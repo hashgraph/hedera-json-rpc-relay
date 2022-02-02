@@ -5,7 +5,7 @@
 export interface Notify {
     jsonrpc: "2.0";
     method: string;
-    params?: Record<string, unknown> | Array<Record<string, unknown>>;
+    params?: string[]|any;
 }
 
 // A subtype of Notify that includes an id. This id will be included in responses from the server.
