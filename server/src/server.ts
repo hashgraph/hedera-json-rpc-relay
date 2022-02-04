@@ -1,9 +1,10 @@
-import express, {Application, Router} from 'express';
-import cors from 'cors';
+import Application from 'koa';
+import Router from 'koa-router';
 import {METHOD_NOT_FOUND, Request, Response} from "../../bridge"
 import {Bridge, BridgeImpl} from "../../bridge";
 
 const bridge: Bridge = new BridgeImpl();
+const cors = require('@koa/cors');
 
 const router = new Router();
 router.post("/", async (ctx) => {
@@ -60,7 +61,7 @@ router.post("/", async (ctx) => {
     }
 })
 
-const app:Application = express();
+const app:Application = new Application();
 app.use(
     cors({
         origin: "*",
