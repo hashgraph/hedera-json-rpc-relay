@@ -1,7 +1,7 @@
 import express, {Application, Router} from 'express';
-import {oakCors} from "https://deno.land/x/cors@v1.2.2/mod.ts";
-import {METHOD_NOT_FOUND, Request, Response} from "../../bridge/src/jsonrpc.ts"
-import {Bridge, BridgeImpl} from "../../bridge/src/bridge.ts";
+import cors from 'cors';
+import {METHOD_NOT_FOUND, Request, Response} from "../../bridge"
+import {Bridge, BridgeImpl} from "../../bridge";
 
 const bridge: Bridge = new BridgeImpl();
 
@@ -62,7 +62,7 @@ router.post("/", async (ctx) => {
 
 const app:Application = express();
 app.use(
-    oakCors({
+    cors({
         origin: "*",
         methods: ["POST"]
     }),
