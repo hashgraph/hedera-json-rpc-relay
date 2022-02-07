@@ -2,13 +2,14 @@ import Application from 'koa';
 import Router from 'koa-router';
 import {METHOD_NOT_FOUND, Request, Response} from "../../bridge"
 import {Bridge, BridgeImpl} from "../../bridge";
+var bodyParser = require('koa-body-parser');
 
 const bridge: Bridge = new BridgeImpl();
 const cors = require('@koa/cors');
 
 const router = new Router();
 router.post("/", async (ctx) => {
-    const req = await ctx.request.body().value as Request;
+    const req = await ctx.request.body as Request;
     if (req.jsonrpc == "2.0") {
         // console.log(" >>> ", req)
         switch (req.method) {
@@ -68,6 +69,7 @@ app.use(
         methods: ["POST"]
     }),
 );
+app.use(bodyParser());
 app.use(router.routes());
 app.use(router.allowedMethods());
 export default app;
