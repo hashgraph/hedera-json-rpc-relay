@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "esnext",
+    "target": "es6",
     "module": "commonjs",                          /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
 
     "rootDir": "./src",                                  /* Specify the root folder within your source files. */
