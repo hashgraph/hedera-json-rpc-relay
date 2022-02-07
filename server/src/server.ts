@@ -1,13 +1,15 @@
-import {Application, Router} from "https://deno.land/x/oak@v10.2.0/mod.ts";
-import {oakCors} from "https://deno.land/x/cors@v1.2.2/mod.ts";
-import {METHOD_NOT_FOUND, Request, Response} from "../../bridge/src/jsonrpc.ts"
-import {Bridge, BridgeImpl} from "../../bridge/src/bridge.ts";
+import Application from 'koa';
+import Router from 'koa-router';
+import {METHOD_NOT_FOUND, Request, Response} from "../../bridge"
+import {Bridge, BridgeImpl} from "../../bridge";
+var bodyParser = require('koa-body-parser');
 
 const bridge: Bridge = new BridgeImpl();
+const cors = require('@koa/cors');
 
 const router = new Router();
 router.post("/", async (ctx) => {
-    const req = await ctx.request.body().value as Request;
+    const req = await ctx.request.body as Request;
     if (req.jsonrpc == "2.0") {
         // console.log(" >>> ", req)
         switch (req.method) {
@@ -60,13 +62,14 @@ router.post("/", async (ctx) => {
     }
 })
 
-const app = new Application();
+const app:Application = new Application();
 app.use(
-    oakCors({
+    cors({
         origin: "*",
         methods: ["POST"]
     }),
 );
+app.use(bodyParser());
 app.use(router.routes());
 app.use(router.allowedMethods());
 export default app;
