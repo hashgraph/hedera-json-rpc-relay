@@ -6,8 +6,10 @@
   "main": "dist/index.js",
   "keywords": [],
   "author": "",
+  "dependencies": {
+    "@types/node": "^17.0.14"
+  },
   "devDependencies": {
-    "@types/node": "^17.0.14",
     "typescript": "^4.5.5"
   }
 }
