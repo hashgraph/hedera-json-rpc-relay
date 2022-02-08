@@ -1,0 +1,19 @@
+{
+  "name": "root",
+  "devDependencies": {
+    "lerna": "^4.0.0",
+    "typescript": "^4.5.5"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/**"
+    ]
+  },
+  "scripts": {
+    "setup": "npx lerna bootstrap --hoist",
+    "build": "npx lerna run build",
+    "clean": "npx lerna run clean",
+    "compile": "npx lerna run compile",
+    "start": "npx lerna exec --scope server -- npm run start"
+  }
+}

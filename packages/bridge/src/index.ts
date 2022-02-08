@@ -1,3 +1,5 @@
+export { BridgeImpl } from './lib/bridge';
+
 export interface Bridge {
     parity() : Parity;
     web3() : Web3;
@@ -23,23 +25,24 @@ export interface Net {
 export interface Eth {
     // getProof();
     // accounts();
-    // blockNumber();
+    blockNumber() : number;
     // call();
     // coinbase();
-    // estimateGas();
-    // gasPrice();
-    // getBalance();
-    // getBlockByHash();
-    // getBlockByNumber();
+    estimateGas() : number;
+    gasPrice() : number;
+    getBalance() : number;
+    getBlockByHash(hash : string) : any;
+    getBlockByNumber(blockNum : number) : any;
     // getBlockTransactionCountByHash();
     // getBlockTransactionCountByNumber();
-    // getCode();
+    getCode() : number;
+    chainId() : number;
     // getLogs();
     // getStorageAt();
     // getTransactionByBlockHashAndIndex();
     // getTransactionByBLockNumberAndIndex();
     // getTransactionByHash();
-    // getTransactionCount();
+    getTransactionCount() : number;
     // getTransactionReceipt();
     // getUncleByBlockHashAndIndex();
     // getUncleByBlockNumberAndIndex();
@@ -58,55 +61,4 @@ export interface Eth {
     // submitHashrate();
     // submitWork();
     // syncing();
-}
-
-export class BridgeImpl implements Bridge {
-    private parityImpl:Parity = new ParityImpl();
-    private web3Impl:Web3 = new Web3Impl();
-    private netImpl:Net = new NetImpl();
-    private ethImpl:Eth = new EthImpl();
-
-    parity(): Parity {
-        return this.parityImpl;
-    }
-
-    web3(): Web3 {
-        return this.web3Impl;
-    }
-
-    net(): Net {
-        return this.netImpl;
-    }
-
-    eth(): Eth {
-        return this.ethImpl;
-    }
-}
-
-class ParityImpl implements Parity {
-    nextNonce() {
-    }
-
-}
-
-class Web3Impl implements Web3 {
-
-}
-
-class NetImpl implements Net {
-    listening(): boolean {
-        return false;
-    }
-
-    peerCount(): number {
-        return 0;
-    }
-
-    version(): number {
-        return 0x123;
-    }
-}
-
-class EthImpl implements Eth {
-
 }
