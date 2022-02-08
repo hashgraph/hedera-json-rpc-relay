@@ -1,6 +1,19 @@
 {
-  "name": "swirlds-json-rpc-bridge",
-  "dependencies": {
-    "lerna": "^4.0.0"
+  "name": "root",
+  "devDependencies": {
+    "lerna": "^4.0.0",
+    "typescript": "^4.5.5"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/**"
+    ]
+  },
+  "scripts": {
+    "compile": "npx lerna run compile",
+    "start": "lerna exec --scope @workspace/app -- yarn start",
+    "test": "lerna run test --since",
+    "new-version": "lerna version --conventional-commits --yes",
+    "diff": "lerna diff"
   }
 }

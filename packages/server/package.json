@@ -5,6 +5,13 @@
   "main": "dist/index.js",
   "keywords": [],
   "author": "",
+  "dependencies": {
+    "bridge": "^0.1.0",
+    "koa": "^2.13.4",
+    "koa-body-parser": "^0.2.1",
+    "koa-jsonrpc": "^1.1.1",
+    "koa-router": "^10.1.1"
+  },
   "devDependencies": {
     "@koa/cors": "^3.1.0",
     "@types/cors": "^2.8.12",
@@ -12,11 +19,12 @@
     "@types/koa-bodyparser": "^4.3.5",
     "@types/koa-router": "^7.4.4",
     "@types/node": "^17.0.14",
-    "koa": "^2.13.4",
-    "koa-body-parser": "^0.2.1",
-    "koa-router": "^10.1.1",
     "tsc": "^2.0.4",
-    "typescript": "^4.5.5",
-    "bridge": "github:swirlds/bridge#v0.1.0"
+    "typescript": "^4.5.5"
+  },
+  "scripts": {
+    "build": "npm run clean && npm run compile",
+    "clean": "rm -rf ./dist && rom -rf tsconfig.tsbuildinfo",
+    "compile": "npx tsc -b tsconfig.json"
   }
 }

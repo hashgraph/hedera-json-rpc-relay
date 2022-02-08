@@ -2,12 +2,18 @@
   "name": "bridge",
   "version": "0.1.0",
   "description": "",
-  "types": "./dist/index.d.ts",
+  "types": "dist/index.d.ts",
   "main": "dist/index.js",
+  "files": [ "dist" ],
   "keywords": [],
   "author": "",
   "devDependencies": {
     "@types/node": "^17.0.14",
     "typescript": "^4.5.5"
+  },
+  "scripts": {
+    "build": "npm run clean && npm run compile",
+    "clean": "rm -rf ./dist && rom -rf tsconfig.tsbuildinfo",
+    "compile": "npx tsc -b tsconfig.json"
   }
 }
