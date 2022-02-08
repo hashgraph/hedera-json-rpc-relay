@@ -1,5 +1,6 @@
 import {Eth} from '../index';
 import {Buffer} from 'buffer';
+import {ContractExecuteTransaction} from "@hashgraph/sdk";
 
 export class EthImpl implements Eth {
     // FIXME
@@ -126,5 +127,11 @@ export class EthImpl implements Eth {
         }
 
         var data = Buffer.from(transaction, 'hex');
+
+        var txRequest : ContractExecuteTransaction =
+            new ContractExecuteTransaction()
+                .populateFromForeignTransaction(data);
+
+        return data.toString();
     }
 }
