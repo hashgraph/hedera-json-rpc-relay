@@ -1,7 +1,7 @@
 import Application from 'koa';
 import Router from 'koa-router';
-import {METHOD_NOT_FOUND, Request, Response} from "../../bridge"
-import {Bridge, BridgeImpl} from "../../bridge";
+import {METHOD_NOT_FOUND, Request, Response} from 'bridge/src/jsonrpc'
+import {Bridge, BridgeImpl} from "bridge/src/bridge";
 var bodyParser = require('koa-body-parser');
 
 const bridge: Bridge = new BridgeImpl();
@@ -13,6 +13,9 @@ router.post("/", async (ctx) => {
     if (req.jsonrpc == "2.0") {
         // console.log(" >>> ", req)
         switch (req.method) {
+            case "net_listening":
+                ctx.response.body = net_listening(req);
+                break;
             case "net_version":
                 ctx.response.body = net_version(req);
                 break;
@@ -74,27 +77,37 @@ app.use(router.routes());
 app.use(router.allowedMethods());
 export default app;
 
+function net_listening(req:Request): Response<string> {
+    return {
+        id: req.id,
+        jsonrpc: "2.0",
+        result: "" + bridge.net().listening()
+    }
+}
+
 function net_version(req:Request): Response<string> {
     return {
         id: req.id,
         jsonrpc: "2.0",
-        result: "0x" + bridge.net().version().toString(16)
+        result: toHexString(bridge.net().version())
     }
 }
 
 function eth_blockNumber(req:Request): Response<string> {
+    // TODO: We should have a legit block number, and we should get it from the mirror node
     return {
         id: req.id,
         jsonrpc: "2.0",
-        result: "0x" + Date.now()
+        result: toHexString(Date.now())
     }
 }
 
 function eth_estimateGas(req:Request): Response<string> {
+    // TODO Somehow compute the amount of gas for this request...
     return {
         id: req.id,
         jsonrpc: "2.0",
-        result: "0x10000" // TODO Somehow compute the amount of gas....
+        result: "0x10000"
     }
 }
 
@@ -236,3 +249,6 @@ function eth_getTransactionReceipt(req: Request): Response<any> {
     }
 }
 
+function toHexString(num:number) {
+    return "0x" + num.toString(16);
+}

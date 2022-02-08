@@ -1,0 +1,6 @@
+{
+  "name": "swirlds-json-rpc-bridge",
+  "dependencies": {
+    "lerna": "^4.0.0"
+  }
+}
