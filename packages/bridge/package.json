@@ -18,6 +18,6 @@
   },
   "dependencies": {
     "buffer": "^6.0.3",
-    "@hashgraph/sdk": "link:../../../hedera-sdk-js"
+    "@hashgraph/sdk": "file:../../../hedera-sdk-js"
   }
 }
