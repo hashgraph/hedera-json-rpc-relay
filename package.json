@@ -10,10 +10,10 @@
     ]
   },
   "scripts": {
+    "setup": "npx lerna bootstrap --hoist",
+    "build": "npx lerna run build",
+    "clean": "npx lerna run clean",
     "compile": "npx lerna run compile",
-    "start": "lerna exec --scope @workspace/app -- yarn start",
-    "test": "lerna run test --since",
-    "new-version": "lerna version --conventional-commits --yes",
-    "diff": "lerna diff"
+    "start": "npx lerna exec --scope server -- npm run start"
   }
 }

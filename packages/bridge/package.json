@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "npm run clean && npm run compile",
-    "clean": "rm -rf ./dist && rom -rf tsconfig.tsbuildinfo",
-    "compile": "npx tsc -b tsconfig.json"
+    "clean": "rm -rf ./dist && rm -rf tsconfig.tsbuildinfo",
+    "compile": "../../node_modules/typescript/bin/tsc -b tsconfig.json"
   }
 }
