@@ -1,4 +1,5 @@
 import {Eth} from '../index';
+import {Buffer} from 'buffer';
 
 export class EthImpl implements Eth {
     // FIXME
@@ -119,8 +120,11 @@ export class EthImpl implements Eth {
         return 0x1;
     }
 
-    // FIXME
     sendRawTransaction(transaction: string): string {
-        throw new Error('Method not implemented.');
+        if (transaction.startsWith("0x")) {
+            transaction = transaction.substring(2);
+        }
+
+        var data = Buffer.from(transaction, 'hex');
     }
 }
