@@ -4,7 +4,8 @@
 
 ### Pre-requirements
 
-You must have installed npm (version 16) and npm.
+You must have installed node (version 16) and npm. I also recommend installing the "prettier" plugin
+in IntelliJ.
 
 ### Steps
 
