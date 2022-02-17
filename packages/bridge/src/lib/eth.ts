@@ -1,8 +1,12 @@
 import {Eth} from '../index';
-import {Buffer} from 'buffer';
-import {ContractExecuteTransaction} from "@hashgraph/sdk";
+import {
+    ContractExecuteTransaction,
+    Client, AccountId
+} from "@hashgraph/sdk";
+var cache = require('js-cache');
 
 export class EthImpl implements Eth {
+
     // FIXME
     feeHistory() {
         const blockNum = "0x" + Date.now()
@@ -121,17 +125,69 @@ export class EthImpl implements Eth {
         return 0x1;
     }
 
-    sendRawTransaction(transaction: string): string {
-        if (transaction.startsWith("0x")) {
-            transaction = transaction.substring(2);
+    async sendRawTransaction(transaction: string): Promise<string> {
+        let client;
+
+        try {
+            client = Client.fromConfig(
+                {
+                        network:
+                            {
+                               '34.70.108.154:50211':  new AccountId(3)
+                            },
+                        operator: {
+                            accountId: '0.0.2',
+                            privateKey: '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'}
+                }
+                );
+        } catch (error) {
+            console.log(error);
+            throw new Error(
+                "Environment variables HEDERA_NETWORK, OPERATOR_ID, and OPERATOR_KEY are required."
+            );
         }
 
-        var data = Buffer.from(transaction, 'hex');
 
-        var txRequest : ContractExecuteTransaction =
-            new ContractExecuteTransaction()
-                .populateFromForeignTransaction(data);
+        var txRequest : ContractExecuteTransaction | null = null;
 
-        return data.toString();
+        txRequest = new ContractExecuteTransaction();
+
+        txRequest = txRequest.populateFromForeignTransaction(transaction);
+
+        console.log(txRequest);
+
+        console.log("ProtoBuf");
+
+        var contractExecuteResponse = null;
+
+        if (client instanceof Client) {
+            try {
+                contractExecuteResponse = await txRequest.execute(client);
+            } catch (e) {
+                console.log(e);
+                throw e;
+            }
+        } else {
+            throw new Error(
+                "txRequest was not a ContractExecute Transaction or the Client was invalid"
+            );
+        }
+        cache.set(contractExecuteResponse.transactionHash, contractExecuteResponse.transactionId);
+
+        console.log(contractExecuteResponse);
+
+        try {
+            const contractReceipt = await contractExecuteResponse.getReceipt(client);
+
+            console.log(contractReceipt);
+
+            const contractRecord = await contractExecuteResponse.getRecord(client);
+
+            console.log(contractRecord);
+        } catch (e) {
+            console.log(e);
+        }
+
+        return Buffer.from(contractExecuteResponse.transactionHash).toString('hex');
     }
 }

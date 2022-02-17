@@ -53,7 +53,7 @@ export interface Eth {
     // hashrate();
     // mining();
     // protocolVersion();
-    sendRawTransaction(transaction : string) : string;
+    sendRawTransaction(transaction : string) : Promise<string>;
     // sendTransaction();
     // sign();
     // signTransaction();

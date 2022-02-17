@@ -17,7 +17,9 @@
     "compile": "../../node_modules/typescript/bin/tsc -b tsconfig.json"
   },
   "dependencies": {
+    "@hashgraph/sdk": "file:../../../hedera-sdk-js",
     "buffer": "^6.0.3",
-    "@hashgraph/sdk": "file:../../../hedera-sdk-js"
+    "js-cache": "^1.0.3",
+    "rlp": "^3.0.0"
   }
 }
