@@ -26,7 +26,7 @@ export interface Eth {
     // getProof();
     // accounts();
     blockNumber() : number;
-    // call();
+    call(call : any, blockParam : string) : Promise<string>;
     // coinbase();
     estimateGas() : number;
     gasPrice() : number;
@@ -43,7 +43,7 @@ export interface Eth {
     // getTransactionByBLockNumberAndIndex();
     // getTransactionByHash();
     getTransactionCount() : number;
-    getTransactionReceipt() : any;
+    getTransactionReceipt(hash : string) : Promise<any>;
     // getUncleByBlockHashAndIndex();
     // getUncleByBlockNumberAndIndex();
     // getUncleCountByBlockHash();

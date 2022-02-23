@@ -1,7 +1,7 @@
 import {Eth} from '../index';
 import {
     ContractExecuteTransaction,
-    Client, AccountId
+    Client, AccountId, ContractCallQuery, ContractId, TransactionReceiptQuery
 } from "@hashgraph/sdk";
 var cache = require('js-cache');
 
@@ -18,8 +18,39 @@ export class EthImpl implements Eth {
     }
 
     // FIXME
-    getTransactionReceipt() {
-        const hash = "BOGUS HASH" // should be passed the hash in the call?
+    async getTransactionReceipt(hash : string) {
+        var client;
+
+        try {
+            client = Client.fromConfig(
+                {
+                    network:
+                        {
+                            '34.70.108.154:50211':  new AccountId(3)
+                        },
+                    operator: {
+                        accountId: '0.0.2',
+                        privateKey: '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'}
+                }
+            );
+        } catch (error) {
+            console.log(error);
+            throw new Error(
+                "Environment variables HEDERA_NETWORK, OPERATOR_ID, and OPERATOR_KEY are required."
+            );
+        }
+
+        const transactionId = cache.get(Buffer.from(hash,'hex'));
+        console.log(transactionId);
+        try {
+            let receipt = await new TransactionReceiptQuery()
+                .setTransactionId(transactionId)
+                .execute(client);
+            console.log(receipt);
+        } catch (e) {
+            console.log(e);
+            throw e;
+        }
         const blockNum = "0x" + Date.now()
         return {
             "transactionHash": hash,
@@ -140,13 +171,13 @@ export class EthImpl implements Eth {
                             privateKey: '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'}
                 }
                 );
+            console.log(client);
         } catch (error) {
             console.log(error);
             throw new Error(
                 "Environment variables HEDERA_NETWORK, OPERATOR_ID, and OPERATOR_KEY are required."
             );
         }
-
 
         var txRequest : ContractExecuteTransaction | null = null;
 
@@ -177,17 +208,86 @@ export class EthImpl implements Eth {
         console.log(contractExecuteResponse);
 
         try {
-            const contractReceipt = await contractExecuteResponse.getReceipt(client);
-
-            console.log(contractReceipt);
-
             const contractRecord = await contractExecuteResponse.getRecord(client);
 
             console.log(contractRecord);
+
+            const contractReceipt = await contractExecuteResponse.getReceipt(client);
+
+            console.log(contractReceipt);
         } catch (e) {
             console.log(e);
         }
 
+
+        console.log(contractExecuteResponse.transactionHash);
+        const transactionId = cache.get(contractExecuteResponse.transactionHash);
+
+        const txnHash = contractExecuteResponse.transactionHash;
+
+        const hashString = Buffer.from(txnHash).toString('hex');
+
+        var receipt = await this.getTransactionReceipt(hashString);
+        console.log("receipt");
+        console.log(receipt);
+
+
         return Buffer.from(contractExecuteResponse.transactionHash).toString('hex');
+    }
+
+    async call(call : any, blockParam : string) {
+        //TODO: ensure block param is latest
+        var client;
+
+        try {
+            client = Client.fromConfig(
+                {
+                    network:
+                        {
+                            '34.70.108.154:50211':  new AccountId(3)
+                        },
+                    operator: {
+                        accountId: '0.0.2',
+                        privateKey: '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'}
+                }
+            );
+        } catch (error) {
+            console.log(error);
+            throw new Error(
+                "Environment variables HEDERA_NETWORK, OPERATOR_ID, and OPERATOR_KEY are required."
+            );
+        }
+
+        try {
+            var gas : number;
+            if (call.gas == null) {
+                gas = 400_000;
+            } else {
+                gas = (typeof call.gas === "string") ? Number(call.gas) : call.gas;
+            }
+
+            const contractCallQuery =
+                new ContractCallQuery()
+                    .setContractId(ContractId.fromSolidityAddress(call.to))
+                    .setFunctionParameters(Buffer.from(call.data,'hex'))
+                    .setGas(gas);
+
+            if (call.from != null) {
+                var lookup = call.from;
+                if (lookup.startsWith("0x")) {
+                    lookup = lookup.substring(2);
+                }
+                var senderId = AccountId.fromSolidityAddress(lookup);
+                contractCallQuery.setSenderId(senderId);
+            }
+
+            console.log(contractCallQuery);
+            const contractCallResponse = await contractCallQuery.execute(client);
+            console.log(contractCallResponse);
+            return Buffer.from(contractCallResponse.asBytes()).toString('hex').replace("^(0x)?0+", "");
+        } catch (e) {
+            console.log(e);
+            throw e;
+        }
     }
 }
