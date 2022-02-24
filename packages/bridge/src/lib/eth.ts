@@ -42,6 +42,9 @@ export class EthImpl implements Eth {
 
         const transactionId = cache.get(Buffer.from(hash,'hex'));
         console.log(transactionId);
+
+        console.log("transactionId.toString()");
+        console.log(transactionId.toString());
         try {
             let receipt = await new TransactionReceiptQuery()
                 .setTransactionId(transactionId)
@@ -207,21 +210,21 @@ export class EthImpl implements Eth {
 
         console.log(contractExecuteResponse);
 
-        try {
-            const contractRecord = await contractExecuteResponse.getRecord(client);
+        // try {
+        //     const contractRecord = await contractExecuteResponse.getRecord(client);
+        //
+        //     console.log(contractRecord);
+        //
+        //     const contractReceipt = await contractExecuteResponse.getReceipt(client);
+        //
+        //     console.log(contractReceipt);
+        // } catch (e) {
+        //     console.log(e);
+        // }
 
-            console.log(contractRecord);
 
-            const contractReceipt = await contractExecuteResponse.getReceipt(client);
-
-            console.log(contractReceipt);
-        } catch (e) {
-            console.log(e);
-        }
-
-
-        console.log(contractExecuteResponse.transactionHash);
-        const transactionId = cache.get(contractExecuteResponse.transactionHash);
+        // console.log(contractExecuteResponse.transactionHash);
+        // const transactionId = cache.get(contractExecuteResponse.transactionHash);
 
         const txnHash = contractExecuteResponse.transactionHash;
 
@@ -266,10 +269,12 @@ export class EthImpl implements Eth {
                 gas = (typeof call.gas === "string") ? Number(call.gas) : call.gas;
             }
 
+            var data : string =  call.data.startsWith("0x") ? call.data.substring(2) : call.data;
+
             const contractCallQuery =
                 new ContractCallQuery()
                     .setContractId(ContractId.fromSolidityAddress(call.to))
-                    .setFunctionParameters(Buffer.from(call.data,'hex'))
+                    .setFunctionParameters(Buffer.from(data,'hex'))
                     .setGas(gas);
 
             if (call.from != null) {
