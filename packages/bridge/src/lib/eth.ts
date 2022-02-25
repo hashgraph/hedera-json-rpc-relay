@@ -1,12 +1,13 @@
 import { Eth } from '../index';
 import {
-  ContractExecuteTransaction,
-  Client,
   AccountId,
+  Client,
   ContractCallQuery,
+  ContractExecuteTransaction,
   ContractId,
   TransactionReceiptQuery,
 } from '@hashgraph/sdk';
+
 var cache = require('js-cache');
 
 export class EthImpl implements Eth {
@@ -43,15 +44,11 @@ export class EthImpl implements Eth {
     }
 
     const transactionId = cache.get(Buffer.from(hash, 'hex'));
-    console.log(transactionId);
 
-    console.log('transactionId.toString()');
-    console.log(transactionId.toString());
     try {
       let receipt = await new TransactionReceiptQuery()
         .setTransactionId(transactionId)
         .execute(client);
-      console.log(receipt);
     } catch (e) {
       console.log(e);
       throw e;
@@ -178,7 +175,6 @@ export class EthImpl implements Eth {
             '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
         },
       });
-      console.log(client);
     } catch (error) {
       console.log(error);
       throw new Error(
@@ -191,10 +187,6 @@ export class EthImpl implements Eth {
     txRequest = new ContractExecuteTransaction();
 
     txRequest = txRequest.populateFromForeignTransaction(transaction);
-
-    console.log(txRequest);
-
-    console.log('ProtoBuf');
 
     var contractExecuteResponse = null;
 
@@ -214,8 +206,6 @@ export class EthImpl implements Eth {
       contractExecuteResponse.transactionHash,
       contractExecuteResponse.transactionId
     );
-
-    console.log(contractExecuteResponse);
 
     // try {
     //     const contractRecord = await contractExecuteResponse.getRecord(client);
@@ -237,8 +227,6 @@ export class EthImpl implements Eth {
     const hashString = Buffer.from(txnHash).toString('hex');
 
     var receipt = await this.getTransactionReceipt(hashString);
-    console.log('receipt');
-    console.log(receipt);
 
     return Buffer.from(contractExecuteResponse.transactionHash).toString('hex');
   }
@@ -291,9 +279,7 @@ export class EthImpl implements Eth {
         contractCallQuery.setSenderId(senderId);
       }
 
-      console.log(contractCallQuery);
       const contractCallResponse = await contractCallQuery.execute(client);
-      console.log(contractCallResponse);
       return Buffer.from(contractCallResponse.asBytes())
         .toString('hex')
         .replace('^(0x)?0+', '');
