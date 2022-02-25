@@ -1,7 +1,5 @@
-import {Parity} from '../index';
+import { Parity } from '../index';
 
 export class ParityImpl implements Parity {
-    nextNonce() {
-    }
-
+  nextNonce() {}
 }
