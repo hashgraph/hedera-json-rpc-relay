@@ -1,6 +1,6 @@
 import { Net } from '../index';
 
-export default class NetImpl implements Net {
+export class NetImpl implements Net {
   /**
    * We always return true for this.
    */

@@ -1,9 +1,19 @@
 import { Eth } from '../index';
+import {
+  AccountId,
+  Client,
+  ContractCallQuery,
+  ContractExecuteTransaction,
+  ContractId,
+  TransactionReceiptQuery,
+} from '@hashgraph/sdk';
 
-export default class EthImpl implements Eth {
-  // FIXME. This is not documented at Infura.
+var cache = require('js-cache');
+
+export class EthImpl implements Eth {
+  // FIXME
   feeHistory() {
-    const blockNum = `0x${Date.now()}`;
+    const blockNum = '0x' + Date.now();
     return {
       baseFeePerGas: ['0x47'],
       gasUsedRatio: ['0.5'],
@@ -12,8 +22,38 @@ export default class EthImpl implements Eth {
   }
 
   // FIXME
-  getTransactionReceipt(hash: string): any {
-    const blockNum = `0x${Date.now()}`;
+  async getTransactionReceipt(hash: string) {
+    var client;
+
+    try {
+      client = Client.fromConfig({
+        network: {
+          '34.70.108.154:50211': new AccountId(3),
+        },
+        operator: {
+          accountId: '0.0.2',
+          privateKey:
+            '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
+        },
+      });
+    } catch (error) {
+      console.log(error);
+      throw new Error(
+        'Environment variables HEDERA_NETWORK, OPERATOR_ID, and OPERATOR_KEY are required.'
+      );
+    }
+
+    const transactionId = cache.get(Buffer.from(hash, 'hex'));
+
+    try {
+      let receipt = await new TransactionReceiptQuery()
+        .setTransactionId(transactionId)
+        .execute(client);
+    } catch (e) {
+      console.log(e);
+      throw e;
+    }
+    const blockNum = '0x' + Date.now();
     return {
       transactionHash: hash,
       transactionIndex: '0x0',
@@ -56,12 +96,12 @@ export default class EthImpl implements Eth {
 
   // FIXME Need to return contract code. For built in accounts we need some fake contract code...?
   getCode(): number {
-    return 0x823928823;
+    return 0x8239283283283823;
   }
 
   // FIXME This is a totally fake implementation
   getBlockByHash(hash: string): any {
-    const blockNum = `0x${Date.now()}`;
+    const blockNum = '0x' + Date.now();
     return {
       difficulty: '0x1',
       extraData: '',
@@ -121,8 +161,131 @@ export default class EthImpl implements Eth {
     return 0x1;
   }
 
-  // FIXME
-  sendRawTransaction(transaction: string): string {
-    throw new Error('Method not implemented.');
+  async sendRawTransaction(transaction: string): Promise<string> {
+    let client;
+
+    try {
+      client = Client.fromConfig({
+        network: {
+          '34.70.108.154:50211': new AccountId(3),
+        },
+        operator: {
+          accountId: '0.0.2',
+          privateKey:
+            '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
+        },
+      });
+    } catch (error) {
+      console.log(error);
+      throw new Error(
+        'Environment variables HEDERA_NETWORK, OPERATOR_ID, and OPERATOR_KEY are required.'
+      );
+    }
+
+    var txRequest: ContractExecuteTransaction | null = null;
+
+    txRequest = new ContractExecuteTransaction();
+
+    txRequest = txRequest.populateFromForeignTransaction(transaction);
+
+    var contractExecuteResponse = null;
+
+    if (client instanceof Client) {
+      try {
+        contractExecuteResponse = await txRequest.execute(client);
+      } catch (e) {
+        console.log(e);
+        throw e;
+      }
+    } else {
+      throw new Error(
+        'txRequest was not a ContractExecute Transaction or the Client was invalid'
+      );
+    }
+    cache.set(
+      contractExecuteResponse.transactionHash,
+      contractExecuteResponse.transactionId
+    );
+
+    // try {
+    //     const contractRecord = await contractExecuteResponse.getRecord(client);
+    //
+    //     console.log(contractRecord);
+    //
+    //     const contractReceipt = await contractExecuteResponse.getReceipt(client);
+    //
+    //     console.log(contractReceipt);
+    // } catch (e) {
+    //     console.log(e);
+    // }
+
+    // console.log(contractExecuteResponse.transactionHash);
+    // const transactionId = cache.get(contractExecuteResponse.transactionHash);
+
+    const txnHash = contractExecuteResponse.transactionHash;
+
+    const hashString = Buffer.from(txnHash).toString('hex');
+
+    var receipt = await this.getTransactionReceipt(hashString);
+
+    return Buffer.from(contractExecuteResponse.transactionHash).toString('hex');
+  }
+
+  async call(call: any, blockParam: string) {
+    //TODO: ensure block param is latest
+    var client;
+
+    try {
+      client = Client.fromConfig({
+        network: {
+          '34.70.108.154:50211': new AccountId(3),
+        },
+        operator: {
+          accountId: '0.0.2',
+          privateKey:
+            '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
+        },
+      });
+    } catch (error) {
+      console.log(error);
+      throw new Error(
+        'Environment variables HEDERA_NETWORK, OPERATOR_ID, and OPERATOR_KEY are required.'
+      );
+    }
+
+    try {
+      var gas: number;
+      if (call.gas == null) {
+        gas = 400_000;
+      } else {
+        gas = typeof call.gas === 'string' ? Number(call.gas) : call.gas;
+      }
+
+      var data: string = call.data.startsWith('0x')
+        ? call.data.substring(2)
+        : call.data;
+
+      const contractCallQuery = new ContractCallQuery()
+        .setContractId(ContractId.fromSolidityAddress(call.to))
+        .setFunctionParameters(Buffer.from(data, 'hex'))
+        .setGas(gas);
+
+      if (call.from != null) {
+        var lookup = call.from;
+        if (lookup.startsWith('0x')) {
+          lookup = lookup.substring(2);
+        }
+        var senderId = AccountId.fromSolidityAddress(lookup);
+        contractCallQuery.setSenderId(senderId);
+      }
+
+      const contractCallResponse = await contractCallQuery.execute(client);
+      return Buffer.from(contractCallResponse.asBytes())
+        .toString('hex')
+        .replace('^(0x)?0+', '');
+    } catch (e) {
+      console.log(e);
+      throw e;
+    }
   }
 }

@@ -1,10 +1,13 @@
-export * from './lib/bridge';
+export { BridgeImpl } from './lib/bridge';
 
 export interface Bridge {
-  parity() : Parity;
-  web3() : Web3;
-  net() : Net;
-  eth() : Eth;
+  parity(): Parity;
+
+  web3(): Web3;
+
+  net(): Net;
+
+  eth(): Eth;
 }
 
 export interface Parity {
@@ -17,43 +20,58 @@ export interface Web3 {
 }
 
 export interface Net {
-  listening() : boolean;
-  peerCount() : number;
-  version() : number;
+  listening(): boolean;
+
+  peerCount(): number;
+
+  version(): number;
 }
 
 export interface Eth {
   // getProof();
   // accounts();
-  blockNumber() : number;
-  // call();
+  blockNumber(): number;
+
+  call(call: any, blockParam: string): Promise<string>;
+
   // coinbase();
-  estimateGas() : number;
-  gasPrice() : number;
-  getBalance() : number;
-  getBlockByHash(hash : string) : any;
-  getBlockByNumber(blockNum : number) : any;
+  estimateGas(): number;
+
+  gasPrice(): number;
+
+  getBalance(): number;
+
+  getBlockByHash(hash: string): any;
+
+  getBlockByNumber(blockNum: number): any;
+
   // getBlockTransactionCountByHash();
   // getBlockTransactionCountByNumber();
-  getCode() : number;
-  chainId() : number;
+  getCode(): number;
+
+  chainId(): number;
+
   // getLogs();
   // getStorageAt();
   // getTransactionByBlockHashAndIndex();
   // getTransactionByBLockNumberAndIndex();
   // getTransactionByHash();
-  getTransactionCount() : number;
-  // getTransactionReceipt();
+  getTransactionCount(): number;
+
+  getTransactionReceipt(hash: string): Promise<any>;
+
   // getUncleByBlockHashAndIndex();
   // getUncleByBlockNumberAndIndex();
   // getUncleCountByBlockHash();
   // getUncleCountByBlockNumber();
   // getWork();
-  // feeHistory();
+  feeHistory(): any;
+
   // hashrate();
   // mining();
   // protocolVersion();
-  // sendRawTransaction();
+  sendRawTransaction(transaction: string): Promise<string>;
+
   // sendTransaction();
   // sign();
   // signTransaction();

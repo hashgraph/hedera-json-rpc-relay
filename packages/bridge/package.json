@@ -14,10 +14,16 @@
     "typescript": "^4.5.5"
   },
   "scripts": {
-    "build": "npm run clean && npm run compile && npm run lint",
+    "build": "npm run clean && npm run compile",
     "clean": "rm -rf ./dist && rm -rf tsconfig.tsbuildinfo",
     "compile": "../../node_modules/typescript/bin/tsc -b tsconfig.json",
     "lint": "npx eslint --ext .js,.ts .",
     "format": "npx prettier --ignore-path ../../.gitignore --write \"**/*.+(js|ts|json)\""
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "file:../../../hedera-sdk-js",
+    "buffer": "^6.0.3",
+    "js-cache": "^1.0.3",
+    "rlp": "^3.0.0"
   }
 }
