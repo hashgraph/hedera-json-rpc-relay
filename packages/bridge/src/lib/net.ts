@@ -1,18 +1,18 @@
-import { Net } from '../index'
-import { Client } from '@hashgraph/sdk'
+import { Net } from '../index';
+import { Client } from '@hashgraph/sdk';
 
 export class NetImpl implements Net {
-  private client: Client
+  private client: Client;
 
   constructor(client: Client) {
-    this.client = client
+    this.client = client;
   }
 
   /**
    * We always return true for this.
    */
   listening(): boolean {
-    return true
+    return true;
   }
 
   /**
@@ -27,6 +27,6 @@ export class NetImpl implements Net {
    * TODO Support some config when launching the server for this. dotenv support?
    */
   version(): string {
-    return "0x012a"
+    return '0x012a';
   }
 }

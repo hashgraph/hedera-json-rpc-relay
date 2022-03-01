@@ -1,4 +1,4 @@
-import { Eth } from '../index'
+import { Eth } from '../index';
 import {
   AccountBalanceQuery,
   AccountId,
@@ -7,41 +7,41 @@ import {
   ContractExecuteTransaction,
   ContractId,
   HbarUnit,
-  TransactionReceiptQuery
-} from '@hashgraph/sdk'
+  TransactionReceiptQuery,
+} from '@hashgraph/sdk';
 
-var cache = require('js-cache')
+var cache = require('js-cache');
 
 export class EthImpl implements Eth {
-  private client: Client
+  private client: Client;
 
   constructor(client: Client) {
-    this.client = client
+    this.client = client;
   }
 
   // FIXME
   feeHistory() {
-    const blockNum = '0x' + Date.now()
+    const blockNum = '0x' + Date.now();
     return {
       baseFeePerGas: ['0x47'],
       gasUsedRatio: ['0.5'],
-      oldestBlock: blockNum
-    }
+      oldestBlock: blockNum,
+    };
   }
 
   // FIXME
   async getTransactionReceipt(hash: string) {
-    const transactionId = cache.get(Buffer.from(hash, 'hex'))
+    const transactionId = cache.get(Buffer.from(hash, 'hex'));
 
     try {
       let receipt = await new TransactionReceiptQuery()
         .setTransactionId(transactionId)
-        .execute(this.client)
+        .execute(this.client);
     } catch (e) {
-      console.log(e)
-      throw e
+      console.log(e);
+      throw e;
     }
-    const blockNum = '0x' + Date.now()
+    const blockNum = '0x' + Date.now();
     return {
       transactionHash: hash,
       transactionIndex: '0x0',
@@ -53,52 +53,56 @@ export class EthImpl implements Eth {
       contractAddress: '0xb60e8dd61c5d32be8058bb8eb970870f07233155',
       logs: [],
       logsBloom: '0x0000',
-      status: '0x1'
-    }
+      status: '0x1',
+    };
   }
 
   // FIXME: We should have a legit block number, and we should get it from the mirror node
   blockNumber() {
-    return Date.now()
+    return Date.now();
   }
 
   // FIXME This needs to be customizable via env variables
   chainId(): string {
-    return '0x12a'
+    return '0x12a';
   }
 
   // FIXME Somehow compute the amount of gas for this request...
   estimateGas(): number {
-    return 0x10000
+    return 0x10000;
   }
 
   // FIXME, fake.
   gasPrice(): number {
-    return 0x2f
+    return 0x2f;
   }
 
   // FIXME Somehow get the account balance... even for testing I need to fake this better
   async getBalance(account: string): Promise<string> {
     try {
-      var balanceQuery: AccountBalanceQuery
-      balanceQuery = new AccountBalanceQuery({ accountId: AccountId.fromSolidityAddress(account) })
-      const result = await balanceQuery.execute(this.client)
-      const weibars = result.hbars.to(HbarUnit.Tinybar).multipliedBy(10_000_000_000)
-      return "0x" + weibars.toString(16)
+      var balanceQuery: AccountBalanceQuery;
+      balanceQuery = new AccountBalanceQuery({
+        accountId: AccountId.fromSolidityAddress(account),
+      });
+      const result = await balanceQuery.execute(this.client);
+      const weibars = result.hbars
+        .to(HbarUnit.Tinybar)
+        .multipliedBy(10_000_000_000);
+      return '0x' + weibars.toString(16);
     } catch (e) {
       //console.log(e)
-      return '0x0'
+      return '0x0';
     }
   }
 
   // FIXME Need to return contract code. For built in accounts we need some fake contract code...?
   getCode(): string {
-    return '0x8239283283283823'
+    return '0x8239283283283823';
   }
 
   // FIXME This is a totally fake implementation
   getBlockByHash(hash: string): any {
-    const blockNum = '0x' + Date.now()
+    const blockNum = '0x' + Date.now();
     return {
       difficulty: '0x1',
       extraData: '',
@@ -121,8 +125,8 @@ export class EthImpl implements Eth {
       totalDifficulty: blockNum,
       transactions: [],
       transactionsRoot: '0x00',
-      uncles: []
-    }
+      uncles: [],
+    };
   }
 
   // FIXME This is a totally fake implementation
@@ -149,27 +153,27 @@ export class EthImpl implements Eth {
       totalDifficulty: blockNum,
       transactions: [],
       transactionsRoot: '0x00',
-      uncles: []
-    }
+      uncles: [],
+    };
   }
 
   // FIXME
   getTransactionCount(): number {
-    return 0x1
+    return 0x1;
   }
 
   async sendRawTransaction(transaction: string): Promise<string> {
-    var txRequest: ContractExecuteTransaction | null
+    var txRequest: ContractExecuteTransaction | null;
 
-    txRequest = new ContractExecuteTransaction()
+    txRequest = new ContractExecuteTransaction();
 
-    txRequest = txRequest.populateFromForeignTransaction(transaction)
+    txRequest = txRequest.populateFromForeignTransaction(transaction);
 
-    var contractExecuteResponse = await txRequest.execute(this.client)
+    var contractExecuteResponse = await txRequest.execute(this.client);
     cache.set(
       contractExecuteResponse.transactionHash,
       contractExecuteResponse.transactionId
-    )
+    );
 
     // try {
     //     const contractRecord = await contractExecuteResponse.getRecord(client);
@@ -186,49 +190,47 @@ export class EthImpl implements Eth {
     // console.log(contractExecuteResponse.transactionHash);
     // const transactionId = cache.get(contractExecuteResponse.transactionHash);
 
-    const txnHash = contractExecuteResponse.transactionHash
+    const txnHash = contractExecuteResponse.transactionHash;
 
-    const hashString = Buffer.from(txnHash).toString('hex')
+    const hashString = Buffer.from(txnHash).toString('hex');
 
-    var receipt = await this.getTransactionReceipt(hashString)
+    var receipt = await this.getTransactionReceipt(hashString);
 
-    return Buffer.from(contractExecuteResponse.transactionHash).toString('hex')
+    return Buffer.from(contractExecuteResponse.transactionHash).toString('hex');
   }
 
   async call(call: any, blockParam: string) {
     try {
-      var gas: number
+      var gas: number;
       if (call.gas == null) {
-        gas = 400_000
+        gas = 400_000;
       } else {
-        gas = typeof call.gas === 'string' ? Number(call.gas) : call.gas
+        gas = typeof call.gas === 'string' ? Number(call.gas) : call.gas;
       }
 
       var data: string = call.data.startsWith('0x')
         ? call.data.substring(2)
-        : call.data
+        : call.data;
 
       const contractCallQuery = new ContractCallQuery()
-        .setContractId(ContractId.fromSolidityAddress(call.to))
+        .setContractId(ContractId.fromEvmAddress(0, 0, call.to))
         .setFunctionParameters(Buffer.from(data, 'hex'))
-        .setGas(gas)
+        .setGas(gas);
 
       if (call.from != null) {
-        var lookup = call.from
+        var lookup = call.from;
         if (lookup.startsWith('0x')) {
-          lookup = lookup.substring(2)
+          lookup = lookup.substring(2);
         }
-        var senderId = AccountId.fromSolidityAddress(lookup)
-        contractCallQuery.setSenderId(senderId)
+        var senderId = AccountId.fromSolidityAddress(lookup);
+        contractCallQuery.setSenderId(senderId);
       }
 
-      const contractCallResponse = await contractCallQuery.execute(this.client)
-      return Buffer.from(contractCallResponse.asBytes())
-        .toString('hex')
-        .replace('^(0x)?0+', '')
+      const contractCallResponse = await contractCallQuery.execute(this.client);
+      return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
     } catch (e) {
-      console.log(e)
-      throw e
+      console.log(e);
+      throw e;
     }
   }
 }
