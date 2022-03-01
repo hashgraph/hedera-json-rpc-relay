@@ -10,7 +10,7 @@ rpc.use('net_listening', async () => {
   return '' + bridge.net().listening()
 })
 rpc.use('net_version', async () => {
-  return toHexString(bridge.net().version())
+  return bridge.net().version()
 })
 rpc.use('eth_blockNumber', async () => {
   return toHexString(bridge.eth().blockNumber())
@@ -18,14 +18,14 @@ rpc.use('eth_blockNumber', async () => {
 rpc.use('eth_estimateGas', async () => {
   return toHexString(bridge.eth().estimateGas())
 })
-rpc.use('eth_getBalance', async () => {
-  return toHexString(bridge.eth().getBalance())
+rpc.use('eth_getBalance', async (params: any) => {
+  return bridge.eth().getBalance(params?.[0])
 })
 rpc.use('eth_getCode', async () => {
-  return toHexString(bridge.eth().getCode())
+  return bridge.eth().getCode()
 })
 rpc.use('eth_chainId', async () => {
-  return toHexString(bridge.eth().chainId())
+  return bridge.eth().chainId()
 })
 rpc.use('eth_getBlockByNumber', async (params: any) => {
   return bridge.eth().getBlockByNumber(params?.[0])

@@ -1,16 +1,24 @@
 import { Eth } from '../index';
 import {
+  AccountBalanceQuery,
   AccountId,
   Client,
   ContractCallQuery,
   ContractExecuteTransaction,
   ContractId,
+  HbarUnit,
   TransactionReceiptQuery,
 } from '@hashgraph/sdk';
 
 var cache = require('js-cache');
 
 export class EthImpl implements Eth {
+  private client: Client;
+
+  constructor(client: Client) {
+    this.client = client;
+  }
+
   // FIXME
   feeHistory() {
     const blockNum = '0x' + Date.now();
@@ -23,32 +31,12 @@ export class EthImpl implements Eth {
 
   // FIXME
   async getTransactionReceipt(hash: string) {
-    var client;
-
-    try {
-      client = Client.fromConfig({
-        network: {
-          '34.70.108.154:50211': new AccountId(3),
-        },
-        operator: {
-          accountId: '0.0.2',
-          privateKey:
-            '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
-        },
-      });
-    } catch (error) {
-      console.log(error);
-      throw new Error(
-        'Environment variables HEDERA_NETWORK, OPERATOR_ID, and OPERATOR_KEY are required.'
-      );
-    }
-
     const transactionId = cache.get(Buffer.from(hash, 'hex'));
 
     try {
       let receipt = await new TransactionReceiptQuery()
         .setTransactionId(transactionId)
-        .execute(client);
+        .execute(this.client);
     } catch (e) {
       console.log(e);
       throw e;
@@ -75,8 +63,8 @@ export class EthImpl implements Eth {
   }
 
   // FIXME This needs to be customizable via env variables
-  chainId(): number {
-    return 0x12a;
+  chainId(): string {
+    return '0x12a';
   }
 
   // FIXME Somehow compute the amount of gas for this request...
@@ -90,13 +78,26 @@ export class EthImpl implements Eth {
   }
 
   // FIXME Somehow get the account balance... even for testing I need to fake this better
-  getBalance(): number {
-    return 0x10000000000000000;
+  async getBalance(account: string): Promise<string> {
+    try {
+      var balanceQuery: AccountBalanceQuery;
+      balanceQuery = new AccountBalanceQuery({
+        accountId: AccountId.fromSolidityAddress(account),
+      });
+      const result = await balanceQuery.execute(this.client);
+      const weibars = result.hbars
+        .to(HbarUnit.Tinybar)
+        .multipliedBy(10_000_000_000);
+      return '0x' + weibars.toString(16);
+    } catch (e) {
+      //console.log(e)
+      return '0x0';
+    }
   }
 
   // FIXME Need to return contract code. For built in accounts we need some fake contract code...?
-  getCode(): number {
-    return 0x8239283283283823;
+  getCode(): string {
+    return '0x8239283283283823';
   }
 
   // FIXME This is a totally fake implementation
@@ -162,46 +163,13 @@ export class EthImpl implements Eth {
   }
 
   async sendRawTransaction(transaction: string): Promise<string> {
-    let client;
-
-    try {
-      client = Client.fromConfig({
-        network: {
-          '34.70.108.154:50211': new AccountId(3),
-        },
-        operator: {
-          accountId: '0.0.2',
-          privateKey:
-            '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
-        },
-      });
-    } catch (error) {
-      console.log(error);
-      throw new Error(
-        'Environment variables HEDERA_NETWORK, OPERATOR_ID, and OPERATOR_KEY are required.'
-      );
-    }
-
-    var txRequest: ContractExecuteTransaction | null = null;
+    var txRequest: ContractExecuteTransaction | null;
 
     txRequest = new ContractExecuteTransaction();
 
     txRequest = txRequest.populateFromForeignTransaction(transaction);
 
-    var contractExecuteResponse = null;
-
-    if (client instanceof Client) {
-      try {
-        contractExecuteResponse = await txRequest.execute(client);
-      } catch (e) {
-        console.log(e);
-        throw e;
-      }
-    } else {
-      throw new Error(
-        'txRequest was not a ContractExecute Transaction or the Client was invalid'
-      );
-    }
+    var contractExecuteResponse = await txRequest.execute(this.client);
     cache.set(
       contractExecuteResponse.transactionHash,
       contractExecuteResponse.transactionId
@@ -232,27 +200,6 @@ export class EthImpl implements Eth {
   }
 
   async call(call: any, blockParam: string) {
-    //TODO: ensure block param is latest
-    var client;
-
-    try {
-      client = Client.fromConfig({
-        network: {
-          '34.70.108.154:50211': new AccountId(3),
-        },
-        operator: {
-          accountId: '0.0.2',
-          privateKey:
-            '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
-        },
-      });
-    } catch (error) {
-      console.log(error);
-      throw new Error(
-        'Environment variables HEDERA_NETWORK, OPERATOR_ID, and OPERATOR_KEY are required.'
-      );
-    }
-
     try {
       var gas: number;
       if (call.gas == null) {
@@ -266,7 +213,7 @@ export class EthImpl implements Eth {
         : call.data;
 
       const contractCallQuery = new ContractCallQuery()
-        .setContractId(ContractId.fromSolidityAddress(call.to))
+        .setContractId(ContractId.fromEvmAddress(0, 0, call.to))
         .setFunctionParameters(Buffer.from(data, 'hex'))
         .setGas(gas);
 
@@ -279,10 +226,8 @@ export class EthImpl implements Eth {
         contractCallQuery.setSenderId(senderId);
       }
 
-      const contractCallResponse = await contractCallQuery.execute(client);
-      return Buffer.from(contractCallResponse.asBytes())
-        .toString('hex')
-        .replace('^(0x)?0+', '');
+      const contractCallResponse = await contractCallQuery.execute(this.client);
+      return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
     } catch (e) {
       console.log(e);
       throw e;

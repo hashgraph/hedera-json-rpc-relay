@@ -24,7 +24,7 @@ export interface Net {
 
   peerCount(): number;
 
-  version(): number;
+  version(): string;
 }
 
 export interface Eth {
@@ -39,7 +39,7 @@ export interface Eth {
 
   gasPrice(): number;
 
-  getBalance(): number;
+  getBalance(account: string): Promise<string>;
 
   getBlockByHash(hash: string): any;
 
@@ -47,9 +47,9 @@ export interface Eth {
 
   // getBlockTransactionCountByHash();
   // getBlockTransactionCountByNumber();
-  getCode(): number;
+  getCode(): string;
 
-  chainId(): number;
+  chainId(): string;
 
   // getLogs();
   // getStorageAt();
