@@ -55,8 +55,8 @@ rpc.use('eth_sendRawTransaction', async (params: any) => {
     throw e
   }
 })
-rpc.use('eth_getTransactionReceipt', async (hash: string) => {
-  return bridge.eth().getTransactionReceipt(hash)
+rpc.use('eth_getTransactionReceipt', async (params: any) => {
+  return bridge.eth().getTransactionReceipt(params?.[0])
 })
 app.use(rpc.app())
 

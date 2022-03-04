@@ -21,10 +21,10 @@
     "format": "npx prettier --ignore-path ../../.gitignore --write \"**/*.+(js|ts|json)\""
   },
   "dependencies": {
-    "@hashgraph/sdk": "file:../../../../hashgraph/hedera-sdk-js",
-    "find-config": "^1.0.0",
+    "@hashgraph/sdk": "file:../../../hedera-sdk-js",
     "buffer": "^6.0.3",
     "dotenv": "^16.0.0",
+    "find-config": "^1.0.0",
     "js-cache": "^1.0.3",
     "rlp": "^3.0.0"
   }

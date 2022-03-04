@@ -7,7 +7,9 @@ import {
   ContractExecuteTransaction,
   ContractId,
   HbarUnit,
-  TransactionReceiptQuery,
+  Status,
+  TransactionRecord,
+  TransactionRecordQuery,
 } from '@hashgraph/sdk';
 
 var cache = require('js-cache');
@@ -29,12 +31,23 @@ export class EthImpl implements Eth {
     };
   }
 
-  // FIXME
   async getTransactionReceipt(hash: string) {
-    const transactionId = cache.get(Buffer.from(hash, 'hex'));
-
+    var transactionId;
     try {
-      let receipt = await new TransactionReceiptQuery()
+      transactionId = cache.get(hash);
+      if (transactionId == null) {
+        console.log('retrieve cached transactionId for hash:');
+        console.log(hash);
+        throw new Error('TransactionId Null');
+      }
+    } catch (e) {
+      console.log(e);
+      throw e;
+    }
+
+    var record;
+    try {
+      record = await new TransactionRecordQuery()
         .setTransactionId(transactionId)
         .execute(this.client);
     } catch (e) {
@@ -42,19 +55,30 @@ export class EthImpl implements Eth {
       throw e;
     }
     const blockNum = '0x' + Date.now();
-    return {
-      transactionHash: hash,
-      transactionIndex: '0x0',
-      blockNumber: blockNum,
-      blockHash:
-        '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
-      cumulativeGasUsed: '0x33bc',
-      gasUsed: '0x4dc',
-      contractAddress: '0xb60e8dd61c5d32be8058bb8eb970870f07233155',
-      logs: [],
-      logsBloom: '0x0000',
-      status: '0x1',
-    };
+    if (
+      record instanceof TransactionRecord &&
+      record.contractFunctionResult != null &&
+      record.receipt.contractId != null
+    ) {
+      //FIXME blockHash, blockNumber, etc should be corrected for what rosettaAPI is using
+      return {
+        transactionHash: hash,
+        transactionIndex: '0x0',
+        blockNumber: blockNum,
+        blockHash:
+          '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+        cumulativeGasUsed:
+          '0x' + Number(record.contractFunctionResult.gasUsed).toString(),
+        gasUsed:
+          '0x' + Number(record.contractFunctionResult.gasUsed).toString(),
+        contractAddress: '0x' + record.receipt.contractId.toSolidityAddress(),
+        logs: record.contractFunctionResult.logs,
+        logsBloom: record.contractFunctionResult.bloom,
+        status: record.receipt.status == Status.Success ? '0x1' : '0x0',
+      };
+    } else {
+      return null;
+    }
   }
 
   // FIXME: We should have a legit block number, and we should get it from the mirror node
@@ -88,10 +112,12 @@ export class EthImpl implements Eth {
       const weibars = result.hbars
         .to(HbarUnit.Tinybar)
         .multipliedBy(10_000_000_000);
-      return '0x' + weibars.toString(16);
+      const retVal = '0x' + weibars.toString(16);
+      return retVal;
     } catch (e) {
-      //console.log(e)
-      return '0x0';
+      //FIXME: This value is dummied up until the above is functional
+      // console.log(e)
+      return '0x10000000000';
     }
   }
 
@@ -170,33 +196,15 @@ export class EthImpl implements Eth {
     txRequest = txRequest.populateFromForeignTransaction(transaction);
 
     var contractExecuteResponse = await txRequest.execute(this.client);
-    cache.set(
-      contractExecuteResponse.transactionHash,
-      contractExecuteResponse.transactionId
-    );
-
-    // try {
-    //     const contractRecord = await contractExecuteResponse.getRecord(client);
-    //
-    //     console.log(contractRecord);
-    //
-    //     const contractReceipt = await contractExecuteResponse.getReceipt(client);
-    //
-    //     console.log(contractReceipt);
-    // } catch (e) {
-    //     console.log(e);
-    // }
-
-    // console.log(contractExecuteResponse.transactionHash);
-    // const transactionId = cache.get(contractExecuteResponse.transactionHash);
 
     const txnHash = contractExecuteResponse.transactionHash;
 
-    const hashString = Buffer.from(txnHash).toString('hex');
+    const hashString =
+      '0x' + Buffer.from(txnHash).toString('hex').substring(0, 64);
 
-    var receipt = await this.getTransactionReceipt(hashString);
+    cache.set(hashString, contractExecuteResponse.transactionId);
 
-    return Buffer.from(contractExecuteResponse.transactionHash).toString('hex');
+    return hashString;
   }
 
   async call(call: any, blockParam: string) {
