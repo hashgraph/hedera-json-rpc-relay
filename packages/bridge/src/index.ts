@@ -1,8 +1,6 @@
 export { BridgeImpl } from './lib/bridge';
 
 export interface Bridge {
-  parity(): Parity;
-
   web3(): Web3;
 
   net(): Net;
@@ -10,12 +8,9 @@ export interface Bridge {
   eth(): Eth;
 }
 
-export interface Parity {
-  // nextNonce();
-}
-
 export interface Web3 {
-  // clientVersion();
+  clientVersion(): string;
+
   // sha();
 }
 
@@ -79,4 +74,6 @@ export interface Eth {
   // submitHashrate();
   // submitWork();
   // syncing();
+
+  accounts(): Array<any>
 }

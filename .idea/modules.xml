@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/swirlds-json-rpc-bridge.iml" filepath="$PROJECT_DIR$/.idea/swirlds-json-rpc-bridge.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/hedera-eth-api-gateway.iml" filepath="$PROJECT_DIR$/.idea/hedera-eth-api-gateway.iml" />
     </modules>
   </component>
 </project>

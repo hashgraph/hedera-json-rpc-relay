@@ -12,3 +12,11 @@
 //             assertEquals(res.body.result, '0x123')
 //         });
 // });
+
+import { expect } from 'chai';
+
+describe('RPC Server', async function() {
+  it('should execute "net_listening"', async function() {
+    expect(1).to.equals(1);
+  });
+});

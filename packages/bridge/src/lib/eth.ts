@@ -9,16 +9,20 @@ import {
   HbarUnit,
   Status,
   TransactionRecord,
-  TransactionRecordQuery,
+  TransactionRecordQuery
 } from '@hashgraph/sdk';
 
-var cache = require('js-cache');
+const cache = require('js-cache');
 
 export class EthImpl implements Eth {
-  private client: Client;
+  private readonly client: Client;
 
   constructor(client: Client) {
     this.client = client;
+  }
+
+  accounts() {
+    return [];
   }
 
   // FIXME
@@ -27,12 +31,12 @@ export class EthImpl implements Eth {
     return {
       baseFeePerGas: ['0x47'],
       gasUsedRatio: ['0.5'],
-      oldestBlock: blockNum,
+      oldestBlock: blockNum
     };
   }
 
   async getTransactionReceipt(hash: string) {
-    var transactionId;
+    let transactionId;
     try {
       transactionId = cache.get(hash);
       if (transactionId == null) {
@@ -45,7 +49,7 @@ export class EthImpl implements Eth {
       throw e;
     }
 
-    var record;
+    let record;
     try {
       record = await new TransactionRecordQuery()
         .setTransactionId(transactionId)
@@ -74,7 +78,7 @@ export class EthImpl implements Eth {
         contractAddress: '0x' + record.receipt.contractId.toSolidityAddress(),
         logs: record.contractFunctionResult.logs,
         logsBloom: record.contractFunctionResult.bloom,
-        status: record.receipt.status == Status.Success ? '0x1' : '0x0',
+        status: record.receipt.status == Status.Success ? '0x1' : '0x0'
       };
     } else {
       return null;
@@ -86,9 +90,8 @@ export class EthImpl implements Eth {
     return Date.now();
   }
 
-  // FIXME This needs to be customizable via env variables
   chainId(): string {
-    return '0x12a';
+    return process.env.CHAIN_ID || '';
   }
 
   // FIXME Somehow compute the amount of gas for this request...
@@ -104,9 +107,8 @@ export class EthImpl implements Eth {
   // FIXME Somehow get the account balance... even for testing I need to fake this better
   async getBalance(account: string): Promise<string> {
     try {
-      var balanceQuery: AccountBalanceQuery;
-      balanceQuery = new AccountBalanceQuery({
-        accountId: AccountId.fromSolidityAddress(account),
+      const balanceQuery = new AccountBalanceQuery({
+        accountId: AccountId.fromSolidityAddress(account)
       });
       const result = await balanceQuery.execute(this.client);
       const weibars = result.hbars
@@ -151,7 +153,7 @@ export class EthImpl implements Eth {
       totalDifficulty: blockNum,
       transactions: [],
       transactionsRoot: '0x00',
-      uncles: [],
+      uncles: []
     };
   }
 
@@ -179,7 +181,7 @@ export class EthImpl implements Eth {
       totalDifficulty: blockNum,
       transactions: [],
       transactionsRoot: '0x00',
-      uncles: [],
+      uncles: []
     };
   }
 
@@ -189,13 +191,15 @@ export class EthImpl implements Eth {
   }
 
   async sendRawTransaction(transaction: string): Promise<string> {
-    var txRequest: ContractExecuteTransaction | null;
+    let txRequest: ContractExecuteTransaction | null;
 
     txRequest = new ContractExecuteTransaction();
 
+    // @ts-ignore
     txRequest = txRequest.populateFromForeignTransaction(transaction);
 
-    var contractExecuteResponse = await txRequest.execute(this.client);
+    // @ts-ignore
+    const contractExecuteResponse = await txRequest.execute(this.client);
 
     const txnHash = contractExecuteResponse.transactionHash;
 
@@ -209,14 +213,14 @@ export class EthImpl implements Eth {
 
   async call(call: any, blockParam: string) {
     try {
-      var gas: number;
+      let gas: number;
       if (call.gas == null) {
         gas = 400_000;
       } else {
         gas = typeof call.gas === 'string' ? Number(call.gas) : call.gas;
       }
 
-      var data: string = call.data.startsWith('0x')
+      const data: string = call.data.startsWith('0x')
         ? call.data.substring(2)
         : call.data;
 
@@ -226,11 +230,12 @@ export class EthImpl implements Eth {
         .setGas(gas);
 
       if (call.from != null) {
-        var lookup = call.from;
+        let lookup = call.from;
         if (lookup.startsWith('0x')) {
           lookup = lookup.substring(2);
         }
-        var senderId = AccountId.fromSolidityAddress(lookup);
+        const senderId = AccountId.fromSolidityAddress(lookup);
+        // @ts-ignore
         contractCallQuery.setSenderId(senderId);
       }
 
