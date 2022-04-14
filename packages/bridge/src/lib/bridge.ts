@@ -30,15 +30,19 @@ export class BridgeImpl implements Bridge {
   initClient(): Client {
     dotenv.config({ path: findConfig('.env') || '' });
     const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
+
     let client: Client;
     if (hederaNetwork in ['mainnet', 'testnet', 'previewnet']) {
-      client = Client.forName(hederaNetwork).setOperator(
-        AccountId.fromString(process.env.OPERATOR_ID || ''),
-        PrivateKey.fromString(process.env.OPERATOR_KEY || '')
-      );
+      client = Client.forName(hederaNetwork);
     } else {
-      client = Client.fromConfig(hederaNetwork);
+      client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
+    
+    client = client.setOperator(
+      AccountId.fromString(process.env.OPERATOR_ID || ''),
+      PrivateKey.fromString(process.env.OPERATOR_KEY || '')
+    );
+
     return client;
   }
 }

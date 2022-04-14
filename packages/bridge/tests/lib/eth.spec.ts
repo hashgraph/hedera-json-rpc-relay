@@ -20,9 +20,4 @@ describe('Eth', async function() {
     expect(accounts).to.be.an('Array');
     expect(accounts.length).to.be.equal(0);
   });
-  it('should execute "web3_clientVersion"', async function() {
-    const clientVersion = await Bridge.web3().clientVersion();
-
-    expect(clientVersion).to.be.equal(process.env.npm_package_version);
-  });
 });

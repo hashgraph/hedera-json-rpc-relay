@@ -195,10 +195,8 @@ export class EthImpl implements Eth {
 
     txRequest = new ContractExecuteTransaction();
 
-    // @ts-ignore
     txRequest = txRequest.populateFromForeignTransaction(transaction);
 
-    // @ts-ignore
     const contractExecuteResponse = await txRequest.execute(this.client);
 
     const txnHash = contractExecuteResponse.transactionHash;
@@ -235,7 +233,6 @@ export class EthImpl implements Eth {
           lookup = lookup.substring(2);
         }
         const senderId = AccountId.fromSolidityAddress(lookup);
-        // @ts-ignore
         contractCallQuery.setSenderId(senderId);
       }
 
