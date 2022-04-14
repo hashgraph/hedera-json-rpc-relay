@@ -243,4 +243,37 @@ export class EthImpl implements Eth {
       throw e;
     }
   }
+  
+  async mining() {
+    return false;
+  }
+
+  async submitWork() {
+    return false;
+  }
+
+  async syncing() {
+    return false;
+  }
+
+  async getUncleByBlockHashAndIndex() {
+    return null;
+  }
+
+  async getUncleByBlockNumberAndIndex() {
+    return null;
+  }
+
+  async getUncleCountByBlockHash() {
+    return '0x0';
+  }
+
+  async getUncleCountByBlockNumber() {
+    return '0x0';
+  }
+
+  async hashrate() {
+    return '0x0';
+  }
+  
 }

@@ -55,15 +55,15 @@ export interface Eth {
 
   getTransactionReceipt(hash: string): Promise<any>;
 
-  // getUncleByBlockHashAndIndex();
-  // getUncleByBlockNumberAndIndex();
-  // getUncleCountByBlockHash();
-  // getUncleCountByBlockNumber();
+  getUncleByBlockHashAndIndex(): Promise<any>;
+  getUncleByBlockNumberAndIndex(): Promise<any>;
+  getUncleCountByBlockHash(): Promise<string>;
+  getUncleCountByBlockNumber(): Promise<string>;
   // getWork();
   feeHistory(): any;
 
-  // hashrate();
-  // mining();
+  hashrate(): Promise<string>;
+  mining(): Promise<boolean>;
   // protocolVersion();
   sendRawTransaction(transaction: string): Promise<string>;
 
@@ -72,8 +72,8 @@ export interface Eth {
   // signTransaction();
   // signTypedData();
   // submitHashrate();
-  // submitWork();
-  // syncing();
+  submitWork(): Promise<boolean>;
+  syncing(): Promise<boolean>;
 
   accounts(): Array<any>
 }
