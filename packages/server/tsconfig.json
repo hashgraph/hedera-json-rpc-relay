@@ -1,18 +1,17 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "rootDir": "./src",
-    /* Specify the root folder within your source files. */
-    "outDir": "./dist"
-    /* Specify an output folder for all emitted files. */
+	"rootDir": "./src",
+	"outDir": "./dist"
   },
   "references": [
-    {
-      "path": "../bridge"
-    }
+	{
+	  "path": "../bridge"
+	}
   ],
   "exclude": [
-    "node_modules",
-    "dist"
+	"node_modules",
+	"dist",
+	"tests"
   ]
 }

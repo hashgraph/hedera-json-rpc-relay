@@ -7,4 +7,8 @@ export class Web3Impl implements Web3 {
   constructor(client: Client) {
     this.client = client;
   }
+
+  clientVersion(): string {
+    return 'hashio/' + process.env.npm_package_version ?? '';
+  }
 }
