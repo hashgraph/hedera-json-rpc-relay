@@ -27,7 +27,7 @@ describe('RPC Server', async function() {
     });
 
     BaseTest.defaultResponseChecks(res);
-    expect(res.data.result).to.be.equal(process.env.CHAIN_ID);
+    expect(res.data.result).to.be.equal(process.env.CHAIN_ID || '');
   });
 
   it('should execute "eth_accounts"', async function() {
