@@ -11,7 +11,7 @@ jobs:
 
     name: Tests
 
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
@@ -24,29 +24,23 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - run: mkdir hedera-sdk-js
-      - run: mkdir json-rpc-bridge
-        working-directory: ./hedera-sdk-js
       - uses: actions/checkout@v2
         with:
           repository: hashgraph/hedera-sdk-js
           ref: wrapped-tx
       - run: npm install --force
       - run: npm run compile:js
+      - run: mkdir ../hedera-sdk-js
+      - run: mv * ../hedera-sdk-js
 
       - name: Checkout repository
         uses: actions/checkout@v2
-        with:
-          path: ./json-rpc-bridge
 
       - name: Install dependencies
-        working-directory: ./json-rpc-bridge
         run: npm ci
 
-      - name: Build TypeScript
-        working-directory: ./json-rpc-bridge
+      - name: Lerna Bootstrap
         run: npm run setup
 
-      - name: Build and Run tests
-        working-directory: ./json-rpc-bridge
+      - name: Build Typescript and Run tests
         run: npm run build-and-test
