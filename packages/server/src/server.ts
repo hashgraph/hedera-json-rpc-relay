@@ -192,12 +192,6 @@ rpc.use('eth_feeHistory', async (params: any) => {
   // TODO
 });
 
-/**
- * Not supported
- */
-rpc.use('eth_coinbase', async (params: any) => {
-  //TODO
-});
 
 /**
  * Returns the number of transactions in a block, queried by hash.
@@ -229,12 +223,6 @@ rpc.use('eth_getLogs', async (params: any) => {
   //TODO
 });
 
-/**
- * Not supported
- */
-rpc.use('eth_getProof', async (params: any) => {
-  //TODO
-});
 
 /**
  * Retrieves an address’ storage information.
@@ -280,7 +268,7 @@ rpc.use('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
  * returns: null
  */
 rpc.use('eth_getUncleByBlockHashAndIndex', async (params: any) => {
-  //TODO
+  return bridge.eth().getUncleByBlockHashAndIndex();
 });
 
 /**
@@ -292,7 +280,7 @@ rpc.use('eth_getUncleByBlockHashAndIndex', async (params: any) => {
  * returns: null
  */
 rpc.use('eth_getUncleByBlockNumberAndIndex', async (params: any) => {
-  //TODO
+  return bridge.eth().getUncleByBlockNumberAndIndex();
 });
 
 /**
@@ -303,7 +291,7 @@ rpc.use('eth_getUncleByBlockNumberAndIndex', async (params: any) => {
  * returns: 0x0
  */
 rpc.use('eth_getUncleCountByBlockHash', async (params: any) => {
-  //TODO
+  return bridge.eth().getUncleCountByBlockHash();
 });
 
 /**
@@ -314,7 +302,7 @@ rpc.use('eth_getUncleCountByBlockHash', async (params: any) => {
  * returns: 0x0
  */
 rpc.use('eth_getUncleCountByBlockNumber', async (params: any) => {
-  //TODO
+  return bridge.eth().getUncleCountByBlockNumber();
 });
 
 /**
@@ -335,7 +323,7 @@ rpc.use('eth_getWork', async (params: any) => {
  * returns: 0x0
  */
 rpc.use('eth_hashrate', async (params: any) => {
-  //TODO
+  return bridge.eth().hashrate();
 });
 
 /**
@@ -346,52 +334,7 @@ rpc.use('eth_hashrate', async (params: any) => {
  * returns: false
  */
 rpc.use('eth_mining', async (params: any) => {
-  //TODO
-});
-
-/**
- * Not supported
- */
-rpc.use('eth_protocolVersion', async (params: any) => {
-  //TODO
-});
-
-
-/**
- * Not supported
- */
-rpc.use('eth_sendTransaction', async (params: any) => {
-  //TODO
-});
-
-
-/**
- * Not supported
- */
-rpc.use('eth_sign', async (params: any) => {
-  //TODO
-});
-
-
-/**
- * Not supported
- */
-rpc.use('eth_signTransaction', async (params: any) => {
-  //TODO
-});
-
-/**
- * Not supported
- */
-rpc.use('eth_signTypedData', async (params: any) => {
-  //TODO
-});
-
-/**
- * Not supported
- */
-rpc.use('eth_submitHashrate', async (params: any) => {
-  //TODO
+  return bridge.eth().mining();
 });
 
 /**
@@ -402,7 +345,7 @@ rpc.use('eth_submitHashrate', async (params: any) => {
  * returns: false
  */
 rpc.use('eth_submitWork', async (params: any) => {
-  //TODO
+  return bridge.eth().submitWork();
 });
 
 /**
@@ -412,21 +355,7 @@ rpc.use('eth_submitWork', async (params: any) => {
  * returns: false
  */
 rpc.use('eth_syncing', async (params: any) => {
-  //TODO
-});
-
-/**
- * Not supported
- */
-rpc.use('net_peerCount', async (params: any) => {
-  //TODO
-});
-
-/**
- * Not supported
- */
-rpc.use('parity_nextNonce', async (params: any) => {
-  //TODO
+  return bridge.eth().syncing();
 });
 
 /**
@@ -435,15 +364,23 @@ rpc.use('parity_nextNonce', async (params: any) => {
  * returns: string
  */
 rpc.use('web3_client_version', async (params: any) => {
-  //TODO
+  return bridge.web3().clientVersion();
 });
 
 /**
  * Not supported
  */
-rpc.use('web3_sha', async (params: any) => {
-  //TODO
-});
+// rpc.use('web3_sha', async (params: any) => { });
+// rpc.use('parity_nextNonce', async (params: any) => { });
+// rpc.use('net_peerCount', async (params: any) => { });
+// rpc.use('eth_submitHashrate', async (params: any) => { });
+// rpc.use('eth_signTypedData', async (params: any) => { });
+// rpc.use('eth_signTransaction', async (params: any) => { });
+// rpc.use('eth_sign', async (params: any) => { });
+// rpc.use('eth_sendTransaction', async (params: any) => { });
+// rpc.use('eth_protocolVersion', async (params: any) => { });
+// rpc.use('eth_getProof', async (params: any) => { });
+// rpc.use('eth_coinbase', async (params: any) => { });
 
 
 app.use(rpc.app());
