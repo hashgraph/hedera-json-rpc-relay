@@ -57,8 +57,8 @@ rpc.use('eth_getBalance', async (params: any) => {
  *
  * returns: Bytecode - hex encoded bytes
  */
-rpc.use('eth_getCode', async () => {
-  return bridge.eth().getCode();
+rpc.use('eth_getCode', async (params: any) => {
+  return bridge.eth().getCode(params?.[0], params?.[1]);
 });
 
 /**

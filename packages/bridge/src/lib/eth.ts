@@ -9,7 +9,8 @@ import {
   HbarUnit,
   Status,
   TransactionRecord,
-  TransactionRecordQuery
+  TransactionRecordQuery,
+  ContractByteCodeQuery
 } from '@hashgraph/sdk';
 
 const cache = require('js-cache');
@@ -123,9 +124,17 @@ export class EthImpl implements Eth {
     }
   }
 
-  // FIXME Need to return contract code. For built in accounts we need some fake contract code...?
-  getCode(): string {
-    return '0x8239283283283823';
+  async getCode(address: string, blockNumber: string | null): Promise<string> {
+    try {
+      const query = new ContractByteCodeQuery()
+          .setContractId(AccountId.fromSolidityAddress(address).toString());
+      const bytecode = await query.execute(this.client);
+
+      return '0x' + Buffer.from(bytecode).toString('hex');
+    } catch (e) {
+      // handle INVALID_CONTRACT_ID
+      return '0x';
+    }
   }
 
   // FIXME This is a totally fake implementation

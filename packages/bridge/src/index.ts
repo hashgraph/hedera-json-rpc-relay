@@ -42,7 +42,7 @@ export interface Eth {
 
   // getBlockTransactionCountByHash();
   // getBlockTransactionCountByNumber();
-  getCode(): string;
+  getCode(address: string, blockNumber: string | null): Promise<string>;
 
   chainId(): string;
 
