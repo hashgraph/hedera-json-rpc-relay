@@ -37,11 +37,12 @@ export class BridgeImpl implements Bridge {
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
-    
-    client = client.setOperator(
-      AccountId.fromString(process.env.OPERATOR_ID || ''),
-      PrivateKey.fromString(process.env.OPERATOR_KEY || '')
-    );
+    if (process.env.OPERATOR_ID && process.env.OPERATOR_KEY) {
+      client = client.setOperator(
+        AccountId.fromString(process.env.OPERATOR_ID),
+        PrivateKey.fromString(process.env.OPERATOR_KEY)
+      );
+    }
 
     return client;
   }
