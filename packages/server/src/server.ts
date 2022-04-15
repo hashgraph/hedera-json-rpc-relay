@@ -6,7 +6,6 @@ const bridge: Bridge = new BridgeImpl();
 const app = new Koa();
 const rpc = koaJsonRpc();
 
-
 /**
  * returns: false
  */
