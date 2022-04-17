@@ -47,7 +47,7 @@ rpc.use('eth_estimateGas', async (params: any) => {
  * returns: Balance - hex encoded integer
  */
 rpc.use('eth_getBalance', async (params: any) => {
-  return bridge.eth().getBalance(params?.[0]);
+  return bridge.eth().getBalance(params?.[0], params?.[1]);
 });
 
 /**
