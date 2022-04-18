@@ -9,7 +9,8 @@ import {
   HbarUnit,
   Status,
   TransactionRecord,
-  TransactionRecordQuery
+  TransactionRecordQuery,
+  ContractByteCodeQuery
 } from '@hashgraph/sdk';
 
 const cache = require('js-cache');
@@ -104,28 +105,44 @@ export class EthImpl implements Eth {
     return 0x2f;
   }
 
-  // FIXME Somehow get the account balance... even for testing I need to fake this better
-  async getBalance(account: string): Promise<string> {
+  // TODO: blockNumber doesn't work atm
+  async getBalance(account: string, blockNumber: string | null): Promise<string> {
     try {
       const balanceQuery = new AccountBalanceQuery({
         accountId: AccountId.fromSolidityAddress(account)
       });
-      const result = await balanceQuery.execute(this.client);
-      const weibars = result.hbars
+      const balance = await balanceQuery.execute(this.client);
+      const weibars = balance.hbars
         .to(HbarUnit.Tinybar)
         .multipliedBy(10_000_000_000);
-      const retVal = '0x' + weibars.toString(16);
-      return retVal;
-    } catch (e) {
-      //FIXME: This value is dummied up until the above is functional
-      // console.log(e)
-      return '0x10000000000';
+
+      return '0x' + weibars.toString(16);
+    } catch (e: any) {
+      // handle INVALID_ACCOUNT_ID
+      if (e?.status?._code === Status.InvalidAccountId._code) {
+        return '0x';
+      }
+
+      throw(e);
     }
   }
 
-  // FIXME Need to return contract code. For built in accounts we need some fake contract code...?
-  getCode(): string {
-    return '0x8239283283283823';
+  // TODO: blockNumber doesn't work atm
+  async getCode(address: string, blockNumber: string | null): Promise<string> {
+    try {
+      const query = new ContractByteCodeQuery()
+          .setContractId(AccountId.fromSolidityAddress(address).toString());
+      const bytecode = await query.execute(this.client);
+
+      return '0x' + Buffer.from(bytecode).toString('hex');
+    } catch (e: any) {
+      // handle INVALID_CONTRACT_ID
+      if (e?.status?._code === Status.InvalidContractId._code) {
+        return '0x';
+      }
+
+      throw(e);
+    }
   }
 
   // FIXME This is a totally fake implementation

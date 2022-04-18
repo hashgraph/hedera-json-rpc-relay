@@ -34,7 +34,7 @@ export interface Eth {
 
   gasPrice(): number;
 
-  getBalance(account: string): Promise<string>;
+  getBalance(account: string, blockNumber: string | null): Promise<string>;
 
   getBlockByHash(hash: string): any;
 
@@ -42,7 +42,7 @@ export interface Eth {
 
   // getBlockTransactionCountByHash();
   // getBlockTransactionCountByNumber();
-  getCode(): string;
+  getCode(address: string, blockNumber: string | null): Promise<string>;
 
   chainId(): string;
 
