@@ -112,7 +112,7 @@ export class EthImpl implements Eth {
         accountId: AccountId.fromSolidityAddress(account)
       });
       const balance = await balanceQuery.execute(this.client);
-      const weibars: number = balance.hbars
+      const weibars = balance.hbars
         .to(HbarUnit.Tinybar)
         .multipliedBy(10_000_000_000);
 
