@@ -8,10 +8,10 @@ import {
   ContractId,
   HbarUnit,
   Status,
-  TransactionRecord,
-  TransactionRecordQuery,
   ContractByteCodeQuery
 } from '@hashgraph/sdk';
+import MirrorNode from './mirrorNode';
+import {hashNumber} from '../formatters';
 
 const cache = require('js-cache');
 
@@ -37,51 +37,52 @@ export class EthImpl implements Eth {
   }
 
   async getTransactionReceipt(hash: string) {
-    let transactionId;
-    try {
-      transactionId = cache.get(hash);
-      if (transactionId == null) {
-        console.log('retrieve cached transactionId for hash:');
-        console.log(hash);
-        throw new Error('TransactionId Null');
-      }
-    } catch (e) {
-      console.log(e);
-      throw e;
+    let transactionId = cache.get(hash);
+
+    if (!transactionId) {
+      return null;
     }
 
-    let record;
-    try {
-      record = await new TransactionRecordQuery()
-        .setTransactionId(transactionId)
-        .execute(this.client);
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
-    const blockNum = '0x' + Date.now();
-    if (
-      record instanceof TransactionRecord &&
-      record.contractFunctionResult != null &&
-      record.receipt.contractId != null
-    ) {
-      //FIXME blockHash, blockNumber, etc should be corrected for what rosettaAPI is using
-      return {
+    let record = await MirrorNode.getTransactionByHash(transactionId);
+
+    const contractAddress = AccountId.fromString(record.contract_id).toSolidityAddress();
+
+    if (record) {
+      let result = {
+        contractAddress: '0x' + contractAddress,
+        from: record.from,
+        gasUsed: hashNumber(record.gas_used),
+        logs: record.logs.map(log => {
+          return {
+            removed: false,
+            logIndex: hashNumber(log.index),
+            address: log.address,
+            data: log.data || "0x",
+            topics: log.topics,
+
+            // TODO change the hardcoded values
+            transactionHash: "0xb87d5cec7ca895eae9d498be0ae0b32b6370bd0e4d3d9ab8d89da2ed09c64b75",
+            transactionIndex: "0x0",
+            blockHash: "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b",
+            blockNumber: hashNumber(5)
+          }
+        }),
+
+        logsBloom: record.bloom,
+        status: record.status,
+        to: record.to,
         transactionHash: hash,
+
+        // TODO change the hardcoded values
+        blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+        blockNumber: hashNumber(5),
         transactionIndex: '0x0',
-        blockNumber: blockNum,
-        blockHash:
-          '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
-        cumulativeGasUsed:
-          '0x' + Number(record.contractFunctionResult.gasUsed).toString(),
-        gasUsed:
-          '0x' + Number(record.contractFunctionResult.gasUsed).toString(),
-        contractAddress: '0x' + record.receipt.contractId.toSolidityAddress(),
-        logs: record.contractFunctionResult.logs,
-        logsBloom: record.contractFunctionResult.bloom,
-        status: record.receipt.status == Status.Success ? '0x1' : '0x0'
+        cumulativeGasUsed: '0x' + Number(record.gas_used).toString()
       };
-    } else {
+
+      return result;
+    }
+    else {
       return null;
     }
   }

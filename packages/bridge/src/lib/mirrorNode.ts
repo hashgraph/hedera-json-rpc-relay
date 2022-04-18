@@ -20,10 +20,6 @@ class MirrorNode {
   }
 
   constructor(baseUrl: string) {
-    if (baseUrl === '') {
-      throw new Error('Missing environment variable: `MIRROR_NODE_URL`');
-    }
-
     if (!baseUrl.match(/^https?:\/\//)) {
       baseUrl = `https://${baseUrl}`;
     }
@@ -50,6 +46,15 @@ class MirrorNode {
 
   handleError(error: any) {
     throw errors['INTERNAL_ERROR'];
+  }
+
+  async getTransactionByHash(hash: string): Promise<any> {
+    return this.request(`contracts/results/${hash}`);
+  }
+
+  // TODO: mirror node method is not yet implemented
+  async getBlockByNumber(blockNumber: string): Promise<any> {
+    return this.request(`blocks/${blockNumber}`);
   }
 }
 
