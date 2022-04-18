@@ -34,7 +34,7 @@ export interface Eth {
 
   gasPrice(): number;
 
-  getBalance(account: string): Promise<string>;
+  getBalance(account: string, blockNumber: string | null): Promise<string>;
 
   getBlockByHash(hash: string): any;
 
