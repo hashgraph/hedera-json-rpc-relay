@@ -124,6 +124,7 @@ export class EthImpl implements Eth {
     }
   }
 
+  // TODO: blockNumber doesn't work atm
   async getCode(address: string, blockNumber: string | null): Promise<string> {
     try {
       const query = new ContractByteCodeQuery()
@@ -131,9 +132,13 @@ export class EthImpl implements Eth {
       const bytecode = await query.execute(this.client);
 
       return '0x' + Buffer.from(bytecode).toString('hex');
-    } catch (e) {
+    } catch (e: any) {
       // handle INVALID_CONTRACT_ID
-      return '0x';
+      if (e?.status?._code === Status.InvalidContractId._code) {
+        return '0x';
+      }
+
+      throw(e);
     }
   }
 
