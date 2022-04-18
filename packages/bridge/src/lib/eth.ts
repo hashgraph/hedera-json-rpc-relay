@@ -105,16 +105,26 @@ export class EthImpl implements Eth {
     return 0x2f;
   }
 
+  // TODO: blockNumber doesn't work atm
   async getBalance(account: string, blockNumber: string | null): Promise<string> {
-    const balanceQuery = new AccountBalanceQuery({
-      accountId: AccountId.fromSolidityAddress(account)
-    });
-    const balance = await balanceQuery.execute(this.client);
-    const weibars: number = balance.hbars
-      .to(HbarUnit.Tinybar)
-      .multipliedBy(10_000_000_000);
+    try {
+      const balanceQuery = new AccountBalanceQuery({
+        accountId: AccountId.fromSolidityAddress(account)
+      });
+      const balance = await balanceQuery.execute(this.client);
+      const weibars: number = balance.hbars
+        .to(HbarUnit.Tinybar)
+        .multipliedBy(10_000_000_000);
 
-    return '0x' + weibars.toString(16);
+      return '0x' + weibars.toString(16);
+    } catch (e: any) {
+      // handle INVALID_ACCOUNT_ID
+      if (e?.status?._code === Status.InvalidAccountId._code) {
+        return '0x';
+      }
+
+      throw(e);
+    }
   }
 
   // TODO: blockNumber doesn't work atm
