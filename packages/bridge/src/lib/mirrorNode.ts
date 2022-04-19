@@ -56,8 +56,8 @@ class MirrorNode {
     throw errors['INTERNAL_ERROR'];
   }
 
-  async getTransactionByHash(hash: string): Promise<any> {
-    return this.request(`contracts/results/${hash}`, [404]);
+  async getTransactionById(txId: string): Promise<any> {
+    return this.request(`contracts/results/${txId}`, [404]);
   }
 
   // TODO: mirror node method is not yet implemented

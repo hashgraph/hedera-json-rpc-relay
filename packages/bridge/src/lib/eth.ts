@@ -43,7 +43,7 @@ export class EthImpl implements Eth {
       return null;
     }
 
-    const record = await MirrorNode.getTransactionByHash(transactionId);
+    const record = await MirrorNode.getTransactionById(transactionId);
 
     if (record) {
       const contractAddress = AccountId.fromString(record.contract_id).toSolidityAddress();
