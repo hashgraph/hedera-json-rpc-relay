@@ -77,82 +77,103 @@ describe('Eth', async function() {
     expect(result).to.eq(false);
   });
 
-  it('should execute "eth_getTransactionReceipt"', async function() {
+  describe('eth_getTransactionReceipt', async function() {
+    it('returns `null` for non-cached hash', async function() {
+      const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
+      const txId = cache.get(txHash);
+      expect(txId).to.not.exist;
+      const receipt = await Bridge.eth().getTransactionReceipt(txHash);
+      expect(receipt).to.be.null;
+    });
 
-    const txHash = '0xb87d5cec7ca895eae9d498be0ae0b32b6370bd0e4d3d9ab8d89da2ed09c64b75';
-    const txId = '0.0.29600650-1650032136-831895528';
+    it('returns `null` for cached hash for non-existing `txId`', async function() {
+      const txHash = '0x0000000000000000000000000000000000000000000000000000000000000002';
+      const txId = '0.0.00000000-0000000000-111111111';
+      cache.set(txHash, txId);
 
-    cache.set(txHash, txId);
+      const cachedId = cache.get(txHash);
+      expect(cachedId).to.eq(txId);
 
-    const receipt = await Bridge.eth().getTransactionReceipt(txHash);
+      const receipt = await Bridge.eth().getTransactionReceipt(txHash);
+      expect(receipt).to.be.null;
+    });
 
-    expect(receipt.blockHash).to.exist;
-    expect(validateHash(receipt.blockHash, 64)).to.eq(true);
+    it('executes correctly', async function() {
 
-    expect(receipt.blockNumber).to.exist;
+      const txHash = '0xb87d5cec7ca895eae9d498be0ae0b32b6370bd0e4d3d9ab8d89da2ed09c64b75';
+      const txId = '0.0.29600650-1650032136-831895528';
 
-    expect(receipt.contractAddress).to.exist;
-    expect(validateHash(receipt.contractAddress, 40)).to.eq(true);
+      cache.set(txHash, txId);
 
-    expect(receipt.cumulativeGasUsed).to.exist;
+      const receipt = await Bridge.eth().getTransactionReceipt(txHash);
 
-    expect(receipt.from).to.exist;
-    expect(validateHash(receipt.from, 40)).to.eq(true);
+      expect(receipt.blockHash).to.exist;
+      expect(validateHash(receipt.blockHash, 64)).to.eq(true);
 
-    expect(receipt.gasUsed).to.exist;
+      expect(receipt.blockNumber).to.exist;
 
-    expect(receipt.logs).to.exist;
-    expect(receipt.logs.length).to.gt(0);
+      expect(receipt.contractAddress).to.exist;
+      expect(validateHash(receipt.contractAddress, 40)).to.eq(true);
 
-    receipt.logs.forEach(log => {
-      expect(log.removed).to.eq(false); // ???
+      expect(receipt.cumulativeGasUsed).to.exist;
 
-      expect(log.logIndex).to.exist;
-      expect(log.logIndex.length).to.gte(3);
-      expect(validateHash(log.logIndex)).to.eq(true);
+      expect(receipt.from).to.exist;
+      expect(validateHash(receipt.from, 40)).to.eq(true);
 
-      expect(log.transactionIndex).to.exist;
-      expect(log.transactionIndex.length).to.gte(3);
-      expect(validateHash(log.transactionIndex)).to.eq(true);
+      expect(receipt.gasUsed).to.exist;
 
-      expect(log.transactionHash).to.exist;
-      expect(validateHash(log.transactionHash, 64)).to.eq(true);
+      expect(receipt.logs).to.exist;
+      expect(receipt.logs.length).to.gt(0);
 
-      expect(log.blockHash).to.exist;
-      expect(validateHash(log.blockHash, 64)).to.eq(true);
+      receipt.logs.forEach(log => {
+        expect(log.removed).to.eq(false); // ???
 
-      expect(log.blockNumber).to.exist;
-      expect(log.blockNumber.length).to.gte(3);
-      expect(validateHash(log.blockNumber)).to.eq(true);
+        expect(log.logIndex).to.exist;
+        expect(log.logIndex.length).to.gte(3);
+        expect(validateHash(log.logIndex)).to.eq(true);
 
-      expect(log.address).to.exist;
-      expect(validateHash(log.address, 40)).to.eq(true);
+        expect(log.transactionIndex).to.exist;
+        expect(log.transactionIndex.length).to.gte(3);
+        expect(validateHash(log.transactionIndex)).to.eq(true);
 
-      expect(log.data).to.exist;
-      expect(validateHash(log.data)).to.eq(true);
+        expect(log.transactionHash).to.exist;
+        expect(validateHash(log.transactionHash, 64)).to.eq(true);
 
-      expect(log.topics).to.exist;
-      expect(Array.isArray(log.topics)).to.eq(true);
+        expect(log.blockHash).to.exist;
+        expect(validateHash(log.blockHash, 64)).to.eq(true);
 
-      log.topics.forEach(topic => {
-        expect(validateHash(topic, 64)).to.eq(true);
-      })
-    })
+        expect(log.blockNumber).to.exist;
+        expect(log.blockNumber.length).to.gte(3);
+        expect(validateHash(log.blockNumber)).to.eq(true);
 
-    expect(receipt.logsBloom).to.exist;
-    expect(validateHash(receipt.logsBloom, 512)).to.eq(true);
+        expect(log.address).to.exist;
+        expect(validateHash(log.address, 40)).to.eq(true);
 
-    expect(receipt.status).to.exist;
-    expect(receipt.status).to.eq('0x1');
+        expect(log.data).to.exist;
+        expect(validateHash(log.data)).to.eq(true);
 
-    expect(receipt.to).to.exist;
-    expect(validateHash(receipt.to, 40)).to.eq(true);
+        expect(log.topics).to.exist;
+        expect(Array.isArray(log.topics)).to.eq(true);
 
-    expect(receipt.transactionHash).to.exist;
-    expect(validateHash(receipt.transactionHash, 64)).to.eq(true);
-    expect(receipt.transactionHash).to.eq(txHash);
+        log.topics.forEach(topic => {
+          expect(validateHash(topic, 64)).to.eq(true);
+        });
+      });
 
-    expect(receipt.transactionIndex).to.exist;
+      expect(receipt.logsBloom).to.exist;
+      expect(validateHash(receipt.logsBloom, 512)).to.eq(true);
+
+      expect(receipt.status).to.exist;
+      expect(receipt.status).to.eq('0x1');
+
+      expect(receipt.to).to.exist;
+      expect(validateHash(receipt.to, 40)).to.eq(true);
+
+      expect(receipt.transactionHash).to.exist;
+      expect(validateHash(receipt.transactionHash, 64)).to.eq(true);
+      expect(receipt.transactionHash).to.eq(txHash);
+
+      expect(receipt.transactionIndex).to.exist;
+    });
   });
-
 });

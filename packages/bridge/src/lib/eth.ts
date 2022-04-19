@@ -37,18 +37,17 @@ export class EthImpl implements Eth {
   }
 
   async getTransactionReceipt(hash: string) {
-    let transactionId = cache.get(hash);
+    const transactionId = cache.get(hash);
 
     if (!transactionId) {
       return null;
     }
 
-    let record = await MirrorNode.getTransactionByHash(transactionId);
-
-    const contractAddress = AccountId.fromString(record.contract_id).toSolidityAddress();
+    const record = await MirrorNode.getTransactionByHash(transactionId);
 
     if (record) {
-      let result = {
+      const contractAddress = AccountId.fromString(record.contract_id).toSolidityAddress();
+      return {
         contractAddress: '0x' + contractAddress,
         from: record.from,
         gasUsed: hashNumber(record.gas_used),
@@ -65,7 +64,7 @@ export class EthImpl implements Eth {
             transactionIndex: "0x0",
             blockHash: "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b",
             blockNumber: hashNumber(5)
-          }
+          };
         }),
 
         logsBloom: record.bloom,
@@ -79,8 +78,6 @@ export class EthImpl implements Eth {
         transactionIndex: '0x0',
         cumulativeGasUsed: '0x' + Number(record.gas_used).toString()
       };
-
-      return result;
     }
     else {
       return null;

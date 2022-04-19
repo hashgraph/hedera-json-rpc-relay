@@ -34,22 +34,30 @@ class MirrorNode {
     this.client = this.createAxiosClient(baseUrl);
   }
 
-  async request(path: string): Promise<any> {
+  async request(path: string, allowedErrorStatuses?: [number]): Promise<any> {
     try {
       const response = await this.client.get(path);
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      this.handleError(error, allowedErrorStatuses);
     }
-    return {};
+    return null;
   }
 
-  handleError(error: any) {
+  handleError(error: any, allowedErrorStatuses?: [number]) {
+    if (allowedErrorStatuses && allowedErrorStatuses.length) {
+      if (error.response && allowedErrorStatuses.indexOf(error.response.status) === -1) {
+        throw error;
+      }
+
+      return null;
+    }
+
     throw errors['INTERNAL_ERROR'];
   }
 
   async getTransactionByHash(hash: string): Promise<any> {
-    return this.request(`contracts/results/${hash}`);
+    return this.request(`contracts/results/${hash}`, [404]);
   }
 
   // TODO: mirror node method is not yet implemented
