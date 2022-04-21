@@ -88,8 +88,7 @@ export class EthImpl implements Eth {
 
         // TODO: this is to be returned from the mirror node as part of the transaction.
         cumulativeGasUsed: '0x' + Number(record.gas_used).toString(),
-        effectiveGasPrice: '0x',
-        root: '0x'
+        effectiveGasPrice: '0x'
       };
     } else {
       return null;

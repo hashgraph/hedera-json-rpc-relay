@@ -230,8 +230,7 @@ describe('Eth', async function() {
           blockNumber: '0x12e7588',
           transactionIndex: '0x0',
           cumulativeGasUsed: '0x160000',
-          effectiveGasPrice: '0x',
-          root: '0x'
+          effectiveGasPrice: '0x'
         }
       );
     });
