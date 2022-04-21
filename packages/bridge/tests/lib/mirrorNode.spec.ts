@@ -1,9 +1,8 @@
 import path from 'path';
 import dotenv from 'dotenv';
 import { expect } from 'chai';
-import MirrorNode from './../../dist/lib/mirrorNode';
-
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+import MirrorNode from './../../dist/lib/mirrorNode';
 
 describe('MirrorNode', async function() {
   this.timeout(10000);
