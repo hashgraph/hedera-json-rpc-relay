@@ -7,13 +7,14 @@ import { EthImpl } from './eth';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 
 export class BridgeImpl implements Bridge {
-  private client: Client = this.initClient();
+  private clientMain: Client = this.initClient();
+  private clientSendRawTx: Client = this.initClient('eth_sendRawTransaction');
 
-  private web3Impl: Web3 = new Web3Impl(this.client);
+  private web3Impl: Web3 = new Web3Impl(this.clientMain);
 
-  private netImpl: Net = new NetImpl(this.client);
+  private netImpl: Net = new NetImpl(this.clientMain);
 
-  private ethImpl: Eth = new EthImpl(this.client);
+  private ethImpl: Eth = new EthImpl(this.clientMain, this.clientSendRawTx);
 
   web3(): Web3 {
     return this.web3Impl;
@@ -27,23 +28,35 @@ export class BridgeImpl implements Bridge {
     return this.ethImpl;
   }
 
-  initClient(): Client {
+  initClient(type: string | null = null): Client {
     dotenv.config({ path: findConfig('.env') || '' });
     const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
-
     let client: Client;
     if (hederaNetwork in ['mainnet', 'testnet', 'previewnet']) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
-    if (process.env.OPERATOR_ID && process.env.OPERATOR_KEY) {
-      client = client.setOperator(
-        AccountId.fromString(process.env.OPERATOR_ID),
-        PrivateKey.fromString(process.env.OPERATOR_KEY)
-      );
-    }
 
-    return client;
+    switch (type) {
+      case 'eth_sendRawTransaction': {
+        if (process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION && process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION) {
+          client = client.setOperator(
+            AccountId.fromString(process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION),
+            PrivateKey.fromString(process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION)
+          );
+        }
+        return client;
+      }
+      default: {
+        if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
+          client = client.setOperator(
+            AccountId.fromString(process.env.OPERATOR_ID_MAIN),
+            PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
+          );
+        }
+        return client;
+      }
+    }
   }
 }

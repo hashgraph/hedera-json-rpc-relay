@@ -16,10 +16,12 @@ import {
 const cache = require('js-cache');
 
 export class EthImpl implements Eth {
-  private readonly client: Client;
+  private readonly clientMain: Client;
+  private readonly clientSendRawTx: Client;
 
-  constructor(client: Client) {
-    this.client = client;
+  constructor(clientMain: Client, clientSendRawTx: Client) {
+    this.clientMain = clientMain;
+    this.clientSendRawTx = clientSendRawTx;
   }
 
   accounts() {
@@ -54,7 +56,7 @@ export class EthImpl implements Eth {
     try {
       record = await new TransactionRecordQuery()
         .setTransactionId(transactionId)
-        .execute(this.client);
+        .execute(this.clientMain);
     } catch (e) {
       console.log(e);
       throw e;
@@ -111,7 +113,7 @@ export class EthImpl implements Eth {
       const balanceQuery = new AccountBalanceQuery({
         accountId: AccountId.fromSolidityAddress(account)
       });
-      const balance = await balanceQuery.execute(this.client);
+      const balance = await balanceQuery.execute(this.clientMain);
       const weibars = balance.hbars
         .to(HbarUnit.Tinybar)
         .multipliedBy(10_000_000_000);
@@ -131,8 +133,8 @@ export class EthImpl implements Eth {
   async getCode(address: string, blockNumber: string | null): Promise<string> {
     try {
       const query = new ContractByteCodeQuery()
-          .setContractId(AccountId.fromSolidityAddress(address).toString());
-      const bytecode = await query.execute(this.client);
+        .setContractId(AccountId.fromSolidityAddress(address).toString());
+      const bytecode = await query.execute(this.clientMain);
 
       return '0x' + Buffer.from(bytecode).toString('hex');
     } catch (e: any) {
@@ -214,7 +216,7 @@ export class EthImpl implements Eth {
 
     txRequest = txRequest.populateFromForeignTransaction(transaction);
 
-    const contractExecuteResponse = await txRequest.execute(this.client);
+    const contractExecuteResponse = await txRequest.execute(this.clientSendRawTx);
 
     const txnHash = contractExecuteResponse.transactionHash;
 
@@ -226,14 +228,12 @@ export class EthImpl implements Eth {
     return hashString;
   }
 
+  // TODO: blockNumber doesn't work atm
   async call(call: any, blockParam: string) {
     try {
-      let gas: number;
-      if (call.gas == null) {
-        gas = 400_000;
-      } else {
-        gas = typeof call.gas === 'string' ? Number(call.gas) : call.gas;
-      }
+      const gas: number = call.gas == null
+        ? 400_000
+        : typeof call.gas === 'string' ? Number(call.gas) : call.gas;
 
       const data: string = call.data.startsWith('0x')
         ? call.data.substring(2)
@@ -245,22 +245,20 @@ export class EthImpl implements Eth {
         .setGas(gas);
 
       if (call.from != null) {
-        let lookup = call.from;
-        if (lookup.startsWith('0x')) {
-          lookup = lookup.substring(2);
-        }
-        const senderId = AccountId.fromSolidityAddress(lookup);
-        contractCallQuery.setSenderId(senderId);
+        const lookup = call.from.startsWith('0x')
+          ? call.from.substring(2)
+          : call.from;
+        contractCallQuery.setSenderId(AccountId.fromSolidityAddress(lookup));
       }
 
-      const contractCallResponse = await contractCallQuery.execute(this.client);
+      const contractCallResponse = await contractCallQuery.execute(this.clientMain);
       return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
     } catch (e) {
       console.log(e);
       throw e;
     }
   }
-  
+
   async mining() {
     return false;
   }
@@ -292,5 +290,4 @@ export class EthImpl implements Eth {
   async hashrate() {
     return '0x0';
   }
-  
 }
