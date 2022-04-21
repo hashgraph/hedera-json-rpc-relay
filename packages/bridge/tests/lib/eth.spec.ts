@@ -1,9 +1,8 @@
 import path from 'path';
 import dotenv from 'dotenv';
 import { expect } from 'chai';
-import { BridgeImpl } from 'bridge';
-
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+import { BridgeImpl } from 'bridge';
 
 const cache = require('js-cache');
 
