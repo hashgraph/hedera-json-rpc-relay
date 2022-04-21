@@ -46,9 +46,16 @@ export class EthImpl implements Eth {
     const record = await MirrorNode.getTransactionById(transactionId);
 
     if (record) {
-      const contractAddress = AccountId.fromString(record.contract_id).toSolidityAddress();
+      const blockHash = record.block_hash ? record.block_hash.slice(0, 66) : "";
+      const blockNumber = hashNumber(record.block_number);
+      let contractAddress;
+      if (record.created_contract_ids?.length
+        && record.created_contract_ids.indexOf(record.contract_id) !== -1) {
+        contractAddress = '0x' + AccountId.fromString(record.contract_id).toSolidityAddress();
+      }
+
       return {
-        contractAddress: '0x' + contractAddress,
+        contractAddress: contractAddress || null,
         from: record.from,
         gasUsed: hashNumber(record.gas_used),
         logs: record.logs.map(log => {
@@ -58,12 +65,12 @@ export class EthImpl implements Eth {
             address: log.address,
             data: log.data || "0x",
             topics: log.topics,
+            transactionHash: hash,
+            blockHash: blockHash,
+            blockNumber: blockNumber,
 
             // TODO change the hardcoded values
-            transactionHash: "0xb87d5cec7ca895eae9d498be0ae0b32b6370bd0e4d3d9ab8d89da2ed09c64b75",
-            transactionIndex: "0x0",
-            blockHash: "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b",
-            blockNumber: hashNumber(5)
+            transactionIndex: "0x0"
           };
         }),
 
@@ -71,12 +78,16 @@ export class EthImpl implements Eth {
         status: record.status,
         to: record.to,
         transactionHash: hash,
+        blockHash: blockHash,
+        blockNumber: blockNumber,
 
         // TODO change the hardcoded values
-        blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
-        blockNumber: hashNumber(5),
         transactionIndex: '0x0',
-        cumulativeGasUsed: '0x' + Number(record.gas_used).toString()
+
+        // TODO: this is to be returned from the mirror node as part of the transaction.
+        cumulativeGasUsed: '0x' + Number(record.gas_used).toString(),
+        effectiveGasPrice: '0x',
+        root: '0x'
       };
     }
     else {
