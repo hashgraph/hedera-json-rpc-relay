@@ -120,7 +120,7 @@ rpc.use('eth_getTransactionCount', async () => {
  */
 rpc.use('eth_call', async (params: any) => {
   try {
-    return bridge.eth().call(params?.[0], 'params?.[1]');
+    return bridge.eth().call(params?.[0], params?.[1]);
   } catch (e) {
     console.log(e);
     throw e;
