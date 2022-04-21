@@ -1,6 +1,18 @@
+<div align="center">
+
 # Hashio
 
-# Building
+[![Node.js CI](https://github.com/hashgraph/hedera-hashio/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/hashgraph/hedera-hashio/actions/workflows/test.yml)
+
+</div>
+
+## Overview
+
+Implementation of an Ethereum JSON RPC APIs for Hedera Hashgraph. Utilises both Hedera Consensus Nodes and Mirror nodes
+to support RPC queries as defined in
+the [JSON RPC Specification](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/ethereum/eth1.0-apis/assembled-spec/openrpc.json&uiSchema%5BappBar%5D%5Bui:splitView%5D=true&uiSchema%5BappBar%5D%5Bui:input%5D=false&uiSchema%5BappBar%5D%5Bui:examplesDropdown%5D=false)
+
+## Building
 
 ### Pre-requirements
 
