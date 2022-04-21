@@ -8,10 +8,10 @@ import {
   ContractId,
   HbarUnit,
   Status,
-  TransactionRecord,
-  TransactionRecordQuery,
   ContractByteCodeQuery
 } from '@hashgraph/sdk';
+import MirrorNode from './mirrorNode';
+import {hashNumber} from '../formatters';
 
 const cache = require('js-cache');
 
@@ -39,51 +39,60 @@ export class EthImpl implements Eth {
   }
 
   async getTransactionReceipt(hash: string) {
-    let transactionId;
-    try {
-      transactionId = cache.get(hash);
-      if (transactionId == null) {
-        console.log('retrieve cached transactionId for hash:');
-        console.log(hash);
-        throw new Error('TransactionId Null');
-      }
-    } catch (e) {
-      console.log(e);
-      throw e;
+    const transactionId = cache.get(hash);
+
+    if (!transactionId) {
+      return null;
     }
 
-    let record;
-    try {
-      record = await new TransactionRecordQuery()
-        .setTransactionId(transactionId)
-        .execute(this.clientMain);
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
-    const blockNum = '0x' + Date.now();
-    if (
-      record instanceof TransactionRecord &&
-      record.contractFunctionResult != null &&
-      record.receipt.contractId != null
-    ) {
-      //FIXME blockHash, blockNumber, etc should be corrected for what rosettaAPI is using
+    const record = await MirrorNode.getTransactionById(transactionId);
+
+    if (record) {
+      const blockHash = record.block_hash ? record.block_hash.slice(0, 66) : "";
+      const blockNumber = hashNumber(record.block_number);
+      let contractAddress;
+      if (record.created_contract_ids?.length
+        && record.created_contract_ids.indexOf(record.contract_id) !== -1) {
+        contractAddress = '0x' + AccountId.fromString(record.contract_id).toSolidityAddress();
+      }
+
       return {
+        contractAddress: contractAddress || null,
+        from: record.from,
+        gasUsed: hashNumber(record.gas_used),
+        logs: record.logs.map(log => {
+          return {
+            removed: false,
+            logIndex: hashNumber(log.index),
+            address: log.address,
+            data: log.data || "0x",
+            topics: log.topics,
+            transactionHash: hash,
+            blockHash: blockHash,
+            blockNumber: blockNumber,
+
+            // TODO change the hardcoded values
+            transactionIndex: "0x0"
+          };
+        }),
+
+        logsBloom: record.bloom,
+        status: record.status,
+        to: record.to,
         transactionHash: hash,
+        blockHash: blockHash,
+        blockNumber: blockNumber,
+
+        // TODO change the hardcoded values
         transactionIndex: '0x0',
-        blockNumber: blockNum,
-        blockHash:
-          '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
-        cumulativeGasUsed:
-          '0x' + Number(record.contractFunctionResult.gasUsed).toString(),
-        gasUsed:
-          '0x' + Number(record.contractFunctionResult.gasUsed).toString(),
-        contractAddress: '0x' + record.receipt.contractId.toSolidityAddress(),
-        logs: record.contractFunctionResult.logs,
-        logsBloom: record.contractFunctionResult.bloom,
-        status: record.receipt.status == Status.Success ? '0x1' : '0x0'
+
+        // TODO: this is to be returned from the mirror node as part of the transaction.
+        cumulativeGasUsed: '0x' + Number(record.gas_used).toString(),
+        effectiveGasPrice: '0x',
+        root: '0x'
       };
-    } else {
+    }
+    else {
       return null;
     }
   }
