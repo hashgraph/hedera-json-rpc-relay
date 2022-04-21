@@ -1,11 +1,10 @@
-# swirlds-json-rpc-bridge
+# Hashio
 
 # Building
 
 ### Pre-requirements
 
-You must have installed node (version 16) and npm. I also recommend installing the "prettier" plugin
-in IntelliJ.
+You must have installed node (version 16) and npm. I also recommend installing the "prettier" plugin in IntelliJ.
 
 ### Steps
 
@@ -17,5 +16,4 @@ From the root of the project workspace:
 4. Run `npm run start`. This will start the server on port `7546`.
 
 Alternatively, after `npm run setup`, from within the IDE, you should see the `Start Bridge Microservice`
-run configuration. You should be able to just run that configuration, and it should start the server
-on port `7546`.
+run configuration. You should be able to just run that configuration, and it should start the server on port `7546`.

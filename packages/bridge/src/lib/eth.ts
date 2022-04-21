@@ -3,15 +3,15 @@ import {
   AccountBalanceQuery,
   AccountId,
   Client,
+  ContractByteCodeQuery,
   ContractCallQuery,
   ContractExecuteTransaction,
   ContractId,
   HbarUnit,
-  Status,
-  ContractByteCodeQuery
+  Status
 } from '@hashgraph/sdk';
 import MirrorNode from './mirrorNode';
-import {hashNumber} from '../formatters';
+import { hashNumber } from '../formatters';
 
 const cache = require('js-cache');
 
@@ -48,7 +48,7 @@ export class EthImpl implements Eth {
     const record = await MirrorNode.getTransactionById(transactionId);
 
     if (record) {
-      const blockHash = record.block_hash ? record.block_hash.slice(0, 66) : "";
+      const blockHash = record.block_hash ? record.block_hash.slice(0, 66) : '';
       const blockNumber = hashNumber(record.block_number);
       let contractAddress;
       if (record.created_contract_ids?.length
@@ -65,14 +65,14 @@ export class EthImpl implements Eth {
             removed: false,
             logIndex: hashNumber(log.index),
             address: log.address,
-            data: log.data || "0x",
+            data: log.data || '0x',
             topics: log.topics,
             transactionHash: hash,
             blockHash: blockHash,
             blockNumber: blockNumber,
 
             // TODO change the hardcoded values
-            transactionIndex: "0x0"
+            transactionIndex: '0x0'
           };
         }),
 
@@ -91,8 +91,7 @@ export class EthImpl implements Eth {
         effectiveGasPrice: '0x',
         root: '0x'
       };
-    }
-    else {
+    } else {
       return null;
     }
   }

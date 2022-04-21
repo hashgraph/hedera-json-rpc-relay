@@ -1,34 +1,34 @@
 {
-  "name": "root",
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.11.0",
-    "@typescript-eslint/parser": "^5.11.0",
-    "eslint": "^7.32.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-import": "^2.25.4",
-    "lerna": "^4.0.0",
-    "nodemon": "^2.0.15",
-    "prettier": "^2.5.1",
-    "typescript": "^4.6.3"
-  },
-  "workspaces": {
-    "packages": [
-      "packages/**"
-    ]
-  },
-  "scripts": {
-    "setup": "npx lerna bootstrap --hoist",
-    "build": "npx lerna run build",
-    "clean": "npx lerna run clean",
-    "compile": "npx lerna run compile",
-    "lint": "npx lerna run lint",
-    "format": "npx lerna run format",
-    "build-and-test": "npx lerna run build && npx lerna run test",
-    "start": "npx lerna exec --scope server -- npm run start",
-    "dev": "npm run build && tsc --watch"
-  },
-  "dependencies": {
-    "@types/find-config": "^1.0.1"
-  }
+    "name": "root",
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^5.11.0",
+        "@typescript-eslint/parser": "^5.11.0",
+        "eslint": "^7.32.0",
+        "eslint-config-airbnb-base": "^15.0.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-import": "^2.25.4",
+        "lerna": "^4.0.0",
+        "nodemon": "^2.0.15",
+        "prettier": "^2.5.1",
+        "typescript": "^4.6.3"
+    },
+    "workspaces": {
+        "packages": [
+            "packages/**"
+        ]
+    },
+    "scripts": {
+        "setup": "npx lerna bootstrap --hoist",
+        "build": "npx lerna run build",
+        "clean": "npx lerna run clean",
+        "compile": "npx lerna run compile",
+        "lint": "npx lerna run lint",
+        "format": "npx lerna run format",
+        "build-and-test": "npx lerna run build && npx lerna run test",
+        "start": "npx lerna exec --scope server -- npm run start",
+        "dev": "npm run build && tsc --watch"
+    },
+    "dependencies": {
+        "@types/find-config": "^1.0.1"
+    }
 }

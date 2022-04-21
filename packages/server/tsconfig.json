@@ -1,17 +1,17 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-	"rootDir": "./src",
-	"outDir": "./dist"
-  },
-  "references": [
-	{
-	  "path": "../bridge"
-	}
-  ],
-  "exclude": [
-	"node_modules",
-	"dist",
-	"tests"
-  ]
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "rootDir": "./src",
+        "outDir": "./dist"
+    },
+    "references": [
+        {
+            "path": "../bridge"
+        }
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "tests"
+    ]
 }

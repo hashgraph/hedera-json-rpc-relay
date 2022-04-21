@@ -1,10 +1,9 @@
 import path from 'path';
 import dotenv from 'dotenv';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
 import { expect } from 'chai';
 import { BridgeImpl } from 'bridge';
+
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const Bridge = new BridgeImpl();
 

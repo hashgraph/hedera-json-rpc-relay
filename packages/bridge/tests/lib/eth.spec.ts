@@ -1,10 +1,9 @@
 import path from 'path';
 import dotenv from 'dotenv';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
 import { expect } from 'chai';
 import { BridgeImpl } from 'bridge';
+
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const cache = require('js-cache');
 
@@ -14,13 +13,12 @@ const validateHash = (hash: string, len?: number) => {
   let regex;
   if (len && len > 0) {
     regex = new RegExp(`^0x[a-f0-9]{${len}}$`);
-  }
-  else {
+  } else {
     regex = new RegExp(`^0x[a-f0-9]*$`);
   }
 
   return !!hash.match(regex);
-}
+};
 
 
 describe('Eth', async function() {
@@ -29,7 +27,7 @@ describe('Eth', async function() {
 
     expect(chainId).to.be.equal(process.env.CHAIN_ID);
   });
-  
+
   it('should execute "eth_accounts"', async function() {
     const accounts = await Bridge.eth().accounts();
 
@@ -188,9 +186,9 @@ describe('Eth', async function() {
               address: '0x00000000000000000000000000000000020a044a',
               data: '0x',
               topics: [
-                "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
-                "0x0000000000000000000000000000000000000000000000000000000000000000",
-                "0x0000000000000000000000000000000000000000000000000000000001c3ab8a"
+                '0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0',
+                '0x0000000000000000000000000000000000000000000000000000000000000000',
+                '0x0000000000000000000000000000000000000000000000000000000001c3ab8a'
               ],
               transactionHash: '0xb87d5cec7ca895eae9d498be0ae0b32b6370bd0e4d3d9ab8d89da2ed09c64b75',
               transactionIndex: '0x0',
@@ -203,8 +201,8 @@ describe('Eth', async function() {
               address: '0x00000000000000000000000000000000020a044a',
               data: '0x00000000000000000000000000000000000000000000000000000001e30512620000000000000000000000000000000000000000000000000000000003bd27b1',
               topics: [
-                "0x1985b1d318899f59e44472a8c4758b3412be7f67e1876b128cda53aa36a8bc6b",
-                "0x00000000000000000000000000000000000000000000000000000000020a0448"
+                '0x1985b1d318899f59e44472a8c4758b3412be7f67e1876b128cda53aa36a8bc6b',
+                '0x00000000000000000000000000000000000000000000000000000000020a0448'
               ],
               transactionHash: '0xb87d5cec7ca895eae9d498be0ae0b32b6370bd0e4d3d9ab8d89da2ed09c64b75',
               transactionIndex: '0x0',
@@ -217,7 +215,7 @@ describe('Eth', async function() {
               address: '0x00000000000000000000000000000000020a044a',
               data: '0x00000000000000000000000000000000000000000000000000000000000003e800000000000000000000000000000000000000000000000000000000643ab17200000000000000000000000000000000000000000000000000000000643ab172',
               topics: [
-                "0x132d3e7081289c093560a3fce5704471b66f6565f282688fead57b561d9db9c4"
+                '0x132d3e7081289c093560a3fce5704471b66f6565f282688fead57b561d9db9c4'
               ],
               transactionHash: '0xb87d5cec7ca895eae9d498be0ae0b32b6370bd0e4d3d9ab8d89da2ed09c64b75',
               transactionIndex: '0x0',
