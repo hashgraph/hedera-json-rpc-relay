@@ -2,7 +2,7 @@
 
 # Hashio
 
-[![Node.js CI](https://github.com/hashgraph/hedera-hashio/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/hashgraph/hedera-hashio/actions/workflows/test.yml)
+[![Tests](https://github.com/hashgraph/hedera-hashio/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/hashgraph/hedera-hashio/actions/workflows/test.yml)
 
 </div>
 
