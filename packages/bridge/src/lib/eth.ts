@@ -259,9 +259,9 @@ export class EthImpl implements Eth {
 
   // FIXME
   getTransactionCount(address: string, blocknum: string): number {
-    const accountInfo = new AccountInfoQuery().setAccountId(account).execute(client)
-    console.log(accountInfo)
-    return accountInfo.ethereumNonce
+    // const accountInfo = new AccountInfoQuery().setAccountId(account).execute(client)
+    // console.log(accountInfo)
+    // return accountInfo.ethereumNonce
     return 0x1;
   }
 
