@@ -1,14 +1,14 @@
 import { Eth } from '../index';
 import {
   AccountBalanceQuery,
-  AccountId,
+  AccountId, AccountInfoQuery,
   Client,
   ContractByteCodeQuery,
   ContractCallQuery,
-  ContractExecuteTransaction,
+  ContractEvmTransaction,
   ContractId,
   HbarUnit,
-  Status
+  Status, Timestamp, TransactionId, TransactionRecord, TransactionRecordQuery
 } from '@hashgraph/sdk';
 import MirrorNode from './mirrorNode';
 import { hashNumber } from '../formatters';
@@ -39,60 +39,99 @@ export class EthImpl implements Eth {
   }
 
   async getTransactionReceipt(hash: string) {
-    const transactionId = cache.get(hash);
+    try {
+      const transactionId = cache.get(hash);
 
-    if (!transactionId) {
-      return null;
-    }
-
-    const record = await MirrorNode.getTransactionById(transactionId);
-
-    if (record) {
-      const blockHash = record.block_hash ? record.block_hash.slice(0, 66) : '';
-      const blockNumber = hashNumber(record.block_number);
-      let contractAddress;
-      if (record.created_contract_ids?.length
-        && record.created_contract_ids.indexOf(record.contract_id) !== -1) {
-        contractAddress = '0x' + AccountId.fromString(record.contract_id).toSolidityAddress();
+      if (!transactionId) {
+        return null;
       }
+      console.log(transactionId);
 
-      return {
-        contractAddress: contractAddress || null,
-        from: record.from,
-        gasUsed: hashNumber(record.gas_used),
-        logs: record.logs.map(log => {
-          return {
-            removed: false,
-            logIndex: hashNumber(log.index),
-            address: log.address,
-            data: log.data || '0x',
-            topics: log.topics,
-            transactionHash: hash,
-            blockHash: blockHash,
-            blockNumber: blockNumber,
+      const query = new TransactionRecordQuery().setTransactionId(transactionId);
 
-            // TODO change the hardcoded values
-            transactionIndex: '0x0'
-          };
-        }),
+      console.log(query);
 
-        logsBloom: record.bloom,
-        status: record.status,
-        to: record.to,
-        transactionHash: hash,
-        blockHash: blockHash,
-        blockNumber: blockNumber,
+      // const record = await MirrorNode.getTransactionById(transactionId);
+      const record = await query.execute(this.clientMain);
 
-        // TODO change the hardcoded values
-        transactionIndex: '0x0',
+      console.log(record);
 
-        // TODO: this is to be returned from the mirror node as part of the transaction.
-        cumulativeGasUsed: '0x' + Number(record.gas_used).toString(),
-        effectiveGasPrice: '0x'
-      };
-    } else {
-      return null;
+
+      const blockNum = '0x' + Date.now();
+      if (
+          record.contractFunctionResult != null &&
+          record.receipt.contractId != null
+      ) {
+        //FIXME blockHash, blockNumber, etc should be corrected for what rosettaAPI is using
+        return {
+          transactionHash: hash,
+          transactionIndex: '0x0',
+          blockNumber: blockNum,
+          blockHash:
+              '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
+          cumulativeGasUsed:
+              '0x' + Number(record.contractFunctionResult.gasUsed).toString(),
+          gasUsed:
+              '0x' + Number(record.contractFunctionResult.gasUsed).toString(),
+          contractAddress: '0x' + record.receipt.contractId.toSolidityAddress(),
+          logs: record.contractFunctionResult.logs,
+          logsBloom: record.contractFunctionResult.bloom,
+          status: record.receipt.status == Status.Success ? '0x1' : '0x0',
+        };
+      } else {
+        return null;
+      }
+    } catch (e) {
+      console.log("error");
+      console.log(e);
     }
+
+    // if (record) {
+    //   const blockHash = record.block_hash ? record.block_hash.slice(0, 66) : '';
+    //   const blockNumber = hashNumber(record.block_number);
+    //   let contractAddress;
+    //   if (record.created_contract_ids?.length
+    //     && record.created_contract_ids.indexOf(record.contract_id) !== -1) {
+    //     contractAddress = '0x' + AccountId.fromString(record.contract_id).toSolidityAddress();
+    //   }
+    //
+    //   return {
+    //     contractAddress: contractAddress || null,
+    //     from: record.from,
+    //     gasUsed: hashNumber(record.gas_used),
+    //     logs: record.logs.map(log => {
+    //       return {
+    //         removed: false,
+    //         logIndex: hashNumber(log.index),
+    //         address: log.address,
+    //         data: log.data || '0x',
+    //         topics: log.topics,
+    //         transactionHash: hash,
+    //         blockHash: blockHash,
+    //         blockNumber: blockNumber,
+    //
+    //         // TODO change the hardcoded values
+    //         transactionIndex: '0x0'
+    //       };
+    //     }),
+    //
+    //     logsBloom: record.bloom,
+    //     status: record.status,
+    //     to: record.to,
+    //     transactionHash: hash,
+    //     blockHash: blockHash,
+    //     blockNumber: blockNumber,
+    //
+    //     // TODO change the hardcoded values
+    //     transactionIndex: '0x0',
+    //
+    //     // TODO: this is to be returned from the mirror node as part of the transaction.
+    //     cumulativeGasUsed: '0x' + Number(record.gas_used).toString(),
+    //     effectiveGasPrice: '0x'
+    //   };
+    // } else {
+    //   return null;
+    // }
   }
 
   // FIXME: We should have a legit block number, and we should get it from the mirror node
@@ -101,7 +140,8 @@ export class EthImpl implements Eth {
   }
 
   chainId(): string {
-    return process.env.CHAIN_ID || '';
+    return '0x12a';
+    // return process.env.CHAIN_ID || '';
   }
 
   // FIXME Somehow compute the amount of gas for this request...
@@ -117,8 +157,13 @@ export class EthImpl implements Eth {
   // TODO: blockNumber doesn't work atm
   async getBalance(account: string, blockNumber: string | null): Promise<string> {
     try {
+      account = account.startsWith('0x')
+          ? account.substring(2)
+          : account;
       const balanceQuery = new AccountBalanceQuery({
-        accountId: AccountId.fromSolidityAddress(account)
+        // accountId: AccountId.fromString("0.0."+account)
+        accountId: AccountId.fromSolidityAddress("0x00000000000000000000000000000000000003e9")
+        // accountId: AccountId.fromSolidityAddress(account)
       });
       const balance = await balanceQuery.execute(this.clientMain);
       const weibars = balance.hbars
@@ -127,6 +172,7 @@ export class EthImpl implements Eth {
 
       return '0x' + weibars.toString(16);
     } catch (e: any) {
+      console.log(e);
       // handle INVALID_ACCOUNT_ID
       if (e?.status?._code === Status.InvalidAccountId._code) {
         return '0x';
@@ -212,58 +258,81 @@ export class EthImpl implements Eth {
   }
 
   // FIXME
-  getTransactionCount(): number {
+  getTransactionCount(address: string, blocknum: string): number {
+    const accountInfo = new AccountInfoQuery().setAccountId(account).execute(client)
+    console.log(accountInfo)
+    return accountInfo.ethereumNonce
     return 0x1;
   }
 
   async sendRawTransaction(transaction: string): Promise<string> {
-    let txRequest: ContractExecuteTransaction | null;
-
-    txRequest = new ContractExecuteTransaction();
-
-    txRequest = txRequest.populateFromForeignTransaction(transaction);
-
-    const contractExecuteResponse = await txRequest.execute(this.clientSendRawTx);
-
-    const txnHash = contractExecuteResponse.transactionHash;
-
-    const hashString =
-      '0x' + Buffer.from(txnHash).toString('hex').substring(0, 64);
-
-    cache.set(hashString, contractExecuteResponse.transactionId);
-
-    return hashString;
-  }
-
-  // TODO: blockNumber doesn't work atm
-  async call(call: any, blockParam: string) {
     try {
-      const gas: number = call.gas == null
-        ? 400_000
-        : typeof call.gas === 'string' ? Number(call.gas) : call.gas;
 
-      const data: string = call.data.startsWith('0x')
-        ? call.data.substring(2)
-        : call.data;
+      transaction = transaction.startsWith('0x')
+          ? transaction.substring(2)
+          : transaction;
 
-      const contractCallQuery = new ContractCallQuery()
-        .setContractId(ContractId.fromEvmAddress(0, 0, call.to))
-        .setFunctionParameters(Buffer.from(data, 'hex'))
-        .setGas(gas);
+      let txRequest: ContractEvmTransaction | null;
 
-      if (call.from != null) {
-        const lookup = call.from.startsWith('0x')
-          ? call.from.substring(2)
-          : call.from;
-        contractCallQuery.setSenderId(AccountId.fromSolidityAddress(lookup));
-      }
+      const maxGas = 100000000000;
+      const nodeAccountId = new AccountId(3);
 
-      const contractCallResponse = await contractCallQuery.execute(this.clientMain);
-      return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
+      let transactionBuffer = Buffer.from(transaction,'hex');
+
+      txRequest = new ContractEvmTransaction()
+          .setNodeAccountIds([nodeAccountId])
+          .setEthereumData(transactionBuffer)
+          .setMaxGas(maxGas)
+          .freezeWith(this.clientMain);
+
+      const contractExecuteResponse = await txRequest.execute(this.clientMain);
+
+      console.log(contractExecuteResponse.getRecord(this.clientMain));
+
+      const txnHash = contractExecuteResponse.transactionHash;
+
+      const hashString =
+          '0x' + Buffer.from(txnHash).toString('hex').substring(0, 64);
+
+      cache.set(hashString, contractExecuteResponse.transactionId);
+
+      return hashString;
     } catch (e) {
       console.log(e);
       throw e;
     }
+  }
+
+  // TODO: blockNumber doesn't work atm
+  async call(call: any, blockParam: string) {
+    // try {
+    //   const gas: number = call.gas == null
+    //     ? 400_000
+    //     : typeof call.gas === 'string' ? Number(call.gas) : call.gas;
+    //
+    //   const data: string = call.data.startsWith('0x')
+    //     ? call.data.substring(2)
+    //     : call.data;
+    //
+    //   const contractCallQuery = new ContractCallQuery()
+    //     .setContractId(ContractId.fromEvmAddress(0, 0, call.to))
+    //     .setFunctionParameters(Buffer.from(data, 'hex'))
+    //     .setGas(gas);
+    //
+    //   if (call.from != null) {
+    //     const lookup = call.from.startsWith('0x')
+    //       ? call.from.substring(2)
+    //       : call.from;
+    //     contractCallQuery.setSenderId(AccountId.fromSolidityAddress(lookup));
+    //   }
+    //
+    //   const contractCallResponse = await contractCallQuery.execute(this.clientMain);
+    //   return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
+    // } catch (e) {
+    //   console.log(e);
+    //   throw e;
+    // }
+    return '0x';
   }
 
   async mining() {

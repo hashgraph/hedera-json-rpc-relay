@@ -108,8 +108,8 @@ rpc.use('eth_gasPrice', async () => {
  *
  * returns: Transaction count - hex encoded integer
  */
-rpc.use('eth_getTransactionCount', async () => {
-  return toHexString(bridge.eth().getTransactionCount());
+rpc.use('eth_getTransactionCount', async (params: any) => {
+  return toHexString(bridge.eth().getTransactionCount(params?.[0],params?.[1]));
 });
 
 /**

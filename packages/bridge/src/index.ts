@@ -51,7 +51,7 @@ export interface Eth {
   // getTransactionByBlockHashAndIndex();
   // getTransactionByBLockNumberAndIndex();
   // getTransactionByHash();
-  getTransactionCount(): number;
+  getTransactionCount(address: string, blocknum: string): number;
 
   getTransactionReceipt(hash: string): Promise<any>;
 
