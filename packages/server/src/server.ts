@@ -2,7 +2,18 @@ import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
 import { Bridge, BridgeImpl } from 'bridge';
 
-const bridge: Bridge = new BridgeImpl();
+import pino from 'pino';
+const mainLogger = pino({
+  name: 'hedera-json-rpc-relay',
+  level: process.env.LOG_LEVEL || 'trace',
+  transport: {
+    target: 'pino-pretty'
+  }
+});
+const logger = mainLogger.child({ name: 'rpc-server' });
+
+const bridge: Bridge = new BridgeImpl(logger);
+const cors = require('koa-cors');
 const app = new Koa();
 const rpc = koaJsonRpc();
 
@@ -10,13 +21,15 @@ const rpc = koaJsonRpc();
  * returns: false
  */
 rpc.use('net_listening', async () => {
+  logger.debug('net_listening');
   return '' + bridge.net().listening();
 });
 
 /**
- *  Not supported
+ *  Returns the current network ID
  */
 rpc.use('net_version', async () => {
+  logger.debug("net_version");
   return bridge.net().version();
 });
 
@@ -26,7 +39,8 @@ rpc.use('net_version', async () => {
  * returns: Block number - hex encoded integer
  */
 rpc.use('eth_blockNumber', async () => {
-  return toHexString(bridge.eth().blockNumber());
+  logger.debug("eth_blockNumber");
+  return toHexString(await bridge.eth().blockNumber());
 });
 
 /**
@@ -36,7 +50,8 @@ rpc.use('eth_blockNumber', async () => {
  * returns: Gas used - hex encoded integer
  */
 rpc.use('eth_estimateGas', async (params: any) => {
-  return toHexString(bridge.eth().estimateGas());
+  logger.debug("eth_estimateGas");
+  return toHexString(await bridge.eth().estimateGas());
 });
 
 /**
@@ -47,6 +62,7 @@ rpc.use('eth_estimateGas', async (params: any) => {
  * returns: Balance - hex encoded integer
  */
 rpc.use('eth_getBalance', async (params: any) => {
+  logger.debug("eth_getBalance");
   return bridge.eth().getBalance(params?.[0], params?.[1]);
 });
 
@@ -58,6 +74,7 @@ rpc.use('eth_getBalance', async (params: any) => {
  * returns: Bytecode - hex encoded bytes
  */
 rpc.use('eth_getCode', async (params: any) => {
+  logger.debug("eth_getCode");
   return bridge.eth().getCode(params?.[0], params?.[1]);
 });
 
@@ -67,7 +84,10 @@ rpc.use('eth_getCode', async (params: any) => {
  * returns: Chain ID - integer
  */
 rpc.use('eth_chainId', async () => {
-  return bridge.eth().chainId();
+  logger.debug("eth_chainId");
+  const result = bridge.eth().chainId();
+  console.info(result);
+  return result;
 });
 
 /**
@@ -78,7 +98,8 @@ rpc.use('eth_chainId', async () => {
  * returns: Block object
  */
 rpc.use('eth_getBlockByNumber', async (params: any) => {
-  return bridge.eth().getBlockByNumber(params?.[0]);
+  logger.debug("eth_getBlockByNumber");
+  return bridge.eth().getBlockByNumber(Number(params?.[0]));
 });
 
 /**
@@ -89,7 +110,8 @@ rpc.use('eth_getBlockByNumber', async (params: any) => {
  * returns: Block object
  */
 rpc.use('eth_getBlockByHash', async (params: any) => {
-  return bridge.eth().getBlockByHash(params?.[0]);
+  logger.debug("eth_getBlockByHash");
+  return bridge.eth().getBlockByHash(params?.[0], Boolean(params?.[1]));
 });
 
 /**
@@ -98,7 +120,8 @@ rpc.use('eth_getBlockByHash', async (params: any) => {
  * returns: Gas price - hex encoded integer
  */
 rpc.use('eth_gasPrice', async () => {
-  return toHexString(bridge.eth().gasPrice());
+  logger.debug("eth_gasPrice");
+  return toHexString(await bridge.eth().gasPrice());
 });
 
 /**
@@ -109,7 +132,8 @@ rpc.use('eth_gasPrice', async () => {
  * returns: Transaction count - hex encoded integer
  */
 rpc.use('eth_getTransactionCount', async (params: any) => {
-  return toHexString(bridge.eth().getTransactionCount(params?.[0],params?.[1]));
+  logger.debug("eth_getTransactionCount");
+  return toHexString(await bridge.eth().getTransactionCount(params?.[0],params?.[1]));
 });
 
 /**
@@ -119,6 +143,7 @@ rpc.use('eth_getTransactionCount', async (params: any) => {
  * returns: Value - hex encoded bytes
  */
 rpc.use('eth_call', async (params: any) => {
+  logger.debug("eth_call");
   try {
     return bridge.eth().call(params?.[0], params?.[1]);
   } catch (e) {
@@ -134,12 +159,8 @@ rpc.use('eth_call', async (params: any) => {
  * returns: Transaction hash - 32 byte hex value
  */
 rpc.use('eth_sendRawTransaction', async (params: any) => {
-  try {
-    return bridge.eth().sendRawTransaction(params?.[0]);
-  } catch (e) {
-    console.log(e);
-    throw e;
-  }
+  logger.debug("eth_sendRawTransaction");
+  return bridge.eth().sendRawTransaction(params?.[0]);
 });
 
 /**
@@ -149,11 +170,15 @@ rpc.use('eth_sendRawTransaction', async (params: any) => {
  * returns: Transaction Receipt - object
  */
 rpc.use('eth_getTransactionReceipt', async (params: any) => {
+  logger.debug("eth_getTransactionReceipt");
   return bridge.eth().getTransactionReceipt(params?.[0]);
 });
 
-
+/**
+ *
+ */
 rpc.use('web3_clientVersion', async (params: any) => {
+  logger.debug("web3_clientVersion");
   return bridge.web3().clientVersion();
 });
 
@@ -163,6 +188,7 @@ rpc.use('web3_clientVersion', async (params: any) => {
  * returns: Accounts - hex encoded address
  */
 rpc.use('eth_accounts', async () => {
+  logger.debug("eth_accounts");
   return bridge.eth().accounts();
 });
 
@@ -173,7 +199,9 @@ rpc.use('eth_accounts', async () => {
  * returns: Transaction Object
  */
 rpc.use('eth_getTransactionByHash', async (params: any) => {
+  logger.debug("eth_getTransactionByHash");
   // TODO
+  // return bridge.eth().getTransactionByHash();
 });
 
 /**
@@ -189,7 +217,8 @@ rpc.use('eth_getTransactionByHash', async (params: any) => {
  *      - reward - Array of effective priority fee per gas data.
  */
 rpc.use('eth_feeHistory', async (params: any) => {
-  // TODO
+  logger.debug("eth_feeHistory");
+  return bridge.eth().feeHistory();
 });
 
 
@@ -200,6 +229,7 @@ rpc.use('eth_feeHistory', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 rpc.use('eth_getBlockTransactionCountByHash', async (params: any) => {
+  logger.debug("eth_getBlockTransactionCountByHash");
   //TODO
 });
 
@@ -210,6 +240,7 @@ rpc.use('eth_getBlockTransactionCountByHash', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 rpc.use('eth_getBlockTransactionCountByNumber', async (params: any) => {
+  logger.debug("eth_getBlockTransactionCountByNumber");
   //TODO
 });
 
@@ -220,6 +251,7 @@ rpc.use('eth_getBlockTransactionCountByNumber', async (params: any) => {
  * returns: Logs - Array of log objects
  */
 rpc.use('eth_getLogs', async (params: any) => {
+  logger.debug("eth_getLogs");
   //TODO
 });
 
@@ -233,6 +265,7 @@ rpc.use('eth_getLogs', async (params: any) => {
  * returns: Value - The storage value
  */
 rpc.use('eth_getStorageAt', async (params: any) => {
+  logger.debug("eth_getStorageAt");
   //TODO
 });
 
@@ -244,6 +277,7 @@ rpc.use('eth_getStorageAt', async (params: any) => {
  * returns: Transaction
  */
 rpc.use('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
+  logger.debug("eth_getTransactionByBlockHashAndIndex");
   //TODO
 });
 
@@ -255,6 +289,7 @@ rpc.use('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
  * returns: Transaction
  */
 rpc.use('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
+  logger.debug("eth_getTransactionByBlockNumberAndIndex");
   //TODO
 });
 
@@ -268,6 +303,7 @@ rpc.use('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
  * returns: null
  */
 rpc.use('eth_getUncleByBlockHashAndIndex', async (params: any) => {
+  logger.debug("eth_getUncleByBlockHashAndIndex");
   return bridge.eth().getUncleByBlockHashAndIndex();
 });
 
@@ -280,6 +316,7 @@ rpc.use('eth_getUncleByBlockHashAndIndex', async (params: any) => {
  * returns: null
  */
 rpc.use('eth_getUncleByBlockNumberAndIndex', async (params: any) => {
+  logger.debug("eth_getUncleByBlockNumberAndIndex");
   return bridge.eth().getUncleByBlockNumberAndIndex();
 });
 
@@ -291,6 +328,7 @@ rpc.use('eth_getUncleByBlockNumberAndIndex', async (params: any) => {
  * returns: 0x0
  */
 rpc.use('eth_getUncleCountByBlockHash', async (params: any) => {
+  logger.debug("eth_getUncleCountByBlockHash");
   return bridge.eth().getUncleCountByBlockHash();
 });
 
@@ -302,6 +340,7 @@ rpc.use('eth_getUncleCountByBlockHash', async (params: any) => {
  * returns: 0x0
  */
 rpc.use('eth_getUncleCountByBlockNumber', async (params: any) => {
+  logger.debug("eth_getUncleCountByBlockNumber");
   return bridge.eth().getUncleCountByBlockNumber();
 });
 
@@ -312,6 +351,7 @@ rpc.use('eth_getUncleCountByBlockNumber', async (params: any) => {
  * returns: code: -32000
  */
 rpc.use('eth_getWork', async (params: any) => {
+  logger.debug("eth_getWork");
   //TODO
 });
 
@@ -323,6 +363,7 @@ rpc.use('eth_getWork', async (params: any) => {
  * returns: 0x0
  */
 rpc.use('eth_hashrate', async (params: any) => {
+  logger.debug("eth_hashrate");
   return bridge.eth().hashrate();
 });
 
@@ -334,6 +375,7 @@ rpc.use('eth_hashrate', async (params: any) => {
  * returns: false
  */
 rpc.use('eth_mining', async (params: any) => {
+  logger.debug("eth_mining");
   return bridge.eth().mining();
 });
 
@@ -345,6 +387,7 @@ rpc.use('eth_mining', async (params: any) => {
  * returns: false
  */
 rpc.use('eth_submitWork', async (params: any) => {
+  logger.debug("eth_submitWork");
   return bridge.eth().submitWork();
 });
 
@@ -355,6 +398,7 @@ rpc.use('eth_submitWork', async (params: any) => {
  * returns: false
  */
 rpc.use('eth_syncing', async (params: any) => {
+  logger.debug("eth_syncing");
   return bridge.eth().syncing();
 });
 
@@ -364,6 +408,7 @@ rpc.use('eth_syncing', async (params: any) => {
  * returns: string
  */
 rpc.use('web3_client_version', async (params: any) => {
+  logger.debug("web3_client_version");
   return bridge.web3().clientVersion();
 });
 
@@ -383,6 +428,12 @@ rpc.use('web3_client_version', async (params: any) => {
 // rpc.use('eth_coinbase', async (params: any) => { });
 
 
+// app.use(logger({
+//   getRequestLogLevel: (ctx) => 'debug',
+//   getResponseLogLevel: (ctx) => 'debug',
+//   getErrorLogLevel: (ctx) => 'debug',
+// }));
+app.use(cors());
 app.use(rpc.app());
 
 export default app;

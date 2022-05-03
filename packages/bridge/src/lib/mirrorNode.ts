@@ -1,10 +1,33 @@
 import Axios, { AxiosInstance } from 'axios';
+import Keyv from 'keyv';
+import { KeyvFile } from 'keyv-file';
 import { predefined as errors } from './errors';
+import {Logger} from "pino";
+// Used for temporary purposes to store block info. As the mirror node supports the APIs, we will remove this.
+import { Block } from './model';
 
-class MirrorNode {
-  private client: AxiosInstance;
+export class MirrorNode {
+  // A FAKE implementation until mirror node is integrated and ready.
+  // Keeps all blocks in memory. We're going to do our own bookkeeping
+  // to keep track of blocks and only create them once per transaction.
+  // So it may have been 20 minutes and if there were no transactions
+  // then we don't advance the block list. The first block is block 0,
+  // so we can quickly look them up in the array. Yes, we will eventually
+  // end up running out of memory.
+  private static MOST_RECENT_BLOCK_NUMBER_KEY = "mostRecentBlockNumber";
+  private static MOST_RECENT_BLOCK_KEY = "mostRecentBlock";
+  private readonly store:Map<string,any> = new Map();
 
-  public baseUrl: string;
+
+  /**
+   * The logger used for logging all output from this class.
+   * @private
+   */
+  private readonly logger:Logger;
+
+  private readonly client: AxiosInstance;
+
+  public readonly baseUrl: string;
 
   protected createAxiosClient(
     baseUrl: string
@@ -19,7 +42,7 @@ class MirrorNode {
     });
   }
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, logger:Logger) {
     if (!baseUrl.match(/^https?:\/\//)) {
       baseUrl = `https://${baseUrl}`;
     }
@@ -32,6 +55,17 @@ class MirrorNode {
 
     this.baseUrl = baseUrl;
     this.client = this.createAxiosClient(baseUrl);
+    this.logger = logger;
+
+    // FIXME: Create an empty genesis block (which has no transactions!)
+    //        to preload the system.
+    if (this.store.has(MirrorNode.MOST_RECENT_BLOCK_KEY)) {
+      this.logger.info("Restarting.");
+    } else {
+      this.logger.info("Fresh start, creating genesis block with no transactions");
+      const genesisBlock = new Block(null, null);
+      this.storeBlock(genesisBlock);
+    }
   }
 
   async request(path: string, allowedErrorStatuses?: [number]): Promise<any> {
@@ -56,14 +90,88 @@ class MirrorNode {
     throw errors['INTERNAL_ERROR'];
   }
 
-  async getTransactionById(txId: string): Promise<any> {
-    return this.request(`contracts/results/${txId}`, [404]);
+  public async getFeeHistory() {
+    // FIXME: This is a fake implementation. It works for now, but should
+    //        actually delegate to the mirror node.
+    this.logger.trace('getFeeHistory()');
+
+    const mostRecentBlockNumber = await this.getMostRecentBlockNumber();
+    this.logger.debug('computing fee history for mostRecentBlockNumber=%d', mostRecentBlockNumber);
+    const mostRecentBlocks:Block[] = [];
+    for (let blockNumber=Math.max(0, mostRecentBlockNumber - 9); blockNumber <= mostRecentBlockNumber; blockNumber++) {
+      const block = await this.getBlockByNumber(blockNumber);
+      this.logger.debug("block for %d is %o", blockNumber, block);
+      if (block != null) {
+        mostRecentBlocks.push(block);
+      } else {
+        this.logger.error('Error: unable to find block by number %d', blockNumber);
+      }
+    }
+    this.logger.debug('Computing fee history based on the last %d blocks', mostRecentBlocks.length);
+
+    return {
+      baseFeePerGas: Array(mostRecentBlocks.length).fill('0x47'),
+      gasUsedRatio: Array(mostRecentBlocks.length).fill('0.5'),
+      oldestBlock: mostRecentBlocks[0].number
+    };
+  }
+
+  // public async getTransactionById(txId: string): Promise<any> {
+  //   return this.request(`contracts/results/${txId}`, [404]);
+  // }
+
+  // FIXME this is for demo/temp purposes, remove it when the mirror node has real blocks
+  //       that they get from the main net nodes
+  public storeBlock(block:Block) {
+    this.store.set(MirrorNode.MOST_RECENT_BLOCK_NUMBER_KEY, block.getNum());
+    this.store.set(MirrorNode.MOST_RECENT_BLOCK_KEY, block);
+    this.store.set(block.getNum().toString(), block);
+    this.store.set(block.transactions[0], block);
+  }
+
+  public async getMostRecentBlockNumber() : Promise<number> {
+    // FIXME: Fake implementation for now. Should go to the mirror node.
+    this.logger.trace('getMostRecentBlockNumber()');
+    const num = this.store.get(MirrorNode.MOST_RECENT_BLOCK_NUMBER_KEY);
+    this.logger.debug('Latest block number: %s', num);
+    return num === undefined ? 0 : Number(num);
+  }
+
+  public async getMostRecentBlock() : Promise<Block | null> {
+    // FIXME: Fake implementation for now. Should go to the mirror node.
+    this.logger.trace('getMostRecentBlock()');
+    const block = this.store.get(MirrorNode.MOST_RECENT_BLOCK_KEY);
+    this.logger.debug("what am I?" + block);
+    if (block === undefined) {
+      this.logger.debug("I am undefined");
+      return null;
+    } else {
+      this.logger.debug("I am not undefined. Yay");
+      return block;
+    }
   }
 
   // TODO: mirror node method is not yet implemented
-  async getBlockByNumber(blockNumber: string): Promise<any> {
-    return this.request(`blocks/${blockNumber}`);
+  public async getBlockByNumber(blockNumber: number): Promise<Block | null> {
+    // FIXME: This needs to be reimplemented to go to the mirror node.
+    // return this.request(`blocks/${blockNumber}`);
+    this.logger.trace('getBlockByNumber(blockNumber=%d)', blockNumber);
+    const block = this.store.get(blockNumber.toString());
+    return block === undefined ? null : block;
+  }
+
+  public async getBlockByHash(hash: string, showDetails: boolean) : Promise<Block | null> {
+    // FIXME: This needs to be reimplemented to go to the mirror node.
+    this.logger.trace('getBlockByHash(hash=%s, showDetails=%o)', hash, showDetails);
+
+    // We don't support this yet, so log a warning in case somebody tries to use it
+    // we can learn of that usage.
+    if (showDetails) {
+      this.logger.warn('getBlockByHash does not yet support "showDetails"');
+    }
+
+    // Look up the block number by hash
+    const block = this.store.get(hash);
+    return block === undefined ? null : block;
   }
 }
-
-export default new MirrorNode(process.env.MIRROR_NODE_URL || '');

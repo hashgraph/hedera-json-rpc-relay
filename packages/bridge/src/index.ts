@@ -1,3 +1,5 @@
+import {Block, Receipt} from './lib/model';
+
 export { BridgeImpl } from './lib/bridge';
 
 export interface Bridge {
@@ -25,20 +27,20 @@ export interface Net {
 export interface Eth {
   // getProof();
   // accounts();
-  blockNumber(): number;
+  blockNumber(): Promise<number>;
 
   call(call: any, blockParam: string): Promise<string>;
 
   // coinbase();
-  estimateGas(): number;
+  estimateGas(): Promise<number>;
 
-  gasPrice(): number;
+  gasPrice(): Promise<number>;
 
   getBalance(account: string, blockNumber: string | null): Promise<string>;
 
-  getBlockByHash(hash: string): any;
+  getBlockByHash(hash: string, showDetails: boolean): Promise<Block | null>;
 
-  getBlockByNumber(blockNum: number): any;
+  getBlockByNumber(blockNum: number): Promise<Block | null>;
 
   // getBlockTransactionCountByHash();
   // getBlockTransactionCountByNumber();
@@ -51,9 +53,9 @@ export interface Eth {
   // getTransactionByBlockHashAndIndex();
   // getTransactionByBLockNumberAndIndex();
   // getTransactionByHash();
-  getTransactionCount(address: string, blocknum: string): number;
+  getTransactionCount(address: string, blocknum: string): Promise<number>;
 
-  getTransactionReceipt(hash: string): Promise<any>;
+  getTransactionReceipt(hash: string): Promise<Receipt | null>;
 
   getUncleByBlockHashAndIndex(): Promise<any>;
 
@@ -64,7 +66,7 @@ export interface Eth {
   getUncleCountByBlockNumber(): Promise<string>;
 
   // getWork();
-  feeHistory(): any;
+  feeHistory(): Promise<any>;
 
   hashrate(): Promise<string>;
 

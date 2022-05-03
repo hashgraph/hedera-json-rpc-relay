@@ -8,362 +8,426 @@ import {
   ContractEvmTransaction,
   ContractId,
   HbarUnit,
-  Status, Timestamp, TransactionId, TransactionRecord, TransactionRecordQuery
+  Status
 } from '@hashgraph/sdk';
-import MirrorNode from './mirrorNode';
-import { hashNumber } from '../formatters';
+import {Logger} from "pino";
+import {Block, Receipt} from './model';
+import {MirrorNode} from "./mirrorNode";
 
 const cache = require('js-cache');
 
+/**
+ * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
+ * Methods are implemented by delegating to the mirror node or to a
+ * consensus node in the main network.
+ *
+ * FIXME: This class is a work in progress because everything we need is
+ * not currently supported by the mirror nodes. As such, we have a lot
+ * of fake stuff in this class for now for the purpose of demos and POC.
+ */
 export class EthImpl implements Eth {
-  private readonly clientMain: Client;
-  private readonly clientSendRawTx: Client;
 
-  constructor(clientMain: Client, clientSendRawTx: Client) {
+  /**
+   * The client to use for connecting to the main consensus network. The account
+   * associated with this client will pay for all operations on the main network.
+   *
+   * @private
+   */
+  private readonly clientMain: Client;
+
+  /**
+   * The interface through which we interact with the mirror node
+   * @private
+   */
+  private readonly mirrorNode: MirrorNode;
+
+  /**
+   * The logger used for logging all output from this class.
+   * @private
+   */
+  private readonly logger:Logger;
+
+  /**
+   * The ID of the chain, as a hex string, as it would be returned in a JSON-RPC call.
+   * @private
+   */
+  private readonly chain:string;
+
+  /**
+   * Create a new Eth implementation.
+   * @param clientMain
+   * @param mirrorNode
+   * @param logger
+   */
+  constructor(clientMain:Client, mirrorNode:MirrorNode, logger:Logger) {
     this.clientMain = clientMain;
-    this.clientSendRawTx = clientSendRawTx;
+    this.mirrorNode = mirrorNode;
+    this.logger = logger;
+
+    // Compute the chainId
+    // FIXME: Should default to a "dev net" number. Is this it?
+    const configuredChainId = process.env.CHAIN_ID || '298';
+    this.chain = '0x' + Number(configuredChainId).toString(16);
+    this.logger.info("Running with chainId=%s", this.chain);
   }
 
+  /**
+   * This method is implemented to always return an empty array. This is in alignment
+   * with the behavior of Infura.
+   */
   accounts() {
+    this.logger.trace('accounts()');
     return [];
   }
 
-  // FIXME
-  feeHistory() {
-    const blockNum = '0x' + Date.now();
-    return {
-      baseFeePerGas: ['0x47'],
-      gasUsedRatio: ['0.5'],
-      oldestBlock: blockNum
-    };
+  /**
+   * Gets the fee history.
+   */
+  async feeHistory() {
+    this.logger.trace('feeHistory()');
+    return await this.mirrorNode.getFeeHistory();
   }
 
-  async getTransactionReceipt(hash: string) {
-    try {
-      const transactionId = cache.get(hash);
-
-      if (!transactionId) {
-        return null;
-      }
-      console.log(transactionId);
-
-      const query = new TransactionRecordQuery().setTransactionId(transactionId);
-
-      console.log(query);
-
-      // const record = await MirrorNode.getTransactionById(transactionId);
-      const record = await query.execute(this.clientMain);
-
-      console.log(record);
-
-
-      const blockNum = '0x' + Date.now();
-      if (
-          record.contractFunctionResult != null &&
-          record.receipt.contractId != null
-      ) {
-        //FIXME blockHash, blockNumber, etc should be corrected for what rosettaAPI is using
-        return {
-          transactionHash: hash,
-          transactionIndex: '0x0',
-          blockNumber: blockNum,
-          blockHash:
-              '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
-          cumulativeGasUsed:
-              '0x' + Number(record.contractFunctionResult.gasUsed).toString(),
-          gasUsed:
-              '0x' + Number(record.contractFunctionResult.gasUsed).toString(),
-          contractAddress: '0x' + record.receipt.contractId.toSolidityAddress(),
-          logs: record.contractFunctionResult.logs,
-          logsBloom: record.contractFunctionResult.bloom,
-          status: record.receipt.status == Status.Success ? '0x1' : '0x0',
-        };
-      } else {
-        return null;
-      }
-    } catch (e) {
-      console.log("error");
-      console.log(e);
-    }
-
-    // if (record) {
-    //   const blockHash = record.block_hash ? record.block_hash.slice(0, 66) : '';
-    //   const blockNumber = hashNumber(record.block_number);
-    //   let contractAddress;
-    //   if (record.created_contract_ids?.length
-    //     && record.created_contract_ids.indexOf(record.contract_id) !== -1) {
-    //     contractAddress = '0x' + AccountId.fromString(record.contract_id).toSolidityAddress();
-    //   }
-    //
-    //   return {
-    //     contractAddress: contractAddress || null,
-    //     from: record.from,
-    //     gasUsed: hashNumber(record.gas_used),
-    //     logs: record.logs.map(log => {
-    //       return {
-    //         removed: false,
-    //         logIndex: hashNumber(log.index),
-    //         address: log.address,
-    //         data: log.data || '0x',
-    //         topics: log.topics,
-    //         transactionHash: hash,
-    //         blockHash: blockHash,
-    //         blockNumber: blockNumber,
-    //
-    //         // TODO change the hardcoded values
-    //         transactionIndex: '0x0'
-    //       };
-    //     }),
-    //
-    //     logsBloom: record.bloom,
-    //     status: record.status,
-    //     to: record.to,
-    //     transactionHash: hash,
-    //     blockHash: blockHash,
-    //     blockNumber: blockNumber,
-    //
-    //     // TODO change the hardcoded values
-    //     transactionIndex: '0x0',
-    //
-    //     // TODO: this is to be returned from the mirror node as part of the transaction.
-    //     cumulativeGasUsed: '0x' + Number(record.gas_used).toString(),
-    //     effectiveGasPrice: '0x'
-    //   };
-    // } else {
-    //   return null;
-    // }
+  /**
+   * Gets the most recent block number.
+   */
+  async blockNumber() {
+    this.logger.trace('blockNumber()');
+    return await this.mirrorNode.getMostRecentBlockNumber();
   }
 
-  // FIXME: We should have a legit block number, and we should get it from the mirror node
-  blockNumber() {
-    return Date.now();
-  }
-
+  /**
+   * Gets the chain ID. This is a static value, in that it always returns
+   * the same value. This can be specified via an environment variable
+   * `CHAIN_ID`.
+   */
   chainId(): string {
-    return '0x12a';
-    // return process.env.CHAIN_ID || '';
+    this.logger.trace('chainId()');
+    return this.chain;
   }
 
-  // FIXME Somehow compute the amount of gas for this request...
-  estimateGas(): number {
+  /**
+   * Estimates the amount of gas to execute a call.
+   *
+   * TODO: API signature is not right, some kind of call info needs to be passed through:
+   *   "params": [{
+   *     "from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
+   *     "to": "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
+   *     "gas": "0x76c0",
+   *     "gasPrice": "0x9184e72a000",
+   *     "value": "0x9184e72a",
+   *     "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"}],
+   */
+  async estimateGas() {
+    // FIXME: For now, we are going to have a rough estimate but in the future we can do something more sophisticated.
+    this.logger.trace('estimateGas()');
     return 0x10000;
   }
 
-  // FIXME, fake.
-  gasPrice(): number {
+  /**
+   * Gets the current gas price of the network.
+   */
+  async gasPrice() {
+    // FIXME: This should come from the mainnet and get cached. The gas price does change dynamically based on
+    //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
+    this.logger.trace('gasPrice()');
     return 0x2f;
   }
 
-  // TODO: blockNumber doesn't work atm
-  async getBalance(account: string, blockNumber: string | null): Promise<string> {
+  /**
+   * Gets whether this "Ethereum client" is a miner. We don't mine, so this always returns false.
+   */
+  async mining() {
+    this.logger.trace('mining()');
+    return false;
+  }
+
+  /**
+   * TODO Needs docs, or be removed?
+   */
+  async submitWork() {
+    this.logger.trace('submitWork()');
+    return false;
+  }
+
+  /**
+   * TODO Needs docs, or be removed?
+   */
+  async syncing() {
+    this.logger.trace('syncing()');
+    return false;
+  }
+
+  /**
+   * Always returns null. There are no uncles in Hedera.
+   */
+  async getUncleByBlockHashAndIndex() {
+    this.logger.trace('getUncleByBlockHashAndIndex()');
+    return null;
+  }
+
+  /**
+   * Always returns null. There are no uncles in Hedera.
+   */
+  async getUncleByBlockNumberAndIndex() {
+    this.logger.trace('getUncleByBlockNumberAndIndex()');
+    return null;
+  }
+
+  /**
+   * Always returns '0x0'. There are no uncles in Hedera.
+   */
+  async getUncleCountByBlockHash() {
+    this.logger.trace('getUncleCountByBlockHash()');
+    return '0x0';
+  }
+
+  /**
+   * Always returns '0x0'. There are no uncles in Hedera.
+   */
+  async getUncleCountByBlockNumber() {
+    this.logger.trace('getUncleCountByBlockNumber()');
+    return '0x0';
+  }
+
+  /**
+   * TODO Needs docs, or be removed?
+   */
+  async hashrate() {
+    this.logger.trace('hashrate()');
+    return '0x0';
+  }
+
+  /**
+   * Gets the balance of an account as of the given block.
+   *
+   * @param account
+   * @param blockNumber
+   */
+  async getBalance(account: string, blockNumber: string | null) {
+    // FIXME: This implementation should be replaced so that instead of going to the
+    //        consensus nodes we go to the mirror nodes instead. The problem is that
+    //        the mirror nodes need to have the ability to give me the **CURRENT**
+    //        account balance *and* the account balance for any given block.
+    this.logger.trace('getBalance(account=%s, blockNumber=%s)', account, blockNumber);
     try {
-      account = account.startsWith('0x')
-          ? account.substring(2)
-          : account;
-      const balanceQuery = new AccountBalanceQuery({
-        // accountId: AccountId.fromString("0.0."+account)
-        accountId: AccountId.fromSolidityAddress("0x00000000000000000000000000000000000003e9")
-        // accountId: AccountId.fromSolidityAddress(account)
-      });
-      const balance = await balanceQuery.execute(this.clientMain);
+      const balance = await (new AccountBalanceQuery()
+          .setAccountId(EthImpl.toAccountId(account)))
+          .execute(this.clientMain);
+
       const weibars = balance.hbars
         .to(HbarUnit.Tinybar)
         .multipliedBy(10_000_000_000);
 
       return '0x' + weibars.toString(16);
     } catch (e: any) {
-      console.log(e);
       // handle INVALID_ACCOUNT_ID
       if (e?.status?._code === Status.InvalidAccountId._code) {
-        return '0x';
+        this.logger.debug('Unable find account %s in block "%s", returning 0x0 balance', account, blockNumber);
+        return '0x0';
       }
 
+      this.logger.error(e, 'Error raised during getBalance for account %s', account);
       throw(e);
     }
   }
 
-  // TODO: blockNumber doesn't work atm
-  async getCode(address: string, blockNumber: string | null): Promise<string> {
+  /**
+   * Gets the smart contract code for the contract at the given Ethereum address.
+   *
+   * @param address
+   * @param blockNumber
+   */
+  async getCode(address: string, blockNumber: string | null) {
+    // FIXME: This has to be reimplemented to get the data from the mirror node.
+    this.logger.trace('getCode(address=%s, blockNumber=%s)', address, blockNumber);
     try {
-      const query = new ContractByteCodeQuery()
-        .setContractId(AccountId.fromSolidityAddress(address).toString());
-      const bytecode = await query.execute(this.clientMain);
+      const bytecode = await (new ContractByteCodeQuery()
+          .setContractId(ContractId.fromEvmAddress(0, 0, address))
+          .execute(this.clientMain));
 
       return '0x' + Buffer.from(bytecode).toString('hex');
     } catch (e: any) {
       // handle INVALID_CONTRACT_ID
       if (e?.status?._code === Status.InvalidContractId._code) {
-        return '0x';
+        this.logger.debug('Unable find code for contract %s in block "%s", returning 0x0', address, blockNumber);
+        return '0x0';
       }
 
+      this.logger.error(e, 'Error raised during getCode for address %s', address);
       throw(e);
     }
   }
 
-  // FIXME This is a totally fake implementation
-  getBlockByHash(hash: string): any {
-    const blockNum = '0x' + Date.now();
-    return {
-      difficulty: '0x1',
-      extraData: '',
-      gasLimit: '0xe4e1c0',
-      baseFeePerGas: '0x1',
-      gasUsed: '0x0',
-      hash: hash,
-      logsBloom: '0x0',
-      miner: '',
-      mixHash:
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-      nonce: '0x0000000000000000',
-      number: blockNum,
-      parentHash: '0x0',
-      receiptsRoot: '0x0',
-      sha3Uncles: '0x0',
-      size: '0x0',
-      stateRoot: '0x0',
-      timestamp: blockNum,
-      totalDifficulty: blockNum,
-      transactions: [],
-      transactionsRoot: '0x00',
-      uncles: []
-    };
+  /**
+   * Gets the block with the given hash.
+   *
+   * TODO What do we return if we cannot find the block with that hash?
+   * @param hash
+   * @param showDetails
+   */
+  async getBlockByHash(hash: string, showDetails: boolean) {
+    this.logger.trace('getBlockByHash(hash=%s, showDetails=%o)', hash, showDetails);
+    return await this.mirrorNode.getBlockByHash(hash, showDetails);
   }
 
-  // FIXME This is a totally fake implementation
-  getBlockByNumber(blockNum: number): any {
-    return {
-      difficulty: '0x1',
-      extraData: '',
-      gasLimit: '0xe4e1c0',
-      baseFeePerGas: '0x1',
-      gasUsed: '0x0',
-      hash: '0x1fb2230a6b5bf856bb4df3c80cbf95b84454169a5a133fffaf8505a05f960aeb',
-      logsBloom: '0x0',
-      miner: '',
-      mixHash:
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-      nonce: '0x0000000000000000',
-      number: blockNum,
-      parentHash: '0x0',
-      receiptsRoot: '0x0',
-      sha3Uncles: '0x0',
-      size: '0x0',
-      stateRoot: '0x0',
-      timestamp: blockNum,
-      totalDifficulty: blockNum,
-      transactions: [],
-      transactionsRoot: '0x00',
-      uncles: []
-    };
+  /**
+   * Gets the block by its block number.
+   * @param blockNum
+   */
+  async getBlockByNumber(blockNum: number) {
+    this.logger.trace('getBlockByNumber(blockNum=%d)', blockNum);
+    return await this.mirrorNode.getBlockByNumber(blockNum);
   }
 
-  // FIXME
-  getTransactionCount(address: string, blocknum: string): number {
-    // const accountInfo = new AccountInfoQuery().setAccountId(account).execute(client)
-    // console.log(accountInfo)
-    // return accountInfo.ethereumNonce
-    return 0x1;
+  /**
+   * Gets the number of transactions that have been executed for the given address.
+   * This goes to the consensus nodes to determine the ethereumNonce.
+   *
+   * TODO Should it go against the mirror node instead? Less load on the network vs. latency...
+   *
+   * @param address
+   * @param blockNum
+   */
+  async getTransactionCount(address: string, blockNum: string): Promise<number> {
+    this.logger.trace('getTransactionCount(address=%s, blockNum=%s)', address, blockNum);
+    const accountInfo = await (new AccountInfoQuery()
+        .setAccountId(EthImpl.toAccountId(address)))
+        .execute(this.clientMain);
+
+    return Number(accountInfo.ethereumNonce);
   }
 
+  /**
+   * Submits a transaction to the network for execution.
+   *
+   * @param transaction
+   */
   async sendRawTransaction(transaction: string): Promise<string> {
+    this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
     try {
+      // Convert from 0xabc format into a raw Uint8Array of bytes and execute the transaction
+      const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction),'hex');
+      const contractExecuteResponse = await (new ContractEvmTransaction()
+          .setEthereumData(transactionBuffer))
+          .execute(this.clientMain);
 
-      transaction = transaction.startsWith('0x')
-          ? transaction.substring(2)
-          : transaction;
+      // Wait for the receipt from the execution.
+      const record = await contractExecuteResponse.getRecord(this.clientMain);
+      const txHash = '0x' + Buffer.from(record.ethereumHash).toString('hex');
 
-      let txRequest: ContractEvmTransaction | null;
+      // If the transaction succeeded, create a new block for the transaction.
+      const mostRecentBlock = await this.mirrorNode.getMostRecentBlock();
+      this.logger.debug('mostRecentBlock=%o', mostRecentBlock);
+      let block = mostRecentBlock;
+      if (record.receipt.status == Status.Success) {
+        block = new Block(mostRecentBlock, txHash);
+        this.mirrorNode.storeBlock(block);
+      }
 
-      const maxGas = 100000000000;
-      const nodeAccountId = new AccountId(3);
+      // Create a receipt. Register the receipt in the cache and return the tx hash
+      if (block == null) {
+        this.logger.error("Failed to get a block for transaction");
+        return "";
+      }
 
-      let transactionBuffer = Buffer.from(transaction,'hex');
-
-      txRequest = new ContractEvmTransaction()
-          .setNodeAccountIds([nodeAccountId])
-          .setEthereumData(transactionBuffer)
-          .setMaxGas(maxGas)
-          .freezeWith(this.clientMain);
-
-      const contractExecuteResponse = await txRequest.execute(this.clientMain);
-
-      console.log(contractExecuteResponse.getRecord(this.clientMain));
-
-      const txnHash = contractExecuteResponse.transactionHash;
-
-      const hashString =
-          '0x' + Buffer.from(txnHash).toString('hex').substring(0, 64);
-
-      cache.set(hashString, contractExecuteResponse.transactionId);
-
-      return hashString;
+      const receipt = new Receipt(txHash, record, block);
+      cache.set(txHash, receipt);
+      return txHash;
     } catch (e) {
-      console.log(e);
+      this.logger.error(e, 'Failed to handle sendRawTransaction cleanly for transaction %s', transaction);
       throw e;
     }
   }
 
-  // TODO: blockNumber doesn't work atm
+  /**
+   * Execute a free contract call query.
+   *
+   * @param call
+   * @param blockParam
+   */
   async call(call: any, blockParam: string) {
-    // try {
-    //   const gas: number = call.gas == null
-    //     ? 400_000
-    //     : typeof call.gas === 'string' ? Number(call.gas) : call.gas;
-    //
-    //   const data: string = call.data.startsWith('0x')
-    //     ? call.data.substring(2)
-    //     : call.data;
-    //
-    //   const contractCallQuery = new ContractCallQuery()
-    //     .setContractId(ContractId.fromEvmAddress(0, 0, call.to))
-    //     .setFunctionParameters(Buffer.from(data, 'hex'))
-    //     .setGas(gas);
-    //
-    //   if (call.from != null) {
-    //     const lookup = call.from.startsWith('0x')
-    //       ? call.from.substring(2)
-    //       : call.from;
-    //     contractCallQuery.setSenderId(AccountId.fromSolidityAddress(lookup));
-    //   }
-    //
-    //   const contractCallResponse = await contractCallQuery.execute(this.clientMain);
-    //   return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
-    // } catch (e) {
-    //   console.log(e);
-    //   throw e;
-    // }
-    return '0x';
+    // FIXME: In the future this will be implemented by making calls to the mirror node. For the
+    //        time being we'll eat the cost and ask the main consensus nodes instead.
+
+    this.logger.trace('call(hash=%o, blockParam=%s)', call, blockParam);
+    // The "to" address must always be 42 chars.
+    if (call.to.length != 42) {
+      throw new Error("Invalid Contract ID: '" + call.to + "'");
+    }
+
+    try {
+      // Get a reasonable value for "gas" if it is not specified.
+      const gas: number = call.gas == null
+          ? 400_000
+          : typeof call.gas === 'string' ? Number(call.gas) : call.gas;
+
+      // Execute the call and get the response
+      const contract = EthImpl.prune0x(call.to);
+      const callData = EthImpl.prune0x(call.data);
+      this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s"', contract, gas, callData);
+      const contractCallResponse = await (new ContractCallQuery()
+          .setContractId(ContractId.fromEvmAddress(0, 0, contract))
+          .setFunctionParameters(Buffer.from(callData, 'hex'))
+          .setGas(gas))
+          .execute(this.clientMain);
+
+      // FIXME Is this right? Maybe so?
+      return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
+    } catch (e) {
+      this.logger.error(e, 'Failed to handle call cleanly for transaction %s', call);
+      throw e;
+    }
   }
 
-  async mining() {
-    return false;
+  /**
+   * Gets a receipt for a transaction that has already executed.
+   *
+   * @param hash
+   */
+  async getTransactionReceipt(hash: string) {
+    // FIXME: This should go to the mirror node. For now we have an in memory map we
+    //        grab receipts from for each tx that was executed. Even in the full implementation
+    //        we will want to use the cache as an LRU to avoid hammering the mirror node more
+    //        than needed, since the receipt is an immutable type. But the cache should be in the
+    //        mirror node connector, rather than here.
+    this.logger.trace('getTransactionReceipt(hash=%s)', hash);
+    try {
+      // Lookup the receipt in the cache.
+      const receipt = cache.get(hash);
+
+      if (!receipt) {
+        // FIXME: if it wasn't in the cache, go to the mirror node. If it isn't there either,
+        //        then return null.
+        this.logger.debug("Did not find the receipt for hash %s. Returning null.", hash);
+        return null;
+      }
+
+      this.logger.trace("Found a receipt, returning it to the caller");
+      return receipt;
+    } catch (e) {
+      this.logger.error(e, 'Failed to handle getTransactionReceipt cleanly for hash %s', hash);
+    }
   }
 
-  async submitWork() {
-    return false;
+  /**
+   * Internal helper method that removes the leading 0x if there is one.
+   * @param input
+   * @private
+   */
+  private static prune0x(input:string):string {
+    return input.startsWith('0x')
+        ? input.substring(2)
+        : input;
   }
 
-  async syncing() {
-    return false;
-  }
-
-  async getUncleByBlockHashAndIndex() {
-    return null;
-  }
-
-  async getUncleByBlockNumberAndIndex() {
-    return null;
-  }
-
-  async getUncleCountByBlockHash() {
-    return '0x0';
-  }
-
-  async getUncleCountByBlockNumber() {
-    return '0x0';
-  }
-
-  async hashrate() {
-    return '0x0';
+  /**
+   * Internal helper method that converts an ethAddress (with, or without a leading 0x)
+   * into an alias friendly AccountId.
+   * @param ethAddress
+   * @private
+   */
+  private static toAccountId(ethAddress:string) {
+    return new AccountId(0, 0, 0, EthImpl.prune0x(ethAddress));
   }
 }
