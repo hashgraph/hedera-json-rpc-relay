@@ -5,7 +5,7 @@ import {
   Client,
   ContractByteCodeQuery,
   ContractCallQuery,
-  ContractEvmTransaction,
+  EthereumTransaction,
   ContractId,
   HbarUnit,
   Status
@@ -308,7 +308,7 @@ export class EthImpl implements Eth {
     try {
       // Convert from 0xabc format into a raw Uint8Array of bytes and execute the transaction
       const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction),'hex');
-      const contractExecuteResponse = await (new ContractEvmTransaction()
+      const contractExecuteResponse = await (new EthereumTransaction()
           .setEthereumData(transactionBuffer))
           .execute(this.clientMain);
 
@@ -428,6 +428,6 @@ export class EthImpl implements Eth {
    * @private
    */
   private static toAccountId(ethAddress:string) {
-    return new AccountId(0, 0, 0, EthImpl.prune0x(ethAddress));
+    return AccountId.fromEvmAddress(0, 0, EthImpl.prune0x(ethAddress));
   }
 }

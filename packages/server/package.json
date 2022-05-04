@@ -31,7 +31,7 @@
         "typescript": "^4.5.5"
     },
     "scripts": {
-        "build": "/home/richard_bair/.local/share/pnpm/pnpm clean && /home/richard_bair/.local/share/pnpm/pnpm compile",
+        "build": "pnpm clean && pnpm compile",
         "clean": "rm -rf ./dist && rm -rf tsconfig.tsbuildinfo",
         "compile": "tsc -b tsconfig.json",
         "start": "node dist/index.js",
