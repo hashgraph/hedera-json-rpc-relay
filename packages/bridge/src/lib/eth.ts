@@ -366,11 +366,16 @@ export class EthImpl implements Eth {
       const contract = EthImpl.prune0x(call.to);
       const callData = EthImpl.prune0x(call.data);
       this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s"', contract, gas, callData);
-      const contractCallResponse = await (new ContractCallQuery()
-          .setContractId(ContractId.fromEvmAddress(0, 0, contract))
+
+      let contractCallQuery = new ContractCallQuery()
           .setFunctionParameters(Buffer.from(callData, 'hex'))
-          .setGas(gas))
-          .execute(this.clientMain);
+          .setGas(gas);
+      if (contract.startsWith('00000000000000')) {
+        contractCallQuery = contractCallQuery.setContractId(ContractId.fromSolidityAddress(contract));
+      } else {
+        contractCallQuery = contractCallQuery.setContractId(ContractId.fromEvmAddress(0, 0, contract));
+      }
+      const contractCallResponse = await contractCallQuery.execute(this.clientMain);
 
       // FIXME Is this right? Maybe so?
       return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
@@ -428,6 +433,6 @@ export class EthImpl implements Eth {
    * @private
    */
   private static toAccountId(ethAddress:string) {
-    return AccountId.fromEvmAddress(0, 0, EthImpl.prune0x(ethAddress));
+    return new AccountId(0, 0, 0, EthImpl.prune0x(ethAddress));
   }
 }
