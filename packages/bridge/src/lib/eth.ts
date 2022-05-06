@@ -367,15 +367,15 @@ export class EthImpl implements Eth {
       const callData = EthImpl.prune0x(call.data);
       this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s"', contract, gas, callData);
 
-      let contractCallQuery = new ContractCallQuery()
+      const contractId = contract.startsWith('00000000000000')
+          ? ContractId.fromSolidityAddress(contract)
+          : ContractId.fromEvmAddress(0, 0, contract);
+
+      const contractCallResponse = await(new ContractCallQuery()
+          .setContractId(contractId)
           .setFunctionParameters(Buffer.from(callData, 'hex'))
-          .setGas(gas);
-      if (contract.startsWith('00000000000000')) {
-        contractCallQuery = contractCallQuery.setContractId(ContractId.fromSolidityAddress(contract));
-      } else {
-        contractCallQuery = contractCallQuery.setContractId(ContractId.fromEvmAddress(0, 0, contract));
-      }
-      const contractCallResponse = await contractCallQuery.execute(this.clientMain);
+          .setGas(gas)
+          .execute(this.clientMain));
 
       // FIXME Is this right? Maybe so?
       return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
