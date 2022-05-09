@@ -141,12 +141,11 @@ export class MirrorNode {
     // FIXME: Fake implementation for now. Should go to the mirror node.
     this.logger.trace('getMostRecentBlock()');
     const block = this.store.get(MirrorNode.MOST_RECENT_BLOCK_KEY);
-    this.logger.debug("what am I?" + block);
     if (block === undefined) {
-      this.logger.debug("I am undefined");
+      this.logger.debug("No blocks retrievable");
       return null;
     } else {
-      this.logger.debug("I am not undefined. Yay");
+      this.logger.debug("Retrieved block number: %s", block.getNum());
       return block;
     }
   }
