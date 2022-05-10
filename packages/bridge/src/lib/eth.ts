@@ -356,7 +356,7 @@ export class EthImpl implements Eth {
     this.logger.trace('call(hash=%o, blockParam=%s)', call, blockParam);
     // The "to" address must always be 42 chars.
     if (call.to.length != 42) {
-      throw new Error("Invalid Contract ID: '" + call.to + "'");
+      throw new Error("Invalid Contract Address: '" + call.to + "'. Expected length of 42 chars but was" + call.to.length);
     }
 
     try {
