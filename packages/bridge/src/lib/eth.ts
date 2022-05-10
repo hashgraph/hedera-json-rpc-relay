@@ -312,7 +312,7 @@ export class EthImpl implements Eth {
           .setEthereumData(transactionBuffer))
           .execute(this.clientMain);
 
-      // Wait for the receipt from the execution.
+      // Wait for the record from the execution.
       const record = await contractExecuteResponse.getRecord(this.clientMain);
       if (record.ethereumHash == null) {
         throw new Error("The ethereumHash can never be null for an ethereum transaction, and yet it was!!");
