@@ -1,14 +1,11 @@
 import path from 'path';
 import dotenv from 'dotenv';
 import { expect } from 'chai';
-import { RelayImpl } from '@hashgraph/json-rpc-relay';
+import { RelayImpl } from 'relay';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
-import pino from 'pino';
-const logger = pino();
-
-const Relay = new RelayImpl(logger);
+const Relay = new RelayImpl();
 
 describe('Web3', async function() {
   it('should execute "web3_clientVersion"', async function() {

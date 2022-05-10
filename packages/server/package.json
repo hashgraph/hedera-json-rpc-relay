@@ -32,6 +32,9 @@
         "ts-mocha": "^9.0.2",
         "typescript": "^4.5.5"
     },
+    "peerDependencies": {
+        "bridge": "file:../relay"
+    },
     "scripts": {
         "build": "pnpm clean && pnpm compile",
         "clean": "rm -rf ./dist && rm -rf tsconfig.tsbuildinfo",
