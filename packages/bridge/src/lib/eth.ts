@@ -223,7 +223,7 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
       if (e?.status?._code === Status.InvalidAccountId._code) {
-        this.logger.debug('Unable find account %s in block "%s", returning 0x0 balance', account, blockNumber);
+        this.logger.debug('Unable to find account %s in block "%s", returning 0x0 balance', account, blockNumber);
         return '0x0';
       }
 
