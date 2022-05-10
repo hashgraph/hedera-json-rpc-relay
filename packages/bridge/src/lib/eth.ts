@@ -223,7 +223,7 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
       if (e?.status?._code === Status.InvalidAccountId._code) {
-        this.logger.debug('Unable find account %s in block "%s", returning 0x0 balance', account, blockNumber);
+        this.logger.debug('Unable to find account %s in block "%s", returning 0x0 balance', account, blockNumber);
         return '0x0';
       }
 
@@ -312,7 +312,7 @@ export class EthImpl implements Eth {
           .setEthereumData(transactionBuffer))
           .execute(this.clientMain);
 
-      // Wait for the receipt from the execution.
+      // Wait for the record from the execution.
       const record = await contractExecuteResponse.getRecord(this.clientMain);
       if (record.ethereumHash == null) {
         throw new Error("The ethereumHash can never be null for an ethereum transaction, and yet it was!!");
@@ -356,7 +356,7 @@ export class EthImpl implements Eth {
     this.logger.trace('call(hash=%o, blockParam=%s)', call, blockParam);
     // The "to" address must always be 42 chars.
     if (call.to.length != 42) {
-      throw new Error("Invalid Contract ID: '" + call.to + "'");
+      throw new Error("Invalid Contract Address: '" + call.to + "'. Expected length of 42 chars but was" + call.to.length);
     }
 
     try {
