@@ -2,11 +2,11 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { expect } from 'chai';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-import { BridgeImpl } from 'bridge';
+import { RelayImpl } from 'relay';
 
 const cache = require('js-cache');
 
-const Bridge = new BridgeImpl();
+const Relay = new RelayImpl();
 
 const validateHash = (hash: string, len?: number) => {
   let regex;
@@ -22,55 +22,55 @@ const validateHash = (hash: string, len?: number) => {
 
 describe('Eth', async function() {
   it('should execute "eth_chainId"', async function() {
-    const chainId = await Bridge.eth().chainId();
+    const chainId = await Relay.eth().chainId();
 
     expect(chainId).to.be.equal(process.env.CHAIN_ID);
   });
 
   it('should execute "eth_accounts"', async function() {
-    const accounts = await Bridge.eth().accounts();
+    const accounts = await Relay.eth().accounts();
 
     expect(accounts).to.be.an('Array');
     expect(accounts.length).to.be.equal(0);
   });
 
   it('should execute "eth_getUncleByBlockHashAndIndex"', async function() {
-    const result = await Bridge.eth().getUncleByBlockHashAndIndex();
+    const result = await Relay.eth().getUncleByBlockHashAndIndex();
     expect(result).to.be.null;
   });
 
   it('should execute "eth_getUncleByBlockNumberAndIndex"', async function() {
-    const result = await Bridge.eth().getUncleByBlockNumberAndIndex();
+    const result = await Relay.eth().getUncleByBlockNumberAndIndex();
     expect(result).to.be.null;
   });
 
   it('should execute "eth_getUncleCountByBlockHash"', async function() {
-    const result = await Bridge.eth().getUncleCountByBlockHash();
+    const result = await Relay.eth().getUncleCountByBlockHash();
     expect(result).to.eq('0x0');
   });
 
   it('should execute "eth_getUncleCountByBlockNumber"', async function() {
-    const result = await Bridge.eth().getUncleCountByBlockNumber();
+    const result = await Relay.eth().getUncleCountByBlockNumber();
     expect(result).to.eq('0x0');
   });
 
   it('should execute "eth_hashrate"', async function() {
-    const result = await Bridge.eth().hashrate();
+    const result = await Relay.eth().hashrate();
     expect(result).to.eq('0x0');
   });
 
   it('should execute "eth_mining"', async function() {
-    const result = await Bridge.eth().mining();
+    const result = await Relay.eth().mining();
     expect(result).to.eq(false);
   });
 
   it('should execute "eth_submitWork"', async function() {
-    const result = await Bridge.eth().submitWork();
+    const result = await Relay.eth().submitWork();
     expect(result).to.eq(false);
   });
 
   it('should execute "eth_syncing"', async function() {
-    const result = await Bridge.eth().syncing();
+    const result = await Relay.eth().syncing();
     expect(result).to.eq(false);
   });
 
@@ -79,7 +79,7 @@ describe('Eth', async function() {
       const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
       const txId = cache.get(txHash);
       expect(txId).to.not.exist;
-      const receipt = await Bridge.eth().getTransactionReceipt(txHash);
+      const receipt = await Relay.eth().getTransactionReceipt(txHash);
       expect(receipt).to.be.null;
     });
 
@@ -91,7 +91,7 @@ describe('Eth', async function() {
       const cachedId = cache.get(txHash);
       expect(cachedId).to.eq(txId);
 
-      const receipt = await Bridge.eth().getTransactionReceipt(txHash);
+      const receipt = await Relay.eth().getTransactionReceipt(txHash);
       expect(receipt).to.be.null;
     });
 
@@ -102,7 +102,7 @@ describe('Eth', async function() {
 
       cache.set(txHash, txId);
 
-      const receipt = await Bridge.eth().getTransactionReceipt(txHash);
+      const receipt = await Relay.eth().getTransactionReceipt(txHash);
 
       // Assert the data format
       expect(receipt.blockHash).to.exist;

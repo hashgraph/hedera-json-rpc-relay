@@ -51,7 +51,7 @@ describe('RPC Server', async function() {
     });
 
     BaseTest.defaultResponseChecks(res);
-    expect(res.data.result).to.be.equal('hashio/' + process.env.npm_package_version);
+    expect(res.data.result).to.be.equal('relay/' + process.env.npm_package_version);
   });
 
   it('should execute "eth_getUncleByBlockHashAndIndex"', async function() {
