@@ -5,16 +5,29 @@ import { Web3Impl } from './web3';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
+import { Logger } from 'pino';
+import {MirrorNode} from "./mirrorNode";
 
 export class BridgeImpl implements Bridge {
-  private clientMain: Client = this.initClient();
-  private clientSendRawTx: Client = this.initClient('eth_sendRawTransaction');
+  private readonly clientMain:Client = this.initClient();
+  private readonly web3Impl:Web3;
+  private readonly netImpl:Net;
+  private readonly ethImpl:Eth;
 
-  private web3Impl: Web3 = new Web3Impl(this.clientMain);
+  constructor(logger:Logger) {
+    this.web3Impl = new Web3Impl(this.clientMain);
+    this.netImpl = new NetImpl(this.clientMain);
 
-  private netImpl: Net = new NetImpl(this.clientMain);
+    const mirrorNode = new MirrorNode(
+        process.env.MIRROR_NODE_URL || '',
+        logger.child({ name: `mirror-node`}));
 
-  private ethImpl: Eth = new EthImpl(this.clientMain, this.clientSendRawTx);
+    this.ethImpl = new EthImpl(
+        this.clientMain,
+        mirrorNode,
+        logger.child({ name: 'relay-eth' }));
+  }
+
 
   web3(): Web3 {
     return this.web3Impl;

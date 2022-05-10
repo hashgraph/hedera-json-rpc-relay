@@ -29,6 +29,10 @@
         "dev": "npm run build && tsc --watch"
     },
     "dependencies": {
-        "@types/find-config": "^1.0.1"
+        "@types/find-config": "^1.0.1",
+        "keyv-file": "^0.2.0",
+        "koa-cors": "^0.0.16",
+        "pino": "^7.11.0",
+        "pino-pretty": "^7.6.1"
     }
 }

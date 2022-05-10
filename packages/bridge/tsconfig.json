@@ -1,12 +1,22 @@
 {
-    "extends": "../../tsconfig.json",
     "compilerOptions": {
-        "rootDir": "./src",
-        "outDir": "./dist"
+        "composite": true,
+        "target": "es6",
+        "lib": [
+            "es6"
+        ],
+        "module": "commonjs",
+        "rootDir": "src/",
+        "moduleResolution": "node",
+        "outDir": "./dist",
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitAny": false,
+        "declaration": true,
+        "strict": true
     },
-    "exclude": [
-        "node_modules",
-        "dist",
-        "tests"
+    "include": [
+        "src"
     ]
 }

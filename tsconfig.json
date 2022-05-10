@@ -10,7 +10,7 @@
         /* Modules */
         "module": "commonjs",
         /* Specify what module code is generated. */
-        "rootDir": ".",
+        "rootDir": "src/",
         /* Specify the root folder within your source files. */
         "moduleResolution": "node",
         /* Specify how TypeScript looks up a file from a given module specifier. */
@@ -27,8 +27,7 @@
         "strict": true
         /* Enable all strict type-checking options. */
     },
-    "exclude": [
-        "node_modules",
-        "dist"
+    "include": [
+        "src"
     ]
 }

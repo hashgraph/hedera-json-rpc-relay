@@ -27,6 +27,6 @@ export class NetImpl implements Net {
    * TODO Support some config when launching the server for this. dotenv support?
    */
   version(): string {
-    return '0x012a';
+    return '0x12a';
   }
 }
