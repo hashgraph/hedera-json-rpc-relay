@@ -216,8 +216,8 @@ export class EthImpl implements Eth {
           .execute(this.clientMain);
 
       const weibars = balance.hbars
-        .to(HbarUnit.Tinybar)
-        .multipliedBy(10_000_000_000);
+          .to(HbarUnit.Tinybar)
+          .multipliedBy(10_000_000_000);
 
       return '0x' + weibars.toString(16);
     } catch (e: any) {
@@ -314,6 +314,9 @@ export class EthImpl implements Eth {
 
       // Wait for the receipt from the execution.
       const record = await contractExecuteResponse.getRecord(this.clientMain);
+      if (record.ethereumHash == null) {
+        throw new Error("The ethereumHash can never be null for an ethereum transaction, and yet it was!!");
+      }
       const txHash = '0x' + Buffer.from(record.ethereumHash).toString('hex');
 
       // If the transaction succeeded, create a new block for the transaction.
@@ -366,16 +369,14 @@ export class EthImpl implements Eth {
       const contract = EthImpl.prune0x(call.to);
       const callData = EthImpl.prune0x(call.data);
       this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s"', contract, gas, callData);
-
-      const contractId = contract.startsWith('00000000000000')
+      const contractId = contract.startsWith("00000000000")
           ? ContractId.fromSolidityAddress(contract)
           : ContractId.fromEvmAddress(0, 0, contract);
-
-      const contractCallResponse = await(new ContractCallQuery()
+      const contractCallResponse = await (new ContractCallQuery()
           .setContractId(contractId)
           .setFunctionParameters(Buffer.from(callData, 'hex'))
-          .setGas(gas)
-          .execute(this.clientMain));
+          .setGas(gas))
+          .execute(this.clientMain);
 
       // FIXME Is this right? Maybe so?
       return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
@@ -433,6 +434,6 @@ export class EthImpl implements Eth {
    * @private
    */
   private static toAccountId(ethAddress:string) {
-    return new AccountId(0, 0, 0, EthImpl.prune0x(ethAddress));
+    return AccountId.fromEvmAddress(0, 0, EthImpl.prune0x(ethAddress));
   }
 }

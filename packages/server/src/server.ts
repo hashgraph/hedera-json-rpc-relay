@@ -86,7 +86,7 @@ rpc.use('eth_getCode', async (params: any) => {
 rpc.use('eth_chainId', async () => {
   logger.debug("eth_chainId");
   const result = bridge.eth().chainId();
-  console.info(result);
+  logger.debug(result);
   return result;
 });
 
@@ -133,7 +133,12 @@ rpc.use('eth_gasPrice', async () => {
  */
 rpc.use('eth_getTransactionCount', async (params: any) => {
   logger.debug("eth_getTransactionCount");
-  return toHexString(await bridge.eth().getTransactionCount(params?.[0],params?.[1]));
+  try {
+    return toHexString(await bridge.eth().getTransactionCount(params?.[0],params?.[1]));
+  } catch (e) {
+    logger.error(e);
+    throw e;
+  }
 });
 
 /**
@@ -147,7 +152,7 @@ rpc.use('eth_call', async (params: any) => {
   try {
     return bridge.eth().call(params?.[0], params?.[1]);
   } catch (e) {
-    console.log(e);
+    logger.error(e);
     throw e;
   }
 });
