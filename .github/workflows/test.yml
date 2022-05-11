@@ -24,15 +24,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - uses: actions/checkout@v2
-        with:
-          repository: hashgraph/hedera-sdk-js
-          ref: wrapped-tx
-      - run: npm install --force
-      - run: npm run compile:js
-      - run: mkdir ../hedera-sdk-js
-      - run: mv * ../hedera-sdk-js
-
       - name: Checkout repository
         uses: actions/checkout@v2
 
@@ -41,6 +32,9 @@ jobs:
 
       - name: Lerna Bootstrap
         run: npm run setup
+
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Build Typescript and Run tests
         run: npm run build-and-test

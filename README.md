@@ -1,8 +1,8 @@
 <div align="center">
 
-# Hashio
+# Hedera JSON RPC Relay
 
-[![Tests](https://github.com/hashgraph/hedera-hashio/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/hashgraph/hedera-hashio/actions/workflows/test.yml)
+[![Tests](https://github.com/hashgraph/hedera-json-rpc-relay/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/hashgraph/hedera-json-rpc-relay/actions/workflows/test.yml)
 
 </div>
 
@@ -24,8 +24,8 @@ From the root of the project workspace:
 
 1. Run `npm install`. This will create and populate `node_modules`.
 2. Run `npm run setup`. This will link the `node_modules` to the packages, and the packages together.
-3. Run `npm run build`. This will clean and compile the bridge library and the server.
+3. Run `npm run build`. This will clean and compile the relay library and the server.
 4. Run `npm run start`. This will start the server on port `7546`.
 
-Alternatively, after `npm run setup`, from within the IDE, you should see the `Start Bridge Microservice`
+Alternatively, after `npm run setup`, from within the IDE, you should see the `Start Relay Microservice`
 run configuration. You should be able to just run that configuration, and it should start the server on port `7546`.

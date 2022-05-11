@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-import { Bridge, Eth, Net, Web3 } from '../index';
+import { Relay, Eth, Net, Web3 } from '../index';
 import { Web3Impl } from './web3';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
@@ -8,7 +8,7 @@ import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import {MirrorNode} from "./mirrorNode";
 
-export class BridgeImpl implements Bridge {
+export class RelayImpl implements Relay {
   private readonly clientMain:Client = this.initClient();
   private readonly web3Impl:Web3;
   private readonly netImpl:Net;

@@ -1,12 +1,14 @@
 {
-    "name": "server",
+    "name": "@hashgraph/json-rpc-server",
     "version": "0.1.0",
     "description": "",
     "main": "dist/index.js",
     "keywords": [],
     "author": "",
     "dependencies": {
-        "bridge": "link:../bridge",
+        "@hashgraph/json-rpc-relay": "file:../relay",
+        "axios": "^0.27.2",
+        "dotenv": "^16.0.0",
         "koa": "^2.13.4",
         "koa-body-parser": "^0.2.1",
         "koa-cors": "^0.0.16",

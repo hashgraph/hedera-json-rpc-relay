@@ -1,8 +1,8 @@
 import {Block, Receipt} from './lib/model';
 
-export { BridgeImpl } from './lib/bridge';
+export { RelayImpl } from './lib/relay';
 
-export interface Bridge {
+export interface Relay {
   web3(): Web3;
 
   net(): Net;

@@ -9,6 +9,6 @@ export class Web3Impl implements Web3 {
   }
 
   clientVersion(): string {
-    return 'hashio/' + process.env.npm_package_version ?? '';
+    return 'relay/' + process.env.npm_package_version ?? '';
   }
 }

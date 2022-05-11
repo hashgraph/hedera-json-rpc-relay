@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
-import { Bridge, BridgeImpl } from 'bridge';
+import { Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
 
 import pino from 'pino';
 const mainLogger = pino({
@@ -12,7 +12,7 @@ const mainLogger = pino({
 });
 const logger = mainLogger.child({ name: 'rpc-server' });
 
-const bridge: Bridge = new BridgeImpl(logger);
+const relay: Relay = new RelayImpl(logger);
 const cors = require('koa-cors');
 const app = new Koa();
 const rpc = koaJsonRpc();
@@ -22,7 +22,7 @@ const rpc = koaJsonRpc();
  */
 rpc.use('net_listening', async () => {
   logger.debug('net_listening');
-  return '' + bridge.net().listening();
+  return '' + relay.net().listening();
 });
 
 /**
@@ -30,7 +30,7 @@ rpc.use('net_listening', async () => {
  */
 rpc.use('net_version', async () => {
   logger.debug("net_version");
-  return bridge.net().version();
+  return relay.net().version();
 });
 
 /**
@@ -40,7 +40,7 @@ rpc.use('net_version', async () => {
  */
 rpc.use('eth_blockNumber', async () => {
   logger.debug("eth_blockNumber");
-  return toHexString(await bridge.eth().blockNumber());
+  return toHexString(await relay.eth().blockNumber());
 });
 
 /**
@@ -51,7 +51,7 @@ rpc.use('eth_blockNumber', async () => {
  */
 rpc.use('eth_estimateGas', async (params: any) => {
   logger.debug("eth_estimateGas");
-  return toHexString(await bridge.eth().estimateGas());
+  return toHexString(await relay.eth().estimateGas());
 });
 
 /**
@@ -63,7 +63,7 @@ rpc.use('eth_estimateGas', async (params: any) => {
  */
 rpc.use('eth_getBalance', async (params: any) => {
   logger.debug("eth_getBalance");
-  return bridge.eth().getBalance(params?.[0], params?.[1]);
+  return relay.eth().getBalance(params?.[0], params?.[1]);
 });
 
 /**
@@ -75,7 +75,7 @@ rpc.use('eth_getBalance', async (params: any) => {
  */
 rpc.use('eth_getCode', async (params: any) => {
   logger.debug("eth_getCode");
-  return bridge.eth().getCode(params?.[0], params?.[1]);
+  return relay.eth().getCode(params?.[0], params?.[1]);
 });
 
 /**
@@ -85,7 +85,7 @@ rpc.use('eth_getCode', async (params: any) => {
  */
 rpc.use('eth_chainId', async () => {
   logger.debug("eth_chainId");
-  const result = bridge.eth().chainId();
+  const result = relay.eth().chainId();
   logger.debug(result);
   return result;
 });
@@ -99,7 +99,7 @@ rpc.use('eth_chainId', async () => {
  */
 rpc.use('eth_getBlockByNumber', async (params: any) => {
   logger.debug("eth_getBlockByNumber");
-  return bridge.eth().getBlockByNumber(Number(params?.[0]));
+  return relay.eth().getBlockByNumber(Number(params?.[0]));
 });
 
 /**
@@ -111,7 +111,7 @@ rpc.use('eth_getBlockByNumber', async (params: any) => {
  */
 rpc.use('eth_getBlockByHash', async (params: any) => {
   logger.debug("eth_getBlockByHash");
-  return bridge.eth().getBlockByHash(params?.[0], Boolean(params?.[1]));
+  return relay.eth().getBlockByHash(params?.[0], Boolean(params?.[1]));
 });
 
 /**
@@ -121,7 +121,7 @@ rpc.use('eth_getBlockByHash', async (params: any) => {
  */
 rpc.use('eth_gasPrice', async () => {
   logger.debug("eth_gasPrice");
-  return toHexString(await bridge.eth().gasPrice());
+  return toHexString(await relay.eth().gasPrice());
 });
 
 /**
@@ -134,7 +134,7 @@ rpc.use('eth_gasPrice', async () => {
 rpc.use('eth_getTransactionCount', async (params: any) => {
   logger.debug("eth_getTransactionCount");
   try {
-    return toHexString(await bridge.eth().getTransactionCount(params?.[0],params?.[1]));
+    return toHexString(await relay.eth().getTransactionCount(params?.[0],params?.[1]));
   } catch (e) {
     logger.error(e);
     throw e;
@@ -150,7 +150,7 @@ rpc.use('eth_getTransactionCount', async (params: any) => {
 rpc.use('eth_call', async (params: any) => {
   logger.debug("eth_call");
   try {
-    return bridge.eth().call(params?.[0], params?.[1]);
+    return relay.eth().call(params?.[0], params?.[1]);
   } catch (e) {
     logger.error(e);
     throw e;
@@ -165,7 +165,7 @@ rpc.use('eth_call', async (params: any) => {
  */
 rpc.use('eth_sendRawTransaction', async (params: any) => {
   logger.debug("eth_sendRawTransaction");
-  return bridge.eth().sendRawTransaction(params?.[0]);
+  return relay.eth().sendRawTransaction(params?.[0]);
 });
 
 /**
@@ -175,16 +175,12 @@ rpc.use('eth_sendRawTransaction', async (params: any) => {
  * returns: Transaction Receipt - object
  */
 rpc.use('eth_getTransactionReceipt', async (params: any) => {
-  logger.debug("eth_getTransactionReceipt");
-  return bridge.eth().getTransactionReceipt(params?.[0]);
+  return relay.eth().getTransactionReceipt(params?.[0]);
 });
 
-/**
- *
- */
 rpc.use('web3_clientVersion', async (params: any) => {
   logger.debug("web3_clientVersion");
-  return bridge.web3().clientVersion();
+  return relay.web3().clientVersion();
 });
 
 /**
@@ -194,7 +190,7 @@ rpc.use('web3_clientVersion', async (params: any) => {
  */
 rpc.use('eth_accounts', async () => {
   logger.debug("eth_accounts");
-  return bridge.eth().accounts();
+  return relay.eth().accounts();
 });
 
 /**
@@ -206,7 +202,7 @@ rpc.use('eth_accounts', async () => {
 rpc.use('eth_getTransactionByHash', async (params: any) => {
   logger.debug("eth_getTransactionByHash");
   // TODO
-  // return bridge.eth().getTransactionByHash();
+  // return relay.eth().getTransactionByHash();
 });
 
 /**
@@ -223,7 +219,7 @@ rpc.use('eth_getTransactionByHash', async (params: any) => {
  */
 rpc.use('eth_feeHistory', async (params: any) => {
   logger.debug("eth_feeHistory");
-  return bridge.eth().feeHistory();
+  return relay.eth().feeHistory();
 });
 
 
@@ -309,7 +305,7 @@ rpc.use('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
  */
 rpc.use('eth_getUncleByBlockHashAndIndex', async (params: any) => {
   logger.debug("eth_getUncleByBlockHashAndIndex");
-  return bridge.eth().getUncleByBlockHashAndIndex();
+  return relay.eth().getUncleByBlockHashAndIndex();
 });
 
 /**
@@ -322,7 +318,7 @@ rpc.use('eth_getUncleByBlockHashAndIndex', async (params: any) => {
  */
 rpc.use('eth_getUncleByBlockNumberAndIndex', async (params: any) => {
   logger.debug("eth_getUncleByBlockNumberAndIndex");
-  return bridge.eth().getUncleByBlockNumberAndIndex();
+  return relay.eth().getUncleByBlockNumberAndIndex();
 });
 
 /**
@@ -334,7 +330,7 @@ rpc.use('eth_getUncleByBlockNumberAndIndex', async (params: any) => {
  */
 rpc.use('eth_getUncleCountByBlockHash', async (params: any) => {
   logger.debug("eth_getUncleCountByBlockHash");
-  return bridge.eth().getUncleCountByBlockHash();
+  return relay.eth().getUncleCountByBlockHash();
 });
 
 /**
@@ -346,7 +342,7 @@ rpc.use('eth_getUncleCountByBlockHash', async (params: any) => {
  */
 rpc.use('eth_getUncleCountByBlockNumber', async (params: any) => {
   logger.debug("eth_getUncleCountByBlockNumber");
-  return bridge.eth().getUncleCountByBlockNumber();
+  return relay.eth().getUncleCountByBlockNumber();
 });
 
 /**
@@ -369,7 +365,7 @@ rpc.use('eth_getWork', async (params: any) => {
  */
 rpc.use('eth_hashrate', async (params: any) => {
   logger.debug("eth_hashrate");
-  return bridge.eth().hashrate();
+  return relay.eth().hashrate();
 });
 
 /**
@@ -381,7 +377,7 @@ rpc.use('eth_hashrate', async (params: any) => {
  */
 rpc.use('eth_mining', async (params: any) => {
   logger.debug("eth_mining");
-  return bridge.eth().mining();
+  return relay.eth().mining();
 });
 
 /**
@@ -393,7 +389,7 @@ rpc.use('eth_mining', async (params: any) => {
  */
 rpc.use('eth_submitWork', async (params: any) => {
   logger.debug("eth_submitWork");
-  return bridge.eth().submitWork();
+  return relay.eth().submitWork();
 });
 
 /**
@@ -404,17 +400,17 @@ rpc.use('eth_submitWork', async (params: any) => {
  */
 rpc.use('eth_syncing', async (params: any) => {
   logger.debug("eth_syncing");
-  return bridge.eth().syncing();
+  return relay.eth().syncing();
 });
 
 /**
- * Returns the JSON-RPC Bridge version number.
+ * Returns the JSON-RPC Relay version number.
  *
  * returns: string
  */
 rpc.use('web3_client_version', async (params: any) => {
   logger.debug("web3_client_version");
-  return bridge.web3().clientVersion();
+  return relay.web3().clientVersion();
 });
 
 /**

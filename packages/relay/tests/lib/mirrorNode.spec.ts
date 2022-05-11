@@ -2,22 +2,26 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { expect } from 'chai';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-import MirrorNode from './../../dist/lib/mirrorNode';
+import MirrorNode from '../../dist/lib/mirrorNode';
+
+import pino from 'pino';
+const logger = pino();
 
 describe('MirrorNode', async function() {
   this.timeout(10000);
+  const mirrorNodeInstance = new MirrorNode(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node`}));
 
   it('it should have a `request` method ', async () => {
-    expect(MirrorNode).to.exist;
-    expect(MirrorNode.request).to.exist;
+    expect(mirrorNodeInstance).to.exist;
+    expect(mirrorNodeInstance.request).to.exist;
   });
 
   it('`baseUrl` is exposed and correct', async () => {
-    expect(MirrorNode.baseUrl).to.eq(`https://${process.env.MIRROR_NODE_URL}/api/v1/`);
+    expect(mirrorNodeInstance.baseUrl).to.eq(`https://${process.env.MIRROR_NODE_URL}/api/v1/`);
   });
 
   it('`request` works', async () => {
-    const result = await MirrorNode.request('accounts');
+    const result = await mirrorNodeInstance.request('accounts');
     expect(result).to.exist;
     expect(result.links).to.exist;
     expect(result.links.next).to.exist;
@@ -33,7 +37,7 @@ describe('MirrorNode', async function() {
 
   it('call to non-existing REST route returns INTERNAL_ERROR', async () => {
     try {
-      expect(await MirrorNode.request('non-existing-route')).to.throw();
+      expect(await mirrorNodeInstance.request('non-existing-route')).to.throw();
     } catch (err: any) {
       expect(err.code).to.eq(-32603);
       expect(err.name).to.eq('Internal error');
