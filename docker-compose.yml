@@ -1,0 +1,8 @@
+version: "3.7"
+services:
+  relay:
+    container_name:  hedera-jspn-rpc-relay
+    image: "hashgraph/hedera-json-rpc-relay:0.1.0"
+    restart: "unless-stopped"
+    ports:
+      - 7546:7546
