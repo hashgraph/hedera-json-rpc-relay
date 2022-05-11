@@ -8,17 +8,11 @@ import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import {MirrorNode} from "./mirrorNode";
 
-<<<<<<< HEAD:packages/bridge/src/lib/bridge.ts
-export class BridgeImpl implements Bridge {
+export class RelayImpl implements Relay {
   private readonly clientMain:Client = this.initClient();
   private readonly web3Impl:Web3;
   private readonly netImpl:Net;
   private readonly ethImpl:Eth;
-=======
-export class RelayImpl implements Relay {
-  private clientMain: Client = this.initClient();
-  private clientSendRawTx: Client = this.initClient('eth_sendRawTransaction');
->>>>>>> 0e638ab (Replace bridge and hashio references with relay):packages/relay/src/lib/relay.ts
 
   constructor(logger:Logger) {
     this.web3Impl = new Web3Impl(this.clientMain);

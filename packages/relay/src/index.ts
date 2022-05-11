@@ -1,10 +1,6 @@
-<<<<<<< HEAD:packages/bridge/src/index.ts
 import {Block, Receipt} from './lib/model';
 
-export { BridgeImpl } from './lib/bridge';
-=======
 export { RelayImpl } from './lib/relay';
->>>>>>> 0e638ab (Replace bridge and hashio references with relay):packages/relay/src/index.ts
 
 export interface Relay {
   web3(): Web3;
