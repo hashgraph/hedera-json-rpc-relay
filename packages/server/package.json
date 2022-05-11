@@ -1,11 +1,12 @@
 {
-    "name": "hedera-json-rpc-server",
+    "name": "@hashgraph/json-rpc-server",
     "version": "0.1.0",
     "description": "",
     "main": "dist/index.js",
     "keywords": [],
     "author": "",
     "dependencies": {
+        "@hashgraph/json-rpc-relay": "file:../relay",
         "koa": "^2.13.4",
         "koa-body-parser": "^0.2.1",
         "koa-cors": "^0.0.16",
@@ -28,9 +29,6 @@
         "chai": "^4.3.6",
         "ts-mocha": "^9.0.2",
         "typescript": "^4.5.5"
-    },
-    "peerDependencies": {
-        "relay": "file:../relay"
     },
     "scripts": {
         "build": "pnpm clean && pnpm compile",

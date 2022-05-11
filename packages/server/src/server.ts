@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
-import { Relay, RelayImpl } from 'relay';
+import { Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
 
 import pino from 'pino';
 const mainLogger = pino({
