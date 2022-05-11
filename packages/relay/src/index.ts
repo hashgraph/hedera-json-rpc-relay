@@ -1,3 +1,5 @@
+import {Block, Receipt} from './lib/model';
+
 export { RelayImpl } from './lib/relay';
 
 export interface Relay {

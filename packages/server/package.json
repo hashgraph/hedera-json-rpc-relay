@@ -33,7 +33,7 @@
         "typescript": "^4.5.5"
     },
     "peerDependencies": {
-        "bridge": "file:../relay"
+        "relay": "file:../relay"
     },
     "scripts": {
         "build": "pnpm clean && pnpm compile",
