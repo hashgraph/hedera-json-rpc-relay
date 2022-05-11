@@ -25,6 +25,7 @@
         "lint": "npx lerna run lint",
         "format": "npx lerna run format",
         "build-and-test": "npx lerna run build && npx lerna run test",
+        "test": "npx lerna run test",
         "start": "npx lerna exec --scope @hashgraph/json-rpc-server -- npm run start",
         "dev": "npm run build && tsc --watch"
     },

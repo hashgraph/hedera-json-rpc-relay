@@ -1,7 +1,10 @@
 import { expect } from 'chai';
-import { RelayImpl } from 'relay';
+import { RelayImpl } from '@hashgraph/json-rpc-relay';
 
-const Relay = new RelayImpl();
+import pino from 'pino';
+const logger = pino();
+
+const Relay = new RelayImpl(logger);
 
 describe('Net', async function() {
   it('should execute "net_listening"', async function() {
