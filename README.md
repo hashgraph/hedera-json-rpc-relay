@@ -36,6 +36,54 @@ From the root of the project workspace:
 Alternatively, after `npm run setup`, from within the IDE, you should see the `Start Relay Microservice`
 run configuration. You should be able to just run that configuration, and it should start the server on port `7546`.
 
+## Deployment
+
+The Relay supports Docker image building and Docker Compose container management using the provided [Dockerfile](Dockerfile) and [docker-compose](docker-compose.yml) files.
+
+### Image Build (optional)
+A new docker image may be created from a local copy of the repo.
+Run the following command, substituting `<owner>` as desired
+
+```shell
+docker build -t <owner>/hedera-json-rpc-relay .
+```
+
+After building, the image may be tagged by running the following command, substituting `<version>` as desired
+
+```shell
+docker tag <owner>/hedera-json-rpc-relay:latest hedera-json-rpc-relay:<version>
+```
+
+### Configuration
+
+The relay application currently utilizes [dotenv](https://github.com/motdotla/dotenv) to manage configurations.
+Key values are pulled from a `.env` file and reference as `process.env.<KEY>` in the application.
+
+To modify the default values
+1. Rename [.env.example file](.env.example) to `.env`
+2. Populate the expected fields
+3. Update the `relay` service volumes section in the [docker-compose](docker-compose.yml) file from `./.env.sample:/home/node/app/.env.sample` to `./.env:/home/node/app/.env`
+
+Custom values provided will now be incorporated on startup of the relay
+
+### Starting
+
+To start the relay, a docker container may be created using the following command
+```shell
+docker compose up -d
+```
+
+By default the relay will be made accessible on port `7546`
+A quick tests can be performed to verify the container is up and running
+
+From a command prompt/terminal run the command
+```shell
+curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":"2","method":"eth_chainId","params":[null]}' http://localhost:7546
+```
+
+The expected response should be `{"result":"0x12a","jsonrpc":"2.0","id":"2"}`
+Where the `result` value matches the .env `CHAIN_ID` configuration value or the current deault value of `298`
+
 ## Support
 
 If you have a question on how to use the product, please see our
