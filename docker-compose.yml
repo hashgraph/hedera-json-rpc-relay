@@ -5,4 +5,6 @@ services:
     image: "hashgraph/hedera-json-rpc-relay:0.1.0"
     restart: "unless-stopped"
     ports:
-      - 7546:7546
+      - 7546:7546    
+    volumes:
+      - ./.env.sample:/home/node/app/.env.sample

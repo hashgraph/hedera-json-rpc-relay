@@ -60,9 +60,9 @@ to [oss@hedera.com](mailto:oss@hedera.com).
 
 ## Deployment
 
-The Relay supports Docker image building and Docker Compose container management usng the provided [Dockerfile](Dockerfile) and [docker-compose](docker-compose.yml) files.
+The Relay supports Docker image building and Docker Compose container management using the provided [Dockerfile](Dockerfile) and [docker-compose](docker-compose.yml) files.
 
-### Building (optional)
+### Image Build (optional)
 A new docker image may be created from a local copy of the repo.
 Run the following command, substituting `<owner>` as desired
 
@@ -76,9 +76,21 @@ After building, the image may be tagged by running the following command, substi
 docker tag <owner>/hedera-json-rpc-relay:latest hedera-json-rpc-relay:<version>
 ```
 
+### Configuration
+
+The relay application currently utilizes [dotenv](https://github.com/motdotla/dotenv) to manage configurations.
+Key values are pulled from a `.env` file and reference as `process.env.<KEY>` in the application.
+
+To modify the default values
+1. Rename [.env.example file](.env.example) to `.env`
+2. Populate the expected fields
+3. Update the `relay` service volumes section in the [docker-compose](docker-compose.yml) file from `./.env.sample:/home/node/app/.env.sample` to `./.env:/home/node/app/.env`
+
+Custom values provided will now be incorporated on startup of the relay
+
 ### Starting
 
-To start the relay, a docker container may be create using the following command
+To start the relay, a docker container may be created using the following command
 ```shell
 docker compose up -d
 ```
@@ -92,4 +104,4 @@ curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":"2","
 ```
 
 The expected response should be `{"result":"0x12a","jsonrpc":"2.0","id":"2"}`
-Where the `result` value matches `process.env.CHAIN_ID` envrionment variable or the current deault value of `298`
+Where the `result` value matches the .env `CHAIN_ID` configuration value or the current deault value of `298`
