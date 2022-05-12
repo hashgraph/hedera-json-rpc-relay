@@ -57,3 +57,39 @@ to [oss@hedera.com](mailto:oss@hedera.com).
 ## License
 
 [Apache License 2.0](LICENSE)
+
+## Deployment
+
+The Relay supports Docker image building and Docker Compose container management usng the provided [Dockerfile](Dockerfile) and [docker-compose](docker-compose.yml) files.
+
+### Building (optional)
+A new docker image may be created from a local copy of the repo.
+Run the following command, substituting `<owner>` as desired
+
+```shell
+docker build -t <owner>/hedera-json-rpc-relay .
+```
+
+After building, the image may be tagged by running the following command, substituting `<version>` as desired
+
+```shell
+docker tag <owner>/hedera-json-rpc-relay:latest hedera-json-rpc-relay:<version>
+```
+
+### Starting
+
+To start the relay, a docker container may be create using the following command
+```shell
+docker compose up -d
+```
+
+By default the relay will be made accessible on port `7546`
+A quick tests can be performed to verify the container is up and running
+
+From a command prompt/terminal run the command
+```shell
+curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":"2","method":"eth_chainId","params":[null]}' http://localhost:7546
+```
+
+The expected response should be `{"result":"0x12a","jsonrpc":"2.0","id":"2"}`
+Where the `result` value matches `process.env.CHAIN_ID` envrionment variable or the current deault value of `298`
