@@ -36,28 +36,6 @@ From the root of the project workspace:
 Alternatively, after `npm run setup`, from within the IDE, you should see the `Start Relay Microservice`
 run configuration. You should be able to just run that configuration, and it should start the server on port `7546`.
 
-## Support
-
-If you have a question on how to use the product, please see our
-[support guide](https://github.com/hashgraph/.github/blob/main/SUPPORT.md).
-
-## Contributing
-
-Contributions are welcome. Please see the
-[contributing guide](https://github.com/hashgraph/.github/blob/main/CONTRIBUTING.md)
-to see how you can get involved.
-
-## Code of Conduct
-
-This project is governed by the
-[Contributor Covenant Code of Conduct](https://github.com/hashgraph/.github/blob/main/CODE_OF_CONDUCT.md). By
-participating, you are expected to uphold this code of conduct. Please report unacceptable behavior
-to [oss@hedera.com](mailto:oss@hedera.com).
-
-## License
-
-[Apache License 2.0](LICENSE)
-
 ## Deployment
 
 The Relay supports Docker image building and Docker Compose container management using the provided [Dockerfile](Dockerfile) and [docker-compose](docker-compose.yml) files.
@@ -105,3 +83,25 @@ curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":"2","
 
 The expected response should be `{"result":"0x12a","jsonrpc":"2.0","id":"2"}`
 Where the `result` value matches the .env `CHAIN_ID` configuration value or the current deault value of `298`
+
+## Support
+
+If you have a question on how to use the product, please see our
+[support guide](https://github.com/hashgraph/.github/blob/main/SUPPORT.md).
+
+## Contributing
+
+Contributions are welcome. Please see the
+[contributing guide](https://github.com/hashgraph/.github/blob/main/CONTRIBUTING.md)
+to see how you can get involved.
+
+## Code of Conduct
+
+This project is governed by the
+[Contributor Covenant Code of Conduct](https://github.com/hashgraph/.github/blob/main/CODE_OF_CONDUCT.md). By
+participating, you are expected to uphold this code of conduct. Please report unacceptable behavior
+to [oss@hedera.com](mailto:oss@hedera.com).
+
+## License
+
+[Apache License 2.0](LICENSE)
