@@ -1,8 +1,26 @@
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import Axios, { AxiosInstance } from 'axios';
-import Keyv from 'keyv';
-import { KeyvFile } from 'keyv-file';
 import { predefined as errors } from './errors';
-import {Logger} from "pino";
+import { Logger } from "pino";
 // Used for temporary purposes to store block info. As the mirror node supports the APIs, we will remove this.
 import { Block } from './model';
 
@@ -16,14 +34,14 @@ export class MirrorNode {
   // end up running out of memory.
   private static MOST_RECENT_BLOCK_NUMBER_KEY = "mostRecentBlockNumber";
   private static MOST_RECENT_BLOCK_KEY = "mostRecentBlock";
-  private readonly store:Map<string,any> = new Map();
+  private readonly store: Map<string, any> = new Map();
 
 
   /**
    * The logger used for logging all output from this class.
    * @private
    */
-  private readonly logger:Logger;
+  private readonly logger: Logger;
 
   private readonly client: AxiosInstance;
 
@@ -42,7 +60,7 @@ export class MirrorNode {
     });
   }
 
-  constructor(baseUrl: string, logger:Logger) {
+  constructor(baseUrl: string, logger: Logger) {
     if (!baseUrl.match(/^https?:\/\//)) {
       baseUrl = `https://${baseUrl}`;
     }
@@ -97,8 +115,8 @@ export class MirrorNode {
 
     const mostRecentBlockNumber = await this.getMostRecentBlockNumber();
     this.logger.debug('computing fee history for mostRecentBlockNumber=%d', mostRecentBlockNumber);
-    const mostRecentBlocks:Block[] = [];
-    for (let blockNumber=Math.max(0, mostRecentBlockNumber - 9); blockNumber <= mostRecentBlockNumber; blockNumber++) {
+    const mostRecentBlocks: Block[] = [];
+    for (let blockNumber = Math.max(0, mostRecentBlockNumber - 9); blockNumber <= mostRecentBlockNumber; blockNumber++) {
       const block = await this.getBlockByNumber(blockNumber);
       this.logger.debug("block for %d is %o", blockNumber, block);
       if (block != null) {
@@ -122,14 +140,14 @@ export class MirrorNode {
 
   // FIXME this is for demo/temp purposes, remove it when the mirror node has real blocks
   //       that they get from the main net nodes
-  public storeBlock(block:Block) {
+  public storeBlock(block: Block) {
     this.store.set(MirrorNode.MOST_RECENT_BLOCK_NUMBER_KEY, block.getNum());
     this.store.set(MirrorNode.MOST_RECENT_BLOCK_KEY, block);
     this.store.set(block.getNum().toString(), block);
     this.store.set(block.transactions[0], block);
   }
 
-  public async getMostRecentBlockNumber() : Promise<number> {
+  public async getMostRecentBlockNumber(): Promise<number> {
     // FIXME: Fake implementation for now. Should go to the mirror node.
     this.logger.trace('getMostRecentBlockNumber()');
     const num = this.store.get(MirrorNode.MOST_RECENT_BLOCK_NUMBER_KEY);
@@ -137,7 +155,7 @@ export class MirrorNode {
     return num === undefined ? 0 : Number(num);
   }
 
-  public async getMostRecentBlock() : Promise<Block | null> {
+  public async getMostRecentBlock(): Promise<Block | null> {
     // FIXME: Fake implementation for now. Should go to the mirror node.
     this.logger.trace('getMostRecentBlock()');
     const block = this.store.get(MirrorNode.MOST_RECENT_BLOCK_KEY);
@@ -159,7 +177,7 @@ export class MirrorNode {
     return block === undefined ? null : block;
   }
 
-  public async getBlockByHash(hash: string, showDetails: boolean) : Promise<Block | null> {
+  public async getBlockByHash(hash: string, showDetails: boolean): Promise<Block | null> {
     // FIXME: This needs to be reimplemented to go to the mirror node.
     this.logger.trace('getBlockByHash(hash=%s, showDetails=%o)', hash, showDetails);
 
