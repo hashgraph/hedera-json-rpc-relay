@@ -8,7 +8,7 @@
         "dist"
     ],
     "keywords": [],
-    "author": "",
+    "author": "Hedera Smart Contracts Team",
     "devDependencies": {
         "@types/chai": "^4.3.0",
         "@types/mocha": "^9.1.0",
@@ -23,7 +23,7 @@
         "compile": "tsc -b tsconfig.json",
         "lint": "npx eslint --ext .js,.ts .",
         "format": "npx prettier --ignore-path ../../.gitignore --write \"**/*.+(js|ts|json)\"",
-        "test": " ../../node_modules/.bin/ts-mocha  --recursive ./tests/**/*.spec.ts"
+        "test": "nyc ts-mocha  --recursive ./tests/**/*.spec.ts"
     },
     "dependencies": {
         "@hashgraph/sdk": "^2.14.0-beta.3",
@@ -37,5 +37,15 @@
         "keyv-file": "^0.2.0",
         "pino": "^7.11.0",
         "rlp": "^3.0.0"
+    },
+    "nyc": {
+        "check-coverage": false,
+        "reporter": [
+            "html",
+            "lcov",
+            "text",
+            "text-summary"
+        ],
+        "report-dir": "coverage"
     }
 }

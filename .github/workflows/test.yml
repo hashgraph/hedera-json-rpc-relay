@@ -1,9 +1,11 @@
 name: Tests
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
+    branches: [ main, release/** ]
+  push:
+    branches: [ main, release/** ]
+    tags: [ v* ]
 
 jobs:
 
@@ -38,3 +40,7 @@ jobs:
 
       - name: Build Typescript and Run tests
         run: npm run build-and-test
+
+      - name: Upload coverage report
+        if: always()
+        run: node_modules/codecov/bin/codecov
