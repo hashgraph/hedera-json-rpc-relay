@@ -1,10 +1,10 @@
 {
     "name": "@hashgraph/json-rpc-server",
     "version": "0.1.0",
-    "description": "",
+    "description": "Hedera Hashgraph Ethereum JSON RPC server. Accepts requests for Ethereum JSON RPC 2.0 APIs",
     "main": "dist/index.js",
     "keywords": [],
-    "author": "",
+    "author": "Hedera Smart Contracts Team",
     "dependencies": {
         "@hashgraph/json-rpc-relay": "file:../relay",
         "axios": "^0.27.2",
@@ -37,6 +37,16 @@
         "clean": "rm -rf ./dist && rm -rf tsconfig.tsbuildinfo",
         "compile": "tsc -b tsconfig.json",
         "start": "node dist/index.js",
-        "test": " ts-mocha ./tests/*.spec.ts"
+        "test": "nyc ts-mocha --recursive ./tests/*.spec.ts"
+    },
+    "nyc": {
+        "check-coverage": false,
+        "reporter": [
+            "html",
+            "lcov",
+            "text",
+            "text-summary"
+        ],
+        "report-dir": "coverage"
     }
 }
