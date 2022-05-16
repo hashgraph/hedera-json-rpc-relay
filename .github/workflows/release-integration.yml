@@ -1,0 +1,38 @@
+name: Release Integration Environment
+
+on:
+  pull_request:
+    branches: [ 66-docker-main-image ]
+  push:
+    branches: [ main ]
+
+env:
+  OWNER: hashgraph
+  PACKAGE: hedera-json-rpc-relay
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [ 16.x ]
+
+    steps:
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Build docker image 
+        uses: actions/checkout@v2
+
+      - name: Tag docker image
+        uses: docker tag ${OWNER/PACKAGE}:latest ${OWNER/PACKAGE}:main
+
+      - name: Deploy docker image
+        uses: docker push ghcr.io/${OWNER/PACKAGE}:main
