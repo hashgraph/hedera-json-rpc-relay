@@ -1,4 +1,4 @@
-FROM node:17.9.0-alpine3.15
+FROM node:16.15-alpine3.15
 
 # Setup
 ENV NODE_ENV production
