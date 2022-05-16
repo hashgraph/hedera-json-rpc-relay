@@ -35,4 +35,4 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64, linux/arm64
           push: true
-          tags: ${{ env.REGISTRY }}/${OWNER}/${{ github.repository }}:main
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}:main
