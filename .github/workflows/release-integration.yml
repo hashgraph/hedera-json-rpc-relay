@@ -2,7 +2,7 @@ name: Release Integration Environment
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ 66-docker-main-image ]
   push:
     branches: [ main ]
 
@@ -29,10 +29,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build docker image 
-        uses: actions/checkout@v2
+        run: docker build . -t ${PACKAGE}
 
       - name: Tag docker image
-        uses: docker tag ${OWNER/PACKAGE}:latest ${OWNER/PACKAGE}:main
+        run: docker tag ${OWNER/PACKAGE}:latest ${OWNER/PACKAGE}:main
 
       - name: Deploy docker image
-        uses: docker push ghcr.io/${OWNER/PACKAGE}:main
+        run: docker push ghcr.io/${OWNER/PACKAGE}:main
