@@ -7,28 +7,32 @@ on:
     branches: [ main ]
 
 env:
-  PACKAGE: hashgraph/hedera-json-rpc-relay
+  OWNER: hashgraph
+  REGISTRY: ghcr.io
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [ 16.x ]
 
     steps:
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
-        with:
-          node-version: ${{ matrix.node-version }}
-
       - name: Checkout repository
         uses: actions/checkout@v2
+        
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build docker image 
-        run: docker build . -t ${PACKAGE}:main
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-      - name: Deploy docker image
-        run: docker push ghcr.io/${PACKAGE}:main
+      - name: Build and push images
+        uses: docker/build-push-action@v2
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64, linux/arm64
+          push: true
+          tags: ${{ env.REGISTRY }}/${OWNER}/${{ github.repository }}:main
