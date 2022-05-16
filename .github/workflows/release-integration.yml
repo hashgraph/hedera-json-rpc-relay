@@ -2,7 +2,7 @@ name: Release Integration Environment
 
 on:
   pull_request:
-    branches: [ 66-docker-main-image ]
+    branches: [ main ]
   push:
     branches: [ main ]
 
