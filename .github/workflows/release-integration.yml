@@ -28,11 +28,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
+      - name: Platforms avaialble
+        run: echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+
       - name: Build and push images
         uses: docker/build-push-action@v2
         with:
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64, linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ env.REGISTRY }}/${{ github.repository }}:main
