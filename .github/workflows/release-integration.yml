@@ -30,7 +30,7 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Platforms avaialble
-        run: echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+        run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Build and push images
         uses: docker/build-push-action@v2
