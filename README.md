@@ -51,8 +51,10 @@ docker build -t <owner>/hedera-json-rpc-relay .
 After building, the image may be tagged by running the following command, substituting `<version>` as desired
 
 ```shell
-docker tag <owner>/hedera-json-rpc-relay:latest hedera-json-rpc-relay:<version>
+docker tag <owner>/hedera-json-rpc-relay:latest ghcr.io/hashgraph/hedera-json-rpc-relay:main
 ```
+
+> **_NOTE:_** image is tagged using `ghcr.io/hashgraph/hedera-json-rpc-relay:main` to agree with [docker compose](docker-compose.yml). Modify build commands or file as needed.
 
 ### Configuration
 
@@ -72,6 +74,8 @@ To start the relay, a docker container may be created using the following comman
 ```shell
 docker compose up -d
 ```
+
+> **_NOTE:_** If you encounter `unauthorized` when pulling iamge, then ensure you're loggeed in with `docker login ghcr.io` or use a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) to authorize your login.
 
 By default the relay will be made accessible on port `7546`
 A quick tests can be performed to verify the container is up and running
