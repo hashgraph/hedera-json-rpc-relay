@@ -26,6 +26,8 @@ import {
   ContractByteCodeQuery,
   ContractCallQuery,
   EthereumTransaction,
+  ExchangeRates,
+  FileContentsQuery,
   ContractId,
   HbarUnit,
   Status
@@ -105,7 +107,25 @@ export class EthImpl implements Eth {
    */
   async feeHistory() {
     this.logger.trace('feeHistory()');
-    return await this.mirrorNode.getFeeHistory();
+    try {
+      const exchangeFileBytes = await (new FileContentsQuery()
+          .setFileId("0.0.112")
+          .execute(this.clientMain));
+
+      const exchangeRates = ExchangeRates.fromBytes(exchangeFileBytes);
+
+      //FIXME retrieve fee from fee API when released
+      const contractTransactionGas = 853454;
+
+      //contractTransactionGas is in tinycents * 1000, so the final multiplier is truncated by 3 zeroes for
+      // the conversion to weibars
+      const weibars = Math.ceil( contractTransactionGas / exchangeRates.currentRate.cents *
+          exchangeRates.currentRate.hbars * 10_000_000 );
+
+      return await this.mirrorNode.getFeeHistory('0x' + weibars.toString(16));
+    } catch (e) {
+      this.logger.trace(e);
+    }
   }
 
   /**
@@ -151,7 +171,26 @@ export class EthImpl implements Eth {
     // FIXME: This should come from the mainnet and get cached. The gas price does change dynamically based on
     //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
     this.logger.trace('gasPrice()');
-    return 0x2f;
+    try {
+      const exchangeFileBytes = await (new FileContentsQuery()
+          .setFileId("0.0.112")
+          .execute(this.clientMain));
+
+      const exchangeRates = ExchangeRates.fromBytes(exchangeFileBytes);
+
+      //FIXME retrieve fee from fee API when released
+      const contractTransactionGas = 853454;
+
+      //contractTransactionGas is in tinycents * 1000, so the final multiplier is truncated by 3 zeroes for
+      // the conversion to weibars
+      const weibars = Math.ceil( contractTransactionGas / exchangeRates.currentRate.cents *
+          exchangeRates.currentRate.hbars * 10_000_000 );
+
+      return weibars;
+    } catch (e) {
+      this.logger.trace(e);
+      throw e;
+    }
   }
 
   /**
