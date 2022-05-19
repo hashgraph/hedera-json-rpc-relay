@@ -108,7 +108,7 @@ export class MirrorNode {
     throw errors['INTERNAL_ERROR'];
   }
 
-  public async getFeeHistory() {
+  public async getFeeHistory(fee : number) {
     // FIXME: This is a fake implementation. It works for now, but should
     //        actually delegate to the mirror node.
     this.logger.trace('getFeeHistory()');
@@ -128,7 +128,7 @@ export class MirrorNode {
     this.logger.debug('Computing fee history based on the last %d blocks', mostRecentBlocks.length);
 
     return {
-      baseFeePerGas: Array(mostRecentBlocks.length).fill('0x47'),
+      baseFeePerGas: Array(mostRecentBlocks.length).fill('0x' + fee.toString(16)),
       gasUsedRatio: Array(mostRecentBlocks.length).fill('0.5'),
       oldestBlock: mostRecentBlocks[0].number
     };
