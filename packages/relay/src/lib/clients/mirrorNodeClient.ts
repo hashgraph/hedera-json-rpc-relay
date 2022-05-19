@@ -23,15 +23,16 @@ import { predefined as errors } from '../errors';
 import { Logger } from "pino";
 
 export class MirrorNodeClient {
-    private static GET_ACCOUNTS_ENDPOINT = "accounts/";
-    private static GET_BLOCK_ENDPOINT = "blocks/";
-    private static GET_BLOCKS_ENDPOINT = "blocks";
-    private static GET_CONTRACT_ENDPOINT = "contracts/";
-    private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = "contracts/{address}/results";
-    private static GET_CONTRACT_RESULT_ENDPOINT = "contracts/results/";
-    private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = "contracts/results/logs";
-    private static GET_CONTRACT_RESULTS_ENDPOINT = "contracts/results";
-    private static GET_NETWORK_EXCHANGERATE_ENDPOINT = "network/exchangerate";
+    private static GET_ACCOUNTS_ENDPOINT = 'accounts/';
+    private static GET_BLOCK_ENDPOINT = 'blocks/';
+    private static GET_BLOCKS_ENDPOINT = 'blocks';
+    private static GET_CONTRACT_ENDPOINT = 'contracts/';
+    private static ADDRESS_PLACEHOLDER = '{address}';
+    private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
+    private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
+    private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
+    private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
+    private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
 
     private static ORDER = {
         ASC: 'asc',
@@ -111,13 +112,13 @@ export class MirrorNodeClient {
         return this.request(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?order=desc&limit=1`, [400]);
     }
 
-    public async getBlock(hashOrBlockNumber: string) {
+    public async getBlock(hashOrBlockNumber: string|number) {
         return this.request(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`, [400]);
     }
 
     public async getBlocks(blockNumber?: number, timestamp?: string, limit?: number, order?: string) {
         const queryParamObject = {};
-        this.setQueryParam(queryParamObject, 'blockNumber', blockNumber);
+        this.setQueryParam(queryParamObject, 'block.number', blockNumber);
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         this.setQueryParam(queryParamObject, 'limit', limit);
         this.setQueryParam(queryParamObject, 'order', order);
@@ -175,11 +176,11 @@ export class MirrorNodeClient {
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         this.setQueryParam(queryParamObject, 'transaction.index', transactionIndex);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT}${contractIdOrAddress}${queryParams}`, [400]);
+        return this.request(`${this.getContractResultsByAddressPath(contractIdOrAddress)}${queryParams}`, [400]);
     }
 
     public async getContractResultsLogs(
-        index: number,
+        index?: number,
         limit?: number,
         order?: string,
         timestamp?: string | [string],
@@ -211,10 +212,20 @@ export class MirrorNodeClient {
         return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`, [400]);
     }
 
+    getContractResultsByAddressPath(address: string) {
+        return MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT.replace(MirrorNodeClient.ADDRESS_PLACEHOLDER, address);
+    }
+
     getQueryParams(params: object) {
         let paramString = '';
         for (const [key, value] of Object.entries(params)) {
-            paramString += paramString === '' ? `?${key}=${value}` : `&${key}=${value}`;
+            let additionalString = '';
+            if (Array.isArray(value)) {
+                additionalString = value.map(v => `${key}=${v}`).join('&');
+            } else {
+                additionalString = `${key}=${value}`;
+            }
+            paramString += paramString === '' ? `?${additionalString}` : `&${additionalString}`;
         }
         return paramString;
     }
