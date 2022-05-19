@@ -29,7 +29,7 @@ export class Block {
     public readonly difficulty:string = '0x1';
     public readonly extraData:string = '';
     public readonly gasLimit:string = '0xe4e1c0';
-    public readonly baseFeePerGas:string = '0x1';
+    public readonly baseFeePerGas:string = '0xa54f4c3c00';
     public readonly gasUsed:string = '0x0';
     public readonly logsBloom:string = '0x0';
     public readonly miner:string = '';
