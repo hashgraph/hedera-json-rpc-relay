@@ -43,7 +43,6 @@ export class MirrorNode {
 
   constructor(logger: Logger) {
     this.logger = logger;
-    this.logger.info("Restarting.");
 
     // FIXME: Create an empty genesis block (which has no transactions!)
     //        to preload the system.
