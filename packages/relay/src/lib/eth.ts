@@ -108,24 +108,29 @@ export class EthImpl implements Eth {
   async feeHistory() {
     this.logger.trace('feeHistory()');
     try {
-      const exchangeFileBytes = await (new FileContentsQuery()
-          .setFileId("0.0.112")
-          .execute(this.clientMain));
+      const feeWeibars = await this.getFeeWeibars();
 
-      const exchangeRates = ExchangeRates.fromBytes(exchangeFileBytes);
-
-      //FIXME retrieve fee from fee API when released
-      const contractTransactionGas = 853454;
-
-      //contractTransactionGas is in tinycents * 1000, so the final multiplier is truncated by 3 zeroes for
-      // the conversion to weibars
-      const weibars = Math.ceil( contractTransactionGas / exchangeRates.currentRate.cents *
-          exchangeRates.currentRate.hbars * 10_000_000 );
-
-      return await this.mirrorNode.getFeeHistory('0x' + weibars.toString(16));
+      return await this.mirrorNode.getFeeHistory(feeWeibars);
     } catch (e) {
       this.logger.trace(e);
     }
+  }
+
+  private async getFeeWeibars() {
+    const exchangeFileBytes = await (new FileContentsQuery()
+        .setFileId("0.0.112")
+        .execute(this.clientMain));
+
+    const exchangeRates = ExchangeRates.fromBytes(exchangeFileBytes);
+
+    //FIXME retrieve fee from fee API when released
+    const contractTransactionGas = 853454;
+
+    //contractTransactionGas is in tinycents * 1000, so the final multiplier is truncated by 3 zeroes for
+    // the conversion to weibars
+    const weibars = Math.ceil(contractTransactionGas / exchangeRates.currentRate.cents *
+        exchangeRates.currentRate.hbars * 10_000_000);
+    return weibars;
   }
 
   /**
@@ -172,21 +177,9 @@ export class EthImpl implements Eth {
     //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
     this.logger.trace('gasPrice()');
     try {
-      const exchangeFileBytes = await (new FileContentsQuery()
-          .setFileId("0.0.112")
-          .execute(this.clientMain));
+      const feeWeibars = await this.getFeeWeibars();
 
-      const exchangeRates = ExchangeRates.fromBytes(exchangeFileBytes);
-
-      //FIXME retrieve fee from fee API when released
-      const contractTransactionGas = 853454;
-
-      //contractTransactionGas is in tinycents * 1000, so the final multiplier is truncated by 3 zeroes for
-      // the conversion to weibars
-      const weibars = Math.ceil( contractTransactionGas / exchangeRates.currentRate.cents *
-          exchangeRates.currentRate.hbars * 10_000_000 );
-
-      return weibars;
+      return feeWeibars;
     } catch (e) {
       this.logger.trace(e);
       throw e;
