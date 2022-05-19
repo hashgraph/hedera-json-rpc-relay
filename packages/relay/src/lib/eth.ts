@@ -89,7 +89,7 @@ export class EthImpl implements Eth {
     // Compute the chainId
     // FIXME: Should default to a "dev net" number. Is this it?
     const configuredChainId = process.env.CHAIN_ID || '298';
-    this.chain = '0x' + Number(configuredChainId).toString(16);
+    this.chain = EthImpl.prepend0x(Number(configuredChainId).toString(16));
     this.logger.info("Running with chainId=%s", this.chain);
   }
 
@@ -271,7 +271,7 @@ export class EthImpl implements Eth {
           .to(HbarUnit.Tinybar)
           .multipliedBy(10_000_000_000);
 
-      return '0x' + weibars.toString(16);
+      return EthImpl.prepend0x(weibars.toString(16));
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
       if (e?.status?._code === Status.InvalidAccountId._code) {
@@ -298,7 +298,7 @@ export class EthImpl implements Eth {
           .setContractId(ContractId.fromEvmAddress(0, 0, address))
           .execute(this.clientMain));
 
-      return '0x' + Buffer.from(bytecode).toString('hex');
+      return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       // handle INVALID_CONTRACT_ID
       if (e?.status?._code === Status.InvalidContractId._code) {
@@ -369,7 +369,7 @@ export class EthImpl implements Eth {
       if (record.ethereumHash == null) {
         throw new Error("The ethereumHash can never be null for an ethereum transaction, and yet it was!!");
       }
-      const txHash = '0x' + Buffer.from(record.ethereumHash).toString('hex');
+      const txHash = EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
 
       // If the transaction succeeded, create a new block for the transaction.
       const mostRecentBlock = await this.mirrorNode.getMostRecentBlock();
@@ -431,7 +431,7 @@ export class EthImpl implements Eth {
           .execute(this.clientMain);
 
       // FIXME Is this right? Maybe so?
-      return '0x' + Buffer.from(contractCallResponse.asBytes()).toString('hex');
+      return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
     } catch (e) {
       this.logger.error(e, 'Failed to handle call cleanly for transaction %s', call);
       throw e;
@@ -477,6 +477,17 @@ export class EthImpl implements Eth {
     return input.startsWith('0x')
         ? input.substring(2)
         : input;
+  }
+
+  /**
+   * Internal helper method that prepends a leading 0x if there isn't one.
+   * @param input
+   * @private
+   */
+  private static prepend0x(input:string):string {
+    return input.startsWith('0x')
+        ? input
+        : '0x' + input;
   }
 
   /**
