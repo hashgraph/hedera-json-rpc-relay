@@ -191,6 +191,11 @@ describe('Eth', async function () {
     expect(result).to.eq(false);
   });
 
+  it('should execute "eth_blockNumber"', async function () {
+    const blockNumber = await Relay.eth().blockNumber();
+    expect(blockNumber).to.be.greaterThanOrEqual(0);
+  });
+
   describe('eth_getTransactionReceipt', async function () {
     it('returns `null` for non-cached hash', async function () {
       const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
