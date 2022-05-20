@@ -22,6 +22,20 @@ import Axios, { AxiosInstance } from 'axios';
 import { predefined as errors } from '../errors';
 import { Logger } from "pino";
 
+export interface IGetListsParams {
+    limit?: number;
+    order?: string;
+}
+
+export interface IContractResultsParams {
+    blockHash?: string;
+    blockNumber?: number;
+    from?: string;
+    internal?: boolean;
+    timestamp?: string | string[];
+    transactionIndex?: number;
+}
+
 export class MirrorNodeClient {
     private static GET_ACCOUNTS_ENDPOINT = 'accounts/';
     private static GET_BLOCK_ENDPOINT = 'blocks/';
@@ -134,23 +148,23 @@ export class MirrorNodeClient {
     }
 
     public async getContractResults(
-        blockHash?: string,
-        blockNumber?: number,
-        from?: string,
-        internal?: boolean,
-        limit?: number,
-        order?: string,
-        timestamp?: string | [string],
-        transactionIndex?: number) {
+        contractResultsParams?: IContractResultsParams,
+        limitOrderParams?: IGetListsParams) {
         const queryParamObject = {};
-        this.setQueryParam(queryParamObject, 'block.hash', blockHash);
-        this.setQueryParam(queryParamObject, 'block.number', blockNumber);
-        this.setQueryParam(queryParamObject, 'from', from);
-        this.setQueryParam(queryParamObject, 'internal', internal);
-        this.setQueryParam(queryParamObject, 'limit', limit);
-        this.setQueryParam(queryParamObject, 'order', order);
-        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-        this.setQueryParam(queryParamObject, 'transaction.index', transactionIndex);
+        if (contractResultsParams) {
+            this.setQueryParam(queryParamObject, 'block.hash', contractResultsParams.blockHash);
+            this.setQueryParam(queryParamObject, 'block.number', contractResultsParams.blockNumber);
+            this.setQueryParam(queryParamObject, 'from', contractResultsParams.from);
+            this.setQueryParam(queryParamObject, 'internal', contractResultsParams.internal);
+            this.setQueryParam(queryParamObject, 'timestamp', contractResultsParams.timestamp);
+            this.setQueryParam(queryParamObject, 'transaction.index', contractResultsParams.transactionIndex);
+        }
+
+        if (limitOrderParams) {
+            this.setQueryParam(queryParamObject, 'limit', limitOrderParams.limit);
+            this.setQueryParam(queryParamObject, 'order', limitOrderParams.order);
+        }
+
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`, [400]);
     }

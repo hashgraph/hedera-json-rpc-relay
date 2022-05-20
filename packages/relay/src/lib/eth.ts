@@ -36,7 +36,7 @@ import {
 import { Logger } from 'pino';
 import { Block, Receipt, Transaction } from './model';
 import { MirrorNode } from './mirrorNode';
-import { MirrorNodeClient } from './clients';
+import { NodeClient, MirrorNodeClient } from './clients';
 
 const cache = require('js-cache');
 
@@ -50,13 +50,18 @@ const cache = require('js-cache');
  * of fake stuff in this class for now for the purpose of demos and POC.
  */
 export class EthImpl implements Eth {
+  private static emptyHex = '0x';
+  private static zeroHex = '0x0';
+  private static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
+  private static defaultGas = 0x10000;
+  
   /**
    * The client to use for connecting to the main consensus network. The account
    * associated with this client will pay for all operations on the main network.
    *
    * @private
    */
-  private readonly clientMain: Client;
+  private readonly nodeClient: NodeClient;
 
   /**
    * The mirror node mock
@@ -84,18 +89,12 @@ export class EthImpl implements Eth {
 
   /**
    * Create a new Eth implementation.
-   * @param clientMain
+   * @param nodeClient
    * @param mirrorNode
    * @param logger
    */
-  constructor(
-    clientMain: Client,
-    mirrorNode: MirrorNode,
-    mirrorNodeClient: MirrorNodeClient,
-    logger: Logger,
-    chain: string
-  ) {
-    this.clientMain = clientMain;
+  constructor(nodeClient: NodeClient, mirrorNode: MirrorNode, mirrorNodeClient: MirrorNodeClient, logger: Logger, chain: string) {
+    this.nodeClient = nodeClient;
     this.mirrorNode = mirrorNode;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
@@ -135,11 +134,7 @@ export class EthImpl implements Eth {
   }
 
   private async getFeeWeibars() {
-    const exchangeFileBytes = await new FileContentsQuery()
-      .setFileId('0.0.112')
-      .execute(this.clientMain);
-
-    const exchangeRates = ExchangeRates.fromBytes(exchangeFileBytes);
+    const exchangeRates = await this.nodeClient.getExchangeRate();
 
     //FIXME retrieve fee from fee API when released
     const contractTransactionGas = 853454;
@@ -193,7 +188,7 @@ export class EthImpl implements Eth {
   async estimateGas() {
     // FIXME: For now, we are going to have a rough estimate but in the future we can do something more sophisticated.
     this.logger.trace('estimateGas()');
-    return 0x10000;
+    return EthImpl.defaultGas;
   }
 
   /**
@@ -258,7 +253,7 @@ export class EthImpl implements Eth {
    */
   async getUncleCountByBlockHash() {
     this.logger.trace('getUncleCountByBlockHash()');
-    return '0x0';
+    return EthImpl.zeroHex;
   }
 
   /**
@@ -266,7 +261,7 @@ export class EthImpl implements Eth {
    */
   async getUncleCountByBlockNumber() {
     this.logger.trace('getUncleCountByBlockNumber()');
-    return '0x0';
+    return EthImpl.zeroHex;
   }
 
   /**
@@ -274,7 +269,7 @@ export class EthImpl implements Eth {
    */
   async hashrate() {
     this.logger.trace('hashrate()');
-    return '0x0';
+    return EthImpl.zeroHex;
   }
 
   /**
@@ -294,32 +289,17 @@ export class EthImpl implements Eth {
       blockNumber
     );
     try {
-      const balance = await new AccountBalanceQuery()
-        .setAccountId(EthImpl.toAccountId(account))
-        .execute(this.clientMain);
-
-      const weibars = balance.hbars
-        .to(HbarUnit.Tinybar)
-        .multipliedBy(10_000_000_000);
-
+      const weibars = await this.nodeClient.getAccountBalanceInWeiBar(account);
       return EthImpl.prepend0x(weibars.toString(16));
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
       if (e?.status?._code === Status.InvalidAccountId._code) {
-        this.logger.debug(
-          'Unable to find account %s in block "%s", returning 0x0 balance',
-          account,
-          blockNumber
-        );
-        return '0x0';
+        this.logger.debug('Unable to find account %s in block "%s", returning 0x0 balance', account, blockNumber);
+        return EthImpl.zeroHex;
       }
 
-      this.logger.error(
-        e,
-        'Error raised during getBalance for account %s',
-        account
-      );
-      throw e;
+      this.logger.error(e, 'Error raised during getBalance for account %s', account);
+      throw (e);
     }
   }
 
@@ -337,10 +317,7 @@ export class EthImpl implements Eth {
       blockNumber
     );
     try {
-      const bytecode = await new ContractByteCodeQuery()
-        .setContractId(ContractId.fromEvmAddress(0, 0, address))
-        .execute(this.clientMain);
-
+      const bytecode = await this.nodeClient.getContractByteCode(0, 0, address);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       // handle INVALID_CONTRACT_ID
@@ -353,12 +330,8 @@ export class EthImpl implements Eth {
         return '0x0';
       }
 
-      this.logger.error(
-        e,
-        'Error raised during getCode for address %s',
-        address
-      );
-      throw e;
+      this.logger.error(e, 'Error raised during getCode for address %s', address);
+      throw (e);
     }
   }
 
@@ -370,21 +343,27 @@ export class EthImpl implements Eth {
    * @param showDetails
    */
   async getBlockByHash(hash: string, showDetails: boolean) {
-    this.logger.trace(
-      'getBlockByHash(hash=%s, showDetails=%o)',
-      hash,
-      showDetails
-    );
-    return await this.mirrorNode.getBlockByHash(hash, showDetails);
+    this.logger.trace('getBlockByHash(hash=%s, showDetails=%o)', hash, showDetails);
+    try {
+      return this.getBlock(hash, showDetails);
+    } catch (e) {
+      this.logger.error(e, 'Failed to retrieve block for hash %s', hash);
+      return this.mirrorNode.getBlockByHash(hash, showDetails);
+    }
   }
 
   /**
    * Gets the block by its block number.
    * @param blockNum
    */
-  async getBlockByNumber(blockNum: number) {
-    this.logger.trace('getBlockByNumber(blockNum=%d)', blockNum);
-    return await this.mirrorNode.getBlockByNumber(blockNum);
+  async getBlockByNumber(blockNum: number, showDetails: boolean) {
+    this.logger.trace('getBlockByNumber(blockNum=%d, showDetails=%o)', blockNum);
+    try {
+      return this.getBlock(blockNum, showDetails);
+    } catch (e) {
+      this.logger.error(e, 'Failed to retrieve block for blockNum %s', blockNum);
+      return this.mirrorNode.getBlockByNumber(blockNum);
+    }
   }
 
   /**
@@ -396,18 +375,9 @@ export class EthImpl implements Eth {
    * @param address
    * @param blockNum
    */
-  async getTransactionCount(
-    address: string,
-    blockNum: string
-  ): Promise<number> {
-    this.logger.trace(
-      'getTransactionCount(address=%s, blockNum=%s)',
-      address,
-      blockNum
-    );
-    const accountInfo = await new AccountInfoQuery()
-      .setAccountId(EthImpl.toAccountId(address))
-      .execute(this.clientMain);
+  async getTransactionCount(address: string, blockNum: string): Promise<number> {
+    this.logger.trace('getTransactionCount(address=%s, blockNum=%s)', address, blockNum);
+    const accountInfo = await this.nodeClient.getAccountInfo(address);
 
     return Number(accountInfo.ethereumNonce);
   }
@@ -421,16 +391,11 @@ export class EthImpl implements Eth {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
     try {
       // Convert from 0xabc format into a raw Uint8Array of bytes and execute the transaction
-      const transactionBuffer = Buffer.from(
-        EthImpl.prune0x(transaction),
-        'hex'
-      );
-      const contractExecuteResponse = await new EthereumTransaction()
-        .setEthereumData(transactionBuffer)
-        .execute(this.clientMain);
+      const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
+      const contractExecuteResponse = await this.nodeClient.submitEthereumTransaction(transactionBuffer);
 
       // Wait for the record from the execution.
-      const record = await contractExecuteResponse.getRecord(this.clientMain);
+      const record = await this.nodeClient.getRecord(contractExecuteResponse);
       if (record.ethereumHash == null) {
         throw new Error(
           'The ethereumHash can never be null for an ethereum transaction, and yet it was!!'
@@ -503,22 +468,8 @@ export class EthImpl implements Eth {
       }
 
       // Execute the call and get the response
-      const contract = EthImpl.prune0x(call.to);
-      const callData = EthImpl.prune0x(call.data);
-      this.logger.debug(
-        'Making eth_call on contract %o with gas %d and call data "%s"',
-        contract,
-        gas,
-        callData
-      );
-      const contractId = contract.startsWith('00000000000')
-        ? ContractId.fromSolidityAddress(contract)
-        : ContractId.fromEvmAddress(0, 0, contract);
-      const contractCallResponse = await new ContractCallQuery()
-        .setContractId(contractId)
-        .setFunctionParameters(Buffer.from(callData, 'hex'))
-        .setGas(gas)
-        .execute(this.clientMain);
+      this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s"', call.to, gas, call.data);
+      const contractCallResponse = await this.nodeClient.submitContractCallQuery(call.to, call.data, gas);
 
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(
@@ -612,7 +563,9 @@ export class EthImpl implements Eth {
    * @private
    */
   private static prune0x(input: string): string {
-    return input.startsWith('0x') ? input.substring(2) : input;
+    return input.startsWith(EthImpl.emptyHex)
+      ? input.substring(2)
+      : input;
   }
 
   /**
@@ -620,17 +573,90 @@ export class EthImpl implements Eth {
    * @param input
    * @private
    */
-  public static prepend0x(input: string): string {
-    return input.startsWith('0x') ? input : '0x' + input;
+  private static prepend0x(input: string): string {
+    return input.startsWith(EthImpl.emptyHex)
+      ? input
+      : EthImpl.emptyHex + input;
   }
 
   /**
-   * Internal helper method that converts an ethAddress (with, or without a leading 0x)
-   * into an alias friendly AccountId.
-   * @param ethAddress
-   * @private
+   * Gets the block with the given hash.
+   * Given an ethereum transaction hash, call the mirror node to get the block info.
+   * Then using the block timerange get all contract results to get transaction details.
+   * If showDetails is set to true subsequently call mirror node for addtional transaction details
+   *
+   * TODO What do we return if we cannot find the block with that hash?
+   * @param hash
+   * @param showDetails
    */
-  private static toAccountId(ethAddress: string) {
-    return AccountId.fromEvmAddress(0, 0, EthImpl.prune0x(ethAddress));
+  private async getBlock(hash: number | string, showDetails: boolean): Promise<Block> {
+
+    const blockResponse = await this.mirrorNodeClient.getBlock(hash);
+    const timestampRange = blockResponse.timestamp;
+    const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
+    const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams });
+
+    // loop over contract function results to calculated aggregated datapoints
+    let gasUsed = 0;
+    let maxGasLimit = 0;
+    let timestamp = 0;
+    const transactions = [];
+    contractResults.results.forEach((result) => {
+      maxGasLimit = result.gas_limit > maxGasLimit ? result.gas_limit : maxGasLimit;
+      gasUsed += result.gas_used;
+      if (timestamp === 0) {
+        // The consensus timestamp of the first transaction in the block, with the nanoseconds part omitted.
+        timestamp = result.timestamp.substring(0, result.timestamp.indexOf('.')); // mirrorNode response assures format of ssssssssss.nnnnnnnnn
+      }
+
+      // transactions.push(this.getTransaction(result.ethereum_hash, showDetails));
+    });
+
+    return new Block(null, null, {
+      baseFeePerGas: 0,
+      difficulty: EthImpl.zeroHex,
+      extraData: EthImpl.emptyHex,
+      gasLimit: maxGasLimit,
+      gasUsed: gasUsed,
+      hash: blockResponse.hash,
+      logsBloom: blockResponse.logsBloom,
+      miner: EthImpl.emptyHex,
+      mixHash: EthImpl.emptyHex,
+      nonce: EthImpl.emptyHex,
+      number: blockResponse.number,
+      parentHash: blockResponse.previous_hash,
+      receiptsRoot: EthImpl.emptyHex,
+      timestamp: timestamp,
+      sha3Uncles: EthImpl.emptyArrayHex,
+      size: blockResponse.size,
+      stateRoot: EthImpl.emptyHex,
+      totalDifficulty: EthImpl.zeroHex,
+      transactions: transactions,
+      transactionsRoot: blockResponse.hash,
+      uncles: [],
+    });
+  }
+
+  private getTransaction(hash: string, showDetails: boolean) {
+    // blockHash: DATA, 32 Bytes - hash of the block where this transaction was in. null when its pending.
+    // blockNumber: QUANTITY - block number where this transaction was in. null when its pending.
+    // from: DATA, 20 Bytes - address of the sender.
+    // gas: QUANTITY - gas provided by the sender.
+    // gasPrice: QUANTITY - gas price provided by the sender in Wei.
+    // hash: DATA, 32 Bytes - hash of the transaction.
+    // input: DATA - the data send along with the transaction.
+    // nonce: QUANTITY - the number of transactions made by the sender prior to this one.
+    // to: DATA, 20 Bytes - address of the receiver. null when its a contract creation transaction.
+    // transactionIndex: QUANTITY - integer of the transactions index position in the block. null when its pending.
+    // value: QUANTITY - value transferred in Wei.
+    // v: QUANTITY - ECDSA recovery id
+    // r: DATA, 32 Bytes - ECDSA signature r
+    // s: DATA, 32 Bytes - ECDSA signature s
+    if (showDetails) {
+      // build and return transaction object
+      // hopefully we don't have to call mirroNode api/v1/contracts/results/{transactionHash} for every single item
+    } else {
+      return hash;
+    }
   }
 }

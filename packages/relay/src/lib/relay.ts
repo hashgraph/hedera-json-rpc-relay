@@ -27,7 +27,7 @@ import { EthImpl } from './eth';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNode } from './mirrorNode';
-import { MirrorNodeClient } from './clients';
+import { MirrorNodeClient, NodeClient } from './clients';
 
 export class RelayImpl implements Relay {
   private static chainIds = {
@@ -47,13 +47,13 @@ export class RelayImpl implements Relay {
 
     const configuredChainId =
       process.env.CHAIN_ID || RelayImpl.chainIds[hederaNetwork] || '298';
-    const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
+    const chainId = this.prepend0x(Number(configuredChainId).toString(16));
     logger.info('Running with chainId=%s', chainId);
 
     this.clientMain = this.initClient(hederaNetwork);
 
     this.web3Impl = new Web3Impl(this.clientMain);
-    this.netImpl = new NetImpl(this.clientMain, chainId);
+    this.netImpl = new NetImpl(this.clientMain);
 
     const mirrorNode = new MirrorNode(logger.child({ name: `mirror-node` }));
 
@@ -62,13 +62,14 @@ export class RelayImpl implements Relay {
       logger.child({ name: `mirror-node` })
     );
 
+    const nodeClient = new NodeClient(this.clientMain);
+
     this.ethImpl = new EthImpl(
-      this.clientMain,
+      nodeClient,
       mirrorNode,
       mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
-      chainId
-    );
+      chainId);
   }
 
   web3(): Web3 {
@@ -118,5 +119,16 @@ export class RelayImpl implements Relay {
         return client;
       }
     }
+  }
+
+  /**
+     * Internal helper method that prepends a leading 0x if there isn't one.
+     * @param input
+     * @private
+     */
+  private prepend0x(input: string): string {
+    return input.startsWith('0x')
+      ? input
+      : '0x' + input;
   }
 }

@@ -18,5 +18,5 @@
  *
  */
 
-export * from './consensusNodeClient';
+export * from './nodeClient';
 export * from './mirrorNodeClient';
