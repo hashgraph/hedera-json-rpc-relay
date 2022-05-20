@@ -33,7 +33,7 @@ import {
   Status
 } from '@hashgraph/sdk';
 import {Logger} from "pino";
-import {Block, Receipt} from './model';
+import {Block, Receipt, Transaction} from './model';
 import {MirrorNode} from "./mirrorNode";
 import {MirrorNodeClient} from "./clients";
 
@@ -445,6 +445,38 @@ export class EthImpl implements Eth {
       this.logger.error(e, 'Failed to handle call cleanly for transaction %s', call);
       throw e;
     }
+  }
+
+  /**
+   * Gets a transaction by the provided hash
+   *
+   * @param hash
+   */
+  async getTransactionByHash(hash: string) {
+    this.logger.trace('getTransactionByHash(hash=%s)', hash);
+    // const contractResult = await this.mirrorNodeClient.getContractResult(hash);
+    const contractResult = await this.mirrorNode.getContractResult(hash);
+    return new Transaction({
+      accessList: contractResult.access_list,
+      blockHash: contractResult.block_hash,
+      blockNumber: contractResult.block_number,
+      chainId: contractResult.chain_id,
+      from: contractResult.from,
+      gas: contractResult.gas_used,
+      gasPrice: contractResult.gas_price,
+      hash: contractResult.hash,
+      input: contractResult.function_parameters,
+      maxPriorityFeePerGas: contractResult.max_priority_fee_per_gas,
+      maxFeePerGas: contractResult.max_fee_per_gas,
+      nonce: contractResult.nonce,
+      r: contractResult.r,
+      s: contractResult.s,
+      to: contractResult.to,
+      transactionIndex: contractResult.transaction_index,
+      type: contractResult.type,
+      v: contractResult.v,
+      value: contractResult.amount,
+    });
   }
 
   /**

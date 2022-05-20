@@ -134,4 +134,62 @@ export class MirrorNode {
     const block = this.store.get(hash);
     return block === undefined ? null : block;
   }
+
+  public async getContractResult(hash: string): Promise<any> {
+    return {
+      'access_list': '0x',
+      'amount': 2000000000,
+      'block_gas_used': 50000000,
+      'block_hash': '0x6ceecd8bb224da491',
+      'block_number': 17,
+      'bloom': '0x0505',
+      'call_result': '0x0606',
+      'chain_id': '0x',
+      'contract_id': '0.0.5001',
+      'created_contract_ids': ['0.0.7001'],
+      'error_message': null,
+      'from': '0x0000000000000000000000000000000000001f41',
+      'function_parameters': '0x0707',
+      'gas_limit': 1000000,
+      'gas_price': '0x4a817c80',
+      'gas_used': 123,
+      'hash': '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
+      'logs': [
+        {
+          'address': '0x0000000000000000000000000000000000001389',
+          'bloom': '0x0123',
+          'contract_id': '0.0.5001',
+          'data': '0x0123',
+          'index': 0,
+          'topics': [
+            '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+            '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+            '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+            '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67'
+          ]
+        }
+      ],
+      'max_fee_per_gas': '0x',
+      'max_priority_fee_per_gas': '0x',
+      'nonce': 1,
+      'r': '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+      'result': 'SUCCESS',
+      's': '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+      'state_changes': [
+        {
+          'address': '0x0000000000000000000000000000000000001389',
+          'contract_id': '0.0.5001',
+          'slot': '0x0000000000000000000000000000000000000000000000000000000000000101',
+          'value_read': '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+          'value_written': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+        }
+      ],
+      'status': '0x1',
+      'timestamp': '167654.000123456',
+      'to': '0x0000000000000000000000000000000000001389',
+      'transaction_index': 1,
+      'type': 2,
+      'v': 1
+    };
+  }
 }

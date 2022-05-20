@@ -123,3 +123,47 @@ export class Receipt {
         this.status = record.receipt.status == Status.Success ? "0x1" : "0x0";
     }
 }
+
+export class Transaction {
+    public readonly accessList:string = '0x';
+    public readonly blockHash:string = '0x0000000000000000000000000000000000000000000000000000000000000000';
+    public readonly blockNumber:string = '0x0';
+    public readonly chainId:string = '0x';
+    public readonly from:string = '0x0000000000000000000000000000000000000000000000000000000000000000';
+    public readonly gas:string = '0x0';
+    public readonly gasPrice:string = '0x0';
+    public readonly hash:string = '0x0000000000000000000000000000000000000000000000000000000000000000';
+    public readonly input:string = '0x';
+    public readonly maxPriorityFeePerGas:string = '0x0';
+    public readonly maxFeePerGas:string = '0x0';
+    public readonly nonce:string = '';
+    public readonly r:string = '0x';
+    public readonly s:string = '0x';
+    public readonly to:string = '0x';
+    public readonly transactionIndex:string = '0x';
+    public readonly type:string = '0x';
+    public readonly v:string = '0x';
+    public readonly value:string = '0x';
+
+    constructor(args: any) {
+        this.accessList = args.accessList;
+        this.blockHash = args.blockHash;
+        this.blockNumber = args.blockNumber;
+        this.chainId = args.chainId;
+        this.from = args.from;
+        this.gas = args.gas;
+        this.gasPrice = args.gasPrice;
+        this.hash = args.hash;
+        this.input = args.input;
+        this.maxPriorityFeePerGas = args.maxPriorityFeePerGas;
+        this.maxFeePerGas = args.maxFeePerGas;
+        this.nonce = args.nonce;
+        this.r = args.r;
+        this.s = args.s;
+        this.to = args.to;
+        this.transactionIndex = args.transactionIndex;
+        this.type = args.type;
+        this.v = args.v;
+        this.value = args.value;
+    }
+}

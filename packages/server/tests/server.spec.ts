@@ -74,6 +74,40 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('relay/' + process.env.npm_package_version);
   });
 
+  it('should execute "eth_getTransactionByHash"', async function() {
+    const res = await this.testClient.post('/', {
+      'id': '2',
+      'jsonrpc': '2.0',
+      'method': 'eth_getTransactionByHash',
+      'params': ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392']
+    });
+
+    BaseTest.defaultResponseChecks(res);
+
+    expect(res.data.result).to.deep.equal({
+      "accessList": "0x",
+      "blockHash": "0x6ceecd8bb224da491",
+      "blockNumber": 17,
+      "chainId": "0x",
+      "from": "0x0000000000000000000000000000000000001f41",
+      "gas": 123,
+      "gasPrice": "0x4a817c80",
+      "hash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+      "input": "0x0707",
+      "maxFeePerGas": "0x",
+      "maxPriorityFeePerGas": "0x",
+      "nonce": 1,
+      "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
+      "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
+      "to": "0x0000000000000000000000000000000000001389",
+      "transactionIndex": 1,
+      "type": 2,
+      "v": 1,
+      "value": 2000000000
+    });
+  });
+
+
   it('should execute "eth_getUncleByBlockHashAndIndex"', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
