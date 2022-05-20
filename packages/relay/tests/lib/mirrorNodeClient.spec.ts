@@ -1,0 +1,467 @@
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+import path from 'path';
+import dotenv from 'dotenv';
+import { expect } from 'chai';
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+
+import pino from 'pino';
+const logger = pino();
+
+describe('MirrorNodeClient', async function () {
+  this.timeout(10000);
+
+  // mock axios
+  const instance = axios.create({
+    baseURL: 'https://localhost:5551/api/v1',
+    responseType: 'json' as const,
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    timeout: 10 * 1000
+  });;
+  const mock = new MockAdapter(instance);
+  const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
+
+  it('it should have a `request` method ', async () => {
+    expect(mirrorNodeInstance).to.exist;
+    expect(mirrorNodeInstance.request).to.exist;
+  });
+
+  it('`baseUrl` is exposed and correct', async () => {
+    const prodMirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }));
+    expect(prodMirrorNodeInstance.baseUrl).to.eq(`https://${process.env.MIRROR_NODE_URL}/api/v1/`);
+  });
+
+  it('`getQueryParams` general', async () => {
+    // this.setQueryParam(queryParamObject, 'block.number', blockNumber);
+    // this.setQueryParam(queryParamObject, 'timestamp', timestamp);
+    // this.setQueryParam(queryParamObject, 'limit', limit);
+    // this.setQueryParam(queryParamObject, 'order', order);
+    const queryParams = {
+      'limit': 5,
+      'order': 'desc',
+      'timestamp': '1586567700.453054000'
+    };
+
+    const queryParamsString = mirrorNodeInstance.getQueryParams(queryParams);
+    expect(queryParamsString).equal('?limit=5&order=desc&timestamp=1586567700.453054000');
+  });
+
+  it('`getQueryParams` contract result related', async () => {
+    const queryParams = {
+      'block.hash': '0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61',
+      'block.number': 5,
+      'from': '0x0000000000000000000000000000000000000065',
+      'internal': 'true',
+      'transaction.index': '1586567700.453054000'
+    };
+
+    const queryParamsString = mirrorNodeInstance.getQueryParams(queryParams);
+    expect(queryParamsString).equal('?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61' +
+      '&block.number=5&from=0x0000000000000000000000000000000000000065&internal=true&transaction.index=1586567700.453054000');
+  });
+
+  it('`getQueryParams` logs related', async () => {
+    const queryParams = {
+      'topic0': ['0x0a','0x0b'],
+      'topic1': '0x0c',
+      'topic2': ['0x0d','0x0e'],
+      'topic3': '0x0f',
+    };
+
+    const queryParamsString = mirrorNodeInstance.getQueryParams(queryParams);
+    expect(queryParamsString).equal('?topic0=0x0a&topic0=0x0b&topic1=0x0c&topic2=0x0d&topic2=0x0e&topic3=0x0f');
+  });
+
+  it('`request` works', async () => {
+    mock.onGet('accounts').reply(200, {
+      'accounts': [
+        {
+          'account': '0.0.1',
+          'balance': {
+            'balance': '536516344215',
+            'timestamp': '1652985000.085209000'
+          },
+          'timestamp': '1652985000.085209000'
+        },
+        {
+          'account': '0.0.2',
+          'balance': {
+            'balance': '4045894480417537000',
+            'timestamp': '1652985000.085209000'
+          },
+          'timestamp': '1652985000.085209000'
+        }
+      ],
+      'links': {
+        'next': '/api/v1/accounts?limit=1&account.id=gt:0.0.1'
+      }
+    });
+
+    // const customMirrorNodeInstance = new MirrorNodeClient('', logger.child({ name: `mirror-node`}), instance);
+    const result = await mirrorNodeInstance.request('accounts');
+    expect(result).to.exist;
+    expect(result.links).to.exist;
+    expect(result.links.next).to.exist;
+    expect(result.accounts).to.exist;
+    expect(result.accounts.length).to.gt(0);
+    result.accounts.forEach((acc: any) => {
+      expect(acc.account).to.exist;
+      expect(acc.balance).to.exist;
+      expect(acc.balance.balance).to.exist;
+      expect(acc.balance.timestamp).to.exist;
+    });
+  });
+
+  it('call to non-existing REST route returns INTERNAL_ERROR', async () => {
+    try {
+      expect(await mirrorNodeInstance.request('non-existing-route')).to.throw();
+    } catch (err: any) {
+      expect(err.code).to.eq(-32603);
+      expect(err.name).to.eq('Internal error');
+      expect(err.message).to.eq('Unknown error invoking RPC');
+    }
+  });
+
+  // move following methods to eth.spec.ts once it starts using mirrorNodeClient
+  it('`getAccountLatestTransactionByAddress` works', async () => {
+    const alias = 'HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA';
+    mock.onGet(`accounts/${alias}?order=desc&limit=1`).reply(200, {
+      'transactions': [
+        {
+          'nonce': 3,
+        }
+      ],
+      'links': {
+        'next': null
+      }
+    });
+
+    const result = await mirrorNodeInstance.getAccountLatestTransactionByAddress(alias);
+    expect(result).to.exist;
+    expect(result.links).to.exist;
+    expect(result.links.next).to.equal(null);
+    expect(result.transactions.length).to.gt(0);
+    expect(result.transactions[0].nonce).to.equal(3);
+  });
+
+  it('`getBlock by hash` works', async () => {
+    const hash = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b';
+    mock.onGet(`blocks/${hash}`).reply(200, {
+      'count': 3,
+      'hapi_version': '0.27.0',
+      'hash': '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b',
+      'name': '2022-05-03T06_46_26.060890949Z.rcd',
+      'number': 77,
+      'previous_hash': '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b',
+      'size': null,
+      'timestamp': {
+        'from': '1651560386.060890949',
+        'to': '1651560389.060890949'
+      }
+    });
+
+    const result = await mirrorNodeInstance.getBlock(hash);
+    expect(result).to.exist;
+    expect(result.count).equal(3);
+    expect(result.number).equal(77);
+  });
+
+  it('`getBlock by number` works', async () => {
+    const number = 3;
+    mock.onGet(`blocks/${number}`).reply(200, {
+      'count': 3,
+      'hapi_version': '0.27.0',
+      'hash': '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b',
+      'name': '2022-05-03T06_46_26.060890949Z.rcd',
+      'number': 77,
+      'previous_hash': '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b',
+      'size': null,
+      'timestamp': {
+        'from': '1651560386.060890949',
+        'to': '1651560389.060890949'
+      }
+    });
+
+    const result = await mirrorNodeInstance.getBlock(number);
+    expect(result).to.exist;
+    expect(result.count).equal(3);
+    expect(result.number).equal(77);
+  });
+
+  const block = {
+    'count': 3,
+    'hapi_version': '0.27.0',
+    'hash': '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b',
+    'name': '2022-05-03T06_46_26.060890949Z.rcd',
+    'number': 77,
+    'previous_hash': '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b',
+    'size': null,
+    'timestamp': {
+      'from': '1651560386.060890949',
+      'to': '1651560389.060890949'
+    }
+  };
+  it('`getBlocks` by number', async () => {
+    const number = 3;
+    mock.onGet(`blocks?block.number=${number}`).reply(200, {blocks: [block], links: {next: null}});
+
+    const result = await mirrorNodeInstance.getBlocks(number);
+    expect(result).to.exist;
+    expect(result.links).to.exist;
+    expect(result.links.next).to.equal(null);
+    expect(result.blocks.length).to.gt(0);
+    const firstBlock = result.blocks[0];
+    expect(firstBlock.count).equal(block.count);
+    expect(firstBlock.number).equal(block.number);
+  });
+
+  it('`getBlocks` by timestamp', async () => {
+    const timestamp = '1651560786.960890949';
+    mock.onGet(`blocks?timestamp=${timestamp}`).reply(200, {blocks: [block], links: {next: null}});
+
+    const result = await mirrorNodeInstance.getBlocks(undefined, timestamp);
+    expect(result).to.exist;
+    expect(result.links).to.exist;
+    expect(result.links.next).to.equal(null);
+    expect(result.blocks.length).to.gt(0);
+    const firstBlock = result.blocks[0];
+    expect(firstBlock.count).equal(block.count);
+    expect(firstBlock.number).equal(block.number);
+  });
+
+  it('`getContract`', async () => {
+    const evmAddress = '0000000000000000000000000000000000001f41';
+    mock.onGet(`contracts/${evmAddress}`).reply(200, {
+      'contract_id': '0.0.2000',
+      'evm_address': '0000000000000000000000000000000000001f41',
+      'file_id': '0.0.1000',
+      'obtainer_id': '0.0.3000',
+      'timestamp': {
+        'from': '1651560386.060890949',
+        'to': null
+      }
+    });
+
+    const result = await mirrorNodeInstance.getContract(evmAddress);
+    expect(result).to.exist;
+    expect(result.contract_id).equal('0.0.2000');
+  });
+
+  const detailedContractResult = {
+    'access_list': '0x',
+    'amount': 2000000000,
+    'block_gas_used': 50000000,
+    'block_hash': '0x6ceecd8bb224da491',
+    'block_number': 17,
+    'bloom': '0x0505',
+    'call_result': '0x0606',
+    'chain_id': '0x',
+    'contract_id': '0.0.5001',
+    'created_contract_ids': ['0.0.7001'],
+    'error_message': null,
+    'from': '0x0000000000000000000000000000000000001f41',
+    'function_parameters': '0x0707',
+    'gas_limit': 1000000,
+    'gas_price': '0x4a817c80',
+    'gas_used': 123,
+    'hash': '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
+    'logs': [
+      {
+        'address': '0x0000000000000000000000000000000000001389',
+        'bloom': '0x0123',
+        'contract_id': '0.0.5001',
+        'data': '0x0123',
+        'index': 0,
+        'topics': [
+          '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+          '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+          '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67'
+        ]
+      }
+    ],
+    'max_fee_per_gas': '0x',
+    'max_priority_fee_per_gas': '0x',
+    'nonce': 1,
+    'r': '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+    'result': 'SUCCESS',
+    's': '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+    'state_changes': [
+      {
+        'address': '0x0000000000000000000000000000000000001389',
+        'contract_id': '0.0.5001',
+        'slot': '0x0000000000000000000000000000000000000000000000000000000000000101',
+        'value_read': '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+        'value_written': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+      }
+    ],
+    'status': '0x1',
+    'timestamp': '167654.000123456',
+    'to': '0x0000000000000000000000000000000000001389',
+    'transaction_index': 1,
+    'type': 2,
+    'v': 1
+  };
+  it('`getContractResults` by transactionId', async () => {
+    const transactionId = '0.0.10-167654-000123456';
+    mock.onGet(`contracts/results/${transactionId}`).reply(200, detailedContractResult);
+
+    const result = await mirrorNodeInstance.getContractResult(transactionId);
+    expect(result).to.exist;
+    expect(result.contract_id).equal(detailedContractResult.contract_id);
+    expect(result.to).equal(detailedContractResult.to);
+    expect(result.v).equal(detailedContractResult.v);
+  });
+
+  it('`getContractResults` by hash', async () => {
+    const hash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+    mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
+
+    const result = await mirrorNodeInstance.getContractResult(hash);
+    expect(result).to.exist;
+    expect(result.contract_id).equal(detailedContractResult.contract_id);
+    expect(result.to).equal(detailedContractResult.to);
+    expect(result.v).equal(detailedContractResult.v);
+  });
+
+  it('`getContractResults` detailed', async () => {
+    mock.onGet(`contracts/results`).reply(200, { results: [detailedContractResult], links: { next: null } });
+
+    const result = await mirrorNodeInstance.getContractResults();
+    expect(result).to.exist;
+    expect(result.links).to.exist;
+    expect(result.links.next).to.equal(null);
+    expect(result.results.length).to.gt(0);
+    const firstResult = result.results[0];
+    expect(firstResult.contract_id).equal(detailedContractResult.contract_id);
+    expect(firstResult.to).equal(detailedContractResult.to);
+    expect(firstResult.v).equal(detailedContractResult.v);
+  });
+
+  const contractResult = {
+    'amount': 30,
+    'bloom': '0x0505',
+    'call_result': '0x0606',
+    'contract_id': '0.0.5001',
+    'created_contract_ids': ['0.0.7001'],
+    'error_message': null,
+    'from': '0x0000000000000000000000000000000000001f41',
+    'function_parameters': '0x0707',
+    'gas_limit': 9223372036854775807,
+    'gas_used': 9223372036854775806,
+    'timestamp': '987654.000123456',
+    'to': '0x0000000000000000000000000000000000001389'
+  };
+  it('`getContractResults` by id', async () => {
+    const contractId = '0.0.5001';
+    mock.onGet(`contracts/${contractId}/results`).reply(200, { results: [contractResult], links: { next: null } });
+
+    const result = await mirrorNodeInstance.getContractResultsByAddress(contractId);
+    expect(result).to.exist;
+    expect(result.links).to.exist;
+    expect(result.links.next).to.equal(null);
+    expect(result.results.length).to.gt(0);
+    const firstResult = result.results[0];
+    expect(firstResult.contract_id).equal(detailedContractResult.contract_id);
+    expect(firstResult.function_parameters).equal(contractResult.function_parameters);
+    expect(firstResult.to).equal(contractResult.to);
+  });
+
+  it('`getContractResults` by address', async () => {
+    const address = '0x0000000000000000000000000000000000001f41';
+    mock.onGet(`contracts/${address}/results`).reply(200, { results: [contractResult], links: { next: null } });
+
+    const result = await mirrorNodeInstance.getContractResultsByAddress(address);
+    expect(result).to.exist;
+    expect(result.links).to.exist;
+    expect(result.links.next).to.equal(null);
+    expect(result.results.length).to.gt(0);
+    const firstResult = result.results[0];
+    expect(firstResult.contract_id).equal(detailedContractResult.contract_id);
+    expect(firstResult.function_parameters).equal(contractResult.function_parameters);
+    expect(firstResult.to).equal(contractResult.to);
+  });
+
+  it('`getContractResultsLogs` ', async () => {
+    const log = {
+      'address': '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+      'bloom': '0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398',
+      'contract_id': '0.1.2',
+      'data': '0x00000000000000000000000000000000000000000000000000000000000000fa',
+      'index': 0,
+      'topics': [
+        '0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300'
+      ],
+      'root_contract_id': '0.1.2',
+      'timestamp': '1586567700.453054000'
+    };
+    mock.onGet(`contracts/results/logs`).reply(200, { logs: [log] });
+
+    const result = await mirrorNodeInstance.getContractResultsLogs();
+    expect(result).to.exist;
+    expect(result.logs.length).to.gt(0);
+    const firstResult = result.logs[0];
+    expect(firstResult.address).equal(log.address);
+    expect(firstResult.contract_id).equal(log.contract_id);
+    expect(firstResult.index).equal(log.index);
+  });
+
+  it('`getBlocks` by number', async () => {
+    mock.onGet(`blocks?limit=1&order=desc`).reply(200, block);
+
+    const result = await mirrorNodeInstance.getLatestBlock();
+    expect(result).to.exist;
+    expect(result.count).equal(block.count);
+    expect(result.number).equal(block.number);
+  });
+
+  it('`getNetworkExchangeRate`', async () => {
+    const exchangerate = {
+      'current_rate': {
+        'cent_equivalent': 596987,
+        'expiration_time': 1649689200,
+        'hbar_equivalent': 30000
+      },
+      'next_rate': {
+        'cent_equivalent': 596987,
+        'expiration_time': 1649689200,
+        'hbar_equivalent': 30000
+      },
+      'timestamp': '1586567700.453054000'
+    };
+
+    mock.onGet(`network/exchangerate`).reply(200, exchangerate);
+
+    const result = await mirrorNodeInstance.getNetworkExchangeRate();
+    expect(result).to.exist;
+    expect(result.current_rate).to.exist;
+    expect(result.next_rate).to.exist;
+    expect(result).to.exist;
+    expect(result.current_rate.cent_equivalent).equal(exchangerate.current_rate.cent_equivalent);
+    expect(result.next_rate.hbar_equivalent).equal(exchangerate.next_rate.hbar_equivalent);
+    expect(result.timestamp).equal(exchangerate.timestamp);
+  });
+});

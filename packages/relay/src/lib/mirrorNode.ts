@@ -18,8 +18,6 @@
  *
  */
 
-import Axios, { AxiosInstance } from 'axios';
-import { predefined as errors } from './errors';
 import { Logger } from "pino";
 // Used for temporary purposes to store block info. As the mirror node supports the APIs, we will remove this.
 import { Block } from './model';
@@ -43,36 +41,7 @@ export class MirrorNode {
    */
   private readonly logger: Logger;
 
-  private readonly client: AxiosInstance;
-
-  public readonly baseUrl: string;
-
-  protected createAxiosClient(
-    baseUrl: string
-  ): AxiosInstance {
-    return Axios.create({
-      baseURL: baseUrl,
-      responseType: 'json' as const,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      timeout: 10 * 1000
-    });
-  }
-
-  constructor(baseUrl: string, logger: Logger) {
-    if (!baseUrl.match(/^https?:\/\//)) {
-      baseUrl = `https://${baseUrl}`;
-    }
-
-    if (!baseUrl.match(/\/$/)) {
-      baseUrl = `${baseUrl}/`;
-    }
-
-    baseUrl = `${baseUrl}api/v1/`;
-
-    this.baseUrl = baseUrl;
-    this.client = this.createAxiosClient(baseUrl);
+  constructor(logger: Logger) {
     this.logger = logger;
 
     // FIXME: Create an empty genesis block (which has no transactions!)
@@ -84,28 +53,6 @@ export class MirrorNode {
       const genesisBlock = new Block(null, null);
       this.storeBlock(genesisBlock);
     }
-  }
-
-  async request(path: string, allowedErrorStatuses?: [number]): Promise<any> {
-    try {
-      const response = await this.client.get(path);
-      return response.data;
-    } catch (error) {
-      this.handleError(error, allowedErrorStatuses);
-    }
-    return null;
-  }
-
-  handleError(error: any, allowedErrorStatuses?: [number]) {
-    if (allowedErrorStatuses && allowedErrorStatuses.length) {
-      if (error.response && allowedErrorStatuses.indexOf(error.response.status) === -1) {
-        throw error;
-      }
-
-      return null;
-    }
-
-    throw errors['INTERNAL_ERROR'];
   }
 
   public async getFeeHistory(fee : number) {
@@ -133,10 +80,6 @@ export class MirrorNode {
       oldestBlock: mostRecentBlocks[0].number
     };
   }
-
-  // public async getTransactionById(txId: string): Promise<any> {
-  //   return this.request(`contracts/results/${txId}`, [404]);
-  // }
 
   // FIXME this is for demo/temp purposes, remove it when the mirror node has real blocks
   //       that they get from the main net nodes
