@@ -35,6 +35,7 @@ import {
 import {Logger} from "pino";
 import {Block, Receipt} from './model';
 import {MirrorNode} from "./mirrorNode";
+import {MirrorNodeClient} from "./clients";
 
 const cache = require('js-cache');
 
@@ -58,10 +59,17 @@ export class EthImpl implements Eth {
   private readonly clientMain: Client;
 
   /**
-   * The interface through which we interact with the mirror node
+   * The mirror node mock
    * @private
    */
   private readonly mirrorNode: MirrorNode;
+
+    /**
+   * The interface through which we interact with the mirror node
+   * @private
+   */
+     private readonly mirrorNodeClient: MirrorNodeClient;
+
 
   /**
    * The logger used for logging all output from this class.
@@ -81,9 +89,10 @@ export class EthImpl implements Eth {
    * @param mirrorNode
    * @param logger
    */
-  constructor(clientMain:Client, mirrorNode:MirrorNode, logger:Logger) {
+  constructor(clientMain:Client, mirrorNode:MirrorNode, mirrorNodeClient:MirrorNodeClient, logger:Logger) {
     this.clientMain = clientMain;
     this.mirrorNode = mirrorNode;
+    this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
 
     // Compute the chainId
