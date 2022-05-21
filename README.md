@@ -39,6 +39,7 @@ run configuration. You should be able to just run that configuration, and it sho
 ## Deployment
 
 The Relay supports Docker image building and Docker Compose container management using the provided [Dockerfile](Dockerfile) and [docker-compose](docker-compose.yml) files.
+> **_NOTE:_** docker compose is for development purposes only.
 
 ### Image Build (optional)
 A new docker image may be created from a local copy of the repo.
