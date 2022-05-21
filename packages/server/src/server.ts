@@ -239,7 +239,7 @@ rpc.use('eth_getTransactionByHash', async (params: any) => {
  */
 rpc.use('eth_feeHistory', async (params: any) => {
   logger.debug("eth_feeHistory");
-  return relay.eth().feeHistory();
+  return relay.eth().feeHistory(params?.[0], params?.[1], params?.[2]);
 });
 
 

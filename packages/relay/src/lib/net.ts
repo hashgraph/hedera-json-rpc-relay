@@ -23,9 +23,11 @@ import { Client } from '@hashgraph/sdk';
 
 export class NetImpl implements Net {
   private client: Client;
+  private readonly chainId: string;
 
-  constructor(client: Client) {
+  constructor(client: Client, chainId: string) {
     this.client = client;
+    this.chainId = chainId;
   }
 
   /**
@@ -47,6 +49,6 @@ export class NetImpl implements Net {
    * TODO Support some config when launching the server for this. dotenv support?
    */
   version(): string {
-    return '0x12a';
+    return this.chainId;
   }
 }
