@@ -19,24 +19,11 @@
  */
 
 import { Eth } from '../index';
-import {
-  AccountBalanceQuery,
-  AccountId,
-  AccountInfoQuery,
-  Client,
-  ContractByteCodeQuery,
-  ContractCallQuery,
-  ContractId,
-  EthereumTransaction,
-  ExchangeRates,
-  FileContentsQuery,
-  HbarUnit,
-  Status,
-} from '@hashgraph/sdk';
+import { Status } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Block, Receipt, Transaction } from './model';
 import { MirrorNode } from './mirrorNode';
-import { NodeClient, MirrorNodeClient } from './clients';
+import { MirrorNodeClient, NodeClient } from './clients';
 
 const cache = require('js-cache');
 
@@ -338,18 +325,15 @@ export class EthImpl implements Eth {
   /**
    * Gets the block with the given hash.
    *
-   * TODO What do we return if we cannot find the block with that hash?
    * @param hash
    * @param showDetails
    */
   async getBlockByHash(hash: string, showDetails: boolean) {
     this.logger.trace('getBlockByHash(hash=%s, showDetails=%o)', hash, showDetails);
-    try {
-      return this.getBlock(hash, showDetails);
-    } catch (e) {
+    return this.getBlock(hash, showDetails).catch((e: any) => {
       this.logger.error(e, 'Failed to retrieve block for hash %s', hash);
       return this.mirrorNode.getBlockByHash(hash, showDetails);
-    }
+    });
   }
 
   /**
@@ -358,12 +342,10 @@ export class EthImpl implements Eth {
    */
   async getBlockByNumber(blockNum: number, showDetails: boolean) {
     this.logger.trace('getBlockByNumber(blockNum=%d, showDetails=%o)', blockNum);
-    try {
-      return this.getBlock(blockNum, showDetails);
-    } catch (e) {
+    return this.getBlock(blockNum, showDetails).catch((e: any) => {
       this.logger.error(e, 'Failed to retrieve block for blockNum %s', blockNum);
       return this.mirrorNode.getBlockByNumber(blockNum);
-    }
+    });
   }
 
   /**
@@ -589,9 +571,14 @@ export class EthImpl implements Eth {
    * @param hash
    * @param showDetails
    */
-  private async getBlock(hash: number | string, showDetails: boolean): Promise<Block> {
+  private async getBlock(hash: number | string, showDetails: boolean): Promise<Block | null> {
 
     const blockResponse = await this.mirrorNodeClient.getBlock(hash);
+    if (blockResponse.hash === undefined) {
+      // block not found
+      return null;
+    }
+
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
     const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams });
@@ -608,8 +595,6 @@ export class EthImpl implements Eth {
         // The consensus timestamp of the first transaction in the block, with the nanoseconds part omitted.
         timestamp = result.timestamp.substring(0, result.timestamp.indexOf('.')); // mirrorNode response assures format of ssssssssss.nnnnnnnnn
       }
-
-      // transactions.push(this.getTransaction(result.ethereum_hash, showDetails));
     });
 
     return new Block(null, null, {
