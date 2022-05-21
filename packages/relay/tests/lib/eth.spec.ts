@@ -46,7 +46,9 @@ const validateHash = (hash: string, len?: number) => {
   return !!hash.match(regex);
 };
 
-describe("Eth calls using mocked MirrorNode", async () => {
+describe('Eth calls using MirrorNode', async function () {
+  this.timeout(10000);
+
   // mock axios
   const instance = axios.create({
     baseURL: 'https://localhost:5551/api/v1',
@@ -56,9 +58,10 @@ describe("Eth calls using mocked MirrorNode", async () => {
     },
     timeout: 10 * 1000
   });
-  const mock = new MockAdapter(instance);
+
+  const mock = new MockAdapter(instance, { onNoMatch: "throwException" });
   const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
-  const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger);
+  const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger, '0x12a');
 
   const blockHash = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b';
   const blockNumber = 3;
@@ -99,6 +102,103 @@ describe("Eth calls using mocked MirrorNode", async () => {
     } catch (error) {
       expect(error.message).to.equal('Error encountered retrieving latest block');
     }
+  });
+
+  const defaultContractResults = {
+    "results": [
+      {
+        "amount": 1,
+        "bloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "call_result": "0x6080604052600436106100385760003560e01c80632b6adf431461003c5780633d99e80d1461010f5780634bfdab701461015257610038565b5b5b005b61010d600480360360408110156100535760006000fd5b81019080803563ffffffff169060200190929190803590602001906401000000008111156100815760006000fd5b8201836020820111156100945760006000fd5b803590602001918460018302840111640100000000831117156100b75760006000fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f8201169050808301925050505050505090909192909091929050505061018a565b005b34801561011c5760006000fd5b50610150600480360360208110156101345760006000fd5b81019080803563ffffffff169060200190929190505050610292565b005b34801561015f5760006000fd5b506101686102b7565b604051808263ffffffff1663ffffffff16815260200191505060405180910390f35b60008263ffffffff166effffffffffffffffffffffffffffff1690508073ffffffffffffffffffffffffffffffffffffffff166108fc60019081150290604051600060405180830381858888f193505050501580156101ee573d600060003e3d6000fd5b507f930f628a0950173c55b8f7d31636aa82e481f09d70191adc38b8c8cd186a0ad7826040518080602001828103825283818151815260200191508051906020019080838360005b838110156102525780820151818401525b602081019050610236565b50505050905090810190601f16801561027f5780820380516001836020036101000a031916815260200191505b509250505060405180910390a1505b5050565b80600060006101000a81548163ffffffff021916908363ffffffff1602179055505b50565b6000600060009054906101000a900463ffffffff1690506102d3565b9056fea265627a7a723158201b51cf608b8b7e2c5d36bd8733f2213b669e5d1cfa53b67f52a7e878d1d7bb0164736f6c634300050b0032",
+        "contract_id": "0.0.1375",
+        "created_contract_ids": ["0.0.1375"],
+        "error_message": null,
+        "from": "0x0000000000000000000000000000000000000557",
+        "function_parameters": "0x",
+        "gas_limit": 250000,
+        "gas_used": 200000,
+        "timestamp": "1653077547.983983199",
+        "to": "0x000000000000000000000000000000000000055f"
+      },
+      {
+        "amount": 0,
+        "bloom": "0x00000000000000000000000000000000000000000000000000000000000000040000000000000000000001000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000",
+        "call_result": "0x",
+        "contract_id": "0.0.1374",
+        "created_contract_ids": [],
+        "error_message": null,
+        "from": "0x0000000000000000000000000000000000000557",
+        "function_parameters": "0x2b6adf430000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000084865792c204d6121000000000000000000000000000000000000000000000000",
+        "gas_limit": 100000,
+        "gas_used": 80000,
+        "timestamp": "1653077542.701408897",
+        "to": "0x000000000000000000000000000000000000055e"
+      }
+    ],
+    "links": {
+      "next": "/api/v1/contracts/results?limit=2&timestamp=lt:1653077542.701408897"
+    }
+  };
+  const results = defaultContractResults.results;
+  const totalGasUsed = results[0].gas_used + results[1].gas_used;
+
+  this.afterEach(() => {
+    mock.resetHandlers();
+  });
+
+  it('eth_getBlockByNumber with match', async function () {
+    // mirror node request mocks
+    mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
+    const result = await ethImpl.getBlockByNumber(blockNumber, false);
+    expect(result).to.exist;
+    expect(result.hash).equal(blockHash);
+    expect(result.number).equal(blockNumber.toString());
+    expect(result.gasUsed).equal(totalGasUsed);
+  });
+
+  it('eth_getBlockByNumber with no match', async function () {
+    mock.onGet(`blocks/${blockNumber}`).reply(200, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'No such block exists'
+          }
+        ]
+      }
+    });
+
+    const result = await ethImpl.getBlockByNumber(blockNumber, false);
+    expect(result).to.equal(null);
+  });
+
+  it('eth_getBlockByHash with match', async function () {
+    // mirror node request mocks
+    mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
+    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
+
+    const result = await ethImpl.getBlockByHash(blockHash, false);
+    expect(result).to.exist;
+    expect(result.extraData).equal('0x');
+    expect(result.hash).equal(blockHash);
+    expect(result.number).equal(blockNumber.toString());
+    expect(result.gasUsed).equal(totalGasUsed);
+  });
+
+  it('eth_getBlockByHash with no match', async function () {
+    // mirror node request mocks
+    mock.onGet(`blocks/${blockHash}`).reply(200, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'No such block exists'
+          }
+        ]
+      }
+    });
+
+    const result = await ethImpl.getBlockByHash(blockHash, false);
+    expect(result).to.equal(null);
   });
 });
 
@@ -142,50 +242,50 @@ describe('Eth', async function () {
   };
 
   const defaultDetailedContractResultByHash = {
-    "amount":2000000000,
-    "bloom":"0x0505",
-    "call_result":"0x0606",
-    "contract_id":"0.0.5001",
-    "created_contract_ids":["0.0.7001"],
-    "error_message":null,
-    "from":"0x0000000000000000000000000000000000001f41",
-    "function_parameters":"0x0707",
-    "gas_limit":1000000,
-    "gas_used":123,
-    "timestamp":"167654.000123456",
-    "to":"0x0000000000000000000000000000000000001389",
-    "block_hash":"0x6ceecd8bb224da491",
-    "block_number":17,
+    "amount": 2000000000,
+    "bloom": "0x0505",
+    "call_result": "0x0606",
+    "contract_id": "0.0.5001",
+    "created_contract_ids": ["0.0.7001"],
+    "error_message": null,
+    "from": "0x0000000000000000000000000000000000001f41",
+    "function_parameters": "0x0707",
+    "gas_limit": 1000000,
+    "gas_used": 123,
+    "timestamp": "167654.000123456",
+    "to": "0x0000000000000000000000000000000000001389",
+    "block_hash": "0x6ceecd8bb224da491",
+    "block_number": 17,
     "logs": [{
-        "address":"0x0000000000000000000000000000000000001389",
-        "bloom":"0x0123",
-        "contract_id":"0.0.5001",
-        "data":"0x0123",
-        "index":0,
-        "topics":["0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750"]
+      "address": "0x0000000000000000000000000000000000001389",
+      "bloom": "0x0123",
+      "contract_id": "0.0.5001",
+      "data": "0x0123",
+      "index": 0,
+      "topics": ["0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750"]
     }],
-      "result":"SUCCESS",
-      "transaction_index":1,
-      "hash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
-      "state_changes":[{
-        "address":"0x0000000000000000000000000000000000001389",
-        "contract_id":"0.0.5001",
-        "slot":"0x0000000000000000000000000000000000000000000000000000000000000101",
-        "value_read":"0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
-        "value_written":"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
-      }],
-      "status":"0x1",
-      "access_list":"0x",
-      "block_gas_used":50000000,
-      "chain_id":"0x",
-      "gas_price":"0x4a817c80",
-      "max_fee_per_gas":"0x",
-      "max_priority_fee_per_gas":"0x",
-      "r":"0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
-      "s":"0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
-      "type":2,
-      "v":1,
-      "nonce":1
+    "result": "SUCCESS",
+    "transaction_index": 1,
+    "hash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+    "state_changes": [{
+      "address": "0x0000000000000000000000000000000000001389",
+      "contract_id": "0.0.5001",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000101",
+      "value_read": "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+      "value_written": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+    }],
+    "status": "0x1",
+    "access_list": "0x",
+    "block_gas_used": 50000000,
+    "chain_id": "0x",
+    "gas_price": "0x4a817c80",
+    "max_fee_per_gas": "0x",
+    "max_priority_fee_per_gas": "0x",
+    "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
+    "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
+    "type": 2,
+    "v": 1,
+    "nonce": 1
   };
 
   this.afterEach(() => {

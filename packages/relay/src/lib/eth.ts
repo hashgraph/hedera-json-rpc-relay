@@ -78,6 +78,7 @@ export class EthImpl implements Eth {
    * Create a new Eth implementation.
    * @param nodeClient
    * @param mirrorNode
+   * @param mirrorNodeClient
    * @param logger
    */
   constructor(nodeClient: NodeClient, mirrorNode: MirrorNode, mirrorNodeClient: MirrorNodeClient, logger: Logger, chain: string) {
@@ -568,12 +569,11 @@ export class EthImpl implements Eth {
    * If showDetails is set to true subsequently call mirror node for addtional transaction details
    *
    * TODO What do we return if we cannot find the block with that hash?
-   * @param hash
+   * @param blockHashOrNumber
    * @param showDetails
    */
-  private async getBlock(hash: number | string, showDetails: boolean): Promise<Block | null> {
-
-    const blockResponse = await this.mirrorNodeClient.getBlock(hash);
+  private async getBlock(blockHashOrNumber: number | string, showDetails: boolean): Promise<Block | null> {
+    const blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
     if (blockResponse.hash === undefined) {
       // block not found
       return null;

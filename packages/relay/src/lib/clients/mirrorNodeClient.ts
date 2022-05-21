@@ -36,6 +36,16 @@ export interface IContractResultsParams {
     transactionIndex?: number;
 }
 
+export interface IContractLogsResultsParams {
+    index?: number,
+    order?: string,
+    timestamp?: string | string[],
+    topic0?: string | string[],
+    topic1?: string | string[],
+    topic2?: string | string[],
+    topic3?: string | string[]
+}
+
 export class MirrorNodeClient {
     private static GET_ACCOUNTS_ENDPOINT = 'accounts/';
     private static GET_BLOCK_ENDPOINT = 'blocks/';
@@ -140,16 +150,14 @@ export class MirrorNodeClient {
     }
 
     public async getContract(contractIdOrAddress: string) {
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`, [400]);
+        return this.request(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`, [400, 404]);
     }
 
     public async getContractResult(transactionIdOrHash: string) {
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`, [400]);
+        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`, [400, 404]);
     }
 
-    public async getContractResults(
-        contractResultsParams?: IContractResultsParams,
-        limitOrderParams?: IGetListsParams) {
+    public async getContractResults(contractResultsParams?: IContractResultsParams, limitOrderParams?: IGetListsParams) {
         const queryParamObject = {};
         if (contractResultsParams) {
             this.setQueryParam(queryParamObject, 'block.hash', contractResultsParams.blockHash);
@@ -171,45 +179,43 @@ export class MirrorNodeClient {
 
     public async getContractResultsByAddress(
         contractIdOrAddress: string, 
-        blockHash?: string,
-        blockNumber?: number,
-        from?: string,
-        internal?: boolean,
-        limit?: number,
-        order?: string,
-        timestamp?: string | [string],
-        transactionIndex?: number) {
+        contractResultsParams?: IContractResultsParams,
+        limitOrderParams?: IGetListsParams) {
         const queryParamObject = {};
-        this.setQueryParam(queryParamObject, 'block.hash', blockHash);
-        this.setQueryParam(queryParamObject, 'block.number', blockNumber);
-        this.setQueryParam(queryParamObject, 'from', from);
-        this.setQueryParam(queryParamObject, 'internal', internal);
-        this.setQueryParam(queryParamObject, 'limit', limit);
-        this.setQueryParam(queryParamObject, 'order', order);
-        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-        this.setQueryParam(queryParamObject, 'transaction.index', transactionIndex);
+        if (contractResultsParams) {
+            this.setQueryParam(queryParamObject, 'block.hash', contractResultsParams.blockHash);
+            this.setQueryParam(queryParamObject, 'block.number', contractResultsParams.blockNumber);
+            this.setQueryParam(queryParamObject, 'from', contractResultsParams.from);
+            this.setQueryParam(queryParamObject, 'internal', contractResultsParams.internal);
+            this.setQueryParam(queryParamObject, 'timestamp', contractResultsParams.timestamp);
+            this.setQueryParam(queryParamObject, 'transaction.index', contractResultsParams.transactionIndex);
+        }
+
+        if (limitOrderParams) {
+            this.setQueryParam(queryParamObject, 'limit', limitOrderParams.limit);
+            this.setQueryParam(queryParamObject, 'order', limitOrderParams.order);
+        }
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${this.getContractResultsByAddressPath(contractIdOrAddress)}${queryParams}`, [400]);
     }
 
     public async getContractResultsLogs(
-        index?: number,
-        limit?: number,
-        order?: string,
-        timestamp?: string | [string],
-        topic0?: string | [string],
-        topic1?: string | [string],
-        topic2?: string | [string],
-        topic3?: string | [string]) {
+        contractLogsResultsParams?: IContractLogsResultsParams,
+        limitOrderParams?: IGetListsParams) {
         const queryParamObject = {};
-        this.setQueryParam(queryParamObject, 'index', index);
-        this.setQueryParam(queryParamObject, 'limit', limit);
-        this.setQueryParam(queryParamObject, 'order', order);
-        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-        this.setQueryParam(queryParamObject, 'topic0', topic0);
-        this.setQueryParam(queryParamObject, 'topic1', topic1);
-        this.setQueryParam(queryParamObject, 'topic2', topic2);
-        this.setQueryParam(queryParamObject, 'topic3', topic3);
+        if (contractLogsResultsParams) {
+            this.setQueryParam(queryParamObject, 'index', contractLogsResultsParams.index);
+            this.setQueryParam(queryParamObject, 'timestamp', contractLogsResultsParams.timestamp);
+            this.setQueryParam(queryParamObject, 'topic0', contractLogsResultsParams.topic0);
+            this.setQueryParam(queryParamObject, 'topic1', contractLogsResultsParams.topic1);
+            this.setQueryParam(queryParamObject, 'topic2', contractLogsResultsParams.topic2);
+            this.setQueryParam(queryParamObject, 'topic3', contractLogsResultsParams.topic3);
+        }
+
+        if (limitOrderParams) {
+            this.setQueryParam(queryParamObject, 'limit', limitOrderParams.limit);
+            this.setQueryParam(queryParamObject, 'order', limitOrderParams.order);
+        }
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`, [400]);
     }
@@ -222,7 +228,7 @@ export class MirrorNodeClient {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`, [400]);
+        return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`, [400, 404, 500]);
     }
 
     getContractResultsByAddressPath(address: string) {
