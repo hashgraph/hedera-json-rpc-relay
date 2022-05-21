@@ -30,14 +30,29 @@ import {MirrorNode} from "./mirrorNode";
 import {MirrorNodeClient, NodeClient} from './clients';
 
 export class RelayImpl implements Relay {
-  private readonly clientMain:Client = this.initClient();
+  private static chainIds = {
+    mainnet: 0x127,
+    testnet: 0x128,
+    previewnet: 0x129,
+  };
+
+
+  private readonly clientMain:Client;
   private readonly web3Impl:Web3;
   private readonly netImpl:Net;
   private readonly ethImpl:Eth;
 
   constructor(logger:Logger) {
+    dotenv.config({ path: findConfig('.env') || '' });
+    const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
+    const configuredChainId =
+        process.env.CHAIN_ID || RelayImpl.chainIds[hederaNetwork] || '298';
+    const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
+    
+    this.clientMain = this.initClient(hederaNetwork);
+
     this.web3Impl = new Web3Impl(this.clientMain);
-    this.netImpl = new NetImpl(this.clientMain);
+    this.netImpl = new NetImpl(this.clientMain, chainId);
 
     const mirrorNode = new MirrorNode(logger.child({ name: `mirror-node`}));
 
@@ -51,7 +66,9 @@ export class RelayImpl implements Relay {
         nodeClient,
         mirrorNode,
         mirrorNodeClient,
-        logger.child({ name: 'relay-eth' }));
+      logger.child({ name: 'relay-eth' }),
+      chainId
+    );
   }
 
 
@@ -67,11 +84,9 @@ export class RelayImpl implements Relay {
     return this.ethImpl;
   }
 
-  initClient(type: string | null = null): Client {
-    dotenv.config({ path: findConfig('.env') || '' });
-    const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
+  initClient(hederaNetwork: string, type: string | null = null): Client {
     let client: Client;
-    if (hederaNetwork in ['mainnet', 'testnet', 'previewnet']) {
+    if (hederaNetwork in RelayImpl.chainIds) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));

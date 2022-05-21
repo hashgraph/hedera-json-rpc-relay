@@ -56,6 +56,7 @@ export class MirrorNodeClient {
     private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
     private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
     private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
+    private static GET_RECEIPTS_ENDPOINT = 'contracts/results/';
     private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
 
     private static ORDER = {
@@ -149,6 +150,10 @@ export class MirrorNodeClient {
         this.setQueryParam(queryParamObject, 'order', order);
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`, [400, 404]);
+    }
+
+    public async getTransactionReceipt(hash: string) {
+        return this.request(`${MirrorNodeClient.GET_RECEIPTS_ENDPOINT}${hash}?nonce=0`, [400, 404]);
     }
 
     public async getContract(contractIdOrAddress: string) {

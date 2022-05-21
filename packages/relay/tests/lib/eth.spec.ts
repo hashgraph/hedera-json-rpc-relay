@@ -60,7 +60,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   const mock = new MockAdapter(instance, { onNoMatch: "throwException" });
   const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
-  const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger);
+  const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger, '0x12a');
 
   const blockHash = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b';
   const blockNumber = 3;

@@ -86,7 +86,7 @@ export interface Eth {
   getUncleCountByBlockNumber(): Promise<string>;
 
   // getWork();
-  feeHistory(): Promise<any>;
+  feeHistory(blockCount: string, newestBlock: string, rewardPercentiles: Array<number>|null): Promise<any>;
 
   hashrate(): Promise<string>;
 
