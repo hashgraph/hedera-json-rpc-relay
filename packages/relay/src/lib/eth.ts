@@ -18,7 +18,7 @@
  *
  */
 
-import { Eth } from '../index';
+import {Eth} from '../index';
 import {
   AccountBalanceQuery,
   AccountId,
@@ -26,17 +26,17 @@ import {
   Client,
   ContractByteCodeQuery,
   ContractCallQuery,
+  ContractId,
   EthereumTransaction,
   ExchangeRates,
   FileContentsQuery,
-  ContractId,
   HbarUnit,
   Status,
 } from '@hashgraph/sdk';
-import { Logger } from 'pino';
-import { Block, Receipt } from './model';
-import { MirrorNode } from './mirrorNode';
-import { MirrorNodeClient } from './clients';
+import {Logger} from 'pino';
+import {Block, Receipt} from './model';
+import {MirrorNode} from './mirrorNode';
+import {MirrorNodeClient} from './clients';
 
 const cache = require('js-cache');
 
@@ -151,12 +151,11 @@ export class EthImpl implements Eth {
 
     //contractTransactionGas is in tinycents * 1000, so the final multiplier is truncated by 3 zeroes for
     // the conversion to weibars
-    const weibars = Math.ceil(
-      (contractTransactionGas / exchangeRates.currentRate.cents) *
+    return Math.ceil(
+        (contractTransactionGas / exchangeRates.currentRate.cents) *
         exchangeRates.currentRate.hbars *
         10_000_000
     );
-    return weibars;
   }
 
   /**
@@ -490,12 +489,16 @@ export class EthImpl implements Eth {
 
     try {
       // Get a reasonable value for "gas" if it is not specified.
-      const gas: number =
-        call.gas == null
-          ? 400_000
-          : typeof call.gas === 'string'
-          ? Number(call.gas)
-          : call.gas;
+      let gas: number;
+      if (typeof call.gas === 'string') {
+        gas = Number(call.gas);
+      } else {
+        if (call.gas == null) {
+          gas = 400_000;
+        } else {
+          gas = call.gas;
+        }
+      }
 
       // Execute the call and get the response
       const contract = EthImpl.prune0x(call.to);

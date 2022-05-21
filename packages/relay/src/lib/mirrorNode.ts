@@ -55,7 +55,7 @@ export class MirrorNode {
     }
   }
 
-  public async getFeeHistory(fee : number, blockCount: string, newestBlock: string, rewardPercentiles: Array<number>|null) {
+  public async getFeeHistory(fee : number, _blockCount: string, _newestBlock: string, rewardPercentiles: Array<number>|null) {
     // FIXME: This is a fake implementation. It works for now, but should
     //        actually delegate to the mirror node.
     this.logger.trace('getFeeHistory()');
