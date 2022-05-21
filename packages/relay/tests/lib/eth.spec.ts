@@ -23,6 +23,10 @@ import dotenv from 'dotenv';
 import { expect } from 'chai';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
+import { EthImpl } from '../../src/lib/eth';
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 const cache = require('js-cache');
 
@@ -42,6 +46,135 @@ const validateHash = (hash: string, len?: number) => {
   return !!hash.match(regex);
 };
 
+describe('Eth calls using MirrorNode', async function () {
+  this.timeout(10000);
+  
+  const instance = axios.create({
+    baseURL: 'https://localhost:5551/api/v1',
+    responseType: 'json' as const,
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    timeout: 10 * 1000
+  });
+
+  const mock = new MockAdapter(instance, { onNoMatch: "throwException" });
+  const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
+  const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger);
+
+  const blockHash = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b';
+  const blockNumber = 3;
+  const defaultBlock = {
+    'count': 3,
+    'hapi_version': '0.27.0',
+    'hash': `${blockHash}`,
+    'name': '2022-05-03T06_46_26.060890949Z.rcd',
+    'number': `${blockNumber}`,
+    'previous_hash': '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b',
+    'size': null,
+    'timestamp': {
+      'from': '1651560386.060890949',
+      'to': '1651560389.060890949'
+    }
+  };
+
+  const defaultContractResults = {
+    "results": [
+      {
+        "amount": 1,
+        "bloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "call_result": "0x6080604052600436106100385760003560e01c80632b6adf431461003c5780633d99e80d1461010f5780634bfdab701461015257610038565b5b5b005b61010d600480360360408110156100535760006000fd5b81019080803563ffffffff169060200190929190803590602001906401000000008111156100815760006000fd5b8201836020820111156100945760006000fd5b803590602001918460018302840111640100000000831117156100b75760006000fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f8201169050808301925050505050505090909192909091929050505061018a565b005b34801561011c5760006000fd5b50610150600480360360208110156101345760006000fd5b81019080803563ffffffff169060200190929190505050610292565b005b34801561015f5760006000fd5b506101686102b7565b604051808263ffffffff1663ffffffff16815260200191505060405180910390f35b60008263ffffffff166effffffffffffffffffffffffffffff1690508073ffffffffffffffffffffffffffffffffffffffff166108fc60019081150290604051600060405180830381858888f193505050501580156101ee573d600060003e3d6000fd5b507f930f628a0950173c55b8f7d31636aa82e481f09d70191adc38b8c8cd186a0ad7826040518080602001828103825283818151815260200191508051906020019080838360005b838110156102525780820151818401525b602081019050610236565b50505050905090810190601f16801561027f5780820380516001836020036101000a031916815260200191505b509250505060405180910390a1505b5050565b80600060006101000a81548163ffffffff021916908363ffffffff1602179055505b50565b6000600060009054906101000a900463ffffffff1690506102d3565b9056fea265627a7a723158201b51cf608b8b7e2c5d36bd8733f2213b669e5d1cfa53b67f52a7e878d1d7bb0164736f6c634300050b0032",
+        "contract_id": "0.0.1375",
+        "created_contract_ids": ["0.0.1375"],
+        "error_message": null,
+        "from": "0x0000000000000000000000000000000000000557",
+        "function_parameters": "0x",
+        "gas_limit": 250000,
+        "gas_used": 200000,
+        "timestamp": "1653077547.983983199",
+        "to": "0x000000000000000000000000000000000000055f"
+      },
+      {
+        "amount": 0,
+        "bloom": "0x00000000000000000000000000000000000000000000000000000000000000040000000000000000000001000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000",
+        "call_result": "0x",
+        "contract_id": "0.0.1374",
+        "created_contract_ids": [],
+        "error_message": null,
+        "from": "0x0000000000000000000000000000000000000557",
+        "function_parameters": "0x2b6adf430000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000084865792c204d6121000000000000000000000000000000000000000000000000",
+        "gas_limit": 100000,
+        "gas_used": 80000,
+        "timestamp": "1653077542.701408897",
+        "to": "0x000000000000000000000000000000000000055e"
+      }
+    ],
+    "links": {
+      "next": "/api/v1/contracts/results?limit=2&timestamp=lt:1653077542.701408897"
+    }
+  };
+  const results = defaultContractResults.results;
+  const totalGasUsed = results[0].gas_used + results[1].gas_used;
+
+  this.afterEach(() => {
+    mock.resetHandlers();
+  });
+
+  it('eth_getBlockByNumber with match', async function () {
+    // mirror node request mocks
+    mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
+    const result = await ethImpl.getBlockByNumber(blockNumber, false);
+    expect(result).to.exist;
+    expect(result.hash).equal(blockHash);
+    expect(result.number).equal(blockNumber.toString());
+    expect(result.gasUsed).equal(totalGasUsed);
+  });
+
+  it('eth_getBlockByNumber with no match', async function () {
+    mock.onGet(`blocks/${blockNumber}`).reply(200, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'No such block exists'
+          }
+        ]
+      }
+    });
+
+    const result = await ethImpl.getBlockByNumber(blockNumber, false);
+    expect(result).to.equal(null);
+  });
+
+  it('eth_getBlockByHash with match', async function () {
+    // mirror node request mocks
+    mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
+    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
+
+    const result = await ethImpl.getBlockByHash(blockHash, false);
+    expect(result).to.exist;
+    expect(result.extraData).equal('0x');
+    expect(result.hash).equal(blockHash);
+    expect(result.number).equal(blockNumber.toString());
+    expect(result.gasUsed).equal(totalGasUsed);
+  });
+
+  it('eth_getBlockByHash with no match', async function () {
+    // mirror node request mocks
+    mock.onGet(`blocks/${blockHash}`).reply(200, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'No such block exists'
+          }
+        ]
+      }
+    });
+
+    const result = await ethImpl.getBlockByHash(blockHash, false);
+    expect(result).to.equal(null);
+  });
+});
 
 describe('Eth', async function () {
   it('should execute "eth_chainId"', async function () {

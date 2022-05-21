@@ -51,11 +51,10 @@ export class EthImpl implements Eth {
   private readonly mirrorNode: MirrorNode;
 
   /**
- * The interface through which we interact with the mirror node
- * @private
- */
+   * The interface through which we interact with the mirror node
+   * @private
+   */
   private readonly mirrorNodeClient: MirrorNodeClient;
-
 
   /**
    * The logger used for logging all output from this class.
@@ -73,6 +72,7 @@ export class EthImpl implements Eth {
    * Create a new Eth implementation.
    * @param nodeClient
    * @param mirrorNode
+   * @param mirrorNodeClient
    * @param logger
    */
   constructor(nodeClient: NodeClient, mirrorNode: MirrorNode, mirrorNodeClient: MirrorNodeClient, logger: Logger) {
@@ -469,12 +469,11 @@ export class EthImpl implements Eth {
    * If showDetails is set to true subsequently call mirror node for addtional transaction details
    *
    * TODO What do we return if we cannot find the block with that hash?
-   * @param hash
+   * @param blockHashOrNumber
    * @param showDetails
    */
-  private async getBlock(hash: number | string, showDetails: boolean): Promise<Block | null> {
-
-    const blockResponse = await this.mirrorNodeClient.getBlock(hash);
+  private async getBlock(blockHashOrNumber: number | string, showDetails: boolean): Promise<Block | null> {
+    const blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
     if (blockResponse.hash === undefined) {
       // block not found
       return null;
