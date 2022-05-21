@@ -329,7 +329,7 @@ export class EthImpl implements Eth {
    * @param hash
    * @param showDetails
    */
-  async getBlockByHash(hash: string, showDetails: boolean) {
+  async getBlockByHash(hash: string, showDetails: boolean): Promise<Block | null> {
     this.logger.trace('getBlockByHash(hash=%s, showDetails=%o)', hash, showDetails);
     return this.getBlock(hash, showDetails).catch((e: any) => {
       this.logger.error(e, 'Failed to retrieve block for hash %s', hash);
@@ -341,12 +341,52 @@ export class EthImpl implements Eth {
    * Gets the block by its block number.
    * @param blockNum
    */
-  async getBlockByNumber(blockNum: number, showDetails: boolean) {
+  async getBlockByNumber(blockNum: number, showDetails: boolean): Promise<Block | null> {
     this.logger.trace('getBlockByNumber(blockNum=%d, showDetails=%o)', blockNum);
     return this.getBlock(blockNum, showDetails).catch((e: any) => {
       this.logger.error(e, 'Failed to retrieve block for blockNum %s', blockNum);
       return this.mirrorNode.getBlockByNumber(blockNum);
     });
+  }
+
+  /**
+ * Gets the number of transaction in a block by its block hash.
+ *
+ * @param hash
+ * @param showDetails
+ */
+  async getBlockTransactionCountByHash(hash: string): Promise<number | null> {
+    this.logger.trace('getBlockTransactionCountByHash(hash=%s, showDetails=%o)', hash);
+    const block = await this.mirrorNodeClient.getBlock(hash).catch((e: any) => {
+      this.logger.error(e, 'Failed to retrieve block for hash %s', hash);
+      return null;
+    });
+
+    if (block.count === undefined) {
+      // block not found
+      return null;
+    }
+
+    return block.count;
+  }
+
+  /**
+   * Gets the number of transaction in a block by its block number.
+   * @param blockNum
+   */
+  async getBlockTransactionCountByNumber(blockNum: number): Promise<number | null> {
+    this.logger.trace('getBlockTransactionCountByNumber(blockNum=%d, showDetails=%o)', blockNum);
+    const block = await this.mirrorNodeClient.getBlock(blockNum).catch((e: any) => {
+      this.logger.error(e, 'Failed to retrieve block for blockNum %s', blockNum);
+      return null;
+    });
+
+    if (block.count === undefined) {
+      // block not found
+      return null;
+    }
+
+    return block.count;
   }
 
   /**

@@ -250,7 +250,7 @@ rpc.use('eth_feeHistory', async (params: any) => {
  */
 rpc.use('eth_getBlockTransactionCountByHash', async (params: any) => {
   logger.debug("eth_getBlockTransactionCountByHash");
-  //TODO
+  return relay.eth().getBlockTransactionCountByHash(params?.[0]);
 });
 
 /**
@@ -261,7 +261,7 @@ rpc.use('eth_getBlockTransactionCountByHash', async (params: any) => {
  */
 rpc.use('eth_getBlockTransactionCountByNumber', async (params: any) => {
   logger.debug("eth_getBlockTransactionCountByNumber");
-  //TODO
+  return relay.eth().getBlockTransactionCountByNumber(params?.[0]);
 });
 
 /**
