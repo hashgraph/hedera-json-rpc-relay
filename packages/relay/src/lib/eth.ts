@@ -37,10 +37,10 @@ const cache = require('js-cache');
  * of fake stuff in this class for now for the purpose of demos and POC.
  */
 export class EthImpl implements Eth {
-  private static emptyHex = '0x';
-  private static zeroHex = '0x0';
-  private static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
-  private static defaultGas = 0x10000;
+  static emptyHex = '0x';
+  static zeroHex = '0x0';
+  static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
+  static defaultGas = 0x10000;
   
   /**
    * The client to use for connecting to the main consensus network. The account

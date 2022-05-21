@@ -65,6 +65,8 @@ describe('Eth calls using MirrorNode', async function () {
 
   const blockHash = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b';
   const blockNumber = 3;
+  const maxGasLimit = 250000;
+  const firstTransactionTimestampSeconds = '1653077547';
   const defaultBlock = {
     'count': 3,
     'hapi_version': '0.27.0',
@@ -115,9 +117,9 @@ describe('Eth calls using MirrorNode', async function () {
         "error_message": null,
         "from": "0x0000000000000000000000000000000000000557",
         "function_parameters": "0x",
-        "gas_limit": 250000,
+        "gas_limit": maxGasLimit,
         "gas_used": 200000,
-        "timestamp": "1653077547.983983199",
+        "timestamp": `${firstTransactionTimestampSeconds}.983983199`,
         "to": "0x000000000000000000000000000000000000055f"
       },
       {
@@ -129,7 +131,7 @@ describe('Eth calls using MirrorNode', async function () {
         "error_message": null,
         "from": "0x0000000000000000000000000000000000000557",
         "function_parameters": "0x2b6adf430000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000084865792c204d6121000000000000000000000000000000000000000000000000",
-        "gas_limit": 100000,
+        "gas_limit": maxGasLimit - 1000,
         "gas_used": 80000,
         "timestamp": "1653077542.701408897",
         "to": "0x000000000000000000000000000000000000055e"
@@ -151,10 +153,27 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
     const result = await ethImpl.getBlockByNumber(blockNumber, false);
-    expect(result).to.exist;
+    expect(result).to.exist;    
+    
+    // verify aggregated info
     expect(result.hash).equal(blockHash);
-    expect(result.number).equal(blockNumber.toString());
     expect(result.gasUsed).equal(totalGasUsed);
+    expect(result.gasLimit).equal(maxGasLimit);
+    expect(result.number).equal(blockNumber.toString());
+    expect(result.timestamp).equal(firstTransactionTimestampSeconds);
+
+    // verify expected constants
+    expect(result.baseFeePerGas).equal(0);
+    expect(result.difficulty).equal(EthImpl.zeroHex);
+    expect(result.extraData).equal(EthImpl.emptyHex);
+    expect(result.miner).equal(EthImpl.emptyHex);
+    expect(result.mixHash).equal(EthImpl.emptyHex);
+    expect(result.nonce).equal(EthImpl.emptyHex);
+    expect(result.receiptsRoot).equal(EthImpl.emptyHex);
+    expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
+    expect(result.stateRoot).equal(EthImpl.emptyHex);
+    expect(result.totalDifficulty).equal(EthImpl.zeroHex);
+    expect(result.uncles).to.deep.equal([]);
   });
 
   it('eth_getBlockByNumber with no match', async function () {
@@ -179,10 +198,26 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByHash(blockHash, false);
     expect(result).to.exist;
-    expect(result.extraData).equal('0x');
+
+    // verify aggregated info
     expect(result.hash).equal(blockHash);
-    expect(result.number).equal(blockNumber.toString());
     expect(result.gasUsed).equal(totalGasUsed);
+    expect(result.gasLimit).equal(maxGasLimit);
+    expect(result.number).equal(blockNumber.toString());
+    expect(result.timestamp).equal(firstTransactionTimestampSeconds);
+
+    // verify expected constants
+    expect(result.baseFeePerGas).equal(0);
+    expect(result.difficulty).equal(EthImpl.zeroHex);
+    expect(result.extraData).equal(EthImpl.emptyHex);
+    expect(result.miner).equal(EthImpl.emptyHex);
+    expect(result.mixHash).equal(EthImpl.emptyHex);
+    expect(result.nonce).equal(EthImpl.emptyHex);
+    expect(result.receiptsRoot).equal(EthImpl.emptyHex);
+    expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
+    expect(result.stateRoot).equal(EthImpl.emptyHex);
+    expect(result.totalDifficulty).equal(EthImpl.zeroHex);
+    expect(result.uncles).to.deep.equal([]);
   });
 
   it('eth_getBlockByHash with no match', async function () {
