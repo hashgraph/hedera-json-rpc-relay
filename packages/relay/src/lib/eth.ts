@@ -18,12 +18,12 @@
  *
  */
 
-import { Eth } from '../index';
-import { Status } from '@hashgraph/sdk';
-import { Logger } from 'pino';
-import { Block, Receipt } from './model';
-import { MirrorNode } from './mirrorNode';
-import { MirrorNodeClient, NodeClient } from './clients';
+import {Eth} from '../index';
+import {Status} from '@hashgraph/sdk';
+import {Logger} from 'pino';
+import {Block, Receipt} from './model';
+import {MirrorNode} from './mirrorNode';
+import {MirrorNodeClient, NodeClient} from './clients';
 
 const cache = require('js-cache');
 
@@ -67,7 +67,7 @@ export class EthImpl implements Eth {
    * The ID of the chain, as a hex string, as it would be returned in a JSON-RPC call.
    * @private
    */
-  private readonly chain: string;
+  private readonly chain_id: string;
 
   /**
    * Create a new Eth implementation.
@@ -75,20 +75,21 @@ export class EthImpl implements Eth {
    * @param mirrorNode
    * @param mirrorNodeClient
    * @param logger
+   * @param chainId
    */
   constructor(
     nodeClient: NodeClient,
     mirrorNode: MirrorNode,
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
-    chain: string
+    chainId: string
   ) {
     this.nodeClient = nodeClient;
     this.mirrorNode = mirrorNode;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
-    this.chain = chain;
-    this.logger.info('Running with chainId=%s', this.chain);
+    this.chain_id = chainId;
+    this.logger.info('Running with chainId=%s', this.chain_id);
   }
 
   /**
@@ -143,12 +144,7 @@ export class EthImpl implements Eth {
    */
   async blockNumber(): Promise<number> {
     this.logger.trace('blockNumber()');
-    const blockResponse = await this.mirrorNodeClient.getBlocks(
-      undefined,
-      undefined,
-      1,
-      'desc'
-    );
+    const blockResponse = await this.mirrorNodeClient.getLatestBlock();
     const block = blockResponse.blocks[0];
     if (block === undefined || block.number === undefined) {
       this.logger.trace('blockNumber=???');
@@ -167,7 +163,7 @@ export class EthImpl implements Eth {
    */
   chainId(): string {
     this.logger.trace('chainId()');
-    return this.chain;
+    return this.chain_id;
   }
 
   /**
@@ -196,9 +192,7 @@ export class EthImpl implements Eth {
     //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
     this.logger.trace('gasPrice()');
     try {
-      const feeWeibars = await this.getFeeWeibars();
-
-      return feeWeibars;
+      return await this.getFeeWeibars();
     } catch (e) {
       this.logger.trace(e);
       throw e;
@@ -365,6 +359,7 @@ export class EthImpl implements Eth {
   /**
    * Gets the block by its block number.
    * @param blockNum
+   * @param showDetails
    */
   async getBlockByNumber(blockNum: number, showDetails: boolean) {
     this.logger.trace(
