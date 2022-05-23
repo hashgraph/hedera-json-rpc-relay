@@ -187,9 +187,7 @@ export class EthImpl implements Eth {
     //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
     this.logger.trace('gasPrice()');
     try {
-      const feeWeibars = await this.getFeeWeibars();
-
-      return feeWeibars;
+      return this.getFeeWeibars();
     } catch (e) {
       this.logger.trace(e);
       throw e;
@@ -545,7 +543,7 @@ export class EthImpl implements Eth {
     return new Transaction({
       accessList: contractResult.access_list,
       blockHash: contractResult.block_hash.substring(0, 66),
-      blockNumber: contractResult.block_number,
+      blockNumber: EthImpl.prepend0x(contractResult.block_number.toString(16)),
       chainId: contractResult.chain_id,
       from: contractResult.from.substring(0, 42),
       gas: contractResult.gas_used,
@@ -723,26 +721,27 @@ export class EthImpl implements Eth {
     // call mirror node by id and timestamp for further details
     return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp)
       .then(contractResultDetails => {
-        const transaction = new Transaction();
-        transaction.accessList = [];
-        transaction.blockHash = contractResultDetails.block_hash.substring(0, 66);
-        transaction.blockNumber = contractResultDetails.block_number.toString();
-        transaction.chainId = contractResultDetails.chain_id;
-        transaction.from = contractResultDetails.from.substring(0, 42);
-        transaction.gas = contractResultDetails.gas_used;
-        transaction.gasPrice = contractResultDetails.gas_price;
-        transaction.hash = contractResultDetails.hash.substring(0, 66);
-        transaction.input = contractResultDetails.function_parameters;
-        transaction.maxPriorityFeePerGas = contractResultDetails.max_priority_fee_per_gas;
-        transaction.maxFeePerGas = contractResultDetails.max_fee_per_gas;
-        transaction.nonce = contractResultDetails.nonce;
-        transaction.r = contractResultDetails.r.substring(0, 66);
-        transaction.s = contractResultDetails.s.substring(0, 66);
-        transaction.to = contractResultDetails.to.substring(0, 42);
-        transaction.transactionIndex = contractResultDetails.transaction_index;
-        transaction.type = contractResultDetails.type;
-        transaction.v = contractResultDetails.v;
-        transaction.value = contractResultDetails.amount;
+        const transaction = new Transaction({
+          accessList: contractResultDetails.access_list,
+          blockHash: contractResultDetails.block_hash.substring(0, 66),
+          blockNumber: EthImpl.prepend0x(contractResultDetails.block_number.toString(16)),
+          chainId: contractResultDetails.chain_id,
+          from: contractResultDetails.from.substring(0, 42),
+          gas: contractResultDetails.gas_used,
+          gasPrice: contractResultDetails.gas_price,
+          hash: contractResultDetails.hash.substring(0, 66),
+          input: contractResultDetails.function_parameters,
+          maxPriorityFeePerGas: contractResultDetails.max_priority_fee_per_gas,
+          maxFeePerGas: contractResultDetails.max_fee_per_gas,
+          nonce: contractResultDetails.nonce,
+          r: contractResultDetails.r.substring(0, 66),
+          s: contractResultDetails.s.substring(0, 66),
+          to: contractResultDetails.to.substring(0, 42),
+          transactionIndex: contractResultDetails.transaction_index,
+          type: contractResultDetails.type,
+          v: contractResultDetails.v,
+          value: contractResultDetails.amount,
+        });
         return transaction;
       })
       .catch((e: any) => {
