@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "json-rpc-relay.fullname" . }}
+  labels:
+    {{- include "json-rpc-relay.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.ports.containerPort }}
+      targetPort: {{ .Values.ports.name  }}
+      protocol: TCP
+      name: {{ .Values.ports.name  }}
+  selector:
+    app: {{ template "json-rpc-relay.name" . }}
+    {{- include "json-rpc-relay.selectorLabels" . | nindent 4 }}
