@@ -145,9 +145,16 @@ export class EthImpl implements Eth {
   /**
    * Gets the most recent block number.
    */
-  async blockNumber() {
+  async blockNumber(): Promise<number> {
     this.logger.trace('blockNumber()');
-    return await this.mirrorNode.getMostRecentBlockNumber();
+
+    const blocksResponse = await this.mirrorNodeClient.getLatestBlock();
+    const blocks = blocksResponse !== null ? blocksResponse.blocks : null;
+    if (Array.isArray(blocks) && blocks.length > 0) {
+      return blocks[0].number;
+    }
+
+    throw new Error('Error encountered retrieving latest block');
   }
 
   /**

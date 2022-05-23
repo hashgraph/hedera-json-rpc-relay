@@ -85,9 +85,8 @@ export class MirrorNodeClient {
           this.logger.info("Restarting.");
     }
 
-    async request(path: string, allowedErrorStatuses?: [number]): Promise<any> {
+    async request(path: string, allowedErrorStatuses?: number[]): Promise<any> {
         try {
-            this.logger.info(`*** requesting: ${path}`);
             const response = await this.client.get(path);
             return response.data;
         } catch (error) {
@@ -96,7 +95,7 @@ export class MirrorNodeClient {
         return null;
     }
 
-    handleError(error: any, allowedErrorStatuses?: [number]) {
+    handleError(error: any, allowedErrorStatuses?: number[]) {
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
             if (error.response && allowedErrorStatuses.indexOf(error.response.status) === -1) {
                 throw error;
@@ -123,7 +122,7 @@ export class MirrorNodeClient {
         this.setQueryParam(queryParamObject, 'limit', limit);
         this.setQueryParam(queryParamObject, 'order', order);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`, [400]);
+        return this.request(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`, [400, 404]);
     }
 
     public async getContract(contractIdOrAddress: string) {
