@@ -56,10 +56,6 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getQueryParams` general', async () => {
-    // this.setQueryParam(queryParamObject, 'block.number', blockNumber);
-    // this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-    // this.setQueryParam(queryParamObject, 'limit', limit);
-    // this.setQueryParam(queryParamObject, 'order', order);
     const queryParams = {
       'limit': 5,
       'order': 'desc',
