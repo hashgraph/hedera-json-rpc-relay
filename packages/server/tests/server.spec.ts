@@ -316,17 +316,18 @@ describe('RPC Server', async function() {
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
 
-  it('should execute "eth_blockNumber"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_blockNumber',
-      'params': [null]
-    });
+  // TODO: uncomment when integration tests are implemented
+  // it('should execute "eth_blockNumber"', async function() {
+  //   const res = await this.testClient.post('/', {
+  //     'id': '2',
+  //     'jsonrpc': '2.0',
+  //     'method': 'eth_blockNumber',
+  //     'params': [null]
+  //   });
 
-    BaseTest.defaultResponseChecks(res);
-    expect(parseInt(res.data.result, 16)).to.be.greaterThanOrEqual(0);
-  });
+  //   BaseTest.defaultResponseChecks(res);
+  //   expect(parseInt(res.data.result, 16)).to.be.greaterThanOrEqual(0);
+  // });
 });
 
 class BaseTest {

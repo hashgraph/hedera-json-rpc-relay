@@ -19,13 +19,13 @@
  */
 
 import path from 'path';
+import axios from 'axios';
 import dotenv from 'dotenv';
+import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
-import axios from 'axios';
-import MockAdapter from 'axios-mock-adapter';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 const cache = require('js-cache');
@@ -46,6 +46,55 @@ const validateHash = (hash: string, len?: number) => {
   return !!hash.match(regex);
 };
 
+describe("Eth calls using mocked MirrorNode", async () => {
+  // mock axios
+  const instance = axios.create({
+    baseURL: 'https://localhost:5551/api/v1',
+    responseType: 'json' as const,
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    timeout: 10 * 1000
+  });
+  const mock = new MockAdapter(instance);
+  const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
+  const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger);
+
+  const blockHash = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b';
+  const blockNumber = 3;
+  const defaultBlock = {
+    'count': 3,
+    'hapi_version': '0.27.0',
+    'hash': `${blockHash}`,
+    'name': '2022-05-03T06_46_26.060890949Z.rcd',
+    'number': blockNumber,
+    'previous_hash': '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b',
+    'size': null,
+    'timestamp': {
+      'from': '1651560386.060890949',
+      'to': '1651560389.060890949'
+    }
+  };
+
+  it('"eth_blockNumber" should return the latest block number', async function () {
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {
+      blocks: [defaultBlock]
+    });
+    const blockNumber = await ethImpl.blockNumber();
+    expect(blockNumber).to.be.eq(blockNumber);
+  });
+
+  it('"eth_blockNumber" should throw an error if no blocks are found', async function () {
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {
+      blocks: []
+    });
+    try {
+      await ethImpl.blockNumber();
+    } catch (error) {
+      expect(error.message).to.equal("No blocks were found");
+    }
+  });
+})
 
 describe('Eth', async function () {
   this.timeout(10000);
@@ -189,11 +238,6 @@ describe('Eth', async function () {
   it('should execute "eth_syncing"', async function () {
     const result = await Relay.eth().syncing();
     expect(result).to.eq(false);
-  });
-
-  it('should execute "eth_blockNumber"', async function () {
-    const blockNumber = await Relay.eth().blockNumber();
-    expect(blockNumber).to.be.greaterThanOrEqual(0);
   });
 
   describe('eth_getTransactionReceipt', async function () {

@@ -149,9 +149,13 @@ export class EthImpl implements Eth {
     this.logger.trace('blockNumber()');
 
     try {
-      const latestBlock = await this.mirrorNodeClient.getLatestBlock();
+      const { blocks } = await this.mirrorNodeClient.getLatestBlock();
 
-      return latestBlock.blocks[0].number;
+      if (Array.isArray(blocks) && blocks.length > 0) {
+        return blocks[0].number;
+      }
+
+      throw new Error('No blocks were found');
     } catch (error) {
       this.logger.error(error, 'Error raised during blockNumber');
       throw(error);
