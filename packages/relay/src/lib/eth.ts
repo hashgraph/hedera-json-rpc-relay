@@ -393,7 +393,7 @@ export class EthImpl implements Eth {
         this.logger.error(e, 'Failed to retrieve contract result for hash %s and index=%d', blockHash, transactionIndex);
         return null;
       });
-  };
+  }
 
     /**
    * Gets the transaction in a block by its block hash and transactions index.
