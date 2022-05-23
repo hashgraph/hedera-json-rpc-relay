@@ -123,3 +123,47 @@ export class Receipt {
         this.status = record.receipt.status == Status.Success ? "0x1" : "0x0";
     }
 }
+
+export class Transaction {
+    public readonly accessList!: string[] | null;
+    public readonly blockHash!: string | null;
+    public readonly blockNumber!: string | null;
+    public readonly chainId!: string;
+    public readonly from!: string;
+    public readonly gas!: string;
+    public readonly gasPrice!: string;
+    public readonly hash!: string;
+    public readonly input!: string;
+    public readonly maxPriorityFeePerGas!: string;
+    public readonly maxFeePerGas!: string;
+    public readonly nonce!: string;
+    public readonly r!: string;
+    public readonly s!: string;
+    public readonly to!: string | null;
+    public readonly transactionIndex!: string | null;
+    public readonly type!: string;
+    public readonly v!: string;
+    public readonly value!: string;
+
+    constructor(args: any) {
+        this.accessList = args.accessList;
+        this.blockHash = args.blockHash;
+        this.blockNumber = args.blockNumber;
+        this.chainId = args.chainId;
+        this.from = args.from;
+        this.gas = args.gas;
+        this.gasPrice = args.gasPrice;
+        this.hash = args.hash;
+        this.input = args.input;
+        this.maxPriorityFeePerGas = args.maxPriorityFeePerGas;
+        this.maxFeePerGas = args.maxFeePerGas;
+        this.nonce = args.nonce;
+        this.r = args.r;
+        this.s = args.s;
+        this.to = args.to;
+        this.transactionIndex = args.transactionIndex;
+        this.type = args.type;
+        this.v = args.v;
+        this.value = args.value;
+    }
+}

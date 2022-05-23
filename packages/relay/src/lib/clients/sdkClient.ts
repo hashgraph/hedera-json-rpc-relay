@@ -36,7 +36,7 @@ import {
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 
-export class NodeClient {
+export class SDKClient {
     private static EXCHANGE_RATE_FILE_ID = "0.0.112";
     /**
      * The client to use for connecting to the main consensus network. The account
@@ -54,13 +54,13 @@ export class NodeClient {
 
     async getAccountBalance(account: string): Promise<AccountBalance> {
         return (new AccountBalanceQuery()
-            .setAccountId(NodeClient.toAccountId(account)))
+            .setAccountId(SDKClient.toAccountId(account)))
             .execute(this.clientMain);
     }
 
     async getAccountBalanceInWeiBar(account: string): Promise<BigNumber> {
         const balance = await (new AccountBalanceQuery()
-            .setAccountId(NodeClient.toAccountId(account)))
+            .setAccountId(SDKClient.toAccountId(account)))
             .execute(this.clientMain);
 
         return balance.hbars
@@ -70,7 +70,7 @@ export class NodeClient {
 
     async getAccountInfo(address: string): Promise<AccountInfo> {
         return (new AccountInfoQuery()
-            .setAccountId(NodeClient.toAccountId(address)))
+            .setAccountId(SDKClient.toAccountId(address)))
             .execute(this.clientMain);
     }
 
@@ -81,7 +81,7 @@ export class NodeClient {
     }
 
     async getExchangeRate(): Promise<ExchangeRates> {
-        const exchangeFileBytes = await this.getFileIdBytes(NodeClient.EXCHANGE_RATE_FILE_ID);
+        const exchangeFileBytes = await this.getFileIdBytes(SDKClient.EXCHANGE_RATE_FILE_ID);
 
         return ExchangeRates.fromBytes(exchangeFileBytes);
     }
@@ -103,8 +103,8 @@ export class NodeClient {
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number): Promise<ContractFunctionResult> {
-        const contract = NodeClient.prune0x(to);
-        const callData = NodeClient.prune0x(data);
+        const contract = SDKClient.prune0x(to);
+        const callData = SDKClient.prune0x(data);
         const contractId = contract.startsWith("00000000000")
             ? ContractId.fromSolidityAddress(contract)
             : ContractId.fromEvmAddress(0, 0, contract);
@@ -118,7 +118,7 @@ export class NodeClient {
 
 
     private async getExchangeRateBytes(): Promise<Uint8Array> {
-        return this.getFileIdBytes(NodeClient.EXCHANGE_RATE_FILE_ID);
+        return this.getFileIdBytes(SDKClient.EXCHANGE_RATE_FILE_ID);
     }
 
     /**
@@ -128,7 +128,7 @@ export class NodeClient {
    * @private
    */
     private static toAccountId(ethAddress: string) {
-        return AccountId.fromEvmAddress(0, 0, NodeClient.prune0x(ethAddress));
+        return AccountId.fromEvmAddress(0, 0, SDKClient.prune0x(ethAddress));
     }
 
     /**

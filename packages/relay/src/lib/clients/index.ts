@@ -18,5 +18,5 @@
  *
  */
 
-export * from './nodeClient';
+export * from './sdkClient';
 export * from './mirrorNodeClient';

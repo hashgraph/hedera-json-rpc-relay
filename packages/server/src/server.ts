@@ -221,8 +221,7 @@ rpc.use('eth_accounts', async () => {
  */
 rpc.use('eth_getTransactionByHash', async (params: any) => {
   logger.debug("eth_getTransactionByHash");
-  // TODO
-  // return relay.eth().getTransactionByHash();
+  return relay.eth().getTransactionByHash(params[0]);
 });
 
 /**
@@ -239,7 +238,7 @@ rpc.use('eth_getTransactionByHash', async (params: any) => {
  */
 rpc.use('eth_feeHistory', async (params: any) => {
   logger.debug("eth_feeHistory");
-  return relay.eth().feeHistory(params?.[0], params?.[1], params?.[2]);
+  return relay.eth().feeHistory(Number(params?.[0]), params?.[1], params?.[2]);
 });
 
 
@@ -251,7 +250,7 @@ rpc.use('eth_feeHistory', async (params: any) => {
  */
 rpc.use('eth_getBlockTransactionCountByHash', async (params: any) => {
   logger.debug("eth_getBlockTransactionCountByHash");
-  //TODO
+  return relay.eth().getBlockTransactionCountByHash(params?.[0]);
 });
 
 /**
@@ -262,7 +261,7 @@ rpc.use('eth_getBlockTransactionCountByHash', async (params: any) => {
  */
 rpc.use('eth_getBlockTransactionCountByNumber', async (params: any) => {
   logger.debug("eth_getBlockTransactionCountByNumber");
-  //TODO
+  return relay.eth().getBlockTransactionCountByNumber(params?.[0]);
 });
 
 /**
@@ -299,7 +298,7 @@ rpc.use('eth_getStorageAt', async (params: any) => {
  */
 rpc.use('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
   logger.debug("eth_getTransactionByBlockHashAndIndex");
-  //TODO
+  return relay.eth().getTransactionByBlockHashAndIndex(params?.[0], params?.[1]);
 });
 
 /**
@@ -311,7 +310,7 @@ rpc.use('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
  */
 rpc.use('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
   logger.debug("eth_getTransactionByBlockNumberAndIndex");
-  //TODO
+  return relay.eth().getTransactionByBlockNumberAndIndex(params?.[0], params?.[1]);
 });
 
 /**

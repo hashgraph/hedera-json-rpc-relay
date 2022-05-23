@@ -18,7 +18,7 @@
  *
  */
 
-import {Block, Receipt} from './lib/model';
+import {Block, Receipt, Transaction} from './lib/model';
 
 export { RelayImpl } from './lib/relay';
 
@@ -62,17 +62,23 @@ export interface Eth {
 
   getBlockByNumber(blockNum: number, showDetails: boolean): Promise<Block | null>;
 
-  // getBlockTransactionCountByHash();
-  // getBlockTransactionCountByNumber();
+  getBlockTransactionCountByHash(hash: string): Promise<number | null>;
+
+  getBlockTransactionCountByNumber(blockNum: number): Promise<number | null>
+  
   getCode(address: string, blockNumber: string | null): Promise<string>;
 
   chainId(): string;
 
   // getLogs();
   // getStorageAt();
-  // getTransactionByBlockHashAndIndex();
-  // getTransactionByBLockNumberAndIndex();
-  // getTransactionByHash();
+
+  getTransactionByBlockHashAndIndex(hash: string, index: number): Promise<Transaction | null>;
+
+  getTransactionByBlockNumberAndIndex(blockNum: number, index: number): Promise<Transaction | null>;
+
+  getTransactionByHash(hash: string): Promise<Transaction | null>;
+  
   getTransactionCount(address: string, blocknum: string): Promise<number>;
 
   getTransactionReceipt(hash: string): Promise<Receipt | null>;
@@ -86,7 +92,7 @@ export interface Eth {
   getUncleCountByBlockNumber(): Promise<string>;
 
   // getWork();
-  feeHistory(blockCount: string, newestBlock: string, rewardPercentiles: Array<number>|null): Promise<any>;
+  feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number>|null): Promise<any>;
 
   hashrate(): Promise<string>;
 

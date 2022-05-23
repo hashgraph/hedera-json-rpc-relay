@@ -40,18 +40,19 @@ describe('MirrorNodeClient', async function () {
       'Content-Type': 'application/json'
     },
     timeout: 10 * 1000
-  });;
+  });
   const mock = new MockAdapter(instance);
   const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
-
+  
   it('it should have a `request` method ', async () => {
     expect(mirrorNodeInstance).to.exist;
     expect(mirrorNodeInstance.request).to.exist;
   });
 
   it('`baseUrl` is exposed and correct', async () => {
-    const prodMirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }));
-    expect(prodMirrorNodeInstance.baseUrl).to.eq(`https://${process.env.MIRROR_NODE_URL}/api/v1/`);
+    const domain = process.env.MIRROR_NODE_URL.replace(/^https?:\/\//, "");
+    const prodMirrorNodeInstance = new MirrorNodeClient(domain, logger.child({ name: `mirror-node` }));
+    expect(prodMirrorNodeInstance.baseUrl).to.eq(`https://${domain}/api/v1/`);
   });
 
   it('`getQueryParams` general', async () => {
