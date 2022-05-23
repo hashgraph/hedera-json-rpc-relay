@@ -221,8 +221,7 @@ rpc.use('eth_accounts', async () => {
  */
 rpc.use('eth_getTransactionByHash', async (params: any) => {
   logger.debug("eth_getTransactionByHash");
-  // TODO
-  // return relay.eth().getTransactionByHash();
+  return relay.eth().getTransactionByHash(params[0]);
 });
 
 /**
