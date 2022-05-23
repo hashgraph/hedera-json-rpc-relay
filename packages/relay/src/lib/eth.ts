@@ -41,7 +41,7 @@ export class EthImpl implements Eth {
   static zeroHex = '0x0';
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static defaultGas = 0x10000;
-  
+
   /**
    * The client to use for connecting to the main consensus network. The account
    * associated with this client will pay for all operations on the main network.
@@ -131,8 +131,8 @@ export class EthImpl implements Eth {
     // the conversion to weibars
     return Math.ceil(
       (contractTransactionGas / exchangeRates.currentRate.cents) *
-        exchangeRates.currentRate.hbars *
-        10_000_000
+      exchangeRates.currentRate.hbars *
+      10_000_000
     );
   }
 
@@ -186,12 +186,11 @@ export class EthImpl implements Eth {
     // FIXME: This should come from the mainnet and get cached. The gas price does change dynamically based on
     //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
     this.logger.trace('gasPrice()');
-    try {
-      return this.getFeeWeibars();
-    } catch (e) {
-      this.logger.trace(e);
-      throw e;
-    }
+    return this.getFeeWeibars()
+      .catch((e: any) => {
+        this.logger.trace(e);
+        throw e;
+      });
   }
 
   /**
@@ -393,12 +392,12 @@ export class EthImpl implements Eth {
       });
   }
 
-    /**
-   * Gets the transaction in a block by its block hash and transactions index.
-   *
-   * @param blockNumber
-   * @param transactionIndex
-   */
+  /**
+ * Gets the transaction in a block by its block hash and transactions index.
+ *
+ * @param blockNumber
+ * @param transactionIndex
+ */
   async getTransactionByBlockNumberAndIndex(blockNum: number, transactionIndex: number): Promise<Transaction | null> {
     this.logger.trace('getTransactionByBlockNumberAndIndex(blockNum=%d, index=%d)', blockNum, transactionIndex);
     return this.mirrorNodeClient.getContractResults({ blockNumber: blockNum, transactionIndex: transactionIndex })
@@ -491,9 +490,9 @@ export class EthImpl implements Eth {
     if (call.to.length != 42) {
       throw new Error(
         "Invalid Contract Address: '" +
-          call.to +
-          "'. Expected length of 42 chars but was" +
-          call.to.length
+        call.to +
+        "'. Expected length of 42 chars but was" +
+        call.to.length
       );
     }
 
@@ -721,7 +720,7 @@ export class EthImpl implements Eth {
     // call mirror node by id and timestamp for further details
     return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp)
       .then(contractResultDetails => {
-        const transaction = new Transaction({
+        return new Transaction({
           accessList: contractResultDetails.access_list,
           blockHash: contractResultDetails.block_hash.substring(0, 66),
           blockNumber: EthImpl.prepend0x(contractResultDetails.block_number.toString(16)),
@@ -742,7 +741,6 @@ export class EthImpl implements Eth {
           v: contractResultDetails.v,
           value: contractResultDetails.amount,
         });
-        return transaction;
       })
       .catch((e: any) => {
         this.logger.error(e, 'Failed to retrieve contract result details for contract address %s at timestamp=%s', to, timestamp);
