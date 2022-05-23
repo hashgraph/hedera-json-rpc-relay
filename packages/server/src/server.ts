@@ -298,7 +298,7 @@ rpc.use('eth_getStorageAt', async (params: any) => {
  */
 rpc.use('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
   logger.debug("eth_getTransactionByBlockHashAndIndex");
-  //TODO
+  return relay.eth().getTransactionByBlockHashAndIndex(params?.[0], params?.[1]);
 });
 
 /**
@@ -310,7 +310,7 @@ rpc.use('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
  */
 rpc.use('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
   logger.debug("eth_getTransactionByBlockNumberAndIndex");
-  //TODO
+  return relay.eth().getTransactionByBlockNumberAndIndex(params?.[0], params?.[1]);
 });
 
 /**

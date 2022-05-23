@@ -72,11 +72,13 @@ export interface Eth {
 
   // getLogs();
   // getStorageAt();
-  // getTransactionByBlockHashAndIndex();
-  // getTransactionByBLockNumberAndIndex();
+
+  getTransactionByBlockHashAndIndex(hash: string, index: number): Promise<Transaction | null>;
+
+  getTransactionByBlockNumberAndIndex(blockNum: number, index: number): Promise<Transaction | null>;
 
   getTransactionByHash(hash: string): Promise<Transaction | null>;
-
+  
   getTransactionCount(address: string, blocknum: string): Promise<number>;
 
   getTransactionReceipt(hash: string): Promise<Receipt | null>;

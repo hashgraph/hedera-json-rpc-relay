@@ -95,6 +95,28 @@ export class Block {
     }
 }
 
+export class Transaction {
+    accessList!: string[];
+    blockHash!: string | null;
+    blockNumber!: string | null;
+    chainId!: string;
+    from!: string;
+    gas!: string;
+    gasPrice!: string;
+    hash!: string;
+    input!: string;
+    maxPriorityFeePerGas!: string;
+    maxFeePerGas!: string;
+    nonce!: string;
+    r!: string;
+    s!: string;
+    to!: string | null;
+    transactionIndex!: string | null;
+    type!: string;
+    v!: string;
+    value!: string;
+}
+
 export class Receipt {
     public readonly transactionHash:string;
     public readonly transactionIndex:string;

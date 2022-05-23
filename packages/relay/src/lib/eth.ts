@@ -333,7 +333,7 @@ export class EthImpl implements Eth {
     this.logger.trace('getBlockByHash(hash=%s, showDetails=%o)', hash, showDetails);
     return this.getBlock(hash, showDetails).catch((e: any) => {
       this.logger.error(e, 'Failed to retrieve block for hash %s', hash);
-      return this.mirrorNode.getBlockByHash(hash, showDetails);
+      return null;
     });
   }
 
@@ -345,7 +345,7 @@ export class EthImpl implements Eth {
     this.logger.trace('getBlockByNumber(blockNum=%d, showDetails=%o)', blockNum);
     return this.getBlock(blockNum, showDetails).catch((e: any) => {
       this.logger.error(e, 'Failed to retrieve block for blockNum %s', blockNum);
-      return this.mirrorNode.getBlockByNumber(blockNum);
+      return null;
     });
   }
 
@@ -362,7 +362,7 @@ export class EthImpl implements Eth {
       return null;
     });
 
-    if (block.count === undefined) {
+    if (block === null || block.count === undefined) {
       // block not found
       return null;
     }
@@ -381,12 +381,44 @@ export class EthImpl implements Eth {
       return null;
     });
 
-    if (block.count === undefined) {
+    if (block === null || block.count === undefined) {
       // block not found
       return null;
     }
 
     return block.count;
+  }
+
+  async getTransactionByBlockHashAndIndex(hash: string, index: number): Promise<Transaction | null> {
+    this.logger.trace('getTransactionByBlockHashAndIndex(hash=%s, index=%d)', hash, index);
+    const contractResults = await this.mirrorNodeClient.getContractResults({ blockHash: hash, transactionIndex: index }).catch((e: any) => {
+      this.logger.error(e, 'Failed to retrieve contract result for hash %s and index=%d', hash, index);
+      return null;
+    });
+
+    if (contractResults === null || contractResults.results === undefined) {
+      // contract result not found
+      return null;
+    }
+
+    const contractResult = contractResults.results[0];
+    return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp);
+  };
+
+  async getTransactionByBlockNumberAndIndex(blockNum: number, index: number): Promise<Transaction | null> {
+    this.logger.trace('getTransactionByBlockNumberAndIndex(blockNum=%d, index=%d)', blockNum, index);
+    const contractResults = await this.mirrorNodeClient.getContractResults({ blockNumber: blockNum, transactionIndex: index }).catch((e: any) => {
+      this.logger.error(e, 'Failed to retrieve contract result for blockNum %s and index=%d', blockNum, index);
+      return null;
+    });
+
+    if (contractResults === null || contractResults.results === undefined) {
+      // contract result not found
+      return null;
+    }
+
+    const contractResult = contractResults.results[0];
+    return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp);
   }
 
   /**
@@ -623,17 +655,32 @@ export class EthImpl implements Eth {
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
     const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams });
 
+    if (contractResults === null || contractResults.results === undefined) {
+      // contract result not found
+      return null;
+    }
+
     // loop over contract function results to calculated aggregated datapoints
     let gasUsed = 0;
     let maxGasLimit = 0;
     let timestamp = 0;
-    const transactions = [];
-    contractResults.results.forEach((result) => {
+    const transactions: Transaction[] = [];
+    const transactionHashes: string[] = [];
+    contractResults.results.forEach(async (result) => {
       maxGasLimit = result.gas_limit > maxGasLimit ? result.gas_limit : maxGasLimit;
       gasUsed += result.gas_used;
       if (timestamp === 0) {
         // The consensus timestamp of the first transaction in the block, with the nanoseconds part omitted.
         timestamp = result.timestamp.substring(0, result.timestamp.indexOf('.')); // mirrorNode response assures format of ssssssssss.nnnnnnnnn
+      }
+
+      const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp);
+      if (transaction !== null) {
+        if (showDetails) {
+          transactions.push(transaction);
+        } else {
+          transactionHashes.push(transaction.hash);
+        }
       }
     });
 
@@ -656,32 +703,68 @@ export class EthImpl implements Eth {
       size: blockResponse.size,
       stateRoot: EthImpl.emptyHex,
       totalDifficulty: EthImpl.zeroHex,
-      transactions: transactions,
+      transactions: showDetails ? transactions : transactionHashes,
       transactionsRoot: blockResponse.hash,
       uncles: [],
     });
   }
 
-  private getTransaction(hash: string, showDetails: boolean) {
-    // blockHash: DATA, 32 Bytes - hash of the block where this transaction was in. null when its pending.
-    // blockNumber: QUANTITY - block number where this transaction was in. null when its pending.
-    // from: DATA, 20 Bytes - address of the sender.
-    // gas: QUANTITY - gas provided by the sender.
-    // gasPrice: QUANTITY - gas price provided by the sender in Wei.
-    // hash: DATA, 32 Bytes - hash of the transaction.
-    // input: DATA - the data send along with the transaction.
-    // nonce: QUANTITY - the number of transactions made by the sender prior to this one.
-    // to: DATA, 20 Bytes - address of the receiver. null when its a contract creation transaction.
-    // transactionIndex: QUANTITY - integer of the transactions index position in the block. null when its pending.
-    // value: QUANTITY - value transferred in Wei.
-    // v: QUANTITY - ECDSA recovery id
-    // r: DATA, 32 Bytes - ECDSA signature r
-    // s: DATA, 32 Bytes - ECDSA signature s
-    if (showDetails) {
-      // build and return transaction object
-      // hopefully we don't have to call mirroNode api/v1/contracts/results/{transactionHash} for every single item
-    } else {
-      return hash;
-    }
+  private async getTransactionFromContractResult(to: string, timestamp: string): Promise<Transaction | null> {
+    // call mirror node by id and timestamp for further details
+    return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp)
+      .then(contractResultDetails => {
+        const transaction = new Transaction();
+        transaction.accessList = [];
+        transaction.blockHash = contractResultDetails.block_hash;
+        transaction.blockNumber = contractResultDetails.block_number.toString();
+        transaction.chainId = contractResultDetails.chain_id;
+        transaction.from = contractResultDetails.from;
+        transaction.gas = contractResultDetails.gas_used;
+        transaction.gasPrice = contractResultDetails.gas_price;
+        transaction.hash = contractResultDetails.hash;
+        transaction.input = contractResultDetails.function_parameters;
+        transaction.maxPriorityFeePerGas = contractResultDetails.max_priority_fee_per_gas;
+        transaction.maxFeePerGas = contractResultDetails.max_fee_per_gas;
+        transaction.nonce = contractResultDetails.nonce;
+        transaction.r = contractResultDetails.r;
+        transaction.s = contractResultDetails.s;
+        transaction.to = contractResultDetails.to;
+        transaction.transactionIndex = contractResultDetails.transaction_index;
+        transaction.type = contractResultDetails.type;
+        transaction.v = contractResultDetails.v;
+        transaction.value = contractResultDetails.amount;
+        return transaction;
+      })
+      .catch((e: any) => {
+        this.logger.error(e, 'Failed to retrieve contract result details for contract address %s at timestamp=%s', to, timestamp);
+        return null;
+      });
+
+    // if (contractResultDetails === null) {
+    //   // contract result not found
+    //   return null;
+    // }
+
+    // const transaction = new Transaction();
+    // transaction.accessList = [];
+    // transaction.blockHash = contractResultDetails.block_hash;
+    // transaction.blockNumber = contractResultDetails.block_number.toString();
+    // transaction.chainId = contractResultDetails.chain_id;
+    // transaction.from = contractResultDetails.from;
+    // transaction.gas = contractResultDetails.gas_used;
+    // transaction.gasPrice = contractResultDetails.gas_price;
+    // transaction.hash = contractResultDetails.hash;
+    // transaction.input = contractResultDetails.function_parameters;
+    // transaction.maxPriorityFeePerGas = contractResultDetails.max_priority_fee_per_gas;
+    // transaction.maxFeePerGas = contractResultDetails.max_fee_per_gas;
+    // transaction.nonce = contractResultDetails.nonce;
+    // transaction.r = contractResultDetails.r;
+    // transaction.s = contractResultDetails.s;
+    // transaction.to = contractResultDetails.to;
+    // transaction.transactionIndex = contractResultDetails.transaction_index;
+    // transaction.type = contractResultDetails.type;
+    // transaction.v = contractResultDetails.v;
+    // transaction.value = contractResultDetails.amount;
+    // return transaction;
   }
 }

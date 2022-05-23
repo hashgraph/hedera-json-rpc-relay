@@ -68,6 +68,12 @@ describe('Eth calls using MirrorNode', async function () {
   const blockTransactionCount = 77;
   const maxGasLimit = 250000;
   const firstTransactionTimestampSeconds = '1653077547';
+  const contractAddress1 = '0x000000000000000000000000000000000000055f';
+  const contractTimestamp1 = `${firstTransactionTimestampSeconds}.983983199`;
+  const contractHash1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+  const contractAddress2 = '0x000000000000000000000000000000000000055e';
+  const contractTimestamp2 = '1653077542.701408897';
+  
   const defaultBlock = {
     'count': blockTransactionCount,
     'hapi_version': '0.27.0',
@@ -120,8 +126,8 @@ describe('Eth calls using MirrorNode', async function () {
         'function_parameters': '0x',
         'gas_limit': maxGasLimit,
         'gas_used': 200000,
-        'timestamp': `${firstTransactionTimestampSeconds}.983983199`,
-        'to': '0x000000000000000000000000000000000000055f'
+        'timestamp': `${contractTimestamp1}`,
+        'to': `${contractAddress1}`
       },
       {
         'amount': 0,
@@ -134,14 +140,71 @@ describe('Eth calls using MirrorNode', async function () {
         'function_parameters': '0x2b6adf430000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000084865792c204d6121000000000000000000000000000000000000000000000000',
         'gas_limit': maxGasLimit - 1000,
         'gas_used': 80000,
-        'timestamp': '1653077542.701408897',
-        'to': '0x000000000000000000000000000000000000055e'
+        'timestamp': `${contractTimestamp2}`,
+        'to': `${contractAddress2}`
       }
     ],
     'links': {
       'next': '/api/v1/contracts/results?limit=2&timestamp=lt:1653077542.701408897'
     }
   };
+
+  const defaultDetailedContractResults = {
+    'access_list': '0x',
+    'amount': 2000000000,
+    'block_gas_used': 50000000,
+    'block_hash': blockHash,
+    'block_number': blockNumber,
+    'bloom': '0x0505',
+    'call_result': '0x0606',
+    'chain_id': '0x',
+    'contract_id': '0.0.5001',
+    'created_contract_ids': ['0.0.7001'],
+    'error_message': null,
+    'from': '0x0000000000000000000000000000000000001f41',
+    'function_parameters': '0x0707',
+    'gas_limit': 1000000,
+    'gas_price': '0x4a817c80',
+    'gas_used': 123,
+    'hash': contractHash1,
+    'logs': [
+      {
+        'address': contractAddress1,
+        'bloom': '0x0123',
+        'contract_id': '0.0.5001',
+        'data': '0x0123',
+        'index': 0,
+        'topics': [
+          '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+          '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+          '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67'
+        ]
+      },
+    ],
+    'max_fee_per_gas': '0x',
+    'max_priority_fee_per_gas': '0x',
+    'nonce': 1,
+    'r': '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+    'result': 'SUCCESS',
+    's': '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+    'state_changes': [
+      {
+        'address': contractAddress1,
+        'contract_id': '0.0.5001',
+        'slot': '0x0000000000000000000000000000000000000000000000000000000000000101',
+        'value_read': '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+        'value_written': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+      }
+    ],
+    'status': '0x1',
+    'timestamp': contractTimestamp1,
+    'to': contractAddress1,
+    'transaction_index': 1,
+    'type': 2,
+    'v': 1
+  };
+
   const results = defaultContractResults.results;
   const totalGasUsed = results[0].gas_used + results[1].gas_used;
 
@@ -154,8 +217,8 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
     const result = await ethImpl.getBlockByNumber(blockNumber, false);
-    expect(result).to.exist;    
-    
+    expect(result).to.exist;
+
     // verify aggregated info
     expect(result.hash).equal(blockHash);
     expect(result.gasUsed).equal(totalGasUsed);
@@ -178,7 +241,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with no match', async function () {
-    mock.onGet(`blocks/${blockNumber}`).reply(200, {
+    mock.onGet(`blocks/${blockNumber}`).reply(400, {
       '_status': {
         'messages': [
           {
@@ -223,7 +286,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockByHash with no match', async function () {
     // mirror node request mocks
-    mock.onGet(`blocks/${blockHash}`).reply(200, {
+    mock.onGet(`blocks/${blockHash}`).reply(400, {
       '_status': {
         'messages': [
           {
@@ -246,7 +309,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockTransactionCountByNumber with no match', async function () {
-    mock.onGet(`blocks/${blockNumber}`).reply(200, {
+    mock.onGet(`blocks/${blockNumber}`).reply(400, {
       '_status': {
         'messages': [
           {
@@ -270,7 +333,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockTransactionCountByHash with no match', async function () {
     // mirror node request mocks
-    mock.onGet(`blocks/${blockHash}`).reply(200, {
+    mock.onGet(`blocks/${blockHash}`).reply(400, {
       '_status': {
         'messages': [
           {
@@ -281,6 +344,99 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     const result = await ethImpl.getBlockTransactionCountByHash(blockHash);
+    expect(result).to.equal(null);
+  });
+
+  it('eth_getTransactionByBlockNumberAndIndex with match', async function () {
+    // mirror node request mocks
+    mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
+    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number, defaultBlock.count);
+    expect(result).to.exist;
+
+    // verify aggregated info
+    expect(result.blockHash).equal(blockHash);
+    expect(result.blockNumber).equal(blockNumber.toString());
+    expect(result.hash).equal(contractHash1);
+    expect(result.to).equal(contractAddress1);
+  });
+
+  it('eth_getTransactionByBlockNumberAndIndex with no contract result match', async function () {
+    mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(400, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'No such contract result exists'
+          }
+        ]
+      }
+    });
+
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number, defaultBlock.count);
+    expect(result).to.equal(null);
+  });
+
+  it('eth_getTransactionByBlockNumberAndIndex with no contract result match', async function () {
+    mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
+    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(400, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'No such detailed contract result exists'
+          }
+        ]
+      }
+    });
+
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number, defaultBlock.count);
+    expect(result).to.equal(null);
+  });
+
+  it('eth_getTransactionByBlockHashAndIndex with match', async function () {
+    // mirror node request mocks
+    mock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
+    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, defaultBlock.count);
+    expect(result).to.exist;
+
+    // verify aggregated info
+
+    // verify aggregated info
+    expect(result.blockHash).equal(blockHash);
+    expect(result.blockNumber).equal(blockNumber.toString());
+    expect(result.hash).equal(contractHash1);
+    expect(result.to).equal(contractAddress1);
+  });
+
+  it('eth_getTransactionByBlockHashAndIndex with no contract result match', async function () {
+    // mirror node request mocks
+    mock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}`).reply(400, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'No such contract result exists'
+          }
+        ]
+      }
+    });
+
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number, defaultBlock.count);
+    expect(result).to.equal(null);
+  });
+
+  it('eth_getTransactionByBlockHashAndIndex with no contract result match', async function () {
+    mock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
+    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(400, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'No such detailed contract result exists'
+          }
+        ]
+      }
+    });
+
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number, defaultBlock.count);
     expect(result).to.equal(null);
   });
 });

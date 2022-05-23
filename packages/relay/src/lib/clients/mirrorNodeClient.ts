@@ -176,6 +176,10 @@ export class MirrorNodeClient {
         return this.request(`${this.getContractResultsByAddressPath(contractIdOrAddress)}${queryParams}`, [400]);
     }
 
+    public async getContractResultsByAddressAndTimestamp(contractIdOrAddress: string, timestamp: string) {
+        return this.request(`${this.getContractResultsByAddressPath(contractIdOrAddress)}/${timestamp}`, [206, 400, 404]);
+    }
+
     public async getContractResultsLogs(
         contractLogsResultsParams?: IContractLogsResultsParams,
         limitOrderParams?: ILimitOrderParams) {
@@ -209,7 +213,7 @@ export class MirrorNodeClient {
         return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`, [400, 404, 500]);
     }
 
-    getContractResultsByAddressPath(address: string) {
+    private getContractResultsByAddressPath(address: string) {
         return MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT.replace(MirrorNodeClient.ADDRESS_PLACEHOLDER, address);
     }
 
