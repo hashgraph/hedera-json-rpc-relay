@@ -148,18 +148,13 @@ export class EthImpl implements Eth {
   async blockNumber(): Promise<number> {
     this.logger.trace('blockNumber()');
 
-    try {
-      const { blocks } = await this.mirrorNodeClient.getLatestBlock();
-
-      if (Array.isArray(blocks) && blocks.length > 0) {
-        return blocks[0].number;
-      }
-
-      throw new Error('No blocks were found');
-    } catch (error) {
-      this.logger.error(error, 'Error raised during blockNumber');
-      throw(error);
+    const blocksResponse = await this.mirrorNodeClient.getLatestBlock();
+    const blocks = blocksResponse !== null ? blocksResponse.blocks : null;
+    if (Array.isArray(blocks) && blocks.length > 0) {
+      return blocks[0].number;
     }
+
+    throw new Error('Error encountered retrieving latest block');
   }
 
   /**

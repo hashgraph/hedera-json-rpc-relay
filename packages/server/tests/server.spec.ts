@@ -75,15 +75,16 @@ describe('RPC Server', async function() {
   });
 
   it('should execute "eth_getTransactionByHash  missing transaction"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_getTransactionByHash',
-      'params': ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392']
-    });
-
-    BaseTest.defaultResponseChecks(res);
-    expect(res.data.result).to.be.equal(null);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'eth_getTransactionByHash',
+        'params': ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392']
+      });
+    } catch (error) {
+      expect(error.message).to.equal('Request failed with status code 500');
+    }
   });
 
 
@@ -315,19 +316,6 @@ describe('RPC Server', async function() {
 
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
-
-  // TODO: uncomment when integration tests are implemented
-  // it('should execute "eth_blockNumber"', async function() {
-  //   const res = await this.testClient.post('/', {
-  //     'id': '2',
-  //     'jsonrpc': '2.0',
-  //     'method': 'eth_blockNumber',
-  //     'params': [null]
-  //   });
-
-  //   BaseTest.defaultResponseChecks(res);
-  //   expect(parseInt(res.data.result, 16)).to.be.greaterThanOrEqual(0);
-  // });
 });
 
 class BaseTest {

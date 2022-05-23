@@ -85,16 +85,22 @@ describe("Eth calls using mocked MirrorNode", async () => {
   });
 
   it('"eth_blockNumber" should throw an error if no blocks are found', async function () {
-    mock.onGet('blocks?limit=1&order=desc').reply(200, {
-      blocks: []
+    mock.onGet('blocks?limit=1&order=desc').reply(404, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'Block not found'
+          }
+        ]
+      }
     });
     try {
       await ethImpl.blockNumber();
     } catch (error) {
-      expect(error.message).to.equal("No blocks were found");
+      expect(error.message).to.equal('Error encountered retrieving latest block');
     }
   });
-})
+});
 
 describe('Eth', async function () {
   this.timeout(10000);
