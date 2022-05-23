@@ -22,6 +22,29 @@ import Axios, { AxiosInstance } from 'axios';
 import { predefined as errors } from '../errors';
 import { Logger } from "pino";
 
+export interface ILimitOrderParams {
+    limit?: number;
+    order?: string;
+}
+
+export interface IContractResultsParams {
+    blockHash?: string;
+    blockNumber?: number;
+    from?: string;
+    internal?: boolean;
+    timestamp?: string | string[];
+    transactionIndex?: number;
+}
+
+export interface IContractLogsResultsParams {
+    index?: number,
+    timestamp?: string | string[],
+    topic0?: string | string[],
+    topic1?: string | string[],
+    topic2?: string | string[],
+    topic3?: string | string[]
+}
+
 export class MirrorNodeClient {
     private static GET_ACCOUNTS_ENDPOINT = 'accounts/';
     private static GET_BLOCK_ENDPOINT = 'blocks/';
@@ -66,27 +89,28 @@ export class MirrorNodeClient {
         if (axiosClient !== undefined) {
             this.baseUrl = '';
             this.client = axiosClient;
-          } else {
+        } else {
             if (!baseUrl.match(/^https?:\/\//)) {
-              baseUrl = `https://${baseUrl}`;
+                baseUrl = `https://${baseUrl}`;
             }
-      
+
             if (!baseUrl.match(/\/$/)) {
-              baseUrl = `${baseUrl}/`;
+                baseUrl = `${baseUrl}/`;
             }
-      
+
             baseUrl = `${baseUrl}api/v1/`;
-      
+
             this.baseUrl = baseUrl;
             this.client = axiosClient ? axiosClient : this.createAxiosClient(baseUrl);
-          }
-      
-          this.logger = logger;
-          this.logger.info("Restarting.");
+        }
+
+        this.logger = logger;
+        this.logger.info("Restarting.");
     }
 
     async request(path: string, allowedErrorStatuses?: number[]): Promise<any> {
         try {
+            this.logger.debug(`Request: ${path}`);
             const response = await this.client.get(path);
             return response.data;
         } catch (error) {
@@ -104,114 +128,92 @@ export class MirrorNodeClient {
             return null;
         }
 
+        this.logger.error(error, 'Unexpected request error');
         throw errors['INTERNAL_ERROR'];
     }
 
-    public async getAccountLatestTransactionByAddress(idOrAliasOrEvmAddress: string):Promise<object> {
+    public async getAccountLatestTransactionByAddress(idOrAliasOrEvmAddress: string): Promise<object> {
         return this.request(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?order=desc&limit=1`, [400]);
     }
 
-    public async getBlock(hashOrBlockNumber: string|number) {
+    public async getBlock(hashOrBlockNumber: string | number) {
         return this.request(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`, [400]);
     }
 
-    public async getBlocks(blockNumber?: number, timestamp?: string, limit?: number, order?: string) {
+    public async getBlocks(blockNumber?: number, timestamp?: string, limitOrderParams?: ILimitOrderParams) {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'block.number', blockNumber);
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-        this.setQueryParam(queryParamObject, 'limit', limit);
-        this.setQueryParam(queryParamObject, 'order', order);
+        this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`, [400, 404]);
     }
 
     public async getContract(contractIdOrAddress: string) {
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`, [400]);
+        return this.request(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`, [400, 404]);
     }
 
     public async getContractResult(transactionIdOrHash: string) {
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`, [400]);
+        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`, [400, 404]);
     }
 
-    public async getContractResults(
-        blockHash?: string,
-        blockNumber?: number,
-        from?: string,
-        internal?: boolean,
-        limit?: number,
-        order?: string,
-        timestamp?: string | [string],
-        transactionIndex?: number) {
+    public async getContractResults(contractResultsParams?: IContractResultsParams, limitOrderParams?: ILimitOrderParams) {
         const queryParamObject = {};
-        this.setQueryParam(queryParamObject, 'block.hash', blockHash);
-        this.setQueryParam(queryParamObject, 'block.number', blockNumber);
-        this.setQueryParam(queryParamObject, 'from', from);
-        this.setQueryParam(queryParamObject, 'internal', internal);
-        this.setQueryParam(queryParamObject, 'limit', limit);
-        this.setQueryParam(queryParamObject, 'order', order);
-        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-        this.setQueryParam(queryParamObject, 'transaction.index', transactionIndex);
+        this.setContractResultsParams(queryParamObject, contractResultsParams);
+        this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`, [400]);
     }
 
     public async getContractResultsByAddress(
-        contractIdOrAddress: string, 
-        blockHash?: string,
-        blockNumber?: number,
-        from?: string,
-        internal?: boolean,
-        limit?: number,
-        order?: string,
-        timestamp?: string | [string],
-        transactionIndex?: number) {
+        contractIdOrAddress: string,
+        contractResultsParams?: IContractResultsParams,
+        limitOrderParams?: ILimitOrderParams) {
         const queryParamObject = {};
-        this.setQueryParam(queryParamObject, 'block.hash', blockHash);
-        this.setQueryParam(queryParamObject, 'block.number', blockNumber);
-        this.setQueryParam(queryParamObject, 'from', from);
-        this.setQueryParam(queryParamObject, 'internal', internal);
-        this.setQueryParam(queryParamObject, 'limit', limit);
-        this.setQueryParam(queryParamObject, 'order', order);
-        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-        this.setQueryParam(queryParamObject, 'transaction.index', transactionIndex);
+        this.setContractResultsParams(queryParamObject, contractResultsParams);
+        this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${this.getContractResultsByAddressPath(contractIdOrAddress)}${queryParams}`, [400]);
     }
 
+    public async getContractResultsByAddressAndTimestamp(contractIdOrAddress: string, timestamp: string) {
+        return this.request(`${this.getContractResultsByAddressPath(contractIdOrAddress)}/${timestamp}`, [206, 400, 404]);
+    }
+
     public async getContractResultsLogs(
-        index?: number,
-        limit?: number,
-        order?: string,
-        timestamp?: string | [string],
-        topic0?: string | [string],
-        topic1?: string | [string],
-        topic2?: string | [string],
-        topic3?: string | [string]) {
+        contractLogsResultsParams?: IContractLogsResultsParams,
+        limitOrderParams?: ILimitOrderParams) {
         const queryParamObject = {};
-        this.setQueryParam(queryParamObject, 'index', index);
-        this.setQueryParam(queryParamObject, 'limit', limit);
-        this.setQueryParam(queryParamObject, 'order', order);
-        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-        this.setQueryParam(queryParamObject, 'topic0', topic0);
-        this.setQueryParam(queryParamObject, 'topic1', topic1);
-        this.setQueryParam(queryParamObject, 'topic2', topic2);
-        this.setQueryParam(queryParamObject, 'topic3', topic3);
+        if (contractLogsResultsParams) {
+            this.setQueryParam(queryParamObject, 'index', contractLogsResultsParams.index);
+            this.setQueryParam(queryParamObject, 'timestamp', contractLogsResultsParams.timestamp);
+            this.setQueryParam(queryParamObject, 'topic0', contractLogsResultsParams.topic0);
+            this.setQueryParam(queryParamObject, 'topic1', contractLogsResultsParams.topic1);
+            this.setQueryParam(queryParamObject, 'topic2', contractLogsResultsParams.topic2);
+            this.setQueryParam(queryParamObject, 'topic3', contractLogsResultsParams.topic3);
+        }
+
+        this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`, [400]);
     }
 
     public async getLatestBlock() {
-        return this.getBlocks(undefined, undefined, 1, MirrorNodeClient.ORDER.DESC);
+        return this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.DESC));
+    }
+
+    public getLimitOrderQueryParam(limit: number, order: string): ILimitOrderParams {
+        return { limit: limit, order: order };
     }
 
     public async getNetworkExchangeRate(timestamp?: string) {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`, [400]);
+        return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`, [400, 404]);
     }
 
-    getContractResultsByAddressPath(address: string) {
+    private getContractResultsByAddressPath(address: string) {
         return MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT.replace(MirrorNodeClient.ADDRESS_PLACEHOLDER, address);
     }
 
@@ -227,6 +229,24 @@ export class MirrorNodeClient {
             paramString += paramString === '' ? `?${additionalString}` : `&${additionalString}`;
         }
         return paramString;
+    }
+
+    setContractResultsParams(queryParamObject, contractResultsParams?: IContractResultsParams) {
+        if (contractResultsParams) {
+            this.setQueryParam(queryParamObject, 'block.hash', contractResultsParams.blockHash);
+            this.setQueryParam(queryParamObject, 'block.number', contractResultsParams.blockNumber);
+            this.setQueryParam(queryParamObject, 'from', contractResultsParams.from);
+            this.setQueryParam(queryParamObject, 'internal', contractResultsParams.internal);
+            this.setQueryParam(queryParamObject, 'timestamp', contractResultsParams.timestamp);
+            this.setQueryParam(queryParamObject, 'transaction.index', contractResultsParams.transactionIndex);
+        }
+    }
+
+    setLimitOrderParams(queryParamObject, limitOrderParams?: ILimitOrderParams) {
+        if (limitOrderParams) {
+            this.setQueryParam(queryParamObject, 'limit', limitOrderParams.limit);
+            this.setQueryParam(queryParamObject, 'order', limitOrderParams.order);
+        }
     }
 
     setQueryParam(queryParamObject, key, value) {
