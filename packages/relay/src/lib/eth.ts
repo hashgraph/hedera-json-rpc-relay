@@ -132,8 +132,8 @@ export class EthImpl implements Eth {
     // the conversion to weibars
     return Math.ceil(
       (contractTransactionGas / exchangeRates.currentRate.cents) *
-        exchangeRates.currentRate.hbars *
-        10_000_000
+      exchangeRates.currentRate.hbars *
+      10_000_000
     );
   }
 
@@ -187,10 +187,11 @@ export class EthImpl implements Eth {
     // FIXME: This should come from the mainnet and get cached. The gas price does change dynamically based on
     //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
     this.logger.trace('gasPrice()');
-    return this.getFeeWeibars().catch((e: any) => {
-      this.logger.trace(e);
-      throw e;
-    });
+    return this.getFeeWeibars()
+      .catch((e: any) => {
+        this.logger.trace(e);
+        throw e;
+      });
   }
 
   /**
@@ -279,19 +280,11 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
       if (e?.status?._code === Status.InvalidAccountId._code) {
-        this.logger.debug(
-          'Unable to find account %s in block "%s", returning 0x0 balance',
-          account,
-          blockNumber
-        );
+        this.logger.debug('Unable to find account %s in block "%s", returning 0x0 balance', account, blockNumber);
         return EthImpl.zeroHex;
       }
 
-      this.logger.error(
-        e,
-        'Error raised during getBalance for account %s',
-        account
-      );
+      this.logger.error(e, 'Error raised during getBalance for account %s', account);
       throw (e);
     }
   }
@@ -323,11 +316,7 @@ export class EthImpl implements Eth {
         return '0x0';
       }
 
-      this.logger.error(
-        e,
-        'Error raised during getCode for address %s',
-        address
-      );
+      this.logger.error(e, 'Error raised during getCode for address %s', address);
       throw (e);
     }
   }
