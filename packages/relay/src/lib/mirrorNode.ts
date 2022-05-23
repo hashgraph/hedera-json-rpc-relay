@@ -18,7 +18,7 @@
  *
  */
 
-import { Logger } from 'pino';
+import { Logger } from "pino";
 // Used for temporary purposes to store block info. As the mirror node supports the APIs, we will remove this.
 import { Block } from './model';
 
@@ -30,9 +30,10 @@ export class MirrorNode {
   // then we don't advance the block list. The first block is block 0,
   // so we can quickly look them up in the array. Yes, we will eventually
   // end up running out of memory.
-  private static MOST_RECENT_BLOCK_NUMBER_KEY = 'mostRecentBlockNumber';
-  private static MOST_RECENT_BLOCK_KEY = 'mostRecentBlock';
+  private static MOST_RECENT_BLOCK_NUMBER_KEY = "mostRecentBlockNumber";
+  private static MOST_RECENT_BLOCK_KEY = "mostRecentBlock";
   private readonly store: Map<string, any> = new Map();
+
 
   /**
    * The logger used for logging all output from this class.
@@ -46,65 +47,41 @@ export class MirrorNode {
     // FIXME: Create an empty genesis block (which has no transactions!)
     //        to preload the system.
     if (this.store.has(MirrorNode.MOST_RECENT_BLOCK_KEY)) {
-      this.logger.info('Restarting.');
+      this.logger.info("Restarting.");
     } else {
-      this.logger.info(
-        'Fresh start, creating genesis block with no transactions'
-      );
+      this.logger.info("Fresh start, creating genesis block with no transactions");
       const genesisBlock = new Block(null, null);
       this.storeBlock(genesisBlock);
     }
   }
 
-  public async getFeeHistory(
-    fee: number,
-    _blockCount: number,
-    _newestBlock: string,
-    rewardPercentiles: Array<number> | null
-  ) {
+  public async getFeeHistory(fee : number, _blockCount: number, _newestBlock: string, rewardPercentiles: Array<number>|null) {
     // FIXME: This is a fake implementation. It works for now, but should
     //        actually delegate to the mirror node.
     this.logger.trace('getFeeHistory()');
 
     const mostRecentBlockNumber = await this.getMostRecentBlockNumber();
-    this.logger.debug(
-      'computing fee history for mostRecentBlockNumber=%d',
-      mostRecentBlockNumber
-    );
+    this.logger.debug('computing fee history for mostRecentBlockNumber=%d', mostRecentBlockNumber);
     const mostRecentBlocks: Block[] = [];
-    for (
-      let blockNumber = Math.max(0, mostRecentBlockNumber - 9);
-      blockNumber <= mostRecentBlockNumber;
-      blockNumber++
-    ) {
+    for (let blockNumber = Math.max(0, mostRecentBlockNumber - 9); blockNumber <= mostRecentBlockNumber; blockNumber++) {
       const block = await this.getBlockByNumber(blockNumber);
-      this.logger.debug('block for %d is %o', blockNumber, block);
+      this.logger.debug("block for %d is %o", blockNumber, block);
       if (block != null) {
         mostRecentBlocks.push(block);
       } else {
-        this.logger.error(
-          'Error: unable to find block by number %d',
-          blockNumber
-        );
+        this.logger.error('Error: unable to find block by number %d', blockNumber);
       }
     }
-    this.logger.debug(
-      'Computing fee history based on the last %d blocks',
-      mostRecentBlocks.length
-    );
+    this.logger.debug('Computing fee history based on the last %d blocks', mostRecentBlocks.length);
 
     const feeHistoryResponse = {
-      baseFeePerGasArray: Array(mostRecentBlocks.length).fill(
-        '0x' + fee.toString(16)
-      ),
+      baseFeePerGasArray: Array(mostRecentBlocks.length).fill('0x' + fee.toString(16)),
       gasUsedRatioArray: Array(mostRecentBlocks.length).fill('0.5'),
-      oldestBlockNumber: mostRecentBlocks[0].number,
+      oldestBlockNumber: mostRecentBlocks[0].number
     };
 
     if (rewardPercentiles) {
-      feeHistoryResponse['reward'] = Array(mostRecentBlocks.length).fill(
-        Array(rewardPercentiles.length).fill('0x0')
-      );
+      feeHistoryResponse['reward'] = Array(mostRecentBlocks.length).fill(Array(rewardPercentiles.length).fill("0x0"));
     }
 
     return feeHistoryResponse;
@@ -132,10 +109,10 @@ export class MirrorNode {
     this.logger.trace('getMostRecentBlock()');
     const block = this.store.get(MirrorNode.MOST_RECENT_BLOCK_KEY);
     if (block === undefined) {
-      this.logger.debug('No blocks retrievable');
+      this.logger.debug("No blocks retrievable");
       return null;
     } else {
-      this.logger.debug('Retrieved block number: %s', block.getNum());
+      this.logger.debug("Retrieved block number: %s", block.getNum());
       return block;
     }
   }
@@ -149,16 +126,9 @@ export class MirrorNode {
     return block === undefined ? null : block;
   }
 
-  public async getBlockByHash(
-    hash: string,
-    showDetails: boolean
-  ): Promise<Block | null> {
+  public async getBlockByHash(hash: string, showDetails: boolean): Promise<Block | null> {
     // FIXME: This needs to be reimplemented to go to the mirror node.
-    this.logger.trace(
-      'getBlockByHash(hash=%s, showDetails=%o)',
-      hash,
-      showDetails
-    );
+    this.logger.trace('getBlockByHash(hash=%s, showDetails=%o)', hash, showDetails);
 
     // We don't support this yet, so log a warning in case somebody tries to use it
     // we can learn of that usage.
