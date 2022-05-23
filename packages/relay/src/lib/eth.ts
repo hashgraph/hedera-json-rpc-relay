@@ -455,32 +455,31 @@ export class EthImpl implements Eth {
   async getTransactionByHash(hash: string) {
     this.logger.trace('getTransactionByHash(hash=%s)', hash);
     const contractResult = await this.mirrorNodeClient.getContractResult(hash);
-    if (contractResult) {
-      return new Transaction({
-        accessList: contractResult.access_list,
-        blockHash: contractResult.block_hash,
-        blockNumber: contractResult.block_number,
-        chainId: contractResult.chain_id,
-        from: contractResult.from,
-        gas: contractResult.gas_used,
-        gasPrice: contractResult.gas_price,
-        hash: contractResult.hash,
-        input: contractResult.function_parameters,
-        maxPriorityFeePerGas: contractResult.max_priority_fee_per_gas,
-        maxFeePerGas: contractResult.max_fee_per_gas,
-        nonce: contractResult.nonce,
-        r: contractResult.r,
-        s: contractResult.s,
-        to: contractResult.to,
-        transactionIndex: contractResult.transaction_index,
-        type: contractResult.type,
-        v: contractResult.v,
-        value: contractResult.amount,
-      });
-    }
-    else {
+    if (contractResult === null || contractResult.hash === undefined) {
       return null;
     }
+
+    return new Transaction({
+      accessList: contractResult.access_list,
+      blockHash: contractResult.block_hash.substring(0, 66),
+      blockNumber: contractResult.block_number,
+      chainId: contractResult.chain_id,
+      from: contractResult.from.substring(0, 42),
+      gas: contractResult.gas_used,
+      gasPrice: contractResult.gas_price,
+      hash: contractResult.hash.substring(0, 66),
+      input: contractResult.function_parameters,
+      maxPriorityFeePerGas: contractResult.max_priority_fee_per_gas,
+      maxFeePerGas: contractResult.max_fee_per_gas,
+      nonce: contractResult.nonce,
+      r: contractResult.r.substring(0, 66),
+      s: contractResult.s.substring(0, 66),
+      to: contractResult.to.substring(0, 42),
+      transactionIndex: contractResult.transaction_index,
+      type: contractResult.type,
+      v: contractResult.v,
+      value: contractResult.amount,
+    });
   }
 
   /**

@@ -356,7 +356,16 @@ describe('Eth', async function () {
   describe('eth_getTransactionByHash', async function () {
     it('returns `null` for non-existing hash', async function () {
       // mirror node request mocks
-      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(404, {
+        '_status': {
+          'messages': [
+            {
+              'message': 'No correlating transaction'
+            }
+          ]
+        }
+      });
+
       const result = await ethImpl.getTransactionByHash('0x4444444444444444444444444444444444444444444444444444444444444444');
       expect(result).to.equal(null);
     });
