@@ -584,23 +584,15 @@ export class EthImpl implements Eth {
           : receiptResponse.max_fee_per_gas;
       const answer = {
         blockHash: receiptResponse.block_hash.substring(0, 66),
-        blockNumber: EthImpl.prepend0x(
-          receiptResponse.block_number.toString(16)
-        ),
+        blockNumber: EthImpl.prepend0x(receiptResponse.block_number.toString(16)),
         from: receiptResponse.from,
-        cumulativeGasUsed: EthImpl.prepend0x(
-          receiptResponse.block_gas_used.toString(16)
-        ),
+        cumulativeGasUsed: EthImpl.prepend0x(receiptResponse.block_gas_used.toString(16)),
         gasUsed: EthImpl.prepend0x(receiptResponse.gas_used.toString(16)),
         logs: receiptResponse.logs,
         logsBloom: receiptResponse.logs_bloom,
         transactionHash: receiptResponse.hash,
-        transactionIndex: EthImpl.prepend0x(
-          receiptResponse.transaction_index.toString(16)
-        ),
-        effectiveGasPrice: EthImpl.prepend0x(
-          (Number.parseInt(effectiveGas) * 10_000_000_000).toString(16)
-        ),
+        transactionIndex: EthImpl.prepend0x(receiptResponse.transaction_index.toString(16)),
+        effectiveGasPrice: EthImpl.prepend0x((Number.parseInt(effectiveGas) * 10_000_000_000).toString(16)),
         contractAddress: receiptResponse.to,
         status: receiptResponse.status,
       };
