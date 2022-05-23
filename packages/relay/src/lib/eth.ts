@@ -674,19 +674,20 @@ export class EthImpl implements Eth {
       }
     });
 
+    const blockHash = blockResponse.hash.substring(0, 66);
     return new Block(null, null, {
       baseFeePerGas: 0,
       difficulty: EthImpl.zeroHex,
       extraData: EthImpl.emptyHex,
       gasLimit: maxGasLimit,
       gasUsed: gasUsed,
-      hash: blockResponse.hash,
+      hash: blockHash,
       logsBloom: blockResponse.logsBloom,
       miner: EthImpl.emptyHex,
       mixHash: EthImpl.emptyHex,
       nonce: EthImpl.emptyHex,
       number: blockResponse.number,
-      parentHash: blockResponse.previous_hash,
+      parentHash: blockResponse.previous_hash.substring(0, 66),
       receiptsRoot: EthImpl.emptyHex,
       timestamp: timestamp,
       sha3Uncles: EthImpl.emptyArrayHex,
@@ -694,7 +695,7 @@ export class EthImpl implements Eth {
       stateRoot: EthImpl.emptyHex,
       totalDifficulty: EthImpl.zeroHex,
       transactions: showDetails ? transactions : transactionHashes,
-      transactionsRoot: blockResponse.hash,
+      transactionsRoot: blockHash,
       uncles: [],
     });
   }
@@ -724,20 +725,20 @@ export class EthImpl implements Eth {
       .then(contractResultDetails => {
         const transaction = new Transaction();
         transaction.accessList = [];
-        transaction.blockHash = contractResultDetails.block_hash;
+        transaction.blockHash = contractResultDetails.block_hash.substring(0, 66);
         transaction.blockNumber = contractResultDetails.block_number.toString();
         transaction.chainId = contractResultDetails.chain_id;
-        transaction.from = contractResultDetails.from;
+        transaction.from = contractResultDetails.from.substring(0, 42);
         transaction.gas = contractResultDetails.gas_used;
         transaction.gasPrice = contractResultDetails.gas_price;
-        transaction.hash = contractResultDetails.hash;
+        transaction.hash = contractResultDetails.hash.substring(0, 66);
         transaction.input = contractResultDetails.function_parameters;
         transaction.maxPriorityFeePerGas = contractResultDetails.max_priority_fee_per_gas;
         transaction.maxFeePerGas = contractResultDetails.max_fee_per_gas;
         transaction.nonce = contractResultDetails.nonce;
-        transaction.r = contractResultDetails.r;
-        transaction.s = contractResultDetails.s;
-        transaction.to = contractResultDetails.to;
+        transaction.r = contractResultDetails.r.substring(0, 66);
+        transaction.s = contractResultDetails.s.substring(0, 66);
+        transaction.to = contractResultDetails.to.substring(0, 42);
         transaction.transactionIndex = contractResultDetails.transaction_index;
         transaction.type = contractResultDetails.type;
         transaction.v = contractResultDetails.v;

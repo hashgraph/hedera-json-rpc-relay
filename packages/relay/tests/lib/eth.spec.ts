@@ -63,7 +63,10 @@ describe('Eth calls using MirrorNode', async function () {
   const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
   const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger, '0x12a');
 
-  const blockHash = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b';
+  const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
+  const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;  
+  const blockHashPreviousTrimmed = '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298';
+  const blockHashPrevious = `${blockHashPreviousTrimmed}dc2dfa10f51bcbaab8ae23bc6d662a0b`;
   const blockNumber = 3;
   const blockTransactionCount = 77;
   const maxGasLimit = 250000;
@@ -220,10 +223,11 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.exist;
 
     // verify aggregated info
-    expect(result.hash).equal(blockHash);
+    expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(totalGasUsed);
     expect(result.gasLimit).equal(maxGasLimit);
     expect(result.number).equal(blockNumber);
+    expect(result.parentHash).equal(blockHashPreviousTrimmed);
     expect(result.timestamp).equal(firstTransactionTimestampSeconds);
 
     // verify expected constants
@@ -264,10 +268,11 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.exist;
 
     // verify aggregated info
-    expect(result.hash).equal(blockHash);
+    expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(totalGasUsed);
     expect(result.gasLimit).equal(maxGasLimit);
     expect(result.number).equal(blockNumber);
+    expect(result.parentHash).equal(blockHashPreviousTrimmed);
     expect(result.timestamp).equal(firstTransactionTimestampSeconds);
 
     // verify expected constants
@@ -355,7 +360,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.exist;
 
     // verify aggregated info
-    expect(result.blockHash).equal(blockHash);
+    expect(result.blockHash).equal(blockHashTrimmed);
     expect(result.blockNumber).equal(blockNumber.toString());
     expect(result.hash).equal(contractHash1);
     expect(result.to).equal(contractAddress1);
@@ -402,7 +407,7 @@ describe('Eth calls using MirrorNode', async function () {
     // verify aggregated info
 
     // verify aggregated info
-    expect(result.blockHash).equal(blockHash);
+    expect(result.blockHash).equal(blockHashTrimmed);
     expect(result.blockNumber).equal(blockNumber.toString());
     expect(result.hash).equal(contractHash1);
     expect(result.to).equal(contractAddress1);
