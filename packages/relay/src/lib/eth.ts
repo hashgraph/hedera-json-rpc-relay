@@ -350,24 +350,19 @@ export class EthImpl implements Eth {
   }
 
   /**
- * Gets the number of transaction in a block by its block hash.
- *
- * @param hash
- * @param showDetails
- */
+   * Gets the number of transaction in a block by its block hash.
+   *
+   * @param hash
+   * @param showDetails
+   */
   async getBlockTransactionCountByHash(hash: string): Promise<number | null> {
     this.logger.trace('getBlockTransactionCountByHash(hash=%s, showDetails=%o)', hash);
-    const block = await this.mirrorNodeClient.getBlock(hash).catch((e: any) => {
-      this.logger.error(e, 'Failed to retrieve block for hash %s', hash);
-      return null;
-    });
-
-    if (block === null || block.count === undefined) {
-      // block not found
-      return null;
-    }
-
-    return block.count;
+    return this.mirrorNodeClient.getBlock(hash)
+      .then(block => this.getTransactionCountFromBlockResponse(block))
+      .catch((e: any) => {
+        this.logger.error(e, 'Failed to retrieve block for hash %s', hash);
+        return null;
+      });
   }
 
   /**
@@ -376,49 +371,44 @@ export class EthImpl implements Eth {
    */
   async getBlockTransactionCountByNumber(blockNum: number): Promise<number | null> {
     this.logger.trace('getBlockTransactionCountByNumber(blockNum=%d, showDetails=%o)', blockNum);
-    const block = await this.mirrorNodeClient.getBlock(blockNum).catch((e: any) => {
-      this.logger.error(e, 'Failed to retrieve block for blockNum %s', blockNum);
-      return null;
-    });
-
-    if (block === null || block.count === undefined) {
-      // block not found
-      return null;
-    }
-
-    return block.count;
+    return this.mirrorNodeClient.getBlock(blockNum)
+      .then(block => this.getTransactionCountFromBlockResponse(block))
+      .catch((e: any) => {
+        this.logger.error(e, 'Failed to retrieve block for blockNum %s', blockNum);
+        return null;
+      });
   }
 
-  async getTransactionByBlockHashAndIndex(hash: string, index: number): Promise<Transaction | null> {
-    this.logger.trace('getTransactionByBlockHashAndIndex(hash=%s, index=%d)', hash, index);
-    const contractResults = await this.mirrorNodeClient.getContractResults({ blockHash: hash, transactionIndex: index }).catch((e: any) => {
-      this.logger.error(e, 'Failed to retrieve contract result for hash %s and index=%d', hash, index);
-      return null;
-    });
-
-    if (contractResults === null || contractResults.results === undefined) {
-      // contract result not found
-      return null;
-    }
-
-    const contractResult = contractResults.results[0];
-    return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp);
+  /**
+   * Gets the transaction in a block by its block hash and transactions index.
+   *
+   * @param blockHash
+   * @param transactionIndex
+   */
+  async getTransactionByBlockHashAndIndex(blockHash: string, transactionIndex: number): Promise<Transaction | null> {
+    this.logger.trace('getTransactionByBlockHashAndIndex(hash=%s, index=%d)', blockHash, transactionIndex);
+    return this.mirrorNodeClient.getContractResults({ blockHash: blockHash, transactionIndex: transactionIndex })
+      .then(contractResults => this.getTransactionFromContractResults(contractResults))
+      .catch((e: any) => {
+        this.logger.error(e, 'Failed to retrieve contract result for hash %s and index=%d', blockHash, transactionIndex);
+        return null;
+      });
   };
 
-  async getTransactionByBlockNumberAndIndex(blockNum: number, index: number): Promise<Transaction | null> {
-    this.logger.trace('getTransactionByBlockNumberAndIndex(blockNum=%d, index=%d)', blockNum, index);
-    const contractResults = await this.mirrorNodeClient.getContractResults({ blockNumber: blockNum, transactionIndex: index }).catch((e: any) => {
-      this.logger.error(e, 'Failed to retrieve contract result for blockNum %s and index=%d', blockNum, index);
-      return null;
-    });
-
-    if (contractResults === null || contractResults.results === undefined) {
-      // contract result not found
-      return null;
-    }
-
-    const contractResult = contractResults.results[0];
-    return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp);
+    /**
+   * Gets the transaction in a block by its block hash and transactions index.
+   *
+   * @param blockNumber
+   * @param transactionIndex
+   */
+  async getTransactionByBlockNumberAndIndex(blockNum: number, transactionIndex: number): Promise<Transaction | null> {
+    this.logger.trace('getTransactionByBlockNumberAndIndex(blockNum=%d, index=%d)', blockNum, transactionIndex);
+    return this.mirrorNodeClient.getContractResults({ blockNumber: blockNum, transactionIndex: transactionIndex })
+      .then(contractResults => this.getTransactionFromContractResults(contractResults))
+      .catch((e: any) => {
+        this.logger.error(e, 'Failed to retrieve contract result for blockNum %s and index=%d', blockNum, transactionIndex);
+        return null;
+      });
   }
 
   /**
@@ -709,6 +699,25 @@ export class EthImpl implements Eth {
     });
   }
 
+  private getTransactionCountFromBlockResponse(block: any) {
+    if (block === null || block.count === undefined) {
+      // block not found
+      return null;
+    }
+
+    return block.count;
+  }
+
+  private getTransactionFromContractResults(contractResults: any) {
+    if (contractResults.results === undefined) {
+      // contract result not found
+      return null;
+    }
+
+    const contractResult = contractResults.results[0];
+    return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp);
+  }
+
   private async getTransactionFromContractResult(to: string, timestamp: string): Promise<Transaction | null> {
     // call mirror node by id and timestamp for further details
     return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp)
@@ -739,32 +748,5 @@ export class EthImpl implements Eth {
         this.logger.error(e, 'Failed to retrieve contract result details for contract address %s at timestamp=%s', to, timestamp);
         return null;
       });
-
-    // if (contractResultDetails === null) {
-    //   // contract result not found
-    //   return null;
-    // }
-
-    // const transaction = new Transaction();
-    // transaction.accessList = [];
-    // transaction.blockHash = contractResultDetails.block_hash;
-    // transaction.blockNumber = contractResultDetails.block_number.toString();
-    // transaction.chainId = contractResultDetails.chain_id;
-    // transaction.from = contractResultDetails.from;
-    // transaction.gas = contractResultDetails.gas_used;
-    // transaction.gasPrice = contractResultDetails.gas_price;
-    // transaction.hash = contractResultDetails.hash;
-    // transaction.input = contractResultDetails.function_parameters;
-    // transaction.maxPriorityFeePerGas = contractResultDetails.max_priority_fee_per_gas;
-    // transaction.maxFeePerGas = contractResultDetails.max_fee_per_gas;
-    // transaction.nonce = contractResultDetails.nonce;
-    // transaction.r = contractResultDetails.r;
-    // transaction.s = contractResultDetails.s;
-    // transaction.to = contractResultDetails.to;
-    // transaction.transactionIndex = contractResultDetails.transaction_index;
-    // transaction.type = contractResultDetails.type;
-    // transaction.v = contractResultDetails.v;
-    // transaction.value = contractResultDetails.amount;
-    // return transaction;
   }
 }
