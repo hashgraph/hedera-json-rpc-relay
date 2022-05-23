@@ -125,7 +125,7 @@ export class Receipt {
 }
 
 export class Transaction {
-    public readonly accessList!: string[];
+    public readonly accessList!: string | null;
     public readonly blockHash!: string | null;
     public readonly blockNumber!: string | null;
     public readonly chainId!: string;

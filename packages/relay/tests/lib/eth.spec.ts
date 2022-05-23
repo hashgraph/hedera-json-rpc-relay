@@ -86,6 +86,57 @@ describe('Eth', async function () {
     "value": 2000000000
   };
 
+  const defaultDetailedContractResultByHash = {
+    "amount":2000000000,
+    "bloom":"0x0505",
+    "call_result":"0x0606",
+    "contract_id":"0.0.5001",
+    "created_contract_ids":["0.0.7001"],
+    "error_message":null,
+    "from":"0x0000000000000000000000000000000000001f41",
+    "function_parameters":"0x0707",
+    "gas_limit":1000000,
+    "gas_used":123,
+    "timestamp":"167654.000123456",
+    "to":"0x0000000000000000000000000000000000001389",
+    "block_hash":"0x6ceecd8bb224da491",
+    "block_number":17,
+    "logs": [{
+        "address":"0x0000000000000000000000000000000000001389",
+        "bloom":"0x0123",
+        "contract_id":"0.0.5001",
+        "data":"0x0123",
+        "index":0,
+        "topics":["0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750"]
+    }],
+      "result":"SUCCESS",
+      "transaction_index":1,
+      "hash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+      "state_changes":[{
+        "address":"0x0000000000000000000000000000000000001389",
+        "contract_id":"0.0.5001",
+        "slot":"0x0000000000000000000000000000000000000000000000000000000000000101",
+        "value_read":"0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+        "value_written":"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+      }],
+      "status":"0x1",
+      "access_list":"0x",
+      "block_gas_used":50000000,
+      "chain_id":"0x",
+      "gas_price":"0x4a817c80",
+      "max_fee_per_gas":"0x",
+      "max_priority_fee_per_gas":"0x",
+      "r":"0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
+      "s":"0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
+      "type":2,
+      "v":1,
+      "nonce":1
+  };
+
+  this.afterEach(() => {
+    mock.resetHandlers();
+  });
+
 
   it('should execute "eth_chainId"', async function () {
     const chainId = await Relay.eth().chainId();
@@ -302,30 +353,39 @@ describe('Eth', async function () {
     });
   });
 
-  it('eth_getTransactionByHash', async function () {
-    // mirror node request mocks
-    mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultTransaction);
-    const result = await ethImpl.getTransactionByHash(defaultTxHash);
+  describe('eth_getTransactionByHash', async function () {
+    it('returns `null` for non-existing hash', async function () {
+      // mirror node request mocks
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+      const result = await ethImpl.getTransactionByHash('0x4444444444444444444444444444444444444444444444444444444444444444');
+      expect(result).to.equal(null);
+    });
 
-    expect(result).to.exist;
-    expect(result.accessList).to.eq(defaultTransaction.accessList);
-    expect(result.blockHash).to.eq(defaultTransaction.blockHash);
-    expect(result.blockNumber).to.eq(defaultTransaction.blockNumber);
-    expect(result.chainId).to.eq(defaultTransaction.chainId);
-    expect(result.from).to.eq(defaultTransaction.from);
-    expect(result.gas).to.eq(defaultTransaction.gas);
-    expect(result.gasPrice).to.eq(defaultTransaction.gasPrice);
-    expect(result.hash).to.eq(defaultTransaction.hash);
-    expect(result.input).to.eq(defaultTransaction.input);
-    expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
-    expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
-    expect(result.nonce).to.eq(defaultTransaction.nonce);
-    expect(result.r).to.eq(defaultTransaction.r);
-    expect(result.s).to.eq(defaultTransaction.s);
-    expect(result.to).to.eq(defaultTransaction.to);
-    expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
-    expect(result.type).to.eq(defaultTransaction.type);
-    expect(result.v).to.eq(defaultTransaction.v);
-    expect(result.value).to.eq(defaultTransaction.value);
+    it('returns correct transaction for existing hash', async function () {
+      // mirror node request mocks
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+      const result = await ethImpl.getTransactionByHash(defaultTxHash);
+
+      expect(result).to.exist;
+      expect(result.accessList).to.eq(defaultTransaction.accessList);
+      expect(result.blockHash).to.eq(defaultTransaction.blockHash);
+      expect(result.blockNumber).to.eq(defaultTransaction.blockNumber);
+      expect(result.chainId).to.eq(defaultTransaction.chainId);
+      expect(result.from).to.eq(defaultTransaction.from);
+      expect(result.gas).to.eq(defaultTransaction.gas);
+      expect(result.gasPrice).to.eq(defaultTransaction.gasPrice);
+      expect(result.hash).to.eq(defaultTransaction.hash);
+      expect(result.input).to.eq(defaultTransaction.input);
+      expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
+      expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
+      expect(result.nonce).to.eq(defaultTransaction.nonce);
+      expect(result.r).to.eq(defaultTransaction.r);
+      expect(result.s).to.eq(defaultTransaction.s);
+      expect(result.to).to.eq(defaultTransaction.to);
+      expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
+      expect(result.type).to.eq(defaultTransaction.type);
+      expect(result.v).to.eq(defaultTransaction.v);
+      expect(result.value).to.eq(defaultTransaction.value);
+    });
   });
 });
