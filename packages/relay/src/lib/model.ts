@@ -125,25 +125,25 @@ export class Receipt {
 }
 
 export class Transaction {
-    public readonly accessList:string = '0x';
-    public readonly blockHash:string = '0x0000000000000000000000000000000000000000000000000000000000000000';
-    public readonly blockNumber:string = '0x0';
-    public readonly chainId:string = '0x';
-    public readonly from:string = '0x0000000000000000000000000000000000000000000000000000000000000000';
-    public readonly gas:string = '0x0';
-    public readonly gasPrice:string = '0x0';
-    public readonly hash:string = '0x0000000000000000000000000000000000000000000000000000000000000000';
-    public readonly input:string = '0x';
-    public readonly maxPriorityFeePerGas:string = '0x0';
-    public readonly maxFeePerGas:string = '0x0';
-    public readonly nonce:string = '';
-    public readonly r:string = '0x';
-    public readonly s:string = '0x';
-    public readonly to:string = '0x';
-    public readonly transactionIndex:string = '0x';
-    public readonly type:string = '0x';
-    public readonly v:string = '0x';
-    public readonly value:string = '0x';
+    public readonly accessList!: string[];
+    public readonly blockHash!: string | null;
+    public readonly blockNumber!: string | null;
+    public readonly chainId!: string;
+    public readonly from!: string;
+    public readonly gas!: string;
+    public readonly gasPrice!: string;
+    public readonly hash!: string;
+    public readonly input!: string;
+    public readonly maxPriorityFeePerGas!: string;
+    public readonly maxFeePerGas!: string;
+    public readonly nonce!: string;
+    public readonly r!: string;
+    public readonly s!: string;
+    public readonly to!: string | null;
+    public readonly transactionIndex!: string | null;
+    public readonly type!: string;
+    public readonly v!: string;
+    public readonly value!: string;
 
     constructor(args: any) {
         this.accessList = args.accessList;

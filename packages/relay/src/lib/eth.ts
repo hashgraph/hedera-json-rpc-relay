@@ -454,8 +454,7 @@ export class EthImpl implements Eth {
    */
   async getTransactionByHash(hash: string) {
     this.logger.trace('getTransactionByHash(hash=%s)', hash);
-    // const contractResult = await this.mirrorNodeClient.getContractResult(hash);
-    const contractResult = await this.mirrorNode.getContractResult(hash);
+    const contractResult = await this.mirrorNodeClient.getContractResult(hash);
     return new Transaction({
       accessList: contractResult.access_list,
       blockHash: contractResult.block_hash,

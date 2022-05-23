@@ -23,6 +23,10 @@ import dotenv from 'dotenv';
 import { expect } from 'chai';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
+import { EthImpl } from '../../src/lib/eth';
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 const cache = require('js-cache');
 
@@ -44,6 +48,45 @@ const validateHash = (hash: string, len?: number) => {
 
 
 describe('Eth', async function () {
+  this.timeout(10000);
+
+  const instance = axios.create({
+    baseURL: 'https://localhost:5551/api/v1',
+    responseType: 'json' as const,
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    timeout: 10 * 1000
+  });
+
+  const mock = new MockAdapter(instance, { onNoMatch: "throwException" });
+  const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
+  const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger);
+
+  const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+  const defaultTransaction = {
+    "accessList": "0x",
+    "blockHash": "0x6ceecd8bb224da491",
+    "blockNumber": 17,
+    "chainId": "0x",
+    "from": "0x0000000000000000000000000000000000001f41",
+    "gas": 123,
+    "gasPrice": "0x4a817c80",
+    "hash": defaultTxHash,
+    "input": "0x0707",
+    "maxFeePerGas": "0x",
+    "maxPriorityFeePerGas": "0x",
+    "nonce": 1,
+    "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
+    "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
+    "to": "0x0000000000000000000000000000000000001389",
+    "transactionIndex": 1,
+    "type": 2,
+    "v": 1,
+    "value": 2000000000
+  };
+
+
   it('should execute "eth_chainId"', async function () {
     const chainId = await Relay.eth().chainId();
 
@@ -257,5 +300,32 @@ describe('Eth', async function () {
       // Assert the exact values
       expect(receipt).to.deep.eq(cachedReceipt);
     });
+  });
+
+  it('eth_getTransactionByHash', async function () {
+    // mirror node request mocks
+    mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultTransaction);
+    const result = await ethImpl.getTransactionByHash(defaultTxHash);
+
+    expect(result).to.exist;
+    expect(result.accessList).to.eq(defaultTransaction.accessList);
+    expect(result.blockHash).to.eq(defaultTransaction.blockHash);
+    expect(result.blockNumber).to.eq(defaultTransaction.blockNumber);
+    expect(result.chainId).to.eq(defaultTransaction.chainId);
+    expect(result.from).to.eq(defaultTransaction.from);
+    expect(result.gas).to.eq(defaultTransaction.gas);
+    expect(result.gasPrice).to.eq(defaultTransaction.gasPrice);
+    expect(result.hash).to.eq(defaultTransaction.hash);
+    expect(result.input).to.eq(defaultTransaction.input);
+    expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
+    expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
+    expect(result.nonce).to.eq(defaultTransaction.nonce);
+    expect(result.r).to.eq(defaultTransaction.r);
+    expect(result.s).to.eq(defaultTransaction.s);
+    expect(result.to).to.eq(defaultTransaction.to);
+    expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
+    expect(result.type).to.eq(defaultTransaction.type);
+    expect(result.v).to.eq(defaultTransaction.v);
+    expect(result.value).to.eq(defaultTransaction.value);
   });
 });
