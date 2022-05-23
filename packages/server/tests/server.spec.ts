@@ -74,6 +74,19 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('relay/' + process.env.npm_package_version);
   });
 
+  it('should execute "eth_getTransactionByHash  missing transaction"', async function() {
+    const res = await this.testClient.post('/', {
+      'id': '2',
+      'jsonrpc': '2.0',
+      'method': 'eth_getTransactionByHash',
+      'params': ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392']
+    });
+
+    BaseTest.defaultResponseChecks(res);
+    expect(res.data.result).to.be.equal(null);
+  });
+
+
   it('should execute "eth_getUncleByBlockHashAndIndex"', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
