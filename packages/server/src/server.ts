@@ -221,8 +221,7 @@ rpc.use('eth_accounts', async () => {
  */
 rpc.use('eth_getTransactionByHash', async (params: any) => {
   logger.debug("eth_getTransactionByHash");
-  // TODO
-  // return relay.eth().getTransactionByHash();
+  return relay.eth().getTransactionByHash(params[0]);
 });
 
 /**
@@ -239,7 +238,7 @@ rpc.use('eth_getTransactionByHash', async (params: any) => {
  */
 rpc.use('eth_feeHistory', async (params: any) => {
   logger.debug("eth_feeHistory");
-  return relay.eth().feeHistory(params?.[0], params?.[1], params?.[2]);
+  return relay.eth().feeHistory(Number(params?.[0]), params?.[1], params?.[2]);
 });
 
 

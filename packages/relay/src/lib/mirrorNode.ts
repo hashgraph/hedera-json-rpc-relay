@@ -55,7 +55,7 @@ export class MirrorNode {
     }
   }
 
-  public async getFeeHistory(fee : number, _blockCount: string, _newestBlock: string, rewardPercentiles: Array<number>|null) {
+  public async getFeeHistory(fee : number, _blockCount: number, _newestBlock: string, rewardPercentiles: Array<number>|null) {
     // FIXME: This is a fake implementation. It works for now, but should
     //        actually delegate to the mirror node.
     this.logger.trace('getFeeHistory()');
@@ -74,20 +74,17 @@ export class MirrorNode {
     }
     this.logger.debug('Computing fee history based on the last %d blocks', mostRecentBlocks.length);
 
+    const feeHistoryResponse = {
+      baseFeePerGasArray: Array(mostRecentBlocks.length).fill('0x' + fee.toString(16)),
+      gasUsedRatioArray: Array(mostRecentBlocks.length).fill('0.5'),
+      oldestBlockNumber: mostRecentBlocks[0].number
+    };
+
     if (rewardPercentiles) {
-      return {
-        oldestBlock: mostRecentBlocks[0].number,
-        baseFeePerGas: Array(mostRecentBlocks.length).fill('0x' + fee.toString(16)),
-        gasUsedRatio: Array(mostRecentBlocks.length).fill('0.5'),
-        reward: Array(mostRecentBlocks.length).fill(Array(rewardPercentiles.length).fill("0x0"))
-      };
-    } else {
-      return {
-        oldestBlock: mostRecentBlocks[0].number,
-        baseFeePerGas: Array(mostRecentBlocks.length).fill('0x' + fee.toString(16)),
-        gasUsedRatio: Array(mostRecentBlocks.length).fill('0.5')
-      };
+      feeHistoryResponse['reward'] = Array(mostRecentBlocks.length).fill(Array(rewardPercentiles.length).fill("0x0"));
     }
+
+    return feeHistoryResponse;
   }
 
   // FIXME this is for demo/temp purposes, remove it when the mirror node has real blocks

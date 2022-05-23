@@ -18,7 +18,7 @@
  *
  */
 
-import {Eth} from '../index';
+import { Eth } from '../index';
 import {
   AccountBalanceQuery,
   AccountId,
@@ -33,10 +33,10 @@ import {
   HbarUnit,
   Status,
 } from '@hashgraph/sdk';
-import {Logger} from 'pino';
-import {Block, Receipt} from './model';
-import {MirrorNode} from './mirrorNode';
-import {MirrorNodeClient} from './clients';
+import { Logger } from 'pino';
+import { Block, Receipt, Transaction } from './model';
+import { MirrorNode } from './mirrorNode';
+import { MirrorNodeClient } from './clients';
 
 const cache = require('js-cache');
 
@@ -99,12 +99,7 @@ export class EthImpl implements Eth {
     this.mirrorNode = mirrorNode;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
-
-    // Compute the chainId
-    // FIXME: Should default to a "dev net" number. Is this it?
-    //const configuredChainId = process.env.CHAIN_ID || '298';
     this.chain = chain;
-    this.logger.info('Running with chainId=%s', this.chain);
   }
 
   /**
@@ -120,7 +115,7 @@ export class EthImpl implements Eth {
    * Gets the fee history.
    */
   async feeHistory(
-    blockCount: string,
+    blockCount: number,
     newestBlock: string,
     rewardPercentiles: Array<number> | null
   ) {
@@ -152,7 +147,7 @@ export class EthImpl implements Eth {
     //contractTransactionGas is in tinycents * 1000, so the final multiplier is truncated by 3 zeroes for
     // the conversion to weibars
     return Math.ceil(
-        (contractTransactionGas / exchangeRates.currentRate.cents) *
+      (contractTransactionGas / exchangeRates.currentRate.cents) *
         exchangeRates.currentRate.hbars *
         10_000_000
     );
@@ -161,9 +156,16 @@ export class EthImpl implements Eth {
   /**
    * Gets the most recent block number.
    */
-  async blockNumber() {
+  async blockNumber(): Promise<number> {
     this.logger.trace('blockNumber()');
-    return await this.mirrorNode.getMostRecentBlockNumber();
+
+    const blocksResponse = await this.mirrorNodeClient.getLatestBlock();
+    const blocks = blocksResponse !== null ? blocksResponse.blocks : null;
+    if (Array.isArray(blocks) && blocks.length > 0) {
+      return blocks[0].number;
+    }
+
+    throw new Error('Error encountered retrieving latest block');
   }
 
   /**
@@ -530,6 +532,41 @@ export class EthImpl implements Eth {
       );
       throw e;
     }
+  }
+
+  /**
+   * Gets a transaction by the provided hash
+   *
+   * @param hash
+   */
+  async getTransactionByHash(hash: string) {
+    this.logger.trace('getTransactionByHash(hash=%s)', hash);
+    const contractResult = await this.mirrorNodeClient.getContractResult(hash);
+    if (contractResult === null || contractResult.hash === undefined) {
+      return null;
+    }
+
+    return new Transaction({
+      accessList: contractResult.access_list,
+      blockHash: contractResult.block_hash.substring(0, 66),
+      blockNumber: contractResult.block_number,
+      chainId: contractResult.chain_id,
+      from: contractResult.from.substring(0, 42),
+      gas: contractResult.gas_used,
+      gasPrice: contractResult.gas_price,
+      hash: contractResult.hash.substring(0, 66),
+      input: contractResult.function_parameters,
+      maxPriorityFeePerGas: contractResult.max_priority_fee_per_gas,
+      maxFeePerGas: contractResult.max_fee_per_gas,
+      nonce: contractResult.nonce,
+      r: contractResult.r.substring(0, 66),
+      s: contractResult.s.substring(0, 66),
+      to: contractResult.to.substring(0, 42),
+      transactionIndex: contractResult.transaction_index,
+      type: contractResult.type,
+      v: contractResult.v,
+      value: contractResult.amount,
+    });
   }
 
   /**
