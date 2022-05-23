@@ -572,7 +572,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`getTransactionReceipt(${hash})`);
     const receiptResponse = await this.mirrorNodeClient.getContractResult(hash);
     this.logger.trace(`response - ${JSON.stringify(receiptResponse)}`);
-    if (receiptResponse === undefined) {
+    if (receiptResponse === null || receiptResponse.hash === undefined) {
       this.logger.trace(`no receipt for ${hash}`);
       // block not found
       return Promise.reject('no receipt');
