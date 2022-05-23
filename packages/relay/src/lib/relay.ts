@@ -47,13 +47,13 @@ export class RelayImpl implements Relay {
 
     const configuredChainId =
       process.env.CHAIN_ID || RelayImpl.chainIds[hederaNetwork] || '298';
-    const chainId = this.prepend0x(Number(configuredChainId).toString(16));
+    const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
     logger.info('Running with chainId=%s', chainId);
 
     this.clientMain = this.initClient(hederaNetwork);
 
     this.web3Impl = new Web3Impl(this.clientMain);
-    this.netImpl = new NetImpl(this.clientMain);
+    this.netImpl = new NetImpl(this.clientMain, chainId);
 
     const mirrorNode = new MirrorNode(logger.child({ name: `mirror-node` }));
 
@@ -119,16 +119,5 @@ export class RelayImpl implements Relay {
         return client;
       }
     }
-  }
-
-  /**
-     * Internal helper method that prepends a leading 0x if there isn't one.
-     * @param input
-     * @private
-     */
-  private prepend0x(input: string): string {
-    return input.startsWith('0x')
-      ? input
-      : '0x' + input;
   }
 }

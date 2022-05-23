@@ -601,6 +601,17 @@ export class EthImpl implements Eth {
   }
 
   /**
+   * Internal helper method that prepends a leading 0x if there isn't one.
+   * @param input
+   * @private
+   */
+  static prepend0x(input: string): string {
+    return input.startsWith(EthImpl.emptyHex)
+      ? input
+      : EthImpl.emptyHex + input;
+  }
+
+  /**
    * Internal helper method that removes the leading 0x if there is one.
    * @param input
    * @private
@@ -609,17 +620,6 @@ export class EthImpl implements Eth {
     return input.startsWith(EthImpl.emptyHex)
       ? input.substring(2)
       : input;
-  }
-
-  /**
-   * Internal helper method that prepends a leading 0x if there isn't one.
-   * @param input
-   * @private
-   */
-  private static prepend0x(input: string): string {
-    return input.startsWith(EthImpl.emptyHex)
-      ? input
-      : EthImpl.emptyHex + input;
   }
 
   /**
