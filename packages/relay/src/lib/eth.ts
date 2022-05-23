@@ -23,7 +23,7 @@ import { Status } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Block, Receipt, Transaction } from './model';
 import { MirrorNode } from './mirrorNode';
-import { MirrorNodeClient, NodeClient } from './clients';
+import { MirrorNodeClient, SDKClient } from './clients';
 
 const cache = require('js-cache');
 
@@ -43,12 +43,12 @@ export class EthImpl implements Eth {
   static defaultGas = 0x10000;
 
   /**
-   * The client to use for connecting to the main consensus network. The account
+   * The sdk client use for connecting to both the consensus nodes and mirror node. The account
    * associated with this client will pay for all operations on the main network.
    *
    * @private
    */
-  private readonly nodeClient: NodeClient;
+  private readonly sdkClient: SDKClient;
 
   /**
    * The mirror node mock
@@ -81,8 +81,8 @@ export class EthImpl implements Eth {
    * @param mirrorNodeClient
    * @param logger
    */
-  constructor(nodeClient: NodeClient, mirrorNode: MirrorNode, mirrorNodeClient: MirrorNodeClient, logger: Logger, chain: string) {
-    this.nodeClient = nodeClient;
+  constructor(nodeClient: SDKClient, mirrorNode: MirrorNode, mirrorNodeClient: MirrorNodeClient, logger: Logger, chain: string) {
+    this.sdkClient = nodeClient;
     this.mirrorNode = mirrorNode;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
@@ -122,7 +122,7 @@ export class EthImpl implements Eth {
   }
 
   private async getFeeWeibars() {
-    const exchangeRates = await this.nodeClient.getExchangeRate();
+    const exchangeRates = await this.sdkClient.getExchangeRate();
 
     //FIXME retrieve fee from fee API when released
     const contractTransactionGas = 853454;
@@ -274,7 +274,7 @@ export class EthImpl implements Eth {
       blockNumber
     );
     try {
-      const weibars = await this.nodeClient.getAccountBalanceInWeiBar(account);
+      const weibars = await this.sdkClient.getAccountBalanceInWeiBar(account);
       return EthImpl.prepend0x(weibars.toString(16));
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
@@ -302,7 +302,7 @@ export class EthImpl implements Eth {
       blockNumber
     );
     try {
-      const bytecode = await this.nodeClient.getContractByteCode(0, 0, address);
+      const bytecode = await this.sdkClient.getContractByteCode(0, 0, address);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       // handle INVALID_CONTRACT_ID
@@ -419,7 +419,7 @@ export class EthImpl implements Eth {
    */
   async getTransactionCount(address: string, blockNum: string): Promise<number> {
     this.logger.trace('getTransactionCount(address=%s, blockNum=%s)', address, blockNum);
-    const accountInfo = await this.nodeClient.getAccountInfo(address);
+    const accountInfo = await this.sdkClient.getAccountInfo(address);
 
     return Number(accountInfo.ethereumNonce);
   }
@@ -434,10 +434,10 @@ export class EthImpl implements Eth {
     try {
       // Convert from 0xabc format into a raw Uint8Array of bytes and execute the transaction
       const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
-      const contractExecuteResponse = await this.nodeClient.submitEthereumTransaction(transactionBuffer);
+      const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer);
 
       // Wait for the record from the execution.
-      const record = await this.nodeClient.getRecord(contractExecuteResponse);
+      const record = await this.sdkClient.getRecord(contractExecuteResponse);
       if (record.ethereumHash == null) {
         throw new Error(
           'The ethereumHash can never be null for an ethereum transaction, and yet it was!!'
@@ -511,7 +511,7 @@ export class EthImpl implements Eth {
 
       // Execute the call and get the response
       this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s"', call.to, gas, call.data);
-      const contractCallResponse = await this.nodeClient.submitContractCallQuery(call.to, call.data, gas);
+      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas);
 
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(

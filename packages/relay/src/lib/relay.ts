@@ -27,7 +27,7 @@ import { EthImpl } from './eth';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNode } from './mirrorNode';
-import { MirrorNodeClient, NodeClient } from './clients';
+import { MirrorNodeClient, SDKClient } from './clients';
 
 export class RelayImpl implements Relay {
   private static chainIds = {
@@ -62,10 +62,10 @@ export class RelayImpl implements Relay {
       logger.child({ name: `mirror-node` })
     );
 
-    const nodeClient = new NodeClient(this.clientMain);
+    const sdkClient = new SDKClient(this.clientMain);
 
     this.ethImpl = new EthImpl(
-      nodeClient,
+      sdkClient,
       mirrorNode,
       mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
