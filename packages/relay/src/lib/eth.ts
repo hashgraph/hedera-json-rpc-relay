@@ -567,7 +567,6 @@ export class EthImpl implements Eth {
   async getTransactionReceipt(hash: string) {
     this.logger.trace(`getTransactionReceipt(${hash})`);
     const receiptResponse = await this.mirrorNodeClient.getContractResult(hash);
-    this.logger.trace(`response - ${JSON.stringify(receiptResponse)}`);
     if (receiptResponse === null || receiptResponse.hash === undefined) {
       this.logger.trace(`no receipt for ${hash}`);
       // block not found
@@ -594,7 +593,7 @@ export class EthImpl implements Eth {
         root: receiptResponse.root,
         status: receiptResponse.status,
       };
-      this.logger.trace(answer);
+      this.logger.trace(`receipt for ${hash} found in block ${answer.blockNumber}`);
       return answer;
     }
   }
