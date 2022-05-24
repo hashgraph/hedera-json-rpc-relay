@@ -3,10 +3,10 @@
 replicaCount: 1
 
 image:
-  repository: #IMAGE is not published yet, use internal repo/location to push to
+  repository: ghcr.io/hashgraph/hedera-json-rpc-relay
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: main
 
 imagePullSecrets: []
 nameOverride: ""
@@ -82,3 +82,4 @@ affinity: {}
 ports:
   name: jsonrpcrelay
   containerPort: 7546
+  

@@ -14,3 +14,4 @@ spec:
   selector:
     app: {{ template "json-rpc-relay.name" . }}
     {{- include "json-rpc-relay.selectorLabels" . | nindent 4 }}
+    
