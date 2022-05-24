@@ -21,11 +21,9 @@
 import { Eth } from '../index';
 import { Status } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Block, Receipt, Transaction } from './model';
+import { Block, Transaction } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
-
-const cache = require('js-cache');
 
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
@@ -463,8 +461,6 @@ export class EthImpl implements Eth {
         return '';
       }
 
-      const receipt = new Receipt(txHash, record, block);
-      cache.set(txHash, receipt);
       return txHash;
     } catch (e) {
       this.logger.error(
@@ -575,7 +571,7 @@ export class EthImpl implements Eth {
     if (receiptResponse === null || receiptResponse.hash === undefined) {
       this.logger.trace(`no receipt for ${hash}`);
       // block not found
-      return Promise.reject('no receipt');
+      return null;
     } else {
       const effectiveGas =
         receiptResponse.max_fee_per_gas === undefined ||
@@ -586,14 +582,16 @@ export class EthImpl implements Eth {
         blockHash: receiptResponse.block_hash.substring(0, 66),
         blockNumber: EthImpl.prepend0x(receiptResponse.block_number.toString(16)),
         from: receiptResponse.from,
+        to: receiptResponse.to,
         cumulativeGasUsed: EthImpl.prepend0x(receiptResponse.block_gas_used.toString(16)),
         gasUsed: EthImpl.prepend0x(receiptResponse.gas_used.toString(16)),
+        contractAddress: undefined, // FIXME translate from receiptResponse.created_contract_ids when `to` is empty,
         logs: receiptResponse.logs,
-        logsBloom: receiptResponse.logs_bloom,
+        logsBloom: receiptResponse.bloom,
         transactionHash: receiptResponse.hash,
         transactionIndex: EthImpl.prepend0x(receiptResponse.transaction_index.toString(16)),
         effectiveGasPrice: EthImpl.prepend0x((Number.parseInt(effectiveGas) * 10_000_000_000).toString(16)),
-        contractAddress: receiptResponse.to,
+        root: receiptResponse.root,
         status: receiptResponse.status,
       };
       this.logger.trace(answer);
