@@ -21,11 +21,9 @@
 import { Eth } from '../index';
 import { Status } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Block, Receipt, Transaction } from './model';
+import { Block, Transaction } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
-
-const cache = require('js-cache');
 
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
@@ -80,6 +78,7 @@ export class EthImpl implements Eth {
    * @param mirrorNode
    * @param mirrorNodeClient
    * @param logger
+   * @param chain
    */
   constructor(nodeClient: SDKClient, mirrorNode: MirrorNode, mirrorNodeClient: MirrorNodeClient, logger: Logger, chain: string) {
     this.sdkClient = nodeClient;
@@ -337,6 +336,7 @@ export class EthImpl implements Eth {
   /**
    * Gets the block by its block number.
    * @param blockNum
+   * @param showDetails
    */
   async getBlockByNumber(blockNum: number, showDetails: boolean): Promise<Block | null> {
     this.logger.trace('getBlockByNumber(blockNum=%d, showDetails=%o)', blockNum);
@@ -350,12 +350,11 @@ export class EthImpl implements Eth {
    * Gets the number of transaction in a block by its block hash.
    *
    * @param hash
-   * @param showDetails
    */
   async getBlockTransactionCountByHash(hash: string): Promise<number | null> {
     this.logger.trace('getBlockTransactionCountByHash(hash=%s, showDetails=%o)', hash);
     return this.mirrorNodeClient.getBlock(hash)
-      .then(block => this.getTransactionCountFromBlockResponse(block))
+      .then(block => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, 'Failed to retrieve block for hash %s', hash);
         return null;
@@ -369,7 +368,7 @@ export class EthImpl implements Eth {
   async getBlockTransactionCountByNumber(blockNum: number): Promise<number | null> {
     this.logger.trace('getBlockTransactionCountByNumber(blockNum=%d, showDetails=%o)', blockNum);
     return this.mirrorNodeClient.getBlock(blockNum)
-      .then(block => this.getTransactionCountFromBlockResponse(block))
+      .then(block => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, 'Failed to retrieve block for blockNum %s', blockNum);
         return null;
@@ -395,7 +394,7 @@ export class EthImpl implements Eth {
   /**
  * Gets the transaction in a block by its block hash and transactions index.
  *
- * @param blockNumber
+ * @param blockNum
  * @param transactionIndex
  */
   async getTransactionByBlockNumberAndIndex(blockNum: number, transactionIndex: number): Promise<Transaction | null> {
@@ -462,8 +461,6 @@ export class EthImpl implements Eth {
         return '';
       }
 
-      const receipt = new Receipt(txHash, record, block);
-      cache.set(txHash, receipt);
       return txHash;
     } catch (e) {
       this.logger.error(
@@ -568,34 +565,36 @@ export class EthImpl implements Eth {
    * @param hash
    */
   async getTransactionReceipt(hash: string) {
-    // FIXME: This should go to the mirror node. For now we have an in memory map we
-    //        grab receipts from for each tx that was executed. Even in the full implementation
-    //        we will want to use the cache as an LRU to avoid hammering the mirror node more
-    //        than needed, since the receipt is an immutable type. But the cache should be in the
-    //        mirror node connector, rather than here.
-    this.logger.trace('getTransactionReceipt(hash=%s)', hash);
-    try {
-      // Lookup the receipt in the cache.
-      const receipt = cache.get(hash);
-
-      if (!receipt) {
-        // FIXME: if it wasn't in the cache, go to the mirror node. If it isn't there either,
-        //        then return null.
-        this.logger.debug(
-          'Did not find the receipt for hash %s. Returning null.',
-          hash
-        );
-        return null;
-      }
-
-      this.logger.trace('Found a receipt, returning it to the caller');
-      return receipt;
-    } catch (e) {
-      this.logger.error(
-        e,
-        'Failed to handle getTransactionReceipt cleanly for hash %s',
-        hash
-      );
+    this.logger.trace(`getTransactionReceipt(${hash})`);
+    const receiptResponse = await this.mirrorNodeClient.getContractResult(hash);
+    if (receiptResponse === null || receiptResponse.hash === undefined) {
+      this.logger.trace(`no receipt for ${hash}`);
+      // block not found
+      return null;
+    } else {
+      const effectiveGas =
+        receiptResponse.max_fee_per_gas === undefined ||
+        receiptResponse.max_fee_per_gas == '0x'
+          ? receiptResponse.gas_price
+          : receiptResponse.max_fee_per_gas;
+      const answer = {
+        blockHash: receiptResponse.block_hash.substring(0, 66),
+        blockNumber: EthImpl.prepend0x(receiptResponse.block_number.toString(16)),
+        from: receiptResponse.from,
+        to: receiptResponse.to,
+        cumulativeGasUsed: EthImpl.prepend0x(receiptResponse.block_gas_used.toString(16)),
+        gasUsed: EthImpl.prepend0x(receiptResponse.gas_used.toString(16)),
+        contractAddress: undefined, // FIXME translate from receiptResponse.created_contract_ids when `to` is empty,
+        logs: receiptResponse.logs,
+        logsBloom: receiptResponse.bloom,
+        transactionHash: receiptResponse.hash,
+        transactionIndex: EthImpl.prepend0x(receiptResponse.transaction_index.toString(16)),
+        effectiveGasPrice: EthImpl.prepend0x((Number.parseInt(effectiveGas) * 10_000_000_000).toString(16)),
+        root: receiptResponse.root,
+        status: receiptResponse.status,
+      };
+      this.logger.trace(`receipt for ${hash} found in block ${answer.blockNumber}`);
+      return answer;
     }
   }
 
@@ -697,7 +696,7 @@ export class EthImpl implements Eth {
     });
   }
 
-  private getTransactionCountFromBlockResponse(block: any) {
+  private static getTransactionCountFromBlockResponse(block: any) {
     if (block === null || block.count === undefined) {
       // block not found
       return null;
