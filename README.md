@@ -86,7 +86,7 @@ Where the `result` value matches the .env `CHAIN_ID` configuration value or the 
 
 ### Helm Chart
 
-In this repo there is a `helm-chart` directory that contains the configurations for deploy Hedera's json-rpc relay to a K8s cluster.
+In this repo there is a `helm-chart` directory that contains the configurations to deploy Hedera's json-rpc relay to a K8s cluster.
 To get started install the helm chart:
 ```
 helm install hedera-json-rpc-relay ./helm-chart --debug
