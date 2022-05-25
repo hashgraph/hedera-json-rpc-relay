@@ -112,7 +112,7 @@ helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./helm-cha
     --docker-password=$GH_PAT \
     --docker-email=$GH_EMAIL
     ```
-3. Deploy this helm-chart with the addtion environment/minikube.yaml file
+3. Deploy this helm-chart with the addtion [environment/minikube.yaml](environment/minikube.yaml) file
 ```
 helm upgrade -f environments/minkube.yaml jrpc-test ./ 
 ```
