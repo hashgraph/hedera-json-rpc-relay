@@ -24,11 +24,16 @@ import koaJsonRpc from 'koa-jsonrpc';
 import { collectDefaultMetrics, Counter, Registry } from 'prom-client';
 
 import pino from 'pino';
+
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
   level: process.env.LOG_LEVEL || 'trace',
   transport: {
-    target: 'pino-pretty'
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: true
+    }
   }
 });
 const logger = mainLogger.child({ name: 'rpc-server' });
@@ -116,7 +121,6 @@ rpc.use('net_listening', async () => {
  *  Returns the current network ID
  */
 rpc.use('net_version', async () => {
-  methodCounter.inc();
   methodCounter.inc({ method: 'net_version' });
   logger.debug("net_version");
   return relay.net().version();
@@ -128,7 +132,6 @@ rpc.use('net_version', async () => {
  * returns: Block number - hex encoded integer
  */
 rpc.use('eth_blockNumber', async () => {
-  methodCounter.inc();
   methodCounter.inc({ method: 'eth_blockNumber' });
   logger.debug("eth_blockNumber");
   return toHexString(await relay.eth().blockNumber());
@@ -175,7 +178,6 @@ rpc.use('eth_getCode', async (params: any) => {
  * returns: Chain ID - integer
  */
 rpc.use('eth_chainId', async () => {
-  methodCounter.inc();
   methodCounter.inc({ method: 'eth_chainId' });
   logger.debug("eth_chainId");
   const result = relay.eth().chainId();
@@ -501,7 +503,6 @@ rpc.use('eth_syncing', async (params: any) => {
  * returns: string
  */
 rpc.use('web3_client_version', async (params: any) => {
-  methodCounter.inc();
   methodCounter.inc({ method: 'web3_client_version' });
   logger.debug("web3_client_version");
   return relay.web3().clientVersion();
