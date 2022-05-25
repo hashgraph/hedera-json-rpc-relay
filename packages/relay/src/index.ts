@@ -21,6 +21,8 @@
 import {Block, Receipt, Transaction} from './lib/model';
 import {JsonRpcError} from './lib/errors';
 
+export { JsonRpcError };
+
 export { RelayImpl } from './lib/relay';
 
 export interface Relay {
@@ -29,30 +31,37 @@ export interface Relay {
   net(): Net;
 
   eth(): Eth;
+
+  parity(): Parity;
 }
 
 export interface Web3 {
   clientVersion(): string;
 
-  // sha();
+  sha(): JsonRpcError;
 }
 
 export interface Net {
   listening(): boolean;
 
-  peerCount(): number;
+  peerCount(): JsonRpcError;
 
   version(): string;
 }
 
+export interface Parity {
+  nextNonce(): JsonRpcError;
+}
+
 export interface Eth {
-  // getProof();
-  // accounts();
+  getProof(): JsonRpcError;
+
   blockNumber(): Promise<number>;
 
   call(call: any, blockParam: string): Promise<string>;
 
-  // coinbase();
+  coinbase(): JsonRpcError;
+
   estimateGas(): Promise<number>;
 
   gasPrice(): Promise<number>;
@@ -92,7 +101,7 @@ export interface Eth {
 
   getUncleCountByBlockNumber(): Promise<string>;
 
-  getWork(): Promise<JsonRpcError>;
+  getWork(): JsonRpcError;
 
   feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number>|null): Promise<any>;
 
@@ -100,14 +109,20 @@ export interface Eth {
 
   mining(): Promise<boolean>;
 
-  // protocolVersion();
+  protocolVersion(): JsonRpcError;
+
   sendRawTransaction(transaction: string): Promise<string>;
 
-  // sendTransaction();
-  // sign();
-  // signTransaction();
-  // signTypedData();
-  // submitHashrate();
+  sendTransaction(): JsonRpcError;
+
+  sign(): JsonRpcError;
+
+  signTransaction(): JsonRpcError;
+
+  signTypedData(): JsonRpcError;
+
+  submitHashrate(): JsonRpcError;
+
   submitWork(): Promise<boolean>;
 
   syncing(): Promise<boolean>;

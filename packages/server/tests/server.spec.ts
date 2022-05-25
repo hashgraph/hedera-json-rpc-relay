@@ -328,8 +328,8 @@ describe('RPC Server', async function() {
     BaseTest.errorResponseChecks(
         res,
         -32000,
+        'No mining work available yet',
         'No mining work',
-        'No mining work available yet'
     );
   });
 });
@@ -356,26 +356,24 @@ class BaseTest {
     expect(response.data.jsonrpc).to.be.equal('2.0');
   }
 
-  static errorResponseChecks(response, code, name, message) {
-    this.defaultResponseChecks(response);
-    expect(response.data.result).to.have.property('code');
-    expect(response.data.result).to.have.property('name');
-    expect(response.data.result).to.have.property('message');
-    expect(response.data.result.code).to.be.equal(code);
-    expect(response.data.result.name).to.be.equal(name);
-    expect(response.data.result.message).to.be.equal(message);
-  }
-
-  static unsupportedJsonRpcMethodChecks(response) {
+  static errorResponseChecks(response, code, message, name?) {
     expect(response).to.have.property('data');
     expect(response.data).to.have.property('id');
     expect(response.data).to.have.property('jsonrpc');
-    expect(response.data).to.have.property('error');
     expect(response.data.id).to.be.equal('2');
     expect(response.data.jsonrpc).to.be.equal('2.0');
-    expect(response.data.error).to.have.property('message');
+    expect(response.data).to.have.property('error');
     expect(response.data.error).to.have.property('code');
-    expect(response.data.error.message).to.be.equal('Method not found');
-    expect(response.data.error.code).to.be.equal(-32601);
+    expect(response.data.error.code).to.be.equal(code);
+    expect(response.data.error).to.have.property('message');
+    expect(response.data.error.message).to.be.equal(message);
+    if (name) {
+      expect(response.data.error).to.have.property('name');
+      expect(response.data.error.name).to.be.equal(name);
+    }
+  }
+
+  static unsupportedJsonRpcMethodChecks(response) {
+    this.errorResponseChecks(response, -32601, 'Unsupported JSON-RPC method');
   }
 }

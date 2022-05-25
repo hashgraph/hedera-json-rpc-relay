@@ -20,7 +20,7 @@
 
 import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
-import { Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { Relay, RelayImpl, JsonRpcError } from '@hashgraph/json-rpc-relay';
 
 import pino from 'pino';
 const mainLogger = pino({
@@ -435,18 +435,60 @@ rpc.use('web3_client_version', async (params: any) => {
 /**
  * Not supported
  */
-// rpc.use('web3_sha', async (params: any) => { });
-// rpc.use('parity_nextNonce', async (params: any) => { });
-// rpc.use('net_peerCount', async (params: any) => { });
-// rpc.use('eth_submitHashrate', async (params: any) => { });
-// rpc.use('eth_signTypedData', async (params: any) => { });
-// rpc.use('eth_signTransaction', async (params: any) => { });
-// rpc.use('eth_sign', async (params: any) => { });
-// rpc.use('eth_sendTransaction', async (params: any) => { });
-// rpc.use('eth_protocolVersion', async (params: any) => { });
-// rpc.use('eth_getProof', async (params: any) => { });
-// rpc.use('eth_coinbase', async (params: any) => { });
+rpc.use('web3_sha', async (params: any) => {
+  logger.debug("web3_sha");
+  return relay.web3().sha();
+});
 
+rpc.use('parity_nextNonce', async (params: any) => {
+  logger.debug("nextNonce");
+  return relay.parity().nextNonce();
+});
+
+rpc.use('net_peerCount', async (params: any) => {
+  logger.debug("net_peerCount");
+  return relay.net().peerCount();
+});
+
+rpc.use('eth_submitHashrate', async (params: any) => {
+  logger.debug("eth_submitHashrate");
+  return relay.eth().submitHashrate();
+});
+
+rpc.use('eth_signTransaction', async (params: any) => {
+  logger.debug("eth_signTransaction");
+  return relay.eth().signTransaction();
+});
+
+rpc.use('eth_sign', async (params: any) => {
+  logger.debug("eth_sign");
+  return relay.eth().sign();
+});
+
+rpc.use('eth_signTypedData', async (params: any) => {
+  logger.debug("eth_signTypedData");
+  return relay.eth().signTypedData();
+});
+
+rpc.use('eth_sendTransaction', async (params: any) => {
+  logger.debug("eth_sendTransaction");
+  return relay.eth().sendTransaction();
+});
+
+rpc.use('eth_protocolVersion', async (params: any) => {
+  logger.debug("eth_protocolVersion");
+  return relay.eth().protocolVersion();
+});
+
+rpc.use('eth_getProof', async (params: any) => {
+  logger.debug("eth_getProof");
+  return relay.eth().getProof();
+});
+
+rpc.use('eth_coinbase', async (params: any) => {
+  logger.debug("eth_coinbase");
+  return relay.eth().coinbase();
+});
 
 // app.use(logger({
 //   getRequestLogLevel: (ctx) => 'debug',
@@ -454,7 +496,18 @@ rpc.use('web3_client_version', async (params: any) => {
 //   getErrorLogLevel: (ctx) => 'debug',
 // }));
 app.use(cors());
-app.use(rpc.app());
+
+const rpcApp = rpc.app();
+
+app.use(async (ctx, next) => {
+  await rpcApp(ctx, next);
+
+  // Handle custom errors
+  if (ctx.body && ctx.body.result instanceof JsonRpcError) {
+    ctx.body.error = {...ctx.body.result};
+    delete ctx.body.result;
+  }
+});
 
 export default app;
 

@@ -20,10 +20,11 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-import { Relay, Eth, Net, Web3 } from '../index';
+import { Relay, Eth, Net, Web3, Parity } from '../index';
 import { Web3Impl } from './web3';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
+import { ParityImpl } from './parity';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNode } from './mirrorNode';
@@ -40,6 +41,7 @@ export class RelayImpl implements Relay {
   private readonly web3Impl: Web3;
   private readonly netImpl: Net;
   private readonly ethImpl: Eth;
+  private readonly parityImpl: Parity;
 
   constructor(logger: Logger) {
     dotenv.config({ path: findConfig('.env') || '' });
@@ -70,6 +72,8 @@ export class RelayImpl implements Relay {
       mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId);
+
+    this.parityImpl = new ParityImpl(this.clientMain);
   }
 
   web3(): Web3 {
@@ -82,6 +86,10 @@ export class RelayImpl implements Relay {
 
   eth(): Eth {
     return this.ethImpl;
+  }
+
+  parity(): Parity {
+    return this.parityImpl;
   }
 
   initClient(hederaNetwork: string, type: string | null = null): Client {

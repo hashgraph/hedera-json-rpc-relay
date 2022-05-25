@@ -18,22 +18,18 @@
  *
  */
 
-import { Web3 } from '../index';
+import { Parity } from '../index';
 import { predefined as Errors, JsonRpcError } from './errors';
 import { Client } from '@hashgraph/sdk';
 
-export class Web3Impl implements Web3 {
+export class ParityImpl implements Parity {
   private client: Client;
 
   constructor(client: Client) {
     this.client = client;
   }
 
-  clientVersion(): string {
-    return 'relay/' + process.env.npm_package_version ?? '';
-  }
-
-  sha(): JsonRpcError {
+  nextNonce(): JsonRpcError {
     return Errors['UNSUPPORTED_METHOD'];
   }
 }
