@@ -18,16 +18,22 @@
  *
  */
 
+import { Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
 import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
-import { Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { collectDefaultMetrics, Counter, Registry } from 'prom-client';
 
 import pino from 'pino';
+
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
   level: process.env.LOG_LEVEL || 'trace',
   transport: {
-    target: 'pino-pretty'
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: true
+    }
   }
 });
 const logger = mainLogger.child({ name: 'rpc-server' });
@@ -36,6 +42,72 @@ const relay: Relay = new RelayImpl(logger);
 const cors = require('koa-cors');
 const app = new Koa();
 const rpc = koaJsonRpc();
+
+const register = new Registry();
+collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
+const methodCounter = new Counter({ name: 'rpc_method_counter', help: 'JSON RPC method counter', labelNames: ['method'], registers: [register] });
+const successCounter = new Counter({ name: 'rpc_success_counter', help: 'JSON RPC success counter', labelNames: ['success'], registers: [register] });
+
+/**
+ * middleware for request timing
+ */
+app.use(async (ctx, next) => {
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+  logger.info(`[${ctx.method}]: ${ctx.url} ${ms} ms`);
+
+  if (ctx.method === 'POST') {
+    const success = ctx.body.result ? 'true' : 'false';
+    successCounter.inc({ success: success });
+  }
+});
+
+/**
+ * prometheus metrics exposure
+ */
+app.use(async (ctx, next) => {
+  if (ctx.url === '/metrics') {
+    ctx.status = 200;
+    ctx.body = await register.metrics();
+  } else {
+    return next();
+  }
+});
+
+/**
+ * liveness endpoint
+ */
+app.use(async (ctx, next) => {
+  if (ctx.url === '/health/liveness') {
+    ctx.status = 200;
+  } else {
+    return next();
+  }
+});
+
+/**
+ * readiness endpoint
+ */
+app.use(async (ctx, next) => {
+  if (ctx.url === '/health/readiness') {
+    try {
+      const result = relay.eth().chainId();
+      if (result.indexOf('0x12') > 0) {
+        ctx.status = 200;
+        ctx.body = 'OK';
+      } else {
+        ctx.body = 'DOWN';
+        ctx.status = 503; // UNAVAILABLE
+      }
+    } catch (e) {
+      logger.error(e);
+      throw e;
+    }
+  } else {
+    return next();
+  }
+});
 
 /**
  * returns: false
@@ -49,6 +121,7 @@ rpc.use('net_listening', async () => {
  *  Returns the current network ID
  */
 rpc.use('net_version', async () => {
+  methodCounter.inc({ method: 'net_version' });
   logger.debug("net_version");
   return relay.net().version();
 });
@@ -59,6 +132,7 @@ rpc.use('net_version', async () => {
  * returns: Block number - hex encoded integer
  */
 rpc.use('eth_blockNumber', async () => {
+  methodCounter.inc({ method: 'eth_blockNumber' });
   logger.debug("eth_blockNumber");
   return toHexString(await relay.eth().blockNumber());
 });
@@ -104,6 +178,7 @@ rpc.use('eth_getCode', async (params: any) => {
  * returns: Chain ID - integer
  */
 rpc.use('eth_chainId', async () => {
+  methodCounter.inc({ method: 'eth_chainId' });
   logger.debug("eth_chainId");
   const result = relay.eth().chainId();
   logger.debug(result);
@@ -154,7 +229,7 @@ rpc.use('eth_gasPrice', async () => {
 rpc.use('eth_getTransactionCount', async (params: any) => {
   logger.debug("eth_getTransactionCount");
   try {
-    return toHexString(await relay.eth().getTransactionCount(params?.[0],params?.[1]));
+    return toHexString(await relay.eth().getTransactionCount(params?.[0], params?.[1]));
   } catch (e) {
     logger.error(e);
     throw e;
@@ -428,6 +503,7 @@ rpc.use('eth_syncing', async (params: any) => {
  * returns: string
  */
 rpc.use('web3_client_version', async (params: any) => {
+  methodCounter.inc({ method: 'web3_client_version' });
   logger.debug("web3_client_version");
   return relay.web3().clientVersion();
 });
