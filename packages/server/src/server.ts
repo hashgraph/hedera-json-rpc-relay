@@ -119,7 +119,7 @@ rpc.use('eth_chainId', async () => {
  */
 rpc.use('eth_getBlockByNumber', async (params: any) => {
   logger.debug("eth_getBlockByNumber");
-  return relay.eth().getBlockByNumber(Number(params?.[0]), Boolean(params?.[1]));
+  return relay.eth().getBlockByNumber(params?.[0], Boolean(params?.[1]));
 });
 
 /**
