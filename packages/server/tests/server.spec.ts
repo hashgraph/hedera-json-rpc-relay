@@ -316,6 +316,22 @@ describe('RPC Server', async function() {
 
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
+
+  it('should execute "eth_getWork"', async function() {
+    const res = await this.testClient.post('/', {
+      'id': '2',
+      'jsonrpc': '2.0',
+      'method': 'eth_getWork',
+      'params': [null]
+    });
+
+    BaseTest.errorResponseChecks(
+        res,
+        -32000,
+        'No mining work',
+        'No mining work available yet'
+    );
+  });
 });
 
 class BaseTest {
@@ -338,6 +354,16 @@ class BaseTest {
     expect(response.data).to.have.property('result');
     expect(response.data.id).to.be.equal('2');
     expect(response.data.jsonrpc).to.be.equal('2.0');
+  }
+
+  static errorResponseChecks(response, code, name, message) {
+    this.defaultResponseChecks(response);
+    expect(response.data.result).to.have.property('code');
+    expect(response.data.result).to.have.property('name');
+    expect(response.data.result).to.have.property('message');
+    expect(response.data.result.code).to.be.equal(code);
+    expect(response.data.result.name).to.be.equal(name);
+    expect(response.data.result.message).to.be.equal(message);
   }
 
   static unsupportedJsonRpcMethodChecks(response) {

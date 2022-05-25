@@ -19,6 +19,7 @@
  */
 
 import {Block, Receipt, Transaction} from './lib/model';
+import {JsonRpcError} from './lib/errors';
 
 export { RelayImpl } from './lib/relay';
 
@@ -91,7 +92,8 @@ export interface Eth {
 
   getUncleCountByBlockNumber(): Promise<string>;
 
-  // getWork();
+  getWork(): Promise<JsonRpcError>;
+
   feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number>|null): Promise<any>;
 
   hashrate(): Promise<string>;

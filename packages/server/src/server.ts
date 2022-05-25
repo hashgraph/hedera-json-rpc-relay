@@ -372,7 +372,7 @@ rpc.use('eth_getUncleCountByBlockNumber', async (params: any) => {
  */
 rpc.use('eth_getWork', async (params: any) => {
   logger.debug("eth_getWork");
-  //TODO
+  return relay.eth().getWork();
 });
 
 /**

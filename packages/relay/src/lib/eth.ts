@@ -24,6 +24,7 @@ import { Logger } from 'pino';
 import { Block, Transaction } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
+import { predefined as Errors } from './errors';
 
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
@@ -254,6 +255,14 @@ export class EthImpl implements Eth {
   async hashrate() {
     this.logger.trace('hashrate()');
     return EthImpl.zeroHex;
+  }
+
+  /**
+   * Always returns NO_MINING_WORK error.
+   */
+  async getWork() {
+    this.logger.trace('getWork()');
+    return Errors['NO_MINING_WORK'];
   }
 
   /**

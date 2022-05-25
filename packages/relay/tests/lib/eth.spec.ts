@@ -597,6 +597,16 @@ describe('Eth', async function () {
     expect(result).to.eq(false);
   });
 
+  it('should execute "eth_getWork"', async function () {
+    const result = await Relay.eth().getWork();
+    expect(result).to.have.property('code');
+    expect(result.code).to.be.equal(-32000);
+    expect(result).to.have.property('name');
+    expect(result.name).to.be.equal('No mining work');
+    expect(result).to.have.property('message');
+    expect(result.message).to.be.equal('No mining work available yet');
+  });
+
   describe('eth_getTransactionReceipt', async function () {
     it('returns `null` for non-existent hash', async function () {
       const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
