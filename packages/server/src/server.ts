@@ -441,7 +441,7 @@ rpc.use('web3_sha', async (params: any) => {
 });
 
 rpc.use('parity_nextNonce', async (params: any) => {
-  logger.debug("nextNonce");
+  logger.debug("parity_nextNonce");
   return relay.parity().nextNonce();
 });
 

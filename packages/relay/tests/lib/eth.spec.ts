@@ -27,6 +27,7 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
+import {expectUnsupportedMethod} from '../helpers';
 
 const cache = require('js-cache');
 
@@ -605,6 +606,24 @@ describe('Eth', async function () {
     expect(result.name).to.be.equal('No mining work');
     expect(result).to.have.property('message');
     expect(result.message).to.be.equal('No mining work available yet');
+  });
+
+  const unsupportedMethods = [
+      'submitHashrate',
+      'signTypedData',
+      'signTransaction',
+      'sign',
+      'sendTransaction',
+      'protocolVersion',
+      'getProof',
+      'coinbase'
+  ];
+
+  unsupportedMethods.forEach(method => {
+    it(`should execute "eth_${method}" and return unsupported message`, async function () {
+      const result = await Relay.eth()[method]();
+      expectUnsupportedMethod(result);
+    });
   });
 
   describe('eth_getTransactionReceipt', async function () {
