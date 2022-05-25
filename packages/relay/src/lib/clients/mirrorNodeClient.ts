@@ -110,14 +110,10 @@ export class MirrorNodeClient {
 
     async request(path: string, allowedErrorStatuses?: number[]): Promise<any> {
         try {
-            console.log(`Request: ${path}`);
             this.logger.debug(`Request: ${path}`);
             const response = await this.client.get(path);
-            console.log(response);
-            console.log(response.data);
             return response.data;
         } catch (error) {
-            console.log(error);
             this.handleError(error, allowedErrorStatuses);
         }
         return null;
@@ -254,7 +250,7 @@ export class MirrorNodeClient {
     }
 
     setQueryParam(queryParamObject, key, value) {
-        if (key && value) {
+        if (key && value !== undefined) {
             queryParamObject[key] = value;
         }
     }

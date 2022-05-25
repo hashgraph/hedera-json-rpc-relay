@@ -39,7 +39,6 @@ export class EthImpl implements Eth {
   static emptyHex = '0x';
   static zeroHex = '0x0';
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
-  // static defaultGas = 0x10000;
   static defaultGas = 0x3d0900;
 
   /**
@@ -295,7 +294,7 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       // handle INVALID_CONTRACT_ID
       if (e?.status?._code === Status.InvalidContractId._code) {
-        this.logger.debug('Unable find code for contract %s in block "%s", returning 0x0', address, blockNumber);
+        this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0', address, blockNumber);
         return '0x0';
       }
 
@@ -324,10 +323,9 @@ export class EthImpl implements Eth {
    * @param showDetails
    */
   async getBlockByNumber(blockNumOrTag: string, showDetails: boolean): Promise<Block | null> {
-    this.logger.trace('getBlockByNumber(blockNum=%s, showDetails=%o)', blockNumOrTag, showDetails);
-    const blockNum = await this.translateBlockTag(blockNumOrTag);
-    return this.getBlock(blockNum, showDetails).catch((e: any) => {
-      this.logger.error(e, 'Failed to retrieve block for blockNum %s', blockNum);
+    this.logger.trace('getBlockByNumber(blockNum=%d, showDetails=%o)', blockNumOrTag);
+    return this.getBlock(blockNumOrTag, showDetails).catch((e: any) => {
+      this.logger.error(e, 'Failed to retrieve block for blockNum %s', blockNumOrTag);
       return null;
     });
   }
@@ -612,16 +610,16 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Translates a block tage into a number. Latest, pending, and null are the 
-   * most recent block, earliest is 0, numbers become numbers.
-   * 
+   * Translates a block tag into a number. 'latest', 'pending', and null are the
+   * most recent block, 'earliest' is 0, numbers become numbers.
+   *
    * @param tag null, a number, or 'latest', 'pending', or 'earliest'
    * @private
    */
   private async translateBlockTag(tag: string | null): Promise<number> {
-    if (tag == null || tag == 'latest' || tag == 'pending') {
+    if (tag === null || tag === 'latest' || tag === 'pending') {
       return this.blockNumber();
-    } else if (tag == 'earliest') {
+    } else if (tag === 'earliest') {
       return 0;
     } else {
       return Number(tag);
@@ -638,8 +636,18 @@ export class EthImpl implements Eth {
    * @param blockHashOrNumber
    * @param showDetails
    */
-  private async getBlock(blockHashOrNumber: number | string, showDetails: boolean): Promise<Block | null> {
-    const blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
+  private async getBlock(blockHashOrNumber: string, showDetails: boolean): Promise<Block | null> {
+    let blockResponse: any;
+    if (blockHashOrNumber == null || blockHashOrNumber == 'latest' || blockHashOrNumber == 'pending') {
+      const blockPromise = this.mirrorNodeClient.getLatestBlock();
+      const blockAnswer = await blockPromise;
+      blockResponse = blockAnswer.blocks[0];
+    } else if (blockHashOrNumber == 'earliest') {
+      blockResponse = await this.mirrorNodeClient.getBlock(0);
+    } else {
+      blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
+    }
+
     if (blockResponse.hash === undefined) {
       // block not found
       return null;
