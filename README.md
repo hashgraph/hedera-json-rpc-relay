@@ -100,6 +100,27 @@ Deploy an installation with custom values file:
 ```
 helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./helm-chart --debug
 ```
+#### Deploy Helm Chart locally on minikube
+1.  Minikube must be running and the set context
+2. GHCR.io requires authorization to pull the image.  This auth will require a Github PAT to be generated
+  * Acquire PAT, username, and, (primary) email address from Github.
+  * Manually create a secret on kubernetes with the following command.  The $ must be replaced
+    ```
+    kubectl create secret docker-registry ghcr-registry-auth \
+    --docker-server=https://ghcr.io \
+    --docker-username=$GH_USERNAME \
+    --docker-password=$GH_PAT \
+    --docker-email=$GH_EMAIL
+    ```
+3. Deploy this helm-chart with the addtion environment/minikube.yaml file
+```
+helm upgrade -f environments/minkube.yaml jrpc-test ./ 
+```
+4. Port forward the pod IP to localhost
+```
+kubectl port-forward $POD_NAME 7546:7546
+```
+
 
 ## Support
 
