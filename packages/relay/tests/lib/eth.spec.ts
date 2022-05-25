@@ -299,6 +299,17 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.number).equal(blockNumber);
   });
   
+  it('eth_getBlockByNumber with hex number', async function() {
+    mock.onGet(`blocks/3735929054`).reply(200, defaultBlock);
+    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
+
+    const result = await ethImpl.getBlockByNumber('0xdeadc0de', false);
+    expect(result).to.exist;
+    if (result == null) return;
+
+    expect(result.number).equal(blockNumber);
+  });
+  
   it('eth_getBlockByHash with match', async function () {
     // mirror node request mocks
     mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
@@ -392,6 +403,14 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/0`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('earliest');
+    expect(result).equal(blockTransactionCount);
+  });
+
+  it('eth_getBlockTransactionCountByNumber with hex number', async function () {
+    // mirror node request mocks
+    mock.onGet(`blocks/3735929054`).reply(200, defaultBlock);
+
+    const result = await ethImpl.getBlockTransactionCountByNumber('0xdeadc0de');
     expect(result).equal(blockTransactionCount);
   });
 
@@ -490,6 +509,23 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
     
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('earliest', defaultBlock.count);
+    expect(result).to.exist;
+    if (result == null) return;
+
+    // verify aggregated info
+    expect(result.blockHash).equal(blockHashTrimmed);
+    expect(result.blockNumber).equal(blockNumberHex);
+    expect(result.hash).equal(contractHash1);
+    expect(result.to).equal(contractAddress1);
+  });
+
+  it('eth_getTransactionByBlockNumberAndIndex with hex number', async function () {
+    // mirror node request mocks
+    mock.onGet(`contracts/results?block.number=3735929054&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
+    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+    
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex('0xdeadc0de' +
+        '', defaultBlock.count);
     expect(result).to.exist;
     if (result == null) return;
 
