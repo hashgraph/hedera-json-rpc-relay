@@ -644,10 +644,12 @@ export class EthImpl implements Eth {
       blockResponse = blockAnswer.blocks[0];
     } else if (blockHashOrNumber == 'earliest') {
       blockResponse = await this.mirrorNodeClient.getBlock(0);
+    } else if (blockHashOrNumber.length < 32) {
+      // anything less than 32 characters is treated as a number
+      blockResponse = await this.mirrorNodeClient.getBlock(Number(blockHashOrNumber));
     } else {
       blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
     }
-
     if (blockResponse.hash === undefined) {
       // block not found
       return null;
