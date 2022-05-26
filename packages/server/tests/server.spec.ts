@@ -204,18 +204,7 @@ describe('RPC Server', async function() {
       'params': [null]
     });
 
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
-  });
-
-  it('should execute "parity_nextNonce"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'parity_nextNonce',
-      'params': [null]
-    });
-
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    BaseTest.methodNotFoundCheck(res);
   });
 
   it('should execute "net_peerCount"', async function() {
@@ -226,7 +215,7 @@ describe('RPC Server', async function() {
       'params': [null]
     });
 
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    BaseTest.methodNotFoundCheck(res);
   });
 
   it('should execute "eth_submitHashrate"', async function() {
@@ -248,7 +237,7 @@ describe('RPC Server', async function() {
       'params': [null]
     });
 
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    BaseTest.methodNotFoundCheck(res);
   });
 
   it('should execute "eth_signTransaction"', async function() {
@@ -303,7 +292,7 @@ describe('RPC Server', async function() {
       'params': [null]
     });
 
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    BaseTest.methodNotFoundCheck(res);
   });
 
   it('should execute "eth_coinbase"', async function() {
@@ -311,6 +300,17 @@ describe('RPC Server', async function() {
       'id': '2',
       'jsonrpc': '2.0',
       'method': 'eth_coinbase',
+      'params': [null]
+    });
+
+    BaseTest.unsupportedJsonRpcMethodChecks(res);
+  });
+
+  it('should execute "eth_getWork"', async function() {
+    const res = await this.testClient.post('/', {
+      'id': '2',
+      'jsonrpc': '2.0',
+      'method': 'eth_getWork',
       'params': [null]
     });
 
@@ -340,16 +340,28 @@ class BaseTest {
     expect(response.data.jsonrpc).to.be.equal('2.0');
   }
 
-  static unsupportedJsonRpcMethodChecks(response) {
+  static errorResponseChecks(response, code, message, name?) {
     expect(response).to.have.property('data');
     expect(response.data).to.have.property('id');
     expect(response.data).to.have.property('jsonrpc');
-    expect(response.data).to.have.property('error');
     expect(response.data.id).to.be.equal('2');
     expect(response.data.jsonrpc).to.be.equal('2.0');
-    expect(response.data.error).to.have.property('message');
+    expect(response.data).to.have.property('error');
     expect(response.data.error).to.have.property('code');
-    expect(response.data.error.message).to.be.equal('Method not found');
-    expect(response.data.error.code).to.be.equal(-32601);
+    expect(response.data.error.code).to.be.equal(code);
+    expect(response.data.error).to.have.property('message');
+    expect(response.data.error.message).to.be.equal(message);
+    if (name) {
+      expect(response.data.error).to.have.property('name');
+      expect(response.data.error.name).to.be.equal(name);
+    }
+  }
+
+  static unsupportedJsonRpcMethodChecks(response) {
+    this.errorResponseChecks(response, -32601, 'Unsupported JSON-RPC method');
+  }
+
+  static methodNotFoundCheck(response) {
+    this.errorResponseChecks(response, -32601, 'Method not found');
   }
 }

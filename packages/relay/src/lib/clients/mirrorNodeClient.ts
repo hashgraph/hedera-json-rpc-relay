@@ -19,7 +19,7 @@
  */
 
 import Axios, { AxiosInstance } from 'axios';
-import { predefined as errors } from '../errors';
+import { predefined } from '../errors';
 import { Logger } from "pino";
 
 export interface ILimitOrderParams {
@@ -129,7 +129,7 @@ export class MirrorNodeClient {
         }
 
         this.logger.error(error, 'Unexpected request error');
-        throw errors['INTERNAL_ERROR'];
+        throw predefined.INTERNAL_ERROR;
     }
 
     public async getAccountLatestTransactionByAddress(idOrAliasOrEvmAddress: string): Promise<object> {

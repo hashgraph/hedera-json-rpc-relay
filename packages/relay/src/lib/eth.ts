@@ -25,6 +25,7 @@ import { Logger } from 'pino';
 import { Block, CachedBlock, Transaction } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
+import {JsonRpcError, predefined} from './errors';
 
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
@@ -249,6 +250,47 @@ export class EthImpl implements Eth {
   async hashrate() {
     this.logger.trace('hashrate()');
     return EthImpl.zeroHex;
+  }
+
+  /**
+   * Always returns UNSUPPORTED_METHOD error.
+   */
+  getWork(): JsonRpcError {
+    this.logger.trace('getWork()');
+    return predefined.UNSUPPORTED_METHOD;
+  }
+
+  /**
+   * Unsupported methods always return UNSUPPORTED_METHOD error.
+   */
+  submitHashrate(): JsonRpcError {
+    this.logger.trace('submitHashrate()');
+    return predefined.UNSUPPORTED_METHOD;
+  }
+
+  signTransaction(): JsonRpcError {
+    this.logger.trace('signTransaction()');
+    return predefined.UNSUPPORTED_METHOD;
+  }
+
+  sign(): JsonRpcError {
+    this.logger.trace('sign()');
+    return predefined.UNSUPPORTED_METHOD;
+  }
+
+  sendTransaction(): JsonRpcError {
+    this.logger.trace('sendTransaction()');
+    return predefined.UNSUPPORTED_METHOD;
+  }
+
+  protocolVersion(): JsonRpcError {
+    this.logger.trace('protocolVersion()');
+    return predefined.UNSUPPORTED_METHOD;
+  }
+
+  coinbase(): JsonRpcError {
+    this.logger.trace('coinbase()');
+    return predefined.UNSUPPORTED_METHOD;
   }
 
   /**

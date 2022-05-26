@@ -18,30 +18,15 @@
  *
  */
 
-import { Net } from '../index';
-import { Client } from '@hashgraph/sdk';
+import {expect} from "chai";
 
-export class NetImpl implements Net {
-  private client: Client;
-  private readonly chainId: string;
+const expectUnsupportedMethod = (result) => {
+    expect(result).to.have.property('code');
+    expect(result.code).to.be.equal(-32601);
+    expect(result).to.have.property('name');
+    expect(result.name).to.be.equal('Method not found');
+    expect(result).to.have.property('message');
+    expect(result.message).to.be.equal('Unsupported JSON-RPC method');
+};
 
-  constructor(client: Client, chainId: string) {
-    this.client = client;
-    this.chainId = chainId;
-  }
-
-  /**
-   * We always return true for this.
-   */
-  listening(): boolean {
-    return false;
-  }
-
-  /**
-   * This is the chain id we registered.
-   * TODO Support some config when launching the server for this. dotenv support?
-   */
-  version(): string {
-    return this.chainId;
-  }
-}
+export {expectUnsupportedMethod};
