@@ -69,8 +69,6 @@ export class Block {
             this.transactions = args.transactions;
             this.transactionsRoot = args.transactionsRoot;
             this.uncles = [];
-            
-            console.log(`*** model, this.transactions: ${JSON.stringify(this.transactions)}, args.transactions: ${JSON.stringify(args.transactions)}`);
         }
     }
 
