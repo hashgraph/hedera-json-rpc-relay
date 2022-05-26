@@ -21,7 +21,7 @@
 import { Eth } from '../index';
 import { Status } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Block, Transaction } from './model';
+import { Block, Transaction, Log } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 
@@ -745,5 +745,89 @@ export class EthImpl implements Eth {
         this.logger.error(e, 'Failed to retrieve contract result details for contract address %s at timestamp=%s', to, timestamp);
         return null;
       });
+  }
+
+  async getLogs(filters: any): Promise<Log[]> {
+    const params: any = {};
+    if (filters.blockHash) {
+      const block = await this.mirrorNodeClient.getBlock(filters.blockHash);
+      if (block) {
+        params.timestamp = [
+          `gte:${block.timestamp.from}`,
+          `lte:${block.timestamp.to}`
+        ];
+      }
+    }
+    else if (filters.fromBlock && filters.toBlock) {
+      const blocks = await this.mirrorNodeClient.getBlocks([
+          `gte:${filters.fromBlock}`,
+          `lte:${filters.toBlock}`
+      ]);
+
+      if (blocks?.length) {
+        const firstBlock = blocks[0];
+        const lastBlock = blocks[blocks.length - 1];
+        params.timestamp = [
+          `gte:${firstBlock.timestamp.from}`,
+          `lte:${lastBlock.timestamp.to}`
+        ];
+      }
+    }
+
+    if (filters?.topics) {
+      for (let i = 0; i < filters.topics.length; i++) {
+        params[`topic${i}`] = filters.topics[i];
+      }
+    }
+
+    let logs;
+    if (filters.address) {
+      // /api/v1/contracts/{address}/results/logs
+      logs = await this.mirrorNodeClient.getContractResultsLogsByAddress(filters.address, params);
+    }
+    else {
+      logs = await this.mirrorNodeClient.getContractResultsLogs(params);
+    }
+
+    // Find all unique contractId and timestamp pairs and for each one make mirror node request
+    const promises: Promise<any>[] = [];
+    const uniquePairs: string[] = [];
+    logs.forEach(log => {
+      const pair = `${log.contract_id}-${log.timestamp}`;
+      if (uniquePairs.indexOf(pair) === -1) {
+        uniquePairs.push(pair);
+        promises.push(this.mirrorNodeClient.getContractResultsDetails(
+            log.contract_id,
+            log.timestamp
+        ));
+      }
+    });
+
+    // Populate the Log objects with block and transaction data from ContractResultsDetails
+    const contractsResultsDetails = await Promise.all(promises);
+    contractsResultsDetails.forEach(detail => {
+      logs.forEach(log => {
+        if (log.contract_id === detail.contract_id && log.timestamp === detail.timestamp) {
+          log.block_hash = detail.block_hash;
+          log.block_number = detail.block_number;
+          log.transaction_index = detail.transaction_index;
+          log.hash = detail.hash;
+        }
+      });
+    });
+
+    return logs.map(log => {
+      return new Log({
+        address: log.address,
+        blockHash: log.block_hash,
+        blockNumber: log.block_number,
+        data: log.data,
+        logIndex: log.index,
+        removed: false,
+        topics: log.topics,
+        transactionHash: log.hash,
+        transactionIndex: log.transaction_Index
+      });
+    });
   }
 }

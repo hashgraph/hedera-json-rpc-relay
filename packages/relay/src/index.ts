@@ -18,7 +18,7 @@
  *
  */
 
-import {Block, Receipt, Transaction} from './lib/model';
+import {Block, Log, Receipt, Transaction} from './lib/model';
 
 export { RelayImpl } from './lib/relay';
 
@@ -70,7 +70,8 @@ export interface Eth {
 
   chainId(): string;
 
-  // getLogs();
+  getLogs(filters: any): Promise<Log[]>;
+
   // getStorageAt();
 
   getTransactionByBlockHashAndIndex(hash: string, index: number): Promise<Transaction | null>;
