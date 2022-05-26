@@ -22,7 +22,7 @@ import { Eth } from '../index';
 import { ContractId, Status } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
-import { Block, Transaction } from './model';
+import { Block, CachedBlock, Transaction } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 
@@ -456,7 +456,7 @@ export class EthImpl implements Eth {
       this.logger.debug('mostRecentBlock=%o', mostRecentBlock);
       let block = mostRecentBlock;
       if (record.receipt.status == Status.Success) {
-        block = new Block(mostRecentBlock, txHash);
+        block = new CachedBlock(mostRecentBlock, txHash);
         this.mirrorNode.storeBlock(block);
       }
 
@@ -530,7 +530,9 @@ export class EthImpl implements Eth {
 
     const maxPriorityFee = contractResult.max_priority_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_priority_fee_per_gas;
     const maxFee = contractResult.max_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_fee_per_gas;
-    
+    const rSig = contractResult.r === null ? null : contractResult.r.substring(0, 66);
+    const sSig = contractResult.s === null ? null : contractResult.s.substring(0, 66);
+
     return new Transaction({
       accessList: undefined, // we don't support access lists, so punt for now
       blockHash: contractResult.block_hash.substring(0, 66),
@@ -544,8 +546,8 @@ export class EthImpl implements Eth {
       maxPriorityFeePerGas: maxPriorityFee, 
       maxFeePerGas: maxFee,
       nonce: contractResult.nonce,
-      r: contractResult.r.substring(0, 66),
-      s: contractResult.s.substring(0, 66),
+      r: rSig,
+      s: sSig,
       to: contractResult.to.substring(0, 42),
       transactionIndex: contractResult.transaction_index,
       type: contractResult.type,
@@ -677,10 +679,10 @@ export class EthImpl implements Eth {
     let gasUsed = 0;
     let maxGasLimit = 0;
     let timestamp = 0;
-    const transactions: Transaction[] = [];
+    const transactionObjects: Transaction[] = [];
     const transactionHashes: string[] = [];
-    for (const i in contractResults.results) {
-      const result = contractResults.results[i];
+
+    for (const result of contractResults.results) {
       maxGasLimit = result.gas_limit > maxGasLimit ? result.gas_limit : maxGasLimit;
       gasUsed += result.gas_used;
       if (timestamp === 0) {
@@ -691,7 +693,7 @@ export class EthImpl implements Eth {
       const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp);
       if (transaction !== null) {
         if (showDetails) {
-          transactions.push(transaction);
+          transactionObjects.push(transaction);
         } else {
           transactionHashes.push(transaction.hash);
         }
@@ -699,7 +701,7 @@ export class EthImpl implements Eth {
     }
 
     const blockHash = blockResponse.hash.substring(0, 66);
-    return new Block(null, null, {
+    return new Block({
       baseFeePerGas: EthImpl.numberTo0x(0), //TODO should be gasPrice
       difficulty: EthImpl.zeroHex,
       extraData: EthImpl.emptyHex,
@@ -718,7 +720,7 @@ export class EthImpl implements Eth {
       size: EthImpl.numberTo0x(blockResponse.size | 0),
       stateRoot: EthImpl.emptyArrayHex,
       totalDifficulty: EthImpl.zeroHex,
-      transactions: showDetails ? transactions : transactionHashes,
+      transactions: showDetails ? transactionObjects : transactionHashes,
       transactionsRoot: blockHash,
       uncles: [],
     });
@@ -745,9 +747,10 @@ export class EthImpl implements Eth {
 
   private async getTransactionFromContractResult(to: string, timestamp: string): Promise<Transaction | null> {
     // call mirror node by id and timestamp for further details
-    return this.mirrorNodeClient
-      .getContractResultsByAddressAndTimestamp(to, timestamp)
-      .then((contractResultDetails) => {
+    return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp)
+      .then(contractResultDetails => {
+        const rSig = contractResultDetails.r === null ? null : contractResultDetails.r.substring(0, 66);
+        const sSig = contractResultDetails.s === null ? null : contractResultDetails.s.substring(0, 66);
         return new Transaction({
           accessList: undefined, // we don't support access lists for now, so punt
           blockHash: contractResultDetails.block_hash.substring(0, 66),
@@ -761,8 +764,8 @@ export class EthImpl implements Eth {
           maxPriorityFeePerGas: contractResultDetails.max_priority_fee_per_gas,
           maxFeePerGas: contractResultDetails.max_fee_per_gas,
           nonce: contractResultDetails.nonce,
-          r: contractResultDetails.r.substring(0, 66),
-          s: contractResultDetails.s.substring(0, 66),
+          r: rSig,
+          s: sSig,
           to: contractResultDetails.to.substring(0, 42),
           transactionIndex: contractResultDetails.transaction_index,
           type: contractResultDetails.type,
