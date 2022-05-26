@@ -74,7 +74,9 @@ describe('Eth calls using MirrorNode', async function () {
   const blockNumberHex = `0x${blockNumber.toString(16)}`;
   const blockTransactionCount = 77;
   const maxGasLimit = 250000;
+  const maxGasLimitHex = EthImpl.numberTo0x(maxGasLimit);
   const firstTransactionTimestampSeconds = '1653077547';
+  const firstTransactionTimestampSecondsHex = EthImpl.numberTo0x(Number(firstTransactionTimestampSeconds));
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
   const contractTimestamp1 = `${firstTransactionTimestampSeconds}.983983199`;
   const contractHash1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
@@ -189,7 +191,7 @@ describe('Eth calls using MirrorNode', async function () {
   };
 
   const results = defaultContractResults.results;
-  const totalGasUsed = results[0].gas_used + results[1].gas_used;
+  const totalGasUsed = EthImpl.numberTo0x(results[0].gas_used + results[1].gas_used);
 
   this.afterEach(() => {
     mock.resetHandlers();
@@ -231,21 +233,21 @@ describe('Eth calls using MirrorNode', async function () {
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.gasLimit).equal(maxGasLimit);
-    expect(result.number).equal(blockNumber);
+    expect(result.gasLimit).equal(maxGasLimitHex);
+    expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(firstTransactionTimestampSeconds);
+    expect(result.timestamp).equal(firstTransactionTimestampSecondsHex);
 
     // verify expected constants
-    expect(result.baseFeePerGas).equal(0);
+    expect(result.baseFeePerGas).equal(EthImpl.zeroHex);
     expect(result.difficulty).equal(EthImpl.zeroHex);
     expect(result.extraData).equal(EthImpl.emptyHex);
-    expect(result.miner).equal(EthImpl.emptyHex);
-    expect(result.mixHash).equal(EthImpl.emptyHex);
-    expect(result.nonce).equal(EthImpl.emptyHex);
-    expect(result.receiptsRoot).equal(EthImpl.emptyHex);
+    expect(result.miner).equal(EthImpl.zeroAddressHex);
+    expect(result.mixHash).equal(EthImpl.emptyArrayHex);
+    expect(result.nonce).equal(EthImpl.zeroHex);
+    expect(result.receiptsRoot).equal(EthImpl.emptyArrayHex);
     expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(result.stateRoot).equal(EthImpl.emptyHex);
+    expect(result.stateRoot).equal(EthImpl.emptyArrayHex);
     expect(result.totalDifficulty).equal(EthImpl.zeroHex);
     expect(result.uncles).to.deep.equal([]);
   });
@@ -273,7 +275,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.exist;
     if (result == null) return;
 
-    expect(result.number).equal(blockNumber);
+    expect(result.number).equal(blockNumberHex);
   });
   
   it('eth_getBlockByNumber with pending tag', async function() {
@@ -285,7 +287,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.exist;
     if (result == null) return;
 
-    expect(result.number).equal(blockNumber);
+    expect(result.number).equal(blockNumberHex);
   });
   
   it('eth_getBlockByNumber with earliest tag', async function() {
@@ -296,7 +298,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.exist;
     if (result == null) return;
 
-    expect(result.number).equal(blockNumber);
+    expect(result.number).equal(blockNumberHex);
   });
   
   it('eth_getBlockByNumber with hex number', async function() {
@@ -307,7 +309,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.exist;
     if (result == null) return;
 
-    expect(result.number).equal(blockNumber);
+    expect(result.number).equal(blockNumberHex);
   });
   
   it('eth_getBlockByHash with match', async function () {
@@ -322,21 +324,21 @@ describe('Eth calls using MirrorNode', async function () {
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.gasLimit).equal(maxGasLimit);
-    expect(result.number).equal(blockNumber);
+    expect(result.gasLimit).equal(maxGasLimitHex);
+    expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(firstTransactionTimestampSeconds);
+    expect(result.timestamp).equal(firstTransactionTimestampSecondsHex);
 
     // verify expected constants
-    expect(result.baseFeePerGas).equal(0);
+    expect(result.baseFeePerGas).equal(EthImpl.zeroHex);
     expect(result.difficulty).equal(EthImpl.zeroHex);
     expect(result.extraData).equal(EthImpl.emptyHex);
-    expect(result.miner).equal(EthImpl.emptyHex);
-    expect(result.mixHash).equal(EthImpl.emptyHex);
-    expect(result.nonce).equal(EthImpl.emptyHex);
-    expect(result.receiptsRoot).equal(EthImpl.emptyHex);
+    expect(result.miner).equal(EthImpl.zeroAddressHex);
+    expect(result.mixHash).equal(EthImpl.emptyArrayHex);
+    expect(result.nonce).equal(EthImpl.zeroHex);
+    expect(result.receiptsRoot).equal(EthImpl.emptyArrayHex);
     expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(result.stateRoot).equal(EthImpl.emptyHex);
+    expect(result.stateRoot).equal(EthImpl.emptyArrayHex);
     expect(result.totalDifficulty).equal(EthImpl.zeroHex);
     expect(result.uncles).to.deep.equal([]);
   });
@@ -605,7 +607,7 @@ describe('Eth', async function () {
 
   const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
   const defaultTransaction = {
-    "accessList": "0x",
+    "accessList": undefined,
     "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "blockNumber": 17,
     "chainId": "0x12a",
@@ -614,8 +616,8 @@ describe('Eth', async function () {
     "gasPrice": "0x4a817c80",
     "hash": defaultTxHash,
     "input": "0x0707",
-    "maxFeePerGas": "0x",
-    "maxPriorityFeePerGas": "0x",
+    "maxFeePerGas": undefined,
+    "maxPriorityFeePerGas": undefined,
     "nonce": 1,
     "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
@@ -646,7 +648,7 @@ describe('Eth', async function () {
     "status": "0x1",
     "transactionHash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
     "transactionIndex": "0x1",
-    "contractAddress": undefined,
+    "contractAddress": "0x0000000000000000000000000000000000001b59",
     "root": undefined
   };
 
