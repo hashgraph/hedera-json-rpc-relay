@@ -273,11 +273,6 @@ export class EthImpl implements Eth {
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  signTypedData(): JsonRpcError {
-    this.logger.trace('signTypedData()');
-    return predefined.UNSUPPORTED_METHOD;
-  }
-
   signTransaction(): JsonRpcError {
     this.logger.trace('signTransaction()');
     return predefined.UNSUPPORTED_METHOD;
@@ -295,11 +290,6 @@ export class EthImpl implements Eth {
 
   protocolVersion(): JsonRpcError {
     this.logger.trace('protocolVersion()');
-    return predefined.UNSUPPORTED_METHOD;
-  }
-
-  getProof(): JsonRpcError {
-    this.logger.trace('getProof()');
     return predefined.UNSUPPORTED_METHOD;
   }
 

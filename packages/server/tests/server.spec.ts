@@ -237,7 +237,7 @@ describe('RPC Server', async function() {
       'params': [null]
     });
 
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    BaseTest.methodNotFoundCheck(res);
   });
 
   it('should execute "eth_signTransaction"', async function() {
@@ -292,7 +292,7 @@ describe('RPC Server', async function() {
       'params': [null]
     });
 
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    BaseTest.methodNotFoundCheck(res);
   });
 
   it('should execute "eth_coinbase"', async function() {

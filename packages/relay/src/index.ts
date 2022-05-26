@@ -44,7 +44,6 @@ export interface Net {
 }
 
 export interface Eth {
-  getProof(): JsonRpcError;
 
   blockNumber(): Promise<number>;
 
@@ -108,8 +107,6 @@ export interface Eth {
   sign(): JsonRpcError;
 
   signTransaction(): JsonRpcError;
-
-  signTypedData(): JsonRpcError;
 
   submitHashrate(): JsonRpcError;
 

@@ -450,11 +450,6 @@ rpc.use('eth_sign', async () => {
   return relay.eth().sign();
 });
 
-rpc.use('eth_signTypedData', async () => {
-  logger.debug("eth_signTypedData");
-  return relay.eth().signTypedData();
-});
-
 rpc.use('eth_sendTransaction', async () => {
   logger.debug("eth_sendTransaction");
   return relay.eth().sendTransaction();
@@ -463,11 +458,6 @@ rpc.use('eth_sendTransaction', async () => {
 rpc.use('eth_protocolVersion', async () => {
   logger.debug("eth_protocolVersion");
   return relay.eth().protocolVersion();
-});
-
-rpc.use('eth_getProof', async () => {
-  logger.debug("eth_getProof");
-  return relay.eth().getProof();
 });
 
 rpc.use('eth_coinbase', async () => {

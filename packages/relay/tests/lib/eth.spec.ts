@@ -610,12 +610,10 @@ describe('Eth', async function () {
 
   const unsupportedMethods = [
       'submitHashrate',
-      'signTypedData',
       'signTransaction',
       'sign',
       'sendTransaction',
       'protocolVersion',
-      'getProof',
       'coinbase'
   ];
 
