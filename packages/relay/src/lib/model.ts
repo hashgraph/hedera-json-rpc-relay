@@ -23,8 +23,8 @@ import {Status, TransactionRecord} from "@hashgraph/sdk";
 
 export class Block {
     public readonly timestamp:string = '0x' + new Date().valueOf().toString(16);
-    public readonly number:string;
-    public readonly hash:string;
+    public number!: string;
+    public hash!: string;
 
     public readonly difficulty:string = '0x1';
     public readonly extraData:string = '';
@@ -36,28 +36,17 @@ export class Block {
     public readonly mixHash:string =
         '0x0000000000000000000000000000000000000000000000000000000000000000';
     public readonly nonce:string = '0x0000000000000000';
-    public readonly parentHash:string;
+    public parentHash!: string;
     public readonly receiptsRoot:string = '0x0';
     public readonly sha3Uncles:string = '0x0';
     public readonly size:string = '0x0';
     public readonly stateRoot:string = '0x0';
     public readonly totalDifficulty:string = '0x1';
-    public readonly transactions:string[] = [];
+    public readonly transactions:string[] | Transaction[] = [];
     public readonly transactionsRoot:string = '0x0';
     public readonly uncles:any[] = [];
 
-    constructor(parentBlock:(null | Block), transaction:(string|null), args?:any) {
-        const num = parentBlock == null ? 0 : parentBlock.getNum() + 1;
-        this.number = '0x' + Number(num).toString(16);
-        this.parentHash = parentBlock == null ? '0x0' : parentBlock.hash;
-        if (transaction) {
-            this.transactions.push(transaction);
-        }
-
-        const numberAsString = num.toString();
-        const baseHash = "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b";
-        this.hash = baseHash.slice(0, baseHash.length - numberAsString.length) + numberAsString;
-
+    constructor(args?:any) {
         if (args) {
             this.timestamp = args.timestamp;
             this.number = args.number;
@@ -77,13 +66,11 @@ export class Block {
             this.size = args.size;
             this.stateRoot = args.stateRoot;
             this.totalDifficulty = args.totalDifficulty;
-            if (args.transactions === undefined) {
-                this.transactions = [];
-            } else {
-                this.transactions.splice(0, this.transactions.length, ...args.transactions);
-            }
+            this.transactions = args.transactions;
             this.transactionsRoot = args.transactionsRoot;
             this.uncles = [];
+            
+            console.log(`*** model, this.transactions: ${JSON.stringify(this.transactions)}, args.transactions: ${JSON.stringify(args.transactions)}`);
         }
     }
 
@@ -92,6 +79,27 @@ export class Block {
      */
     public getNum():number {
         return Number(this.number.substring(2));
+    }
+}
+
+export class CachedBlock extends Block {
+    public readonly parentBlock:Block|null;
+    public readonly transactionHashes:string[] = [];
+
+    constructor(parentBlock:(null | Block), transactionHash:(string|null), args?:any) {
+        super(args);
+        this.parentBlock = parentBlock;
+
+        const num = parentBlock == null ? 0 : parentBlock.getNum() + 1;
+        this.number = '0x' + Number(num).toString(16);
+        this.parentHash = parentBlock == null ? '0x0' : parentBlock.hash;
+        if (transactionHash) {
+            this.transactionHashes.push(transactionHash);
+        }
+
+        const numberAsString = num.toString();
+        const baseHash = "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b";
+        this.hash = baseHash.slice(0, baseHash.length - numberAsString.length) + numberAsString;
     }
 }
 

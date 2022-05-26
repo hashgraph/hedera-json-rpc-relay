@@ -20,7 +20,7 @@
 
 import { Logger } from "pino";
 // Used for temporary purposes to store block info. As the mirror node supports the APIs, we will remove this.
-import { Block } from './model';
+import { Block, CachedBlock } from './model';
 
 export class MirrorNode {
   // A FAKE implementation until mirror node is integrated and ready.
@@ -50,12 +50,12 @@ export class MirrorNode {
       this.logger.info("Restarting.");
     } else {
       this.logger.info("Fresh start, creating genesis block with no transactions");
-      const genesisBlock = new Block(null, null);
+      const genesisBlock = new CachedBlock(null, null);
       this.storeBlock(genesisBlock);
     }
   }
 
-  public async getFeeHistory(fee : number, _blockCount: number, _newestBlock: string, rewardPercentiles: Array<number>|null) {
+  public async getFeeHistory(fee: number, _blockCount: number, _newestBlock: string, rewardPercentiles: Array<number> | null) {
     // FIXME: This is a fake implementation. It works for now, but should
     //        actually delegate to the mirror node.
     this.logger.trace('getFeeHistory()');
@@ -89,11 +89,11 @@ export class MirrorNode {
 
   // FIXME this is for demo/temp purposes, remove it when the mirror node has real blocks
   //       that they get from the main net nodes
-  public storeBlock(block: Block) {
+  public storeBlock(block: CachedBlock) {
     this.store.set(MirrorNode.MOST_RECENT_BLOCK_NUMBER_KEY, block.getNum());
     this.store.set(MirrorNode.MOST_RECENT_BLOCK_KEY, block);
     this.store.set(block.getNum().toString(), block);
-    this.store.set(block.transactions[0], block);
+    this.store.set(block.transactionHashes[0], block);
   }
 
   public async getMostRecentBlockNumber(): Promise<number> {
@@ -104,7 +104,7 @@ export class MirrorNode {
     return num === undefined ? 0 : Number(num);
   }
 
-  public async getMostRecentBlock(): Promise<Block | null> {
+  public async getMostRecentBlock(): Promise<CachedBlock | null> {
     // FIXME: Fake implementation for now. Should go to the mirror node.
     this.logger.trace('getMostRecentBlock()');
     const block = this.store.get(MirrorNode.MOST_RECENT_BLOCK_KEY);
