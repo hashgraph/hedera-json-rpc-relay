@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { Status } from '@hashgraph/sdk';
+import { ContractId, Status } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, CachedBlock, Transaction } from './model';
@@ -40,6 +40,8 @@ export class EthImpl implements Eth {
   static emptyHex = '0x';
   static zeroHex = '0x0';
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
+  static zeroAddressHex = '0x0000000000000000000000000000000000000000';
+  static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   static defaultGas = 0x3d0900;
 
   /**
@@ -568,10 +570,13 @@ export class EthImpl implements Eth {
       return null;
     }
 
+    const maxPriorityFee = contractResult.max_priority_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_priority_fee_per_gas;
+    const maxFee = contractResult.max_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_fee_per_gas;
     const rSig = contractResult.r === null ? null : contractResult.r.substring(0, 66);
     const sSig = contractResult.s === null ? null : contractResult.s.substring(0, 66);
+
     return new Transaction({
-      accessList: contractResult.access_list,
+      accessList: undefined, // we don't support access lists, so punt for now
       blockHash: contractResult.block_hash.substring(0, 66),
       blockNumber: EthImpl.numberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
@@ -580,8 +585,8 @@ export class EthImpl implements Eth {
       gasPrice: contractResult.gas_price,
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
-      maxPriorityFeePerGas: contractResult.max_priority_fee_per_gas,
-      maxFeePerGas: contractResult.max_fee_per_gas,
+      maxPriorityFeePerGas: maxPriorityFee, 
+      maxFeePerGas: maxFee,
       nonce: contractResult.nonce,
       r: rSig,
       s: sSig,
@@ -610,6 +615,10 @@ export class EthImpl implements Eth {
         receiptResponse.max_fee_per_gas === undefined || receiptResponse.max_fee_per_gas == '0x'
           ? receiptResponse.gas_price
           : receiptResponse.max_fee_per_gas;
+      const createdContract =
+        receiptResponse.created_contract_ids.length > 0
+          ? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress())
+          : undefined;
       const answer = {
         blockHash: receiptResponse.block_hash.substring(0, 66),
         blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
@@ -617,7 +626,7 @@ export class EthImpl implements Eth {
         to: receiptResponse.to,
         cumulativeGasUsed: EthImpl.numberTo0x(receiptResponse.block_gas_used),
         gasUsed: EthImpl.numberTo0x(receiptResponse.gas_used),
-        contractAddress: undefined, // FIXME translate from receiptResponse.created_contract_ids when `to` is empty,
+        contractAddress: createdContract,
         logs: receiptResponse.logs,
         logsBloom: receiptResponse.bloom,
         transactionHash: receiptResponse.hash,
@@ -735,23 +744,23 @@ export class EthImpl implements Eth {
 
     const blockHash = blockResponse.hash.substring(0, 66);
     return new Block({
-      baseFeePerGas: 0,
+      baseFeePerGas: EthImpl.numberTo0x(0), //TODO should be gasPrice
       difficulty: EthImpl.zeroHex,
       extraData: EthImpl.emptyHex,
-      gasLimit: maxGasLimit,
-      gasUsed: gasUsed,
+      gasLimit: EthImpl.numberTo0x(maxGasLimit),
+      gasUsed: EthImpl.numberTo0x(gasUsed),
       hash: blockHash,
-      logsBloom: blockResponse.logsBloom,
-      miner: EthImpl.emptyHex,
-      mixHash: EthImpl.emptyHex,
-      nonce: EthImpl.emptyHex,
-      number: blockResponse.number,
+      logsBloom: EthImpl.emptyBloom, //TODO calculate full block boom in mirror node
+      miner: EthImpl.zeroAddressHex,
+      mixHash: EthImpl.emptyArrayHex,
+      nonce: EthImpl.zeroHex,
+      number: EthImpl.numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
-      receiptsRoot: EthImpl.emptyHex,
-      timestamp: timestamp,
+      receiptsRoot: EthImpl.emptyArrayHex,
+      timestamp: EthImpl.numberTo0x(Number(timestamp)),
       sha3Uncles: EthImpl.emptyArrayHex,
-      size: blockResponse.size,
-      stateRoot: EthImpl.emptyHex,
+      size: EthImpl.numberTo0x(blockResponse.size | 0),
+      stateRoot: EthImpl.emptyArrayHex,
       totalDifficulty: EthImpl.zeroHex,
       transactions: showDetails ? transactionObjects : transactionHashes,
       transactionsRoot: blockHash,
@@ -785,7 +794,7 @@ export class EthImpl implements Eth {
         const rSig = contractResultDetails.r === null ? null : contractResultDetails.r.substring(0, 66);
         const sSig = contractResultDetails.s === null ? null : contractResultDetails.s.substring(0, 66);
         return new Transaction({
-          accessList: contractResultDetails.access_list,
+          accessList: undefined, // we don't support access lists for now, so punt
           blockHash: contractResultDetails.block_hash.substring(0, 66),
           blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
           chainId: contractResultDetails.chain_id,
