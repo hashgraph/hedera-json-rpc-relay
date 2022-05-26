@@ -41,7 +41,7 @@ export const predefined = {
     code: -32600,
     message: 'Invalid request'
   }),
-  'METHOD_NOT_FOUND': new JsonRpcError({
+  'UNSUPPORTED_METHOD': new JsonRpcError({
     name: 'Method not found',
     code: -32601,
     message: 'Unsupported JSON-RPC method'
