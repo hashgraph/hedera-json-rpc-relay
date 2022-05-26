@@ -402,19 +402,19 @@ describe('MirrorNodeClient', async function () {
     expect(firstResult.to).equal(contractResult.to);
   });
 
+  const log = {
+    'address': '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+    'bloom': '0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398',
+    'contract_id': '0.1.2',
+    'data': '0x00000000000000000000000000000000000000000000000000000000000000fa',
+    'index': 0,
+    'topics': [
+      '0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300'
+    ],
+    'root_contract_id': '0.1.2',
+    'timestamp': '1586567700.453054000'
+  };
   it('`getContractResultsLogs` ', async () => {
-    const log = {
-      'address': '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-      'bloom': '0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398',
-      'contract_id': '0.1.2',
-      'data': '0x00000000000000000000000000000000000000000000000000000000000000fa',
-      'index': 0,
-      'topics': [
-        '0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300'
-      ],
-      'root_contract_id': '0.1.2',
-      'timestamp': '1586567700.453054000'
-    };
     mock.onGet(`contracts/results/logs`).reply(200, { logs: [log] });
 
     const result = await mirrorNodeInstance.getContractResultsLogs();
@@ -424,6 +424,30 @@ describe('MirrorNodeClient', async function () {
     expect(firstResult.address).equal(log.address);
     expect(firstResult.contract_id).equal(log.contract_id);
     expect(firstResult.index).equal(log.index);
+  });
+
+  it('`getContractResultsLogsByAddress` ', async () => {
+    mock.onGet(`contracts/${log.address}/results/logs`).reply(200, { logs: [log] });
+
+    const result = await mirrorNodeInstance.getContractResultsLogsByAddress(log.address);
+    expect(result).to.exist;
+    expect(result.logs.length).to.gt(0);
+    const firstResult = result.logs[0];
+    expect(firstResult.address).equal(log.address);
+    expect(firstResult.contract_id).equal(log.contract_id);
+    expect(firstResult.index).equal(log.index);
+  });
+
+  it('`getContractResultsLogsByAddress` - incorrect address', async () => {
+    mock.onGet(`contracts/${log.address}/results/logs`).reply(200, { logs: [log] });
+
+    const incorrectAddress = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed';
+    try {
+      expect(await mirrorNodeInstance.getContractResultsLogsByAddress(incorrectAddress)).to.throw();
+    }
+    catch(err: any) {
+      expect(err).to.exist;
+    }
   });
 
   it('`getBlocks` by number', async () => {

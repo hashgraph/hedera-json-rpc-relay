@@ -223,7 +223,7 @@ export class MirrorNodeClient {
             MirrorNodeClient.ADDRESS_PLACEHOLDER,
             address
         );
-        return this.request(`${apiEndpoint}${queryParams}`, [400]);
+        return this.request(`${apiEndpoint}${queryParams}`, [400, 404]);
     }
 
     public async getLatestBlock() {
