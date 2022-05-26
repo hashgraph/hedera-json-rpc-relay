@@ -204,18 +204,7 @@ describe('RPC Server', async function() {
       'params': [null]
     });
 
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
-  });
-
-  it('should execute "parity_nextNonce"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'parity_nextNonce',
-      'params': [null]
-    });
-
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    BaseTest.methodNotFoundCheck(res);
   });
 
   it('should execute "net_peerCount"', async function() {
@@ -226,7 +215,7 @@ describe('RPC Server', async function() {
       'params': [null]
     });
 
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    BaseTest.methodNotFoundCheck(res);
   });
 
   it('should execute "eth_submitHashrate"', async function() {
@@ -325,12 +314,7 @@ describe('RPC Server', async function() {
       'params': [null]
     });
 
-    BaseTest.errorResponseChecks(
-        res,
-        -32000,
-        'No mining work available yet',
-        'No mining work',
-    );
+    BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
 });
 
@@ -375,5 +359,9 @@ class BaseTest {
 
   static unsupportedJsonRpcMethodChecks(response) {
     this.errorResponseChecks(response, -32601, 'Unsupported JSON-RPC method');
+  }
+
+  static methodNotFoundCheck(response) {
+    this.errorResponseChecks(response, -32601, 'Method not found');
   }
 }

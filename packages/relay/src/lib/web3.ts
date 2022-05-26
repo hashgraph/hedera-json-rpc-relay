@@ -19,7 +19,6 @@
  */
 
 import { Web3 } from '../index';
-import { predefined as Errors, JsonRpcError } from './errors';
 import { Client } from '@hashgraph/sdk';
 
 export class Web3Impl implements Web3 {
@@ -31,9 +30,5 @@ export class Web3Impl implements Web3 {
 
   clientVersion(): string {
     return 'relay/' + process.env.npm_package_version ?? '';
-  }
-
-  sha(): JsonRpcError {
-    return Errors['UNSUPPORTED_METHOD'];
   }
 }

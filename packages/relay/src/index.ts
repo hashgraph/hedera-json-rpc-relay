@@ -31,26 +31,16 @@ export interface Relay {
   net(): Net;
 
   eth(): Eth;
-
-  parity(): Parity;
 }
 
 export interface Web3 {
   clientVersion(): string;
-
-  sha(): JsonRpcError;
 }
 
 export interface Net {
   listening(): boolean;
 
-  peerCount(): JsonRpcError;
-
   version(): string;
-}
-
-export interface Parity {
-  nextNonce(): JsonRpcError;
 }
 
 export interface Eth {

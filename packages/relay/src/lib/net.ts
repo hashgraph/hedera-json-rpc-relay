@@ -20,7 +20,6 @@
 
 import { Net } from '../index';
 import { Client } from '@hashgraph/sdk';
-import { predefined as Errors, JsonRpcError } from './errors';
 
 export class NetImpl implements Net {
   private client: Client;
@@ -36,13 +35,6 @@ export class NetImpl implements Net {
    */
   listening(): boolean {
     return false;
-  }
-
-  /**
-   * Method is not supported
-   */
-  peerCount(): JsonRpcError {
-    return Errors['UNSUPPORTED_METHOD'];
   }
 
   /**

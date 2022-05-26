@@ -601,11 +601,11 @@ describe('Eth', async function () {
   it('should execute "eth_getWork"', async function () {
     const result = await Relay.eth().getWork();
     expect(result).to.have.property('code');
-    expect(result.code).to.be.equal(-32000);
+    expect(result.code).to.be.equal(-32601);
     expect(result).to.have.property('name');
-    expect(result.name).to.be.equal('No mining work');
+    expect(result.name).to.be.equal('Method not found');
     expect(result).to.have.property('message');
-    expect(result.message).to.be.equal('No mining work available yet');
+    expect(result.message).to.be.equal('Unsupported JSON-RPC method');
   });
 
   const unsupportedMethods = [

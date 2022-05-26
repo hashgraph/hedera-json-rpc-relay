@@ -24,7 +24,7 @@ import { Logger } from 'pino';
 import { Block, Transaction } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
-import {JsonRpcError, predefined as Errors} from './errors';
+import {JsonRpcError, predefined} from './errors';
 
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
@@ -262,7 +262,7 @@ export class EthImpl implements Eth {
    */
   getWork(): JsonRpcError {
     this.logger.trace('getWork()');
-    return Errors['NO_MINING_WORK'];
+    return predefined.UNSUPPORTED_METHOD;
   }
 
   /**
@@ -270,42 +270,42 @@ export class EthImpl implements Eth {
    */
   submitHashrate(): JsonRpcError {
     this.logger.trace('submitHashrate()');
-    return Errors['UNSUPPORTED_METHOD'];
+    return predefined.UNSUPPORTED_METHOD;
   }
 
   signTypedData(): JsonRpcError {
     this.logger.trace('signTypedData()');
-    return Errors['UNSUPPORTED_METHOD'];
+    return predefined.UNSUPPORTED_METHOD;
   }
 
   signTransaction(): JsonRpcError {
     this.logger.trace('signTransaction()');
-    return Errors['UNSUPPORTED_METHOD'];
+    return predefined.UNSUPPORTED_METHOD;
   }
 
   sign(): JsonRpcError {
     this.logger.trace('sign()');
-    return Errors['UNSUPPORTED_METHOD'];
+    return predefined.UNSUPPORTED_METHOD;
   }
 
   sendTransaction(): JsonRpcError {
     this.logger.trace('sendTransaction()');
-    return Errors['UNSUPPORTED_METHOD'];
+    return predefined.UNSUPPORTED_METHOD;
   }
 
   protocolVersion(): JsonRpcError {
     this.logger.trace('protocolVersion()');
-    return Errors['UNSUPPORTED_METHOD'];
+    return predefined.UNSUPPORTED_METHOD;
   }
 
   getProof(): JsonRpcError {
     this.logger.trace('getProof()');
-    return Errors['UNSUPPORTED_METHOD'];
+    return predefined.UNSUPPORTED_METHOD;
   }
 
   coinbase(): JsonRpcError {
     this.logger.trace('coinbase()');
-    return Errors['UNSUPPORTED_METHOD'];
+    return predefined.UNSUPPORTED_METHOD;
   }
 
   /**

@@ -435,21 +435,6 @@ rpc.use('web3_client_version', async () => {
 /**
  * Not supported
  */
-rpc.use('web3_sha', async () => {
-  logger.debug("web3_sha");
-  return relay.web3().sha();
-});
-
-rpc.use('parity_nextNonce', async () => {
-  logger.debug("parity_nextNonce");
-  return relay.parity().nextNonce();
-});
-
-rpc.use('net_peerCount', async () => {
-  logger.debug("net_peerCount");
-  return relay.net().peerCount();
-});
-
 rpc.use('eth_submitHashrate', async () => {
   logger.debug("eth_submitHashrate");
   return relay.eth().submitHashrate();
