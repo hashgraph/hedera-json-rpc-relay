@@ -253,7 +253,7 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Always returns NO_MINING_WORK error.
+   * Always returns UNSUPPORTED_METHOD error.
    */
   getWork(): JsonRpcError {
     this.logger.trace('getWork()');
