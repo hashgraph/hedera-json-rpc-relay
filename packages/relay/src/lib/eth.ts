@@ -307,14 +307,14 @@ export class EthImpl implements Eth {
     //        the mirror nodes need to have the ability to give me the **CURRENT**
     //        account balance *and* the account balance for any given block.
     this.logger.trace('getBalance(account=%s, blockNumberOrTag=%s)', account, blockNumberOrTag);
-    const blockNumber = this.translateBlockTag(blockNumberOrTag);
+    const blockNumber = await this.translateBlockTag(blockNumberOrTag);
     try {
       const weibars = await this.sdkClient.getAccountBalanceInWeiBar(account);
       return EthImpl.numberTo0x(weibars);
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
       if (e?.status?._code === Status.InvalidAccountId._code) {
-        this.logger.debug('Unable to find account %s in block "%s", returning 0x0 balance', account, blockNumber);
+        this.logger.debug(`Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
         return EthImpl.zeroHex;
       }
 
