@@ -664,7 +664,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result[1].transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
     });
 
-    it.only('fromBlock && toBlock filter', async function () {
+    it('fromBlock && toBlock filter', async function () {
       const filteredLogs = {
         logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
       };
