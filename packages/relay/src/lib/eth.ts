@@ -512,15 +512,12 @@ export class EthImpl implements Eth {
           this.logger.error('Failed to get a block for transaction');
           return '';
         }
-        const computedHash = EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
 
-		if (computedHash != txHash) {
-			this.logger.error("EthereumHash didn't match computed hash");
-		}
         return txHash;
       } catch (e) {
         this.logger.error(e,
             'Failed to handle sendRawTransaction cleanly for transaction %s, returning computed hash', transaction);
+        //Return computed hash if unable to retrieve EthereumHash from record due to error
         return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
       }
     } catch (e) {
