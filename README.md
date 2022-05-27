@@ -89,6 +89,44 @@ curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":"2","
 The expected response should be `{"result":"0x12a","jsonrpc":"2.0","id":"2"}`
 Where the `result` value matches the .env `CHAIN_ID` configuration value or the current deault value of `298`
 
+### Helm Chart
+
+In this repo there is a `helm-chart` directory that contains the configurations to deploy Hedera's json-rpc relay to a K8s cluster.
+To get started install the helm chart:
+```
+helm install hedera-json-rpc-relay ./helm-chart --debug
+```
+
+To see the values that have been deployed:
+```
+helm show values hedera-json-rpc-relay
+```
+Deploy an installation with custom values file:
+```
+helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./helm-chart --debug
+```
+##### Deploy Helm Chart locally on minikube
+
+1.  Minikube must be running and the set context
+2. GHCR.io requires authorization to pull the image.  This auth will require a Github PAT to be generated
+  * Acquire PAT, username, and, (primary) email address from Github.
+  * Manually create a secret on kubernetes with the following command.  The $ must be replaced
+    ```
+    kubectl create secret docker-registry ghcr-registry-auth \
+    --docker-server=https://ghcr.io \
+    --docker-username=$GH_USERNAME \
+    --docker-password=$GH_PAT \
+    --docker-email=$GH_EMAIL
+    ```
+3. Deploy this helm-chart with the addtional [environment/minikube.yaml](environment/minikube.yaml) file
+```
+helm upgrade -f environments/minkube.yaml jrpc-test ./ 
+```
+4. Port forward the pod IP to localhost
+```
+kubectl port-forward $POD_NAME 7546:7546
+```
+
 ## Support
 
 If you have a question on how to use the product, please see our
