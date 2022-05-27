@@ -19,6 +19,9 @@
  */
 
 import {Block, Log, Receipt, Transaction} from './lib/model';
+import {JsonRpcError} from './lib/errors';
+
+export { JsonRpcError };
 
 export { RelayImpl } from './lib/relay';
 
@@ -32,26 +35,22 @@ export interface Relay {
 
 export interface Web3 {
   clientVersion(): string;
-
-  // sha();
 }
 
 export interface Net {
   listening(): boolean;
 
-  peerCount(): number;
-
   version(): string;
 }
 
 export interface Eth {
-  // getProof();
-  // accounts();
+
   blockNumber(): Promise<number>;
 
   call(call: any, blockParam: string): Promise<string>;
 
-  // coinbase();
+  coinbase(): JsonRpcError;
+
   estimateGas(): Promise<number>;
 
   gasPrice(): Promise<number>;
@@ -92,21 +91,26 @@ export interface Eth {
 
   getUncleCountByBlockNumber(): Promise<string>;
 
-  // getWork();
+  getWork(): JsonRpcError;
+
   feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number>|null): Promise<any>;
 
   hashrate(): Promise<string>;
 
   mining(): Promise<boolean>;
 
-  // protocolVersion();
+  protocolVersion(): JsonRpcError;
+
   sendRawTransaction(transaction: string): Promise<string>;
 
-  // sendTransaction();
-  // sign();
-  // signTransaction();
-  // signTypedData();
-  // submitHashrate();
+  sendTransaction(): JsonRpcError;
+
+  sign(): JsonRpcError;
+
+  signTransaction(): JsonRpcError;
+
+  submitHashrate(): JsonRpcError;
+
   submitWork(): Promise<boolean>;
 
   syncing(): Promise<boolean>;

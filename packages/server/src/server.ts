@@ -18,7 +18,7 @@
  *
  */
 
-import { Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { Relay, RelayImpl, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
 import { collectDefaultMetrics, Counter, Registry } from 'prom-client';
@@ -143,7 +143,7 @@ rpc.use('eth_blockNumber', async () => {
  *
  * returns: Gas used - hex encoded integer
  */
-rpc.use('eth_estimateGas', async (params: any) => {
+rpc.use('eth_estimateGas', async () => {
   logger.debug("eth_estimateGas");
   return toHexString(await relay.eth().estimateGas());
 });
@@ -273,7 +273,7 @@ rpc.use('eth_getTransactionReceipt', async (params: any) => {
   return relay.eth().getTransactionReceipt(params?.[0]);
 });
 
-rpc.use('web3_clientVersion', async (params: any) => {
+rpc.use('web3_clientVersion', async () => {
   logger.debug("web3_clientVersion");
   return relay.web3().clientVersion();
 });
@@ -403,7 +403,7 @@ rpc.use('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
  *
  * returns: null
  */
-rpc.use('eth_getUncleByBlockHashAndIndex', async (params: any) => {
+rpc.use('eth_getUncleByBlockHashAndIndex', async () => {
   logger.debug("eth_getUncleByBlockHashAndIndex");
   return relay.eth().getUncleByBlockHashAndIndex();
 });
@@ -416,7 +416,7 @@ rpc.use('eth_getUncleByBlockHashAndIndex', async (params: any) => {
  *
  * returns: null
  */
-rpc.use('eth_getUncleByBlockNumberAndIndex', async (params: any) => {
+rpc.use('eth_getUncleByBlockNumberAndIndex', async () => {
   logger.debug("eth_getUncleByBlockNumberAndIndex");
   return relay.eth().getUncleByBlockNumberAndIndex();
 });
@@ -428,7 +428,7 @@ rpc.use('eth_getUncleByBlockNumberAndIndex', async (params: any) => {
  *
  * returns: 0x0
  */
-rpc.use('eth_getUncleCountByBlockHash', async (params: any) => {
+rpc.use('eth_getUncleCountByBlockHash', async () => {
   logger.debug("eth_getUncleCountByBlockHash");
   return relay.eth().getUncleCountByBlockHash();
 });
@@ -440,7 +440,7 @@ rpc.use('eth_getUncleCountByBlockHash', async (params: any) => {
  *
  * returns: 0x0
  */
-rpc.use('eth_getUncleCountByBlockNumber', async (params: any) => {
+rpc.use('eth_getUncleCountByBlockNumber', async () => {
   logger.debug("eth_getUncleCountByBlockNumber");
   return relay.eth().getUncleCountByBlockNumber();
 });
@@ -451,9 +451,9 @@ rpc.use('eth_getUncleCountByBlockNumber', async (params: any) => {
  *
  * returns: code: -32000
  */
-rpc.use('eth_getWork', async (params: any) => {
+rpc.use('eth_getWork', async () => {
   logger.debug("eth_getWork");
-  //TODO
+  return relay.eth().getWork();
 });
 
 /**
@@ -463,7 +463,7 @@ rpc.use('eth_getWork', async (params: any) => {
  *
  * returns: 0x0
  */
-rpc.use('eth_hashrate', async (params: any) => {
+rpc.use('eth_hashrate', async () => {
   logger.debug("eth_hashrate");
   return relay.eth().hashrate();
 });
@@ -475,7 +475,7 @@ rpc.use('eth_hashrate', async (params: any) => {
  *
  * returns: false
  */
-rpc.use('eth_mining', async (params: any) => {
+rpc.use('eth_mining', async () => {
   logger.debug("eth_mining");
   return relay.eth().mining();
 });
@@ -487,7 +487,7 @@ rpc.use('eth_mining', async (params: any) => {
  *
  * returns: false
  */
-rpc.use('eth_submitWork', async (params: any) => {
+rpc.use('eth_submitWork', async () => {
   logger.debug("eth_submitWork");
   return relay.eth().submitWork();
 });
@@ -498,7 +498,7 @@ rpc.use('eth_submitWork', async (params: any) => {
  *
  * returns: false
  */
-rpc.use('eth_syncing', async (params: any) => {
+rpc.use('eth_syncing', async () => {
   logger.debug("eth_syncing");
   return relay.eth().syncing();
 });
@@ -508,7 +508,7 @@ rpc.use('eth_syncing', async (params: any) => {
  *
  * returns: string
  */
-rpc.use('web3_client_version', async (params: any) => {
+rpc.use('web3_client_version', async () => {
   methodCounter.inc({ method: 'web3_client_version' });
   logger.debug("web3_client_version");
   return relay.web3().clientVersion();
@@ -517,18 +517,35 @@ rpc.use('web3_client_version', async (params: any) => {
 /**
  * Not supported
  */
-// rpc.use('web3_sha', async (params: any) => { });
-// rpc.use('parity_nextNonce', async (params: any) => { });
-// rpc.use('net_peerCount', async (params: any) => { });
-// rpc.use('eth_submitHashrate', async (params: any) => { });
-// rpc.use('eth_signTypedData', async (params: any) => { });
-// rpc.use('eth_signTransaction', async (params: any) => { });
-// rpc.use('eth_sign', async (params: any) => { });
-// rpc.use('eth_sendTransaction', async (params: any) => { });
-// rpc.use('eth_protocolVersion', async (params: any) => { });
-// rpc.use('eth_getProof', async (params: any) => { });
-// rpc.use('eth_coinbase', async (params: any) => { });
+rpc.use('eth_submitHashrate', async () => {
+  logger.debug("eth_submitHashrate");
+  return relay.eth().submitHashrate();
+});
 
+rpc.use('eth_signTransaction', async () => {
+  logger.debug("eth_signTransaction");
+  return relay.eth().signTransaction();
+});
+
+rpc.use('eth_sign', async () => {
+  logger.debug("eth_sign");
+  return relay.eth().sign();
+});
+
+rpc.use('eth_sendTransaction', async () => {
+  logger.debug("eth_sendTransaction");
+  return relay.eth().sendTransaction();
+});
+
+rpc.use('eth_protocolVersion', async () => {
+  logger.debug("eth_protocolVersion");
+  return relay.eth().protocolVersion();
+});
+
+rpc.use('eth_coinbase', async () => {
+  logger.debug("eth_coinbase");
+  return relay.eth().coinbase();
+});
 
 // app.use(logger({
 //   getRequestLogLevel: (ctx) => 'debug',
@@ -536,7 +553,18 @@ rpc.use('web3_client_version', async (params: any) => {
 //   getErrorLogLevel: (ctx) => 'debug',
 // }));
 app.use(cors());
-app.use(rpc.app());
+
+const rpcApp = rpc.app();
+
+app.use(async (ctx, next) => {
+  await rpcApp(ctx, next);
+
+  // Handle custom errors
+  if (ctx.body && ctx.body.result instanceof JsonRpcError) {
+    ctx.body.error = {...ctx.body.result};
+    delete ctx.body.result;
+  }
+});
 
 export default app;
 

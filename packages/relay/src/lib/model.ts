@@ -137,7 +137,7 @@ export class Receipt {
 }
 
 export class Transaction {
-    public readonly accessList!: string[] | null;
+    public readonly accessList!: AccessListEntry[] | null;
     public readonly blockHash!: string | null;
     public readonly blockNumber!: string | null;
     public readonly chainId!: string;
@@ -178,6 +178,11 @@ export class Transaction {
         this.v = args.v;
         this.value = args.value;
     }
+}
+
+export declare class AccessListEntry {
+    readonly address: string;
+    readonly storageKeys: string[];
 }
 
 export class Log {
