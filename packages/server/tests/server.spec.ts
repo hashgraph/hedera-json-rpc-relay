@@ -316,6 +316,17 @@ describe('RPC Server', async function() {
 
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
+
+  it('should execute "eth_getLogs"', async function() {
+    const res = await this.testClient.post('/', {
+      'id': '2',
+      'jsonrpc': '2.0',
+      'method': 'eth_getLogs',
+      'params': [null]
+    });
+
+    BaseTest.genericErrorResponse(res);
+  });
 });
 
 class BaseTest {
@@ -336,6 +347,15 @@ class BaseTest {
     expect(response.data).to.have.property('id');
     expect(response.data).to.have.property('jsonrpc');
     expect(response.data).to.have.property('result');
+    expect(response.data.id).to.be.equal('2');
+    expect(response.data.jsonrpc).to.be.equal('2.0');
+  }
+
+  static genericErrorResponse(response) {
+    expect(response).to.have.property('data');
+    expect(response.data).to.have.property('id');
+    expect(response.data).to.have.property('jsonrpc');
+    expect(response.data).to.have.property('error');
     expect(response.data.id).to.be.equal('2');
     expect(response.data.jsonrpc).to.be.equal('2.0');
   }

@@ -210,7 +210,7 @@ export class MirrorNodeClient {
         contractLogsResultsParams?: IContractLogsResultsParams,
         limitOrderParams?: ILimitOrderParams) {
         const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`, [400]);
+        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`, [400, 404]);
     }
 
     public async getContractResultsLogsByAddress(
@@ -245,7 +245,7 @@ export class MirrorNodeClient {
         return MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT.replace(MirrorNodeClient.ADDRESS_PLACEHOLDER, address);
     }
 
-    public async getContractResultsDetailsByContractIdAndTimestamp(contractId: string, timestamp: string) {
+    public getContractResultsDetailsByContractIdAndTimestamp(contractId: string, timestamp: string) {
         return MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT
             .replace(MirrorNodeClient.CONTRACT_ID_PLACEHOLDER, contractId)
             .replace(MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);

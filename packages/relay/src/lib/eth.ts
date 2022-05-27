@@ -759,11 +759,12 @@ export class EthImpl implements Eth {
       }
     }
     else if (filters.fromBlock && filters.toBlock) {
-      const blocks = await this.mirrorNodeClient.getBlocks([
+      const blocksResult = await this.mirrorNodeClient.getBlocks([
           `gte:${filters.fromBlock}`,
           `lte:${filters.toBlock}`
       ]);
 
+      const blocks = blocksResult?.blocks;
       if (blocks?.length) {
         const firstBlock = blocks[0];
         const lastBlock = blocks[blocks.length - 1];
@@ -780,14 +781,18 @@ export class EthImpl implements Eth {
       }
     }
 
-    let logs;
+    let result;
     if (filters.address) {
-      // /api/v1/contracts/{address}/results/logs
-      logs = await this.mirrorNodeClient.getContractResultsLogsByAddress(filters.address, params);
+      result = await this.mirrorNodeClient.getContractResultsLogsByAddress(filters.address, params);
     }
     else {
-      logs = await this.mirrorNodeClient.getContractResultsLogs(params);
+      result = await this.mirrorNodeClient.getContractResultsLogs(params);
     }
+
+    if (!result || !result.logs) {
+      return [];
+    }
+    const logs = result.logs;
 
     // Find all unique contractId and timestamp pairs and for each one make mirror node request
     const promises: Promise<any>[] = [];
@@ -807,7 +812,10 @@ export class EthImpl implements Eth {
     const contractsResultsDetails = await Promise.all(promises);
     contractsResultsDetails.forEach(detail => {
       logs.forEach(log => {
-        if (log.contract_id === detail.contract_id && log.timestamp === detail.timestamp) {
+        if ( !log.block_hash
+            && log.contract_id === detail.contract_id
+            && log.timestamp === detail.timestamp
+        ) {
           log.block_hash = detail.block_hash;
           log.block_number = detail.block_number;
           log.transaction_index = detail.transaction_index;
@@ -826,7 +834,7 @@ export class EthImpl implements Eth {
         removed: false,
         topics: log.topics,
         transactionHash: log.hash,
-        transactionIndex: log.transaction_Index
+        transactionIndex: log.transaction_index
       });
     });
   }
