@@ -27,6 +27,8 @@ import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import {JsonRpcError, predefined} from './errors';
 
+const createHash = require('keccak');
+
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
  * Methods are implemented by delegating to the mirror node or to a
@@ -481,36 +483,49 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string): Promise<string> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
+
+    const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
+
     try {
       // Convert from 0xabc format into a raw Uint8Array of bytes and execute the transaction
-      const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
       const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer);
 
-      // Wait for the record from the execution.
-      const record = await this.sdkClient.getRecord(contractExecuteResponse);
-      if (record.ethereumHash == null) {
-        throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
-      }
-      const txHash = EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
+      try {
+        // Wait for the record from the execution.
+        const record = await this.sdkClient.getRecord(contractExecuteResponse);
+        if (record.ethereumHash == null) {
+          throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
+        }
+        const txHash = EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
 
-      // If the transaction succeeded, create a new block for the transaction.
-      const mostRecentBlock = await this.mirrorNode.getMostRecentBlock();
-      this.logger.debug('mostRecentBlock=%o', mostRecentBlock);
-      let block = mostRecentBlock;
-      if (record.receipt.status == Status.Success) {
-        block = new CachedBlock(mostRecentBlock, txHash);
-        this.mirrorNode.storeBlock(block);
-      }
+        // If the transaction succeeded, create a new block for the transaction.
+        const mostRecentBlock = await this.mirrorNode.getMostRecentBlock();
+        this.logger.debug('mostRecentBlock=%o', mostRecentBlock);
+        let block = mostRecentBlock;
+        if (record.receipt.status == Status.Success) {
+          block = new CachedBlock(mostRecentBlock, txHash);
+          this.mirrorNode.storeBlock(block);
+        }
 
-      // Create a receipt. Register the receipt in the cache and return the tx hash
-      if (block == null) {
-        this.logger.error('Failed to get a block for transaction');
-        return '';
-      }
+        // Create a receipt. Register the receipt in the cache and return the tx hash
+        if (block == null) {
+          this.logger.error('Failed to get a block for transaction');
+          return '';
+        }
+        const computedHash = EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
 
-      return txHash;
+		if (computedHash != txHash) {
+			this.logger.error("EthereumHash didn't match computed hash");
+		}
+        return txHash;
+      } catch (e) {
+        this.logger.error(e,
+            'Failed to handle sendRawTransaction cleanly for transaction %s, returning computed hash', transaction);
+        return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+      }
     } catch (e) {
-      this.logger.error(e, 'Failed to handle sendRawTransaction cleanly for transaction %s', transaction);
+      this.logger.error(e,
+          'Failed to submit sendRawTransaction cleanly for transaction %s', transaction);
       throw e;
     }
   }
