@@ -228,7 +228,7 @@ describe('RPC Server Integration Tests', async function () {
     };
 
     const createToken = async () => {
-        const symbol = crypto.randomBytes(2).toString('hex').toUpperCase();
+        const symbol = Math.random().toString(36).slice(2, 6); //crypto.randomBytes(2).toString('hex').toUpperCase();
         console.log(`symbol = ${symbol}`);
         const resp = await new TokenCreateTransaction()
             .setTokenName("relay-1")
