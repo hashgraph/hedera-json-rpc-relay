@@ -93,7 +93,7 @@ export class SDKClient {
     }
 
     async getRecord(transactionResponse: TransactionResponse) {
-      return transactionResponse.getRecord(this.clientMain);
+        return transactionResponse.getRecord(this.clientMain);
     }
 
     async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionResponse> {
@@ -109,10 +109,14 @@ export class SDKClient {
             ? ContractId.fromSolidityAddress(contract)
             : ContractId.fromEvmAddress(0, 0, contract);
 
-        return (new ContractCallQuery()
+        const contractCallQuery = new ContractCallQuery()
             .setContractId(contractId)
             .setFunctionParameters(Buffer.from(callData, 'hex'))
-            .setGas(gas))
+            .setGas(gas);
+
+        const cost = await contractCallQuery.getCost(this.clientMain);
+        return (contractCallQuery)
+            .setQueryPayment(cost)
             .execute(this.clientMain);
     }
 
