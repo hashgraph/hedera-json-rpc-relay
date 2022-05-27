@@ -70,7 +70,7 @@ export interface Eth {
 
   chainId(): string;
 
-  getLogs(fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null): Promise<Log[]>;
+  getLogs(blockHash: string|null, fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null): Promise<Log[]>;
 
   // getStorageAt(address: string, slot: string, blockNumber: string|null);
 

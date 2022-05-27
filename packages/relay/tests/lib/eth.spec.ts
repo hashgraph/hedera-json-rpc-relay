@@ -770,7 +770,7 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
       mock.onGet(`contracts/${contractId2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults3);
 
-      const result = await ethImpl.getLogs({});
+      const result = await ethImpl.getLogs(null, null, null, null ,null);
       expect(result).to.exist;
 
       expect(result.length).to.eq(4);
@@ -827,9 +827,7 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
       mock.onGet(`contracts/${contractAddress1}/results/logs`).reply(200, filteredLogs);
 
-      const result = await ethImpl.getLogs({
-        address: contractAddress1
-      });
+      const result = await ethImpl.getLogs(null, null, null, contractAddress1, null);
 
       expect(result).to.exist;
 
@@ -875,9 +873,7 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
       mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
       mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
-      const result = await ethImpl.getLogs({
-        blockHash: blockHash
-      });
+      const result = await ethImpl.getLogs(blockHash, null, null, null, null);
 
       expect(result).to.exist;
 
@@ -911,13 +907,10 @@ describe('Eth calls using MirrorNode', async function () {
       };
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
       mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
-      mock.onGet('blocks?block.number=gte:5&block.number=lte:10').reply(200, {
+      mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
         blocks: [defaultBlock]
       });
-      const result = await ethImpl.getLogs({
-        fromBlock: 5,
-        toBlock: 10
-      });
+      const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null);
 
       expect(result).to.exist;
 

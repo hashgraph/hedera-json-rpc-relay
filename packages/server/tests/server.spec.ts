@@ -325,7 +325,17 @@ describe('RPC Server', async function() {
       'params': [null]
     });
 
-    BaseTest.genericErrorResponse(res);
+    BaseTest.defaultResponseChecks(res);
+    expect(res.data.result.length).to.be.gt(0);
+    expect(res.data.result[0]).to.have.property('address');
+    expect(res.data.result[0]).to.have.property('blockHash');
+    expect(res.data.result[0]).to.have.property('blockNumber');
+    expect(res.data.result[0]).to.have.property('data');
+    expect(res.data.result[0]).to.have.property('logIndex');
+    expect(res.data.result[0]).to.have.property('removed');
+    expect(res.data.result[0]).to.have.property('topics');
+    expect(res.data.result[0]).to.have.property('transactionHash');
+    expect(res.data.result[0]).to.have.property('transactionIndex');
   });
 });
 
@@ -347,15 +357,6 @@ class BaseTest {
     expect(response.data).to.have.property('id');
     expect(response.data).to.have.property('jsonrpc');
     expect(response.data).to.have.property('result');
-    expect(response.data.id).to.be.equal('2');
-    expect(response.data.jsonrpc).to.be.equal('2.0');
-  }
-
-  static genericErrorResponse(response) {
-    expect(response).to.have.property('data');
-    expect(response.data).to.have.property('id');
-    expect(response.data).to.have.property('jsonrpc');
-    expect(response.data).to.have.property('error');
     expect(response.data.id).to.be.equal('2');
     expect(response.data.jsonrpc).to.be.equal('2.0');
   }

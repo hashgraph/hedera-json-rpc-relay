@@ -347,7 +347,13 @@ rpc.use('eth_getBlockTransactionCountByNumber', async (params: any) => {
  */
 rpc.use('eth_getLogs', async (params: any) => {
   logger.debug("eth_getLogs");
-  return relay.eth().getLogs(params?.[0]);
+  return relay.eth().getLogs(
+      params?.[0] || null,
+      params?.[1] || null,
+      params?.[2] || null,
+      params?.[3] || null,
+      params?.[4] || null
+  );
 });
 
 

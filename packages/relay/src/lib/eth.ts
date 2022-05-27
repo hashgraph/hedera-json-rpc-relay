@@ -775,10 +775,10 @@ export class EthImpl implements Eth {
       });
   }
 
-  async getLogs(filters: any): Promise<Log[]> {
+  async getLogs(blockHash: string|null, fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null): Promise<Log[]> {
     const params: any = {};
-    if (filters.blockHash) {
-      const block = await this.mirrorNodeClient.getBlock(filters.blockHash);
+    if (blockHash) {
+      const block = await this.mirrorNodeClient.getBlock(blockHash);
       if (block) {
         params.timestamp = [
           `gte:${block.timestamp.from}`,
@@ -786,10 +786,10 @@ export class EthImpl implements Eth {
         ];
       }
     }
-    else if (filters.fromBlock && filters.toBlock) {
+    else if (fromBlock && toBlock) {
       const blocksResult = await this.mirrorNodeClient.getBlocks([
-          `gte:${filters.fromBlock}`,
-          `lte:${filters.toBlock}`
+          `gte:${fromBlock}`,
+          `lte:${toBlock}`
       ]);
 
       const blocks = blocksResult?.blocks;
@@ -803,15 +803,15 @@ export class EthImpl implements Eth {
       }
     }
 
-    if (filters?.topics) {
-      for (let i = 0; i < filters.topics.length; i++) {
-        params[`topic${i}`] = filters.topics[i];
+    if (topics) {
+      for (let i = 0; i < topics.length; i++) {
+        params[`topic${i}`] = topics[i];
       }
     }
 
     let result;
-    if (filters.address) {
-      result = await this.mirrorNodeClient.getContractResultsLogsByAddress(filters.address, params);
+    if (address) {
+      result = await this.mirrorNodeClient.getContractResultsLogsByAddress(address, params);
     }
     else {
       result = await this.mirrorNodeClient.getContractResultsLogs(params);
