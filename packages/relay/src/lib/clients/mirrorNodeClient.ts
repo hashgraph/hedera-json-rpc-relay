@@ -182,11 +182,11 @@ export class MirrorNodeClient {
         this.setContractResultsParams(queryParamObject, contractResultsParams);
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${this.getContractResultsByAddressPath(contractIdOrAddress)}${queryParams}`, [400]);
+        return this.request(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}${queryParams}`, [400]);
     }
 
     public async getContractResultsByAddressAndTimestamp(contractIdOrAddress: string, timestamp: string) {
-        return this.request(`${this.getContractResultsByAddressPath(contractIdOrAddress)}/${timestamp}`, [206, 400, 404]);
+        return this.request(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}/${timestamp}`, [206, 400, 404]);
     }
 
     private prepareLogsParams(
@@ -241,7 +241,7 @@ export class MirrorNodeClient {
         return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`, [400, 404]);
     }
 
-    private getContractResultsByAddressPath(address: string) {
+    private static getContractResultsByAddressPath(address: string) {
         return MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT.replace(MirrorNodeClient.ADDRESS_PLACEHOLDER, address);
     }
 
@@ -284,7 +284,7 @@ export class MirrorNodeClient {
     }
 
     setQueryParam(queryParamObject, key, value) {
-        if (key && value) {
+        if (key && value !== undefined) {
             queryParamObject[key] = value;
         }
     }

@@ -60,23 +60,23 @@ export interface Eth {
 
   getBlockByHash(hash: string, showDetails: boolean): Promise<Block | null>;
 
-  getBlockByNumber(blockNum: number, showDetails: boolean): Promise<Block | null>;
+  getBlockByNumber(blockNum: string, showDetails: boolean): Promise<Block | null>;
 
   getBlockTransactionCountByHash(hash: string): Promise<number | null>;
 
-  getBlockTransactionCountByNumber(blockNum: number): Promise<number | null>
+  getBlockTransactionCountByNumber(blockNum: string): Promise<number | null>
   
   getCode(address: string, blockNumber: string | null): Promise<string>;
 
   chainId(): string;
 
-  getLogs(filters: any): Promise<Log[]>;
+  getLogs(fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null): Promise<Log[]>;
 
-  // getStorageAt();
+  // getStorageAt(address: string, slot: string, blockNumber: string|null);
 
   getTransactionByBlockHashAndIndex(hash: string, index: number): Promise<Transaction | null>;
 
-  getTransactionByBlockNumberAndIndex(blockNum: number, index: number): Promise<Transaction | null>;
+  getTransactionByBlockNumberAndIndex(blockNum: string, index: number): Promise<Transaction | null>;
 
   getTransactionByHash(hash: string): Promise<Transaction | null>;
   
