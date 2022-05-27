@@ -226,6 +226,13 @@ describe('Eth calls using MirrorNode', async function () {
   const logBloom3 = '0x3333';
   const logBloom4 = '0x4444';
 
+  const defaultLogTopics = [
+    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+    "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "0x000000000000000000000000000000000000000000000000000000000208fa13",
+    "0x0000000000000000000000000000000000000000000000000000000000000005"
+  ];
+
   const defaultLogs = {
     "logs": [
       {
@@ -234,12 +241,7 @@ describe('Eth calls using MirrorNode', async function () {
         "contract_id": contractId1,
         "data": "0x",
         "index": 0,
-        "topics": [
-          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-          "0x0000000000000000000000000000000000000000000000000000000000000000",
-          "0x000000000000000000000000000000000000000000000000000000000208fa13",
-          "0x0000000000000000000000000000000000000000000000000000000000000005"
-        ],
+        "topics": defaultLogTopics,
         "root_contract_id": "0.0.34806097",
         "timestamp": contractTimestamp1
       },
@@ -249,12 +251,7 @@ describe('Eth calls using MirrorNode', async function () {
         "contract_id": contractId1,
         "data": "0x",
         "index": 1,
-        "topics": [
-          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-          "0x0000000000000000000000000000000000000000000000000000000000000000",
-          "0x000000000000000000000000000000000000000000000000000000000208fa13",
-          "0x0000000000000000000000000000000000000000000000000000000000000004"
-        ],
+        "topics": defaultLogTopics,
         "root_contract_id": "0.0.34806097",
         "timestamp": contractTimestamp1
       },
@@ -264,12 +261,7 @@ describe('Eth calls using MirrorNode', async function () {
         "contract_id": contractId1,
         "data": "0x",
         "index": 1,
-        "topics": [
-          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-          "0x0000000000000000000000000000000000000000000000000000000000000000",
-          "0x000000000000000000000000000000000000000000000000000000000208fa13",
-          "0x0000000000000000000000000000000000000000000000000000000000000004"
-        ],
+        "topics": [],
         "root_contract_id": "0.0.34806097",
         "timestamp": contractTimestamp2
       },
@@ -279,12 +271,7 @@ describe('Eth calls using MirrorNode', async function () {
         "contract_id": contractId2,
         "data": "0x",
         "index": 1,
-        "topics": [
-          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-          "0x0000000000000000000000000000000000000000000000000000000000000000",
-          "0x000000000000000000000000000000000000000000000000000000000208fa13",
-          "0x0000000000000000000000000000000000000000000000000000000000000004"
-        ],
+        "topics": [],
         "root_contract_id": "0.0.34806097",
         "timestamp": contractTimestamp2
       }
@@ -764,6 +751,59 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_getLogs', async function () {
+
+    const expectLogData1 = (res) => {
+      expect(res.address).to.eq(defaultLogs.logs[0].address);
+      expect(res.blockHash).to.eq(defaultDetailedContractResults.block_hash);
+      expect(res.blockNumber).to.eq(defaultDetailedContractResults.block_number);
+      expect(res.data).to.eq(defaultLogs.logs[0].data);
+      expect(res.logIndex).to.eq(defaultLogs.logs[0].index);
+      expect(res.removed).to.eq(false);
+      expect(res.topics).to.exist;
+      expect(res.topics).to.deep.eq(defaultLogs.logs[0].topics);
+      expect(res.transactionHash).to.eq(defaultDetailedContractResults.hash);
+      expect(res.transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
+    };
+
+    const expectLogData2 = (res) => {
+      expect(res.address).to.eq(defaultLogs.logs[1].address);
+      expect(res.blockHash).to.eq(defaultDetailedContractResults.block_hash);
+      expect(res.blockNumber).to.eq(defaultDetailedContractResults.block_number);
+      expect(res.data).to.eq(defaultLogs.logs[1].data);
+      expect(res.logIndex).to.eq(defaultLogs.logs[1].index);
+      expect(res.removed).to.eq(false);
+      expect(res.topics).to.exist;
+      expect(res.topics).to.deep.eq(defaultLogs.logs[1].topics);
+      expect(res.transactionHash).to.eq(defaultDetailedContractResults.hash);
+      expect(res.transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
+    };
+
+    const expectLogData3 = (res) => {
+      expect(res.address).to.eq(defaultLogs.logs[2].address);
+      expect(res.blockHash).to.eq(defaultDetailedContractResults2.block_hash);
+      expect(res.blockNumber).to.eq(defaultDetailedContractResults2.block_number);
+      expect(res.data).to.eq(defaultLogs.logs[2].data);
+      expect(res.logIndex).to.eq(defaultLogs.logs[2].index);
+      expect(res.removed).to.eq(false);
+      expect(res.topics).to.exist;
+      expect(res.topics).to.deep.eq(defaultLogs.logs[2].topics);
+      expect(res.transactionHash).to.eq(defaultDetailedContractResults2.hash);
+      expect(res.transactionIndex).to.eq(defaultDetailedContractResults2.transaction_index);
+    };
+
+    const expectLogData4 = (res) => {
+      expect(res.address).to.eq(defaultLogs.logs[3].address);
+      expect(res.blockHash).to.eq(defaultDetailedContractResults3.block_hash);
+      expect(res.blockNumber).to.eq(defaultDetailedContractResults3.block_number);
+      expect(res.data).to.eq(defaultLogs.logs[3].data);
+      expect(res.logIndex).to.eq(defaultLogs.logs[3].index);
+      expect(res.removed).to.eq(false);
+      expect(res.topics).to.exist;
+      expect(res.topics).to.deep.eq(defaultLogs.logs[3].topics);
+      expect(res.transactionHash).to.eq(defaultDetailedContractResults3.hash);
+      expect(res.transactionIndex).to.eq(defaultDetailedContractResults3.transaction_index);
+    };
+
     it('no filters', async function () {
       mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
@@ -774,49 +814,10 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.exist;
 
       expect(result.length).to.eq(4);
-      expect(result[0].address).to.eq(defaultLogs.logs[0].address);
-      expect(result[0].blockHash).to.eq(defaultDetailedContractResults.block_hash);
-      expect(result[0].blockNumber).to.eq(defaultDetailedContractResults.block_number);
-      expect(result[0].data).to.eq(defaultLogs.logs[0].data);
-      expect(result[0].logIndex).to.eq(defaultLogs.logs[0].index);
-      expect(result[0].removed).to.eq(false);
-      expect(result[0].topics).to.exist;
-      expect(result[0].topics).to.deep.eq(defaultLogs.logs[0].topics);
-      expect(result[0].transactionHash).to.eq(defaultDetailedContractResults.hash);
-      expect(result[0].transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
-
-      expect(result[1].address).to.eq(defaultLogs.logs[1].address);
-      expect(result[1].blockHash).to.eq(defaultDetailedContractResults.block_hash);
-      expect(result[1].blockNumber).to.eq(defaultDetailedContractResults.block_number);
-      expect(result[1].data).to.eq(defaultLogs.logs[1].data);
-      expect(result[1].logIndex).to.eq(defaultLogs.logs[1].index);
-      expect(result[1].removed).to.eq(false);
-      expect(result[1].topics).to.exist;
-      expect(result[1].topics).to.deep.eq(defaultLogs.logs[1].topics);
-      expect(result[1].transactionHash).to.eq(defaultDetailedContractResults.hash);
-      expect(result[1].transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
-
-      expect(result[2].address).to.eq(defaultLogs.logs[2].address);
-      expect(result[2].blockHash).to.eq(defaultDetailedContractResults2.block_hash);
-      expect(result[2].blockNumber).to.eq(defaultDetailedContractResults2.block_number);
-      expect(result[2].data).to.eq(defaultLogs.logs[2].data);
-      expect(result[2].logIndex).to.eq(defaultLogs.logs[2].index);
-      expect(result[2].removed).to.eq(false);
-      expect(result[2].topics).to.exist;
-      expect(result[2].topics).to.deep.eq(defaultLogs.logs[2].topics);
-      expect(result[2].transactionHash).to.eq(defaultDetailedContractResults2.hash);
-      expect(result[2].transactionIndex).to.eq(defaultDetailedContractResults2.transaction_index);
-
-      expect(result[3].address).to.eq(defaultLogs.logs[3].address);
-      expect(result[3].blockHash).to.eq(defaultDetailedContractResults3.block_hash);
-      expect(result[3].blockNumber).to.eq(defaultDetailedContractResults3.block_number);
-      expect(result[3].data).to.eq(defaultLogs.logs[3].data);
-      expect(result[3].logIndex).to.eq(defaultLogs.logs[3].index);
-      expect(result[3].removed).to.eq(false);
-      expect(result[3].topics).to.exist;
-      expect(result[3].topics).to.deep.eq(defaultLogs.logs[3].topics);
-      expect(result[3].transactionHash).to.eq(defaultDetailedContractResults3.hash);
-      expect(result[3].transactionIndex).to.eq(defaultDetailedContractResults3.transaction_index);
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+      expectLogData3(result[2]);
+      expectLogData4(result[3]);
     });
 
     it('address filter', async function () {
@@ -832,38 +833,9 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.exist;
 
       expect(result.length).to.eq(3);
-      expect(result[0].address).to.eq(defaultLogs.logs[0].address);
-      expect(result[0].blockHash).to.eq(defaultDetailedContractResults.block_hash);
-      expect(result[0].blockNumber).to.eq(defaultDetailedContractResults.block_number);
-      expect(result[0].data).to.eq(defaultLogs.logs[0].data);
-      expect(result[0].logIndex).to.eq(defaultLogs.logs[0].index);
-      expect(result[0].removed).to.eq(false);
-      expect(result[0].topics).to.exist;
-      expect(result[0].topics).to.deep.eq(defaultLogs.logs[0].topics);
-      expect(result[0].transactionHash).to.eq(defaultDetailedContractResults.hash);
-      expect(result[0].transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
-
-      expect(result[1].address).to.eq(defaultLogs.logs[1].address);
-      expect(result[1].blockHash).to.eq(defaultDetailedContractResults.block_hash);
-      expect(result[1].blockNumber).to.eq(defaultDetailedContractResults.block_number);
-      expect(result[1].data).to.eq(defaultLogs.logs[1].data);
-      expect(result[1].logIndex).to.eq(defaultLogs.logs[1].index);
-      expect(result[1].removed).to.eq(false);
-      expect(result[1].topics).to.exist;
-      expect(result[1].topics).to.deep.eq(defaultLogs.logs[1].topics);
-      expect(result[1].transactionHash).to.eq(defaultDetailedContractResults.hash);
-      expect(result[1].transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
-
-      expect(result[2].address).to.eq(defaultLogs.logs[2].address);
-      expect(result[2].blockHash).to.eq(defaultDetailedContractResults2.block_hash);
-      expect(result[2].blockNumber).to.eq(defaultDetailedContractResults2.block_number);
-      expect(result[2].data).to.eq(defaultLogs.logs[2].data);
-      expect(result[2].logIndex).to.eq(defaultLogs.logs[2].index);
-      expect(result[2].removed).to.eq(false);
-      expect(result[2].topics).to.exist;
-      expect(result[2].topics).to.deep.eq(defaultLogs.logs[2].topics);
-      expect(result[2].transactionHash).to.eq(defaultDetailedContractResults2.hash);
-      expect(result[2].transactionIndex).to.eq(defaultDetailedContractResults2.transaction_index);
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+      expectLogData3(result[2]);
     });
 
     it('blockHash filter', async function () {
@@ -876,29 +848,8 @@ describe('Eth calls using MirrorNode', async function () {
       const result = await ethImpl.getLogs(blockHash, null, null, null, null);
 
       expect(result).to.exist;
-
-      expect(result.length).to.eq(2);
-      expect(result[0].address).to.eq(defaultLogs.logs[0].address);
-      expect(result[0].blockHash).to.eq(defaultDetailedContractResults.block_hash);
-      expect(result[0].blockNumber).to.eq(defaultDetailedContractResults.block_number);
-      expect(result[0].data).to.eq(defaultLogs.logs[0].data);
-      expect(result[0].logIndex).to.eq(defaultLogs.logs[0].index);
-      expect(result[0].removed).to.eq(false);
-      expect(result[0].topics).to.exist;
-      expect(result[0].topics).to.deep.eq(defaultLogs.logs[0].topics);
-      expect(result[0].transactionHash).to.eq(defaultDetailedContractResults.hash);
-      expect(result[0].transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
-
-      expect(result[1].address).to.eq(defaultLogs.logs[1].address);
-      expect(result[1].blockHash).to.eq(defaultDetailedContractResults.block_hash);
-      expect(result[1].blockNumber).to.eq(defaultDetailedContractResults.block_number);
-      expect(result[1].data).to.eq(defaultLogs.logs[1].data);
-      expect(result[1].logIndex).to.eq(defaultLogs.logs[1].index);
-      expect(result[1].removed).to.eq(false);
-      expect(result[1].topics).to.exist;
-      expect(result[1].topics).to.deep.eq(defaultLogs.logs[1].topics);
-      expect(result[1].transactionHash).to.eq(defaultDetailedContractResults.hash);
-      expect(result[1].transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
     });
 
     it('fromBlock && toBlock filter', async function () {
@@ -913,29 +864,29 @@ describe('Eth calls using MirrorNode', async function () {
       const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null);
 
       expect(result).to.exist;
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+    });
 
-      expect(result.length).to.eq(2);
-      expect(result[0].address).to.eq(defaultLogs.logs[0].address);
-      expect(result[0].blockHash).to.eq(defaultDetailedContractResults.block_hash);
-      expect(result[0].blockNumber).to.eq(defaultDetailedContractResults.block_number);
-      expect(result[0].data).to.eq(defaultLogs.logs[0].data);
-      expect(result[0].logIndex).to.eq(defaultLogs.logs[0].index);
-      expect(result[0].removed).to.eq(false);
-      expect(result[0].topics).to.exist;
-      expect(result[0].topics).to.deep.eq(defaultLogs.logs[0].topics);
-      expect(result[0].transactionHash).to.eq(defaultDetailedContractResults.hash);
-      expect(result[0].transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
+    it('topics filter', async function () {
+      const filteredLogs = {
+        logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
+      };
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(
+          `contracts/results/logs` +
+          `?topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
+          `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}`
+      ).reply(200, filteredLogs);
+      mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
+        blocks: [defaultBlock]
+      });
 
-      expect(result[1].address).to.eq(defaultLogs.logs[1].address);
-      expect(result[1].blockHash).to.eq(defaultDetailedContractResults.block_hash);
-      expect(result[1].blockNumber).to.eq(defaultDetailedContractResults.block_number);
-      expect(result[1].data).to.eq(defaultLogs.logs[1].data);
-      expect(result[1].logIndex).to.eq(defaultLogs.logs[1].index);
-      expect(result[1].removed).to.eq(false);
-      expect(result[1].topics).to.exist;
-      expect(result[1].topics).to.deep.eq(defaultLogs.logs[1].topics);
-      expect(result[1].transactionHash).to.eq(defaultDetailedContractResults.hash);
-      expect(result[1].transactionIndex).to.eq(defaultDetailedContractResults.transaction_index);
+      const result = await ethImpl.getLogs(null, null, null, null, defaultLogTopics);
+
+      expect(result).to.exist;
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
     });
   });
 });
