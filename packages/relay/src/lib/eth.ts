@@ -516,13 +516,13 @@ export class EthImpl implements Eth {
         return txHash;
       } catch (e) {
         this.logger.error(e,
-            'Failed to handle sendRawTransaction cleanly for transaction %s, returning computed hash', transaction);
+            'Failed sendRawTransaction during receipt retrieval for transaction %s, returning computed hash', transaction);
         //Return computed hash if unable to retrieve EthereumHash from record due to error
         return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
       }
     } catch (e) {
       this.logger.error(e,
-          'Failed to submit sendRawTransaction cleanly for transaction %s', transaction);
+          'Failed to successfully submit sendRawTransaction for transaction %s', transaction);
       throw e;
     }
   }
