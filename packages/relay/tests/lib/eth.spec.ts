@@ -215,6 +215,8 @@ describe('Eth calls using MirrorNode', async function () {
     'contract_id': contractId2,
   }};
 
+  const detailedContractResultNotFound = {"_status":{"messages":[{"message":"No correlating transaction"}]}};
+
   const defaultDetailedContractResultsWithNullNullableValues = {
     ...defaultDetailedContractResults,
     r: null,
@@ -807,6 +809,24 @@ describe('Eth calls using MirrorNode', async function () {
       expect(res.transactionHash).to.eq(defaultDetailedContractResults3.hash);
       expect(res.transactionIndex).to.eq(defaultDetailedContractResults3.transaction_index);
     };
+
+    it('contract results details not found', async function () {
+      mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(404, detailedContractResultNotFound);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(404, detailedContractResultNotFound);
+      mock.onGet(`contracts/${contractId2}/results/${contractTimestamp2}`).reply(404, detailedContractResultNotFound);
+
+      const result = await ethImpl.getLogs(null, null, null, null ,null);
+      expect(result).to.exist;
+      expect(result.length).to.eq(0);
+    });
+
+    it('error when retrieving logs', async function () {
+      mock.onGet(`contracts/results/logs`).reply(400, {"_status":{"messages":[{"message":"Mocked error"}]}});
+      const result = await ethImpl.getLogs(null, null, null, null ,null);
+      expect(result).to.exist;
+      expect(result.length).to.eq(0);
+    });
 
     it('no filters', async function () {
       mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);

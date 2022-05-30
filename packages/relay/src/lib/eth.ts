@@ -893,26 +893,31 @@ export class EthImpl implements Eth {
     }
 
     // Populate the Log objects with block and transaction data from ContractResultsDetails
-    const contractsResultsDetails = await Promise.all(promises);
-    for (let i = 0; i < contractsResultsDetails.length; i++) {
-      const detail = contractsResultsDetails[i];
-      const pair = `${detail.contract_id}-${detail.timestamp}`;
-      const uPair = uniquePairs[pair] || [];
-      for (let p = 0; p < uPair.length; p++) {
-        const logIndex = uPair[p];
-        const log = logs[logIndex];
-        logs[logIndex] = new Log({
-          address: log.address,
-          blockHash: detail.block_hash,
-          blockNumber: detail.block_number,
-          data: log.data,
-          logIndex: log.index,
-          removed: false,
-          topics: log.topics,
-          transactionHash: detail.hash,
-          transactionIndex: detail.transaction_index
-        });
+    try {
+      const contractsResultsDetails = await Promise.all(promises);
+      for (let i = 0; i < contractsResultsDetails.length; i++) {
+        const detail = contractsResultsDetails[i];
+        const pair = `${detail.contract_id}-${detail.timestamp}`;
+        const uPair = uniquePairs[pair] || [];
+        for (let p = 0; p < uPair.length; p++) {
+          const logIndex = uPair[p];
+          const log = logs[logIndex];
+          logs[logIndex] = new Log({
+            address: log.address,
+            blockHash: detail.block_hash,
+            blockNumber: detail.block_number,
+            data: log.data,
+            logIndex: log.index,
+            removed: false,
+            topics: log.topics,
+            transactionHash: detail.hash,
+            transactionIndex: detail.transaction_index
+          });
+        }
       }
+    }
+    catch(e) {
+      return [];
     }
 
     return logs;
