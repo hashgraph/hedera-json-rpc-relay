@@ -875,46 +875,46 @@ export class EthImpl implements Eth {
 
     // Find all unique contractId and timestamp pairs and for each one make mirror node request
     const promises: Promise<any>[] = [];
-    const uniquePairs: string[] = [];
-    logs.forEach(log => {
+    const uniquePairs = {};
+
+    for (let i = 0; i < logs.length; i++) {
+      const log = logs[i];
       const pair = `${log.contract_id}-${log.timestamp}`;
-      if (uniquePairs.indexOf(pair) === -1) {
-        uniquePairs.push(pair);
+      if (uniquePairs[pair] === undefined) {
+        uniquePairs[pair] = [i];
         promises.push(this.mirrorNodeClient.getContractResultsDetails(
             log.contract_id,
             log.timestamp
         ));
       }
-    });
+      else {
+        uniquePairs[pair].push(i);
+      }
+    }
 
     // Populate the Log objects with block and transaction data from ContractResultsDetails
     const contractsResultsDetails = await Promise.all(promises);
-    contractsResultsDetails.forEach(detail => {
-      logs.forEach(log => {
-        if ( !log.block_hash
-            && log.contract_id === detail.contract_id
-            && log.timestamp === detail.timestamp
-        ) {
-          log.block_hash = detail.block_hash;
-          log.block_number = detail.block_number;
-          log.transaction_index = detail.transaction_index;
-          log.hash = detail.hash;
-        }
-      });
-    });
+    for (let i = 0; i < contractsResultsDetails.length; i++) {
+      const detail = contractsResultsDetails[i];
+      const pair = `${detail.contract_id}-${detail.timestamp}`;
+      const uPair = uniquePairs[pair] || [];
+      for (let p = 0; p < uPair.length; p++) {
+        const logIndex = uPair[p];
+        const log = logs[logIndex];
+        logs[logIndex] = new Log({
+          address: log.address,
+          blockHash: detail.block_hash,
+          blockNumber: detail.block_number,
+          data: log.data,
+          logIndex: log.index,
+          removed: false,
+          topics: log.topics,
+          transactionHash: detail.hash,
+          transactionIndex: detail.transaction_index
+        });
+      }
+    }
 
-    return logs.map(log => {
-      return new Log({
-        address: log.address,
-        blockHash: log.block_hash,
-        blockNumber: log.block_number,
-        data: log.data,
-        logIndex: log.index,
-        removed: false,
-        topics: log.topics,
-        transactionHash: log.hash,
-        transactionIndex: log.transaction_index
-      });
-    });
+    return logs;
   }
 }
