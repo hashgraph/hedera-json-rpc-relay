@@ -69,10 +69,17 @@ describe('RPC Server Integration Tests', async function () {
         setupClient();
 
         if (useLocalNode === 'true') {
+            // set env variables for docker images until local-node is updated
+            process.env['NETWORK_NODE_IMAGE_TAG'] = '0.25.4';
+            process.env['HAVEGED_IMAGE_TAG'] = '0.25.4';
+            process.env['MIRROR_IMAGE_TAG'] = '0.57.2';
+            console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
+
             // start local-node
             console.log('Start local node and genereate accounts');
             shell.exec('npx hedera-local start');
             shell.exec('npx hedera-local generate-accounts 0');
+            console.log('Hedera Hashgraph local node env started');
         }
 
         // set up mirror node contents
@@ -86,7 +93,6 @@ describe('RPC Server Integration Tests', async function () {
         // Take Parent contract used in mirror node acceptance tests since it's well use
         await createParentContract();
         await executeContractCall();
-        console.log(`*** contractExecuteTimestamp: ${contractExecuteTimestamp}, contractExecutedTransactionId: ${contractExecutedTransactionId}`);
 
         console.log('Create token');
         // 2. Token create
@@ -97,8 +103,9 @@ describe('RPC Server Integration Tests', async function () {
         await associateAndTransferToken(primaryAccountInfo.accountId, primaryKey);
         await associateAndTransferToken(secondaryAccountInfo.accountId, secondaryKey);
 
-        console.log('Submit ethereum transaction types');
-        await submitEthereumTransactions();
+        // requires 0.26.0 of service nodes
+        // console.log('Submit ethereum transaction types');
+        // await submitEthereumTransactions();
 
         console.log('Send file close crypto transfers');
         // 5. simple crypto trasnfer to ensure file close
@@ -119,53 +126,16 @@ describe('RPC Server Integration Tests', async function () {
         // get contract details
         const mirrorContractDetailsResponse = await callMirrorNode(mirrorNodeClient, `/contracts/${contractId}/results/${contractExecuteTimestamp}`);
         mirrorContractDetails = mirrorContractDetailsResponse.data;
-        console.log(`*** mirrorContractDetails: ${JSON.stringify(mirrorContractDetails)}`);
 
         // get block
         const mirrorBlockResponse = await callMirrorNode(mirrorNodeClient, `/blocks?block.number=${mirrorContractDetails.block_number}`);
         mirrorBlock = mirrorBlockResponse.data.blocks[0];
-        console.log(`*** mirrorBlock: ${JSON.stringify(mirrorBlock)}`);
 
         const mirrorPrimaryAccountResponse = await callMirrorNode(mirrorNodeClient, `accounts?account.id=${primaryAccountInfo.accountId}`);
         mirrorPrimaryAccount = mirrorPrimaryAccountResponse.data.accounts[0];
-        console.log(`*** mirrorPrimaryAccount: ${JSON.stringify(mirrorPrimaryAccount)}`);
 
         const mirrorSecondaryAccountResponse = await callMirrorNode(mirrorNodeClient, `accounts?account.id=${secondaryAccountInfo.accountId}`);
         mirrorSecondaryAccount = mirrorSecondaryAccountResponse.data.accounts[0];
-        console.log(`*** mirrorSecondaryAccount: ${JSON.stringify(mirrorSecondaryAccount)}`);
-
-        // may have to calculate the eth public key as metamask would for account hash
-
-        // const mirrorBlocks = await callMirrorNode(mirrorNodeClient, `/blocks`);
-        // console.log(`*** mirrorBlocks: ${JSON.stringify(mirrorBlocks.data.blocks)}`);
-
-        // get contract details - transaction
-        // const mirrorContractIdResults = await callMirrorNode(mirrorNodeClient, `/contracts/${contractId}/results`);
-        // console.log(`*** mirrorContractIdResults: ${JSON.stringify(mirrorContractIdResults.data)}`);
-
-        // const mirrorContractResults = await callMirrorNode(mirrorNodeClient, `/contracts/results`);
-        // console.log(`*** mirrorContractResults: ${JSON.stringify(mirrorContractResults.data)}`);
-
-        // const mirrorTransactionsResults = await callMirrorNode(mirrorNodeClient, `/transactions?order=desc&transactiontype=CONTRACTCALL`);
-        // console.log(`*** mirrorTransactionsResults: ${JSON.stringify(mirrorTransactionsResults.data)}`);
-
-        // const mirrorTransactionsResults2 = await callMirrorNode(mirrorNodeClient, `/transactions?order=desc&transactiontype=CONTRACTCREATEINSTANCE`);
-        // console.log(`*** mirrorTransactionsResults: ${JSON.stringify(mirrorTransactionsResults2.data)}`);
-
-        const mirrorEthereumTransactionsResults = await callMirrorNode(mirrorNodeClient, `/transactions?order=desc&transactiontype=ETHEREUMTRANSACTION`);
-        console.log(`*** mirrorEthereumTransactionsResults: ${JSON.stringify(mirrorEthereumTransactionsResults.data)}`);
-
-        // const mirrorContractTransactionIdResults = await callMirrorNode(mirrorNodeClient, `/contracts/results/${mirrorContractDetails.hash}`);
-        // console.log(`*** mirrorContractTransactionIdResults: ${JSON.stringify(mirrorContractTransactionIdResults.data)}`);
-
-        // const mirrorTransactionIdResults = await callMirrorNode(mirrorNodeClient, `/transactions/${mirrorTransactionsResults.data.transactions[0].transaction_id}`);
-        // console.log(`*** mirrorTransactionIdResults contract call: ${JSON.stringify(mirrorTransactionIdResults.data)}`);
-
-        // const mirrorTransactionIdResults2 = await callMirrorNode(mirrorNodeClient, `/transactions/${mirrorTransactionsResults2.data.transactions[0].transaction_id}`);
-        // console.log(`*** mirrorTransactionIdResults contract create: ${JSON.stringify(mirrorTransactionIdResults2.data)}`);
-
-        const mirrorEthereumTransactionIdResults = await callMirrorNode(mirrorNodeClient, `/transactions/${mirrorEthereumTransactionsResults.data.transactions[0].transaction_id}`);
-        console.log(`*** mirrorTransactionIdResults contract call: ${JSON.stringify(mirrorEthereumTransactionIdResults.data)}`);
 
         // start relay
         console.log(`Start relay on port ${process.env.SERVER_PORT}`);
@@ -195,83 +165,34 @@ describe('RPC Server Integration Tests', async function () {
         }
     });
 
-    // it('should execute "eth_chainId"', async function () {
-    //     console.log('Start should execute "eth_chainId');
-    //     const res = await this.relayClient.post('/', {
-    //         'id': '2',
-    //         'jsonrpc': '2.0',
-    //         'method': 'eth_chainId',
-    //         'params': [null]
-    //     });
+    it('should execute "eth_chainId"', async function () {        
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_chainId', [null]);
+        expect(res.data.result).to.be.equal('0x12a');
+    });
 
-    //     expect(res).to.have.property('data');
-    //     console.log(`*** res: ${JSON.stringify(res.data)}`);
-    //     expect(res.data).to.have.property('id');
-    //     expect(res.data).to.have.property('jsonrpc');
-    //     expect(res.data).to.have.property('result');
-    //     expect(res.data.id).to.be.equal('2');
-    //     expect(res.data.jsonrpc).to.be.equal('2.0');
-    //     expect(res.data.result).to.be.equal('0x12a');
-    // });
+    it('should execute "eth_getBlockByHash"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBlockByHash', [mirrorBlock.hash, 'true']);
 
-    // it('should execute "eth_getBlockByHash"', async function () {
-    //     const res = await this.relayClient.post('/', {
-    //         'id': '2',
-    //         'jsonrpc': '2.0',
-    //         'method': 'eth_getBlockByHash',
-    //         'params': [mirrorBlock.hash, 'true']
-    //     });
+        const blockResult = res.data.result;
+        expect(blockResult.hash).to.be.equal(mirrorBlock.hash.slice(0, 66));
+        expect(blockResult.number).to.be.equal(numberTo0x(mirrorBlock.number));
+        expect(blockResult).to.have.property('transactions');
+        expect(blockResult.transactions.length).to.be.greaterThan(0);
+    });
 
-    //     expect(res).to.have.property('data');
-    //     console.log(`*** res: ${JSON.stringify(res.data)}`);
-    //     expect(res.data).to.have.property('id');
-    //     expect(res.data).to.have.property('jsonrpc');
-    //     expect(res.data).to.have.property('result');
-    //     expect(res.data.id).to.be.equal('2');
-    //     expect(res.data.jsonrpc).to.be.equal('2.0');
-    //     const blockResult = res.data.result;
-    //     expect(blockResult.hash).to.be.equal(mirrorBlock.hash.slice(0, 66));
-    //     expect(blockResult.number).to.be.equal(numberTo0x(mirrorBlock.number));
-    //     expect(blockResult).to.have.property('transactions');
-    //     expect(blockResult.transactions.length).to.be.greaterThan(0);
-    // });
+    it('should execute "eth_getBlockByNumber"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBlockByNumber', [mirrorBlock.number, true]);
 
-    // it('should execute "eth_getBlockByNumber"', async function () {
-    //     const res = await this.relayClient.post('/', {
-    //         'id': '2',
-    //         'jsonrpc': '2.0',
-    //         'method': 'eth_getBlockByNumber',
-    //         'params': [mirrorBlock.number, true]
-    //     });
-
-    //     expect(res).to.have.property('data');
-    //     console.log(`*** res: ${JSON.stringify(res.data)}`);
-    //     expect(res.data).to.have.property('id');
-    //     expect(res.data).to.have.property('jsonrpc');
-    //     expect(res.data).to.have.property('result');
-    //     expect(res.data.id).to.be.equal('2');
-    //     const blockResult = res.data.result;
-    //     expect(blockResult.hash).to.be.equal(mirrorBlock.hash.slice(0, 66));
-    //     expect(blockResult.number).to.be.equal(numberTo0x(mirrorBlock.number));
-    //     expect(blockResult).to.have.property('transactions');
-    //     expect(blockResult.transactions.length).to.be.greaterThan(0);
-    // });
+        const blockResult = res.data.result;
+        expect(blockResult.hash).to.be.equal(mirrorBlock.hash.slice(0, 66));
+        expect(blockResult.number).to.be.equal(numberTo0x(mirrorBlock.number));
+        expect(blockResult).to.have.property('transactions');
+        expect(blockResult.transactions.length).to.be.greaterThan(0);
+    });
 
     it('should execute "eth_getTransactionReceipt"', async function () {
-        const res = await this.relayClient.post('/', {
-            'id': '2',
-            'jsonrpc': '2.0',
-            'method': 'eth_getTransactionReceipt',
-            'params': [mirrorContractDetails.hash]
-        });
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getTransactionReceipt', [mirrorContractDetails.hash]);
 
-        expect(res).to.have.property('data');
-        console.log(`*** res: ${JSON.stringify(res.data)}`);
-        expect(res.data).to.have.property('id');
-        expect(res.data).to.have.property('jsonrpc');
-        expect(res.data).to.have.property('result');
-        expect(res.data.id).to.be.equal('2');
-        expect(res.data.jsonrpc).to.be.equal('2.0');
         const transactionResult = res.data.result;
         expect(transactionResult.transactionHash).to.be.equal(mirrorContractDetails.hash.slice(0, 66));
         expect(transactionResult.blockHash).to.be.equal(mirrorContractDetails.block_hash.slice(0, 66));
@@ -279,277 +200,166 @@ describe('RPC Server Integration Tests', async function () {
     });
 
     it('should execute "eth_getBalance" for primary account', async function () {
-        const res = await this.relayClient.post('/', {
-            'id': '2',
-            'jsonrpc': '2.0',
-            'method': 'eth_getBalance',
-            'params': [mirrorPrimaryAccount.evm_address, 'latest']
-        });
-
-        expect(res).to.have.property('data');
-        console.log(`*** res: ${JSON.stringify(res.data)}`);
-        expect(res.data).to.have.property('id');
-        expect(res.data).to.have.property('jsonrpc');
-        expect(res.data).to.have.property('result');
-        expect(res.data.id).to.be.equal('2');
-        expect(res.data.jsonrpc).to.be.equal('2.0');
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
         expect(res.data.result).to.be.equal('0x');
     });
 
     it('should execute "eth_getBalance" for secondary account', async function () {
-        const res = await this.relayClient.post('/', {
-            'id': '2',
-            'jsonrpc': '2.0',
-            'method': 'eth_getBalance',
-            'params': [mirrorSecondaryAccount.evm_address, 'latest']
-        });
-
-        expect(res).to.have.property('data');
-        console.log(`*** res: ${JSON.stringify(res.data)}`);
-        expect(res.data).to.have.property('id');
-        expect(res.data).to.have.property('jsonrpc');
-        expect(res.data).to.have.property('result');
-        expect(res.data.id).to.be.equal('2');
-        expect(res.data.jsonrpc).to.be.equal('2.0');
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorSecondaryAccount.evm_address, 'latest']);
         expect(res.data.result).to.be.equal('0x');
     });
 
     it('should execute "eth_getTransactionCount" primary', async function () {
-        const res = await this.relayClient.post('/', {
-            'id': '2',
-            'jsonrpc': '2.0',
-            'method': 'eth_getTransactionCount',
-            'params': [mirrorPrimaryAccount.evm_address, mirrorContractDetails.block_number]
-        });
-
-        expect(res).to.have.property('data');
-        console.log(`*** res: ${JSON.stringify(res.data)}`);
-        expect(res.data).to.have.property('id');
-        expect(res.data).to.have.property('jsonrpc');
-        expect(res.data).to.have.property('result');
-        expect(res.data.id).to.be.equal('2');
-        expect(res.data.jsonrpc).to.be.equal('2.0');
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('');
     });
 
     it('should execute "eth_getTransactionCount" secondary', async function () {
-        const res = await this.relayClient.post('/', {
-            'id': '2',
-            'jsonrpc': '2.0',
-            'method': 'eth_getTransactionCount',
-            'params': [mirrorSecondaryAccount.evm_address, mirrorContractDetails.block_number]
-        });
-
-        expect(res).to.have.property('data');
-        console.log(`*** res: ${JSON.stringify(res.data)}`);
-        expect(res.data).to.have.property('id');
-        expect(res.data).to.have.property('jsonrpc');
-        expect(res.data).to.have.property('result');
-        expect(res.data.id).to.be.equal('2');
-        expect(res.data.jsonrpc).to.be.equal('2.0');
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [mirrorSecondaryAccount.evm_address, mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('');
     });
 
-    // it('should execute "eth_getBlockTransactionCountByHash"', async function () {
-    //     const res = await this.relayClient.post('/', {
-    //         'id': '2',
-    //         'jsonrpc': '2.0',
-    //         'method': 'eth_getBlockTransactionCountByHash',
-    //         'params': [mirrorBlock.hash]
-    //     });
+    it('should execute "eth_getBlockTransactionCountByHash"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
+        expect(res.data.result).to.be.equal(mirrorBlock.count);
+    });
 
-    //     expect(res).to.have.property('data');
-    //     console.log(`*** res: ${JSON.stringify(res.data)}`);
-    //     expect(res.data).to.have.property('id');
-    //     expect(res.data).to.have.property('jsonrpc');
-    //     expect(res.data).to.have.property('result');
-    //     expect(res.data.id).to.be.equal('2');
-    //     expect(res.data.jsonrpc).to.be.equal('2.0');
-    //     expect(res.data.result).to.be.equal(mirrorBlock.count);
-    // });
+    it('should execute "eth_getBlockTransactionCountByNumber"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBlockTransactionCountByNumber', [mirrorBlock.number]);
+        expect(res.data.result).to.be.equal(mirrorBlock.count);
+    });
 
-    // it('should execute "eth_getBlockTransactionCountByNumber"', async function () {
-    //     const res = await this.relayClient.post('/', {
-    //         'id': '2',
-    //         'jsonrpc': '2.0',
-    //         'method': 'eth_getBlockTransactionCountByNumber',
-    //         'params': [mirrorBlock.number]
-    //     });
+    it('should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getTransactionByBlockHashAndIndex', [mirrorContractDetails.block_hash, mirrorContractDetails.transaction_index]);
 
-    //     expect(res).to.have.property('data');
-    //     console.log(`*** res: ${JSON.stringify(res.data)}`);
-    //     expect(res.data).to.have.property('id');
-    //     expect(res.data).to.have.property('jsonrpc');
-    //     expect(res.data).to.have.property('result');
-    //     expect(res.data.id).to.be.equal('2');
-    //     expect(res.data.jsonrpc).to.be.equal('2.0');
-    //     expect(res.data.result).to.be.equal(mirrorBlock.count);
-    // });
+        const transactionResult = res.data.result;
+        expect(transactionResult.blockHash).to.be.equal(mirrorContractDetails.block_hash.slice(0, 66));
+        expect(transactionResult.blockNumber).to.be.equal(numberTo0x(mirrorContractDetails.block_number));
+    });
 
-    // it('should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
-    //     const res = await this.relayClient.post('/', {
-    //         'id': '2',
-    //         'jsonrpc': '2.0',
-    //         'method': 'eth_getTransactionByBlockHashAndIndex',
-    //         'params': [mirrorContractDetails.block_hash, mirrorContractDetails.transaction_index]
-    //     });
+    it('should execute "eth_getTransactionByBlockNumberAndIndex"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, mirrorContractDetails.transaction_index]);
 
-    //     expect(res).to.have.property('data');
-    //     console.log(`*** res: ${JSON.stringify(res.data)}`);
-    //     expect(res.data).to.have.property('id');
-    //     expect(res.data).to.have.property('jsonrpc');
-    //     expect(res.data).to.have.property('result');
-    //     expect(res.data.id).to.be.equal('2');
-    //     expect(res.data.jsonrpc).to.be.equal('2.0');
-    //     const transactionResult = res.data.result;
-    //     expect(transactionResult.blockHash).to.be.equal(mirrorContractDetails.block_hash.slice(0, 66));
-    //     expect(transactionResult.blockNumber).to.be.equal(numberTo0x(mirrorContractDetails.block_number));
-    // });
+        const transactionResult = res.data.result;
+        expect(transactionResult.blockHash).to.be.equal(mirrorContractDetails.block_hash.slice(0, 66));
+        expect(transactionResult.blockNumber).to.be.equal(numberTo0x(mirrorContractDetails.block_number));
+    });
 
-    // it('should execute "eth_getTransactionByBlockNumberAndIndex"', async function () {
-    //     const res = await this.relayClient.post('/', {
-    //         'id': '2',
-    //         'jsonrpc': '2.0',
-    //         'method': 'eth_getTransactionByBlockNumberAndIndex',
-    //         'params': [mirrorContractDetails.block_number, mirrorContractDetails.transaction_index]
-    //     });
+    it('should execute "net_listening"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'net_listening', []);
+        expect(res.data.result).to.be.equal('false');
+    });
 
-    //     expect(res).to.have.property('data');
-    //     console.log(`*** res: ${JSON.stringify(res.data)}`);
-    //     expect(res.data).to.have.property('id');
-    //     expect(res.data).to.have.property('jsonrpc');
-    //     expect(res.data).to.have.property('result');
-    //     expect(res.data.id).to.be.equal('2');
-    //     expect(res.data.jsonrpc).to.be.equal('2.0');
-    //     const transactionResult = res.data.result;
-    //     expect(transactionResult.blockHash).to.be.equal(mirrorContractDetails.block_hash.slice(0, 66));
-    //     expect(transactionResult.blockNumber).to.be.equal(numberTo0x(mirrorContractDetails.block_number));
-    // });
+    it('should execute "net_version"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'net_version', []);
+        expect(res.data.result).to.be.equal('0x12a');
+    });
 
-    // it('should execute "net_listening"', async function () {
-    //     const res = callRelay(this.relayClient, 'net_listening', []);
+    it('should execute "eth_estimateGas"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_estimateGas', []);
+        expect(res.data.result).to.be.equal('0x9');
+    });
 
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
+    it('should execute "eth_gasPrice"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_gasPrice', []);
+        expect(res.data.result).to.be.equal('0xa59784cceb');
+    });
 
-    // it('should execute "net_version"', async function () {
-    //     const res = callRelay(this.relayClient, 'net_version', []);
+    it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getUncleByBlockHashAndIndex', []);
+        expect(res.data.result).to.be.null;
+    });
 
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
+    it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getUncleByBlockNumberAndIndex', []);
+        expect(res.data.result).to.be.null;
+    });
 
-    // it('should execute "eth_estimateGas"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_estimateGas', []);
+    it('should execute "eth_getUncleCountByBlockHash"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getUncleCountByBlockHash', []);
+        expect(res.data.result).to.be.equal('0x0');
+    });
 
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
+    it('should execute "eth_getUncleCountByBlockNumber"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getUncleCountByBlockNumber', []);
+        expect(res.data.result).to.be.equal('0x0');
+    });
 
-    // it('should execute "eth_gasPrice"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_gasPrice', []);
+    it('should execute "eth_getWork"', async function () {
+        callUnsupportedRelayMethod(this.relayClient, 'eth_getWork', []);
+    });
 
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
+    it('should execute "eth_hashrate"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_hashrate', []);
+        expect(res.data.result).to.be.equal('0x0');
+    });
 
-    // it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_getUncleByBlockHashAndIndex', []);
+    it('should execute "eth_mining"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_mining', []);
+        expect(res.data.result).to.be.equal(false);
+    });
 
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
+    it('should execute "eth_submitWork"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_submitWork', []);
+        expect(res.data.result).to.be.equal(false);
+    });
 
-    // it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_getUncleByBlockNumberAndIndex', []);
+    it('should execute "eth_syncing"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_syncing', []);
+        expect(res.data.result).to.be.equal(false);
+    });
 
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
+    it('should execute "web3_client_version"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'web3_client_version', []);
+        expect(res.data.result).to.be.equal('relay/0.1.0');
+    });
 
-    // it('should execute "eth_getUncleCountByBlockHash"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_getUncleCountByBlockHash', []);
-
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
-
-    // it('should execute "eth_getUncleCountByBlockNumber"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_getUncleCountByBlockNumber', []);
-
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
-
-    // it('should execute "eth_getWork"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_getWork', []);
-
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
-
-    // it('should execute "eth_hashrate"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_hashrate', []);
-
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
-
-    // it('should execute "eth_mining"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_mining', []);
-
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
-
-    // it('should execute "eth_submitWork"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_submitWork', []);
-
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
-
-    // it('should execute "eth_syncing"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_syncing', []);
-
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
-
-    // it('should execute "web3_client_version"', async function () {
-    //     const res = callRelay(this.relayClient, 'web3_client_version', []);
-
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
-
-    // it('should execute "web3_client_version"', async function () {
-    //     const res = callRelay(this.relayClient, 'web3_client_version', []);
-
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
-
-    // it('should execute "eth_protocolVersion"', async function () {
-    //     const res = callRelay(this.relayClient, 'eth_protocolVersion', []);
-
-    //     console.log(`*** res: ${JSON.stringify(res)}`);
-    //     expect(res).to.not.be.null;
-    // });
+    it('should execute "eth_protocolVersion"', async function () {
+        callUnsupportedRelayMethod(this.relayClient, 'eth_protocolVersion', []);
+    });
 
     const callMirrorNode = (mirrorNodeClient: AxiosInstance, path: string) => {
         console.log(`[GET] mirrornode ${path} endpoint`);
         return mirrorNodeClient.get(path);
     };
 
-    const callRelay = (client: any, methodName: string, params: any[]) => {
-        return client.post('/', {
+    const callSupportedRelayMethod = async (client: any, methodName: string, params: any[]) => {
+        const resp = await callRelay(client, methodName, params);
+        console.log(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.result)}`);
+
+        expect(resp.data).to.have.property('result');
+        expect(resp.data.id).to.be.equal('2');
+
+        return resp;
+    };
+
+    const callUnsupportedRelayMethod = async (client: any, methodName: string, params: any[]) => {
+        const resp = await callRelay(client, methodName, params);
+        console.log(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.error)}`);
+
+        expect(resp.data).to.have.property('error');
+        expect(resp.data.error.code).to.be.equal(-32601);
+        expect(resp.data.error.name).to.be.equal('Method not found');
+        expect(resp.data.error.message).to.be.equal('Unsupported JSON-RPC method');
+
+        return resp;
+    };
+
+    const callRelay = async (client: any, methodName: string, params: any[]) => {
+        const resp = await  client.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
             'method': methodName,
             'params': params
         });
+
+        expect(resp).to.not.be.null;
+        expect(resp).to.have.property('data');
+        expect(resp.data).to.have.property('id');
+        expect(resp.data).to.have.property('jsonrpc');
+        expect(resp.data.jsonrpc).to.be.equal('2.0');
+
+        return resp;
     };
 
     const setupClient = () => {
@@ -605,7 +415,7 @@ describe('RPC Server Integration Tests', async function () {
             .setEthereumData(legacyTransactionBuffer)
             .execute(client);
 
-        // const { executedTimestamp: legacyTimestamp, executedTransactionId: legacyTransactionId } = await getRecordResponseDetails(legacyResp);
+        const { executedTimestamp: legacyTimestamp, executedTransactionId: legacyTransactionId } = await getRecordResponseDetails(legacyResp);
 
         // eip 155
         console.log(`Submit eip 155 type ethereum transaction`);
@@ -613,7 +423,7 @@ describe('RPC Server Integration Tests', async function () {
             .setEthereumData(eip155TransactionBuffer)
             .execute(client);
 
-        // const { executedTimestamp: eip155Timestamp, executedTransactionId: eip155TransactionId } = await getRecordResponseDetails(eip155Resp);
+        const { executedTimestamp: eip155Timestamp, executedTransactionId: eip155TransactionId } = await getRecordResponseDetails(eip155Resp);
 
         // eip 1559
         console.log(`Submit eip 1559 type ethereum transaction`);
@@ -621,7 +431,7 @@ describe('RPC Server Integration Tests', async function () {
             .setEthereumData(londonTransactionBuffer)
             .execute(client);
 
-        // const { executedTimestamp: eip1559Timestamp, executedTransactionId: eip1559TransactionId } = await getRecordResponseDetails(eip1559Resp);
+        const { executedTimestamp: eip1559Timestamp, executedTransactionId: eip1559TransactionId } = await getRecordResponseDetails(eip1559Resp);
     };
 
     const createToken = async () => {
@@ -728,10 +538,12 @@ describe('RPC Server Integration Tests', async function () {
         contractId = contractReceipt.contractId;
 
         console.log(`new contract ID: ${contractId.toString()}`);
+        await getRecordResponseDetails(contractTransactionResponse);
     };
 
     const executeContractCall = async () => {
         // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
+        console.log(`Execute contracts ${contractId}'s createChild method`);
         const contractExecTransactionResponse =
             await new ContractExecuteTransaction()
                 .setContractId(contractId)
@@ -743,12 +555,9 @@ describe('RPC Server Integration Tests', async function () {
                 )
                 .execute(client);
 
-        const record = await contractExecTransactionResponse.getRecord(client);
-        const nanoString = record.consensusTimestamp.nanos.toString();
-        contractExecuteTimestamp = `${record.consensusTimestamp.seconds}.${nanoString.padStart(9, '0')}`;
-        const transactionId = record.transactionId;
-        const transactionIdNanoString = transactionId.validStart.nanos.toString();
-        contractExecutedTransactionId = `${transactionId.accountId}@${transactionIdNanoString.padStart(9, '0')}`;
+        const resp = await getRecordResponseDetails(contractExecTransactionResponse);
+        contractExecuteTimestamp = resp.executedTimestamp;
+        contractExecutedTransactionId = resp.executedTransactionId;
     };
 
     const getRecordResponseDetails = async (resp: TransactionResponse) => {
