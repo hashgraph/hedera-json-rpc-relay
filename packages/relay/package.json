@@ -26,7 +26,7 @@
         "test": "nyc ts-mocha  --recursive ./tests/**/*.spec.ts"
     },
     "dependencies": {
-        "@hashgraph/sdk": "^2.14.0-beta.3",
+        "@hashgraph/sdk": "^2.14.2",
         "@keyvhq/core": "^1.6.9",
         "axios": "^0.26.1",
         "buffer": "^6.0.3",
@@ -37,7 +37,8 @@
         "keyv": "^4.2.2",
         "keyv-file": "^0.2.0",
         "pino": "^7.11.0",
-        "rlp": "^3.0.0"
+        "rlp": "^3.0.0",
+        "sinon": "^14.0.0"
     },
     "nyc": {
         "check-coverage": false,
