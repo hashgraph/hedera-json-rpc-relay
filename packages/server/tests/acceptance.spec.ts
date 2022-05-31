@@ -590,17 +590,6 @@ describe('RPC Server Integration Tests', async function () {
         return { executedTimestamp, executedTransactionId };
     };
 
-    const getRecordResponseDetails = async (resp: TransactionResponse) => {
-        const record = await resp.getRecord(client);
-        const nanoString = record.consensusTimestamp.nanos.toString();
-        const executedTimestamp = `${record.consensusTimestamp.seconds}.${nanoString.padStart(9, '0')}`;
-        const transactionId = record.transactionId;
-        const transactionIdNanoString = transactionId.validStart.nanos.toString();
-        const executedTransactionId = `${transactionId.accountId}@${transactionIdNanoString.padStart(9, '0')}`;
-        console.log(`executedTimestamp: ${executedTimestamp}, executedTransactionId: ${executedTransactionId}`);
-        return { executedTimestamp, executedTransactionId };
-    };
-
     const numberTo0x = (input: number): string => {
         return `0x${input.toString(16)}`;
     };
