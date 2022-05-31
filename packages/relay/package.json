@@ -37,8 +37,7 @@
         "keyv": "^4.2.2",
         "keyv-file": "^0.2.0",
         "pino": "^7.11.0",
-        "rlp": "^3.0.0",
-        "sinon": "^14.0.0"
+        "rlp": "^3.0.0"
     },
     "nyc": {
         "check-coverage": false,
