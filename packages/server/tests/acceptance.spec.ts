@@ -18,6 +18,7 @@
  *
  */
 
+// external resources
 import {
     Client,
     PrivateKey,
@@ -36,20 +37,35 @@ import {
     TransactionResponse,
     TransferTransaction,
 } from "@hashgraph/sdk";
-
-import app from '../src/server';
-
 import Axios, { AxiosInstance } from 'axios';
 import { expect } from 'chai';
-import path from 'path';
 import dotenv from 'dotenv';
+import path from 'path';
+import pino from 'pino';
 import shell from 'shelljs';
 
-; import parentContract from './parentContract/Parent.json';
+// local resources
+import parentContract from './parentContract/Parent.json';
+import app from '../src/server';
+
+const testLogger = pino({
+  name: 'hedera-json-rpc-relay',
+  level: process.env.LOG_LEVEL || 'trace',
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: true
+    }
+  }
+});
+const logger = testLogger.child({ name: 'rpc-acceptance-test' });
+
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const useLocalNode = process.env.LOCAL_NODE || 'true';
 
+// cached entities
 let client: Client;
 let tokenId;
 let opPrivateKey;
@@ -65,7 +81,7 @@ describe('RPC Server Integration Tests', async function () {
     this.timeout(180 * 1000);
 
     before(async function () {
-        console.log('Setting up SDK Client for local instances');
+        logger.info('Setting up SDK Client for local instances');
         setupClient();
 
         if (useLocalNode === 'true') {
@@ -73,41 +89,41 @@ describe('RPC Server Integration Tests', async function () {
             process.env['NETWORK_NODE_IMAGE_TAG'] = '0.25.4';
             process.env['HAVEGED_IMAGE_TAG'] = '0.25.4';
             process.env['MIRROR_IMAGE_TAG'] = '0.57.2';
-            console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
+            logger.trace(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
             // start local-node
-            console.log('Start local node and genereate accounts');
+            logger.debug('Start local node and genereate accounts');
             shell.exec('npx hedera-local start');
             shell.exec('npx hedera-local generate-accounts 0');
-            console.log('Hedera Hashgraph local node env started');
+            logger.trace('Hedera Hashgraph local node env started');
         }
 
         // set up mirror node contents
-        console.log('Submit eth account create transactions via crypto transfers');
+        logger.info('Submit eth account create transactions via crypto transfers');
         // 1. Crypto create with alias - metamask flow
         const { accountInfo: primaryAccountInfo, privateKey: primaryKey } = await createEthCompatibleAccount();
         const { accountInfo: secondaryAccountInfo, privateKey: secondaryKey } = await createEthCompatibleAccount();
 
-        console.log('Create and execute contracts');
+        logger.info('Create and execute contracts');
         // 2. contract create amd execute
         // Take Parent contract used in mirror node acceptance tests since it's well use
         await createParentContract();
         await executeContractCall();
 
-        console.log('Create token');
+        logger.info('Create token');
         // 2. Token create
         await createToken();
 
-        console.log('Associate and transfer tokens');
+        logger.info('Associate and transfer tokens');
         // 4. associate and transfer 2 tokens
         await associateAndTransferToken(primaryAccountInfo.accountId, primaryKey);
         await associateAndTransferToken(secondaryAccountInfo.accountId, secondaryKey);
 
         // requires 0.26.0 of service nodes
-        // console.log('Submit ethereum transaction types');
+        // logger.info('Submit ethereum transaction types');
         // await submitEthereumTransactions();
 
-        console.log('Send file close crypto transfers');
+        logger.info('Send file close crypto transfers');
         // 5. simple crypto trasnfer to ensure file close
         await sendFileClosingCryptoTransfer(primaryAccountInfo.accountId);
         await sendFileClosingCryptoTransfer(secondaryAccountInfo.accountId);
@@ -138,7 +154,7 @@ describe('RPC Server Integration Tests', async function () {
         mirrorSecondaryAccount = mirrorSecondaryAccountResponse.data.accounts[0];
 
         // start relay
-        console.log(`Start relay on port ${process.env.SERVER_PORT}`);
+        logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
         this.testServer = app.listen({ port: process.env.SERVER_PORT });
         this.relayClient = Axios.create({
             baseURL: 'http://localhost:7546',
@@ -154,18 +170,18 @@ describe('RPC Server Integration Tests', async function () {
     after(function () {
         if (useLocalNode === 'true') {
             // stop local-node
-            console.log('Shutdown local node');
+            logger.info('Shutdown local node');
             shell.exec('npx hedera-local stop');
         }
 
         // stop relay
-        console.log('Stop relay');
+        logger.info('Stop relay');
         if (this.testServer !== undefined) {
             this.testServer.close();
         }
     });
 
-    it('should execute "eth_chainId"', async function () {        
+    it('should execute "eth_chainId"', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_chainId', [null]);
         expect(res.data.result).to.be.equal('0x12a');
     });
@@ -319,13 +335,13 @@ describe('RPC Server Integration Tests', async function () {
     });
 
     const callMirrorNode = (mirrorNodeClient: AxiosInstance, path: string) => {
-        console.log(`[GET] mirrornode ${path} endpoint`);
+        logger.debug(`[GET] mirrornode ${path} endpoint`);
         return mirrorNodeClient.get(path);
     };
 
     const callSupportedRelayMethod = async (client: any, methodName: string, params: any[]) => {
         const resp = await callRelay(client, methodName, params);
-        console.log(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.result)}`);
+        logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.result)}`);
 
         expect(resp.data).to.have.property('result');
         expect(resp.data.id).to.be.equal('2');
@@ -335,7 +351,7 @@ describe('RPC Server Integration Tests', async function () {
 
     const callUnsupportedRelayMethod = async (client: any, methodName: string, params: any[]) => {
         const resp = await callRelay(client, methodName, params);
-        console.log(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.error)}`);
+        logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.error)}`);
 
         expect(resp.data).to.have.property('error');
         expect(resp.data.error.code).to.be.equal(-32601);
@@ -346,7 +362,8 @@ describe('RPC Server Integration Tests', async function () {
     };
 
     const callRelay = async (client: any, methodName: string, params: any[]) => {
-        const resp = await  client.post('/', {
+        logger.debug(`[POST] to relay '${methodName}' with params [${params}]`);
+        const resp = await client.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
             'method': methodName,
@@ -376,15 +393,15 @@ describe('RPC Server Integration Tests', async function () {
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
 
-        console.log(`New Eth compatible privateKey: ${privateKey}`);
-        console.log(`New Eth compatible publicKey: ${publicKey}`);
-        console.log(`New Eth compatible account ID: ${aliasAccountId.toString()}`);
+        logger.trace(`New Eth compatible privateKey: ${privateKey}`);
+        logger.trace(`New Eth compatible publicKey: ${publicKey}`);
+        logger.debug(`New Eth compatible account ID: ${aliasAccountId.toString()}`);
         const aliasCreationResponse = await new TransferTransaction()
             .addHbarTransfer(client.operatorAccountId, new Hbar(100).negated())
             .addHbarTransfer(aliasAccountId, new Hbar(100))
             .execute(client);
 
-        console.log(`Get ${aliasAccountId.toString()} receipt`);
+        logger.debug(`Get ${aliasAccountId.toString()} receipt`);
         await aliasCreationResponse.getReceipt(client);
 
         const balance = await new AccountBalanceQuery()
@@ -392,14 +409,14 @@ describe('RPC Server Integration Tests', async function () {
             .setAccountId(aliasAccountId)
             .execute(client);
 
-        console.log(`Balances of the new account: ${balance.toString()}`);
+        logger.info(`Balances of the new account: ${balance.toString()}`);
 
         const accountInfo = await new AccountInfoQuery()
             .setNodeAccountIds([aliasCreationResponse.nodeId])
             .setAccountId(aliasAccountId)
             .execute(client);
 
-        console.log(`New account Info: ${accountInfo.accountId.toString()}`);
+        logger.info(`New account Info: ${accountInfo.accountId.toString()}`);
         return { accountInfo, privateKey };
     };
 
@@ -410,7 +427,7 @@ describe('RPC Server Integration Tests', async function () {
         const londonTransactionBuffer = Buffer.from('02f902e082012a80a00000000000000000000000000000000000000000000000000000000000004e20a0000000000000000000000000000000000000000000000000000000746a528800830f42408080b9024d608060405261023a806100136000396000f3fe60806040526004361061003f5760003560e01c806312065fe01461008f5780633ccfd60b146100ba5780636f64234e146100d1578063b6b55f251461012c575b3373ffffffffffffffffffffffffffffffffffffffff167ff1b03f708b9c39f453fe3f0cef84164c7d6f7df836df0796e1e9c2bce6ee397e346040518082815260200191505060405180910390a2005b34801561009b57600080fd5b506100a461015a565b6040518082815260200191505060405180910390f35b3480156100c657600080fd5b506100cf610162565b005b3480156100dd57600080fd5b5061012a600480360360408110156100f457600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291905050506101ab565b005b6101586004803603602081101561014257600080fd5b81019080803590602001909291905050506101f6565b005b600047905090565b3373ffffffffffffffffffffffffffffffffffffffff166108fc479081150290604051600060405180830381858888f193505050501580156101a8573d6000803e3d6000fd5b50565b8173ffffffffffffffffffffffffffffffffffffffff166108fc829081150290604051600060405180830381858888f193505050501580156101f1573d6000803e3d6000fd5b505050565b80341461020257600080fd5b5056fea265627a7a72315820f8f84fc31a845064b5781e908316f3c591157962deabb0fd424ed54f256400f964736f6c63430005110032c001a01f7e8e436e6035ef7e5cd1387e2ad679e74d6a78a2736efe3dee72e531e28505a042b40a9cf56aad4530a5beaa8623f1ac3554d59ac1e927c672287eb45bfe7b8d', 'hex');
 
         // legacy
-        console.log(`Submit legacy type ethereum transaction`);
+        logger.info(`Submit legacy type ethereum transaction`);
         const legacyResp = await new EthereumTransaction()
             .setEthereumData(legacyTransactionBuffer)
             .execute(client);
@@ -418,7 +435,7 @@ describe('RPC Server Integration Tests', async function () {
         const { executedTimestamp: legacyTimestamp, executedTransactionId: legacyTransactionId } = await getRecordResponseDetails(legacyResp);
 
         // eip 155
-        console.log(`Submit eip 155 type ethereum transaction`);
+        logger.info(`Submit eip 155 type ethereum transaction`);
         const eip155Resp = await new EthereumTransaction()
             .setEthereumData(eip155TransactionBuffer)
             .execute(client);
@@ -426,7 +443,7 @@ describe('RPC Server Integration Tests', async function () {
         const { executedTimestamp: eip155Timestamp, executedTransactionId: eip155TransactionId } = await getRecordResponseDetails(eip155Resp);
 
         // eip 1559
-        console.log(`Submit eip 1559 type ethereum transaction`);
+        logger.info(`Submit eip 1559 type ethereum transaction`);
         const eip1559Resp = await new EthereumTransaction()
             .setEthereumData(londonTransactionBuffer)
             .execute(client);
@@ -435,23 +452,23 @@ describe('RPC Server Integration Tests', async function () {
     };
 
     const createToken = async () => {
-        const symbol = Math.random().toString(36).slice(2, 6); //crypto.randomBytes(2).toString('hex').toUpperCase();
-        console.log(`symbol = ${symbol}`);
+        const symbol = Math.random().toString(36).slice(2, 6).toUpperCase();
+        logger.trace(`symbol = ${symbol}`);
         const resp = await new TokenCreateTransaction()
-            .setTokenName("relay-1")
-            .setTokenSymbol("RL")
+            .setTokenName(`relay-acceptance token ${symbol}`)
+            .setTokenSymbol(symbol)
             .setDecimals(3)
             .setInitialSupply(1000)
             .setTreasuryAccountId(client.operatorAccountId)
             .execute(client);
 
-        console.log(`get token id from receipt`);
+        logger.trace(`get token id from receipt`);
         tokenId = (await resp.getReceipt(client)).tokenId;
-        console.log(`token id = ${tokenId.toString()}`);
+        logger.info(`token id = ${tokenId.toString()}`);
     };
 
     const associateAndTransferToken = async (accountId: AccountId, pk: PrivateKey) => {
-        console.log(`Associate account ${accountId.toString()} with token ${tokenId.toString()}`);
+        logger.info(`Associate account ${accountId.toString()} with token ${tokenId.toString()}`);
         await (
             await (
                 await new TokenAssociateTransaction()
@@ -462,7 +479,7 @@ describe('RPC Server Integration Tests', async function () {
             ).execute(client)
         ).getReceipt(client);
 
-        console.log(
+        logger.debug(
             `Associated account ${accountId.toString()} with token ${tokenId.toString()}`
         );
 
@@ -473,7 +490,7 @@ describe('RPC Server Integration Tests', async function () {
                 .execute(client)
         ).getReceipt(client);
 
-        console.log(
+        logger.debug(
             `Sent 10 tokens from account ${client.operatorAccountId.toString()} to account ${accountId.toString()} on token ${tokenId.toString()}`
         );
 
@@ -481,7 +498,7 @@ describe('RPC Server Integration Tests', async function () {
             .setAccountId(accountId)
             .execute(client);
 
-        console.log(
+        logger.debug(
             `Token balances for ${accountId.toString()} are ${balances.tokens
                 .toString()
                 .toString()}`
@@ -501,7 +518,7 @@ describe('RPC Server Integration Tests', async function () {
             .setAccountId(accountId)
             .execute(client);
 
-        console.log(`Balances of the new account: ${balance.toString()}`);
+        logger.info(`Balances of the new account: ${balance.toString()}`);
     };
 
     const createParentContract = async () => {
@@ -517,7 +534,7 @@ describe('RPC Server Integration Tests', async function () {
 
         // The file ID is located on the transaction receipt
         const fileId = fileReceipt.fileId;
-        console.log(`contract bytecode file: ${fileId.toString()}`);
+        logger.info(`contract bytecode file: ${fileId.toString()}`);
 
         // Create the contract
         const contractTransactionResponse = await new ContractCreateTransaction()
@@ -537,13 +554,13 @@ describe('RPC Server Integration Tests', async function () {
         // The conract ID is located on the transaction receipt
         contractId = contractReceipt.contractId;
 
-        console.log(`new contract ID: ${contractId.toString()}`);
+        logger.info(`new contract ID: ${contractId.toString()}`);
         await getRecordResponseDetails(contractTransactionResponse);
     };
 
     const executeContractCall = async () => {
         // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
-        console.log(`Execute contracts ${contractId}'s createChild method`);
+        logger.info(`Execute contracts ${contractId}'s createChild method`);
         const contractExecTransactionResponse =
             await new ContractExecuteTransaction()
                 .setContractId(contractId)
@@ -566,8 +583,8 @@ describe('RPC Server Integration Tests', async function () {
         const executedTimestamp = `${record.consensusTimestamp.seconds}.${nanoString.padStart(9, '0')}`;
         const transactionId = record.transactionId;
         const transactionIdNanoString = transactionId.validStart.nanos.toString();
-        const executedTransactionId = `${transactionId.accountId}@${transactionIdNanoString.padStart(9, '0')}`;
-        console.log(`executedTimestamp: ${executedTimestamp}, executedTransactionId: ${executedTransactionId}`);
+        const executedTransactionId = `${transactionId.accountId}-${transactionId.validStart.seconds}-${transactionIdNanoString.padStart(9, '0')}`;
+        logger.info(`executedTimestamp: ${executedTimestamp}, executedTransactionId: ${executedTransactionId}`);
         return { executedTimestamp, executedTransactionId };
     };
 
