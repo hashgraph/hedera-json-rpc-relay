@@ -26,7 +26,7 @@ jobs:
         run: npm ci
 
       - name: Create .env file
-        run: cp ./.github/acceptance.env .env
+        run: cp ./packages/server/tests/localAcceptance.env .env
 
       - name: Lerna Bootstrap
         run: npm run setup
