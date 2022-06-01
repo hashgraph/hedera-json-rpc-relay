@@ -22,7 +22,7 @@ import { Eth } from '../index';
 import { ContractId, Status } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
-import { Block, CachedBlock, Transaction } from './model';
+import { Block, CachedBlock, Transaction, Log } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import {JsonRpcError, predefined} from './errors';
@@ -836,5 +836,102 @@ export class EthImpl implements Eth {
         );
         return null;
       });
+  }
+
+  async getLogs(blockHash: string|null, fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null): Promise<Log[]> {
+    const params: any = {};
+    if (blockHash) {
+      const block = await this.mirrorNodeClient.getBlock(blockHash);
+      if (block) {
+        params.timestamp = [
+          `gte:${block.timestamp.from}`,
+          `lte:${block.timestamp.to}`
+        ];
+      }
+    }
+    else if (fromBlock && toBlock) {
+      const blocksResult = await this.mirrorNodeClient.getBlocks([
+          `gte:${fromBlock}`,
+          `lte:${toBlock}`
+      ]);
+
+      const blocks = blocksResult?.blocks;
+      if (blocks?.length) {
+        const firstBlock = blocks[0];
+        const lastBlock = blocks[blocks.length - 1];
+        params.timestamp = [
+          `gte:${firstBlock.timestamp.from}`,
+          `lte:${lastBlock.timestamp.to}`
+        ];
+      }
+    }
+
+    if (topics) {
+      for (let i = 0; i < topics.length; i++) {
+        params[`topic${i}`] = topics[i];
+      }
+    }
+
+    let result;
+    if (address) {
+      result = await this.mirrorNodeClient.getContractResultsLogsByAddress(address, params);
+    }
+    else {
+      result = await this.mirrorNodeClient.getContractResultsLogs(params);
+    }
+
+    if (!result || !result.logs) {
+      return [];
+    }
+    const logs = result.logs;
+
+    // Find all unique contractId and timestamp pairs and for each one make mirror node request
+    const promises: Promise<any>[] = [];
+    const uniquePairs = {};
+
+    for (let i = 0; i < logs.length; i++) {
+      const log = logs[i];
+      const pair = `${log.contract_id}-${log.timestamp}`;
+      if (uniquePairs[pair] === undefined) {
+        uniquePairs[pair] = [i];
+        promises.push(this.mirrorNodeClient.getContractResultsDetails(
+            log.contract_id,
+            log.timestamp
+        ));
+      }
+      else {
+        uniquePairs[pair].push(i);
+      }
+    }
+
+    // Populate the Log objects with block and transaction data from ContractResultsDetails
+    try {
+      const contractsResultsDetails = await Promise.all(promises);
+      for (let i = 0; i < contractsResultsDetails.length; i++) {
+        const detail = contractsResultsDetails[i];
+        const pair = `${detail.contract_id}-${detail.timestamp}`;
+        const uPair = uniquePairs[pair] || [];
+        for (let p = 0; p < uPair.length; p++) {
+          const logIndex = uPair[p];
+          const log = logs[logIndex];
+          logs[logIndex] = new Log({
+            address: log.address,
+            blockHash: detail.block_hash,
+            blockNumber: detail.block_number,
+            data: log.data,
+            logIndex: log.index,
+            removed: false,
+            topics: log.topics,
+            transactionHash: detail.hash,
+            transactionIndex: detail.transaction_index
+          });
+        }
+      }
+    }
+    catch(e) {
+      return [];
+    }
+
+    return logs;
   }
 }

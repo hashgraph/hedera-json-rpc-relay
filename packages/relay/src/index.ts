@@ -18,7 +18,7 @@
  *
  */
 
-import {Block, Receipt, Transaction} from './lib/model';
+import {Block, Log, Receipt, Transaction} from './lib/model';
 import {JsonRpcError} from './lib/errors';
 
 export { JsonRpcError };
@@ -69,7 +69,8 @@ export interface Eth {
 
   chainId(): string;
 
-  // getLogs(fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null);
+  getLogs(blockHash: string|null, fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null): Promise<Log[]>;
+
   // getStorageAt(address: string, slot: string, blockNumber: string|null);
 
   getTransactionByBlockHashAndIndex(hash: string, index: number): Promise<Transaction | null>;

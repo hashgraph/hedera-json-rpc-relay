@@ -184,3 +184,27 @@ export declare class AccessListEntry {
     readonly address: string;
     readonly storageKeys: string[];
 }
+
+export class Log {
+    public readonly address: string;
+    public readonly blockHash: string;
+    public readonly blockNumber: string;
+    public readonly data: string;
+    public readonly logIndex: string;
+    public readonly removed: boolean;
+    public readonly topics: string[];
+    public readonly transactionHash: string;
+    public readonly transactionIndex: string;
+
+    constructor(args: any) {
+        this.address = args.address;
+        this.blockHash = args.blockHash;
+        this.blockNumber = args.blockNumber;
+        this.data = args.data;
+        this.logIndex = args.logIndex;
+        this.removed = args.removed;
+        this.topics = args.topics;
+        this.transactionHash = args.transactionHash;
+        this.transactionIndex = args.transactionIndex;
+    }
+}

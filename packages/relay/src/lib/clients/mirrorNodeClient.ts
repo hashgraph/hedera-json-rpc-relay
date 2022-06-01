@@ -51,9 +51,14 @@ export class MirrorNodeClient {
     private static GET_BLOCKS_ENDPOINT = 'blocks';
     private static GET_CONTRACT_ENDPOINT = 'contracts/';
     private static ADDRESS_PLACEHOLDER = '{address}';
+    private static TIMESTAMP_PLACEHOLDER = '{timestamp}';
+    private static CONTRACT_ID_PLACEHOLDER = '{contractId}';
     private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
+    private static GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT =
+        `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
     private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
     private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
+    private static GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
     private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
     private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
 
@@ -140,7 +145,7 @@ export class MirrorNodeClient {
         return this.request(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`, [400]);
     }
 
-    public async getBlocks(blockNumber?: number, timestamp?: string, limitOrderParams?: ILimitOrderParams) {
+    public async getBlocks(blockNumber?: number | string[], timestamp?: string, limitOrderParams?: ILimitOrderParams) {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'block.number', blockNumber);
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
@@ -165,6 +170,10 @@ export class MirrorNodeClient {
         return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`, [400]);
     }
 
+    public async getContractResultsDetails(contractId: string, timestamp: string) {
+        return this.request(`${this.getContractResultsDetailsByContractIdAndTimestamp(contractId, timestamp)}`, [400]);
+    }
+
     public async getContractResultsByAddress(
         contractIdOrAddress: string,
         contractResultsParams?: IContractResultsParams,
@@ -180,7 +189,7 @@ export class MirrorNodeClient {
         return this.request(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}/${timestamp}`, [206, 400, 404]);
     }
 
-    public async getContractResultsLogs(
+    private prepareLogsParams(
         contractLogsResultsParams?: IContractLogsResultsParams,
         limitOrderParams?: ILimitOrderParams) {
         const queryParamObject = {};
@@ -194,8 +203,27 @@ export class MirrorNodeClient {
         }
 
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
-        const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`, [400]);
+        return this.getQueryParams(queryParamObject);
+    }
+
+    public async getContractResultsLogs(
+        contractLogsResultsParams?: IContractLogsResultsParams,
+        limitOrderParams?: ILimitOrderParams) {
+        const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
+        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`, [400, 404]);
+    }
+
+    public async getContractResultsLogsByAddress(
+        address: string,
+        contractLogsResultsParams?: IContractLogsResultsParams,
+        limitOrderParams?: ILimitOrderParams
+    ) {
+        const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
+        const apiEndpoint = MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT.replace(
+            MirrorNodeClient.ADDRESS_PLACEHOLDER,
+            address
+        );
+        return this.request(`${apiEndpoint}${queryParams}`, [400, 404]);
     }
 
     public async getLatestBlock() {
@@ -215,6 +243,12 @@ export class MirrorNodeClient {
 
     private static getContractResultsByAddressPath(address: string) {
         return MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT.replace(MirrorNodeClient.ADDRESS_PLACEHOLDER, address);
+    }
+
+    public getContractResultsDetailsByContractIdAndTimestamp(contractId: string, timestamp: string) {
+        return MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT
+            .replace(MirrorNodeClient.CONTRACT_ID_PLACEHOLDER, contractId)
+            .replace(MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);
     }
 
     getQueryParams(params: object) {

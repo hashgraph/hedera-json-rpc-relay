@@ -70,9 +70,13 @@ describe('Eth calls using MirrorNode', async function () {
 
   const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
   const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;  
+  const blockHash2 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6c`;
+  const blockHash3 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6d`;
   const blockHashPreviousTrimmed = '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298';
   const blockHashPrevious = `${blockHashPreviousTrimmed}dc2dfa10f51bcbaab8ae23bc6d662a0b`;
   const blockNumber = 3;
+  const blockNumber2 = 4;
+  const blockNumber3 = 5;
   const blockNumberHex = `0x${blockNumber.toString(16)}`;
   const blockTransactionCount = 77;
   const maxGasLimit = 250000;
@@ -82,9 +86,13 @@ describe('Eth calls using MirrorNode', async function () {
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
   const contractTimestamp1 = `${firstTransactionTimestampSeconds}.983983199`;
   const contractHash1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+  const contractHash2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
+  const contractHash3 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394';
   const contractAddress2 = '0x000000000000000000000000000000000000055e';
   const contractTimestamp2 = '1653077542.701408897';
-  
+  const contractId1 = '0.0.5001';
+  const contractId2 = '0.0.5002';
+
   const defaultBlock = {
     'count': blockTransactionCount,
     'hapi_version': '0.27.0',
@@ -145,7 +153,7 @@ describe('Eth calls using MirrorNode', async function () {
     'bloom': '0x0505',
     'call_result': '0x0606',
     'chain_id': '0x',
-    'contract_id': '0.0.5001',
+    'contract_id': contractId1,
     'created_contract_ids': ['0.0.7001'],
     'error_message': null,
     'from': '0x0000000000000000000000000000000000001f41',
@@ -158,7 +166,7 @@ describe('Eth calls using MirrorNode', async function () {
       {
         'address': contractAddress1,
         'bloom': '0x0123',
-        'contract_id': '0.0.5001',
+        'contract_id': contractId1,
         'data': '0x0123',
         'index': 0,
         'topics': [
@@ -178,7 +186,7 @@ describe('Eth calls using MirrorNode', async function () {
     'state_changes': [
       {
         'address': contractAddress1,
-        'contract_id': '0.0.5001',
+        'contract_id': contractId1,
         'slot': '0x0000000000000000000000000000000000000000000000000000000000000101',
         'value_read': '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
         'value_written': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
@@ -192,6 +200,23 @@ describe('Eth calls using MirrorNode', async function () {
     'v': 1
   };
 
+  const defaultDetailedContractResults2 = {...defaultDetailedContractResults, ...{
+    'timestamp': contractTimestamp2,
+    'block_hash': blockHash2,
+    'block_number': blockNumber2,
+    'hash': contractHash2
+  }};
+
+  const defaultDetailedContractResults3 = {...defaultDetailedContractResults, ...{
+    'timestamp': contractTimestamp2,
+    'block_hash': blockHash3,
+    'block_number': blockNumber3,
+    'hash': contractHash3,
+    'contract_id': contractId2,
+  }};
+
+  const detailedContractResultNotFound = {"_status":{"messages":[{"message":"No correlating transaction"}]}};
+
   const defaultDetailedContractResultsWithNullNullableValues = {
     ...defaultDetailedContractResults,
     r: null,
@@ -200,6 +225,63 @@ describe('Eth calls using MirrorNode', async function () {
 
   const results = defaultContractResults.results;
   const totalGasUsed = EthImpl.numberTo0x(results[0].gas_used + results[1].gas_used);
+
+  const logBloom1 = '0x1111';
+  const logBloom2 = '0x2222';
+  const logBloom3 = '0x3333';
+  const logBloom4 = '0x4444';
+
+  const defaultLogTopics = [
+    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+    "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "0x000000000000000000000000000000000000000000000000000000000208fa13",
+    "0x0000000000000000000000000000000000000000000000000000000000000005"
+  ];
+
+  const defaultLogs = {
+    "logs": [
+      {
+        "address": "0x0000000000000000000000000000000002131951",
+        "bloom": logBloom1,
+        "contract_id": contractId1,
+        "data": "0x",
+        "index": 0,
+        "topics": defaultLogTopics,
+        "root_contract_id": "0.0.34806097",
+        "timestamp": contractTimestamp1
+      },
+      {
+        "address": "0x0000000000000000000000000000000002131951",
+        "bloom": logBloom2,
+        "contract_id": contractId1,
+        "data": "0x",
+        "index": 1,
+        "topics": defaultLogTopics,
+        "root_contract_id": "0.0.34806097",
+        "timestamp": contractTimestamp1
+      },
+      {
+        "address": "0x0000000000000000000000000000000002131951",
+        "bloom": logBloom3,
+        "contract_id": contractId1,
+        "data": "0x",
+        "index": 1,
+        "topics": [],
+        "root_contract_id": "0.0.34806097",
+        "timestamp": contractTimestamp2
+      },
+      {
+        "address": "0x0000000000000000000000000000000002131951",
+        "bloom": logBloom4,
+        "contract_id": contractId2,
+        "data": "0x",
+        "index": 1,
+        "topics": [],
+        "root_contract_id": "0.0.34806097",
+        "timestamp": contractTimestamp2
+      }
+    ]
+  };
 
   this.afterEach(() => {
     mock.resetHandlers();
@@ -325,7 +407,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     expect(result.number).equal(blockNumberHex);
   });
-  
+
   it('eth_getBlockByNumber with pending tag', async function() {
     mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
@@ -337,7 +419,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     expect(result.number).equal(blockNumberHex);
   });
-  
+
   it('eth_getBlockByNumber with earliest tag', async function() {
     mock.onGet(`blocks/0`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
@@ -348,7 +430,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     expect(result.number).equal(blockNumberHex);
   });
-  
+
   it('eth_getBlockByNumber with hex number', async function() {
     mock.onGet(`blocks/3735929054`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
@@ -359,7 +441,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     expect(result.number).equal(blockNumberHex);
   });
-  
+
   it('eth_getBlockByHash with match', async function () {
     // mirror node request mocks
     mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
@@ -370,7 +452,7 @@ describe('Eth calls using MirrorNode', async function () {
     const result = await ethImpl.getBlockByHash(blockHash, false);
     expect(result).to.exist;
     if (result == null) return;
-    
+
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(totalGasUsed);
@@ -533,7 +615,7 @@ describe('Eth calls using MirrorNode', async function () {
     // mirror node request mocks
     mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-    
+
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number.toString(), defaultBlock.count);
     expect(result).to.exist;
     if (result == null) return;
@@ -565,7 +647,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
     mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-    
+
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('latest', defaultBlock.count);
     expect(result).to.exist;
     if (result == null) return;
@@ -582,7 +664,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
     mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-    
+
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('pending', defaultBlock.count);
     expect(result).to.exist;
     if (result == null) return;
@@ -598,7 +680,7 @@ describe('Eth calls using MirrorNode', async function () {
     // mirror node request mocks
     mock.onGet(`contracts/results?block.number=0&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-    
+
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('earliest', defaultBlock.count);
     expect(result).to.exist;
     if (result == null) return;
@@ -614,7 +696,7 @@ describe('Eth calls using MirrorNode', async function () {
     // mirror node request mocks
     mock.onGet(`contracts/results?block.number=3735929054&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-    
+
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('0xdeadc0de' +
         '', defaultBlock.count);
     expect(result).to.exist;
@@ -672,6 +754,141 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number.toString(), defaultBlock.count);
     expect(result).to.equal(null);
+  });
+
+  describe('eth_getLogs', async function () {
+
+    const expectLogData = (res, log, tx) => {
+      expect(res.address).to.eq(log.address);
+      expect(res.blockHash).to.eq(tx.block_hash);
+      expect(res.blockNumber).to.eq(tx.block_number);
+      expect(res.data).to.eq(log.data);
+      expect(res.logIndex).to.eq(log.index);
+      expect(res.removed).to.eq(false);
+      expect(res.topics).to.exist;
+      expect(res.topics).to.deep.eq(log.topics);
+      expect(res.transactionHash).to.eq(tx.hash);
+      expect(res.transactionIndex).to.eq(tx.transaction_index);
+    };
+
+    const expectLogData1 = (res) => {
+      expectLogData(res, defaultLogs.logs[0], defaultDetailedContractResults);
+    };
+
+    const expectLogData2 = (res) => {
+      expectLogData(res, defaultLogs.logs[1], defaultDetailedContractResults);
+    };
+
+    const expectLogData3 = (res) => {
+      expectLogData(res, defaultLogs.logs[2], defaultDetailedContractResults2);
+    };
+
+    const expectLogData4 = (res) => {
+      expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3);
+    };
+
+    it('contract results details not found', async function () {
+      mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(404, detailedContractResultNotFound);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(404, detailedContractResultNotFound);
+      mock.onGet(`contracts/${contractId2}/results/${contractTimestamp2}`).reply(404, detailedContractResultNotFound);
+
+      const result = await ethImpl.getLogs(null, null, null, null ,null);
+      expect(result).to.exist;
+      expect(result.length).to.eq(0);
+    });
+
+    it('error when retrieving logs', async function () {
+      mock.onGet(`contracts/results/logs`).reply(400, {"_status":{"messages":[{"message":"Mocked error"}]}});
+      const result = await ethImpl.getLogs(null, null, null, null ,null);
+      expect(result).to.exist;
+      expect(result.length).to.eq(0);
+    });
+
+    it('no filters', async function () {
+      mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
+      mock.onGet(`contracts/${contractId2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults3);
+
+      const result = await ethImpl.getLogs(null, null, null, null ,null);
+      expect(result).to.exist;
+
+      expect(result.length).to.eq(4);
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+      expectLogData3(result[2]);
+      expectLogData4(result[3]);
+    });
+
+    it('address filter', async function () {
+      const filteredLogs = {
+        logs: [defaultLogs.logs[0], defaultLogs.logs[1], defaultLogs.logs[2]]
+      };
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
+      mock.onGet(`contracts/${contractAddress1}/results/logs`).reply(200, filteredLogs);
+
+      const result = await ethImpl.getLogs(null, null, null, contractAddress1, null);
+
+      expect(result).to.exist;
+
+      expect(result.length).to.eq(3);
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+      expectLogData3(result[2]);
+    });
+
+    it('blockHash filter', async function () {
+      const filteredLogs = {
+        logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
+      };
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
+      mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
+      const result = await ethImpl.getLogs(blockHash, null, null, null, null);
+
+      expect(result).to.exist;
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+    });
+
+    it('fromBlock && toBlock filter', async function () {
+      const filteredLogs = {
+        logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
+      };
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
+      mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
+        blocks: [defaultBlock]
+      });
+      const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null);
+
+      expect(result).to.exist;
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+    });
+
+    it('topics filter', async function () {
+      const filteredLogs = {
+        logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
+      };
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(
+          `contracts/results/logs` +
+          `?topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
+          `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}`
+      ).reply(200, filteredLogs);
+      mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
+        blocks: [defaultBlock]
+      });
+
+      const result = await ethImpl.getLogs(null, null, null, null, defaultLogTopics);
+
+      expect(result).to.exist;
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+    });
   });
 });
 
@@ -890,7 +1107,7 @@ describe('Eth', async function () {
       // Assert the data format
       expect(receipt).to.exist;
       if (receipt == null) return;
-      
+
       expect(validateHash(receipt.transactionHash, 64)).to.eq(true);
       expect(validateHash(receipt.blockHash, 64)).to.eq(true);
       expect(validateHash(receipt.from, 40)).to.eq(true);
@@ -947,7 +1164,7 @@ describe('Eth', async function () {
 
       expect(result).to.exist;
       if (result == null) return;
-      
+
       expect(result.accessList).to.eq(defaultTransaction.accessList);
       expect(result.blockHash).to.eq(defaultTransaction.blockHash);
       expect(result.blockNumber).to.eq(`0x${defaultTransaction.blockNumber.toString(16)}`);
