@@ -26,6 +26,7 @@ import { Block, CachedBlock, Transaction, Log } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import {JsonRpcError, predefined} from './errors';
+import * as ethers from 'ethers';
 
 const createHash = require('keccak');
 
@@ -483,6 +484,22 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string): Promise<string> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
+
+    // Legacy Transactions:
+    //  rlp([nonce, gasPrice, gasLimit, to, value, data]) // unsigned
+    //  rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s]) // signed
+    // EIP-1559 Transactions:
+    //  rlp([nonce, gasLimit, to, value, data, gasPremium, feeCap]) // unsigned
+    //  rlp([nonce, gasLimit, to, value, data, gasPremium, feeCap, v, r, s]) // signed
+    const tx = ethers.utils.RLP.decode(transaction);
+    const nonce = tx[0];
+    const [v, r, s] = tx.slice(-3);
+    // TODO: get the address by v/r/s
+    const address = '0x0314488a72991f755db8010eb4ef7b03d57b3e3f09c869e8bd1641962026e7a3ee';
+    const accountInfo = await this.sdkClient.getAccountInfo(address);
+    if (accountInfo.ethereumNonce != nonce) {
+      throw new Error('Wrong nonce.');
+    }
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
