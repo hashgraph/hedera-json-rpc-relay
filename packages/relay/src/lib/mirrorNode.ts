@@ -65,7 +65,7 @@ export class MirrorNode {
     const mostRecentBlocks: Block[] = [];
     for (let blockNumber = Math.max(0, mostRecentBlockNumber - 9); blockNumber <= mostRecentBlockNumber; blockNumber++) {
       const block = await this.getBlockByNumber(blockNumber);
-      this.logger.debug("block for %d is %o", blockNumber, block);
+      this.logger.trace("block for %d is %o", blockNumber, block);
       if (block != null) {
         mostRecentBlocks.push(block);
       } else {

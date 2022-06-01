@@ -25,7 +25,7 @@ import { Logger } from 'pino';
 import { Block, CachedBlock, Transaction, Log } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
-import {JsonRpcError, predefined} from './errors';
+import { JsonRpcError, predefined } from './errors';
 
 const createHash = require('keccak');
 
@@ -139,13 +139,13 @@ export class EthImpl implements Eth {
   /**
    * Gets the most recent block number.
    */
-  async blockNumber(): Promise<number> {
+  async blockNumber(): Promise<string> {
     this.logger.trace('blockNumber()');
 
     const blocksResponse = await this.mirrorNodeClient.getLatestBlock();
     const blocks = blocksResponse !== null ? blocksResponse.blocks : null;
     if (Array.isArray(blocks) && blocks.length > 0) {
-      return blocks[0].number;
+      return EthImpl.numberTo0x(blocks[0].number);
     }
 
     throw new Error('Error encountered retrieving latest block');
@@ -176,7 +176,7 @@ export class EthImpl implements Eth {
   async estimateGas() {
     // FIXME: For now, we are going to have a rough estimate but in the future we can do something more sophisticated.
     this.logger.trace('estimateGas()');
-    return EthImpl.defaultGas;
+    return EthImpl.numberTo0x(EthImpl.defaultGas);
   }
 
   /**
@@ -186,10 +186,12 @@ export class EthImpl implements Eth {
     // FIXME: This should come from the mainnet and get cached. The gas price does change dynamically based on
     //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
     this.logger.trace('gasPrice()');
-    return this.getFeeWeibars().catch((e: any) => {
-      this.logger.trace(e);
-      throw e;
-    });
+    return this.getFeeWeibars()
+      .then((weiBars) => EthImpl.numberTo0x((weiBars)))
+      .catch((e: any) => {
+        this.logger.trace(e);
+        throw e;
+      });
   }
 
   /**
@@ -465,14 +467,14 @@ export class EthImpl implements Eth {
    * @param address
    * @param blockNumOrTag
    */
-  async getTransactionCount(address: string, blockNumOrTag: string): Promise<number> {
+  async getTransactionCount(address: string, blockNumOrTag: string): Promise<string> {
     this.logger.trace('getTransactionCount(address=%s, blockNumOrTag=%s)', address, blockNumOrTag);
     const blockNumber = await this.translateBlockTag(blockNumOrTag);
     if (blockNumber === 0) {
-      return 0;
+      return '0x0';
     } else {
       const accountInfo = await this.sdkClient.getAccountInfo(address);
-      return Number(accountInfo.ethereumNonce);
+      return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
     }
   }
 
@@ -516,13 +518,13 @@ export class EthImpl implements Eth {
         return txHash;
       } catch (e) {
         this.logger.error(e,
-            'Failed sendRawTransaction during receipt retrieval for transaction %s, returning computed hash', transaction);
+          'Failed sendRawTransaction during receipt retrieval for transaction %s, returning computed hash', transaction);
         //Return computed hash if unable to retrieve EthereumHash from record due to error
         return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
       }
     } catch (e) {
       this.logger.error(e,
-          'Failed to successfully submit sendRawTransaction for transaction %s', transaction);
+        'Failed to successfully submit sendRawTransaction for transaction %s', transaction);
       throw e;
     }
   }
@@ -565,7 +567,7 @@ export class EthImpl implements Eth {
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
     } catch (e) {
-      this.logger.error(e, 'Failed to handle call cleanly for transaction %s', call);
+      this.logger.error(e, `Failed to handle call cleanly for transaction ${JSON.stringify(call)}`);
       throw e;
     }
   }
@@ -597,7 +599,7 @@ export class EthImpl implements Eth {
       gasPrice: contractResult.gas_price,
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
-      maxPriorityFeePerGas: maxPriorityFee, 
+      maxPriorityFeePerGas: maxPriorityFee,
       maxFeePerGas: maxFee,
       nonce: contractResult.nonce,
       r: rSig,
@@ -683,7 +685,7 @@ export class EthImpl implements Eth {
    */
   private async translateBlockTag(tag: string | null): Promise<number> {
     if (tag === null || tag === 'latest' || tag === 'pending') {
-      return this.blockNumber();
+      return Number(this.blockNumber());
     } else if (tag === 'earliest') {
       return 0;
     } else {
