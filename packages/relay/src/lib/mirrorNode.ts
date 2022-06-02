@@ -47,9 +47,9 @@ export class MirrorNode {
     // FIXME: Create an empty genesis block (which has no transactions!)
     //        to preload the system.
     if (this.store.has(MirrorNode.MOST_RECENT_BLOCK_KEY)) {
-      this.logger.info("Restarting.");
+      this.logger.trace("Cache recent block");
     } else {
-      this.logger.info("Fresh start, creating genesis block with no transactions");
+      this.logger.trace("Fresh start, creating genesis block with no transactions");
       const genesisBlock = new CachedBlock(null, null);
       this.storeBlock(genesisBlock);
     }

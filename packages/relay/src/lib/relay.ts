@@ -48,7 +48,6 @@ export class RelayImpl implements Relay {
     const configuredChainId =
       process.env.CHAIN_ID || RelayImpl.chainIds[hederaNetwork] || '298';
     const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
-    logger.info('Running with chainId=%s', chainId);
 
     this.clientMain = this.initClient(hederaNetwork);
 
@@ -70,6 +69,8 @@ export class RelayImpl implements Relay {
       mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId);
+      
+    logger.info('Relay running with chainId=%s', chainId);
   }
 
   web3(): Web3 {
