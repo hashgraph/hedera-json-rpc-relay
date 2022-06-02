@@ -209,35 +209,6 @@ describe('RPC Server Integration Tests', async function () {
         expect(blockResult.transactions.length).to.be.greaterThan(0);
     });
 
-    // it('should execute "eth_getTransactionReceipt"', async function () {
-    //     const res = await callSupportedRelayMethod(this.relayClient, 'eth_getTransactionReceipt', [mirrorContractDetails.hash]);
-
-    //     const transactionResult = res.data.result;
-    //     expect(transactionResult.transactionHash).to.be.equal(mirrorContractDetails.hash.slice(0, 66));
-    //     expect(transactionResult.blockHash).to.be.equal(mirrorContractDetails.block_hash.slice(0, 66));
-    //     expect(transactionResult.blockNumber).to.be.equal(numberTo0x(mirrorContractDetails.block_number));
-    // });
-
-    // it('should execute "eth_getBalance" for primary account', async function () {
-    //     const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
-    //     expect(res.data.result).to.not.be.equal('0x0');
-    // });
-
-    // it('should execute "eth_getBalance" for secondary account', async function () {
-    //     const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorSecondaryAccount.evm_address, 'latest']);
-    //     expect(res.data.result).to.not.be.equal('0x0');
-    // });
-
-    // it('should execute "eth_getTransactionCount" primary', async function () {
-    //     const res = await callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, mirrorContractDetails.block_number]);
-    //     expect(res.data.result).to.be.equal('');
-    // });
-
-    // it('should execute "eth_getTransactionCount" secondary', async function () {
-    //     const res = await callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [mirrorSecondaryAccount.evm_address, mirrorContractDetails.block_number]);
-    //     expect(res.data.result).to.be.equal('');
-    // });
-
     it('should execute "eth_getBlockTransactionCountByHash"', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
         expect(res.data.result).to.be.equal(mirrorBlock.count);
@@ -330,13 +301,6 @@ describe('RPC Server Integration Tests', async function () {
         logger.info(`*** eth_sendRawTransaction" legacy res.data.result: ${res.data.result}`);
         expect(res.data.result).to.be.equal('0x9ffbd69c44cf643ed8d1e756b505e545e3b5dd3a6b5ef9da1d8eca6679706594');
     });
-
-    // failing with WRONG_CHAIN_ID
-    // it('should execute "eth_sendRawTransaction"  eip155', async function () {
-    //     const res = await callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', ['0x' + eip155TransactionHex]);
-    //     logger.info(`*** eth_sendRawTransaction" eip155 res.data.result: ${res.data.result}`);
-    //     expect(res.data.result).to.be.equal(false);
-    // });
 
     it('should execute "eth_sendRawTransaction" london', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', ['0x' + londonTransactionHex]);
