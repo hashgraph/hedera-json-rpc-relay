@@ -80,6 +80,7 @@ let contractId;
 let contractExecuteTimestamp;
 let contractExecutedTransactionId;
 let mirrorBlock;
+let mirrorContract;
 let mirrorContractDetails;
 let mirrorPrimaryAccount;
 let mirrorSecondaryAccount;
@@ -141,6 +142,10 @@ describe('RPC Server Integration Tests', async function () {
             timeout: 5 * 1000
         });
 
+
+        // get contract details
+        const mirrorContractResponse = await callMirrorNode(mirrorNodeClient, `/contracts/${contractId}`);
+        mirrorContract = mirrorContractResponse.data;
 
         // get contract details
         const mirrorContractDetailsResponse = await callMirrorNode(mirrorNodeClient, `/contracts/${contractId}/results/${contractExecuteTimestamp}`);
@@ -207,6 +212,28 @@ describe('RPC Server Integration Tests', async function () {
         expect(blockResult.number).to.be.equal(numberTo0x(mirrorBlock.number));
         expect(blockResult).to.have.property('transactions');
         expect(blockResult.transactions.length).to.be.greaterThan(0);
+    });
+
+    it('should execute "eth_getBalance" for primary account', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
+        expect(res.data.result).to.not.be.equal('0x0');
+        expect(res.data.result).to.eq('0x566527b339630a400');
+    });
+
+    it('should execute "eth_getBalance" for secondary account', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorSecondaryAccount.evm_address, 'latest']);
+        expect(res.data.result).to.not.be.equal('0x0');
+        expect(res.data.result).to.eq('0x566527b339630a400');
+    });
+
+    it('should execute "eth_getBalance" for non-existing account', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', ['0x5555555555555555555555555555555555555555', 'latest']);
+        expect(res.data.result).to.eq('0x0');
+    });
+
+    it('should execute "eth_getBalance" for contract', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
+        expect(res.data.result).to.eq('0x56bc75e2d63100000');
     });
 
     it('should execute "eth_getBlockTransactionCountByHash"', async function () {
@@ -483,6 +510,7 @@ describe('RPC Server Integration Tests', async function () {
                 new ContractFunctionParameters()
             )
             .setGas(75000)
+            .setInitialBalance(100)
             .setBytecodeFileId(fileId)
             .setAdminKey(client.operatorPublicKey));
 
@@ -541,7 +569,7 @@ describe('RPC Server Integration Tests', async function () {
             return resp.getReceipt(client);
         }
         catch (e) {
-            logger.error(e, 
+            logger.error(e,
                 `Error retrieving receipt for ${resp === undefined ? transaction.constructor.name : resp.transactionId.toString()} transaction`);
         }
     };

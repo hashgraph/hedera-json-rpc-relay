@@ -46,7 +46,7 @@ export class SDKClient {
     private static ETH_FUNCTIONALITY_CODE = 84;
     private static EXCHANGE_RATE_FILE_ID = "0.0.112";
     private static FEE_SCHEDULE_FILE_ID = '0.0.111';
-    
+
     /**
      * The client to use for connecting to the main consensus network. The account
      * associated with this client will pay for all operations on the main network.
@@ -62,18 +62,13 @@ export class SDKClient {
 
     async getAccountBalance(account: string): Promise<AccountBalance> {
         return (new AccountBalanceQuery()
-            .setAccountId(SDKClient.toAccountId(account)))
+            .setAccountId(AccountId.fromString(account)))
             .execute(this.clientMain);
     }
 
     async getAccountBalanceInWeiBar(account: string): Promise<BigNumber> {
-        const balance = await (new AccountBalanceQuery()
-            .setAccountId(SDKClient.toAccountId(account)))
-            .execute(this.clientMain);
-
-        return balance.hbars
-            .to(HbarUnit.Tinybar)
-            .multipliedBy(10_000_000_000);
+        const balance = await this.getAccountBalance(account);
+        return SDKClient.toTinyBar(balance);
     }
 
     async getAccountInfo(address: string): Promise<AccountInfo> {
@@ -86,6 +81,17 @@ export class SDKClient {
         return (new ContractByteCodeQuery()
             .setContractId(ContractId.fromEvmAddress(shard, realm, address)))
             .execute(this.clientMain);
+    }
+
+    async getContractBalance(contract: string): Promise<AccountBalance> {
+        return (new AccountBalanceQuery()
+            .setContractId(ContractId.fromString(contract)))
+            .execute(this.clientMain);
+    }
+
+    async getContractBalanceInWeiBar(account: string): Promise<BigNumber> {
+        const balance = await this.getContractBalance(account);
+        return SDKClient.toTinyBar(balance);
     }
 
     async getExchangeRate(): Promise<ExchangeRates> {
@@ -181,6 +187,16 @@ export class SDKClient {
     }
 
     /**
+   * Internal helper method that converts an ethAddress (with, or without a leading 0x)
+   * into an alias friendly ContractId.
+   * @param ethAddress
+   * @private
+   */
+    private static toContractId(ethAddress: string) {
+        return ContractId.fromSolidityAddress(SDKClient.prepend0x(ethAddress));
+    }
+
+    /**
      * Internal helper method that prepends a leading 0x if there isn't one.
      * @param input
      * @private
@@ -200,5 +216,11 @@ export class SDKClient {
         return input.startsWith('0x')
             ? input.substring(2)
             : input;
+    }
+
+    private static toTinyBar(balance: AccountBalance): BigNumber {
+        return balance.hbars
+            .to(HbarUnit.Tinybar)
+            .multipliedBy(10_000_000_000);
     }
 }

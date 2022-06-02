@@ -505,7 +505,11 @@ describe('MirrorNodeClient', async function () {
 
       const entityType = await mirrorNodeInstance.resolveEntityType(mockData.contractEvmAddress);
       expect(entityType).to.exist;
-      expect(entityType).to.eq('contract');
+      expect(entityType).to.have.property('type');
+      expect(entityType).to.have.property('entity');
+      expect(entityType.type).to.eq('contract');
+      expect(entityType.entity).to.have.property('contract_id');
+      expect(entityType.entity.contract_id).to.eq(mockData.contract.contract_id);
     });
 
     it('returns `account` when CONTRACTS endpoint returns 404 and ACCOUNTS endpoint returns a result', async() => {
@@ -514,7 +518,11 @@ describe('MirrorNodeClient', async function () {
 
       const entityType = await mirrorNodeInstance.resolveEntityType(mockData.contractEvmAddress);
       expect(entityType).to.exist;
-      expect(entityType).to.eq('account');
+      expect(entityType).to.have.property('type');
+      expect(entityType).to.have.property('entity');
+      expect(entityType.type).to.eq('account');
+      expect(entityType.entity).to.have.property('account');
+      expect(entityType.entity.account).to.eq(mockData.account.account);
     });
 
     it('returns null when CONTRACTS and ACCOUNTS endpoints return 404', async() => {

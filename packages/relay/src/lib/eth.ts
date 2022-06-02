@@ -352,7 +352,15 @@ export class EthImpl implements Eth {
     this.logger.trace('getBalance(account=%s, blockNumberOrTag=%s)', account, blockNumberOrTag);
     const blockNumber = await this.translateBlockTag(blockNumberOrTag);
     try {
-      const weibars = await this.sdkClient.getAccountBalanceInWeiBar(account);
+      let weibars: BigNumber | number = 0;
+      const result = await this.mirrorNodeClient.resolveEntityType(account);
+      if (result && result.type === 'account') {
+        weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account);
+      }
+      else if (result && result.type === 'contract') {
+        weibars = await this.sdkClient.getContractBalanceInWeiBar(result.entity.contract_id);
+      }
+
       return EthImpl.numberTo0x(weibars);
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
