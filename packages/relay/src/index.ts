@@ -45,15 +45,15 @@ export interface Net {
 
 export interface Eth {
 
-  blockNumber(): Promise<number>;
+  blockNumber(): Promise<string>;
 
   call(call: any, blockParam: string): Promise<string>;
 
   coinbase(): JsonRpcError;
 
-  estimateGas(): Promise<number>;
+  estimateGas(): Promise<string>;
 
-  gasPrice(): Promise<number>;
+  gasPrice(): Promise<string>;
 
   getBalance(account: string, blockNumber: string | null): Promise<string>;
 
@@ -79,7 +79,7 @@ export interface Eth {
 
   getTransactionByHash(hash: string): Promise<Transaction | null>;
   
-  getTransactionCount(address: string, blocknum: string): Promise<number>;
+  getTransactionCount(address: string, blocknum: string): Promise<string>;
 
   getTransactionReceipt(hash: string): Promise<Receipt | null>;
 

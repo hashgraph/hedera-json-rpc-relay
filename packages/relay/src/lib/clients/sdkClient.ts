@@ -32,7 +32,8 @@ import {
     ContractFunctionResult,
     TransactionResponse,
     AccountInfo,
-    HbarUnit
+    HbarUnit,
+    TransactionId
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 
@@ -114,15 +115,16 @@ export class SDKClient {
             .setFunctionParameters(Buffer.from(callData, 'hex'))
             .setGas(gas);
 
-        const cost = await contractCallQuery.getCost(this.clientMain);
-        return (contractCallQuery)
+        if (this.clientMain.operatorAccountId !== null) {
+            contractCallQuery
+                .setPaymentTransactionId(TransactionId.generate(this.clientMain.operatorAccountId));
+        }
+
+        const cost = await contractCallQuery
+            .getCost(this.clientMain);
+        return contractCallQuery
             .setQueryPayment(cost)
             .execute(this.clientMain);
-    }
-
-
-    private async getExchangeRateBytes(): Promise<Uint8Array> {
-        return this.getFileIdBytes(SDKClient.EXCHANGE_RATE_FILE_ID);
     }
 
     /**

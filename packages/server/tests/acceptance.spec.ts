@@ -298,7 +298,6 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute eth_sendRawTransaction legacy', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', ['0x' + legacyTransactionHex]);
-        logger.info(`*** eth_sendRawTransaction" legacy res.data.result: ${res.data.result}`);
         expect(res.data.result).to.be.equal('0x9ffbd69c44cf643ed8d1e756b505e545e3b5dd3a6b5ef9da1d8eca6679706594');
     });
 
