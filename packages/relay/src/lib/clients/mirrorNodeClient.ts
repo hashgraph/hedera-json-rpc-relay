@@ -301,4 +301,17 @@ export class MirrorNodeClient {
             queryParamObject[key] = value;
         }
     }
+
+    public async resolveEntityType(entityIdentifier: string) {
+        const contractResult = await this.getContract(entityIdentifier);
+        if (contractResult) {
+            return 'contract';
+        }
+        const accountResult = await this.getAccount(entityIdentifier);
+        if (accountResult) {
+            return 'account';
+        }
+
+        return null;
+    }
 }
