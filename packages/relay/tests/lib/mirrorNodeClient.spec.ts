@@ -485,4 +485,46 @@ describe('MirrorNodeClient', async function () {
     expect(result.next_rate.hbar_equivalent).equal(exchangerate.next_rate.hbar_equivalent);
     expect(result.timestamp).equal(exchangerate.timestamp);
   });
+
+  it('`getNetworkFees`', async () => {
+    const networkFees = {
+      'fees': [
+        {
+          'gas': 77,
+          'transaction_type': 'ContractCall'
+        },
+        {
+          'gas': 771,
+          'transaction_type': 'ContractCreate'
+        },
+        {
+          'gas': 57,
+          'transaction_type': 'EthereumTransaction'
+        }
+      ],
+      'timestamp': '1653644164.591111113'
+    }
+
+    mock.onGet(`network/fees`).reply(200, networkFees);
+    const result = await mirrorNodeInstance.getNetworkFees();
+
+    expect(result).to.exist;
+    expect(result.fees.length).equal(networkFees.fees.length);
+    expect(result.timestamp).equal(networkFees.timestamp);
+  });
+
+  it('`getNetworkFees` - not found', async () => {
+    mock.onGet(`network/fees`).reply(404, {
+      "_status": {
+        "messages": [
+          {
+            "message": "Not found"
+          }
+        ]
+      }
+    });
+    const result = await mirrorNodeInstance.getNetworkFees();
+
+    expect(result).to.equal(null);
+  });
 });

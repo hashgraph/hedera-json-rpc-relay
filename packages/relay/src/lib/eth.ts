@@ -27,8 +27,12 @@ import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
 
+const cache = require('js-cache');
 const createHash = require('keccak');
 
+enum CACHE_KEY {
+  GAS_PRICE = 'gas_price'
+}
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
  * Methods are implemented by delegating to the mirror node or to a
@@ -125,16 +129,17 @@ export class EthImpl implements Eth {
   }
 
   private async getFeeWeibars() {
-    const exchangeRates = await this.sdkClient.getExchangeRate();
+    const networkFees = await this.mirrorNodeClient.getNetworkFees();
 
-    //FIXME retrieve fee from fee API when released
-    const contractTransactionGas = 853454;
-
-    //contractTransactionGas is in tinycents * 1000, so the final multiplier is truncated by 3 zeroes for
-    // the conversion to weibars
-    return Math.ceil(
-      (contractTransactionGas / exchangeRates.currentRate.cents) * exchangeRates.currentRate.hbars * 10_000_000
-    );
+    if (networkFees && Array.isArray(networkFees.fees)) {
+      const txFee = networkFees.fees.find(({transaction_type}) => transaction_type === "EthereumTransaction");
+      if (txFee && txFee.gas) {
+        // convert tinyBars into weiBars 
+        return Math.ceil(txFee.gas * Math.pow(10, 10));
+      }
+    }
+    
+    throw new Error('Error encountered estimating the gas price');
   }
 
   /**
@@ -184,15 +189,22 @@ export class EthImpl implements Eth {
    * Gets the current gas price of the network.
    */
   async gasPrice() {
-    // FIXME: This should come from the mainnet and get cached. The gas price does change dynamically based on
-    //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
     this.logger.trace('gasPrice()');
-    return this.getFeeWeibars()
-      .then((weiBars) => EthImpl.numberTo0x((weiBars)))
-      .catch((e: any) => {
-        this.logger.trace(e);
-        throw e;
-      });
+    try {
+      let gasPrice = cache.get(CACHE_KEY.GAS_PRICE);
+
+      if (!gasPrice) {
+        gasPrice = await this.getFeeWeibars();
+      
+        // FIXME: when ttl is set, the test cases are waiting for the same amount of time before continuing
+        // cache.set(CACHE_KEY.GAS_PRICE, gasPrice, 60*60*1000);
+      }
+
+      return gasPrice; 
+    } catch (error) {
+      this.logger.trace(error);
+      throw error;
+    }
   }
 
   /**
