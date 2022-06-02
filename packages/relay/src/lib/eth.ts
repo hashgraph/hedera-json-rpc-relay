@@ -685,7 +685,7 @@ export class EthImpl implements Eth {
    */
   private async translateBlockTag(tag: string | null): Promise<number> {
     if (tag === null || tag === 'latest' || tag === 'pending') {
-      return Number(this.blockNumber());
+      return Number(await this.blockNumber());
     } else if (tag === 'earliest') {
       return 0;
     } else {
