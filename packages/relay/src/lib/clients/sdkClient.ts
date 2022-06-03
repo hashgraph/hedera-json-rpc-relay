@@ -74,7 +74,7 @@ export class SDKClient {
 
     async getAccountInfo(address: string): Promise<AccountInfo> {
         return (new AccountInfoQuery()
-            .setAccountId(SDKClient.toAccountId(address)))
+            .setAccountId(AccountId.fromString(address)))
             .execute(this.clientMain);
     }
 

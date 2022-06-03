@@ -520,8 +520,16 @@ export class EthImpl implements Eth {
     if (blockNumber === 0) {
       return '0x0';
     } else {
-      const accountInfo = await this.sdkClient.getAccountInfo(address);
-      return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+      const result = await this.mirrorNodeClient.resolveEntityType(address);
+      if (result && result.type === 'account') {
+        const accountInfo = await this.sdkClient.getAccountInfo(result.entity.account);
+        return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+      }
+      else if (result && result.type === 'contract') {
+        return EthImpl.numberTo0x(1);
+      }
+
+      return EthImpl.numberTo0x(0);
     }
   }
 
