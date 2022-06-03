@@ -33,6 +33,7 @@ const cache = require('js-cache');
 
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
+import constants from '../../src/lib/constants';
 const logger = pino();
 
 const Relay = new RelayImpl(logger);
@@ -887,8 +888,8 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
 
     const weiBars = await ethImpl.gasPrice();
-    const expectedWeiBars = defaultNetworkFees.fees[2].gas * Math.pow(10, 10);
-    expect(weiBars).to.equal(expectedWeiBars);
+    const expectedWeiBars = defaultNetworkFees.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF;
+    expect(weiBars).to.equal(EthImpl.numberTo0x(expectedWeiBars));
   });
 
   it('eth_gasPrice with cached value', async function() {
