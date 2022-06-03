@@ -2,7 +2,7 @@ name: Release Production Environment
 
 on:
   push:
-    branches: [ v* ]
+    tags: [ v* ]
 
 env:
   OWNER: hashgraph
