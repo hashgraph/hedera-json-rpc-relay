@@ -33,7 +33,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Produce artifact
-        run: tar -czf ${{ github.repository }}.tgz -C ./packages . 
+        run: tar -czf hedera-json-rpc-relay.tgz -C ./packages . 
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
