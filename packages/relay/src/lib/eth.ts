@@ -478,28 +478,43 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Submits a transaction to the network for execution.
+   * Do the pre-checks for the sendRawTransaction route
    *
    * @param transaction
+   * @private
    */
-  async sendRawTransaction(transaction: string): Promise<string> {
-    this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
-
+  private async precheckSendRawTransaction(transaction: string) {
     // Legacy Transactions:
     //  rlp([nonce, gasPrice, gasLimit, to, value, data]) // unsigned
     //  rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s]) // signed
     // EIP-1559 Transactions:
     //  rlp([nonce, gasLimit, to, value, data, gasPremium, feeCap]) // unsigned
     //  rlp([nonce, gasLimit, to, value, data, gasPremium, feeCap, v, r, s]) // signed
-    const tx = ethers.utils.RLP.decode(transaction);
-    const nonce = tx[0];
-    const [v, r, s] = tx.slice(-3);
-    // TODO: get the address by v/r/s
-    const address = '0x0314488a72991f755db8010eb4ef7b03d57b3e3f09c869e8bd1641962026e7a3ee';
-    const accountInfo = await this.sdkClient.getAccountInfo(address);
-    if (accountInfo.ethereumNonce != nonce) {
-      throw new Error('Wrong nonce.');
+    const decodedTx = ethers.utils.RLP.decode(transaction);
+    const [v, r, s] = decodedTx.slice(-3);
+    const signature = ethers.utils.joinSignature({ r, s, v });
+    let accountInfo;
+    try {
+      accountInfo = await this.mirrorNodeClient.getAccount(
+        ethers.utils.recoverAddress(ethers.utils.arrayify(transaction), signature)
+      );
+    } catch (e) {
+      // account not found, handle the error
     }
+
+    if (accountInfo && accountInfo['ethereum_nonce'] != decodedTx[0]) {
+      throw new Error('Invalid nonce.');
+    }
+  }
+
+  /**
+   * Submits a transaction to the network for execution.
+   *
+   * @param transaction
+   */
+  async sendRawTransaction(transaction: string): Promise<string> {
+    this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
+    await this.precheckSendRawTransaction(transaction);
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
