@@ -354,10 +354,10 @@ export class EthImpl implements Eth {
     try {
       let weibars: BigNumber | number = 0;
       const result = await this.mirrorNodeClient.resolveEntityType(account);
-      if (result && result.type === 'account') {
+      if (result?.type === 'account') {
         weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account);
       }
-      else if (result && result.type === 'contract') {
+      else if (result?.type === 'contract') {
         weibars = await this.sdkClient.getContractBalanceInWeiBar(result.entity.contract_id);
       }
 
@@ -521,11 +521,11 @@ export class EthImpl implements Eth {
       return '0x0';
     } else {
       const result = await this.mirrorNodeClient.resolveEntityType(address);
-      if (result && result.type === 'account') {
-        const accountInfo = await this.sdkClient.getAccountInfo(result.entity.account);
+      if (result?.type === 'account') {
+        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account);
         return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
       }
-      else if (result && result.type === 'contract') {
+      else if (result?.type === 'contract') {
         return EthImpl.numberTo0x(1);
       }
 
