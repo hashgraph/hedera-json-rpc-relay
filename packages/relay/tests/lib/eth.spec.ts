@@ -891,21 +891,20 @@ describe('Eth calls using MirrorNode', async function () {
     expect(weiBars).to.equal(expectedWeiBars);
   });
 
-  // TODO: uncomment when cache issue is fixed
-  // it('eth_gasPrice with cached value', async function() {
-  //   mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
+  it('eth_gasPrice with cached value', async function() {
+    mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
 
-  //   const firstGasResult = await ethImpl.gasPrice();
+    const firstGasResult = await ethImpl.gasPrice();
 
-  //   const modifiedNetworkFees = Object.assign({}, defaultNetworkFees);
-  //   modifiedNetworkFees.fees[2].gas = defaultNetworkFees.fees[2].gas * 100;
-  //   mock.reset();
-  //   mock.onGet(`network/fees`).reply(200, modifiedNetworkFees);
+    const modifiedNetworkFees = Object.assign({}, defaultNetworkFees);
+    modifiedNetworkFees.fees[2].gas = defaultNetworkFees.fees[2].gas * 100;
 
-  //   const secondGasResult = await ethImpl.gasPrice();
+    mock.onGet(`network/fees`).reply(200, modifiedNetworkFees);
 
-  //   expect(firstGasResult).to.equal(secondGasResult);
-  // });
+    const secondGasResult = await ethImpl.gasPrice();
+
+    expect(firstGasResult).to.equal(secondGasResult);
+  });
 
   it('eth_gasPrice with no EthereumTransaction gas returned', async function() {
     const partialNetworkFees = Object.assign({}, defaultNetworkFees);

@@ -23,7 +23,7 @@
         "compile": "tsc -b tsconfig.json",
         "lint": "npx eslint --ext .js,.ts .",
         "format": "npx prettier --ignore-path ../../.gitignore --write \"**/*.+(js|ts|json)\"",
-        "test": "nyc ts-mocha  --recursive ./tests/**/*.spec.ts"
+        "test": "nyc ts-mocha --recursive ./tests/**/*.spec.ts --exit"
     },
     "dependencies": {
         "@hashgraph/sdk": "^2.14.2",

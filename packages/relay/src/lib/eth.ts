@@ -199,7 +199,6 @@ export class EthImpl implements Eth {
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars();
       
-        // FIXME: when ttl is set, the test cases are waiting for the same amount of time before continuing
         cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
       }
 
