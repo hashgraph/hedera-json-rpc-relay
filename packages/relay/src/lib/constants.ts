@@ -20,14 +20,13 @@
 
 enum CACHE_KEY {
     GAS_PRICE = 'gas_price'
-};
+}
 enum CACHE_TTL {
     ONE_HOUR = 3_600_000
-};
+}
 
 export default {
     TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
-    EXCHANGE_RATE_FILE_ID: "0.0.112",
     CACHE_KEY,
     CACHE_TTL,
 };

@@ -252,11 +252,10 @@ describe('RPC Server Integration Tests', async function () {
         expect(res.data.result).to.not.be.equal('0x0');
     });
 
-    // Uncomment when version 0.58 is released
-    // it('should execute "eth_gasPrice"', async function () {
-    //     const res = await callSupportedRelayMethod(this.relayClient, 'eth_gasPrice', []);
-    //     expect(res.data.result).to.be.equal('0xa59784cceb');
-    // });
+    it('should execute "eth_gasPrice"', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_gasPrice', []);
+        expect(res.data.result).to.be.equal('0xa59784cceb');
+    });
 
     it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_getUncleByBlockHashAndIndex', []);

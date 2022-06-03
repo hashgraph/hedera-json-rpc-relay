@@ -48,7 +48,8 @@ export class EthImpl implements Eth {
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   static defaultGas = 0x3d0900;
-
+  static ethTxType = 'EthereumTransaction';
+  
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
    * associated with this client will pay for all operations on the main network.
@@ -130,7 +131,7 @@ export class EthImpl implements Eth {
     const networkFees = await this.mirrorNodeClient.getNetworkFees();
 
     if (networkFees && Array.isArray(networkFees.fees)) {
-      const txFee = networkFees.fees.find(({transaction_type}) => transaction_type === "EthereumTransaction");
+      const txFee = networkFees.fees.find(({transaction_type}) => transaction_type === EthImpl.ethTxType);
       if (txFee && txFee.gas) {
         // convert tinyBars into weiBars 
         const weibars = Hbar
