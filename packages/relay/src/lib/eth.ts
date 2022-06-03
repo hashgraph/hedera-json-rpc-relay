@@ -19,20 +19,18 @@
  */
 
 import { Eth } from '../index';
-import { ContractId, Status } from '@hashgraph/sdk';
+import { ContractId, Status, Hbar } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, CachedBlock, Transaction, Log } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
+import constants from './constants';
 
 const cache = require('js-cache');
 const createHash = require('keccak');
 
-enum CACHE_KEY {
-  GAS_PRICE = 'gas_price'
-}
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
  * Methods are implemented by delegating to the mirror node or to a
@@ -135,7 +133,12 @@ export class EthImpl implements Eth {
       const txFee = networkFees.fees.find(({transaction_type}) => transaction_type === "EthereumTransaction");
       if (txFee && txFee.gas) {
         // convert tinyBars into weiBars 
-        return Math.ceil(txFee.gas * Math.pow(10, 10));
+        const weibars = Hbar
+          .fromTinybars(txFee.gas)
+          .toTinybars()
+          .multiply(constants.TINYBAR_TO_WEIBAR_COEF);
+        
+        return weibars.toNumber();
       }
     }
     
@@ -191,13 +194,13 @@ export class EthImpl implements Eth {
   async gasPrice() {
     this.logger.trace('gasPrice()');
     try {
-      let gasPrice = cache.get(CACHE_KEY.GAS_PRICE);
+      let gasPrice: number | undefined = cache.get(constants.CACHE_KEY.GAS_PRICE);
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars();
       
         // FIXME: when ttl is set, the test cases are waiting for the same amount of time before continuing
-        // cache.set(CACHE_KEY.GAS_PRICE, gasPrice, 60*60*1000);
+        cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
       }
 
       return gasPrice; 
