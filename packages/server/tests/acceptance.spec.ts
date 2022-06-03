@@ -236,6 +236,16 @@ describe('RPC Server Integration Tests', async function () {
         expect(res.data.result).to.eq('0x56bc75e2d63100000');
     });
 
+    it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [idToEvmAddress(mirrorPrimaryAccount.account), 'latest']);
+        expect(res.data.result).to.eq('0x566527b339630a400');
+    });
+
+    it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
+        const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [idToEvmAddress(contractId.toString()), 'latest']);
+        expect(res.data.result).to.eq('0x56bc75e2d63100000');
+    });
+
     it('should execute "eth_getBlockTransactionCountByHash"', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
         expect(res.data.result).to.be.equal(mirrorBlock.count);
@@ -587,10 +597,28 @@ describe('RPC Server Integration Tests', async function () {
     };
 
     const numberTo0x = (input: number): string => {
-        return `0x${input.toString(16)}`;
+        return `0x${toHex(input)}`;
     };
 
     const prune0x = (input: string): string => {
         return input.startsWith('0x') ? input.substring(2) : input;
+    };
+
+    const toHex = (num) => {
+        return parseInt(num).toString(16);
+    };
+
+    const idToEvmAddress = (id): string => {
+        const [shard, realm, num] = id.split('.');
+        expect(shard).to.not.be.null;
+        expect(realm).to.not.be.null;
+        expect(num).to.not.be.null;
+
+        return [
+            '0x',
+            toHex(shard).padStart(8, '0'),
+            toHex(realm).padStart(16, '0'),
+            toHex(num).padStart(16, '0'),
+        ].join('');
     };
 });

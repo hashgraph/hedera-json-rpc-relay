@@ -38,6 +38,7 @@ import {
     FeeComponents
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import constants from './../../constants';
 
 const _ = require('lodash');
 
@@ -221,6 +222,6 @@ export class SDKClient {
     private static toTinyBar(balance: AccountBalance): BigNumber {
         return balance.hbars
             .to(HbarUnit.Tinybar)
-            .multipliedBy(10_000_000_000);
+            .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
     }
 }
