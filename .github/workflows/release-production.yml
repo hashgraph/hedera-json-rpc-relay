@@ -35,6 +35,13 @@ jobs:
       - name: Produce artifact
         run: tar -czf ${{ github.repository }}.tgz -C ./packages . 
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.MODULE }}
+          path: ./*.tgz
+          if-no-files-found: error
+
       - name: Build and push images
         uses: docker/build-push-action@v2
         with:
