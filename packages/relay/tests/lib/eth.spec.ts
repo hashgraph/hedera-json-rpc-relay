@@ -32,7 +32,7 @@ import {expectUnsupportedMethod} from '../helpers';
 const cache = require('js-cache');
 
 import pino from 'pino';
-import { Transaction } from '../../src/lib/model';
+import { Block, Transaction } from '../../src/lib/model';
 const logger = pino();
 
 const Relay = new RelayImpl(logger);
@@ -46,6 +46,20 @@ const validateHash = (hash: string, len?: number) => {
   }
 
   return !!hash.match(regex);
+};
+
+const verifyBlockConstants = (block: Block) => {
+  expect(block.baseFeePerGas).equal(EthImpl.zeroHex);
+  expect(block.difficulty).equal(EthImpl.zeroHex);
+  expect(block.extraData).equal(EthImpl.emptyHex);
+  expect(block.miner).equal(EthImpl.zeroAddressHex);
+  expect(block.mixHash).equal(EthImpl.emptyArrayHex);
+  expect(block.nonce).equal(EthImpl.zeroHex8Byte);
+  expect(block.receiptsRoot).equal(EthImpl.emptyArrayHex);
+  expect(block.sha3Uncles).equal(EthImpl.emptyArrayHex);
+  expect(block.stateRoot).equal(EthImpl.emptyArrayHex);
+  expect(block.totalDifficulty).equal(EthImpl.zeroHex);
+  expect(block.uncles).to.deep.equal([]);
 };
 
 describe('Eth calls using MirrorNode', async function () {
@@ -334,17 +348,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect((result.transactions[1] as string)).equal(contractHash1);
 
     // verify expected constants
-    expect(result.baseFeePerGas).equal(EthImpl.zeroHex);
-    expect(result.difficulty).equal(EthImpl.zeroHex);
-    expect(result.extraData).equal(EthImpl.emptyHex);
-    expect(result.miner).equal(EthImpl.zeroAddressHex);
-    expect(result.mixHash).equal(EthImpl.emptyArrayHex);
-    expect(result.nonce).equal(EthImpl.zeroHex);
-    expect(result.receiptsRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(result.stateRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.totalDifficulty).equal(EthImpl.zeroHex);
-    expect(result.uncles).to.deep.equal([]);
+    verifyBlockConstants(result);
   });
 
   it('eth_getBlockByNumber with match and details', async function () {
@@ -369,17 +373,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect((result.transactions[1] as Transaction).hash).equal(contractHash1);
 
     // verify expected constants
-    expect(result.baseFeePerGas).equal(EthImpl.zeroHex);
-    expect(result.difficulty).equal(EthImpl.zeroHex);
-    expect(result.extraData).equal(EthImpl.emptyHex);
-    expect(result.miner).equal(EthImpl.zeroAddressHex);
-    expect(result.mixHash).equal(EthImpl.emptyArrayHex);
-    expect(result.nonce).equal(EthImpl.zeroHex);
-    expect(result.receiptsRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(result.stateRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.totalDifficulty).equal(EthImpl.zeroHex);
-    expect(result.uncles).to.deep.equal([]);
+    verifyBlockConstants(result);
   });
 
   it('eth_getBlockByNumber with no match', async function () {
@@ -465,17 +459,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect((result.transactions[1] as string)).equal(contractHash1);
 
     // verify expected constants
-    expect(result.baseFeePerGas).equal(EthImpl.zeroHex);
-    expect(result.difficulty).equal(EthImpl.zeroHex);
-    expect(result.extraData).equal(EthImpl.emptyHex);
-    expect(result.miner).equal(EthImpl.zeroAddressHex);
-    expect(result.mixHash).equal(EthImpl.emptyArrayHex);
-    expect(result.nonce).equal(EthImpl.zeroHex);
-    expect(result.receiptsRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(result.stateRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.totalDifficulty).equal(EthImpl.zeroHex);
-    expect(result.uncles).to.deep.equal([]);
+    verifyBlockConstants(result);
   });
 
   it('eth_getBlockByHash with match and details', async function () {
@@ -501,17 +485,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect((result.transactions[1] as Transaction).hash).equal(contractHash1);
 
     // verify expected constants
-    expect(result.baseFeePerGas).equal(EthImpl.zeroHex);
-    expect(result.difficulty).equal(EthImpl.zeroHex);
-    expect(result.extraData).equal(EthImpl.emptyHex);
-    expect(result.miner).equal(EthImpl.zeroAddressHex);
-    expect(result.mixHash).equal(EthImpl.emptyArrayHex);
-    expect(result.nonce).equal(EthImpl.zeroHex);
-    expect(result.receiptsRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(result.stateRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.totalDifficulty).equal(EthImpl.zeroHex);
-    expect(result.uncles).to.deep.equal([]);
+    verifyBlockConstants(result);
   });
 
   it('eth_getBlockByHash with no match', async function () {
