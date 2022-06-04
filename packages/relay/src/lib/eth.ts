@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { ContractId, Status, Hbar } from '@hashgraph/sdk';
+import { ContractId, FeeSchedules, Status, Hbar } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, CachedBlock, Transaction, Log } from './model';
@@ -28,6 +28,7 @@ import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
 
+const _ = require('lodash');
 const cache = require('js-cache');
 const createHash = require('keccak');
 
@@ -49,7 +50,8 @@ export class EthImpl implements Eth {
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   static defaultGas = 0x3d0900;
   static ethTxType = 'EthereumTransaction';
-  
+  static ethFunctionalityCode = 84;
+
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
    * associated with this client will pay for all operations on the main network.
@@ -128,21 +130,42 @@ export class EthImpl implements Eth {
   }
 
   private async getFeeWeibars() {
-    const networkFees = await this.mirrorNodeClient.getNetworkFees();
+    let networkFees = await this.mirrorNodeClient.getNetworkFees();
+
+    if (_.isNil(networkFees)) {
+      this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
+      const feeSchedules = await this.sdkClient.getFeeSchedule();
+      if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
+        throw new Error('Invalid FeeSchedules proto format');
+      }
+
+      for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
+        if (schedule.hederaFunctionality?._code === EthImpl.ethFunctionalityCode && schedule.fees !== undefined) {
+          networkFees = {
+            fees: [
+              {
+                gas: schedule.fees[0].servicedata?.contractTransactionGas?.toNumber(),
+                'transaction_type': EthImpl.ethTxType
+              }
+            ]
+          };
+        }
+      }
+    }
 
     if (networkFees && Array.isArray(networkFees.fees)) {
-      const txFee = networkFees.fees.find(({transaction_type}) => transaction_type === EthImpl.ethTxType);
+      const txFee = networkFees.fees.find(({ transaction_type }) => transaction_type === EthImpl.ethTxType);
       if (txFee && txFee.gas) {
         // convert tinyBars into weiBars 
         const weibars = Hbar
           .fromTinybars(txFee.gas)
           .toTinybars()
           .multiply(constants.TINYBAR_TO_WEIBAR_COEF);
-        
+
         return weibars.toNumber();
       }
     }
-    
+
     throw new Error('Error encountered estimating the gas price');
   }
 
@@ -199,11 +222,11 @@ export class EthImpl implements Eth {
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars();
-      
+
         cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
       }
 
-      return gasPrice; 
+      return EthImpl.numberTo0x(gasPrice);
     } catch (error) {
       this.logger.trace(error);
       throw error;
@@ -856,7 +879,7 @@ export class EthImpl implements Eth {
       });
   }
 
-  async getLogs(blockHash: string|null, fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null): Promise<Log[]> {
+  async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | null, topics: any[] | null): Promise<Log[]> {
     const params: any = {};
     if (blockHash) {
       const block = await this.mirrorNodeClient.getBlock(blockHash);
@@ -869,8 +892,8 @@ export class EthImpl implements Eth {
     }
     else if (fromBlock && toBlock) {
       const blocksResult = await this.mirrorNodeClient.getBlocks([
-          `gte:${fromBlock}`,
-          `lte:${toBlock}`
+        `gte:${fromBlock}`,
+        `lte:${toBlock}`
       ]);
 
       const blocks = blocksResult?.blocks;
@@ -913,8 +936,8 @@ export class EthImpl implements Eth {
       if (uniquePairs[pair] === undefined) {
         uniquePairs[pair] = [i];
         promises.push(this.mirrorNodeClient.getContractResultsDetails(
-            log.contract_id,
-            log.timestamp
+          log.contract_id,
+          log.timestamp
         ));
       }
       else {
@@ -946,7 +969,7 @@ export class EthImpl implements Eth {
         }
       }
     }
-    catch(e) {
+    catch (e) {
       return [];
     }
 
