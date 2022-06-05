@@ -484,26 +484,15 @@ export class EthImpl implements Eth {
    * @private
    */
   private async precheckSendRawTransaction(transaction: string) {
-    // Legacy Transactions:
-    //  rlp([nonce, gasPrice, gasLimit, to, value, data]) // unsigned
-    //  rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s]) // signed
-    // EIP-1559 Transactions:
-    //  rlp([nonce, gasLimit, to, value, data, gasPremium, feeCap]) // unsigned
-    //  rlp([nonce, gasLimit, to, value, data, gasPremium, feeCap, v, r, s]) // signed
-    const decodedTx = ethers.utils.RLP.decode(transaction);
-    const [v, r, s] = decodedTx.slice(-3);
-    const signature = ethers.utils.joinSignature({ r, s, v });
-    let accountInfo;
-    try {
-      accountInfo = await this.mirrorNodeClient.getAccount(
-        ethers.utils.recoverAddress(ethers.utils.arrayify(transaction), signature)
-      );
-    } catch (e) {
-      // account not found, handle the error
+    const txData = ethers.utils.parseTransaction(transaction);
+    const accountInfo = await this.mirrorNodeClient.getAccount(txData.from || '');
+
+    if (accountInfo['ethereum_nonce'] > txData.nonce) {
+      throw predefined.NONCE_TOO_LOW;
     }
 
-    if (accountInfo && accountInfo['ethereum_nonce'] != decodedTx[0]) {
-      throw new Error('Invalid nonce.');
+    if (accountInfo['ethereum_nonce'] + 1 < txData.nonce) {
+      throw predefined.INCORRECT_NONCE;
     }
   }
 
