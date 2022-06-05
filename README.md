@@ -36,6 +36,44 @@ From the root of the project workspace:
 Alternatively, after `npm run setup`, from within the IDE, you should see the `Start Relay Microservice`
 run configuration. You should be able to just run that configuration, and it should start the server on port `7546`.
 
+## Testing
+
+### Acceptance Tests
+
+The relay has a suite of acceptance tests that may be run to confirm E2E operation of the relay in either a `hedera-local-node` or deployed env.
+
+### Postman
+
+First ensure newman is installed locally using `npm`, then execute `newman`.
+
+```shell
+npm install -g newman
+newman run packages/server/tests/postman.json --env-var baseUrl=http://localhost:7546
+```
+
+#### Configuration
+
+As in the case of a fully deployed relay the acceptance tests utilize the `.env` file. See the [Configuration](#configuration) for setup details.
+
+For test context additional fields need to be set. The following example showcases a `hedera-local-node` instance (where values match those noted on [Local Node Network Variables](https://github.com/hashgraph/hedera-local-node#network-variables))
+
+```.env
+HEDERA_NETWORK={"127.0.0.1:50211":"0.0.3"}
+OPERATOR_ID_MAIN=0.0.2
+OPERATOR_KEY_MAIN=302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137
+CHAIN_ID=0x12a
+MIRROR_NODE_URL=http://127.0.0.1:5551
+LOCAL_NODE=true
+SERVER_PORT=7546
+```
+
+#### Run
+
+Tests may be run using the following command
+```shell
+npm run acceptancetest
+```
+
 ## Deployment
 
 The Relay supports Docker image building and Docker Compose container management using the provided [Dockerfile](Dockerfile) and [docker-compose](docker-compose.yml) files.

@@ -115,7 +115,7 @@ export class MirrorNodeClient {
 
     async request(path: string, allowedErrorStatuses?: number[]): Promise<any> {
         try {
-            this.logger.debug(`Request: ${path}`);
+            this.logger.debug(`Mirror Request: ${path}`);
             const response = await this.client.get(path);
             return response.data;
         } catch (error) {

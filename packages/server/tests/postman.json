@@ -1,0 +1,902 @@
+{
+	"info": {
+		"_postman_id": "351c728f-14b0-4b18-a499-4b100b68a822",
+		"name": "Relay",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "21244258"
+	},
+	"item": [
+		{
+			"name": "eth_accounts",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.be.an(\"array\");",
+							"    pm.expect(response.result).length(0);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_accounts\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_blockNumber",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_blockNumber\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_chainId",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_chainId\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_estimateGas",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_estimateGas\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_getBalance",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_chainId\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_getBlockByNumber",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result.timestamp).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.difficulty).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.extraData).to.match(/^0x$/);",
+							"    pm.expect(response.result.gasLimit).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.baseFeePerGas).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.gasUsed).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.logsBloom).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.miner).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.mixHash).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.nonce).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.receiptsRoot).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.sha3Uncles).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.size).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.stateRoot).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.totalDifficulty).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.transactions).to.be.an(\"array\");",
+							"    pm.expect(response.result.transactionsRoot).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.uncles).to.be.an(\"array\");",
+							"    pm.expect(response.result.number).to.equal(\"0x1\");",
+							"    pm.expect(response.result.hash).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.parentHash).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_getBlockByNumber\",\n    \"params\": [\n        \"0x1\",\n        false\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_getTransactionReceipt",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.be.null;",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_getTransactionReceipt\",\n    \"params\": [\"0x0000000000000000000000000000000000000000000000000000000000000001\"]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_getUncleByBlockHashAndIndex",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.be.null;",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_getUncleByBlockHashAndIndex\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_getUncleByBlockNumberAndIndex",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.be.null;",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_getUncleByBlockNumberAndIndex\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_getUncleCountByBlockHash",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.equal(\"0x0\");",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_getUncleCountByBlockHash\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_getUncleCountByBlockNumber",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.equal(\"0x0\");",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_getUncleCountByBlockNumber\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_getWork",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.error.code).to.equal(-32601);",
+							"    pm.expect(response.error.name).to.equal(\"Method not found\");",
+							"    pm.expect(response.error.message).to.equal(\"Unsupported JSON-RPC method\");",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_getWork\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "unsupported_function",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.error.code).to.equal(-32601);",
+							"    pm.expect(response.error.message).to.equal(\"Method not found\");",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"unsupported_function\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "invalid_request",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.error.code).to.equal(-32600);",
+							"    pm.expect(response.error.message).to.equal(\"Invalid Request\");",
+							"    pm.expect(response.id).is.null;",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_hashrate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.equal(\"0x0\");",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_hashrate\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_mining",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.equal(false);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_mining\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_submitWork",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.equal(false);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_submitWork\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_syncing",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.equal(false);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_syncing\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "net_listening",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.equal(\"false\");",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"net_listening\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "net_version",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"net_version\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "web3_clientVersion",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.match(/^relay[/]/);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"web3_clientVersion\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "localhost:7546",
+			"type": "string"
+		}
+	]
+}
