@@ -254,7 +254,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_gasPrice"', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_gasPrice', []);
-        expect(res.data.result).to.be.equal('0x1e521e71057800');
+        expect(res.data.result).to.be.equal('0xa7a3582000');
     });
 
     it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
