@@ -26,6 +26,7 @@ import {
     ContractByteCodeQuery,
     ContractCallQuery,
     EthereumTransaction,
+    ExchangeRates,
     FeeSchedules,
     FileContentsQuery,
     ContractId,
@@ -33,12 +34,19 @@ import {
     TransactionResponse,
     AccountInfo,
     HbarUnit,
-    TransactionId
+    TransactionId,
+    FeeComponents
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 
+const _ = require('lodash');
+
 export class SDKClient {
+    private static DEFAULT_TINY_BAR_GAS = 72; // (853454 / 1000) * (1 / 12)
+    private static ETH_FUNCTIONALITY_CODE = 84;
+    private static EXCHANGE_RATE_FILE_ID = "0.0.112";
     private static FEE_SCHEDULE_FILE_ID = '0.0.111';
+    
     /**
      * The client to use for connecting to the main consensus network. The account
      * associated with this client will pay for all operations on the main network.
@@ -51,7 +59,6 @@ export class SDKClient {
     constructor(clientMain: Client) {
         this.clientMain = clientMain;
     }
-
 
     async getAccountBalance(account: string): Promise<AccountBalance> {
         return (new AccountBalanceQuery()
@@ -81,10 +88,34 @@ export class SDKClient {
             .execute(this.clientMain);
     }
 
+    async getExchangeRate(): Promise<ExchangeRates> {
+        const exchangeFileBytes = await this.getFileIdBytes(SDKClient.EXCHANGE_RATE_FILE_ID);
+
+        return ExchangeRates.fromBytes(exchangeFileBytes);
+    }
+
     async getFeeSchedule(): Promise<FeeSchedules> {
         const feeSchedulesFileBytes = await this.getFileIdBytes(SDKClient.FEE_SCHEDULE_FILE_ID);
 
         return FeeSchedules.fromBytes(feeSchedulesFileBytes);
+    }
+
+    async getTinyBarGasFee(): Promise<number> {
+        const feeSchedules = await this.getFeeSchedule();
+        if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
+            throw new Error('Invalid FeeSchedules proto format');
+        }
+
+        for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
+            if (schedule.hederaFunctionality?._code === SDKClient.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
+                // get exchange rate & convert to tiny bar
+                const exchangeRates = await this.getExchangeRate();
+
+                return this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
+            }
+        }
+
+        throw new Error(`${SDKClient.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
     }
 
     async getFileIdBytes(address: string): Promise<Uint8Array> {
@@ -127,12 +158,24 @@ export class SDKClient {
             .execute(this.clientMain);
     }
 
+    private convertGasPriceToTinyBars = (feeComponents: FeeComponents |  undefined, exchangeRates: ExchangeRates) => {
+        // gas -> tinCents:  gas / 1000
+        // tinCents -> tinyBars: tinCents * exchangeRate (hbarEquiv/ centsEquiv)
+        if (feeComponents === undefined || feeComponents.contractTransactionGas === undefined) {
+            return SDKClient.DEFAULT_TINY_BAR_GAS;
+        }
+
+        return Math.ceil(
+            (feeComponents.contractTransactionGas.toNumber() / 1_000) * (exchangeRates.currentRate.hbars / exchangeRates.currentRate.cents)
+        );
+    };
+
     /**
-   * Internal helper method that converts an ethAddress (with, or without a leading 0x)
-   * into an alias friendly AccountId.
-   * @param ethAddress
-   * @private
-   */
+     * Internal helper method that converts an ethAddress (with, or without a leading 0x)
+     * into an alias friendly AccountId.
+     * @param ethAddress
+     * @private
+     */
     private static toAccountId(ethAddress: string) {
         return AccountId.fromEvmAddress(0, 0, SDKClient.prune0x(ethAddress));
     }
