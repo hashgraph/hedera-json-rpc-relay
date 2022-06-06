@@ -487,14 +487,29 @@ export class EthImpl implements Eth {
    * @private
    */
   private async precheckSendRawTransaction(transaction: string) {
-    const txData = ethers.utils.parseTransaction(transaction);
-    const accountInfo = await this.mirrorNodeClient.getAccount(txData.from || '');
+    const tx = ethers.utils.parseTransaction(transaction);
+    const rsTx = await ethers.utils.resolveProperties({
+      gasPrice: tx.gasPrice,
+      gasLimit: tx.gasLimit,
+      value: tx.value,
+      nonce: tx.nonce,
+      data: tx.data,
+      chainId: tx.chainId,
+      to: tx.to
+    });
+    const raw = ethers.utils.serializeTransaction(rsTx);
+    const recoveredAddress = ethers.utils.recoverAddress(
+      ethers.utils.arrayify(ethers.utils.keccak256(raw)),
+      // @ts-ignore
+      ethers.utils.joinSignature({ 'r': tx.r, 's': tx.s, 'v': tx.v })
+    );
+    const accountInfo = await this.mirrorNodeClient.getAccount(recoveredAddress);
 
-    if (accountInfo['ethereum_nonce'] > txData.nonce) {
+    if (accountInfo['ethereum_nonce'] > tx.nonce) {
       throw predefined.NONCE_TOO_LOW;
     }
 
-    if (accountInfo['ethereum_nonce'] + 1 < txData.nonce) {
+    if (accountInfo['ethereum_nonce'] + 1 < tx.nonce) {
       throw predefined.INCORRECT_NONCE;
     }
   }
