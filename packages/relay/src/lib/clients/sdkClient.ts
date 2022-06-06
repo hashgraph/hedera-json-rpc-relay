@@ -26,7 +26,7 @@ import {
     ContractByteCodeQuery,
     ContractCallQuery,
     EthereumTransaction,
-    ExchangeRates,
+    FeeSchedules,
     FileContentsQuery,
     ContractId,
     ContractFunctionResult,
@@ -38,7 +38,7 @@ import {
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 
 export class SDKClient {
-    private static EXCHANGE_RATE_FILE_ID = "0.0.112";
+    private static FEE_SCHEDULE_FILE_ID = '0.0.111';
     /**
      * The client to use for connecting to the main consensus network. The account
      * associated with this client will pay for all operations on the main network.
@@ -81,10 +81,10 @@ export class SDKClient {
             .execute(this.clientMain);
     }
 
-    async getExchangeRate(): Promise<ExchangeRates> {
-        const exchangeFileBytes = await this.getFileIdBytes(SDKClient.EXCHANGE_RATE_FILE_ID);
+    async getFeeSchedule(): Promise<FeeSchedules> {
+        const feeSchedulesFileBytes = await this.getFileIdBytes(SDKClient.FEE_SCHEDULE_FILE_ID);
 
-        return ExchangeRates.fromBytes(exchangeFileBytes);
+        return FeeSchedules.fromBytes(feeSchedulesFileBytes);
     }
 
     async getFileIdBytes(address: string): Promise<Uint8Array> {

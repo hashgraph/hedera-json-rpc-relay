@@ -61,6 +61,7 @@ export class MirrorNodeClient {
     private static GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
     private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
     private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
+    private static GET_NETWORK_FEES_ENDPOINT = 'network/fees';
 
     private static ORDER = {
         ASC: 'asc',
@@ -243,6 +244,14 @@ export class MirrorNodeClient {
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`, [400, 404]);
+    }
+
+    public async getNetworkFees(timestamp?: string, order?: string) {
+        const queryParamObject = {};
+        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
+        this.setQueryParam(queryParamObject, 'order', order);
+        const queryParams = this.getQueryParams(queryParamObject);
+        return this.request(`${MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT}${queryParams}`, [400, 404]);
     }
 
     private static getContractResultsByAddressPath(address: string) {

@@ -95,7 +95,7 @@ describe('RPC Server Integration Tests', async function () {
             // set env variables for docker images until local-node is updated
             process.env['NETWORK_NODE_IMAGE_TAG'] = '0.26.2-patch.3';
             process.env['HAVEGED_IMAGE_TAG'] = '0.25.4';
-            process.env['MIRROR_IMAGE_TAG'] = '0.57.2';
+            process.env['MIRROR_IMAGE_TAG'] = '0.58.0-rc1';
             logger.trace(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
             // start local-node
@@ -254,7 +254,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_gasPrice"', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_gasPrice', []);
-        expect(res.data.result).to.be.equal('0xa59784cceb');
+        expect(res.data.result).to.be.equal('0x1e521e71057800');
     });
 
     it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {

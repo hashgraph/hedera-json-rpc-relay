@@ -19,15 +19,18 @@
  */
 
 import { Eth } from '../index';
-import { ContractId, Status } from '@hashgraph/sdk';
+import { ContractId, FeeSchedules, Status, Hbar } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, CachedBlock, Transaction, Log } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
+import constants from './constants';
 import * as ethers from 'ethers';
 
+const _ = require('lodash');
+const cache = require('js-cache');
 const createHash = require('keccak');
 
 /**
@@ -47,6 +50,8 @@ export class EthImpl implements Eth {
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   static defaultGas = 0x3d0900;
+  static ethTxType = 'EthereumTransaction';
+  static ethFunctionalityCode = 84;
 
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
@@ -126,16 +131,43 @@ export class EthImpl implements Eth {
   }
 
   private async getFeeWeibars() {
-    const exchangeRates = await this.sdkClient.getExchangeRate();
+    let networkFees = await this.mirrorNodeClient.getNetworkFees();
 
-    //FIXME retrieve fee from fee API when released
-    const contractTransactionGas = 853454;
+    if (_.isNil(networkFees)) {
+      this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
+      const feeSchedules = await this.sdkClient.getFeeSchedule();
+      if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
+        throw new Error('Invalid FeeSchedules proto format');
+      }
 
-    //contractTransactionGas is in tinycents * 1000, so the final multiplier is truncated by 3 zeroes for
-    // the conversion to weibars
-    return Math.ceil(
-      (contractTransactionGas / exchangeRates.currentRate.cents) * exchangeRates.currentRate.hbars * 10_000_000
-    );
+      for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
+        if (schedule.hederaFunctionality?._code === EthImpl.ethFunctionalityCode && schedule.fees !== undefined) {
+          networkFees = {
+            fees: [
+              {
+                gas: schedule.fees[0].servicedata?.contractTransactionGas?.toNumber(),
+                'transaction_type': EthImpl.ethTxType
+              }
+            ]
+          };
+        }
+      }
+    }
+
+    if (networkFees && Array.isArray(networkFees.fees)) {
+      const txFee = networkFees.fees.find(({ transaction_type }) => transaction_type === EthImpl.ethTxType);
+      if (txFee && txFee.gas) {
+        // convert tinyBars into weiBars
+        const weibars = Hbar
+          .fromTinybars(txFee.gas)
+          .toTinybars()
+          .multiply(constants.TINYBAR_TO_WEIBAR_COEF);
+
+        return weibars.toNumber();
+      }
+    }
+
+    throw new Error('Error encountered estimating the gas price');
   }
 
   /**
@@ -185,15 +217,21 @@ export class EthImpl implements Eth {
    * Gets the current gas price of the network.
    */
   async gasPrice() {
-    // FIXME: This should come from the mainnet and get cached. The gas price does change dynamically based on
-    //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
     this.logger.trace('gasPrice()');
-    return this.getFeeWeibars()
-      .then((weiBars) => EthImpl.numberTo0x((weiBars)))
-      .catch((e: any) => {
-        this.logger.trace(e);
-        throw e;
-      });
+    try {
+      let gasPrice: number | undefined = cache.get(constants.CACHE_KEY.GAS_PRICE);
+
+      if (!gasPrice) {
+        gasPrice = await this.getFeeWeibars();
+
+        cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
+      }
+
+      return EthImpl.numberTo0x(gasPrice);
+    } catch (error) {
+      this.logger.trace(error);
+      throw error;
+    }
   }
 
   /**
@@ -877,7 +915,7 @@ export class EthImpl implements Eth {
       });
   }
 
-  async getLogs(blockHash: string|null, fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null): Promise<Log[]> {
+  async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | null, topics: any[] | null): Promise<Log[]> {
     const params: any = {};
     if (blockHash) {
       const block = await this.mirrorNodeClient.getBlock(blockHash);
@@ -890,8 +928,8 @@ export class EthImpl implements Eth {
     }
     else if (fromBlock && toBlock) {
       const blocksResult = await this.mirrorNodeClient.getBlocks([
-          `gte:${fromBlock}`,
-          `lte:${toBlock}`
+        `gte:${fromBlock}`,
+        `lte:${toBlock}`
       ]);
 
       const blocks = blocksResult?.blocks;
@@ -934,8 +972,8 @@ export class EthImpl implements Eth {
       if (uniquePairs[pair] === undefined) {
         uniquePairs[pair] = [i];
         promises.push(this.mirrorNodeClient.getContractResultsDetails(
-            log.contract_id,
-            log.timestamp
+          log.contract_id,
+          log.timestamp
         ));
       }
       else {
@@ -967,7 +1005,7 @@ export class EthImpl implements Eth {
         }
       }
     }
-    catch(e) {
+    catch (e) {
       return [];
     }
 
