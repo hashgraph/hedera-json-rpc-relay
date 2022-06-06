@@ -96,7 +96,7 @@ export class SDKClient {
     }
 
     async getExchangeRate(): Promise<ExchangeRates> {
-        const exchangeFileBytes = await this.getFileIdBytes(SDKClient.EXCHANGE_RATE_FILE_ID);
+        const exchangeFileBytes = await this.getFileIdBytes(constants.EXCHANGE_RATE_FILE_ID);
 
         return ExchangeRates.fromBytes(exchangeFileBytes);
     }

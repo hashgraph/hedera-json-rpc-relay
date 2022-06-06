@@ -216,13 +216,11 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for primary account', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.not.be.equal('0x0');
         expect(res.data.result).to.eq('0x566527b339630a400');
     });
 
     it('should execute "eth_getBalance" for secondary account', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorSecondaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.not.be.equal('0x0');
         expect(res.data.result).to.eq('0x566527b339630a400');
     });
 
