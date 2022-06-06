@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { ContractId, FeeSchedules, Status, Hbar } from '@hashgraph/sdk';
+import { ContractId, Status, Hbar } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, CachedBlock, Transaction, Log } from './model';
@@ -134,23 +134,14 @@ export class EthImpl implements Eth {
 
     if (_.isNil(networkFees)) {
       this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
-      const feeSchedules = await this.sdkClient.getFeeSchedule();
-      if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
-        throw new Error('Invalid FeeSchedules proto format');
-      }
-
-      for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
-        if (schedule.hederaFunctionality?._code === EthImpl.ethFunctionalityCode && schedule.fees !== undefined) {
-          networkFees = {
-            fees: [
-              {
-                gas: schedule.fees[0].servicedata?.contractTransactionGas?.toNumber(),
-                'transaction_type': EthImpl.ethTxType
-              }
-            ]
-          };
-        }
-      }
+      networkFees = {
+        fees: [
+          {
+            gas: await this.sdkClient.getTinyBarGasFee(),
+            'transaction_type': EthImpl.ethTxType
+          }
+        ]
+      };
     }
 
     if (networkFees && Array.isArray(networkFees.fees)) {
