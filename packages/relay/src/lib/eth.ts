@@ -505,11 +505,11 @@ export class EthImpl implements Eth {
     );
     const accountInfo = await this.mirrorNodeClient.getAccount(recoveredAddress);
 
-    if (accountInfo['ethereum_nonce'] > tx.nonce) {
+    if (accountInfo && accountInfo['ethereum_nonce'] > tx.nonce) {
       throw predefined.NONCE_TOO_LOW;
     }
 
-    if (accountInfo['ethereum_nonce'] + 1 < tx.nonce) {
+    if (accountInfo && accountInfo['ethereum_nonce'] + 1 < tx.nonce) {
       throw predefined.INCORRECT_NONCE;
     }
   }
