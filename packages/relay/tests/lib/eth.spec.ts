@@ -33,6 +33,7 @@ const cache = require('js-cache');
 
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
+import constants from '../../src/lib/constants';
 const logger = pino();
 
 const Relay = new RelayImpl(logger);
@@ -295,6 +296,24 @@ describe('Eth calls using MirrorNode', async function () {
         "timestamp": contractTimestamp2
       }
     ]
+  };
+
+  const defaultNetworkFees = {
+    'fees': [
+      {
+        'gas': 77,
+        'transaction_type': 'ContractCall'
+      },
+      {
+        'gas': 771,
+        'transaction_type': 'ContractCreate'
+      },
+      {
+        'gas': 57,
+        'transaction_type': 'EthereumTransaction'
+      }
+    ],
+    'timestamp': '1653644164.591111113'
   };
 
   this.afterEach(() => {
@@ -863,6 +882,60 @@ describe('Eth calls using MirrorNode', async function () {
       expectLogData1(result[0]);
       expectLogData2(result[1]);
     });
+  });
+
+  it('eth_gasPrice', async function() {
+    mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
+
+    const weiBars = await ethImpl.gasPrice();
+    const expectedWeiBars = defaultNetworkFees.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF;
+    expect(weiBars).to.equal(EthImpl.numberTo0x(expectedWeiBars));
+  });
+
+  it('eth_gasPrice with cached value', async function() {
+    mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
+
+    const firstGasResult = await ethImpl.gasPrice();
+
+    const modifiedNetworkFees = Object.assign({}, defaultNetworkFees);
+    modifiedNetworkFees.fees[2].gas = defaultNetworkFees.fees[2].gas * 100;
+
+    mock.onGet(`network/fees`).reply(200, modifiedNetworkFees);
+
+    const secondGasResult = await ethImpl.gasPrice();
+
+    expect(firstGasResult).to.equal(secondGasResult);
+  });
+
+  it('eth_gasPrice with no EthereumTransaction gas returned', async function() {
+    const partialNetworkFees = Object.assign({}, defaultNetworkFees);
+    partialNetworkFees.fees.splice(2);
+
+    mock.onGet(`network/fees`).reply(200, partialNetworkFees);
+
+    try {
+      await ethImpl.gasPrice();
+    } catch (error) {
+      expect(error.message).to.equal('Error encountered estimating the gas price');
+    }
+  });
+
+  it('eth_gasPrice with no network fees records found', async function() {
+    mock.onGet(`network/fees`).reply(404, {
+      "_status": {
+        "messages": [
+          {
+            "message": "Not found"
+          }
+        ]
+      }
+    });
+
+    try {
+      await ethImpl.gasPrice();
+    } catch (error) {
+      expect(error.message).to.equal('Error encountered estimating the gas price');
+    }
   });
 });
 

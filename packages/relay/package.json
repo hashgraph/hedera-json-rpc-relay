@@ -23,7 +23,7 @@
         "compile": "tsc -b tsconfig.json",
         "lint": "npx eslint --ext .js,.ts .",
         "format": "npx prettier --ignore-path ../../.gitignore --write \"**/*.+(js|ts|json)\"",
-        "test": "nyc ts-mocha  --recursive ./tests/**/*.spec.ts"
+        "test": "nyc ts-mocha --recursive ./tests/**/*.spec.ts --exit"
     },
     "dependencies": {
         "@hashgraph/sdk": "^2.14.2",
@@ -36,6 +36,7 @@
         "keccak": "^3.0.2",
         "keyv": "^4.2.2",
         "keyv-file": "^0.2.0",
+        "lodash": "^4.17.21",
         "pino": "^7.11.0",
         "rlp": "^3.0.0"
     },
