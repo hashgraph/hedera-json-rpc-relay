@@ -38,7 +38,7 @@ import {
     FeeComponents
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import constants from './../../constants';
+import constants from './../constants';
 
 const _ = require('lodash');
 

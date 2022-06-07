@@ -21,6 +21,7 @@
 import Axios, { AxiosInstance } from 'axios';
 import { predefined } from '../errors';
 import { Logger } from "pino";
+import constants from './../constants';
 
 export interface ILimitOrderParams {
     limit?: number;
@@ -306,14 +307,14 @@ export class MirrorNodeClient {
         const contractResult = await this.getContract(entityIdentifier);
         if (contractResult) {
             return {
-                type: 'contract',
+                type: constants.TYPE_CONTRACT,
                 entity: contractResult
             };
         }
         const accountResult = await this.getAccount(entityIdentifier);
         if (accountResult) {
             return {
-                type: 'account',
+                type: constants.TYPE_ACCOUNT,
                 entity: accountResult
             };
         }

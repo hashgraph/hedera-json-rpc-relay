@@ -22,23 +22,8 @@
 import {
     Client,
     PrivateKey,
-    Hbar,
-    HbarUnit,
-    AccountId,
-    AccountBalanceQuery,
-    AccountInfoQuery,
-    ContractCreateTransaction,
-    ContractExecuteTransaction,
-    ContractFunctionParameters,
-    FileCreateTransaction,
-    Query,
-    TokenAssociateTransaction,
-    TokenCreateTransaction,
-    Transaction,
-    TransactionResponse,
-    TransferTransaction,
 } from "@hashgraph/sdk";
-import Axios, { AxiosInstance } from 'axios';
+import Axios from 'axios';
 import { expect } from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';

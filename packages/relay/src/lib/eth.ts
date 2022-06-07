@@ -354,10 +354,10 @@ export class EthImpl implements Eth {
     try {
       let weibars: BigNumber | number = 0;
       const result = await this.mirrorNodeClient.resolveEntityType(account);
-      if (result?.type === 'account') {
+      if (result?.type === constants.TYPE_ACCOUNT) {
         weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account);
       }
-      else if (result?.type === 'contract') {
+      else if (result?.type === constants.TYPE_CONTRACT) {
         weibars = await this.sdkClient.getContractBalanceInWeiBar(result.entity.contract_id);
       }
 
