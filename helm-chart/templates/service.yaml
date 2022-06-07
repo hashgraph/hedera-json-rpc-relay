@@ -4,6 +4,10 @@ metadata:
   name: {{ include "json-rpc-relay.fullname" . }}
   labels:
     {{- include "json-rpc-relay.labels" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.service.annotations }}
+      {{ $key }}: {{ $value | toJson | quote }}
+    {{- end }}
 spec:
   type: {{ .Values.service.type }}
   ports:

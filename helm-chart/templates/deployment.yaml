@@ -19,6 +19,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}    
       labels:
+        app:  {{ template "json-rpc-relay.name" . }}
         {{- include "json-rpc-relay.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
