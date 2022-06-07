@@ -43,11 +43,6 @@ import constants from './../../constants';
 const _ = require('lodash');
 
 export class SDKClient {
-    private static DEFAULT_TINY_BAR_GAS = 72; // (853454 / 1000) * (1 / 12)
-    private static ETH_FUNCTIONALITY_CODE = 84;
-    private static EXCHANGE_RATE_FILE_ID = "0.0.112";
-    private static FEE_SCHEDULE_FILE_ID = '0.0.111';
-
     /**
      * The client to use for connecting to the main consensus network. The account
      * associated with this client will pay for all operations on the main network.
@@ -102,7 +97,7 @@ export class SDKClient {
     }
 
     async getFeeSchedule(): Promise<FeeSchedules> {
-        const feeSchedulesFileBytes = await this.getFileIdBytes(SDKClient.FEE_SCHEDULE_FILE_ID);
+        const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID);
 
         return FeeSchedules.fromBytes(feeSchedulesFileBytes);
     }
@@ -114,7 +109,7 @@ export class SDKClient {
         }
 
         for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
-            if (schedule.hederaFunctionality?._code === SDKClient.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
+            if (schedule.hederaFunctionality?._code === constants.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
                 // get exchange rate & convert to tiny bar
                 const exchangeRates = await this.getExchangeRate();
 
@@ -122,7 +117,7 @@ export class SDKClient {
             }
         }
 
-        throw new Error(`${SDKClient.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
+        throw new Error(`${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
     }
 
     async getFileIdBytes(address: string): Promise<Uint8Array> {
@@ -169,7 +164,7 @@ export class SDKClient {
         // gas -> tinCents:  gas / 1000
         // tinCents -> tinyBars: tinCents * exchangeRate (hbarEquiv/ centsEquiv)
         if (feeComponents === undefined || feeComponents.contractTransactionGas === undefined) {
-            return SDKClient.DEFAULT_TINY_BAR_GAS;
+            return constants.DEFAULT_TINY_BAR_GAS;
         }
 
         return Math.ceil(
