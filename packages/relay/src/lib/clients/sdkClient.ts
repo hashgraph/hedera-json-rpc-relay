@@ -64,7 +64,7 @@ export class SDKClient {
 
     async getAccountBalanceInWeiBar(account: string): Promise<BigNumber> {
         const balance = await this.getAccountBalance(account);
-        return SDKClient.toTinyBar(balance);
+        return SDKClient.HbarToWeiBar(balance);
     }
 
     async getAccountInfo(address: string): Promise<AccountInfo> {
@@ -87,7 +87,7 @@ export class SDKClient {
 
     async getContractBalanceInWeiBar(account: string): Promise<BigNumber> {
         const balance = await this.getContractBalance(account);
-        return SDKClient.toTinyBar(balance);
+        return SDKClient.HbarToWeiBar(balance);
     }
 
     async getExchangeRate(): Promise<ExchangeRates> {
@@ -214,7 +214,7 @@ export class SDKClient {
             : input;
     }
 
-    private static toTinyBar(balance: AccountBalance): BigNumber {
+    private static HbarToWeiBar(balance: AccountBalance): BigNumber {
         return balance.hbars
             .to(HbarUnit.Tinybar)
             .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
