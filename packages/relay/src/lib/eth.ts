@@ -28,6 +28,7 @@ import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
 import * as ethers from 'ethers';
+import { Precheck } from './precheck';
 
 const _ = require('lodash');
 const cache = require('js-cache');
@@ -80,6 +81,12 @@ export class EthImpl implements Eth {
   private readonly logger: Logger;
 
   /**
+   * The precheck class used for checking the fields like nonce before the tx execution.
+   * @private
+   */
+  private readonly precheck: Precheck;
+
+  /**
    * The ID of the chain, as a hex string, as it would be returned in a JSON-RPC call.
    * @private
    */
@@ -105,6 +112,7 @@ export class EthImpl implements Eth {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
+    this.precheck = new Precheck(mirrorNodeClient);
   }
 
   /**
@@ -519,47 +527,13 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Do the pre-checks for the sendRawTransaction route
-   *
-   * @param transaction
-   * @private
-   */
-  private async precheckSendRawTransaction(transaction: string) {
-    const tx = ethers.utils.parseTransaction(transaction);
-    const rsTx = await ethers.utils.resolveProperties({
-      gasPrice: tx.gasPrice,
-      gasLimit: tx.gasLimit,
-      value: tx.value,
-      nonce: tx.nonce,
-      data: tx.data,
-      chainId: tx.chainId,
-      to: tx.to
-    });
-    const raw = ethers.utils.serializeTransaction(rsTx);
-    const recoveredAddress = ethers.utils.recoverAddress(
-      ethers.utils.arrayify(ethers.utils.keccak256(raw)),
-      // @ts-ignore
-      ethers.utils.joinSignature({ 'r': tx.r, 's': tx.s, 'v': tx.v })
-    );
-    const accountInfo = await this.mirrorNodeClient.getAccount(recoveredAddress);
-
-    if (accountInfo && accountInfo['ethereum_nonce'] > tx.nonce) {
-      throw predefined.NONCE_TOO_LOW;
-    }
-
-    if (accountInfo && accountInfo['ethereum_nonce'] + 1 < tx.nonce) {
-      throw predefined.INCORRECT_NONCE;
-    }
-  }
-
-  /**
    * Submits a transaction to the network for execution.
    *
    * @param transaction
    */
   async sendRawTransaction(transaction: string): Promise<string> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
-    await this.precheckSendRawTransaction(transaction);
+    await this.precheck.nonce(transaction);
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
