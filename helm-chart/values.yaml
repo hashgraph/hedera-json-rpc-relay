@@ -23,6 +23,8 @@ serviceAccount:
 
 podAnnotations: {}
 
+serviceAnnotations: {}
+
 podSecurityContext: {}
   # fsGroup: 2000
 
@@ -37,7 +39,7 @@ securityContext: {}
 service:
   type: ClusterIP
   port: 7546
-
+  annotations: {}
 ingress:
   enabled: false
   className: ""
