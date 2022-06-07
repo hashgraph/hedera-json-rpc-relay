@@ -48,6 +48,7 @@ import shell from 'shelljs';
 // local resources
 import parentContract from './parentContract/Parent.json';
 import app from '../src/server';
+import {ethers} from 'ethers';
 
 const testLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -74,6 +75,7 @@ const nonExistingAddress = '0x5555555555555555555555555555555555555555';
 
 // cached entities
 let client: Client;
+let accOneClient: Client;
 let tokenId;
 let opPrivateKey;
 let contractId;
@@ -90,7 +92,9 @@ describe('RPC Server Integration Tests', async function () {
 
     before(async function () {
         logger.info(`Setting up SDK Client for ${process.env['HEDERA_NETWORK']} env`);
-        setupClient();
+        client = setupClient(process.env.OPERATOR_KEY_MAIN, process.env.OPERATOR_ID_MAIN);
+        opPrivateKey = PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN);
+
 
         if (useLocalNode === 'true') {
             // set env variables for docker images until local-node is updated
@@ -112,11 +116,18 @@ describe('RPC Server Integration Tests', async function () {
         const { accountInfo: primaryAccountInfo, privateKey: primaryKey } = await createEthCompatibleAccount();
         const { accountInfo: secondaryAccountInfo, privateKey: secondaryKey } = await createEthCompatibleAccount();
 
+        logger.info(`Setup Client for AccountOne: ${primaryAccountInfo.accountId.toString()}`);
+        accOneClient = setupClient(primaryKey.toString(), primaryAccountInfo.accountId.toString());
+
         logger.info('Create and execute contracts');
         // 2. contract create amd execute
         // Take Parent contract used in mirror node acceptance tests since it's well use
-        await createParentContract();
-        await executeContractCall();
+        contractId = await createParentContract(client);
+        await executeContractCall(client);
+
+        logger.info('Create parent contract with AccountOne');
+        await createParentContract(accOneClient);
+        await executeContractCall(accOneClient);
 
         logger.info('Create token');
         // 3. Token create
@@ -216,12 +227,12 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for primary account', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x566527b339630a400');
+        expect(res.data.result).to.eq('0x109579644a3889f3400');
     });
 
     it('should execute "eth_getBalance" for secondary account', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorSecondaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x566527b339630a400');
+        expect(res.data.result).to.eq('0x10f077b81e38c40a400');
     });
 
     it('should execute "eth_getBalance" for non-existing address', async function () {
@@ -236,7 +247,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
         const res = await callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [idToEvmAddress(mirrorPrimaryAccount.account), 'latest']);
-        expect(res.data.result).to.eq('0x566527b339630a400');
+        expect(res.data.result).to.eq('0x109579644a3889f3400');
     });
 
     it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
@@ -430,13 +441,13 @@ describe('RPC Server Integration Tests', async function () {
         return resp;
     };
 
-    const setupClient = () => {
-        opPrivateKey = PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN);
-        client = Client
+    const setupClient = (key, id) => {
+        const opPrivateKey = PrivateKey.fromString(key);
+        return Client
             .forNetwork({
                 '127.0.0.1:50211': '0.0.3'
             })
-            .setOperator(AccountId.fromString(process.env.OPERATOR_ID_MAIN), opPrivateKey);
+            .setOperator(AccountId.fromString(id), opPrivateKey);
     };
 
     const createEthCompatibleAccount = async () => {
@@ -450,8 +461,8 @@ describe('RPC Server Integration Tests', async function () {
 
         logger.info(`Transfer transaction attempt`);
         const aliasCreationResponse = await executeTransaction(new TransferTransaction()
-            .addHbarTransfer(client.operatorAccountId, new Hbar(100).negated())
-            .addHbarTransfer(aliasAccountId, new Hbar(100)));
+            .addHbarTransfer(client.operatorAccountId, new Hbar(5000).negated())
+            .addHbarTransfer(aliasAccountId, new Hbar(5000)), client);
 
         logger.debug(`Get ${aliasAccountId.toString()} receipt`);
         await aliasCreationResponse.getReceipt(client);
@@ -478,7 +489,7 @@ describe('RPC Server Integration Tests', async function () {
             .setTokenSymbol(symbol)
             .setDecimals(3)
             .setInitialSupply(1000)
-            .setTreasuryAccountId(client.operatorAccountId));
+            .setTreasuryAccountId(client.operatorAccountId), client);
 
         logger.trace(`get token id from receipt`);
         tokenId = resp.tokenId;
@@ -492,7 +503,7 @@ describe('RPC Server Integration Tests', async function () {
                 .setAccountId(accountId)
                 .setTokenIds([tokenId])
                 .freezeWith(client)
-                .sign(pk));
+                .sign(pk), client);
 
         logger.debug(
             `Associated account ${accountId.toString()} with token ${tokenId.toString()}`
@@ -500,7 +511,7 @@ describe('RPC Server Integration Tests', async function () {
 
         executeAndGetTransactionReceipt(new TransferTransaction()
             .addTokenTransfer(tokenId, client.operatorAccountId, -10)
-            .addTokenTransfer(tokenId, accountId, 10));
+            .addTokenTransfer(tokenId, accountId, 10), client);
 
         logger.debug(
             `Sent 10 tokens from account ${client.operatorAccountId.toString()} to account ${accountId.toString()} on token ${tokenId.toString()}`
@@ -519,7 +530,7 @@ describe('RPC Server Integration Tests', async function () {
     const sendFileClosingCryptoTransfer = async (accountId: AccountId) => {
         const aliasCreationResponse = await executeTransaction(new TransferTransaction()
             .addHbarTransfer(client.operatorAccountId, new Hbar(1, HbarUnit.Millibar).negated())
-            .addHbarTransfer(accountId, new Hbar(1, HbarUnit.Millibar)));
+            .addHbarTransfer(accountId, new Hbar(1, HbarUnit.Millibar)), client);
 
         await aliasCreationResponse.getReceipt(client);
 
@@ -530,12 +541,12 @@ describe('RPC Server Integration Tests', async function () {
         logger.info(`Balances of the new account: ${balance.toString()}`);
     };
 
-    const createParentContract = async () => {
+    const createParentContract = async (client: Client) => {
         const contractByteCode = (parentContract.deployedBytecode.replace('0x', ''));
 
         const fileReceipt = await executeAndGetTransactionReceipt(new FileCreateTransaction()
             .setKeys([client.operatorPublicKey])
-            .setContents(contractByteCode));
+            .setContents(contractByteCode), client);
 
         // Fetch the receipt for transaction that created the file
         // The file ID is located on the transaction receipt
@@ -550,17 +561,19 @@ describe('RPC Server Integration Tests', async function () {
             .setGas(75000)
             .setInitialBalance(100)
             .setBytecodeFileId(fileId)
-            .setAdminKey(client.operatorPublicKey));
+            .setAdminKey(client.operatorPublicKey), client);
 
         // Fetch the receipt for the transaction that created the contract
 
         // The conract ID is located on the transaction receipt
-        contractId = contractReceipt.contractId;
+        const contractId = contractReceipt.contractId;
 
         logger.info(`new contract ID: ${contractId.toString()}`);
+
+        return contractId;
     };
 
-    const executeContractCall = async () => {
+    const executeContractCall = async (client: Client) => {
         // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
         logger.info(`Execute contracts ${contractId}'s createChild method`);
         const contractExecTransactionResponse =
@@ -571,7 +584,7 @@ describe('RPC Server Integration Tests', async function () {
                     "createChild",
                     new ContractFunctionParameters()
                         .addUint256(1000)
-                ));
+                ), client);
 
         const resp = await getRecordResponseDetails(contractExecTransactionResponse);
         contractExecuteTimestamp = resp.executedTimestamp;
@@ -588,7 +601,7 @@ describe('RPC Server Integration Tests', async function () {
         }
     };
 
-    const executeTransaction = async (transaction: Transaction) => {
+    const executeTransaction = async (transaction: Transaction, client: Client) => {
         try {
             logger.info(`Execute ${transaction.constructor.name} transaction`);
             const resp = await transaction.execute(client);
@@ -600,10 +613,10 @@ describe('RPC Server Integration Tests', async function () {
         }
     };
 
-    const executeAndGetTransactionReceipt = async (transaction: Transaction) => {
+    const executeAndGetTransactionReceipt = async (transaction: Transaction, client: Client) => {
         let resp;
         try {
-            resp = await executeTransaction(transaction);
+            resp = await executeTransaction(transaction, client);
             return resp.getReceipt(client);
         }
         catch (e) {
