@@ -51,7 +51,8 @@ export class Precheck {
     );
     const accountInfo = await this.mirrorNodeClient.getAccount(recoveredAddress);
 
-    if (accountInfo && accountInfo['ethereum_nonce'] > tx.nonce) {
+    // @ts-ignore
+    if (accountInfo && accountInfo.ethereum_nonce > tx.nonce) {
       throw predefined.NONCE_TOO_LOW;
     }
   }
