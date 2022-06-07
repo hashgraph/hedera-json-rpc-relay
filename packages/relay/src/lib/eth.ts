@@ -27,6 +27,8 @@ import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
+import * as ethers from 'ethers';
+import { Precheck } from './precheck';
 
 const _ = require('lodash');
 const cache = require('js-cache');
@@ -79,6 +81,12 @@ export class EthImpl implements Eth {
   private readonly logger: Logger;
 
   /**
+   * The precheck class used for checking the fields like nonce before the tx execution.
+   * @private
+   */
+  private readonly precheck: Precheck;
+
+  /**
    * The ID of the chain, as a hex string, as it would be returned in a JSON-RPC call.
    * @private
    */
@@ -104,6 +112,7 @@ export class EthImpl implements Eth {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
+    this.precheck = new Precheck(mirrorNodeClient);
   }
 
   /**
@@ -147,7 +156,7 @@ export class EthImpl implements Eth {
     if (networkFees && Array.isArray(networkFees.fees)) {
       const txFee = networkFees.fees.find(({ transaction_type }) => transaction_type === EthImpl.ethTxType);
       if (txFee && txFee.gas) {
-        // convert tinyBars into weiBars 
+        // convert tinyBars into weiBars
         const weibars = Hbar
           .fromTinybars(txFee.gas)
           .toTinybars()
@@ -515,6 +524,7 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string): Promise<string> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
+    await this.precheck.nonce(transaction);
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 

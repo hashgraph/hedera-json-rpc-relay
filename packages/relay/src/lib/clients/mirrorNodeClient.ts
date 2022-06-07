@@ -142,6 +142,10 @@ export class MirrorNodeClient {
         return this.request(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?order=desc&limit=1`, [400]);
     }
 
+    public async getAccount(idOrAliasOrEvmAddress: string): Promise<object> {
+        return this.request(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}`, [400, 404]);
+    }
+
     public async getBlock(hashOrBlockNumber: string | number) {
         return this.request(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`, [400]);
     }
