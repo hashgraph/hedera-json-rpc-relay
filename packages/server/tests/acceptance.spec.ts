@@ -54,9 +54,6 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const useLocalNode = process.env.LOCAL_NODE || 'true';
 
 // const refs
-const legacyTransactionHex = 'f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792';
-const eip155TransactionHex = 'f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83';
-const londonTransactionHex = '02f902e082012a80a00000000000000000000000000000000000000000000000000000000000004e20a0000000000000000000000000000000000000000000000000000000746a528800830f42408080b9024d608060405261023a806100136000396000f3fe60806040526004361061003f5760003560e01c806312065fe01461008f5780633ccfd60b146100ba5780636f64234e146100d1578063b6b55f251461012c575b3373ffffffffffffffffffffffffffffffffffffffff167ff1b03f708b9c39f453fe3f0cef84164c7d6f7df836df0796e1e9c2bce6ee397e346040518082815260200191505060405180910390a2005b34801561009b57600080fd5b506100a461015a565b6040518082815260200191505060405180910390f35b3480156100c657600080fd5b506100cf610162565b005b3480156100dd57600080fd5b5061012a600480360360408110156100f457600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291905050506101ab565b005b6101586004803603602081101561014257600080fd5b81019080803590602001909291905050506101f6565b005b600047905090565b3373ffffffffffffffffffffffffffffffffffffffff166108fc479081150290604051600060405180830381858888f193505050501580156101a8573d6000803e3d6000fd5b50565b8173ffffffffffffffffffffffffffffffffffffffff166108fc829081150290604051600060405180830381858888f193505050501580156101f1573d6000803e3d6000fd5b505050565b80341461020257600080fd5b5056fea265627a7a72315820f8f84fc31a845064b5781e908316f3c591157962deabb0fd424ed54f256400f964736f6c63430005110032c001a01f7e8e436e6035ef7e5cd1387e2ad679e74d6a78a2736efe3dee72e531e28505a042b40a9cf56aad4530a5beaa8623f1ac3554d59ac1e927c672287eb45bfe7b8d';
 const nonExistingAddress = '0x5555555555555555555555555555555555555555';
 
 // cached entities
@@ -375,17 +372,7 @@ describe('RPC Server Integration Tests', async function () {
         expect(res.data.result).to.be.equal(false);
     });
 
-    it('should execute eth_sendRawTransaction legacy', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', ['0x' + legacyTransactionHex]);
-        expect(res.data.result).to.be.equal('0x9ffbd69c44cf643ed8d1e756b505e545e3b5dd3a6b5ef9da1d8eca6679706594');
-    });
-
-    it('should execute "eth_sendRawTransaction" london', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', ['0x' + londonTransactionHex]);
-        expect(res.data.result).to.be.equal('0xcdbbfb6400aab319f97d32c38e285f0d0399c2b48b683f04878b5f07eb0d50e3');
-    });
-
-    it('should execute "eth_sendRawTransaction" for simple transactions', async function () {
+    it('should execute "eth_sendRawTransaction" for legacy transactions', async function () {
         const signedTx = await utils.signRawTransaction({
             to: mirrorContract.evm_address,
             value: 1,
@@ -396,6 +383,22 @@ describe('RPC Server Integration Tests', async function () {
 
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
         expect(res.data.result).to.be.equal('0x93c4b87f7fe3d6071a9c58acf5b64ec976c60ca2017f21fac42f445472885727');
+    });
+
+    it('should execute "eth_sendRawTransaction" for London transactions', async function () {
+        const signedTx = await utils.signRawTransaction({
+            to: mirrorContract.evm_address,
+            value: 1,
+            chainId: 0x12a,
+            maxPriorityFeePerGas: 720000000000,
+            maxFeePerGas: 720000000000,
+            gasLimit: 3000000,
+            type: 2,
+            nonce: 1
+        }, ethCompPrivateKey3);
+
+        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
+        expect(res.data.result).to.be.equal('0x0a0bf0ecf2875f660ce2ccd3e9168b76ba56691fdee3a3400f91a8cc0ba51b47');
     });
 
     it('should execute "eth_syncing"', async function () {
