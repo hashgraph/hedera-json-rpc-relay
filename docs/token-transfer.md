@@ -93,7 +93,7 @@ Repeat this process for every account you wish to import:
 
 ![Send Asset Settled](images/sendAssetSettled.png)
 
-8. Wait a few seconds for the transaction to confirm
+8. Verify the balance has decreased by the expected amount of the asset previously selected
 
 ![Send Asset Decrease](images/sendAssetDecrease.png)
 
