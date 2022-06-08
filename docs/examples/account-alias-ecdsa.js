@@ -78,14 +78,12 @@ async function main() {
     await response.getReceipt(client);
 
     const balance = await new AccountBalanceQuery()
-        .setNodeAccountIds([response.nodeId])
         .setAccountId(aliasAccountId)
         .execute(client);
 
     console.log(`Balances of the new account: ${balance.toString()}`);
 
     const info = await new AccountInfoQuery()
-        .setNodeAccountIds([response.nodeId])
         .setAccountId(aliasAccountId)
         .execute(client);
 
