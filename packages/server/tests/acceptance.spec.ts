@@ -48,13 +48,39 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const utils = new TestUtils(logger);
+const utils = new TestUtils(logger, 'http://localhost:7546');
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const useLocalNode = process.env.LOCAL_NODE || 'true';
 
 // const refs
+const privateKeyHex1 = 'a3e5428dd97d479b1ee4690ef9ec627896020d79883c38e9c1e9a45087959888';
+const privateKeyHex2 = '93239c5e19d76c0bd5d62d713cd90f0c3af80c9cb467db93fd92f3772c00985f';
+const privateKeyHex3 = '3e389f612c4b27de9c817299d2b3bd0753b671036608a30a90b0c4bea8b97e74';
 const nonExistingAddress = '0x5555555555555555555555555555555555555555';
+
+const defaultLegacyTransactionData = {
+    value: 1,
+    chainId: 0x12a,
+    gasPrice: 720000000000,
+    gasLimit: 3000000
+};
+
+const defaultLondonTransactionData = {
+    value: 1,
+    chainId: 0x12a,
+    maxPriorityFeePerGas: 720000000000,
+    maxFeePerGas: 720000000000,
+    gasLimit: 3000000,
+    type: 2,
+};
+
+const defaultEIP115TransactionData = {
+    value: 1,
+    chainId: 0x12a,
+    gasPrice: 720000000000,
+    gasLimit: 3000000,
+};
 
 // cached entities
 let client: Client;
@@ -102,15 +128,15 @@ describe('RPC Server Integration Tests', async function () {
         // set up mirror node contents
         logger.info('Submit eth account create transactions via crypto transfers');
         // 1. Crypto create with alias - metamask flow
-        const { accountInfo: primaryAccountInfo, privateKey: primaryKey } = await utils.createEthCompatibleAccount(client, 'a3e5428dd97d479b1ee4690ef9ec627896020d79883c38e9c1e9a45087959888');
+        const { accountInfo: primaryAccountInfo, privateKey: primaryKey } = await utils.createEthCompatibleAccount(client, privateKeyHex1);
         ethCompPrivateKey1 = primaryKey;
         ethCompAccountInfo1 = primaryAccountInfo;
 
-        const { accountInfo: secondaryAccountInfo, privateKey: secondaryKey } = await utils.createEthCompatibleAccount(client, '93239c5e19d76c0bd5d62d713cd90f0c3af80c9cb467db93fd92f3772c00985f');
+        const { accountInfo: secondaryAccountInfo, privateKey: secondaryKey } = await utils.createEthCompatibleAccount(client, privateKeyHex2);
         ethCompPrivateKey2 = secondaryKey;
         ethCompAccountInfo2 = secondaryAccountInfo;
 
-        const ethCompatibleAccount3 = await utils.createEthCompatibleAccount(client, '3e389f612c4b27de9c817299d2b3bd0753b671036608a30a90b0c4bea8b97e74');
+        const ethCompatibleAccount3 = await utils.createEthCompatibleAccount(client, privateKeyHex3);
         ethCompPrivateKey3 = ethCompatibleAccount3.privateKey;
         ethCompAccountInfo3 = ethCompatibleAccount3.accountInfo;
 
@@ -374,11 +400,8 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_sendRawTransaction" for legacy transactions', async function () {
         const signedTx = await utils.signRawTransaction({
-            to: mirrorContract.evm_address,
-            value: 1,
-            chainId: 0x12a,
-            gasPrice: 720000000000,
-            gasLimit: 3000000
+            ...defaultLegacyTransactionData,
+            to: mirrorContract.evm_address
         }, ethCompPrivateKey3);
 
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
@@ -388,11 +411,8 @@ describe('RPC Server Integration Tests', async function () {
     it('should fail "eth_sendRawTransaction" for eip155 transactions', async function () {
         // INVALID_ETHEREUM_TX
         const signedTx = await utils.signRawTransaction({
+            ...defaultEIP115TransactionData,
             to: mirrorContract.evm_address,
-            value: 1,
-            chainId: 0x12a,
-            gasPrice: 720000000000,
-            gasLimit: 3000000,
             nonce: 1,
             type: 1
         }, ethCompPrivateKey3);
@@ -404,13 +424,8 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_sendRawTransaction" for London transactions', async function () {
         const signedTx = await utils.signRawTransaction({
+            ...defaultLondonTransactionData,
             to: mirrorContract.evm_address,
-            value: 1,
-            chainId: 0x12a,
-            maxPriorityFeePerGas: 720000000000,
-            maxFeePerGas: 720000000000,
-            gasLimit: 3000000,
-            type: 2,
             nonce: 1
         }, ethCompPrivateKey3);
 

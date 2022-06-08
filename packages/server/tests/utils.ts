@@ -49,9 +49,9 @@ export default class TestUtils {
     private readonly logger: Logger;
     private readonly JsonRpcProvider: JsonRpcProvider;
 
-    constructor(logger: Logger) {
+    constructor(logger: Logger, jsonRpcProviderUrl: string) {
         this.logger = logger;
-        this.JsonRpcProvider = new ethers.providers.JsonRpcProvider('http://localhost:7546');
+        this.JsonRpcProvider = new ethers.providers.JsonRpcProvider(jsonRpcProviderUrl);
     }
 
     numberTo0x = (input: number): string => {
