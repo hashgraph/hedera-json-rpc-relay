@@ -385,6 +385,23 @@ describe('RPC Server Integration Tests', async function () {
         expect(res.data.result).to.be.equal('0x93c4b87f7fe3d6071a9c58acf5b64ec976c60ca2017f21fac42f445472885727');
     });
 
+    it('should fail "eth_sendRawTransaction" for eip155 transactions', async function () {
+        // INVALID_ETHEREUM_TX
+        const signedTx = await utils.signRawTransaction({
+            to: mirrorContract.evm_address,
+            value: 1,
+            chainId: 0x12a,
+            gasPrice: 720000000000,
+            gasLimit: 3000000,
+            nonce: 1,
+            type: 1
+        }, ethCompPrivateKey3);
+
+        const res = await utils.callFailingRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
+        expect(res.data.error.message).to.be.equal('Internal error');
+        expect(res.data.error.code).to.be.equal(-32603);
+    });
+
     it('should execute "eth_sendRawTransaction" for London transactions', async function () {
         const signedTx = await utils.signRawTransaction({
             to: mirrorContract.evm_address,

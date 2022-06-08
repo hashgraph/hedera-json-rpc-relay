@@ -43,12 +43,15 @@ import {Logger} from "pino";
 import {AxiosInstance} from "axios";
 import {ethers} from "ethers";
 import type { TransactionRequest } from "@ethersproject/abstract-provider";
+import type { JsonRpcProvider } from "@ethersproject/providers";
 
 export default class TestUtils {
     private readonly logger: Logger;
+    private readonly JsonRpcProvider: JsonRpcProvider;
 
     constructor(logger: Logger) {
         this.logger = logger;
+        this.JsonRpcProvider = new ethers.providers.JsonRpcProvider('http://localhost:7546');
     }
 
     numberTo0x = (input: number): string => {
@@ -133,6 +136,16 @@ export default class TestUtils {
         this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.result)}`);
 
         expect(resp.data).to.have.property('result');
+        expect(resp.data.id).to.be.equal('2');
+
+        return resp;
+    };
+
+    callFailingRelayMethod = async (client: any, methodName: string, params: any[]) => {
+        const resp = await this.callRelay(client, methodName, params);
+        this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.error)}`);
+
+        expect(resp.data).to.have.property('error');
         expect(resp.data.id).to.be.equal('2');
 
         return resp;
@@ -322,8 +335,7 @@ export default class TestUtils {
     };
 
     signRawTransaction = async (tx: TransactionRequest, privateKey) => {
-        const provider = new ethers.providers.JsonRpcProvider('http://localhost:7546');
-        const wallet = new ethers.Wallet(privateKey.toStringRaw(), provider);
+        const wallet = new ethers.Wallet(privateKey.toStringRaw(), this.JsonRpcProvider);
         return await wallet.signTransaction(tx);
     };
 }
