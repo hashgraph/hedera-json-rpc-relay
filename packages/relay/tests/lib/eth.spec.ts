@@ -68,7 +68,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   // mock axios
   const instance = axios.create({
-    baseURL: 'https://localhost:5551/api/v1',
+    baseURL: process.env.MIRROR_NODE_URL,
     responseType: 'json' as const,
     headers: {
       'Content-Type': 'application/json'
@@ -943,7 +943,7 @@ describe('Eth', async function () {
   this.timeout(10000);
 
   const instance = axios.create({
-    baseURL: 'https://localhost:5551/api/v1',
+    baseURL: process.env.MIRROR_NODE_URL,
     responseType: 'json' as const,
     headers: {
       'Content-Type': 'application/json'

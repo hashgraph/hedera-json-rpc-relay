@@ -101,10 +101,10 @@ export class MirrorNodeClient {
             }
 
             if (!baseUrl.match(/\/$/)) {
-                baseUrl = `${baseUrl}/`;
+                baseUrl = `${baseUrl}`;
             }
 
-            baseUrl = `${baseUrl}api/v1/`;
+            baseUrl = `${baseUrl}`;
 
             this.baseUrl = baseUrl;
             this.client = axiosClient ? axiosClient : this.createAxiosClient(baseUrl);

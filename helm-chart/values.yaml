@@ -92,4 +92,6 @@ config:
   CHAIN_ID=
   MIRROR_NODE_URL=
   LOG_LEVEL=
+  SERVER_PATH=
+  SERVER_PORT=
   

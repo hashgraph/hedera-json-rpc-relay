@@ -18,10 +18,20 @@
  *
  */
 
+import dotenv from 'dotenv';
+import findConfig from 'find-config';
+
 import app from './server';
 
+dotenv.config({ path: findConfig('.env') || '' });
+const jrpcPath: string = process.env.SERVER_PATH || 'v1';
+const jrpcPort: string = process.env.SERVER_PORT || '7546';
+
 async function main() {
-  await app.listen({ port: 7546 });
+  app.listen({
+    path: jrpcPath,
+    port: Number(jrpcPort)
+  });
 }
 
 main();

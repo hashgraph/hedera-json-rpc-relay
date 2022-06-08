@@ -65,7 +65,7 @@ const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-const useLocalNode = process.env.LOCAL_NODE || 'true';
+const useLocalNode = process.env.E2E_LOCAL_NODE || 'true';
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
 // const refs
@@ -133,9 +133,9 @@ describe('RPC Server Integration Tests', async function () {
         await sendFileClosingCryptoTransfer(primaryAccountInfo.accountId);
         await sendFileClosingCryptoTransfer(secondaryAccountInfo.accountId);
 
-        logger.info(`Setting up Mirror Node Client for ${process.env['MIRROR_NODE_URL']} env`);
+        logger.info(`Setting up Mirror Node Client for ${process.env.MIRROR_NODE_URL} env`);
         this.mirrorNodeClient = Axios.create({
-            baseURL: `${process.env['MIRROR_NODE_URL']}/api/v1`,
+            baseURL: `${process.env.MIRROR_NODE_URL}`,
             responseType: 'json' as const,
             headers: {
                 'Content-Type': 'application/json'
@@ -146,15 +146,16 @@ describe('RPC Server Integration Tests', async function () {
 
         // allow retries given mirror node waits for consensus, record stream serialization, export and import before parsing and exposing
         axiosRetry(this.mirrorNodeClient, {
-            retries: 5,
+            retries: Number(process.env.E2E_MIRROR_RETRY_COUNT),
             retryDelay: (retryCount) => {
                 logger.info(`Retry delay ${retryCount * 1000} s`);
                 return retryCount * 1000;
             },
             retryCondition: (error) => {
                 // if retry condition is not specified, by default idempotent requests are retried
-                return error.response.status === 400 || error.response.status === 404;
-            }
+                return error.response && (error.response.status === 400 || error.response.status === 404);
+            },
+            shouldResetTimeout: true
         });
 
         // get contract details
@@ -171,11 +172,19 @@ describe('RPC Server Integration Tests', async function () {
         const mirrorSecondaryAccountResponse = await callMirrorNode(this.mirrorNodeClient, `accounts?account.id=${secondaryAccountInfo.accountId}`);
         mirrorSecondaryAccount = mirrorSecondaryAccountResponse.data.accounts[0];
 
-        // start relay
-        logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
-        this.testServer = app.listen({ port: process.env.SERVER_PORT });
+        const jrpcPath: string = process.env.SERVER_PATH || 'v1';
+        const jrpcPort: string = process.env.SERVER_PORT || '7546';
+        if (process.env.E2E_LOCAL_RELAY === 'true') {
+            logger.info(`Start relay at http://localhost:${jrpcPort}/${jrpcPath}`);
+            this.testServer = app.listen({
+                path: jrpcPath,
+                port: jrpcPort
+            });
+        }
+
+        logger.info(`Relay client with query baseUrl: ${process.env.E2E_RELAY_HOST}:${jrpcPort}/${jrpcPath}`);
         this.relayClient = Axios.create({
-            baseURL: 'http://localhost:7546',
+            baseURL: `${process.env.E2E_RELAY_HOST}:${jrpcPort}/${jrpcPath}`,
             responseType: 'json' as const,
             headers: {
                 'Content-Type': 'application/json'
@@ -384,7 +393,7 @@ describe('RPC Server Integration Tests', async function () {
         opPrivateKey = PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN);
         const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
 
-        if (hederaNetwork.toLowerCase() in supportedEnvs) {
+        if (supportedEnvs.includes(hederaNetwork.toLowerCase())) {
             client = Client.forName(hederaNetwork);
         } else {
             client = Client.forNetwork(JSON.parse(hederaNetwork));

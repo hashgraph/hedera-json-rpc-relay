@@ -34,7 +34,7 @@ describe('MirrorNodeClient', async function () {
 
   // mock axios
   const instance = axios.create({
-    baseURL: 'https://localhost:5551/api/v1',
+    baseURL: process.env.MIRROR_NODE_URL,
     responseType: 'json' as const,
     headers: {
       'Content-Type': 'application/json'
@@ -52,7 +52,7 @@ describe('MirrorNodeClient', async function () {
   it('`baseUrl` is exposed and correct', async () => {
     const domain = process.env.MIRROR_NODE_URL.replace(/^https?:\/\//, "");
     const prodMirrorNodeInstance = new MirrorNodeClient(domain, logger.child({ name: `mirror-node` }));
-    expect(prodMirrorNodeInstance.baseUrl).to.eq(`https://${domain}/api/v1/`);
+    expect(prodMirrorNodeInstance.baseUrl).to.eq(`https://${domain}`);
   });
 
   it('`getQueryParams` general', async () => {

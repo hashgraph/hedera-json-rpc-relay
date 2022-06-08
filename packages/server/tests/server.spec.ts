@@ -25,19 +25,24 @@ import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
 import app from '../dist/server.js';
 
-describe('RPC Server', async function() {
+describe('RPC Server', async function () {
   this.timeout(60 * 1000);
 
-  before(function() {
-    this.testServer = app.listen(process.env.E2E_SERVER_PORT);
-    this.testClient = BaseTest.createTestClient();
+  const jrpcPath: string = process.env.SERVER_PATH || 'v1';
+  const jrpcPort: string = process.env.SERVER_PORT || '7546';
+  before(function () {
+    this.testServer = app.listen({
+      path: jrpcPath,
+      port: jrpcPort
+    });
+    this.testClient = BaseTest.createTestClient(jrpcPort, jrpcPath);
   });
 
-  after(function() {
+  after(function () {
     this.testServer.close();
   });
 
-  it('should execute "eth_chainId"', async function() {
+  it('should execute "eth_chainId"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -49,7 +54,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
   });
 
-  it('should execute "eth_accounts"', async function() {
+  it('should execute "eth_accounts"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -62,7 +67,7 @@ describe('RPC Server', async function() {
     expect(res.data.result.length).to.be.equal(0);
   });
 
-  it('should execute "web3_clientVersion"', async function() {
+  it('should execute "web3_clientVersion"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -74,7 +79,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('relay/' + process.env.npm_package_version);
   });
 
-  it('should execute "eth_getTransactionByHash  missing transaction"', async function() {
+  it('should execute "eth_getTransactionByHash  missing transaction"', async function () {
     try {
       await this.testClient.post('/', {
         'id': '2',
@@ -88,7 +93,7 @@ describe('RPC Server', async function() {
   });
 
 
-  it('should execute "eth_getUncleByBlockHashAndIndex"', async function() {
+  it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -100,7 +105,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal(null);
   });
 
-  it('should execute "eth_getUncleByBlockNumberAndIndex"', async function() {
+  it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -112,7 +117,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal(null);
   });
 
-  it('should execute "eth_getUncleCountByBlockHash"', async function() {
+  it('should execute "eth_getUncleCountByBlockHash"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -124,7 +129,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('0x0');
   });
 
-  it('should execute "eth_getUncleCountByBlockNumber"', async function() {
+  it('should execute "eth_getUncleCountByBlockNumber"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -136,7 +141,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('0x0');
   });
 
-  it('should execute "eth_hashrate"', async function() {
+  it('should execute "eth_hashrate"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -148,7 +153,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('0x0');
   });
 
-  it('should execute "eth_mining"', async function() {
+  it('should execute "eth_mining"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -160,7 +165,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal(false);
   });
 
-  it('should execute "eth_submitWork"', async function() {
+  it('should execute "eth_submitWork"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -172,7 +177,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal(false);
   });
 
-  it('should execute "eth_syncing"', async function() {
+  it('should execute "eth_syncing"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -184,7 +189,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal(false);
   });
 
-  it('should execute "net_listening"', async function() {
+  it('should execute "net_listening"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -196,7 +201,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('false');
   });
 
-  it('should execute "web3_sha"', async function() {
+  it('should execute "web3_sha"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -207,7 +212,7 @@ describe('RPC Server', async function() {
     BaseTest.methodNotFoundCheck(res);
   });
 
-  it('should execute "net_peerCount"', async function() {
+  it('should execute "net_peerCount"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -218,7 +223,7 @@ describe('RPC Server', async function() {
     BaseTest.methodNotFoundCheck(res);
   });
 
-  it('should execute "eth_submitHashrate"', async function() {
+  it('should execute "eth_submitHashrate"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -229,7 +234,7 @@ describe('RPC Server', async function() {
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
 
-  it('should execute "eth_signTypedData"', async function() {
+  it('should execute "eth_signTypedData"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -240,7 +245,7 @@ describe('RPC Server', async function() {
     BaseTest.methodNotFoundCheck(res);
   });
 
-  it('should execute "eth_signTransaction"', async function() {
+  it('should execute "eth_signTransaction"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -251,7 +256,7 @@ describe('RPC Server', async function() {
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
 
-  it('should execute "eth_sign"', async function() {
+  it('should execute "eth_sign"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -262,7 +267,7 @@ describe('RPC Server', async function() {
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
 
-  it('should execute "eth_sendTransaction"', async function() {
+  it('should execute "eth_sendTransaction"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -273,7 +278,7 @@ describe('RPC Server', async function() {
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
 
-  it('should execute "eth_protocolVersion"', async function() {
+  it('should execute "eth_protocolVersion"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -284,7 +289,7 @@ describe('RPC Server', async function() {
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
 
-  it('should execute "eth_getProof"', async function() {
+  it('should execute "eth_getProof"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -295,7 +300,7 @@ describe('RPC Server', async function() {
     BaseTest.methodNotFoundCheck(res);
   });
 
-  it('should execute "eth_coinbase"', async function() {
+  it('should execute "eth_coinbase"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -306,7 +311,7 @@ describe('RPC Server', async function() {
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
 
-  it('should execute "eth_getWork"', async function() {
+  it('should execute "eth_getWork"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -317,7 +322,7 @@ describe('RPC Server', async function() {
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
 
-  it('should execute "eth_getLogs"', async function() {
+  it('should execute "eth_getLogs"', async function () {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
@@ -342,9 +347,9 @@ describe('RPC Server', async function() {
 });
 
 class BaseTest {
-  static createTestClient() {
+  static createTestClient(port, path) {
     return Axios.create({
-      baseURL: 'http://localhost:' + process.env.E2E_SERVER_PORT,
+      baseURL: `http://localhost:${port}/${path}`,
       responseType: 'json' as const,
       headers: {
         'Content-Type': 'application/json'
