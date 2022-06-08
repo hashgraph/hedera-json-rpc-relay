@@ -39,6 +39,7 @@ import {
     TransferTransaction,
 } from "@hashgraph/sdk";
 import Axios, { AxiosInstance } from 'axios';
+import axiosRetry from 'axios-retry';
 import { expect } from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -65,6 +66,7 @@ const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const useLocalNode = process.env.LOCAL_NODE || 'true';
+const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
 // const refs
 const legacyTransactionHex = 'f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792';
@@ -131,8 +133,9 @@ describe('RPC Server Integration Tests', async function () {
         await sendFileClosingCryptoTransfer(primaryAccountInfo.accountId);
         await sendFileClosingCryptoTransfer(secondaryAccountInfo.accountId);
 
-        const mirrorNodeClient = Axios.create({
-            baseURL: 'http://localhost:5551/api/v1',
+        logger.info(`Setting up Mirror Node Client for ${process.env['MIRROR_NODE_URL']} env`);
+        this.mirrorNodeClient = Axios.create({
+            baseURL: `${process.env['MIRROR_NODE_URL']}/api/v1`,
             responseType: 'json' as const,
             headers: {
                 'Content-Type': 'application/json'
@@ -141,19 +144,31 @@ describe('RPC Server Integration Tests', async function () {
             timeout: 5 * 1000
         });
 
+        // allow retries given mirror node waits for consensus, record stream serialization, export and import before parsing and exposing
+        axiosRetry(this.mirrorNodeClient, {
+            retries: 5,
+            retryDelay: (retryCount) => {
+                logger.info(`Retry delay ${retryCount * 1000} s`);
+                return retryCount * 1000;
+            },
+            retryCondition: (error) => {
+                // if retry condition is not specified, by default idempotent requests are retried
+                return error.response.status === 400 || error.response.status === 404;
+            }
+        });
 
         // get contract details
-        const mirrorContractDetailsResponse = await callMirrorNode(mirrorNodeClient, `/contracts/${contractId}/results/${contractExecuteTimestamp}`);
+        const mirrorContractDetailsResponse = await callMirrorNode(this.mirrorNodeClient, `/contracts/${contractId}/results/${contractExecuteTimestamp}`);
         mirrorContractDetails = mirrorContractDetailsResponse.data;
 
         // get block
-        const mirrorBlockResponse = await callMirrorNode(mirrorNodeClient, `/blocks?block.number=${mirrorContractDetails.block_number}`);
+        const mirrorBlockResponse = await callMirrorNode(this.mirrorNodeClient, `/blocks?block.number=${mirrorContractDetails.block_number}`);
         mirrorBlock = mirrorBlockResponse.data.blocks[0];
 
-        const mirrorPrimaryAccountResponse = await callMirrorNode(mirrorNodeClient, `accounts?account.id=${primaryAccountInfo.accountId}`);
+        const mirrorPrimaryAccountResponse = await callMirrorNode(this.mirrorNodeClient, `accounts?account.id=${primaryAccountInfo.accountId}`);
         mirrorPrimaryAccount = mirrorPrimaryAccountResponse.data.accounts[0];
 
-        const mirrorSecondaryAccountResponse = await callMirrorNode(mirrorNodeClient, `accounts?account.id=${secondaryAccountInfo.accountId}`);
+        const mirrorSecondaryAccountResponse = await callMirrorNode(this.mirrorNodeClient, `accounts?account.id=${secondaryAccountInfo.accountId}`);
         mirrorSecondaryAccount = mirrorSecondaryAccountResponse.data.accounts[0];
 
         // start relay
@@ -367,11 +382,15 @@ describe('RPC Server Integration Tests', async function () {
 
     const setupClient = () => {
         opPrivateKey = PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN);
-        client = Client
-            .forNetwork({
-                '127.0.0.1:50211': '0.0.3'
-            })
-            .setOperator(AccountId.fromString(process.env.OPERATOR_ID_MAIN), opPrivateKey);
+        const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
+
+        if (hederaNetwork.toLowerCase() in supportedEnvs) {
+            client = Client.forName(hederaNetwork);
+        } else {
+            client = Client.forNetwork(JSON.parse(hederaNetwork));
+        }
+
+        client.setOperator(AccountId.fromString(process.env.OPERATOR_ID_MAIN), opPrivateKey);
     };
 
     const createEthCompatibleAccount = async () => {
@@ -541,7 +560,7 @@ describe('RPC Server Integration Tests', async function () {
             return resp.getReceipt(client);
         }
         catch (e) {
-            logger.error(e, 
+            logger.error(e,
                 `Error retrieving receipt for ${resp === undefined ? transaction.constructor.name : resp.transactionId.toString()} transaction`);
         }
     };
