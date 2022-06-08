@@ -60,5 +60,15 @@ export const predefined = {
     name: 'Parse error',
     code: -32700,
     message: 'Unable to parse JSON'
+  }),
+  'NONCE_TOO_LOW': new JsonRpcError({
+    name: 'Nonce too low',
+    code: 32001,
+    message: 'Nonce too low'
+  }),
+  'INCORRECT_NONCE': new JsonRpcError({
+    name: 'Incorrect nonce',
+    code: -32006,
+    message: 'Incorrect nonce'
   })
 };

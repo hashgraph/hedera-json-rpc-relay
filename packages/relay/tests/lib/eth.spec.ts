@@ -32,7 +32,8 @@ import {expectUnsupportedMethod} from '../helpers';
 const cache = require('js-cache');
 
 import pino from 'pino';
-import { Transaction } from '../../src/lib/model';
+import { Block, Transaction } from '../../src/lib/model';
+import constants from '../../src/lib/constants';
 const logger = pino();
 
 const Relay = new RelayImpl(logger);
@@ -46,6 +47,20 @@ const validateHash = (hash: string, len?: number) => {
   }
 
   return !!hash.match(regex);
+};
+
+const verifyBlockConstants = (block: Block) => {
+  expect(block.baseFeePerGas).equal(EthImpl.zeroHex);
+  expect(block.difficulty).equal(EthImpl.zeroHex);
+  expect(block.extraData).equal(EthImpl.emptyHex);
+  expect(block.miner).equal(EthImpl.zeroAddressHex);
+  expect(block.mixHash).equal(EthImpl.emptyArrayHex);
+  expect(block.nonce).equal(EthImpl.zeroHex8Byte);
+  expect(block.receiptsRoot).equal(EthImpl.emptyArrayHex);
+  expect(block.sha3Uncles).equal(EthImpl.emptyArrayHex);
+  expect(block.stateRoot).equal(EthImpl.emptyArrayHex);
+  expect(block.totalDifficulty).equal(EthImpl.zeroHex);
+  expect(block.uncles).to.deep.equal([]);
 };
 
 describe('Eth calls using MirrorNode', async function () {
@@ -283,6 +298,24 @@ describe('Eth calls using MirrorNode', async function () {
     ]
   };
 
+  const defaultNetworkFees = {
+    'fees': [
+      {
+        'gas': 77,
+        'transaction_type': 'ContractCall'
+      },
+      {
+        'gas': 771,
+        'transaction_type': 'ContractCreate'
+      },
+      {
+        'gas': 57,
+        'transaction_type': 'EthereumTransaction'
+      }
+    ],
+    'timestamp': '1653644164.591111113'
+  };
+
   this.afterEach(() => {
     mock.resetHandlers();
   });
@@ -334,17 +367,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect((result.transactions[1] as string)).equal(contractHash1);
 
     // verify expected constants
-    expect(result.baseFeePerGas).equal(EthImpl.zeroHex);
-    expect(result.difficulty).equal(EthImpl.zeroHex);
-    expect(result.extraData).equal(EthImpl.emptyHex);
-    expect(result.miner).equal(EthImpl.zeroAddressHex);
-    expect(result.mixHash).equal(EthImpl.emptyArrayHex);
-    expect(result.nonce).equal(EthImpl.zeroHex);
-    expect(result.receiptsRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(result.stateRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.totalDifficulty).equal(EthImpl.zeroHex);
-    expect(result.uncles).to.deep.equal([]);
+    verifyBlockConstants(result);
   });
 
   it('eth_getBlockByNumber with match and details', async function () {
@@ -369,17 +392,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect((result.transactions[1] as Transaction).hash).equal(contractHash1);
 
     // verify expected constants
-    expect(result.baseFeePerGas).equal(EthImpl.zeroHex);
-    expect(result.difficulty).equal(EthImpl.zeroHex);
-    expect(result.extraData).equal(EthImpl.emptyHex);
-    expect(result.miner).equal(EthImpl.zeroAddressHex);
-    expect(result.mixHash).equal(EthImpl.emptyArrayHex);
-    expect(result.nonce).equal(EthImpl.zeroHex);
-    expect(result.receiptsRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(result.stateRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.totalDifficulty).equal(EthImpl.zeroHex);
-    expect(result.uncles).to.deep.equal([]);
+    verifyBlockConstants(result);
   });
 
   it('eth_getBlockByNumber with no match', async function () {
@@ -465,17 +478,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect((result.transactions[1] as string)).equal(contractHash1);
 
     // verify expected constants
-    expect(result.baseFeePerGas).equal(EthImpl.zeroHex);
-    expect(result.difficulty).equal(EthImpl.zeroHex);
-    expect(result.extraData).equal(EthImpl.emptyHex);
-    expect(result.miner).equal(EthImpl.zeroAddressHex);
-    expect(result.mixHash).equal(EthImpl.emptyArrayHex);
-    expect(result.nonce).equal(EthImpl.zeroHex);
-    expect(result.receiptsRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(result.stateRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.totalDifficulty).equal(EthImpl.zeroHex);
-    expect(result.uncles).to.deep.equal([]);
+    verifyBlockConstants(result);
   });
 
   it('eth_getBlockByHash with match and details', async function () {
@@ -501,17 +504,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect((result.transactions[1] as Transaction).hash).equal(contractHash1);
 
     // verify expected constants
-    expect(result.baseFeePerGas).equal(EthImpl.zeroHex);
-    expect(result.difficulty).equal(EthImpl.zeroHex);
-    expect(result.extraData).equal(EthImpl.emptyHex);
-    expect(result.miner).equal(EthImpl.zeroAddressHex);
-    expect(result.mixHash).equal(EthImpl.emptyArrayHex);
-    expect(result.nonce).equal(EthImpl.zeroHex);
-    expect(result.receiptsRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(result.stateRoot).equal(EthImpl.emptyArrayHex);
-    expect(result.totalDifficulty).equal(EthImpl.zeroHex);
-    expect(result.uncles).to.deep.equal([]);
+    verifyBlockConstants(result);
   });
 
   it('eth_getBlockByHash with no match', async function () {
@@ -889,6 +882,60 @@ describe('Eth calls using MirrorNode', async function () {
       expectLogData1(result[0]);
       expectLogData2(result[1]);
     });
+  });
+
+  it('eth_gasPrice', async function() {
+    mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
+
+    const weiBars = await ethImpl.gasPrice();
+    const expectedWeiBars = defaultNetworkFees.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF;
+    expect(weiBars).to.equal(EthImpl.numberTo0x(expectedWeiBars));
+  });
+
+  it('eth_gasPrice with cached value', async function() {
+    mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
+
+    const firstGasResult = await ethImpl.gasPrice();
+
+    const modifiedNetworkFees = Object.assign({}, defaultNetworkFees);
+    modifiedNetworkFees.fees[2].gas = defaultNetworkFees.fees[2].gas * 100;
+
+    mock.onGet(`network/fees`).reply(200, modifiedNetworkFees);
+
+    const secondGasResult = await ethImpl.gasPrice();
+
+    expect(firstGasResult).to.equal(secondGasResult);
+  });
+
+  it('eth_gasPrice with no EthereumTransaction gas returned', async function() {
+    const partialNetworkFees = Object.assign({}, defaultNetworkFees);
+    partialNetworkFees.fees.splice(2);
+
+    mock.onGet(`network/fees`).reply(200, partialNetworkFees);
+
+    try {
+      await ethImpl.gasPrice();
+    } catch (error) {
+      expect(error.message).to.equal('Error encountered estimating the gas price');
+    }
+  });
+
+  it('eth_gasPrice with no network fees records found', async function() {
+    mock.onGet(`network/fees`).reply(404, {
+      "_status": {
+        "messages": [
+          {
+            "message": "Not found"
+          }
+        ]
+      }
+    });
+
+    try {
+      await ethImpl.gasPrice();
+    } catch (error) {
+      expect(error.message).to.equal('Error encountered estimating the gas price');
+    }
   });
 });
 

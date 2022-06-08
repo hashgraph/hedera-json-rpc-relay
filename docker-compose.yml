@@ -7,7 +7,6 @@ services:
     ports:
       - 7546:7546
     pull_policy: always    
-    restart: unless-stopped
     tty: true
     volumes:
       - ./.env.sample:/home/node/app/.env.sample
