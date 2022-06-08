@@ -41,7 +41,7 @@ async function main() {
      * account ID.  This public key is an account's aliasKey: a public key that aliases (or will eventually alias)
      * to a Hedera account.
      *
-     * An AccountId takes one of two forms: a normal AccountId with a null aliasKey member takes the form 0.0.123,
+     * An AccountId take on multiple forms. 2 notable mentions are 1.: a normal AccountId with a null aliasKey member takes the form 0.0.123,
      * while an account ID with a non-null aliasKey member takes the form
      * 0.0.302a300506032b6570032100114e6abc371b82dab5c15ea149f02d34a012087b163516dd70f44acafabf7777
      * Note the prefix of "0.0." indicating the shard and realm.  Also note that the aliasKey is stringified
@@ -89,8 +89,6 @@ async function main() {
         .setAccountId(aliasAccountId)
         .execute(client);
 
-    console.log(`Info about the new account: ${info.toString()}`);
-
     /*
      * Note that once an account exists in the ledger, it is assigned a normal AccountId, which can be retrieved
      * via an AccountInfoQuery.
@@ -100,9 +98,9 @@ async function main() {
      */
 
     console.log(`The normal account ID: ${info.accountId.toString()}`);
-    console.log(`The alias key: ${info.aliasKey.toString()}`);
-    console.log(`The alias raw key: ${info.aliasKey.toStringRaw()}`);
-    console.log(`The raw private key: ${privateKey.toStringRaw()}`);
+    console.log(`The aliased account ID: 0.0.${info.aliasKey.toString()}`);
+    console.log(`The private key (use this in sdk/Hedera native wallets): ${privateKey.toString()}`);
+    console.log(`The raw private key (use this for JSON RPC wallet import): ${privateKey.toStringRaw()}`);
 
     console.log("Example complete!");
     client.close();
