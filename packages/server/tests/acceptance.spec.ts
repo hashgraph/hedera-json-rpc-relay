@@ -72,6 +72,10 @@ let mirrorContract;
 let mirrorContractDetails;
 let mirrorPrimaryAccount;
 let mirrorSecondaryAccount;
+let ethCompPrivateKey1;
+let ethCompAccountInfo1;
+let ethCompPrivateKey2;
+let ethCompAccountInfo2;
 
 describe('RPC Server Integration Tests', async function () {
     this.timeout(180 * 1000);
@@ -100,7 +104,12 @@ describe('RPC Server Integration Tests', async function () {
         logger.info('Submit eth account create transactions via crypto transfers');
         // 1. Crypto create with alias - metamask flow
         const { accountInfo: primaryAccountInfo, privateKey: primaryKey } = await utils.createEthCompatibleAccount(client);
+        ethCompPrivateKey1 = primaryKey;
+        ethCompAccountInfo1 = primaryAccountInfo;
+
         const { accountInfo: secondaryAccountInfo, privateKey: secondaryKey } = await utils.createEthCompatibleAccount(client);
+        ethCompPrivateKey2 = secondaryKey;
+        ethCompAccountInfo2 = secondaryAccountInfo;
 
         logger.info(`Setup Client for AccountOne: ${primaryAccountInfo.accountId.toString()}`);
         accOneClient = utils.setupClient(primaryKey.toString(), primaryAccountInfo.accountId.toString());
@@ -368,6 +377,19 @@ describe('RPC Server Integration Tests', async function () {
     it('should execute "eth_sendRawTransaction" london', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', ['0x' + londonTransactionHex]);
         expect(res.data.result).to.be.equal('0xcdbbfb6400aab319f97d32c38e285f0d0399c2b48b683f04878b5f07eb0d50e3');
+    });
+
+    it('should execute "eth_sendRawTransaction" for simple transactions', async function () {
+        const signedTx = await utils.signRawTransaction({
+            to: mirrorContract.evm_address,
+            value: 1,
+            chainId: 0x12a,
+            gasPrice: 720000000000,
+            gasLimit: 3000000,
+        }, ethCompPrivateKey1);
+
+        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
+        expect(res.data.result).to.be.equal('0xbee448cef2fbe1523fbc9c0740bc23442586242027fa87868e1595b158f08662');
     });
 
     it('should execute "eth_syncing"', async function () {

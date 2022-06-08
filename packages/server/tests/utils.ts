@@ -41,6 +41,8 @@ import {
 } from "@hashgraph/sdk";
 import {Logger} from "pino";
 import {AxiosInstance} from "axios";
+import {ethers} from "ethers";
+import type { TransactionRequest } from "@ethersproject/abstract-provider";
 
 export default class TestUtils {
     private readonly logger: Logger;
@@ -319,4 +321,9 @@ export default class TestUtils {
         return {contractExecuteTimestamp, contractExecutedTransactionId};
     };
 
+    signRawTransaction = async (tx: TransactionRequest, privateKey) => {
+        const provider = new ethers.providers.JsonRpcProvider('http://localhost:7546');
+        const wallet = new ethers.Wallet(privateKey.toStringRaw(), provider);
+        return await wallet.signTransaction(tx);
+    };
 }
