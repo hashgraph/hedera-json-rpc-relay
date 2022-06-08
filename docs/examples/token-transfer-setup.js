@@ -39,7 +39,7 @@ async function main() {
         .setTokenName("demo")
         .setTokenSymbol("D")
         .setDecimals(3)
-        .setInitialSupply(100)
+        .setInitialSupply(100000)
         .setTreasuryAccountId(client.operatorAccountId)
         .setAdminKey(client.operatorPublicKey)
         .setSupplyKey(client.operatorPublicKey)
@@ -55,8 +55,8 @@ async function main() {
         const accountId = await createAccountAndAssociate(tokenId);
         await (
             await new TransferTransaction()
-                .addTokenTransfer(tokenId, client.operatorAccountId, -10)
-                .addTokenTransfer(tokenId, accountId, 10)
+                .addTokenTransfer(tokenId, client.operatorAccountId, -10000)
+                .addTokenTransfer(tokenId, accountId, 10000)
                 .execute(client)
         ).getReceipt(client);
 
@@ -73,7 +73,7 @@ async function main() {
 
     console.log(`Token Details:`);
     console.log(`  Token ID: ${tokenId}`);
-    console.log(`  Ethereum Token Address (use this for token import): ${new AccountId(tokenId).toSolidityAddress()}\n`);
+    console.log(`  Ethereum Token Address (use this for token import): 0x${new AccountId(tokenId).toSolidityAddress()}\n`);
     console.log("Example complete!");
     client.close();
 }
