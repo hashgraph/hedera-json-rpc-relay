@@ -177,8 +177,8 @@ export default class TestUtils {
             .setOperator(AccountId.fromString(id), opPrivateKey);
     };
 
-    createEthCompatibleAccount = async (client: Client) => {
-        const privateKey = PrivateKey.generateECDSA();
+    createEthCompatibleAccount = async (client: Client, privateKeyHex: string) => {
+        const privateKey = PrivateKey.fromBytesECDSA(Buffer.from(privateKeyHex, 'hex'));
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
 

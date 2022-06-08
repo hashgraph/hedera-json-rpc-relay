@@ -76,6 +76,8 @@ let ethCompPrivateKey1;
 let ethCompAccountInfo1;
 let ethCompPrivateKey2;
 let ethCompAccountInfo2;
+let ethCompPrivateKey3;
+let ethCompAccountInfo3;
 
 describe('RPC Server Integration Tests', async function () {
     this.timeout(180 * 1000);
@@ -103,13 +105,17 @@ describe('RPC Server Integration Tests', async function () {
         // set up mirror node contents
         logger.info('Submit eth account create transactions via crypto transfers');
         // 1. Crypto create with alias - metamask flow
-        const { accountInfo: primaryAccountInfo, privateKey: primaryKey } = await utils.createEthCompatibleAccount(client);
+        const { accountInfo: primaryAccountInfo, privateKey: primaryKey } = await utils.createEthCompatibleAccount(client, 'a3e5428dd97d479b1ee4690ef9ec627896020d79883c38e9c1e9a45087959888');
         ethCompPrivateKey1 = primaryKey;
         ethCompAccountInfo1 = primaryAccountInfo;
 
-        const { accountInfo: secondaryAccountInfo, privateKey: secondaryKey } = await utils.createEthCompatibleAccount(client);
+        const { accountInfo: secondaryAccountInfo, privateKey: secondaryKey } = await utils.createEthCompatibleAccount(client, '93239c5e19d76c0bd5d62d713cd90f0c3af80c9cb467db93fd92f3772c00985f');
         ethCompPrivateKey2 = secondaryKey;
         ethCompAccountInfo2 = secondaryAccountInfo;
+
+        const ethCompatibleAccount3 = await utils.createEthCompatibleAccount(client, '3e389f612c4b27de9c817299d2b3bd0753b671036608a30a90b0c4bea8b97e74');
+        ethCompPrivateKey3 = ethCompatibleAccount3.privateKey;
+        ethCompAccountInfo3 = ethCompatibleAccount3.accountInfo;
 
         logger.info(`Setup Client for AccountOne: ${primaryAccountInfo.accountId.toString()}`);
         accOneClient = utils.setupClient(primaryKey.toString(), primaryAccountInfo.accountId.toString());
@@ -224,7 +230,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for primary account', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x1095793487fe22cac00');
+        expect(res.data.result).to.eq('0x1095793487d8e20c800');
     });
 
     it('should execute "eth_getBalance" for secondary account', async function () {
@@ -244,7 +250,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [utils.idToEvmAddress(mirrorPrimaryAccount.account), 'latest']);
-        expect(res.data.result).to.eq('0x1095793487fe22cac00');
+        expect(res.data.result).to.eq('0x1095793487d8e20c800');
     });
 
     it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
@@ -385,11 +391,11 @@ describe('RPC Server Integration Tests', async function () {
             value: 1,
             chainId: 0x12a,
             gasPrice: 720000000000,
-            gasLimit: 3000000,
-        }, ethCompPrivateKey1);
+            gasLimit: 3000000
+        }, ethCompPrivateKey3);
 
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
-        expect(res.data.result).to.be.equal('0xbee448cef2fbe1523fbc9c0740bc23442586242027fa87868e1595b158f08662');
+        expect(res.data.result).to.be.equal('0x93c4b87f7fe3d6071a9c58acf5b64ec976c60ca2017f21fac42f445472885727');
     });
 
     it('should execute "eth_syncing"', async function () {
