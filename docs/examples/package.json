@@ -1,0 +1,12 @@
+{
+    "name": "@hashgraph/hedera-json-rpc-relay-examples",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=10.17.0"
+    },
+    "dependencies": {
+        "@hashgraph/sdk": "^2.14.2",
+        "dotenv": "^14.3.2"
+    }
+}
