@@ -39,10 +39,24 @@ Repeat this process for every account you wish to import:
 ![Import Account Panel](images/importAccountPanel.png)
 5. Verify that the balance loads successfully
 
+![Imported Account](images/importedAccount.png)
+
 ## Send Hbar
 1. Open the receiving account in metamask and copy the address using the button below the account nickname
 2. Go to the sending account and click `Send`
 3. Paste the address into the `Send to` bar
 4. Enter in a valid amount to send to the account into the `Amount` field and click `Next`
+
+![Send Populate](images/sendPopulate.png)
 5. Click `Confirm` on the next page
-6. Wait a few seconds for the transaction to confirm and verify the updated balance in the sending/receiving account.
+
+![Send Confirm](images/sendConfirm.png)
+6. Transaction will transition to pending
+
+![Send Pending](images/sendPending.png)
+7. Wait a few seconds for the transaction to confirm and the balance should decrease
+
+![Send Settled](images/sendSettled.png)
+8. Verify the updated balance in the receiving account.
+
+![Send Received](images/sendReceived.png)
