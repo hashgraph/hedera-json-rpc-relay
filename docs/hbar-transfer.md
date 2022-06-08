@@ -45,10 +45,12 @@ Repeat this process for every account you wish to import:
 1. Open the receiving account in metamask and copy the address using the button below the account nickname
 2. Go to the sending account and click `Send`
 3. Paste the address into the `Send to` bar
+
+![Send Address](images/sendAddress.png)
 4. Enter in a valid amount to send to the account into the `Amount` field and click `Next`
 
 ![Send Populate](images/sendPopulate.png)
-5. Click `Confirm` on the next page
+5. Click `Confirm` on the next panel after the gas values populate
 
 ![Send Confirm](images/sendConfirm.png)
 6. Transaction will transition to pending
