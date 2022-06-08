@@ -1,5 +1,5 @@
 {
-    "name": "@hashgraph/examples",
+    "name": "@hashgraph/hedera-json-rpc-relay-examples",
     "private": true,
     "type": "module",
     "engines": {
