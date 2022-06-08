@@ -71,7 +71,7 @@ async function main() {
         console.log(`  Balances of the new account: ${balance.toString()}\n`);
     }
 
-    console.log(`Token Details: ${tokenId}`);
+    console.log(`Token Details:`);
     console.log(`  Token ID: ${tokenId}`);
     console.log(`  Ethereum Token Address (use this for token import): ${new AccountId(tokenId).toSolidityAddress()}\n`);
     console.log("Example complete!");
