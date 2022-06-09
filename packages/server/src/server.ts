@@ -21,7 +21,7 @@
 import { Relay, RelayImpl, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
-import { collectDefaultMetrics, Counter, Histogram, Registry } from 'prom-client';
+import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 
 import pino from 'pino';
 
