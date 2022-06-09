@@ -27,7 +27,6 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-import { MirrorNode } from '../../src/lib/mirrorNode';
 import {expectUnsupportedMethod} from '../helpers';
 
 const cache = require('js-cache');
@@ -81,7 +80,7 @@ describe('Eth calls using MirrorNode', async function () {
   // @ts-ignore
   const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
   // @ts-ignore
-  const ethImpl = new EthImpl(null, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
+  const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger, '0x12a');
 
   const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
   const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;  
