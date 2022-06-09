@@ -49,7 +49,7 @@ const register = new Registry();
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
 
 const methodResponseHistogram = new Histogram({
-  name: 'rpc_relay_method_response_histogram',
+  name: 'rpc_relay_method_response',
   help: 'JSON RPC method statusCode latency histogram',
   labelNames: ['method', 'statusCode'],
   registers: [register]
