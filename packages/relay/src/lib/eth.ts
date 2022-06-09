@@ -27,7 +27,6 @@ import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
-import * as ethers from 'ethers';
 import { Precheck } from './precheck';
 
 const _ = require('lodash');
@@ -130,9 +129,17 @@ export class EthImpl implements Eth {
   async feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number> | null) {
     this.logger.trace('feeHistory()');
     try {
-      const feeWeibars = await this.getFeeWeibars();
+      let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
+      if (!feeHistory) {
+        const feeWeibars = await this.getFeeWeibars();
 
-      return await this.mirrorNode.getFeeHistory(feeWeibars, blockCount, newestBlock, rewardPercentiles);
+        feeHistory = await this.mirrorNode.getFeeHistory(feeWeibars, blockCount, newestBlock, rewardPercentiles);
+
+        this.logger.trace(`caching ${constants.CACHE_KEY.FEE_HISTORY} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory, constants.CACHE_TTL.ONE_HOUR);
+      }
+
+      return feeHistory;
     } catch (e) {
       this.logger.trace(e);
     }
@@ -223,6 +230,7 @@ export class EthImpl implements Eth {
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars();
 
+        this.logger.trace(`caching ${constants.CACHE_KEY.GAS_PRICE} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
       }
 

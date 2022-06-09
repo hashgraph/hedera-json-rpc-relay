@@ -19,7 +19,8 @@
   */
 
 enum CACHE_KEY {
-    GAS_PRICE = 'gas_price'
+    GAS_PRICE = 'gas_price',
+    FEE_HISTORY = 'fee_history'
 }
 enum CACHE_TTL {
     ONE_HOUR = 3_600_000
