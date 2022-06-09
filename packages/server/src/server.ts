@@ -21,7 +21,7 @@
 import { Relay, RelayImpl, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
-import { collectDefaultMetrics, Counter, Registry } from 'prom-client';
+import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 
 import pino from 'pino';
 
@@ -43,12 +43,15 @@ const cors = require('koa-cors');
 const app = new Koa();
 const rpc = koaJsonRpc();
 
+const responseSuccessStatusCode = '200';
+const responseInternalErrorCode = '-32603';
 const register = new Registry();
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
-const methodSuccessLatencyCounter = new Counter({
-  name: 'rpc_method_success_latency_counter',
-  help: 'JSON RPC method success latencycounter',
-  labelNames: ['method', 'success', 'latency'],
+
+const methodResponseHistogram = new Histogram({
+  name: 'rpc_relay_method_response',
+  help: 'JSON RPC method statusCode latency histogram',
+  labelNames: ['method', 'statusCode'],
   registers: [register]
 });
 
@@ -118,15 +121,15 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
   const messagePrefix = `[POST] ${methodName}:`;
   try {
     const response = await methodFunction();
-    const success = response instanceof JsonRpcError ? 'Failure' : 'Success';
+    const status = response instanceof JsonRpcError ? response.code.toString() : responseSuccessStatusCode;
     ms = Date.now() - start;
-    methodSuccessLatencyCounter.inc({ method: methodName, success: success, latency: ms });
-    logger.info(`${messagePrefix} ${ms} ms ${success}`);
+    methodResponseHistogram.labels(methodName, status).observe(ms);
+    logger.info(`${messagePrefix} ${status} ${ms} ms `);
     return response;
   } catch (e) {
     ms = Date.now() - start;
-    methodSuccessLatencyCounter.inc({ method: methodName, success: 'Failure', latency: ms });
-    logger.error(e, `${messagePrefix} ${ms} ms`);
+    methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
+    logger.error(e, `${messagePrefix} ${responseInternalErrorCode} ${ms} ms`);
     throw e;
   }
 };
