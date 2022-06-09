@@ -45,6 +45,8 @@ import {ethers} from "ethers";
 import type { TransactionRequest } from "@ethersproject/abstract-provider";
 import type { JsonRpcProvider } from "@ethersproject/providers";
 
+const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
+
 export default class TestUtils {
     private readonly logger: Logger;
     private readonly JsonRpcProvider: JsonRpcProvider;
@@ -183,11 +185,17 @@ export default class TestUtils {
 
     setupClient = (key, id) => {
         const opPrivateKey = PrivateKey.fromString(key);
-        return Client
-            .forNetwork({
-                '127.0.0.1:50211': '0.0.3'
-            })
-            .setOperator(AccountId.fromString(id), opPrivateKey);
+        let client: Client;
+
+        const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
+
+        if (hederaNetwork.toLowerCase() in supportedEnvs) {
+            client = Client.forName(hederaNetwork);
+        } else {
+            client = Client.forNetwork(JSON.parse(hederaNetwork));
+        }
+
+        return client.setOperator(AccountId.fromString(id), opPrivateKey);
     };
 
     createEthCompatibleAccount = async (client: Client, privateKeyHex: string) => {
