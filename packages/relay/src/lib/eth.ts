@@ -26,7 +26,9 @@ import { Block, CachedBlock, Transaction, Log } from './model';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
+import constants from './constants';
 
+const cache = require('js-cache');
 const createHash = require('keccak');
 
 /**
@@ -114,13 +116,21 @@ export class EthImpl implements Eth {
    * Gets the fee history.
    */
   async feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number> | null) {
-    this.logger.trace('feeHistory()');
+    this.logger.trace(`feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
     try {
-      const feeWeibars = await this.getFeeWeibars();
+      let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
+      if (!feeHistory) {
+        const feeWeibars = await this.getFeeWeibars();
 
-      return await this.mirrorNode.getFeeHistory(feeWeibars, blockCount, newestBlock, rewardPercentiles);
+        feeHistory = await this.mirrorNode.getFeeHistory(feeWeibars, blockCount, newestBlock, rewardPercentiles);
+
+        this.logger.trace(`caching ${constants.CACHE_KEY.FEE_HISTORY} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory, constants.CACHE_TTL.ONE_HOUR);
+      }
+
+      return feeHistory;
     } catch (e) {
-      this.logger.trace(e);
+      this.logger.error(e, 'Error constructing default feeHistory');
     }
   }
 
@@ -187,12 +197,21 @@ export class EthImpl implements Eth {
     // FIXME: This should come from the mainnet and get cached. The gas price does change dynamically based on
     //        the price of the HBAR relative to the USD. It only needs to be updated hourly.
     this.logger.trace('gasPrice()');
-    return this.getFeeWeibars()
-      .then((weiBars) => EthImpl.numberTo0x((weiBars)))
-      .catch((e: any) => {
-        this.logger.trace(e);
-        throw e;
-      });
+    try {
+      let gasPrice: number | undefined = cache.get(constants.CACHE_KEY.GAS_PRICE);
+
+      if (!gasPrice) {
+        gasPrice = await this.getFeeWeibars();
+
+        this.logger.trace(`caching ${constants.CACHE_KEY.GAS_PRICE} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
+      }
+
+      return EthImpl.numberTo0x(gasPrice);
+    } catch (error) {
+      this.logger.trace(error);
+      throw error;
+    }
   }
 
   /**
