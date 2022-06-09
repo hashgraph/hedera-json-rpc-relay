@@ -50,8 +50,8 @@ collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
 
 const methodResponseHistogram = new Histogram({
   name: 'rpc_relay_method_response_histogram',
-  help: 'JSON RPC method status latency histogram',
-  labelNames: ['method', 'status'],
+  help: 'JSON RPC method statusCode latency histogram',
+  labelNames: ['method', 'statusCode'],
   registers: [register]
 });
 
