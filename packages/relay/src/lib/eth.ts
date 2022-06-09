@@ -127,7 +127,7 @@ export class EthImpl implements Eth {
    * Gets the fee history.
    */
   async feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number> | null) {
-    this.logger.trace('feeHistory()');
+    this.logger.trace(`feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
     try {
       let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
       if (!feeHistory) {
@@ -141,7 +141,7 @@ export class EthImpl implements Eth {
 
       return feeHistory;
     } catch (e) {
-      this.logger.trace(e);
+      this.logger.error(e, 'Error constructing default feeHistory');
     }
   }
 
