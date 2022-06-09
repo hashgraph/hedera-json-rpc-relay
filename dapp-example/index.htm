@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>dApp</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <script src='https://cdn.ethers.io/lib/ethers-5.2.umd.min.js' type='application/javascript'></script>
+    <style>
+        body {
+            padding: 50px;
+        }
+
+        .btn {
+            display: block;
+            width: 250px;
+            text-align: center;
+            border-radius: 20px;
+            border: 1px solid gray;
+            padding: 10px;
+            margin: 20px auto;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <!DOCTYPE html>
+    <html>
+
+    <head>
+        <title>dApp</title>
+        <script src='https://cdn.ethers.io/lib/ethers-5.2.umd.min.js' type='application/javascript'></script>
+    </head>
+
+    <body>
+        <div class="btn" id="connect-btn">Connect to MetaMask</div>
+        <div class="btn" id="show-balance-btn">Show balance</div>
+        <div class="btn" id="export-public-key-btn">Export public key</div>
+    </body>
+
+    </html>
+</body>
+
+<script>
+    const getSigner = async () => {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send('eth_requestAccounts', []);
+
+        return provider.getSigner();
+    }
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        document.getElementById('connect-btn').addEventListener('click', async function () {
+            await getSigner();
+        });
+        document.getElementById('show-balance-btn').addEventListener('click', async function () {
+            const signer = await getSigner();
+            const balance = await signer.getBalance();
+            console.log(`Signer address: ${await signer.getAddress()}`);
+            console.log(`Balance in wei: ${balance.toString()}`);
+            alert(`Balance in wei: ${balance.toString()}`);
+        });
+        document.getElementById('export-public-key-btn').addEventListener('click', async function () {
+            const signer = await getSigner();
+
+            // try to get the key via metamask method
+            const encryptionPublicKey = await ethereum.request({
+                method: 'eth_getEncryptionPublicKey',
+                params: [await signer.getAddress()],
+            });
+            console.log(encryptionPublicKey);
+
+            // try to get the key via message decoding
+            const signature = await signer.signMessage('msg');
+            const msgHash = ethers.utils.hashMessage('msg');
+            const msgHashBytes = ethers.utils.arrayify(msgHash);
+            let recoveredPubKey = ethers.utils.recoverPublicKey(msgHashBytes, signature);
+            let recoveredAddress = ethers.utils.recoverAddress(msgHashBytes, signature);
+
+            // you can test that the algorithm is working
+            // by passing key 0xd75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a
+            // and expected to return CIQNOWUYAGBLCCVX2VF75U6JMQDTUDXBOLZ5VJRDEWXQEGTI64DVCGQ as alias
+            // https://hips.hedera.com/hip/hip-32
+            // recoveredPubKey = '0xd75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a';
+            console.log("Recovered public key: ", recoveredPubKey);
+            console.log("Recovered address: ", recoveredAddress);
+            console.log("Recovered alias: ", '0.0.' + ethers.utils.base64.encode(recoveredPubKey));
+        });
+    });
+</script>
+
+</html>
