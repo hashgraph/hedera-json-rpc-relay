@@ -41,12 +41,17 @@ import {
 } from "@hashgraph/sdk";
 import {Logger} from "pino";
 import {AxiosInstance} from "axios";
+import {ethers} from "ethers";
+import type { TransactionRequest } from "@ethersproject/abstract-provider";
+import type { JsonRpcProvider } from "@ethersproject/providers";
 
 export default class TestUtils {
     private readonly logger: Logger;
+    private readonly JsonRpcProvider: JsonRpcProvider;
 
-    constructor(logger: Logger) {
+    constructor(logger: Logger, jsonRpcProviderUrl: string) {
         this.logger = logger;
+        this.JsonRpcProvider = new ethers.providers.JsonRpcProvider(jsonRpcProviderUrl);
     }
 
     numberTo0x = (input: number): string => {
@@ -136,6 +141,16 @@ export default class TestUtils {
         return resp;
     };
 
+    callFailingRelayMethod = async (client: any, methodName: string, params: any[]) => {
+        const resp = await this.callRelay(client, methodName, params);
+        this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.error)}`);
+
+        expect(resp.data).to.have.property('error');
+        expect(resp.data.id).to.be.equal('2');
+
+        return resp;
+    };
+
     callUnsupportedRelayMethod = async (client: any, methodName: string, params: any[]) => {
         const resp = await this.callRelay(client, methodName, params);
         this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.error)}`);
@@ -175,8 +190,8 @@ export default class TestUtils {
             .setOperator(AccountId.fromString(id), opPrivateKey);
     };
 
-    createEthCompatibleAccount = async (client: Client) => {
-        const privateKey = PrivateKey.generateECDSA();
+    createEthCompatibleAccount = async (client: Client, privateKeyHex: string) => {
+        const privateKey = PrivateKey.fromBytesECDSA(Buffer.from(privateKeyHex, 'hex'));
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
 
@@ -319,4 +334,8 @@ export default class TestUtils {
         return {contractExecuteTimestamp, contractExecutedTransactionId};
     };
 
+    signRawTransaction = async (tx: TransactionRequest, privateKey) => {
+        const wallet = new ethers.Wallet(privateKey.toStringRaw(), this.JsonRpcProvider);
+        return await wallet.signTransaction(tx);
+    };
 }
