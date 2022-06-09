@@ -21,7 +21,7 @@
 import { Relay, RelayImpl, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
-import { collectDefaultMetrics, Counter, Registry } from 'prom-client';
+import { collectDefaultMetrics, Counter, Histogram, Registry } from 'prom-client';
 
 import pino from 'pino';
 
@@ -43,12 +43,21 @@ const cors = require('koa-cors');
 const app = new Koa();
 const rpc = koaJsonRpc();
 
+const responseSuccessLabel = 'Success';
+const responseFailureLabel = 'Failure';
 const register = new Registry();
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
 const methodSuccessLatencyCounter = new Counter({
-  name: 'rpc_method_success_latency_counter',
-  help: 'JSON RPC method success latencycounter',
-  labelNames: ['method', 'success', 'latency'],
+  name: 'rpc_method_success_counter',
+  help: 'JSON RPC method success counter',
+  labelNames: ['method', 'success'],
+  registers: [register]
+});
+
+const methodLatencyHistogram = new Histogram({
+  name: 'rpc_method_success_latency_hist',
+  help: 'JSON RPC method success latency histogram',
+  labelNames: ['method', 'success'],
   registers: [register]
 });
 
@@ -118,14 +127,16 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
   const messagePrefix = `[POST] ${methodName}:`;
   try {
     const response = await methodFunction();
-    const success = response instanceof JsonRpcError ? 'Failure' : 'Success';
+    const success = response instanceof JsonRpcError ? responseFailureLabel : responseSuccessLabel;
     ms = Date.now() - start;
-    methodSuccessLatencyCounter.inc({ method: methodName, success: success, latency: ms });
+    methodSuccessLatencyCounter.inc({ method: methodName, success: success });
+    methodLatencyHistogram.labels(methodName, success).observe(ms);
     logger.info(`${messagePrefix} ${ms} ms ${success}`);
     return response;
   } catch (e) {
     ms = Date.now() - start;
-    methodSuccessLatencyCounter.inc({ method: methodName, success: 'Failure', latency: ms });
+    methodSuccessLatencyCounter.inc({ method: methodName, success: responseFailureLabel });
+    methodLatencyHistogram.labels(methodName, responseFailureLabel).observe(ms);
     logger.error(e, `${messagePrefix} ${ms} ms`);
     throw e;
   }
