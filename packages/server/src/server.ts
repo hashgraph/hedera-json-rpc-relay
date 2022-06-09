@@ -43,21 +43,15 @@ const cors = require('koa-cors');
 const app = new Koa();
 const rpc = koaJsonRpc();
 
-const responseSuccessLabel = 'Success';
-const responseFailureLabel = 'Failure';
+const responseSuccessStatusCode = '200';
+const responseInternalErrorCode = '-32603';
 const register = new Registry();
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
-const methodSuccessLatencyCounter = new Counter({
-  name: 'rpc_method_success_counter',
-  help: 'JSON RPC method success counter',
-  labelNames: ['method', 'success'],
-  registers: [register]
-});
 
-const methodLatencyHistogram = new Histogram({
-  name: 'rpc_method_success_latency_hist',
-  help: 'JSON RPC method success latency histogram',
-  labelNames: ['method', 'success'],
+const methodResponseHistogram = new Histogram({
+  name: 'rpc_relay_method_response_histogram',
+  help: 'JSON RPC method status latency histogram',
+  labelNames: ['method', 'status'],
   registers: [register]
 });
 
@@ -127,17 +121,15 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
   const messagePrefix = `[POST] ${methodName}:`;
   try {
     const response = await methodFunction();
-    const success = response instanceof JsonRpcError ? responseFailureLabel : responseSuccessLabel;
+    const status = response instanceof JsonRpcError ? response.code.toString() : responseSuccessStatusCode;
     ms = Date.now() - start;
-    methodSuccessLatencyCounter.inc({ method: methodName, success: success });
-    methodLatencyHistogram.labels(methodName, success).observe(ms);
-    logger.info(`${messagePrefix} ${ms} ms ${success}`);
+    methodResponseHistogram.labels(methodName, status).observe(ms);
+    logger.info(`${messagePrefix} ${status} ${ms} ms `);
     return response;
   } catch (e) {
     ms = Date.now() - start;
-    methodSuccessLatencyCounter.inc({ method: methodName, success: responseFailureLabel });
-    methodLatencyHistogram.labels(methodName, responseFailureLabel).observe(ms);
-    logger.error(e, `${messagePrefix} ${ms} ms`);
+    methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
+    logger.error(e, `${messagePrefix} ${responseInternalErrorCode} ${ms} ms`);
     throw e;
   }
 };
