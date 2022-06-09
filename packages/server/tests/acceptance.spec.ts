@@ -24,13 +24,14 @@ import {
     PrivateKey,
 } from "@hashgraph/sdk";
 import Axios from 'axios';
-import Axios, { AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
 import { expect } from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';
 import pino from 'pino';
 import shell from 'shelljs';
+import {BigNumber} from "ethers";
+
 
 // local resources
 import parentContract from './parentContract/Parent.json';
@@ -61,16 +62,17 @@ const privateKeyHex2 = '93239c5e19d76c0bd5d62d713cd90f0c3af80c9cb467db93fd92f377
 const privateKeyHex3 = '3e389f612c4b27de9c817299d2b3bd0753b671036608a30a90b0c4bea8b97e74';
 const nonExistingAddress = '0x5555555555555555555555555555555555555555';
 const defaultChainId = Number(process.env.CHAIN_ID);
+const oneHbarInWeiHexString = `0x0de0b6b3a7640000`;
 
 const defaultLegacyTransactionData = {
-    value: 1,
+    value: oneHbarInWeiHexString,
     chainId: defaultChainId,
     gasPrice: 720000000000,
     gasLimit: 3000000
 };
 
 const defaultLondonTransactionData = {
-    value: 1,
+    value: oneHbarInWeiHexString,
     chainId: defaultChainId,
     maxPriorityFeePerGas: 720000000000,
     maxFeePerGas: 720000000000,
@@ -79,7 +81,7 @@ const defaultLondonTransactionData = {
 };
 
 const defaultLegacy2930TransactionData = {
-    value: 1,
+    value: oneHbarInWeiHexString,
     chainId: defaultChainId,
     gasPrice: 720000000000,
     gasLimit: 3000000,
@@ -105,6 +107,7 @@ let ethCompPrivateKey2;
 let ethCompAccountInfo2;
 let ethCompPrivateKey3;
 let ethCompAccountInfo3;
+let ethCompAccountEvmAddr3;
 
 describe('RPC Server Integration Tests', async function () {
     this.timeout(180 * 1000);
@@ -143,6 +146,7 @@ describe('RPC Server Integration Tests', async function () {
         const ethCompatibleAccount3 = await utils.createEthCompatibleAccount(client, privateKeyHex3);
         ethCompPrivateKey3 = ethCompatibleAccount3.privateKey;
         ethCompAccountInfo3 = ethCompatibleAccount3.accountInfo;
+        ethCompAccountEvmAddr3 = utils.idToEvmAddress(ethCompAccountInfo3.accountId.toString());
 
         logger.info(`Setup Client for AccountOne: ${primaryAccountInfo.accountId.toString()}`);
         accOneClient = utils.setupClient(primaryKey.toString(), primaryAccountInfo.accountId.toString());
@@ -355,57 +359,9 @@ describe('RPC Server Integration Tests', async function () {
         expect(res.data.result).to.be.equal(false);
     });
 
-    it('should execute "eth_sendRawTransaction" for legacy transactions', async function () {
-        const signedTx = await utils.signRawTransaction({
-            ...defaultLegacyTransactionData,
-            to: mirrorContract.evm_address
-        }, ethCompPrivateKey3);
-
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
-        expect(res.data.result).to.be.equal('0x93c4b87f7fe3d6071a9c58acf5b64ec976c60ca2017f21fac42f445472885727');
-    });
-
-    it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
-        // INVALID_ETHEREUM_TX
-        const signedTx = await utils.signRawTransaction({
-            ...defaultLegacy2930TransactionData,
-            to: mirrorContract.evm_address,
-            nonce: 1
-        }, ethCompPrivateKey3);
-
-        const res = await utils.callFailingRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
-        expect(res.data.error.message).to.be.equal('Internal error');
-        expect(res.data.error.code).to.be.equal(-32603);
-    });
-
-    it('should execute "eth_sendRawTransaction" for London transactions', async function () {
-        const signedTx = await utils.signRawTransaction({
-            ...defaultLondonTransactionData,
-            to: mirrorContract.evm_address,
-            nonce: 1
-        }, ethCompPrivateKey3);
-
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
-        expect(res.data.result).to.be.equal('0x0a0bf0ecf2875f660ce2ccd3e9168b76ba56691fdee3a3400f91a8cc0ba51b47');
-    });
-
-    it('should execute "eth_syncing"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_syncing', []);
-        expect(res.data.result).to.be.equal(false);
-    });
-
-    it('should execute "web3_client_version"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'web3_client_version', []);
-        expect(res.data.result).to.contain('relay/');
-    });
-
-    it('should execute "eth_protocolVersion"', async function () {
-        utils.callUnsupportedRelayMethod(this.relayClient, 'eth_protocolVersion', []);
-    });
-
     it('should execute "eth_getBalance" for primary account', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x1095793487d8e20c800');
+        expect(res.data.result).to.eq('0x1095793487fe22cac00');
     });
 
     it('should execute "eth_getBalance" for secondary account', async function () {
@@ -425,12 +381,90 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [utils.idToEvmAddress(mirrorPrimaryAccount.account), 'latest']);
-        expect(res.data.result).to.eq('0x1095793487d8e20c800');
+        expect(res.data.result).to.eq('0x1095793487fe22cac00');
     });
 
     it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [utils.idToEvmAddress(contractId.toString()), 'latest']);
         expect(res.data.result).to.eq('0x56bc75e2d63100000');
+    });
+
+    it('should execute "eth_sendRawTransaction" for legacy transactions', async function () {
+        const senderInitialBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [ethCompAccountEvmAddr3, 'latest']);
+        const senderInitialBalance = senderInitialBalanceRes.data.result;
+        const receiverInitialBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
+        const receiverInitialBalance = receiverInitialBalanceRes.data.result;
+
+        const signedTx = await utils.signRawTransaction({
+            ...defaultLegacyTransactionData,
+            to: mirrorContract.evm_address
+        }, ethCompPrivateKey3);
+
+        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
+        expect(res.data.result).to.be.equal('0x872d83c28c30ec48befb6cd77c1588e5589e00b7c61fcbc942a5b26ea23b9694');
+
+        const senderEndBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [ethCompAccountEvmAddr3, 'latest']);
+        const senderEndBalance = senderEndBalanceRes.data.result;
+        const receiverEndBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
+        const receiverEndBalance = receiverEndBalanceRes.data.result;
+
+        expect(utils.subtractBigNumberHexes(receiverEndBalance, receiverInitialBalance).toHexString()).to.eq(oneHbarInWeiHexString);
+        expect(senderInitialBalance).to.not.eq(senderEndBalance);
+        expect(utils.subtractBigNumberHexes(senderInitialBalance, senderEndBalance).toHexString()).to.not.eq(oneHbarInWeiHexString);
+        expect(BigNumber.from(senderInitialBalance).sub(BigNumber.from(senderEndBalance)).gt(0)).to.eq(true);
+    });
+
+    it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
+        // INVALID_ETHEREUM_TX
+        const signedTx = await utils.signRawTransaction({
+            ...defaultLegacy2930TransactionData,
+            to: mirrorContract.evm_address,
+            nonce: 1
+        }, ethCompPrivateKey3);
+
+        const res = await utils.callFailingRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
+        expect(res.data.error.message).to.be.equal('Internal error');
+        expect(res.data.error.code).to.be.equal(-32603);
+    });
+
+    it('should execute "eth_sendRawTransaction" for London transactions', async function () {
+        const senderInitialBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [ethCompAccountEvmAddr3, 'latest']);
+        const senderInitialBalance = senderInitialBalanceRes.data.result;
+        const receiverInitialBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
+        const receiverInitialBalance = receiverInitialBalanceRes.data.result;
+
+        const signedTx = await utils.signRawTransaction({
+            ...defaultLondonTransactionData,
+            to: mirrorContract.evm_address,
+            nonce: 1
+        }, ethCompPrivateKey3);
+
+        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
+        expect(res.data.result).to.be.equal('0xcf7df11282f835c05be88f9cc95e41f706fc12bd0833afd0212df32eeaf3eaf1');
+
+        const senderEndBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [ethCompAccountEvmAddr3, 'latest']);
+        const senderEndBalance = senderEndBalanceRes.data.result;
+        const receiverEndBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
+        const receiverEndBalance = receiverEndBalanceRes.data.result;
+
+        expect(utils.subtractBigNumberHexes(receiverEndBalance, receiverInitialBalance).toHexString()).to.eq(oneHbarInWeiHexString);
+        expect(senderInitialBalance).to.not.eq(senderEndBalance);
+        expect(utils.subtractBigNumberHexes(senderInitialBalance, senderEndBalance).toHexString()).to.not.eq(oneHbarInWeiHexString);
+        expect(BigNumber.from(senderInitialBalance).sub(BigNumber.from(senderEndBalance)).gt(0)).to.eq(true);
+    });
+
+    it('should execute "eth_syncing"', async function () {
+        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_syncing', []);
+        expect(res.data.result).to.be.equal(false);
+    });
+
+    it('should execute "web3_client_version"', async function () {
+        const res = await utils.callSupportedRelayMethod(this.relayClient, 'web3_client_version', []);
+        expect(res.data.result).to.contain('relay/');
+    });
+
+    it('should execute "eth_protocolVersion"', async function () {
+        utils.callUnsupportedRelayMethod(this.relayClient, 'eth_protocolVersion', []);
     });
 
     it('should execute "eth_getTransactionCount" primary', async function () {
@@ -464,8 +498,7 @@ describe('RPC Server Integration Tests', async function () {
     });
 
     it('should execute "eth_getTransactionCount" for account with non-zero nonce', async function () {
-        const evmAddress = utils.idToEvmAddress(ethCompAccountInfo3.accountId.toString());
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [evmAddress, mirrorContractDetails.block_number]);
+        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [ethCompAccountEvmAddr3, mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('0x2');
     });
 });

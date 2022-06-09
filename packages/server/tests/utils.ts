@@ -41,7 +41,7 @@ import {
 } from "@hashgraph/sdk";
 import {Logger} from "pino";
 import {AxiosInstance} from "axios";
-import {ethers} from "ethers";
+import {BigNumber, ethers} from "ethers";
 import type { TransactionRequest } from "@ethersproject/abstract-provider";
 import type { JsonRpcProvider } from "@ethersproject/providers";
 
@@ -346,4 +346,10 @@ export default class TestUtils {
         const wallet = new ethers.Wallet(privateKey.toStringRaw(), this.JsonRpcProvider);
         return await wallet.signTransaction(tx);
     };
+
+    subtractBigNumberHexes = (hex1, hex2) => {
+        return BigNumber.from(hex1).sub(BigNumber.from(hex2));
+    };
+
 }
+
