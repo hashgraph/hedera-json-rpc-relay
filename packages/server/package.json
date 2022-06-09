@@ -30,6 +30,7 @@
         "@types/koa-router": "^7.4.4",
         "@types/mocha": "^9.1.0",
         "@types/node": "^17.0.31",
+        "axios-retry": "^3.2.5",
         "chai": "^4.3.6",
         "ethers": "^5.6.8",
         "shelljs": "^0.8.5",
