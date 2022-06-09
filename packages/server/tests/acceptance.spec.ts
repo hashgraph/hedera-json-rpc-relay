@@ -58,28 +58,30 @@ const privateKeyHex1 = 'a3e5428dd97d479b1ee4690ef9ec627896020d79883c38e9c1e9a450
 const privateKeyHex2 = '93239c5e19d76c0bd5d62d713cd90f0c3af80c9cb467db93fd92f3772c00985f';
 const privateKeyHex3 = '3e389f612c4b27de9c817299d2b3bd0753b671036608a30a90b0c4bea8b97e74';
 const nonExistingAddress = '0x5555555555555555555555555555555555555555';
+const defaultChainId = Number(process.env.CHAIN_ID);
 
 const defaultLegacyTransactionData = {
     value: 1,
-    chainId: 0x12a,
+    chainId: defaultChainId,
     gasPrice: 720000000000,
     gasLimit: 3000000
 };
 
 const defaultLondonTransactionData = {
     value: 1,
-    chainId: 0x12a,
+    chainId: defaultChainId,
     maxPriorityFeePerGas: 720000000000,
     maxFeePerGas: 720000000000,
     gasLimit: 3000000,
     type: 2,
 };
 
-const defaultEIP115TransactionData = {
+const defaultLegacy2930TransactionData = {
     value: 1,
-    chainId: 0x12a,
+    chainId: defaultChainId,
     gasPrice: 720000000000,
     gasLimit: 3000000,
+    type: 1
 };
 
 // cached entities
@@ -408,13 +410,12 @@ describe('RPC Server Integration Tests', async function () {
         expect(res.data.result).to.be.equal('0x93c4b87f7fe3d6071a9c58acf5b64ec976c60ca2017f21fac42f445472885727');
     });
 
-    it('should fail "eth_sendRawTransaction" for eip155 transactions', async function () {
+    it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
         // INVALID_ETHEREUM_TX
         const signedTx = await utils.signRawTransaction({
-            ...defaultEIP115TransactionData,
+            ...defaultLegacy2930TransactionData,
             to: mirrorContract.evm_address,
-            nonce: 1,
-            type: 1
+            nonce: 1
         }, ethCompPrivateKey3);
 
         const res = await utils.callFailingRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
