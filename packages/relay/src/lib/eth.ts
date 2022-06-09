@@ -52,6 +52,7 @@ export class EthImpl implements Eth {
   static defaultGas = 0x3d0900;
   static ethTxType = 'EthereumTransaction';
   static ethFunctionalityCode = 84;
+  static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
 
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
@@ -805,6 +806,7 @@ export class EthImpl implements Eth {
     }
 
     const blockHash = blockResponse.hash.substring(0, 66);
+    const transactionArray = showDetails ? transactionObjects : transactionHashes;
     return new Block({
       baseFeePerGas: EthImpl.numberTo0x(0), //TODO should be gasPrice
       difficulty: EthImpl.zeroHex,
@@ -824,8 +826,8 @@ export class EthImpl implements Eth {
       size: EthImpl.numberTo0x(blockResponse.size | 0),
       stateRoot: EthImpl.emptyArrayHex,
       totalDifficulty: EthImpl.zeroHex,
-      transactions: showDetails ? transactionObjects : transactionHashes,
-      transactionsRoot: blockHash,
+      transactions: transactionArray,
+      transactionsRoot: transactionArray.length == 0 ? EthImpl.ethEmptyTrie : blockHash,
       uncles: [],
     });
   }
