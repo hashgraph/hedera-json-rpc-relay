@@ -92,19 +92,13 @@ const defaultLegacy2930TransactionData = {
 let client: Client;
 let accOneClient: Client;
 let tokenId;
-let opPrivateKey;
 let contractId;
 let contractExecuteTimestamp;
-let contractExecutedTransactionId;
 let mirrorBlock;
 let mirrorContract;
 let mirrorContractDetails;
 let mirrorPrimaryAccount;
 let mirrorSecondaryAccount;
-let ethCompPrivateKey1;
-let ethCompAccountInfo1;
-let ethCompPrivateKey2;
-let ethCompAccountInfo2;
 let ethCompPrivateKey3;
 let ethCompAccountInfo3;
 let ethCompAccountEvmAddr3;
@@ -115,8 +109,6 @@ describe('RPC Server Integration Tests', async function () {
     before(async function () {
         logger.info(`Setting up SDK Client for ${process.env['HEDERA_NETWORK']} env`);
         client = utils.setupClient(process.env.OPERATOR_KEY_MAIN, process.env.OPERATOR_ID_MAIN);
-        opPrivateKey = PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN);
-
 
         if (useLocalNode === 'true') {
             // set env variables for docker images until local-node is updated
@@ -136,12 +128,7 @@ describe('RPC Server Integration Tests', async function () {
         logger.info('Submit eth account create transactions via crypto transfers');
         // 1. Crypto create with alias - metamask flow
         const { accountInfo: primaryAccountInfo, privateKey: primaryKey } = await utils.createEthCompatibleAccount(client, privateKeyHex1);
-        ethCompPrivateKey1 = primaryKey;
-        ethCompAccountInfo1 = primaryAccountInfo;
-
         const { accountInfo: secondaryAccountInfo, privateKey: secondaryKey } = await utils.createEthCompatibleAccount(client, privateKeyHex2);
-        ethCompPrivateKey2 = secondaryKey;
-        ethCompAccountInfo2 = secondaryAccountInfo;
 
         const ethCompatibleAccount3 = await utils.createEthCompatibleAccount(client, privateKeyHex3);
         ethCompPrivateKey3 = ethCompatibleAccount3.privateKey;
@@ -157,7 +144,6 @@ describe('RPC Server Integration Tests', async function () {
         contractId = await utils.createParentContract(parentContract, client);
         const contractCallResult = await utils.executeContractCall(contractId, client);
         contractExecuteTimestamp = contractCallResult.contractExecuteTimestamp;
-        contractExecutedTransactionId = contractCallResult.contractExecutedTransactionId;
 
         logger.info('Create parent contract with AccountOne');
         await utils.createParentContract(parentContract, accOneClient);
@@ -173,7 +159,7 @@ describe('RPC Server Integration Tests', async function () {
         await utils.associateAndTransferToken(secondaryAccountInfo.accountId, secondaryKey, tokenId, client);
 
         logger.info('Send file close crypto transfers');
-        // 5. simple crypto trasnfer to ensure file close
+        // 5. simple crypto transfer to ensure file close
         await utils.sendFileClosingCryptoTransfer(primaryAccountInfo.accountId, client);
         await utils.sendFileClosingCryptoTransfer(secondaryAccountInfo.accountId, client);
 
