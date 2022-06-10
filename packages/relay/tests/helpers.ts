@@ -29,4 +29,55 @@ const expectUnsupportedMethod = (result) => {
     expect(result.message).to.be.equal('Unsupported JSON-RPC method');
 };
 
-export {expectUnsupportedMethod};
+const mockData = {
+    accountEvmAddress: '0x00000000000000000000000000000000000003f6',
+    account: {
+        "account": "0.0.1014",
+        "alias": null,
+        "auto_renew_period": 7776000,
+        "balance": {
+            "balance": 0,
+            "timestamp": "1654168500.007651338",
+            "tokens": []
+        },
+        "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": "0x00000000000000000000000000000000000003f6",
+        "expiry_timestamp": null,
+        "key": {
+            "_type": "ED25519",
+            "key": "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"
+        },
+        "max_automatic_token_associations": 0,
+        "memo": "",
+        "receiver_sig_required": null,
+        "transactions": [],
+        "links": {
+            "next": null
+        }
+    },
+
+    contractEvmAddress: '0000000000000000000000000000000000001f41',
+    contract: {
+        'contract_id': '0.0.2000',
+        'evm_address': '0000000000000000000000000000000000001f41',
+        'file_id': '0.0.1000',
+        'obtainer_id': '0.0.3000',
+        'timestamp': {
+            'from': '1651560386.060890949',
+            'to': null
+        }
+    },
+
+    notFound: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "Not found"
+                }
+            ]
+        }
+    }
+};
+
+export {expectUnsupportedMethod, mockData};

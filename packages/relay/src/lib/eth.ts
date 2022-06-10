@@ -360,7 +360,15 @@ export class EthImpl implements Eth {
     this.logger.trace('getBalance(account=%s, blockNumberOrTag=%s)', account, blockNumberOrTag);
     const blockNumber = await this.translateBlockTag(blockNumberOrTag);
     try {
-      const weibars = await this.sdkClient.getAccountBalanceInWeiBar(account);
+      let weibars: BigNumber | number = 0;
+      const result = await this.mirrorNodeClient.resolveEntityType(account);
+      if (result?.type === constants.TYPE_ACCOUNT) {
+        weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account);
+      }
+      else if (result?.type === constants.TYPE_CONTRACT) {
+        weibars = await this.sdkClient.getContractBalanceInWeiBar(result.entity.contract_id);
+      }
+
       return EthImpl.numberTo0x(weibars);
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
@@ -520,8 +528,16 @@ export class EthImpl implements Eth {
     if (blockNumber === 0) {
       return '0x0';
     } else {
-      const accountInfo = await this.sdkClient.getAccountInfo(address);
-      return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+      const result = await this.mirrorNodeClient.resolveEntityType(address);
+      if (result?.type === constants.TYPE_ACCOUNT) {
+        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account);
+        return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+      }
+      else if (result?.type === constants.TYPE_CONTRACT) {
+        return EthImpl.numberTo0x(1);
+      }
+
+      return EthImpl.numberTo0x(0);
     }
   }
 
