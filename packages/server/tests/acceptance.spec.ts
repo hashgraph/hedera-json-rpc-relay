@@ -19,10 +19,7 @@
  */
 
 // external resources
-import {
-    Client,
-    PrivateKey,
-} from "@hashgraph/sdk";
+import { Client } from "@hashgraph/sdk";
 import Axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { expect } from 'chai';
@@ -103,7 +100,6 @@ let mirrorSecondaryAccount;
 let ethCompPrivateKey3;
 let ethCompAccountInfo3;
 let ethCompAccountEvmAddr3;
-let ethCompNonce = 0;
 
 describe('RPC Server Integration Tests', async function () {
     this.timeout(180 * 1000);
@@ -401,7 +397,6 @@ describe('RPC Server Integration Tests', async function () {
         expect(utils.subtractBigNumberHexes(senderInitialBalance, senderEndBalance).toHexString()).to.not.eq(oneHbarInWeiHexString);
         expect(BigNumber.from(senderInitialBalance).sub(BigNumber.from(senderEndBalance)).gt(0)).to.eq(true);
 
-        ethCompNonce++;
     });
 
     it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
@@ -409,7 +404,7 @@ describe('RPC Server Integration Tests', async function () {
         const signedTx = await utils.signRawTransaction({
             ...defaultLegacy2930TransactionData,
             to: mirrorContract.evm_address,
-            nonce: ethCompNonce
+            nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
         }, ethCompPrivateKey3);
 
         const res = await utils.callFailingRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
@@ -426,7 +421,7 @@ describe('RPC Server Integration Tests', async function () {
         const signedTx = await utils.signRawTransaction({
             ...defaultLondonTransactionData,
             to: mirrorContract.evm_address,
-            nonce: ethCompNonce
+            nonce:  await utils.getAccountNonce(ethCompAccountEvmAddr3)
         }, ethCompPrivateKey3);
 
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
@@ -441,8 +436,6 @@ describe('RPC Server Integration Tests', async function () {
         expect(senderInitialBalance).to.not.eq(senderEndBalance);
         expect(utils.subtractBigNumberHexes(senderInitialBalance, senderEndBalance).toHexString()).to.not.eq(oneHbarInWeiHexString);
         expect(BigNumber.from(senderInitialBalance).sub(BigNumber.from(senderEndBalance)).gt(0)).to.eq(true);
-
-        ethCompNonce++;
     });
 
     it('should execute "eth_syncing"', async function () {
@@ -498,12 +491,11 @@ describe('RPC Server Integration Tests', async function () {
         const txRequest = {
             ...defaultLegacyTransactionData,
             to: mirrorContract.evm_address,
-            nonce: ethCompNonce
+            nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
         };
         const signedTx = await utils.signRawTransaction(txRequest, ethCompPrivateKey3);
         const txRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
         expect(txRes.data.result).to.be.not.be.null;
-        ethCompNonce++;
 
         await utils.sleep(3000);
 
@@ -520,13 +512,12 @@ describe('RPC Server Integration Tests', async function () {
         const txRequest = {
             ...defaultLondonTransactionData,
             to: mirrorContract.evm_address,
-            nonce: ethCompNonce
+            nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
         };
 
         const signedTx = await utils.signRawTransaction(txRequest, ethCompPrivateKey3);
         const londonRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
         expect(londonRes.data.result).to.be.not.be.null;
-        ethCompNonce++;
 
         await utils.sleep(3000);
 

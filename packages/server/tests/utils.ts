@@ -355,6 +355,11 @@ export default class TestUtils {
         return new Promise(resolve => setTimeout(resolve, ms));
     };
 
+    getAccountNonce = async (evmAddress) => {
+        const nonce = await this.JsonRpcProvider.send('eth_getTransactionCount', [evmAddress, 'latest']);
+        return Number(nonce);
+    };
+
     assertTransactionReceipt = (transactionReceipt, transactionRequest, overwriteValues = {}) => {
         const staticValues = {
             status: '0x1',
