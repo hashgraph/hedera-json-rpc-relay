@@ -351,5 +351,28 @@ export default class TestUtils {
         return BigNumber.from(hex1).sub(BigNumber.from(hex2));
     };
 
+    sleep = async (ms) => {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    };
+
+    assertReceiptNotNull = (receipt) => {
+        expect(receipt.blockHash).to.exist;
+        expect(receipt.blockHash).to.not.eq('0x0');
+        expect(receipt.blockNumber).to.exist;
+        expect(Number(receipt.blockNumber)).to.gt(0);
+        expect(receipt.cumulativeGasUsed).to.exist;
+        expect(Number(receipt.cumulativeGasUsed)).to.gt(0);
+        expect(receipt.gasUsed).to.exist;
+        expect(Number(receipt.gasUsed)).to.gt(0);
+        expect(receipt.logsBloom).to.exist;
+        expect(receipt.logsBloom).to.not.eq('0x0');
+        expect(receipt.transactionHash).to.exist;
+        expect(receipt.transactionHash).to.not.eq('0x0');
+        expect(receipt.transactionIndex).to.exist;
+        expect(receipt.effectiveGasPrice).to.exist;
+        expect(Number(receipt.effectiveGasPrice)).to.gt(0);
+        expect(receipt.status).to.exist;
+        expect(receipt.logs).to.exist;
+    };
 }
 
