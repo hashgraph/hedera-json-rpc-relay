@@ -1,0 +1,22 @@
+{
+	"name": "Dev",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": {}
+	},
+	"runArgs": [
+		"--ulimit", "nofile=4096"
+	],
+	"features": {
+		"docker-in-docker": "latest",
+		"node": "16"
+	},
+	"settings": {
+	},
+	"extensions": [
+	],
+	"postCreateCommand": "sh .devcontainer/install.sh",
+	"remoteUser": "vscode",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/home/vscode/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+  "workspaceFolder": "/home/vscode/${localWorkspaceFolderBasename}"
+}
