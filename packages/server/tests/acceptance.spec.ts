@@ -51,7 +51,6 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const utils = new TestUtils(logger, 'http://localhost:7546');
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const useLocalNode = process.env.LOCAL_NODE || 'true';
@@ -89,6 +88,7 @@ const defaultLegacy2930TransactionData = {
 };
 
 // cached entities
+let utils;
 let client: Client;
 let accOneClient: Client;
 let tokenId;
@@ -107,6 +107,48 @@ describe('RPC Server Integration Tests', async function () {
     this.timeout(180 * 1000);
 
     before(async function () {
+
+        logger.info(`Setting up Mirror Node Client for ${process.env['MIRROR_NODE_URL']} env`);
+        const mirrorNodeClient = Axios.create({
+            baseURL: `${process.env['MIRROR_NODE_URL']}/api/v1`,
+            responseType: 'json' as const,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'GET',
+            timeout: 5 * 1000
+        });
+
+        // allow retries given mirror node waits for consensus, record stream serialization, export and import before parsing and exposing
+        axiosRetry(mirrorNodeClient, {
+            retries: 5,
+            retryDelay: (retryCount) => {
+                logger.info(`Retry delay ${retryCount * 1000} s`);
+                return retryCount * 1000;
+            },
+            retryCondition: (error) => {
+                // if retry condition is not specified, by default idempotent requests are retried
+                return error.response.status === 400 || error.response.status === 404;
+            }
+        });
+
+        const relayClient = Axios.create({
+            baseURL: 'http://localhost:7546',
+            responseType: 'json' as const,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'POST',
+            timeout: 5 * 1000
+        });
+
+        utils = new TestUtils({
+            logger,
+            jsonRpcProviderUrl: 'http://localhost:7546',
+            mirrorNodeClient,
+            relayClient
+        });
+
         logger.info(`Setting up SDK Client for ${process.env['HEDERA_NETWORK']} env`);
         client = utils.setupClient(process.env.OPERATOR_KEY_MAIN, process.env.OPERATOR_ID_MAIN);
 
@@ -163,60 +205,27 @@ describe('RPC Server Integration Tests', async function () {
         await utils.sendFileClosingCryptoTransfer(primaryAccountInfo.accountId, client);
         await utils.sendFileClosingCryptoTransfer(secondaryAccountInfo.accountId, client);
 
-        logger.info(`Setting up Mirror Node Client for ${process.env['MIRROR_NODE_URL']} env`);
-        const mirrorNodeClient = Axios.create({
-            baseURL: `${process.env['MIRROR_NODE_URL']}/api/v1`,
-            responseType: 'json' as const,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            method: 'GET',
-            timeout: 5 * 1000
-        });
-
-        // allow retries given mirror node waits for consensus, record stream serialization, export and import before parsing and exposing
-        axiosRetry(mirrorNodeClient, {
-            retries: 5,
-            retryDelay: (retryCount) => {
-                logger.info(`Retry delay ${retryCount * 1000} s`);
-                return retryCount * 1000;
-            },
-            retryCondition: (error) => {
-                // if retry condition is not specified, by default idempotent requests are retried
-                return error.response.status === 400 || error.response.status === 404;
-            }
-        });
-
         // get contract details
-        const mirrorContractResponse = await utils.callMirrorNode(mirrorNodeClient, `/contracts/${contractId}`);
+        const mirrorContractResponse = await utils.callMirrorNode(`/contracts/${contractId}`);
         mirrorContract = mirrorContractResponse.data;
 
         // get contract details
-        const mirrorContractDetailsResponse = await utils.callMirrorNode(mirrorNodeClient, `/contracts/${contractId}/results/${contractExecuteTimestamp}`);
+        const mirrorContractDetailsResponse = await utils.callMirrorNode(`/contracts/${contractId}/results/${contractExecuteTimestamp}`);
         mirrorContractDetails = mirrorContractDetailsResponse.data;
 
         // get block
-        const mirrorBlockResponse = await utils.callMirrorNode(mirrorNodeClient, `/blocks?block.number=${mirrorContractDetails.block_number}`);
+        const mirrorBlockResponse = await utils.callMirrorNode(`/blocks?block.number=${mirrorContractDetails.block_number}`);
         mirrorBlock = mirrorBlockResponse.data.blocks[0];
 
-        const mirrorPrimaryAccountResponse = await utils.callMirrorNode(mirrorNodeClient, `accounts?account.id=${primaryAccountInfo.accountId}`);
+        const mirrorPrimaryAccountResponse = await utils.callMirrorNode(`accounts?account.id=${primaryAccountInfo.accountId}`);
         mirrorPrimaryAccount = mirrorPrimaryAccountResponse.data.accounts[0];
 
-        const mirrorSecondaryAccountResponse = await utils.callMirrorNode(mirrorNodeClient, `accounts?account.id=${secondaryAccountInfo.accountId}`);
+        const mirrorSecondaryAccountResponse = await utils.callMirrorNode(`accounts?account.id=${secondaryAccountInfo.accountId}`);
         mirrorSecondaryAccount = mirrorSecondaryAccountResponse.data.accounts[0];
 
         // start relay
         logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
         this.testServer = app.listen({ port: process.env.SERVER_PORT });
-        this.relayClient = Axios.create({
-            baseURL: 'http://localhost:7546',
-            responseType: 'json' as const,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            method: 'POST',
-            timeout: 5 * 1000
-        });
     });
 
     after(function () {
@@ -234,12 +243,12 @@ describe('RPC Server Integration Tests', async function () {
     });
 
     it('should execute "eth_chainId"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_chainId', [null]);
+        const res = await utils.callSupportedRelayMethod('eth_chainId', [null]);
         expect(res.data.result).to.be.equal('0x12a');
     });
 
     it('should execute "eth_getBlockByHash"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBlockByHash', [mirrorBlock.hash, 'true']);
+        const res = await utils.callSupportedRelayMethod('eth_getBlockByHash', [mirrorBlock.hash, 'true']);
 
         const blockResult = res.data.result;
         expect(blockResult.hash).to.be.equal(mirrorBlock.hash.slice(0, 66));
@@ -249,7 +258,7 @@ describe('RPC Server Integration Tests', async function () {
     });
 
     it('should execute "eth_getBlockByNumber"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBlockByNumber', [mirrorBlock.number, true]);
+        const res = await utils.callSupportedRelayMethod('eth_getBlockByNumber', [mirrorBlock.number, true]);
 
         const blockResult = res.data.result;
         expect(blockResult.hash).to.be.equal(mirrorBlock.hash.slice(0, 66));
@@ -259,17 +268,17 @@ describe('RPC Server Integration Tests', async function () {
     });
 
     it('should execute "eth_getBlockTransactionCountByHash"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
+        const res = await utils.callSupportedRelayMethod('eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
         expect(res.data.result).to.be.equal(mirrorBlock.count);
     });
 
     it('should execute "eth_getBlockTransactionCountByNumber"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBlockTransactionCountByNumber', [mirrorBlock.number]);
+        const res = await utils.callSupportedRelayMethod('eth_getBlockTransactionCountByNumber', [mirrorBlock.number]);
         expect(res.data.result).to.be.equal(mirrorBlock.count);
     });
 
     it('should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionByBlockHashAndIndex', [mirrorContractDetails.block_hash, mirrorContractDetails.transaction_index]);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionByBlockHashAndIndex', [mirrorContractDetails.block_hash, mirrorContractDetails.transaction_index]);
 
         const transactionResult = res.data.result;
         expect(transactionResult.blockHash).to.be.equal(mirrorContractDetails.block_hash.slice(0, 66));
@@ -277,7 +286,7 @@ describe('RPC Server Integration Tests', async function () {
     });
 
     it('should execute "eth_getTransactionByBlockNumberAndIndex"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, mirrorContractDetails.transaction_index]);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, mirrorContractDetails.transaction_index]);
 
         const transactionResult = res.data.result;
         expect(transactionResult.blockHash).to.be.equal(mirrorContractDetails.block_hash.slice(0, 66));
@@ -285,114 +294,115 @@ describe('RPC Server Integration Tests', async function () {
     });
 
     it('should execute "net_listening"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'net_listening', []);
+        const res = await utils.callSupportedRelayMethod('net_listening', []);
         expect(res.data.result).to.be.equal('false');
     });
 
     it('should execute "net_version"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'net_version', []);
+        const res = await utils.callSupportedRelayMethod('net_version', []);
         expect(res.data.result).to.be.equal('0x12a');
     });
 
     it('should execute "eth_estimateGas"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_estimateGas', []);
+        const res = await utils.callSupportedRelayMethod('eth_estimateGas', []);
         expect(res.data.result).to.contain('0x');
         expect(res.data.result).to.not.be.equal('0x');
         expect(res.data.result).to.not.be.equal('0x0');
     });
 
     it('should execute "eth_gasPrice"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_gasPrice', []);
+        const res = await utils.callSupportedRelayMethod('eth_gasPrice', []);
         expect(res.data.result).to.be.equal('0xa7a3582000');
     });
 
     it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getUncleByBlockHashAndIndex', []);
+        const res = await utils.callSupportedRelayMethod('eth_getUncleByBlockHashAndIndex', []);
         expect(res.data.result).to.be.null;
     });
 
     it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getUncleByBlockNumberAndIndex', []);
+        const res = await utils.callSupportedRelayMethod('eth_getUncleByBlockNumberAndIndex', []);
         expect(res.data.result).to.be.null;
     });
 
     it('should execute "eth_getUncleCountByBlockHash"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getUncleCountByBlockHash', []);
+        const res = await utils.callSupportedRelayMethod('eth_getUncleCountByBlockHash', []);
         expect(res.data.result).to.be.equal('0x0');
     });
 
     it('should execute "eth_getUncleCountByBlockNumber"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getUncleCountByBlockNumber', []);
+        const res = await utils.callSupportedRelayMethod('eth_getUncleCountByBlockNumber', []);
         expect(res.data.result).to.be.equal('0x0');
     });
 
     it('should execute "eth_getWork"', async function () {
-        utils.callUnsupportedRelayMethod(this.relayClient, 'eth_getWork', []);
+        utils.callUnsupportedRelayMethod('eth_getWork', []);
     });
 
     it('should execute "eth_hashrate"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_hashrate', []);
+        const res = await utils.callSupportedRelayMethod('eth_hashrate', []);
         expect(res.data.result).to.be.equal('0x0');
     });
 
     it('should execute "eth_mining"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_mining', []);
+        const res = await utils.callSupportedRelayMethod('eth_mining', []);
         expect(res.data.result).to.be.equal(false);
     });
 
     it('should execute "eth_submitWork"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_submitWork', []);
+        const res = await utils.callSupportedRelayMethod('eth_submitWork', []);
         expect(res.data.result).to.be.equal(false);
     });
 
-    it('should execute "eth_getBalance" for primary account', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x1095793487d8e20c800');
-    });
+    it('should execute "eth_getBalance" for newly created account with 5000 HBAR', async function () {
+        const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 5000);
+        await utils.sleep(3000);
 
-    it('should execute "eth_getBalance" for secondary account', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorSecondaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x10f077b81e38c40a400');
+        const mirrorResponse = await utils.callMirrorNode(`accounts?account.id=${accountInfo.accountId}`);
+        const mirrorAccount = mirrorResponse.data.accounts[0];
+
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorAccount.evm_address, 'latest']);
+        expect(res.data.result).to.eq('0x10f0777f464e77a2400');
     });
 
     it('should execute "eth_getBalance" for non-existing address', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [nonExistingAddress, 'latest']);
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [nonExistingAddress, 'latest']);
         expect(res.data.result).to.eq('0x0');
     });
 
     it('should execute "eth_getBalance" for contract', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorContract.evm_address, 'latest']);
         expect(res.data.result).to.eq('0x56bc75e2d63100000');
     });
 
     it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [utils.idToEvmAddress(mirrorPrimaryAccount.account), 'latest']);
-        expect(res.data.result).to.eq('0x1095793487d8e20c800');
+        const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 5000);
+        const evmAddress = utils.idToEvmAddress(accountInfo.accountId.toString());
+        await utils.sleep(3000);
+
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [evmAddress, 'latest']);
+        expect(res.data.result).to.eq('0x10f0777f464e77a2400');
     });
 
     it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [utils.idToEvmAddress(contractId.toString()), 'latest']);
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [utils.idToEvmAddress(contractId.toString()), 'latest']);
         expect(res.data.result).to.eq('0x56bc75e2d63100000');
     });
 
     it('should execute "eth_sendRawTransaction" for legacy transactions', async function () {
-        const senderInitialBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [ethCompAccountEvmAddr3, 'latest']);
-        const senderInitialBalance = senderInitialBalanceRes.data.result;
-        const receiverInitialBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
-        const receiverInitialBalance = receiverInitialBalanceRes.data.result;
+        const senderInitialBalance = await utils.getBalance(ethCompAccountEvmAddr3);
+        const receiverInitialBalance = await utils.getBalance(mirrorContract.evm_address);
 
         const signedTx = await utils.signRawTransaction({
             ...defaultLegacyTransactionData,
             to: mirrorContract.evm_address
         }, ethCompPrivateKey3);
 
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
+        const res = await utils.callSupportedRelayMethod('eth_sendRawTransaction', [signedTx]);
         expect(res.data.result).to.be.equal('0x872d83c28c30ec48befb6cd77c1588e5589e00b7c61fcbc942a5b26ea23b9694');
 
-        const senderEndBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [ethCompAccountEvmAddr3, 'latest']);
-        const senderEndBalance = senderEndBalanceRes.data.result;
-        const receiverEndBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
-        const receiverEndBalance = receiverEndBalanceRes.data.result;
+        const senderEndBalance = await utils.getBalance(ethCompAccountEvmAddr3);
+        const receiverEndBalance = await utils.getBalance(mirrorContract.evm_address);
 
         expect(utils.subtractBigNumberHexes(receiverEndBalance, receiverInitialBalance).toHexString()).to.eq(oneHbarInWeiHexString);
         expect(senderInitialBalance).to.not.eq(senderEndBalance);
@@ -408,16 +418,14 @@ describe('RPC Server Integration Tests', async function () {
             nonce: 1
         }, ethCompPrivateKey3);
 
-        const res = await utils.callFailingRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
+        const res = await utils.callFailingRelayMethod('eth_sendRawTransaction', [signedTx]);
         expect(res.data.error.message).to.be.equal('Internal error');
         expect(res.data.error.code).to.be.equal(-32603);
     });
 
     it('should execute "eth_sendRawTransaction" for London transactions', async function () {
-        const senderInitialBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [ethCompAccountEvmAddr3, 'latest']);
-        const senderInitialBalance = senderInitialBalanceRes.data.result;
-        const receiverInitialBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
-        const receiverInitialBalance = receiverInitialBalanceRes.data.result;
+        const senderInitialBalance = await utils.getBalance(ethCompAccountEvmAddr3);
+        const receiverInitialBalance = await utils.getBalance(mirrorContract.evm_address);
 
         const signedTx = await utils.signRawTransaction({
             ...defaultLondonTransactionData,
@@ -425,13 +433,11 @@ describe('RPC Server Integration Tests', async function () {
             nonce: 1
         }, ethCompPrivateKey3);
 
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
+        const res = await utils.callSupportedRelayMethod('eth_sendRawTransaction', [signedTx]);
         expect(res.data.result).to.be.equal('0xcf7df11282f835c05be88f9cc95e41f706fc12bd0833afd0212df32eeaf3eaf1');
 
-        const senderEndBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [ethCompAccountEvmAddr3, 'latest']);
-        const senderEndBalance = senderEndBalanceRes.data.result;
-        const receiverEndBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
-        const receiverEndBalance = receiverEndBalanceRes.data.result;
+        const senderEndBalance = await utils.getBalance(ethCompAccountEvmAddr3);
+        const receiverEndBalance = await utils.getBalance(mirrorContract.evm_address);
 
         expect(utils.subtractBigNumberHexes(receiverEndBalance, receiverInitialBalance).toHexString()).to.eq(oneHbarInWeiHexString);
         expect(senderInitialBalance).to.not.eq(senderEndBalance);
@@ -440,51 +446,51 @@ describe('RPC Server Integration Tests', async function () {
     });
 
     it('should execute "eth_syncing"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_syncing', []);
+        const res = await utils.callSupportedRelayMethod('eth_syncing', []);
         expect(res.data.result).to.be.equal(false);
     });
 
     it('should execute "web3_client_version"', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'web3_client_version', []);
+        const res = await utils.callSupportedRelayMethod('web3_client_version', []);
         expect(res.data.result).to.contain('relay/');
     });
 
     it('should execute "eth_protocolVersion"', async function () {
-        utils.callUnsupportedRelayMethod(this.relayClient, 'eth_protocolVersion', []);
+        utils.callUnsupportedRelayMethod('eth_protocolVersion', []);
     });
 
     it('should execute "eth_getTransactionCount" primary', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, mirrorContractDetails.block_number]);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('0x0');
     });
 
     it('should execute "eth_getTransactionCount" secondary', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [mirrorSecondaryAccount.evm_address, mirrorContractDetails.block_number]);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionCount', [mirrorSecondaryAccount.evm_address, mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('0x0');
     });
 
     it('should execute "eth_getTransactionCount" contract', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [mirrorContract.evm_address, mirrorContractDetails.block_number]);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionCount', [mirrorContract.evm_address, mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('0x1');
     });
 
     it('should execute "eth_getTransactionCount" for account with id converted to evm_address', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [utils.idToEvmAddress(mirrorPrimaryAccount.account), mirrorContractDetails.block_number]);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionCount', [utils.idToEvmAddress(mirrorPrimaryAccount.account), mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('0x0');
     });
 
     it('should execute "eth_getTransactionCount" contract with id converted to evm_address', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [utils.idToEvmAddress(contractId.toString()), mirrorContractDetails.block_number]);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionCount', [utils.idToEvmAddress(contractId.toString()), mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('0x1');
     });
 
     it('should execute "eth_getTransactionCount" for non-existing address', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [nonExistingAddress, mirrorContractDetails.block_number]);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionCount', [nonExistingAddress, mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('0x0');
     });
 
     it('should execute "eth_getTransactionCount" for account with non-zero nonce', async function () {
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionCount', [ethCompAccountEvmAddr3, mirrorContractDetails.block_number]);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionCount', [ethCompAccountEvmAddr3, mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('0x2');
     });
 });
