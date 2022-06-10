@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 import useHederaSdk from "../hooks/useHederaSdkClient";
 
 
-const AccountActivationForm = ({ toAccountId, isActive, evmAddress }) => {
+const AccountActivationForm = ({ toAccountId, isActive, evmAddress, fetchAccountBalance }) => {
     const [mainAccountId, setMainAccountId] = useState('');
     const [mainPrivateKey, setMainPrivateKey] = useState('');
     const [amount, setAmount] = useState(0);
@@ -15,6 +15,8 @@ const AccountActivationForm = ({ toAccountId, isActive, evmAddress }) => {
             if (!toAccountId || !mainAccountId || !mainPrivateKey || !amount) return;
 
             await transferHbarsToAccount(mainAccountId, mainPrivateKey, Number(amount), toAccountId);
+
+            await fetchAccountBalance(evmAddress);
 
             const info = await getAccountInfo(evmAddress);
 

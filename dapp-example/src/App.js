@@ -12,7 +12,7 @@ function App() {
   const [balance, setBalance] = useState(null);
   const [accountId, setAccountId] = useState(null);
 
-  const { recoveredPublicKeyToAccountId } = useHederaSdkClient();
+  const { recoveredPublicKeyToAccountId, getAccountInfo } = useHederaSdkClient();
 
   useEffect(() => {
     if (window.ethereum) {
@@ -38,14 +38,31 @@ function App() {
     return address && Number(balance) > 0;
   }, [address, balance]);
 
-  const changeConnectedAccount = async (newAccount) => {
+  const fetchAccountBalance = async (address) => {
     try {
+      // 
       const balance = await window.ethereum.request({
         method: "eth_getBalance",
-        params: [newAccount.toString(), "latest"],
+        params: [address.toString(), "latest"],
       });
       setBalance(ethers.utils.formatEther(balance));
-      setAddress(newAccount);
+
+      // get account balance from SDK()
+      // const info = await getAccountInfo(address);
+
+      // setBalance(info.balance.toBigNumber().toNumber())
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const changeConnectedAccount = async (newAddress) => {
+    try {
+      newAddress = Array.isArray(newAddress) ? newAddress[0] : newAddress;
+
+      await fetchAccountBalance(newAddress);
+
+      setAddress(newAddress);
       setAccountId(null);
     } catch (err) {
       console.error(err);
@@ -56,13 +73,11 @@ function App() {
   const connectAccountHandler = useCallback(async () => {
     if (window.ethereum) {
       try {
-        const res = await window.ethereum.request({
+        const accounts = await window.ethereum.request({
           method: "eth_requestAccounts",
         });
 
-        const address = await signer.getAddress();
-
-        await changeConnectedAccount(address);
+        await changeConnectedAccount(accounts[0]);
       } catch (err) {
         console.error(err);
         setErrorMessage("There was a problem connecting to MetaMask");
@@ -70,7 +85,7 @@ function App() {
     } else {
       setErrorMessage("Install MetaMask");
     }
-  }, [signer]);
+  }, []);
 
   const showAccountIdHandler = useCallback(async () => {
     const message = 'Welcome to Hedera';
@@ -126,7 +141,7 @@ function App() {
 
           {
             isConnected && accountId
-              ? <AccountActivationForm toAccountId={accountId} isActive={isAccountActivated} evmAddress={address} />
+              ? <AccountActivationForm toAccountId={accountId} isActive={isAccountActivated} evmAddress={address} fetchAccountBalance={fetchAccountBalance} />
               : null
           }
         </Grid>
