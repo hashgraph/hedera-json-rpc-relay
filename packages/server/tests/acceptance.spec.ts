@@ -232,7 +232,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_chainId"', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_chainId', [null]);
-        expect(res.data.result).to.be.equal(defaultChainId);
+        expect(res.data.result).to.be.equal(utils.numberTo0x(defaultChainId));
     });
 
     it('should execute "eth_getBlockByHash"', async function () {
@@ -337,7 +337,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should return empty on "eth_accounts"', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_accounts', []);
-        expect(res.data.result).to.be.equal([]);
+        expect(res.data.result).to.deep.equal([]);
     });
 
     it('should execute "eth_hashrate"', async function () {
