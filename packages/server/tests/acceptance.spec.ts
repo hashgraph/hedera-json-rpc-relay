@@ -367,11 +367,6 @@ describe('RPC Server Integration Tests', async function () {
         await utils.callUnsupportedRelayMethod('eth_submitHashrate', []);
     });
 
-    it('should execute "eth_getBalance" for primary account', async function () {
-        const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x1095793487d8e20c800');
-    });
-
     it('should execute "eth_getBalance" for newly created account with 5000 HBAR', async function () {
         const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 5000);
         await utils.sleep(3000);
