@@ -765,7 +765,8 @@ export class EthImpl implements Eth {
     } else {
       blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
     }
-    if (blockResponse.hash === undefined) {
+    
+    if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
       // block not found
       return null;
     }
