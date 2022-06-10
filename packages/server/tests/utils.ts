@@ -360,6 +360,11 @@ export default class TestUtils {
         return Number(nonce);
     };
 
+    sendRawTransaction = async (tx, privateKey) => {
+        const signedTx = await this.signRawTransaction(tx, privateKey);
+        return this.JsonRpcProvider.send('eth_sendRawTransaction', [signedTx]);
+    };
+
     assertTransactionReceipt = (transactionReceipt, transactionRequest, overwriteValues = {}) => {
         const staticValues = {
             status: '0x1',

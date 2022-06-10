@@ -493,15 +493,9 @@ describe('RPC Server Integration Tests', async function () {
             to: mirrorContract.evm_address,
             nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
         };
-        const signedTx = await utils.signRawTransaction(txRequest, ethCompPrivateKey3);
-        const txRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
-        expect(txRes.data.result).to.be.not.be.null;
-
+        const submittedLegacyTransactionHash = await utils.sendRawTransaction(txRequest, ethCompPrivateKey3);
         await utils.sleep(3000);
-
-        const submittedLegacyTransactionHash = txRes.data.result;
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionReceipt', [submittedLegacyTransactionHash]);
-
         utils.assertTransactionReceipt(res.data.result, txRequest, {
             from: ethCompAccountEvmAddr3
         });
@@ -514,16 +508,9 @@ describe('RPC Server Integration Tests', async function () {
             to: mirrorContract.evm_address,
             nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
         };
-
-        const signedTx = await utils.signRawTransaction(txRequest, ethCompPrivateKey3);
-        const londonRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
-        expect(londonRes.data.result).to.be.not.be.null;
-
+        const submittedLondonTransactionHash = await utils.sendRawTransaction(txRequest, ethCompPrivateKey3);
         await utils.sleep(3000);
-
-        const submittedLegacyTransactionHash = londonRes.data.result;
-        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionReceipt', [submittedLegacyTransactionHash]);
-
+        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionReceipt', [submittedLondonTransactionHash]);
         utils.assertTransactionReceipt(res.data.result, txRequest, {
             from: ethCompAccountEvmAddr3
         });
