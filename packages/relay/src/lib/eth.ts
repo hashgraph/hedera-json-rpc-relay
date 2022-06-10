@@ -529,11 +529,11 @@ export class EthImpl implements Eth {
       return '0x0';
     } else {
       const result = await this.mirrorNodeClient.resolveEntityType(address);
-      if (result?.type === 'account') {
+      if (result?.type === constants.TYPE_ACCOUNT) {
         const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account);
         return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
       }
-      else if (result?.type === 'contract') {
+      else if (result?.type === constants.TYPE_CONTRACT) {
         return EthImpl.numberTo0x(1);
       }
 
