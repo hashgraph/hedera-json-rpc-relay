@@ -5,7 +5,7 @@
   "dependencies": {
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
-    "@hashgraph/sdk": "^2.15.0",
+    "@hashgraph/sdk": "2.15.0",
     "@mui/material": "^5.8.3",
     "eth-crypto": "^2.3.0",
     "ethers": "^5.6.8",

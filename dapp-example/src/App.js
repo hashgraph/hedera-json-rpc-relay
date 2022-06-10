@@ -2,14 +2,15 @@ import { Button, Chip, Grid, Typography } from "@mui/material";
 import { Box, Container } from "@mui/system";
 import { ethers } from "ethers";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import useHederaSdkClient from "./useHederaSdkClient";
+import AccountActivationForm from "./components/AccountActivationForm";
+import useHederaSdkClient from "./hooks/useHederaSdkClient";
 
 function App() {
   const [errorMessage, setErrorMessage] = useState(null);
   const [signer, setSigner] = useState(null);
-  const [account, setAccount] = useState(null);
+  const [address, setAddress] = useState(null);
   const [balance, setBalance] = useState(null);
-  const [accountAlias, setAccountAlias] = useState(null);
+  const [accountId, setAccountId] = useState(null);
 
   const { recoveredPublicKeyToAccountId } = useHederaSdkClient();
 
@@ -22,20 +23,20 @@ function App() {
       window.ethereum.on("accountsChanged", changeConnectedAccount);
       window.ethereum.on("chainChanged", () => {
         setErrorMessage(null);
-        setAccount(null);
+        setAddress(null);
         setBalance(null);
-        setAccountAlias(null);
+        setAccountId(null);
       });
     }
   }, []);
 
   const isConnected = useMemo(() => {
-    return !!signer && !!account;
-  }, [signer, account]);
+    return !!signer && !!address;
+  }, [signer, address]);
 
   const isAccountActivated = useMemo(() => {
-    return account && Number(balance) > 0;
-  }, [account, balance]);
+    return address && Number(balance) > 0;
+  }, [address, balance]);
 
   const changeConnectedAccount = async (newAccount) => {
     try {
@@ -44,8 +45,8 @@ function App() {
         params: [newAccount.toString(), "latest"],
       });
       setBalance(ethers.utils.formatEther(balance));
-      setAccount(newAccount);
-      setAccountAlias(null);
+      setAddress(newAccount);
+      setAccountId(null);
     } catch (err) {
       console.error(err);
       setErrorMessage("There was a problem connecting to MetaMask");
@@ -71,7 +72,7 @@ function App() {
     }
   }, [signer]);
 
-  const showAccountAliasHandler = useCallback(async () => {
+  const showAccountIdHandler = useCallback(async () => {
     const message = 'Welcome to Hedera';
     const msgHash = ethers.utils.hashMessage(message);
     const msgHashBytes = ethers.utils.arrayify(msgHash);
@@ -79,10 +80,10 @@ function App() {
     const signature = await signer.signMessage(message);
 
     const recoveredPubKey = ethers.utils.recoverPublicKey(msgHashBytes, signature);
-    const accountAlias = recoveredPublicKeyToAccountId(recoveredPubKey).toString();
+    const accountId = recoveredPublicKeyToAccountId(recoveredPubKey);
 
-    setAccountAlias(accountAlias);
-  }, [signer]);
+    setAccountId(accountId);
+  }, [signer, address]);
 
   return (
     <Container>
@@ -107,7 +108,7 @@ function App() {
       <Grid container spacing={2} justifyContent="center">
         <Grid item md={6}>
           <Typography variant="h5" sx={{ textDecoration: 'underline' }}> Setup Account </Typography>
-          <Typography variant="h6"> Account: {account} </Typography>
+          <Typography variant="h6"> Address: {address} </Typography>
           <Typography variant="h6">
             Balance: {balance ? balance + " HBAR" : null}
           </Typography>
@@ -115,13 +116,19 @@ function App() {
             Status: {isConnected ? <Chip label={isAccountActivated ? "Active" : 'Inactive'} color={isAccountActivated ? 'success' : 'error'} /> : null}
           </Typography>
           <br />
-          <Button onClick={showAccountAliasHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
+          <Button onClick={showAccountIdHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
             Show alias
           </Button>
           <Typography variant="h6" style={{ wordBreak: 'break-word' }}>
-            {accountAlias}
+            {accountId && accountId.toString()}
           </Typography>
+          <br />
 
+          {
+            isConnected && accountId
+              ? <AccountActivationForm toAccountId={accountId} isActive={isAccountActivated} evmAddress={address} />
+              : null
+          }
         </Grid>
       </Grid>
     </Container>
