@@ -51,7 +51,6 @@ export class EthImpl implements Eth {
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   static defaultGas = 0x3d0900;
   static ethTxType = 'EthereumTransaction';
-  static ethFunctionalityCode = 84;
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
 
   /**
@@ -361,7 +360,15 @@ export class EthImpl implements Eth {
     this.logger.trace('getBalance(account=%s, blockNumberOrTag=%s)', account, blockNumberOrTag);
     const blockNumber = await this.translateBlockTag(blockNumberOrTag);
     try {
-      const weibars = await this.sdkClient.getAccountBalanceInWeiBar(account);
+      let weibars: BigNumber | number = 0;
+      const result = await this.mirrorNodeClient.resolveEntityType(account);
+      if (result?.type === constants.TYPE_ACCOUNT) {
+        weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account);
+      }
+      else if (result?.type === constants.TYPE_CONTRACT) {
+        weibars = await this.sdkClient.getContractBalanceInWeiBar(result.entity.contract_id);
+      }
+
       return EthImpl.numberTo0x(weibars);
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
@@ -521,8 +528,16 @@ export class EthImpl implements Eth {
     if (blockNumber === 0) {
       return '0x0';
     } else {
-      const accountInfo = await this.sdkClient.getAccountInfo(address);
-      return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+      const result = await this.mirrorNodeClient.resolveEntityType(address);
+      if (result?.type === constants.TYPE_ACCOUNT) {
+        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account);
+        return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+      }
+      else if (result?.type === constants.TYPE_CONTRACT) {
+        return EthImpl.numberTo0x(1);
+      }
+
+      return EthImpl.numberTo0x(0);
     }
   }
 
@@ -746,7 +761,7 @@ export class EthImpl implements Eth {
    * Gets the block with the given hash.
    * Given an ethereum transaction hash, call the mirror node to get the block info.
    * Then using the block timerange get all contract results to get transaction details.
-   * If showDetails is set to true subsequently call mirror node for addtional transaction details
+   * If showDetails is set to true subsequently call mirror node for additional transaction details
    *
    * TODO What do we return if we cannot find the block with that hash?
    * @param blockHashOrNumber
@@ -766,7 +781,8 @@ export class EthImpl implements Eth {
     } else {
       blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
     }
-    if (blockResponse.hash === undefined) {
+    
+    if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
       // block not found
       return null;
     }

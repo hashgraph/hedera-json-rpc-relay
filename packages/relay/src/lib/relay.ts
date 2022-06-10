@@ -43,13 +43,15 @@ export class RelayImpl implements Relay {
 
   constructor(logger: Logger) {
     dotenv.config({ path: findConfig('.env') || '' });
+    logger.info('Configurations successully loaded');
+
     const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
 
     const configuredChainId =
       process.env.CHAIN_ID || RelayImpl.chainIds[hederaNetwork] || '298';
     const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
 
-    this.clientMain = this.initClient(hederaNetwork);
+    this.clientMain = this.initClient(logger, hederaNetwork);
 
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain, chainId);
@@ -85,13 +87,15 @@ export class RelayImpl implements Relay {
     return this.ethImpl;
   }
 
-  initClient(hederaNetwork: string, type: string | null = null): Client {
+  initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
     let client: Client;
     if (hederaNetwork.toLowerCase() in RelayImpl.chainIds) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
+    
+    logger.info(`SDK client successfully configured to ${JSON.stringify(hederaNetwork)}`);
 
     switch (type) {
       case 'eth_sendRawTransaction': {

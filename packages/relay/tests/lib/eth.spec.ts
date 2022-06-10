@@ -1169,9 +1169,16 @@ describe('Eth', async function () {
   describe('eth_getTransactionReceipt', async function () {
     it('returns `null` for non-existent hash', async function () {
       const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
-      const txId = cache.get(txHash);
-      expect(txId).to.not.exist;
-      const receipt = await Relay.eth().getTransactionReceipt(txHash);
+      mock.onGet(`contracts/results/${txHash}`).reply(404, {
+        '_status': {
+          'messages': [
+            {
+              'message': 'No correlating transaction'
+            }
+          ]
+        }
+      });
+      const receipt = await ethImpl.getTransactionReceipt(txHash);
       expect(receipt).to.be.null;
     });
 
@@ -1229,7 +1236,7 @@ describe('Eth', async function () {
         }
       });
 
-      const result = await ethImpl.getTransactionByHash('0x4444444444444444444444444444444444444444444444444444444444444444');
+      const result = await ethImpl.getTransactionByHash(defaultTxHash);
       expect(result).to.equal(null);
     });
 
