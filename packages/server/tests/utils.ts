@@ -355,24 +355,36 @@ export default class TestUtils {
         return new Promise(resolve => setTimeout(resolve, ms));
     };
 
-    assertReceiptNotNull = (receipt) => {
-        expect(receipt.blockHash).to.exist;
-        expect(receipt.blockHash).to.not.eq('0x0');
-        expect(receipt.blockNumber).to.exist;
-        expect(Number(receipt.blockNumber)).to.gt(0);
-        expect(receipt.cumulativeGasUsed).to.exist;
-        expect(Number(receipt.cumulativeGasUsed)).to.gt(0);
-        expect(receipt.gasUsed).to.exist;
-        expect(Number(receipt.gasUsed)).to.gt(0);
-        expect(receipt.logsBloom).to.exist;
-        expect(receipt.logsBloom).to.not.eq('0x0');
-        expect(receipt.transactionHash).to.exist;
-        expect(receipt.transactionHash).to.not.eq('0x0');
-        expect(receipt.transactionIndex).to.exist;
-        expect(receipt.effectiveGasPrice).to.exist;
-        expect(Number(receipt.effectiveGasPrice)).to.gt(0);
-        expect(receipt.status).to.exist;
-        expect(receipt.logs).to.exist;
+    assertTransactionReceipt = (transactionReceipt, transactionRequest, overwriteValues = {}) => {
+        const staticValues = {
+            status: '0x1',
+            logs: [],
+            from: '',
+            ...overwriteValues
+        };
+
+        expect(transactionReceipt.blockHash).to.exist;
+        expect(transactionReceipt.blockHash).to.not.eq('0x0');
+        expect(transactionReceipt.blockNumber).to.exist;
+        expect(Number(transactionReceipt.blockNumber)).to.gt(0);
+        expect(transactionReceipt.cumulativeGasUsed).to.exist;
+        expect(Number(transactionReceipt.cumulativeGasUsed)).to.gt(0);
+        expect(transactionReceipt.gasUsed).to.exist;
+        expect(Number(transactionReceipt.gasUsed)).to.gt(0);
+        expect(transactionReceipt.logsBloom).to.exist;
+        expect(transactionReceipt.logsBloom).to.not.eq('0x0');
+        expect(transactionReceipt.transactionHash).to.exist;
+        expect(transactionReceipt.transactionHash).to.not.eq('0x0');
+        expect(transactionReceipt.transactionIndex).to.exist;
+        expect(transactionReceipt.effectiveGasPrice).to.exist;
+        expect(Number(transactionReceipt.effectiveGasPrice)).to.gt(0);
+        expect(transactionReceipt.status).to.exist;
+        expect(transactionReceipt.logs).to.exist;
+        expect(transactionReceipt.logs.length).to.eq(staticValues.logs.length);
+        expect(transactionReceipt.status).to.eq(staticValues.status);
+        expect(transactionReceipt.from).to.eq(staticValues.from);
+        expect(transactionReceipt.to).to.eq(transactionRequest.to);
+
     };
 }
 
