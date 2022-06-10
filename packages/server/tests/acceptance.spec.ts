@@ -19,10 +19,7 @@
  */
 
 // external resources
-import {
-    Client,
-    PrivateKey,
-} from "@hashgraph/sdk";
+import { Client } from "@hashgraph/sdk";
 import Axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { expect } from 'chai';
@@ -92,19 +89,13 @@ const defaultLegacy2930TransactionData = {
 let client: Client;
 let accOneClient: Client;
 let tokenId;
-let opPrivateKey;
 let contractId;
 let contractExecuteTimestamp;
-let contractExecutedTransactionId;
 let mirrorBlock;
 let mirrorContract;
 let mirrorContractDetails;
 let mirrorPrimaryAccount;
 let mirrorSecondaryAccount;
-let ethCompPrivateKey1;
-let ethCompAccountInfo1;
-let ethCompPrivateKey2;
-let ethCompAccountInfo2;
 let ethCompPrivateKey3;
 let ethCompAccountInfo3;
 let ethCompAccountEvmAddr3;
@@ -115,8 +106,6 @@ describe('RPC Server Integration Tests', async function () {
     before(async function () {
         logger.info(`Setting up SDK Client for ${process.env['HEDERA_NETWORK']} env`);
         client = utils.setupClient(process.env.OPERATOR_KEY_MAIN, process.env.OPERATOR_ID_MAIN);
-        opPrivateKey = PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN);
-
 
         if (useLocalNode === 'true') {
             // set env variables for docker images until local-node is updated
@@ -126,7 +115,7 @@ describe('RPC Server Integration Tests', async function () {
             logger.trace(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
             // start local-node
-            logger.debug('Start local node and genereate accounts');
+            logger.debug('Start local node and generate accounts');
             shell.exec('npx hedera-local start');
             shell.exec('npx hedera-local generate-accounts 0');
             logger.trace('Hedera Hashgraph local node env started');
@@ -136,12 +125,7 @@ describe('RPC Server Integration Tests', async function () {
         logger.info('Submit eth account create transactions via crypto transfers');
         // 1. Crypto create with alias - metamask flow
         const { accountInfo: primaryAccountInfo, privateKey: primaryKey } = await utils.createEthCompatibleAccount(client, privateKeyHex1);
-        ethCompPrivateKey1 = primaryKey;
-        ethCompAccountInfo1 = primaryAccountInfo;
-
         const { accountInfo: secondaryAccountInfo, privateKey: secondaryKey } = await utils.createEthCompatibleAccount(client, privateKeyHex2);
-        ethCompPrivateKey2 = secondaryKey;
-        ethCompAccountInfo2 = secondaryAccountInfo;
 
         const ethCompatibleAccount3 = await utils.createEthCompatibleAccount(client, privateKeyHex3);
         ethCompPrivateKey3 = ethCompatibleAccount3.privateKey;
@@ -157,7 +141,6 @@ describe('RPC Server Integration Tests', async function () {
         contractId = await utils.createParentContract(parentContract, client);
         const contractCallResult = await utils.executeContractCall(contractId, client);
         contractExecuteTimestamp = contractCallResult.contractExecuteTimestamp;
-        contractExecutedTransactionId = contractCallResult.contractExecutedTransactionId;
 
         logger.info('Create parent contract with AccountOne');
         await utils.createParentContract(parentContract, accOneClient);
@@ -173,7 +156,7 @@ describe('RPC Server Integration Tests', async function () {
         await utils.associateAndTransferToken(secondaryAccountInfo.accountId, secondaryKey, tokenId, client);
 
         logger.info('Send file close crypto transfers');
-        // 5. simple crypto trasnfer to ensure file close
+        // 5. simple crypto transfer to ensure file close
         await utils.sendFileClosingCryptoTransfer(primaryAccountInfo.accountId, client);
         await utils.sendFileClosingCryptoTransfer(secondaryAccountInfo.accountId, client);
 
@@ -249,7 +232,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_chainId"', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_chainId', [null]);
-        expect(res.data.result).to.be.equal('0x12a');
+        expect(res.data.result).to.be.equal(utils.numberTo0x(defaultChainId));
     });
 
     it('should execute "eth_getBlockByHash"', async function () {
@@ -340,8 +323,21 @@ describe('RPC Server Integration Tests', async function () {
         expect(res.data.result).to.be.equal('0x0');
     });
 
-    it('should execute "eth_getWork"', async function () {
-        utils.callUnsupportedRelayMethod(this.relayClient, 'eth_getWork', []);
+    it('should not support "eth_getWork"', async function () {
+        await utils.callUnsupportedRelayMethod(this.relayClient, 'eth_getWork', []);
+    });
+
+    it('should not support "eth_coinbase"', async function () {
+        await utils.callUnsupportedRelayMethod(this.relayClient, 'eth_coinbase', []);
+    });
+
+    it('should not support "eth_sendTransaction"', async function () {
+        await utils.callUnsupportedRelayMethod(this.relayClient, 'eth_sendTransaction', []);
+    });
+
+    it('should return empty on "eth_accounts"', async function () {
+        const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_accounts', []);
+        expect(res.data.result).to.deep.equal([]);
     });
 
     it('should execute "eth_hashrate"', async function () {
@@ -357,6 +353,10 @@ describe('RPC Server Integration Tests', async function () {
     it('should execute "eth_submitWork"', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_submitWork', []);
         expect(res.data.result).to.be.equal(false);
+    });
+
+    it('should not support "eth_submitHashrate"', async function () {
+        await utils.callUnsupportedRelayMethod(this.relayClient, 'eth_submitHashrate', []);
     });
 
     it('should execute "eth_getBalance" for primary account', async function () {
@@ -463,8 +463,16 @@ describe('RPC Server Integration Tests', async function () {
         expect(res.data.result).to.contain('relay/');
     });
 
-    it('should execute "eth_protocolVersion"', async function () {
-        utils.callUnsupportedRelayMethod(this.relayClient, 'eth_protocolVersion', []);
+    it('should not support "eth_protocolVersion"', async function () {
+        await utils.callUnsupportedRelayMethod(this.relayClient, 'eth_protocolVersion', []);
+    });
+
+    it('should not support "eth_sign"', async function () {
+        await utils.callUnsupportedRelayMethod(this.relayClient, 'eth_sign', []);
+    });
+
+    it('should not support "eth_signTransaction"', async function () {
+        await utils.callUnsupportedRelayMethod(this.relayClient, 'eth_signTransaction', []);
     });
 
     it('should execute "eth_getTransactionCount" primary', async function () {
