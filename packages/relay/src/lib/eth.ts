@@ -51,7 +51,6 @@ export class EthImpl implements Eth {
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   static defaultGas = 0x3d0900;
   static ethTxType = 'EthereumTransaction';
-  static ethFunctionalityCode = 84;
 
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
@@ -761,7 +760,7 @@ export class EthImpl implements Eth {
    * Gets the block with the given hash.
    * Given an ethereum transaction hash, call the mirror node to get the block info.
    * Then using the block timerange get all contract results to get transaction details.
-   * If showDetails is set to true subsequently call mirror node for addtional transaction details
+   * If showDetails is set to true subsequently call mirror node for additional transaction details
    *
    * TODO What do we return if we cannot find the block with that hash?
    * @param blockHashOrNumber
