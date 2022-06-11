@@ -145,7 +145,7 @@ function App() {
   const deployContractHandler = useCallback(async () => {
     const contractFactory = new ethers.ContractFactory(contractAbi, contractBytecode, signer);
     const contract = await contractFactory.deploy('initial_msg');
-    const receipt = await contract.deployed();
+    const receipt = await contract.deployTransaction.wait();
     setContractAddress(receipt.contractAddress);
   }, [signer, address]);
 
