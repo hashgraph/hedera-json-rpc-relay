@@ -52,6 +52,10 @@ function App() {
   const [balance, setBalance] = useState(null);
   const [accountId, setAccountId] = useState(null);
   const [contractAddress, setContractAddress] = useState(null);
+  const [isLoading, setIsLoading] = useState(null);
+  const [deployContractMsg, setDeployContractMsg] = useState(null);
+  const [contractCallViewMsg, setContractCallViewMsg] = useState(null);
+  const [contractCallUpdateMsg, setContractCallUpdateMsg] = useState(null);
 
   const { recoveredPublicKeyToAccountId, getAccountInfo } = useHederaSdkClient();
 
@@ -68,6 +72,10 @@ function App() {
         setBalance(null);
         setAccountId(null);
         setContractAddress(null);
+        setIsLoading(null);
+        setDeployContractMsg(null);
+        setContractCallViewMsg(null);
+        setContractCallUpdateMsg(null);
       });
     }
   }, []);
@@ -143,16 +151,43 @@ function App() {
   }, [signer, address]);
 
   const deployContractHandler = useCallback(async () => {
+    setIsLoading(true);
+    setDeployContractMsg('Loading...');
+
     const contractFactory = new ethers.ContractFactory(contractAbi, contractBytecode, signer);
     const contract = await contractFactory.deploy('initial_msg');
     const receipt = await contract.deployTransaction.wait();
     setContractAddress(receipt.contractAddress);
-  }, [signer, address]);
+    console.log(receipt.contractAddress);
 
-  const contractCallHandler = useCallback(async () => {
+    setIsLoading(false);
+    setDeployContractMsg('Addr: ' + receipt.contractAddress);
+  }, [signer, address, isLoading]);
+
+  const contractCallViewHandler = useCallback(async () => {
+    setIsLoading(true);
+    setContractCallViewMsg('Loading...');
+
     const contract = new ethers.Contract(contractAddress, contractAbi, signer);
-    console.log(await contract.greet());
-  }, [signer, address, contractAddress]);
+    const call = await contract.greet();
+    console.log(call);
+
+    setContractCallViewMsg('Result: ' + call);
+    setIsLoading(false);
+  }, [signer, address, contractAddress, isLoading]);
+
+  const contractCallUpdateHandler = useCallback(async () => {
+    setIsLoading(true);
+    setContractCallUpdateMsg('Loading...');
+
+    const contract = new ethers.Contract(contractAddress, contractAbi, signer);
+    const updatedMsg = 'updated_msg_' + (new Date()).getTime();
+    const tx = await contract.setGreeting(updatedMsg);
+    console.log(tx);
+
+    setContractCallUpdateMsg('Updated text: ' + updatedMsg);
+    setIsLoading(false);
+  }, [signer, address, contractAddress, isLoading]);
 
   return (
     <Container>
@@ -175,7 +210,7 @@ function App() {
 
       {/* Account Section */}
       <Grid container spacing={2} justifyContent="center">
-        <Grid item md={6}>
+        <Grid item md={8}>
           <Typography variant="h5" sx={{ textDecoration: 'underline' }}> Setup Account </Typography>
           <Typography variant="h6"> Address: {address} </Typography>
           <Typography variant="h6">
@@ -199,14 +234,25 @@ function App() {
               : null
           }
           <br />
-          <Button onClick={deployContractHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
+          <Button onClick={deployContractHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
             Deploy contract
           </Button>
           <br />
+          <Typography variant="h6"> {deployContractMsg} </Typography>
           <br />
-          <Button onClick={contractCallHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
-            Contract call
+          <br />
+          <Button onClick={contractCallViewHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
+            Contract call view
           </Button>
+          <br />
+          <Typography variant="h6"> {contractCallViewMsg} </Typography>
+          <br />
+          <br />
+          <Button onClick={contractCallUpdateHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
+            Contract call update
+          </Button>
+          <br />
+          <Typography variant="h6"> {contractCallUpdateMsg} </Typography>
         </Grid>
       </Grid>
     </Container>
