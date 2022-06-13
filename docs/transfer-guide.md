@@ -15,13 +15,22 @@ The panel should be populated similar to the following:
 
 ![Network Panel](images/networkPanel.png)
 
-## Fund creation account
+## Create Necessary Accounts
+
+### Fund Creation Account
 In order to get started you will need to have created a Hedera account with sufficient balance to pay for the following transactions.
 
-## Create Aliased Hedera Accounts
-Aliased accounts containing tokens and matching the private keys will need to be created in order to properly sign transactions. 
+### Create Aliased Hedera Accounts for hbar Transfer
+Aliased accounts matching the private keys will need to be created in order to properly sign transactions. 
 
-You can create two aliased accounts with a token balance by executing [token-transfer-setup.js](examples/token-transfer-setup.js). You will need to setup your `.env` file with you account id and private key. It is not recommended to run this on mainnet as this will print private keys to the command line. This is for demonstration purposes only.
+You can create an aliased account by executing [account-alias-ecdsa.js](examples/account-alias-ecdsa.js). You will need to setup your `docs/examples/.env` file with you account id and private key. It is not recommended to run this on mainnet as this will print private keys to the command line. This is for demonstration purposes only.
+
+Record the raw private keys that are printed to the command line.
+
+### Create Aliased Hedera Accounts for Custom Token Transfer
+Aliased accounts containing tokens and matching the private keys will need to be created in order to properly sign transactions.
+
+You can create two aliased accounts with token balances by executing [token-transfer-setup.js](examples/token-transfer-setup.js). You will need to setup your `docs/examples/.env` file with you account id and private key. It is not recommended to run this on mainnet as this will print private keys to the command line. This is for demonstration purposes only.
 
 Record the raw private keys that are printed to the command line as well as the Ethereum Token Address.
 
@@ -43,13 +52,44 @@ Repeat this process for every account you wish to import:
 
 ![Imported Account](images/importedAccount.png)
 
-## Import Token into Metamask Account
+## Transfer Process
+
+### Send Hbar
+1. Open the receiving account in metamask and copy the address using the button below the account nickname
+2. Go to the sending account and click `Send`
+3. Paste the address into the `Send to` bar
+
+![Send Address](images/sendAddress.png)
+
+4. Enter in a valid amount to send to the account into the `Amount` field and click `Next`
+
+![Send Populate](images/sendPopulate.png)
+
+5. Click `Confirm` on the next panel after the gas values populate
+
+![Send Confirm](images/sendConfirm.png)
+
+6. Transaction will transition to pending
+
+![Send Pending](images/sendPending.png)
+
+7. Wait a few seconds for the transaction to confirm and the balance should decrease
+
+![Send Settled](images/sendSettled.png)
+
+8. Verify the updated balance in the receiving account.
+
+![Send Received](images/sendReceived.png)
+
+### Send Tokens
+
+#### Import Token into Metamask Account
 1. Select `Assets` for the account with token you have previously imported
 
 ![Assets Menu](images/assetsMenu.png)
 
 2. Click `Import tokens`
-3. Copy Ethereum Token Address
+3. Copy Ethereum Token Address from account
 4. Paste into `Token Contract Address`
 
 ![Import Token Address](images/importTokenAddress.png)
@@ -63,7 +103,7 @@ Repeat this process for every account you wish to import:
 
 ![Import Tokens](images/ImportTokens.png)
 
-## Send Tokens
+#### Transfer Tokens Between Accounts
 1. Open the receiving account in metamask and copy the address using the button below the account nickname
 2. Go to the sending account and click `Send`
 
@@ -100,3 +140,4 @@ Repeat this process for every account you wish to import:
 9. Verify the updated balance in the receiving account.
 
 ![Send Asset Received](images/sendAssetReceived.png)
+
