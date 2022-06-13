@@ -104,8 +104,8 @@ let ethCompPrivateKey3;
 let ethCompAccountInfo3;
 let ethCompAccountEvmAddr3;
 
-describe('RPC Server Integration Tests', async function () {
-    this.timeout(180 * 1000);
+describe('RPC Server Acceptance Tests', async function () {
+    this.timeout(240 * 1000);
 
     before(async function () {
         logger.info(`Setting up Mirror Node Client for ${process.env['MIRROR_NODE_URL']} env`);
@@ -127,6 +127,8 @@ describe('RPC Server Integration Tests', async function () {
                 return retryCount * 1000;
             },
             retryCondition: (error) => {
+                logger.error(error, `Request failed`);
+
                 // if retry condition is not specified, by default idempotent requests are retried
                 return error.response?.status === 400 || error.response?.status === 404;
             }
@@ -146,9 +148,8 @@ describe('RPC Server Integration Tests', async function () {
             logger.trace(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
             // start local-node
-            logger.debug('Start local node and generate accounts');
-            shell.exec('npx hedera-local start');
-            shell.exec('npx hedera-local generate-accounts 0');
+            logger.debug('Start local node');
+            shell.exec('npx hedera-local restart');
             logger.trace('Hedera Hashgraph local node env started');
         }
 
@@ -368,7 +369,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for primary account', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x1095793487d8e20c800');
+        expect(res.data.result).to.contain('0x1095793487'); // at least 4894697646681780912128 wei bars
     });
 
     it('should execute "eth_getBalance" for secondary account', async function () {
@@ -388,7 +389,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [utils.idToEvmAddress(mirrorPrimaryAccount.account), 'latest']);
-        expect(res.data.result).to.eq('0x1095793487d8e20c800');
+        expect(res.data.result).to.contain('0x1095793487'); // at least 4894697646681780912128 wei bars
     });
 
     it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
