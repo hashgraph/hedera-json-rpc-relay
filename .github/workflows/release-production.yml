@@ -6,6 +6,7 @@ on:
 
 env:
   OWNER: hashgraph
+  PACKAGE_NAME: hedera-json-rpc-relay
   REGISTRY: ghcr.io
 
 jobs:
@@ -41,12 +42,15 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{env.TAG}}
       
+      - name: Install packages
+        run: npm ci
+
       - name: Produce artifact
-        run: tar -czf hedera-json-rpc-relay.tgz -C ./packages . 
+        run: tar -czf ${{ env.PACKAGE_NAME }}.tgz -C ./packages . 
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.MODULE }}
+          name: ${{ env.PACKAGE_NAME }}
           path: ./*.tgz
           if-no-files-found: error
