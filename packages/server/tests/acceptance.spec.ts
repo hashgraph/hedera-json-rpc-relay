@@ -99,8 +99,8 @@ let ethCompPrivateKey3;
 let ethCompAccountInfo3;
 let ethCompAccountEvmAddr3;
 
-describe('RPC Server Integration Tests', async function () {
-    this.timeout(180 * 1000);
+describe('RPC Server Acceptance Tests', async function () {
+    this.timeout(240 * 1000);
 
     before(async function () {
 
@@ -123,6 +123,8 @@ describe('RPC Server Integration Tests', async function () {
                 return retryCount * 1000;
             },
             retryCondition: (error) => {
+                logger.error(error, `Request failed`);
+
                 // if retry condition is not specified, by default idempotent requests are retried
                 return error.response.status === 400 || error.response.status === 404;
             }
@@ -150,15 +152,14 @@ describe('RPC Server Integration Tests', async function () {
 
         if (useLocalNode === 'true') {
             // set env variables for docker images until local-node is updated
-            process.env['NETWORK_NODE_IMAGE_TAG'] = '0.26.2-patch.3';
-            process.env['HAVEGED_IMAGE_TAG'] = '0.25.4';
-            process.env['MIRROR_IMAGE_TAG'] = '0.58.0-rc1';
+            process.env['NETWORK_NODE_IMAGE_TAG'] = '0.26.2';
+            process.env['HAVEGED_IMAGE_TAG'] = '0.26.2';
+            process.env['MIRROR_IMAGE_TAG'] = '0.58.0';
             logger.trace(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
             // start local-node
-            logger.debug('Start local node and generate accounts');
-            shell.exec('npx hedera-local start');
-            shell.exec('npx hedera-local generate-accounts 0');
+            logger.debug('Start local node');
+            shell.exec('npx hedera-local restart');
             logger.trace('Hedera Hashgraph local node env started');
         }
 
