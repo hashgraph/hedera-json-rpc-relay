@@ -116,11 +116,7 @@ describe('RPC Server Acceptance Tests', async function () {
 
             // start local-node
             logger.debug('Start local node');
-            logger.debug('Retrieve docker compose state from load');
-            shell.exec('docker-compose ps');
             shell.exec('npx hedera-local restart');
-            logger.debug('Retrieve docker compose state post local node start');
-            shell.exec('docker-compose ps');
             logger.trace('Hedera Hashgraph local node env started');
         }
 
