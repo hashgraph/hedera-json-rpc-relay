@@ -109,9 +109,9 @@ describe('RPC Server Integration Tests', async function () {
 
         if (useLocalNode === 'true') {
             // set env variables for docker images until local-node is updated
-            process.env['NETWORK_NODE_IMAGE_TAG'] = '0.26.2-patch.3';
-            process.env['HAVEGED_IMAGE_TAG'] = '0.25.4';
-            process.env['MIRROR_IMAGE_TAG'] = '0.58.0-rc1';
+            process.env['NETWORK_NODE_IMAGE_TAG'] = '0.26.2';
+            process.env['HAVEGED_IMAGE_TAG'] = '0.26.2';
+            process.env['MIRROR_IMAGE_TAG'] = '0.58.0';
             logger.trace(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
             // start local-node
