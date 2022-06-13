@@ -369,10 +369,8 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for newly created account with 5000 HBAR', async function () {
         const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 5000);
-        await utils.sleep(3000);
-        const mirrorResponse = await utils.callMirrorNode(`accounts?account.id=${accountInfo.accountId}`);
-        const mirrorAccount = mirrorResponse.data.accounts[0];
-
+        const mirrorResponse = await utils.callMirrorNode(`accounts/${accountInfo.accountId}`);
+        const mirrorAccount = mirrorResponse.data;
         const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorAccount.evm_address, 'latest']);
         expect(res.data.result).to.eq('0x10f0777f464e77a2400');
     });
@@ -389,9 +387,11 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
         const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 5000);
-        const evmAddress = utils.idToEvmAddress(accountInfo.accountId.toString());
-        await utils.sleep(3000);
+        const accountId = accountInfo.accountId.toString();
+        const evmAddress = utils.idToEvmAddress(accountId);
 
+        // wait for the account to be imported in the Mirror Node
+        await utils.callMirrorNode(`accounts/${accountId}`);
         const res = await utils.callSupportedRelayMethod('eth_getBalance', [evmAddress, 'latest']);
         expect(res.data.result).to.eq('0x10f0777f464e77a2400');
     });

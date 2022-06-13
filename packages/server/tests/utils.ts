@@ -370,9 +370,5 @@ export default class TestUtils {
     subtractBigNumberHexes = (hex1, hex2) => {
         return BigNumber.from(hex1).sub(BigNumber.from(hex2));
     };
-
-    sleep = async (ms) => {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    };
 }
 
