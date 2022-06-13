@@ -115,9 +115,8 @@ describe('RPC Server Acceptance Tests', async function () {
             logger.trace(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
             // start local-node
-            logger.debug('Start local node and generate accounts');
-            shell.exec('npx hedera-local start');
-            shell.exec('npx hedera-local generate-accounts 0');
+            logger.debug('Start local node');
+            shell.exec('npx hedera-local restart');
             logger.trace('Hedera Hashgraph local node env started');
         }
 
