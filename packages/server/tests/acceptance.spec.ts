@@ -179,6 +179,8 @@ describe('RPC Server Acceptance Tests', async function () {
                 return retryCount * 1000;
             },
             retryCondition: (error) => {
+                logger.error(error, `Request failed`);
+
                 // if retry condition is not specified, by default idempotent requests are retried
                 return error.response.status === 400 || error.response.status === 404;
             }
