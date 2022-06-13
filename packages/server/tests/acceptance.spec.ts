@@ -48,8 +48,6 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const utils = new TestUtils(logger, 'http://localhost:7546');
-
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const useLocalNode = process.env.LOCAL_NODE || 'true';
 
@@ -87,6 +85,7 @@ const defaultLegacy2930TransactionData = {
 };
 
 // cached entities
+let utils;
 let client: Client;
 let accOneClient: Client;
 let tokenId;
@@ -105,7 +104,34 @@ describe('RPC Server Integration Tests', async function () {
     this.timeout(180 * 1000);
 
     before(async function () {
+        logger.info(`Setting up Mirror Node Client for ${process.env['MIRROR_NODE_URL']} env`);
+        const mirrorNodeClient = Axios.create({
+            baseURL: `${process.env['MIRROR_NODE_URL']}/api/v1`,
+            responseType: 'json' as const,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'GET',
+            timeout: 5 * 1000
+        });
+
+        // allow retries given mirror node waits for consensus, record stream serialization, export and import before parsing and exposing
+        axiosRetry(mirrorNodeClient, {
+            retries: 5,
+            retryDelay: (retryCount) => {
+                logger.info(`Retry delay ${retryCount * 1000} s`);
+                return retryCount * 1000;
+            },
+            retryCondition: (error) => {
+                // if retry condition is not specified, by default idempotent requests are retried
+                return error.response?.status === 400 || error.response?.status === 404;
+            }
+        });
+
         logger.info(`Setting up SDK Client for ${process.env['HEDERA_NETWORK']} env`);
+
+        utils = new TestUtils(logger, 'http://localhost:7546', mirrorNodeClient);
+
         client = utils.setupClient(process.env.OPERATOR_KEY_MAIN, process.env.OPERATOR_ID_MAIN);
 
         if (useLocalNode === 'true') {
@@ -161,46 +187,22 @@ describe('RPC Server Integration Tests', async function () {
         await utils.sendFileClosingCryptoTransfer(primaryAccountInfo.accountId, client);
         await utils.sendFileClosingCryptoTransfer(secondaryAccountInfo.accountId, client);
 
-        logger.info(`Setting up Mirror Node Client for ${process.env['MIRROR_NODE_URL']} env`);
-        const mirrorNodeClient = Axios.create({
-            baseURL: `${process.env['MIRROR_NODE_URL']}/api/v1`,
-            responseType: 'json' as const,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            method: 'GET',
-            timeout: 5 * 1000
-        });
-
-        // allow retries given mirror node waits for consensus, record stream serialization, export and import before parsing and exposing
-        axiosRetry(mirrorNodeClient, {
-            retries: 5,
-            retryDelay: (retryCount) => {
-                logger.info(`Retry delay ${retryCount * 1000} s`);
-                return retryCount * 1000;
-            },
-            retryCondition: (error) => {
-                // if retry condition is not specified, by default idempotent requests are retried
-                return error.response.status === 400 || error.response.status === 404;
-            }
-        });
-
         // get contract details
-        const mirrorContractResponse = await utils.callMirrorNode(mirrorNodeClient, `/contracts/${contractId}`);
+        const mirrorContractResponse = await utils.callMirrorNode(`/contracts/${contractId}`);
         mirrorContract = mirrorContractResponse.data;
 
         // get contract details
-        const mirrorContractDetailsResponse = await utils.callMirrorNode(mirrorNodeClient, `/contracts/${contractId}/results/${contractExecuteTimestamp}`);
+        const mirrorContractDetailsResponse = await utils.callMirrorNode(`/contracts/${contractId}/results/${contractExecuteTimestamp}`);
         mirrorContractDetails = mirrorContractDetailsResponse.data;
 
         // get block
-        const mirrorBlockResponse = await utils.callMirrorNode(mirrorNodeClient, `/blocks?block.number=${mirrorContractDetails.block_number}`);
+        const mirrorBlockResponse = await utils.callMirrorNode(`/blocks?block.number=${mirrorContractDetails.block_number}`);
         mirrorBlock = mirrorBlockResponse.data.blocks[0];
 
-        const mirrorPrimaryAccountResponse = await utils.callMirrorNode(mirrorNodeClient, `accounts?account.id=${primaryAccountInfo.accountId}`);
+        const mirrorPrimaryAccountResponse = await utils.callMirrorNode(`accounts?account.id=${primaryAccountInfo.accountId}`);
         mirrorPrimaryAccount = mirrorPrimaryAccountResponse.data.accounts[0];
 
-        const mirrorSecondaryAccountResponse = await utils.callMirrorNode(mirrorNodeClient, `accounts?account.id=${secondaryAccountInfo.accountId}`);
+        const mirrorSecondaryAccountResponse = await utils.callMirrorNode(`accounts?account.id=${secondaryAccountInfo.accountId}`);
         mirrorSecondaryAccount = mirrorSecondaryAccountResponse.data.accounts[0];
 
         // start relay
@@ -519,7 +521,6 @@ describe('RPC Server Integration Tests', async function () {
             nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
         };
         const submittedLegacyTransactionHash = await utils.sendRawTransaction(txRequest, ethCompPrivateKey3);
-        await utils.sleep(3000);
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionReceipt', [submittedLegacyTransactionHash]);
         utils.assertTransactionReceipt(res.data.result, txRequest, {
             from: ethCompAccountEvmAddr3
@@ -534,7 +535,6 @@ describe('RPC Server Integration Tests', async function () {
             nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
         };
         const submittedLondonTransactionHash = await utils.sendRawTransaction(txRequest, ethCompPrivateKey3);
-        await utils.sleep(3000);
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getTransactionReceipt', [submittedLondonTransactionHash]);
         utils.assertTransactionReceipt(res.data.result, txRequest, {
             from: ethCompAccountEvmAddr3

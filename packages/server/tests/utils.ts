@@ -40,7 +40,7 @@ import {
     TransferTransaction
 } from "@hashgraph/sdk";
 import {Logger} from "pino";
-import {AxiosInstance} from "axios";
+import {Axios, AxiosInstance} from "axios";
 import {BigNumber, ethers} from "ethers";
 import type { TransactionRequest } from "@ethersproject/abstract-provider";
 import type { JsonRpcProvider } from "@ethersproject/providers";
@@ -50,10 +50,12 @@ const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 export default class TestUtils {
     private readonly logger: Logger;
     private readonly JsonRpcProvider: JsonRpcProvider;
+    private readonly mirrorNodeClient: AxiosInstance;
 
-    constructor(logger: Logger, jsonRpcProviderUrl: string) {
+    constructor(logger: Logger, jsonRpcProviderUrl: string, mirrorNodeClient: AxiosInstance) {
         this.logger = logger;
         this.JsonRpcProvider = new ethers.providers.JsonRpcProvider(jsonRpcProviderUrl);
+        this.mirrorNodeClient = mirrorNodeClient;
     }
 
     numberTo0x = (input: number): string => {
@@ -128,9 +130,9 @@ export default class TestUtils {
         return { executedTimestamp, executedTransactionId };
     };
 
-    callMirrorNode = (mirrorNodeClient: AxiosInstance, path: string) => {
+    callMirrorNode = (path: string) => {
         this.logger.debug(`[GET] mirrornode ${path} endpoint`);
-        return mirrorNodeClient.get(path);
+        return this.mirrorNodeClient.get(path);
     };
 
     callSupportedRelayMethod = async (client: any, methodName: string, params: any[]) => {
@@ -351,10 +353,6 @@ export default class TestUtils {
         return BigNumber.from(hex1).sub(BigNumber.from(hex2));
     };
 
-    sleep = async (ms) => {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    };
-
     /**
      * @param evmAddress
      *
@@ -375,7 +373,12 @@ export default class TestUtils {
      */
     sendRawTransaction = async (tx, privateKey): Promise<string> => {
         const signedTx = await this.signRawTransaction(tx, privateKey);
-        return this.JsonRpcProvider.send('eth_sendRawTransaction', [signedTx]);
+        const txHash = await this.JsonRpcProvider.send('eth_sendRawTransaction', [signedTx]);
+
+        // Since the transactionId is not available in this context
+        // Wait for the transaction to be processed and imported in the mirror node with axios-retry
+        await this.callMirrorNode(`contracts/results/${txHash}`);
+        return txHash;
     };
 
     assertTransactionReceipt = (transactionReceipt, transactionRequest, overwriteValues = {}) => {
