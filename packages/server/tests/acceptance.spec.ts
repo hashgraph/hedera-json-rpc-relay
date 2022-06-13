@@ -116,7 +116,6 @@ describe('RPC Server Acceptance Tests', async function () {
 
             // start local-node
             logger.debug('Start local node');
-            shell.exec('docker volume prune -f');
             shell.exec('npx hedera-local restart');
             logger.trace('Hedera Hashgraph local node env started');
         }
