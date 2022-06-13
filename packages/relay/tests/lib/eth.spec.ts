@@ -216,6 +216,13 @@ describe('Eth calls using MirrorNode', async function () {
     'v': 1
   };
 
+  const defaultEmptyContractResults = {
+    'results': [],
+    'links': {
+      'next': '/api/v1/contracts/results?limit=2&timestamp=lt:1653077542.701408897'
+    }
+  };
+
   const defaultDetailedContractResults2 = {...defaultDetailedContractResults, ...{
     'timestamp': contractTimestamp2,
     'block_hash': blockHash2,
@@ -366,6 +373,30 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.transactions.length).equal(2);
     expect((result.transactions[0] as string)).equal(contractHash1);
     expect((result.transactions[1] as string)).equal(contractHash1);
+
+    // verify expected constants
+    verifyBlockConstants(result);
+  });
+
+  it('eth_getBlockByNumber with zero transactions', async function () {
+    // mirror node request mocks
+    mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultEmptyContractResults);
+    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultEmptyContractResults);
+    mock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultEmptyContractResults);
+    const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
+    expect(result).to.exist;
+    if (result == null) return;
+
+    // verify aggregated info
+    expect(result.hash).equal(blockHashTrimmed);
+    expect(result.gasUsed).equal(totalGasUsed);
+    expect(result.gasLimit).equal(maxGasLimitHex);
+    expect(result.number).equal(blockNumberHex);
+    expect(result.parentHash).equal(blockHashPreviousTrimmed);
+    expect(result.timestamp).equal(firstTransactionTimestampSecondsHex);
+    expect(result.transactions.length).equal(0);
+    expect(result.transactionsRoot).equal(EthImpl.ethEmptyTrie);
 
     // verify expected constants
     verifyBlockConstants(result);
