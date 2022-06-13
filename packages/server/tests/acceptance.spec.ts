@@ -101,7 +101,7 @@ let ethCompAccountInfo3;
 let ethCompAccountEvmAddr3;
 
 describe('RPC Server Acceptance Tests', async function () {
-    this.timeout(180 * 1000);
+    this.timeout(240 * 1000);
 
     before(async function () {
         logger.info(`Setting up SDK Client for ${process.env['HEDERA_NETWORK']} env`);
