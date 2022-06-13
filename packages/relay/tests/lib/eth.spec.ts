@@ -381,7 +381,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_getBlockByNumber with zero transactions', async function () {
     // mirror node request mocks
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
-    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultEmptyContractResults);
+    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultEmptyContractResults);
     mock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultEmptyContractResults);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
