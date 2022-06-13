@@ -100,7 +100,7 @@ let ethCompPrivateKey3;
 let ethCompAccountInfo3;
 let ethCompAccountEvmAddr3;
 
-describe('RPC Server Integration Tests', async function () {
+describe('RPC Server Acceptance Tests', async function () {
     this.timeout(180 * 1000);
 
     before(async function () {
@@ -361,7 +361,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for primary account', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorPrimaryAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x1095793487d8e20c800');
+        expect(res.data.result).to.contain('0x1095793487'); // at least 4894697646681780912128 wei bars
     });
 
     it('should execute "eth_getBalance" for secondary account', async function () {
@@ -381,7 +381,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
         const res = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [utils.idToEvmAddress(mirrorPrimaryAccount.account), 'latest']);
-        expect(res.data.result).to.eq('0x1095793487d8e20c800');
+        expect(res.data.result).to.contain('0x1095793487'); // at least 4894697646681780912128 wei bars
     });
 
     it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
