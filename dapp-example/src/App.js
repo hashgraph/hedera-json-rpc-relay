@@ -388,7 +388,6 @@ function App() {
     const contract = await contractFactory.deploy('initial_msg');
     const receipt = await contract.deployTransaction.wait();
     setContractAddress(receipt.contractAddress);
-    console.log(receipt.contractAddress);
 
     setIsLoading(false);
     setDeployContractMsg('Addr: ' + receipt.contractAddress);
@@ -400,7 +399,6 @@ function App() {
 
     const contract = new ethers.Contract(contractAddress, contractAbi, signer);
     const call = await contract.greet();
-    console.log(call);
 
     setContractCallViewMsg('Result: ' + call);
     setIsLoading(false);
@@ -413,7 +411,6 @@ function App() {
     const contract = new ethers.Contract(contractAddress, contractAbi, signer);
     const updatedMsg = 'updated_msg_' + (new Date()).getTime();
     const tx = await contract.setGreeting(updatedMsg);
-    console.log(tx);
 
     setContractCallUpdateMsg('Updated text: ' + updatedMsg);
     setIsLoading(false);
@@ -425,7 +422,6 @@ function App() {
 
     const contract = new ethers.Contract(htsTokenAddress, ERC20ABI, signer);
     const call = await contract.transfer(htsTokenReceiverAddress, htsTokenAmount);
-    console.log(call);
 
     setHtsTokenMsg('Done');
     setIsLoading(false);
