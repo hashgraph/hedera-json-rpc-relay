@@ -355,12 +355,25 @@ export default class TestUtils {
         return new Promise(resolve => setTimeout(resolve, ms));
     };
 
-    getAccountNonce = async (evmAddress) => {
+    /**
+     * @param evmAddress
+     *
+     * Returns: The nonce of the account with the provided `evmAddress`
+     */
+    getAccountNonce = async (evmAddress): Promise<number> => {
         const nonce = await this.JsonRpcProvider.send('eth_getTransactionCount', [evmAddress, 'latest']);
         return Number(nonce);
     };
 
-    sendRawTransaction = async (tx, privateKey) => {
+    /**
+     * @param tx
+     * @param privateKey
+     * Signs a transaction request with the provided privateKey and sends it via `ethers.jsonRpcProvider`.
+     * This invokes the relay logic from eth.ts/sendRawTransaction.
+     *
+     * Returns: Transaction hash
+     */
+    sendRawTransaction = async (tx, privateKey): Promise<string> => {
         const signedTx = await this.signRawTransaction(tx, privateKey);
         return this.JsonRpcProvider.send('eth_sendRawTransaction', [signedTx]);
     };
