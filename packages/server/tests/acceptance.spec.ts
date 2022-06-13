@@ -62,9 +62,13 @@ const oneHbarInWeiHexString = `0x0de0b6b3a7640000`;
 
 const defaultLegacyTransactionData = {
     value: oneHbarInWeiHexString,
-    chainId: defaultChainId,
     gasPrice: 720000000000,
     gasLimit: 3000000
+};
+
+const default155TransactionData = {
+    ...defaultLegacyTransactionData,
+    chainId: defaultChainId
 };
 
 const defaultLondonTransactionData = {
@@ -392,14 +396,14 @@ describe('RPC Server Integration Tests', async function () {
         expect(res.data.result).to.eq('0x56bc75e2d63100000');
     });
 
-    it('should execute "eth_sendRawTransaction" for legacy transactions', async function () {
+    it('should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
         const senderInitialBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [ethCompAccountEvmAddr3, 'latest']);
         const senderInitialBalance = senderInitialBalanceRes.data.result;
         const receiverInitialBalanceRes = await utils.callSupportedRelayMethod(this.relayClient, 'eth_getBalance', [mirrorContract.evm_address, 'latest']);
         const receiverInitialBalance = receiverInitialBalanceRes.data.result;
 
         const signedTx = await utils.signRawTransaction({
-            ...defaultLegacyTransactionData,
+            ...default155TransactionData,
             to: mirrorContract.evm_address
         }, ethCompPrivateKey3);
 
@@ -418,8 +422,19 @@ describe('RPC Server Integration Tests', async function () {
 
     });
 
+    it('should fail "eth_sendRawTransaction" for Legacy transactions (with no chainId)', async function () {
+        const signedTx = await utils.signRawTransaction({
+            ...defaultLegacyTransactionData,
+            to: mirrorContract.evm_address,
+            nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
+        }, ethCompPrivateKey3);
+
+        const res = await utils.callFailingRelayMethod(this.relayClient, 'eth_sendRawTransaction', [signedTx]);
+        expect(res.data.error.message).to.be.equal('Internal error');
+        expect(res.data.error.code).to.be.equal(-32603);
+    });
+
     it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
-        // INVALID_ETHEREUM_TX
         const signedTx = await utils.signRawTransaction({
             ...defaultLegacy2930TransactionData,
             to: mirrorContract.evm_address,
@@ -516,7 +531,7 @@ describe('RPC Server Integration Tests', async function () {
 
     it('should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
         const txRequest = {
-            ...defaultLegacyTransactionData,
+            ...default155TransactionData,
             to: mirrorContract.evm_address,
             nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
         };
