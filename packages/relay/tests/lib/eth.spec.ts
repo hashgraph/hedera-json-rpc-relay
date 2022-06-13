@@ -385,7 +385,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.gasLimit).equal('0x0');
     expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(firstTransactionTimestampSecondsHex);
+    expect(result.timestamp).equal('0x0');
     expect(result.transactions.length).equal(0);
     expect(result.transactionsRoot).equal(EthImpl.ethEmptyTrie);
 
