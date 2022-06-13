@@ -390,7 +390,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
-    expect(result.gasUsed).equal(0);
+    expect(result.gasUsed).equal('0x0');
     expect(result.gasLimit).equal(maxGasLimitHex);
     expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
