@@ -371,6 +371,28 @@ describe('Eth calls using MirrorNode', async function () {
     verifyBlockConstants(result);
   });
 
+  it('eth_getBlockByNumber with zero transactions', async function () {
+    // mirror node request mocks
+    mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, { 'results': []});
+    const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
+    expect(result).to.exist;
+    if (result == null) return;
+
+    // verify aggregated info
+    expect(result.hash).equal(blockHashTrimmed);
+    expect(result.gasUsed).equal('0x0');
+    expect(result.gasLimit).equal('0x0');
+    expect(result.number).equal(blockNumberHex);
+    expect(result.parentHash).equal(blockHashPreviousTrimmed);
+    expect(result.timestamp).equal('0x0');
+    expect(result.transactions.length).equal(0);
+    expect(result.transactionsRoot).equal(EthImpl.ethEmptyTrie);
+
+    // verify expected constants
+    verifyBlockConstants(result);
+  });
+
   it('eth_getBlockByNumber with match and details', async function () {
     // mirror node request mocks
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
