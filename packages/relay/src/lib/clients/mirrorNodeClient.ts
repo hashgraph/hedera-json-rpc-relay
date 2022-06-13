@@ -21,6 +21,7 @@
 import Axios, { AxiosInstance } from 'axios';
 import { predefined } from '../errors';
 import { Logger } from "pino";
+import constants from './../constants';
 
 export interface ILimitOrderParams {
     limit?: number;
@@ -111,27 +112,26 @@ export class MirrorNodeClient {
         }
 
         this.logger = logger;
-        this.logger.info("Restarting.");
+        this.logger.info(`Mirror Node client successfully configured to ${this.baseUrl}`);
     }
 
     async request(path: string, allowedErrorStatuses?: number[]): Promise<any> {
         try {
-            this.logger.debug(`Mirror Request: ${path}`);
             const response = await this.client.get(path);
+            this.logger.debug(`Mirror Node Response: [GET] ${path} ${response.status}`);
             return response.data;
         } catch (error) {
-            this.handleError(error, allowedErrorStatuses);
+            this.handleError(error, path, allowedErrorStatuses);
         }
         return null;
     }
 
-    handleError(error: any, allowedErrorStatuses?: number[]) {
+    handleError(error: any, path: string, allowedErrorStatuses?: number[]) {
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
-            if (error.response && allowedErrorStatuses.indexOf(error.response.status) === -1) {
-                throw error;
+            if (error.response && allowedErrorStatuses.indexOf(error.response.status) !== -1) {
+                this.logger.debug(`Mirror Node Response: [GET] ${path} ${error.response.status} status`);
+                return null;
             }
-
-            return null;
         }
 
         this.logger.error(error, 'Unexpected request error');
@@ -300,5 +300,24 @@ export class MirrorNodeClient {
         if (key && value !== undefined) {
             queryParamObject[key] = value;
         }
+    }
+
+    public async resolveEntityType(entityIdentifier: string) {
+        const contractResult = await this.getContract(entityIdentifier);
+        if (contractResult) {
+            return {
+                type: constants.TYPE_CONTRACT,
+                entity: contractResult
+            };
+        }
+        const accountResult = await this.getAccount(entityIdentifier);
+        if (accountResult) {
+            return {
+                type: constants.TYPE_ACCOUNT,
+                entity: accountResult
+            };
+        }
+
+        return null;
     }
 }

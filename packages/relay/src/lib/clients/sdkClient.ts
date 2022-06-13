@@ -38,15 +38,11 @@ import {
     FeeComponents
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import constants from './../constants';
 
 const _ = require('lodash');
 
 export class SDKClient {
-    private static DEFAULT_TINY_BAR_GAS = 72; // (853454 / 1000) * (1 / 12)
-    private static ETH_FUNCTIONALITY_CODE = 84;
-    private static EXCHANGE_RATE_FILE_ID = "0.0.112";
-    private static FEE_SCHEDULE_FILE_ID = '0.0.111';
-    
     /**
      * The client to use for connecting to the main consensus network. The account
      * associated with this client will pay for all operations on the main network.
@@ -62,23 +58,18 @@ export class SDKClient {
 
     async getAccountBalance(account: string): Promise<AccountBalance> {
         return (new AccountBalanceQuery()
-            .setAccountId(SDKClient.toAccountId(account)))
+            .setAccountId(AccountId.fromString(account)))
             .execute(this.clientMain);
     }
 
     async getAccountBalanceInWeiBar(account: string): Promise<BigNumber> {
-        const balance = await (new AccountBalanceQuery()
-            .setAccountId(SDKClient.toAccountId(account)))
-            .execute(this.clientMain);
-
-        return balance.hbars
-            .to(HbarUnit.Tinybar)
-            .multipliedBy(10_000_000_000);
+        const balance = await this.getAccountBalance(account);
+        return SDKClient.HbarToWeiBar(balance);
     }
 
     async getAccountInfo(address: string): Promise<AccountInfo> {
         return (new AccountInfoQuery()
-            .setAccountId(SDKClient.toAccountId(address)))
+            .setAccountId(AccountId.fromString(address)))
             .execute(this.clientMain);
     }
 
@@ -88,14 +79,25 @@ export class SDKClient {
             .execute(this.clientMain);
     }
 
+    async getContractBalance(contract: string): Promise<AccountBalance> {
+        return (new AccountBalanceQuery()
+            .setContractId(ContractId.fromString(contract)))
+            .execute(this.clientMain);
+    }
+
+    async getContractBalanceInWeiBar(account: string): Promise<BigNumber> {
+        const balance = await this.getContractBalance(account);
+        return SDKClient.HbarToWeiBar(balance);
+    }
+
     async getExchangeRate(): Promise<ExchangeRates> {
-        const exchangeFileBytes = await this.getFileIdBytes(SDKClient.EXCHANGE_RATE_FILE_ID);
+        const exchangeFileBytes = await this.getFileIdBytes(constants.EXCHANGE_RATE_FILE_ID);
 
         return ExchangeRates.fromBytes(exchangeFileBytes);
     }
 
     async getFeeSchedule(): Promise<FeeSchedules> {
-        const feeSchedulesFileBytes = await this.getFileIdBytes(SDKClient.FEE_SCHEDULE_FILE_ID);
+        const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID);
 
         return FeeSchedules.fromBytes(feeSchedulesFileBytes);
     }
@@ -107,7 +109,7 @@ export class SDKClient {
         }
 
         for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
-            if (schedule.hederaFunctionality?._code === SDKClient.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
+            if (schedule.hederaFunctionality?._code === constants.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
                 // get exchange rate & convert to tiny bar
                 const exchangeRates = await this.getExchangeRate();
 
@@ -115,7 +117,7 @@ export class SDKClient {
             }
         }
 
-        throw new Error(`${SDKClient.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
+        throw new Error(`${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
     }
 
     async getFileIdBytes(address: string): Promise<Uint8Array> {
@@ -162,7 +164,7 @@ export class SDKClient {
         // gas -> tinCents:  gas / 1000
         // tinCents -> tinyBars: tinCents * exchangeRate (hbarEquiv/ centsEquiv)
         if (feeComponents === undefined || feeComponents.contractTransactionGas === undefined) {
-            return SDKClient.DEFAULT_TINY_BAR_GAS;
+            return constants.DEFAULT_TINY_BAR_GAS;
         }
 
         return Math.ceil(
@@ -178,6 +180,16 @@ export class SDKClient {
      */
     private static toAccountId(ethAddress: string) {
         return AccountId.fromEvmAddress(0, 0, SDKClient.prune0x(ethAddress));
+    }
+
+    /**
+   * Internal helper method that converts an ethAddress (with, or without a leading 0x)
+   * into an alias friendly ContractId.
+   * @param ethAddress
+   * @private
+   */
+    private static toContractId(ethAddress: string) {
+        return ContractId.fromSolidityAddress(SDKClient.prepend0x(ethAddress));
     }
 
     /**
@@ -200,5 +212,11 @@ export class SDKClient {
         return input.startsWith('0x')
             ? input.substring(2)
             : input;
+    }
+
+    private static HbarToWeiBar(balance: AccountBalance): BigNumber {
+        return balance.hbars
+            .to(HbarUnit.Tinybar)
+            .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
     }
 }

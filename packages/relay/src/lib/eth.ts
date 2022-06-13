@@ -27,7 +27,6 @@ import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
-import * as ethers from 'ethers';
 import { Precheck } from './precheck';
 
 const _ = require('lodash');
@@ -52,7 +51,6 @@ export class EthImpl implements Eth {
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   static defaultGas = 0x3d0900;
   static ethTxType = 'EthereumTransaction';
-  static ethFunctionalityCode = 84;
 
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
@@ -128,13 +126,21 @@ export class EthImpl implements Eth {
    * Gets the fee history.
    */
   async feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number> | null) {
-    this.logger.trace('feeHistory()');
+    this.logger.trace(`feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
     try {
-      const feeWeibars = await this.getFeeWeibars();
+      let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
+      if (!feeHistory) {
+        const feeWeibars = await this.getFeeWeibars();
 
-      return await this.mirrorNode.getFeeHistory(feeWeibars, blockCount, newestBlock, rewardPercentiles);
+        feeHistory = await this.mirrorNode.getFeeHistory(feeWeibars, blockCount, newestBlock, rewardPercentiles);
+
+        this.logger.trace(`caching ${constants.CACHE_KEY.FEE_HISTORY} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory, constants.CACHE_TTL.ONE_HOUR);
+      }
+
+      return feeHistory;
     } catch (e) {
-      this.logger.trace(e);
+      this.logger.error(e, 'Error constructing default feeHistory');
     }
   }
 
@@ -223,6 +229,7 @@ export class EthImpl implements Eth {
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars();
 
+        this.logger.trace(`caching ${constants.CACHE_KEY.GAS_PRICE} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
       }
 
@@ -352,7 +359,15 @@ export class EthImpl implements Eth {
     this.logger.trace('getBalance(account=%s, blockNumberOrTag=%s)', account, blockNumberOrTag);
     const blockNumber = await this.translateBlockTag(blockNumberOrTag);
     try {
-      const weibars = await this.sdkClient.getAccountBalanceInWeiBar(account);
+      let weibars: BigNumber | number = 0;
+      const result = await this.mirrorNodeClient.resolveEntityType(account);
+      if (result?.type === constants.TYPE_ACCOUNT) {
+        weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account);
+      }
+      else if (result?.type === constants.TYPE_CONTRACT) {
+        weibars = await this.sdkClient.getContractBalanceInWeiBar(result.entity.contract_id);
+      }
+
       return EthImpl.numberTo0x(weibars);
     } catch (e: any) {
       // handle INVALID_ACCOUNT_ID
@@ -512,8 +527,16 @@ export class EthImpl implements Eth {
     if (blockNumber === 0) {
       return '0x0';
     } else {
-      const accountInfo = await this.sdkClient.getAccountInfo(address);
-      return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+      const result = await this.mirrorNodeClient.resolveEntityType(address);
+      if (result?.type === constants.TYPE_ACCOUNT) {
+        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account);
+        return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+      }
+      else if (result?.type === constants.TYPE_CONTRACT) {
+        return EthImpl.numberTo0x(1);
+      }
+
+      return EthImpl.numberTo0x(0);
     }
   }
 
@@ -737,7 +760,7 @@ export class EthImpl implements Eth {
    * Gets the block with the given hash.
    * Given an ethereum transaction hash, call the mirror node to get the block info.
    * Then using the block timerange get all contract results to get transaction details.
-   * If showDetails is set to true subsequently call mirror node for addtional transaction details
+   * If showDetails is set to true subsequently call mirror node for additional transaction details
    *
    * TODO What do we return if we cannot find the block with that hash?
    * @param blockHashOrNumber
@@ -757,7 +780,8 @@ export class EthImpl implements Eth {
     } else {
       blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
     }
-    if (blockResponse.hash === undefined) {
+    
+    if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
       // block not found
       return null;
     }

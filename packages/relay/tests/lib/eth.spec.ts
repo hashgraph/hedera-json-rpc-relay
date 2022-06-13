@@ -27,6 +27,7 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
+import { MirrorNode } from '../../src/lib/mirrorNode';
 import {expectUnsupportedMethod} from '../helpers';
 
 const cache = require('js-cache');
@@ -81,7 +82,7 @@ describe('Eth calls using MirrorNode', async function () {
   // @ts-ignore
   const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
   // @ts-ignore
-  const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger, '0x12a');
+  const ethImpl = new EthImpl(null, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
 
   const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
   const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;  
@@ -884,6 +885,34 @@ describe('Eth calls using MirrorNode', async function () {
     });
   });
 
+  it('eth_feeHistory', async function() {
+    mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
+    const feeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
+    expect(feeHistory).to.exist;
+    expect(feeHistory['baseFeePerGasArray'][0]).to.equal('0x84b6a5c400');
+    expect(feeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
+    expect(feeHistory['oldestBlockNumber']).to.equal('0x0');
+    const rewards = feeHistory['reward'][0];
+    expect(rewards[0]).to.equal('0x0');
+    expect(rewards[1]).to.equal('0x0');
+  });
+
+  it('eth_feeHistory verify cached value', async function() {
+    mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
+    const firstFeeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
+    expect(firstFeeHistory).to.exist;
+    expect(firstFeeHistory['baseFeePerGasArray'][0]).to.equal('0x84b6a5c400');
+    expect(firstFeeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
+    expect(firstFeeHistory['oldestBlockNumber']).to.equal('0x0');
+    const rewards = firstFeeHistory['reward'][0];
+    expect(rewards[0]).to.equal('0x0');
+    expect(rewards[1]).to.equal('0x0');
+
+    const secondFeeHistory = await ethImpl.feeHistory(2, 'latest', [25, 75]);
+
+    expect(firstFeeHistory).to.equal(secondFeeHistory);
+  });
+
   it('eth_gasPrice', async function() {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
 
@@ -1140,9 +1169,16 @@ describe('Eth', async function () {
   describe('eth_getTransactionReceipt', async function () {
     it('returns `null` for non-existent hash', async function () {
       const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
-      const txId = cache.get(txHash);
-      expect(txId).to.not.exist;
-      const receipt = await Relay.eth().getTransactionReceipt(txHash);
+      mock.onGet(`contracts/results/${txHash}`).reply(404, {
+        '_status': {
+          'messages': [
+            {
+              'message': 'No correlating transaction'
+            }
+          ]
+        }
+      });
+      const receipt = await ethImpl.getTransactionReceipt(txHash);
       expect(receipt).to.be.null;
     });
 
@@ -1200,7 +1236,7 @@ describe('Eth', async function () {
         }
       });
 
-      const result = await ethImpl.getTransactionByHash('0x4444444444444444444444444444444444444444444444444444444444444444');
+      const result = await ethImpl.getTransactionByHash(defaultTxHash);
       expect(result).to.equal(null);
     });
 
