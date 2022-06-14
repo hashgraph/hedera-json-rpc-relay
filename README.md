@@ -38,10 +38,6 @@ run configuration. You should be able to just run that configuration, and it sho
 
 ## Testing
 
-### Acceptance Tests
-
-The relay has a suite of acceptance tests that may be run to confirm E2E operation of the relay in either a `hedera-local-node` or deployed env.
-
 ### Postman
 
 First ensure newman is installed locally using `npm`, then execute `newman`.
@@ -50,6 +46,10 @@ First ensure newman is installed locally using `npm`, then execute `newman`.
 npm install -g newman
 newman run packages/server/tests/postman.json --env-var baseUrl=http://localhost:7546
 ```
+
+### Acceptance Tests
+
+The relay has a suite of acceptance tests that may be run to confirm E2E operation of the relay in either a `hedera-local-node` or deployed env.
 
 #### Configuration
 
