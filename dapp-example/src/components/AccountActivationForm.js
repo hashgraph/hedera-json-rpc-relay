@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 import useHederaSdk from "../hooks/useHederaSdkClient";
 
 
-const AccountActivationForm = ({ toAccountId, isActive, evmAddress, fetchAccountBalance }) => {
+const AccountActivationForm = ({ isConnected, toAccountId, alias, isActive, evmAddress, fetchAccountBalance }) => {
     const [mainAccountId, setMainAccountId] = useState('');
     const [mainPrivateKey, setMainPrivateKey] = useState('');
     const [amount, setAmount] = useState(0);
@@ -25,15 +25,15 @@ const AccountActivationForm = ({ toAccountId, isActive, evmAddress, fetchAccount
         } catch (error) {
             console.error(error);
         }
-    }, [mainAccountId, mainPrivateKey, amount, evmAddress]);
+    }, [mainAccountId, mainPrivateKey, amount, toAccountId, evmAddress]);
 
     return (
         <>
-            {isActive
-                ? null
-                : <Typography variant="h6" style={{ wordBreak: 'break-word' }} color='orange'>
-                    Your hedera account is not active yet. Please use the form below to send Hbar tokens to your hedera alias in order to activate your account.
+            {isConnected && !isActive
+                ? <Typography variant="h6" style={{ wordBreak: 'break-word' }} color='orange'>
+                    Your hedera account is not active yet. You need to transfer HBAR in order to activate it.
                 </Typography>
+                : null
             }
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
@@ -70,10 +70,10 @@ const AccountActivationForm = ({ toAccountId, isActive, evmAddress, fetchAccount
                     label="To Alias"
                     sx={{ m: 1 }}
                     variant="standard"
-                    value={toAccountId.toString()}
+                    value={alias}
                 />
 
-                <Button onClick={transferHbarHandler} size="medium" variant="contained" color="primary">
+                <Button onClick={transferHbarHandler} disabled={!isConnected || !alias} size="medium" variant="contained" color="primary">
                     Transfer
                 </Button>
             </Box>

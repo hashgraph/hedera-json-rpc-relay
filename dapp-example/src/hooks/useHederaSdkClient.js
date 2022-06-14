@@ -1,5 +1,5 @@
 import React from "react";
-import ethCrypto from 'eth-crypto';
+import { ethers } from 'ethers';
 import { PublicKey, Client, TransferTransaction, Hbar, AccountId, AccountInfoQuery } from "@hashgraph/sdk";
 
 const client = Client.forTestnet();
@@ -7,10 +7,10 @@ const client = Client.forTestnet();
 const useHederaSdk = () => {
 
     const recoveredPublicKeyToAccountId = (publicKey) => {
-        const compressed = ethCrypto.publicKey.compress(publicKey.startsWith('0x') ? publicKey.substring(2) : publicKey);
-
+        const compressed = ethers.utils.computePublicKey(ethers.utils.arrayify(publicKey), true);
+            
         const accountId = PublicKey.fromString(compressed).toAccountId(0, 0);
-
+        
         return accountId;
     }
 
@@ -21,7 +21,7 @@ const useHederaSdk = () => {
             .addHbarTransfer(client.operatorAccountId, new Hbar(amount).negated())
             .addHbarTransfer(accountId, new Hbar(amount))
             .execute(client);
-
+        
         return await transferTransaction.getReceipt(client);
     }
 
