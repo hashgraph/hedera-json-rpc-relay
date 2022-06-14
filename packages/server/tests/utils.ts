@@ -40,7 +40,7 @@ import {
     TransferTransaction
 } from "@hashgraph/sdk";
 import {Logger} from "pino";
-import {AxiosInstance} from "axios";
+import {Axios, AxiosInstance} from "axios";
 import {BigNumber, ethers} from "ethers";
 import type { TransactionRequest } from "@ethersproject/abstract-provider";
 import type { JsonRpcProvider } from "@ethersproject/providers";
@@ -369,6 +369,66 @@ export default class TestUtils {
 
     subtractBigNumberHexes = (hex1, hex2) => {
         return BigNumber.from(hex1).sub(BigNumber.from(hex2));
+    };
+
+    /**
+     * @param evmAddress
+     *
+     * Returns: The nonce of the account with the provided `evmAddress`
+     */
+    getAccountNonce = async (evmAddress): Promise<number> => {
+        const nonce = await this.JsonRpcProvider.send('eth_getTransactionCount', [evmAddress, 'latest']);
+        return Number(nonce);
+    };
+
+    /**
+     * @param tx
+     * @param privateKey
+     * Signs a transaction request with the provided privateKey and sends it via `ethers.jsonRpcProvider`.
+     * This invokes the relay logic from eth.ts/sendRawTransaction.
+     *
+     * Returns: Transaction hash
+     */
+    sendRawTransaction = async (tx, privateKey): Promise<string> => {
+        const signedTx = await this.signRawTransaction(tx, privateKey);
+        const txHash = await this.JsonRpcProvider.send('eth_sendRawTransaction', [signedTx]);
+
+        // Since the transactionId is not available in this context
+        // Wait for the transaction to be processed and imported in the mirror node with axios-retry
+        await this.callMirrorNode(`contracts/results/${txHash}`);
+        return txHash;
+    };
+
+    assertTransactionReceipt = (transactionReceipt, transactionRequest, overwriteValues = {}) => {
+        const staticValues = {
+            status: '0x1',
+            logs: [],
+            from: '',
+            ...overwriteValues
+        };
+
+        expect(transactionReceipt.blockHash).to.exist;
+        expect(transactionReceipt.blockHash).to.not.eq('0x0');
+        expect(transactionReceipt.blockNumber).to.exist;
+        expect(Number(transactionReceipt.blockNumber)).to.gt(0);
+        expect(transactionReceipt.cumulativeGasUsed).to.exist;
+        expect(Number(transactionReceipt.cumulativeGasUsed)).to.gt(0);
+        expect(transactionReceipt.gasUsed).to.exist;
+        expect(Number(transactionReceipt.gasUsed)).to.gt(0);
+        expect(transactionReceipt.logsBloom).to.exist;
+        expect(transactionReceipt.logsBloom).to.not.eq('0x0');
+        expect(transactionReceipt.transactionHash).to.exist;
+        expect(transactionReceipt.transactionHash).to.not.eq('0x0');
+        expect(transactionReceipt.transactionIndex).to.exist;
+        expect(transactionReceipt.effectiveGasPrice).to.exist;
+        expect(Number(transactionReceipt.effectiveGasPrice)).to.gt(0);
+        expect(transactionReceipt.status).to.exist;
+        expect(transactionReceipt.logs).to.exist;
+        expect(transactionReceipt.logs.length).to.eq(staticValues.logs.length);
+        expect(transactionReceipt.status).to.eq(staticValues.status);
+        expect(transactionReceipt.from).to.eq(staticValues.from);
+        expect(transactionReceipt.to).to.eq(transactionRequest.to);
+
     };
 }
 
