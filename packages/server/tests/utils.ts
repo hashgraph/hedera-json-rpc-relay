@@ -40,7 +40,7 @@ import {
     TransferTransaction
 } from "@hashgraph/sdk";
 import {Logger} from "pino";
-import {Axios, AxiosInstance} from "axios";
+import {AxiosInstance} from "axios";
 import {BigNumber, ethers} from "ethers";
 import type { TransactionRequest } from "@ethersproject/abstract-provider";
 import type { JsonRpcProvider } from "@ethersproject/providers";
