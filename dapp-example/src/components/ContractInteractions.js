@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
-import { Button, Typography, TextField } from "@mui/material";
+import { Button, Typography, TextField, Link } from "@mui/material";
 import Greeter from '../contracts/Greeter.json'
 import { ethers } from 'ethers';
 
@@ -81,8 +81,10 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
         <>
             <Typography variant="h5" sx={{ textDecoration: 'underline' }}> Contract Interactions </Typography>
             <br />
+            <Typography variant="h6"> Source: <Link href="https://github.com/NomicFoundation/hardhat/blob/master/packages/hardhat-core/sample-projects/basic/contracts/Greeter.sol" rel="noreferrer" target="_blank">Greeter.sol</Link> </Typography>
+
             <Button onClick={deployContractHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
-                Deploy Greeting contract
+                Deploy contract
             </Button>
             <br />
             <Typography variant="h6"> {deployContractMsg} </Typography>

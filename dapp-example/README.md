@@ -18,7 +18,12 @@ Available operations:
 - [x] Extract `Hedera alias` from public key
 
 - [ ] Transfer HBAR to Hedera alias and activate account -> **Not supported yet**
-- [x] Deploy "Greeter" contract
+- [x] Deploy [Greeter](https://github.com/NomicFoundation/hardhat/blob/master/packages/hardhat-core/sample-projects/basic/contracts/Greeter.sol) contract
 - [x] View greet message
 - [x] Update greet message
 - [x] Transfer HTS token to address
+
+## Screenshots
+![alt text](./connect.png "Connect Account")
+
+![alt text](./contracts.png "Connect Account")
