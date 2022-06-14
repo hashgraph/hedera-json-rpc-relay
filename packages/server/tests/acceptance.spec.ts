@@ -531,4 +531,36 @@ describe('RPC Server Acceptance Tests', async function () {
         const res = await utils.callSupportedRelayMethod('eth_getTransactionCount', [ethCompAccountEvmAddr3, mirrorContractDetails.block_number]);
         expect(res.data.result).to.be.equal('0x2');
     });
+
+    it('should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
+        const txRequest = {
+            ...default155TransactionData,
+            to: mirrorContract.evm_address,
+            nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
+        };
+        const submittedLegacyTransactionHash = await utils.sendRawTransaction(txRequest, ethCompPrivateKey3);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionReceipt', [submittedLegacyTransactionHash]);
+        utils.assertTransactionReceipt(res.data.result, txRequest, {
+            from: ethCompAccountEvmAddr3
+        });
+
+    });
+
+    it('should execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
+        const txRequest = {
+            ...defaultLondonTransactionData,
+            to: mirrorContract.evm_address,
+            nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
+        };
+        const submittedLondonTransactionHash = await utils.sendRawTransaction(txRequest, ethCompPrivateKey3);
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionReceipt', [submittedLondonTransactionHash]);
+        utils.assertTransactionReceipt(res.data.result, txRequest, {
+            from: ethCompAccountEvmAddr3
+        });
+    });
+
+    it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getTransactionReceipt', [nonExistingTxHash]);
+        expect(res.data.result).to.be.null;
+    });
 });
