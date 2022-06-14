@@ -93,9 +93,10 @@ async function createAccountAndAssociate(tokenId) {
      * This account "creation" process is entirely local.
      */
 
-    console.log("  Transferring some Hbar to the new account");
+    const hbarAmount = new Hbar(10);
+    console.log(`  Transferring ${hbarAmount} to the new account`);
     const response = await new TransferTransaction()
-        .addHbarTransfer(client.operatorAccountId, new Hbar(10).negated())
+        .addHbarTransfer(client.operatorAccountId, hbarAmount.negated())
         .addHbarTransfer(aliasAccountId, new Hbar(10))
         .execute(client);
     await response.getReceipt(client);
