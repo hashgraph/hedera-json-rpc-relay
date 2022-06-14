@@ -18,16 +18,16 @@
  *
  */
 
-import { Eth } from '../index';
+import {Eth} from '../index';
 import { ContractId, Status, Hbar } from '@hashgraph/sdk';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { Logger } from 'pino';
+import {BigNumber} from '@hashgraph/sdk/lib/Transfer';
+import {Logger} from 'pino';
 import { Block, CachedBlock, Transaction, Log } from './model';
-import { MirrorNode } from './mirrorNode';
-import { MirrorNodeClient, SDKClient } from './clients';
-import { JsonRpcError, predefined } from './errors';
+import {MirrorNode} from './mirrorNode';
+import {MirrorNodeClient, SDKClient} from './clients';
+import {JsonRpcError, predefined} from './errors';
 import constants from './constants';
-import { Precheck } from './precheck';
+import {Precheck} from './precheck';
 
 const _ = require('lodash');
 const cache = require('js-cache');
@@ -50,6 +50,7 @@ export class EthImpl implements Eth {
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   static defaultGas = 0x3d0900;
+  static gasTxBaseCost = 21_000;
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
 
@@ -203,20 +204,16 @@ export class EthImpl implements Eth {
 
   /**
    * Estimates the amount of gas to execute a call.
-   *
-   * TODO: API signature is not right, some kind of call info needs to be passed through:
-   *   "params": [{
-   *     "from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
-   *     "to": "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
-   *     "gas": "0x76c0",
-   *     "gasPrice": "0x9184e72a000",
-   *     "value": "0x9184e72a",
-   *     "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"}],
    */
-  async estimateGas() {
-    // FIXME: For now, we are going to have a rough estimate but in the future we can do something more sophisticated.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async estimateGas(transaction: any, blockParam: string | null) {
     this.logger.trace('estimateGas()');
-    return EthImpl.numberTo0x(EthImpl.defaultGas);
+    if (!transaction || !transaction.data || transaction.data === '0x') {
+      return EthImpl.numberTo0x(EthImpl.gasTxBaseCost);
+    } else {
+      // FIXME: For now, we are going to have an arbitrary estimate for non-transfers but in the future we will do something more sophisticated.
+      return EthImpl.numberTo0x(EthImpl.defaultGas);
+    }
   }
 
   /**
@@ -599,7 +596,7 @@ export class EthImpl implements Eth {
    * @param call
    * @param blockParam
    */
-  async call(call: any, blockParam: string) {
+  async call(call: any, blockParam: string | null) {
     // FIXME: In the future this will be implemented by making calls to the mirror node. For the
     //        time being we'll eat the cost and ask the main consensus nodes instead.
 

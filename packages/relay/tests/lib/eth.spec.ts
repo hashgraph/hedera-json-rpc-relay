@@ -911,6 +911,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
     const feeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
     expect(feeHistory).to.exist;
+    if (feeHistory == null) return;
     expect(feeHistory['baseFeePerGasArray'][0]).to.equal('0x84b6a5c400');
     expect(feeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
     expect(feeHistory['oldestBlockNumber']).to.equal('0x0');
@@ -923,6 +924,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
     const firstFeeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
     expect(firstFeeHistory).to.exist;
+    if (firstFeeHistory == null) return;
     expect(firstFeeHistory['baseFeePerGasArray'][0]).to.equal('0x84b6a5c400');
     expect(firstFeeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
     expect(firstFeeHistory['oldestBlockNumber']).to.equal('0x0');
@@ -934,6 +936,27 @@ describe('Eth calls using MirrorNode', async function () {
 
     expect(firstFeeHistory).to.equal(secondFeeHistory);
   });
+
+  it('eth_estimateGas contract call returns default', async function() {
+    const gas = await ethImpl.estimateGas({input:"0x01"}, null);
+    expect(gas).to.equal(EthImpl.numberTo0x(EthImpl.defaultGas));
+  });
+
+  it('eth_estimateGas empty call returns transfer cost', async function() {
+    const gas = await ethImpl.estimateGas({}, null);
+    expect(gas).to.equal(EthImpl.numberTo0x(EthImpl.gasTxBaseCost));
+  });
+
+  it('eth_estimateGas empty input transfer cost', async function() {
+    const gas = await ethImpl.estimateGas({input:""}, null);
+    expect(gas).to.equal(EthImpl.numberTo0x(EthImpl.gasTxBaseCost));
+  });
+
+  it('eth_estimateGas zero input returns transfer cost', async function() {
+    const gas = await ethImpl.estimateGas({input:"0x"}, null);
+    expect(gas).to.equal(EthImpl.numberTo0x(EthImpl.gasTxBaseCost));
+  });
+
 
   it('eth_gasPrice', async function() {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
@@ -966,7 +989,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     try {
       await ethImpl.gasPrice();
-    } catch (error) {
+    } catch (error: any) {
       expect(error.message).to.equal('Error encountered estimating the gas price');
     }
   });
@@ -984,7 +1007,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     try {
       await ethImpl.gasPrice();
-    } catch (error) {
+    } catch (error: any) {
       expect(error.message).to.equal('Error encountered estimating the gas price');
     }
   });
