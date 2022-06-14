@@ -40,7 +40,7 @@ import {
     TransferTransaction
 } from "@hashgraph/sdk";
 import {Logger} from "pino";
-import {Axios, AxiosInstance} from "axios";
+import {AxiosInstance} from "axios";
 import {BigNumber, ethers} from "ethers";
 import type { TransactionRequest } from "@ethersproject/abstract-provider";
 import type { JsonRpcProvider } from "@ethersproject/providers";
@@ -51,11 +51,18 @@ export default class TestUtils {
     private readonly logger: Logger;
     private readonly JsonRpcProvider: JsonRpcProvider;
     private readonly mirrorNodeClient: AxiosInstance;
+    private readonly relayClient: AxiosInstance;
 
-    constructor(logger: Logger, jsonRpcProviderUrl: string, mirrorNodeClient: AxiosInstance) {
-        this.logger = logger;
-        this.JsonRpcProvider = new ethers.providers.JsonRpcProvider(jsonRpcProviderUrl);
-        this.mirrorNodeClient = mirrorNodeClient;
+    constructor(args: {
+                    logger: Logger,
+                    jsonRpcProviderUrl: string,
+                    mirrorNodeClient: AxiosInstance,
+                    relayClient: AxiosInstance,
+                }) {
+        this.logger = args.logger;
+        this.JsonRpcProvider = new ethers.providers.JsonRpcProvider(args.jsonRpcProviderUrl);
+        this.mirrorNodeClient = args.mirrorNodeClient;
+        this.relayClient = args.relayClient;
     }
 
     numberTo0x = (input: number): string => {
@@ -135,8 +142,8 @@ export default class TestUtils {
         return this.mirrorNodeClient.get(path);
     };
 
-    callSupportedRelayMethod = async (client: any, methodName: string, params: any[]) => {
-        const resp = await this.callRelay(client, methodName, params);
+    callSupportedRelayMethod = async (methodName: string, params: any[]) => {
+        const resp = await this.callRelay(this.relayClient, methodName, params);
         this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.result)}`);
 
         expect(resp.data).to.have.property('result');
@@ -145,8 +152,8 @@ export default class TestUtils {
         return resp;
     };
 
-    callFailingRelayMethod = async (client: any, methodName: string, params: any[]) => {
-        const resp = await this.callRelay(client, methodName, params);
+    callFailingRelayMethod = async (methodName: string, params: any[]) => {
+        const resp = await this.callRelay(this.relayClient, methodName, params);
         this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.error)}`);
 
         expect(resp.data).to.have.property('error');
@@ -155,8 +162,8 @@ export default class TestUtils {
         return resp;
     };
 
-    callUnsupportedRelayMethod = async (client: any, methodName: string, params: any[]) => {
-        const resp = await this.callRelay(client, methodName, params);
+    callUnsupportedRelayMethod = async (methodName: string, params: any[]) => {
+        const resp = await this.callRelay(this.relayClient, methodName, params);
         this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.error)}`);
 
         expect(resp.data).to.have.property('error');
@@ -200,8 +207,15 @@ export default class TestUtils {
         return client.setOperator(AccountId.fromString(id), opPrivateKey);
     };
 
-    createEthCompatibleAccount = async (client: Client, privateKeyHex: string) => {
-        const privateKey = PrivateKey.fromBytesECDSA(Buffer.from(privateKeyHex, 'hex'));
+    createEthCompatibleAccount = async (client: Client, privateKeyHex: null | string, initialBalance = 5000) => {
+        let privateKey;
+        if (privateKeyHex) {
+            privateKey = PrivateKey.fromBytesECDSA(Buffer.from(privateKeyHex, 'hex'));
+        }
+        else {
+            privateKey = PrivateKey.generateECDSA();
+        }
+
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
 
@@ -211,8 +225,8 @@ export default class TestUtils {
 
         this.logger.info(`Transfer transaction attempt`);
         const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
-            .addHbarTransfer(client.operatorAccountId, new Hbar(5000).negated())
-            .addHbarTransfer(aliasAccountId, new Hbar(5000)), client);
+            .addHbarTransfer(client.operatorAccountId, new Hbar(initialBalance).negated())
+            .addHbarTransfer(aliasAccountId, new Hbar(initialBalance)), client);
 
         this.logger.debug(`Get ${aliasAccountId.toString()} receipt`);
         await aliasCreationResponse.getReceipt(client);
@@ -342,6 +356,10 @@ export default class TestUtils {
         const contractExecutedTransactionId = resp.executedTransactionId;
 
         return {contractExecuteTimestamp, contractExecutedTransactionId};
+    };
+
+    getBalance = async (address, block = 'latest') => {
+        return await this.JsonRpcProvider.getBalance(address, block);
     };
 
     signRawTransaction = async (tx: TransactionRequest, privateKey) => {
