@@ -29,6 +29,7 @@ const AccountActivationForm = ({ isConnected, toAccountId, alias, isActive, evmA
 
     return (
         <>
+            <Typography variant="h5" sx={{ textDecoration: 'underline' }}> Account Activation </Typography>
             {isConnected && !isActive
                 ? <Typography variant="h6" style={{ wordBreak: 'break-word' }} color='orange'>
                     Your hedera account is not active yet. You need to transfer HBAR in order to activate it.

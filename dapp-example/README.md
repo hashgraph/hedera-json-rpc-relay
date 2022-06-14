@@ -24,6 +24,4 @@ Available operations:
 - [x] Transfer HTS token to address
 
 ## Screenshots
-![alt text](./connect.png "Connect Account")
-
-![alt text](./contracts.png "Connect Account")
+![alt text](./screenshot1.png "")

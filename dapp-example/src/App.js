@@ -148,10 +148,10 @@ function App() {
             {alias}
           </Typography>
 
-          <Box sx={{ mt: '2em', mb: '2em' }}>
+          {/* <Box sx={{ mt: '2em', mb: '2em' }}>
             <AccountActivationForm isConnected={isConnected} toAccountId={accountId} alias={alias} isActive={isAccountActivated} evmAddress={address} fetchAccountBalance={fetchAccountBalance} />
-          </Box>
-          
+          </Box> */}
+
           {/* Contracts Section */}
           <Box sx={{ mt: '2em', mb: '2em' }}>
             <ContractInteractions isConnected={isConnected} signer={signer} chain={chain} address={address} />
