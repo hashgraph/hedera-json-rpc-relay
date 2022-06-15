@@ -563,4 +563,24 @@ describe('RPC Server Acceptance Tests', async function () {
         const res = await utils.callSupportedRelayMethod('eth_getTransactionReceipt', [nonExistingTxHash]);
         expect(res.data.result).to.be.null;
     });
+
+    it('should execute "eth_getCode" for existing contract evm_address', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getCode', [mirrorContract.evm_address]);
+        expect(res.data.result).to.eq(parentContract.deployedBytecode);
+    });
+
+    it('should fail "eth_getCode" for non-existing contract', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getCode', [nonExistingAddress]);
+        expect(res.data.result).to.eq('0x0');
+    });
+
+    it('should fail "eth_getCode" for account evm_address', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getCode', [ethCompAccountEvmAddr3]);
+        expect(res.data.result).to.eq('0x0');
+    });
+
+    it('should fail "eth_getCode" for account alias', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getCode', [mirrorPrimaryAccount.alias]);
+        expect(res.data.result).to.eq('0x0');
+    });
 });
