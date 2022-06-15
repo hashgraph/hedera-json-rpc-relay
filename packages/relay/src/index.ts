@@ -47,7 +47,7 @@ export interface Eth {
 
   blockNumber(): Promise<string>;
 
-  call(call: any, blockParam: string | null): Promise<string>;
+  call(call: any, blockParam: string | null): Promise<string | null>;
 
   coinbase(): JsonRpcError;
 

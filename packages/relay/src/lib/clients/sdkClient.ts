@@ -35,14 +35,24 @@ import {
     AccountInfo,
     HbarUnit,
     TransactionId,
-    FeeComponents
+    FeeComponents,
+    Query,
+    Transaction,
+    Hbar,
+    TransactionRecord,
+    TransactionReceipt,
+    Status
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { Logger } from "pino";
+import { Gauge, Histogram, Registry } from 'prom-client';
 import constants from './../constants';
 
 const _ = require('lodash');
 
 export class SDKClient {
+    static transactionMode = 'TRANSACTION';
+    static queryMode = 'QUERY';
     /**
      * The client to use for connecting to the main consensus network. The account
      * associated with this client will pay for all operations on the main network.
@@ -51,15 +61,57 @@ export class SDKClient {
      */
     private readonly clientMain: Client;
 
+    /**
+     * The logger used for logging all output from this class.
+     * @private
+     */
+    private readonly logger: Logger;
+
+    /**
+     * The metrics register used for metrics tracking.
+     * @private
+     */
+    private readonly register: Registry;
+
+    private consensusNodeClientHistorgram;
+    private operatorAccountGauge;
+
     // populate with consensusnode requests via SDK
-    constructor(clientMain: Client) {
+    constructor(clientMain: Client, logger: Logger, register: Registry) {
         this.clientMain = clientMain;
+        this.logger = logger;
+        this.register = register;
+        this.consensusNodeClientHistorgram = new Histogram({
+            name: 'rpc_relay_consensusnode_response',
+            help: 'Relay consensusnode mode type status cost histogram',
+            labelNames: ['mode', 'type', 'status'],
+            registers: [register]
+        });
+
+        this.operatorAccountGauge = new Gauge({
+            name: 'rpc_relay_operator_balance',
+            help: 'Relay operator balance gauge',
+            labelNames: ['mode', 'type'],
+            registers: [register],
+            async collect() {
+                // Invoked when the registry collects its metrics' values.
+                // This can be synchronous or it can return a promise/be an async function.
+                const balance = await getOperatorAccountBalance();
+                this.set(balance);
+            },
+        });
+    }
+
+    async getOperatorAccountBalance(): Promise<Hbar> {
+        const accountBalance = await (new AccountBalanceQuery()
+            .setAccountId(this.clientMain.operatorAccountId!))
+            .execute(this.clientMain);
+        return accountBalance.hbars;
     }
 
     async getAccountBalance(account: string): Promise<AccountBalance> {
-        return (new AccountBalanceQuery()
-            .setAccountId(AccountId.fromString(account)))
-            .execute(this.clientMain);
+        return this.executeQuery(new AccountBalanceQuery()
+            .setAccountId(AccountId.fromString(account)), this.clientMain);
     }
 
     async getAccountBalanceInWeiBar(account: string): Promise<BigNumber> {
@@ -68,21 +120,18 @@ export class SDKClient {
     }
 
     async getAccountInfo(address: string): Promise<AccountInfo> {
-        return (new AccountInfoQuery()
-            .setAccountId(AccountId.fromString(address)))
-            .execute(this.clientMain);
+        return this.executeQuery(new AccountInfoQuery()
+            .setAccountId(AccountId.fromString(address)), this.clientMain);
     }
 
     async getContractByteCode(shard: number | Long, realm: number | Long, address: string): Promise<Uint8Array> {
-        return (new ContractByteCodeQuery()
-            .setContractId(ContractId.fromEvmAddress(shard, realm, address)))
-            .execute(this.clientMain);
+        return this.executeQuery(new ContractByteCodeQuery()
+            .setContractId(ContractId.fromEvmAddress(shard, realm, address)), this.clientMain);
     }
 
     async getContractBalance(contract: string): Promise<AccountBalance> {
-        return (new AccountBalanceQuery()
-            .setContractId(ContractId.fromString(contract)))
-            .execute(this.clientMain);
+        return this.executeQuery(new AccountBalanceQuery()
+            .setContractId(ContractId.fromString(contract)), this.clientMain);
     }
 
     async getContractBalanceInWeiBar(account: string): Promise<BigNumber> {
@@ -121,19 +170,17 @@ export class SDKClient {
     }
 
     async getFileIdBytes(address: string): Promise<Uint8Array> {
-        return (new FileContentsQuery()
-            .setFileId(address)
-            .execute(this.clientMain));
+        return this.executeQuery(new FileContentsQuery()
+            .setFileId(address), this.clientMain);
     }
 
     async getRecord(transactionResponse: TransactionResponse) {
         return transactionResponse.getRecord(this.clientMain);
     }
 
-    async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionResponse> {
-        return (new EthereumTransaction()
-            .setEthereumData(transactionBuffer))
-            .execute(this.clientMain);
+    async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionRecord> {
+        return this.executeAndGetTransactionRecord(new EthereumTransaction()
+            .setEthereumData(transactionBuffer), this.clientMain);
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number): Promise<ContractFunctionResult> {
@@ -155,12 +202,12 @@ export class SDKClient {
 
         const cost = await contractCallQuery
             .getCost(this.clientMain);
-        return contractCallQuery
-            .setQueryPayment(cost)
-            .execute(this.clientMain);
+        const contractResult = await this.executeQuery(contractCallQuery
+            .setQueryPayment(cost), this.clientMain);
+        return contractResult;
     }
 
-    private convertGasPriceToTinyBars = (feeComponents: FeeComponents |  undefined, exchangeRates: ExchangeRates) => {
+    private convertGasPriceToTinyBars = (feeComponents: FeeComponents | undefined, exchangeRates: ExchangeRates) => {
         // gas -> tinCents:  gas / 1000
         // tinCents -> tinyBars: tinCents * exchangeRate (hbarEquiv/ centsEquiv)
         if (feeComponents === undefined || feeComponents.contractTransactionGas === undefined) {
@@ -170,6 +217,118 @@ export class SDKClient {
         return Math.ceil(
             (feeComponents.contractTransactionGas.toNumber() / 1_000) * (exchangeRates.currentRate.hbars / exchangeRates.currentRate.cents)
         );
+    };
+
+    private executeQuery = async (query: Query<any>, client: Client) => {
+        try {
+            const resp = await query.execute(client);
+            this.logger.info(`Consensus Node query response: ${query.constructor.name} ${Status.Success._code}`);
+            // local free queries will have a '0.0.0' accountId on transactionId
+            this.logger.trace(`${query.paymentTransactionId} query cost ${query._queryPayment}`);
+
+            this.captureMetrics(
+                SDKClient.queryMode,
+                query.constructor.name,
+                Status.Success,
+                query._queryPayment?.toTinybars().toNumber());
+            return resp;
+        }
+        catch (e: any) {
+            const statusCode = e.status ? e.status._code : Status.Unknown._code;
+            this.logger.debug(`Consensus Node query response: ${query.constructor.name} ${statusCode}`);
+            this.captureMetrics(
+                SDKClient.queryMode,
+                query.constructor.name,
+                e.status,
+                query._queryPayment?.toTinybars().toNumber());
+
+            if (e.status && e.status._code) {
+                throw new Error(e.message);
+            }
+
+            throw e;
+        }
+    };
+
+    private executeTransaction = async (transaction: Transaction, client: Client): Promise<TransactionResponse> => {
+        const transactionType = transaction.constructor.name;
+        try {
+            this.logger.info(`Execute ${transactionType} transaction`);
+            const resp = await transaction.execute(client);
+            this.logger.info(`Consensus Node ${transactionType} transaction response: ${resp.transactionId.toString()} ${Status.Success._code}`);
+            return resp;
+        }
+        catch (e: any) {
+            const statusCode = e.status ? e.status._code : Status.Unknown._code;
+            this.logger.info(`Consensus Node ${transactionType} transaction response: ${statusCode}`);
+
+            // capture sdk transaction response errorsand shorten familiar stack trace
+            if (e.status && e.status._code) {
+                throw new Error(e.message);
+            }
+
+            throw e;
+        }
+    };
+
+    private executeAndGetTransactionReceipt = async (transaction: Transaction, client: Client): Promise<TransactionReceipt> => {
+        let resp;
+        try {
+            resp = await this.executeTransaction(transaction, client);
+            return resp.getReceipt(client);
+        }
+        catch (e: any) {
+            // capture sdk receipt retrieval errors and shorten familiar stack trace
+            if (e.status && e.status._code) {
+                throw new Error(e.message);
+            }
+
+            throw e;
+        }
+    };
+
+    private executeAndGetTransactionRecord = async (transaction: Transaction, client: Client): Promise<TransactionRecord> => {
+        let resp;
+        try {
+            resp = await this.executeTransaction(transaction, client);
+
+            if (!resp.getRecord) {
+                throw new Error(`Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
+            }
+
+            const transactionRecord: TransactionRecord = await resp.getRecord(client);
+            this.logger.trace(`${resp.transactionId.toString()} transaction cost: ${transactionRecord.transactionFee}`);
+            this.captureMetrics(
+                SDKClient.transactionMode,
+                transaction.constructor.name,
+                transactionRecord.receipt.status,
+                transactionRecord.transactionFee.toTinybars().toNumber());
+            return transactionRecord;
+        }
+        catch (e: any) {
+            // capture sdk record retrieval errors and shorten familiar stack trace
+            if (e.status && e.status._code) {
+                this.captureMetrics(
+                    SDKClient.transactionMode,
+                    transaction.constructor.name,
+                    e.status,
+                    0);
+
+                throw new Error(e.message);
+            }
+
+            throw e;
+        }
+    };
+
+    private captureMetrics = (mode, type, status, cost) => {
+        const resolvedCost = cost ? cost : 0;
+        this.consensusNodeClientHistorgram.labels(
+            mode,
+            type,
+            status)
+            .observe(resolvedCost);
+        this.operatorAccountGauge.labels(mode, type).dec(cost);
     };
 
     /**

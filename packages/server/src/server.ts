@@ -37,15 +37,15 @@ const mainLogger = pino({
   }
 });
 const logger = mainLogger.child({ name: 'rpc-server' });
+const register = new Registry();
 
-const relay: Relay = new RelayImpl(logger);
+const relay: Relay = new RelayImpl(logger, register);
 const cors = require('koa-cors');
 const app = new Koa();
 const rpc = koaJsonRpc();
 
 const responseSuccessStatusCode = '200';
 const responseInternalErrorCode = '-32603';
-const register = new Registry();
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
 
 const methodResponseHistogram = new Histogram({

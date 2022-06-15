@@ -22,6 +22,7 @@ import Axios, { AxiosInstance } from 'axios';
 import { predefined } from '../errors';
 import { Logger } from "pino";
 import constants from './../constants';
+import { Histogram, Registry } from 'prom-client';
 
 export interface ILimitOrderParams {
     limit?: number;
@@ -79,6 +80,14 @@ export class MirrorNodeClient {
 
     public readonly baseUrl: string;
 
+    /**
+     * The metrics register used for metrics tracking.
+     * @private
+     */
+    private readonly register: Registry;
+
+    private mirrorResponseHistogram;
+
     protected createAxiosClient(
         baseUrl: string
     ): AxiosInstance {
@@ -92,7 +101,7 @@ export class MirrorNodeClient {
         });
     }
 
-    constructor(baseUrl: string, logger: Logger, axiosClient?: AxiosInstance) {
+    constructor(baseUrl: string, logger: Logger, register: Registry, axiosClient?: AxiosInstance) {
         if (axiosClient !== undefined) {
             this.baseUrl = '';
             this.client = axiosClient;
@@ -112,15 +121,30 @@ export class MirrorNodeClient {
         }
 
         this.logger = logger;
+        this.register = register;
+
+        this.mirrorResponseHistogram = new Histogram({
+            name: 'rpc_relay_mirror_response',
+            help: 'Mirror node response method statusCode latency histogram',
+            labelNames: ['method', 'statusCode'],
+            registers: [register]
+        });
+
         this.logger.info(`Mirror Node client successfully configured to ${this.baseUrl}`);
     }
 
     async request(path: string, allowedErrorStatuses?: number[]): Promise<any> {
+        const start = Date.now();
+        let ms;
         try {
             const response = await this.client.get(path);
-            this.logger.debug(`Mirror Node Response: [GET] ${path} ${response.status}`);
+            ms = Date.now() - start;
+            this.logger.debug(`Mirror Node Response: [GET] ${path} ${response.status} ${ms} ms`);
+            this.mirrorResponseHistogram.labels(path, response.status).observe(ms);
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
+            ms = Date.now() - start;
+            this.mirrorResponseHistogram.labels(path, error.response.status).observe(ms);
             this.handleError(error, path, allowedErrorStatuses);
         }
         return null;

@@ -550,11 +550,10 @@ export class EthImpl implements Eth {
 
     try {
       // Convert from 0xabc format into a raw Uint8Array of bytes and execute the transaction
-      const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer);
 
       try {
         // Wait for the record from the execution.
-        const record = await this.sdkClient.getRecord(contractExecuteResponse);
+        const record = await this.sdkClient.submitEthereumTransaction(transactionBuffer);
         if (record.ethereumHash == null) {
           throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
         }
@@ -578,13 +577,17 @@ export class EthImpl implements Eth {
         return txHash;
       } catch (e) {
         this.logger.error(e,
-          'Failed sendRawTransaction during receipt retrieval for transaction %s, returning computed hash', transaction);
+          'Failed sendRawTransaction during submission of transaction %s, returning computed hash', transaction);
         //Return computed hash if unable to retrieve EthereumHash from record due to error
         return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
       }
-    } catch (e) {
-      this.logger.error(e,
-        'Failed to successfully submit sendRawTransaction for transaction %s', transaction);
+    } catch (e: any) {
+      // handle NOT_SUPPORTED precheck error
+      if (e.message !== 0 && e.message.includes('NOT_SUPPORTED')) {
+        this.logger.warn(`${e.message}, transaction: ${JSON.stringify(transaction)}`);
+        return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+      }
+
       throw e;
     }
   }
@@ -626,8 +629,13 @@ export class EthImpl implements Eth {
 
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
-    } catch (e) {
-      this.logger.error(e, `Failed to handle call cleanly for transaction ${JSON.stringify(call)}`);
+    } catch (e: any) {
+      // handle NOT_SUPPORTED precheck error
+      if (e.message !== 0 && e.message.includes('NOT_SUPPORTED')) {
+        this.logger.warn(`${e.message}, transaction: ${JSON.stringify(call)}`);
+        return null;
+      }
+
       throw e;
     }
   }
