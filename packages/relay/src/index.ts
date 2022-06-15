@@ -101,7 +101,7 @@ export interface Eth {
 
   protocolVersion(): JsonRpcError;
 
-  sendRawTransaction(transaction: string): Promise<string>;
+  sendRawTransaction(transaction: string): Promise<string | JsonRpcError>;
 
   sendTransaction(): JsonRpcError;
 

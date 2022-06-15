@@ -185,9 +185,9 @@ export class SDKClient {
         return transactionResponse.getRecord(this.clientMain);
     }
 
-    async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionRecord> {
-        return this.executeAndGetTransactionRecord(new EthereumTransaction()
-            .setEthereumData(transactionBuffer), this.clientMain);
+    async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionResponse> {
+        return this.executeTransaction(new EthereumTransaction()
+            .setEthereumData(transactionBuffer));
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number): Promise<ContractFunctionResult> {
@@ -257,11 +257,11 @@ export class SDKClient {
         }
     };
 
-    private executeTransaction = async (transaction: Transaction, client: Client): Promise<TransactionResponse> => {
+    private executeTransaction = async (transaction: Transaction): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
         try {
             this.logger.info(`Execute ${transactionType} transaction`);
-            const resp = await transaction.execute(client);
+            const resp = await transaction.execute(this.clientMain);
             this.logger.info(`Consensus Node ${transactionType} transaction response: ${resp.transactionId.toString()} ${Status.Success._code}`);
             return resp;
         }
@@ -278,11 +278,11 @@ export class SDKClient {
         }
     };
 
-    private executeAndGetTransactionReceipt = async (transaction: Transaction, client: Client): Promise<TransactionReceipt> => {
+    private executeAndGetTransactionReceipt = async (transaction: Transaction): Promise<TransactionReceipt> => {
         let resp;
         try {
-            resp = await this.executeTransaction(transaction, client);
-            return resp.getReceipt(client);
+            resp = await this.executeTransaction(transaction);
+            return resp.getReceipt(this.clientMain);
         }
         catch (e: any) {
             // capture sdk receipt retrieval errors and shorten familiar stack trace
@@ -294,20 +294,17 @@ export class SDKClient {
         }
     };
 
-    private executeAndGetTransactionRecord = async (transaction: Transaction, client: Client): Promise<TransactionRecord> => {
-        let resp;
+    executeGetTransactionRecord = async (resp: TransactionResponse, transactionName: string): Promise<TransactionRecord> => {
         try {
-            resp = await this.executeTransaction(transaction, client);
-
             if (!resp.getRecord) {
                 throw new Error(`Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
             }
 
-            const transactionRecord: TransactionRecord = await resp.getRecord(client);
+            const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
             this.logger.trace(`${resp.transactionId.toString()} transaction cost: ${transactionRecord.transactionFee}`);
             this.captureMetrics(
                 SDKClient.transactionMode,
-                transaction.constructor.name,
+                transactionName,
                 transactionRecord.receipt.status,
                 transactionRecord.transactionFee.toTinybars().toNumber());
             return transactionRecord;
@@ -317,7 +314,7 @@ export class SDKClient {
             if (e.status && e.status._code) {
                 this.captureMetrics(
                     SDKClient.transactionMode,
-                    transaction.constructor.name,
+                    transactionName,
                     e.status,
                     0);
 

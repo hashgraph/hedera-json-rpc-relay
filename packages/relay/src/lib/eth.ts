@@ -19,7 +19,7 @@
  */
 
 import {Eth} from '../index';
-import { ContractId, Status, Hbar } from '@hashgraph/sdk';
+import { ContractId, Status, Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import {BigNumber} from '@hashgraph/sdk/lib/Transfer';
 import {Logger} from 'pino';
 import { Block, CachedBlock, Transaction, Log } from './model';
@@ -542,18 +542,18 @@ export class EthImpl implements Eth {
    *
    * @param transaction
    */
-  async sendRawTransaction(transaction: string): Promise<string> {
+  async sendRawTransaction(transaction: string): Promise<string | JsonRpcError> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
     await this.precheck.nonce(transaction);
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
     try {
-      // Convert from 0xabc format into a raw Uint8Array of bytes and execute the transaction
+      const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer);
 
       try {
         // Wait for the record from the execution.
-        const record = await this.sdkClient.submitEthereumTransaction(transactionBuffer);
+        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name);
         if (record.ethereumHash == null) {
           throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
         }
@@ -577,18 +577,14 @@ export class EthImpl implements Eth {
         return txHash;
       } catch (e) {
         this.logger.error(e,
-          'Failed sendRawTransaction during submission of transaction %s, returning computed hash', transaction);
+          'Failed sendRawTransaction during record retrieval for transaction %s, returning computed hash', transaction);
         //Return computed hash if unable to retrieve EthereumHash from record due to error
         return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
       }
     } catch (e: any) {
-      // handle NOT_SUPPORTED precheck error
-      if (e.message !== 0 && e.message.includes('NOT_SUPPORTED')) {
-        this.logger.warn(`${e.message}, transaction: ${JSON.stringify(transaction)}`);
-        return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
-      }
-
-      throw e;
+      this.logger.error(e,
+        'Failed to successfully submit sendRawTransaction for transaction %s', transaction);
+      return predefined.INTERNAL_ERROR;
     }
   }
 
