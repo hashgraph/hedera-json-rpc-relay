@@ -15,7 +15,6 @@ function App() {
   const [chain, setChain] = useState(null);
   const [alias, setAlias] = useState('');
   const [balance, setBalance] = useState(null);
-  const [accountId, setAccountId] = useState(null);
 
   const { recoveredPublicKeyToAccountId } = useHederaSdk();
 
@@ -31,7 +30,6 @@ function App() {
         setAddress(null);
         setBalance(null);
         setAlias('')
-        setAccountId(null);
         setChain(chainId)
       });
     }
@@ -72,7 +70,6 @@ function App() {
 
       setAddress(newAddress);
       setErrorMessage(null);
-      setAccountId(null);
       setAlias('')
     } catch (err) {
       console.error(err);
@@ -108,7 +105,6 @@ function App() {
       const recoveredPubKey = ethers.utils.recoverPublicKey(msgHashBytes, signature);
       const accountId = recoveredPublicKeyToAccountId(recoveredPubKey);
 
-      setAccountId(accountId);
       setAlias(accountId.aliasKey.toStringRaw());
     } catch (error) {
       console.error(error.message);
