@@ -18,13 +18,10 @@
  *
  */
 
-
-import {expect} from "chai";
 import {
     AccountBalanceQuery,
     AccountId,
     AccountInfoQuery,
-    Client,
     ContractCreateTransaction,
     ContractExecuteTransaction,
     ContractFunctionParameters,
@@ -39,30 +36,108 @@ import {
     TransactionResponse,
     TransferTransaction
 } from "@hashgraph/sdk";
-import {Logger} from "pino";
-import {AxiosInstance} from "axios";
+import pino, {Logger} from "pino";
+import Axios, {AxiosInstance} from 'axios';
 import {BigNumber, ethers} from "ethers";
 import type { TransactionRequest } from "@ethersproject/abstract-provider";
-import type { JsonRpcProvider } from "@ethersproject/providers";
-
-const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
+import Assertions from './assertions';
+import axiosRetry from "axios-retry";
+import ServicesClient from "./ServicesClient";
+import {JsonRpcProvider} from "@ethersproject/providers";
 
 export default class TestUtils {
     private readonly logger: Logger;
-    private readonly JsonRpcProvider: JsonRpcProvider;
     private readonly mirrorNodeClient: AxiosInstance;
-    private readonly relayClient: AxiosInstance;
+    private readonly services: ServicesClient;
+    public readonly provider: JsonRpcProvider;
+    private readonly servicesNetwork: string;
 
     constructor(args: {
-                    logger: Logger,
-                    jsonRpcProviderUrl: string,
-                    mirrorNodeClient: AxiosInstance,
-                    relayClient: AxiosInstance,
-                }) {
-        this.logger = args.logger;
-        this.JsonRpcProvider = new ethers.providers.JsonRpcProvider(args.jsonRpcProviderUrl);
-        this.mirrorNodeClient = args.mirrorNodeClient;
-        this.relayClient = args.relayClient;
+        // Uses the JsonRpcProvided if it is provided, otherwise initializes a new one with serverUrl
+        provider?: JsonRpcProvider
+        serverUrl?: string,
+
+        // ServicesClient options
+        services: {
+            network: string,
+            key: string,
+            accountId: string
+        },
+
+        // Uses the mirrorNodeClient if it is provided, otherwise initializes a new one with mirrorNodeUrl
+        mirrorNodeClient?: AxiosInstance,
+        mirrorNodeUrl?: string,
+
+        logger?: Logger
+    }) {
+
+        if (!args.logger) {
+            const testLogger = pino({
+                name: 'hedera-json-rpc-relay',
+                level: process.env.LOG_LEVEL || 'trace',
+                transport: {
+                    target: 'pino-pretty',
+                    options: {
+                        colorize: true,
+                        translateTime: true
+                    }
+                }
+            });
+
+            testLogger.info(`Setting up Mirror Node Client for ${args.mirrorNodeUrl} env`);
+            this.logger = testLogger;
+        }
+        else {
+            this.logger = args.logger;
+        }
+
+        if (!args.mirrorNodeClient) {
+            const mirrorNodeClient = Axios.create({
+                baseURL: `${args.mirrorNodeUrl}/api/v1`,
+                responseType: 'json' as const,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                method: 'GET',
+                timeout: 5 * 1000
+            });
+
+            // allow retries given mirror node waits for consensus, record stream serialization, export and import before parsing and exposing
+            axiosRetry(mirrorNodeClient, {
+                retries: 5,
+                retryDelay: (retryCount) => {
+                    this.logger.info(`Retry delay ${retryCount * 1000} s`);
+                    return retryCount * 1000;
+                },
+                retryCondition: (error) => {
+                    this.logger.error(error, `Request failed`);
+
+                    // if retry condition is not specified, by default idempotent requests are retried
+                    return error.response.status === 400 || error.response.status === 404;
+                }
+            });
+
+            this.logger = this.logger.child({name: 'rpc-acceptance-test'});
+            this.mirrorNodeClient = mirrorNodeClient;
+        }
+        else {
+            this.mirrorNodeClient = args.mirrorNodeClient;
+        }
+
+        this.servicesNetwork = args.services.network;
+        this.services = new ServicesClient(
+            args.services.network,
+            args.services.key,
+            args.services.accountId
+        );
+
+        if (!args.provider) {
+            this.provider = new ethers.providers.JsonRpcProvider(args.serverUrl);
+        }
+        else {
+            this.provider = args.provider;
+        }
+
     }
 
     numberTo0x = (input: number): string => {
@@ -78,10 +153,8 @@ export default class TestUtils {
     };
 
     idToEvmAddress = (id): string => {
+        Assertions.assertId(id);
         const [shard, realm, num] = id.split('.');
-        expect(shard).to.not.be.null;
-        expect(realm).to.not.be.null;
-        expect(num).to.not.be.null;
 
         return [
             '0x',
@@ -91,20 +164,20 @@ export default class TestUtils {
         ].join('');
     };
 
-    executeQuery = async (query: Query<any>, client: Client) => {
+    executeQuery = async (query: Query<any>) => {
         try {
             this.logger.info(`Execute ${query.constructor.name} query`);
-            return query.execute(client);
+            return query.execute(this.services.client);
         }
         catch (e) {
             this.logger.error(e, `Error executing ${query.constructor.name} query`);
         }
     };
 
-    executeTransaction = async (transaction: Transaction, client: Client) => {
+    executeTransaction = async (transaction: Transaction) => {
         try {
             this.logger.info(`Execute ${transaction.constructor.name} transaction`);
-            const resp = await transaction.execute(client);
+            const resp = await transaction.execute(this.services.client);
             this.logger.info(`Executed transaction ${resp.transactionId.toString()}`);
             return resp;
         }
@@ -113,11 +186,11 @@ export default class TestUtils {
         }
     };
 
-    executeAndGetTransactionReceipt = async (transaction: Transaction, client: Client) => {
+    executeAndGetTransactionReceipt = async (transaction: Transaction) => {
         let resp;
         try {
-            resp = await this.executeTransaction(transaction, client);
-            return resp.getReceipt(client);
+            resp = await this.executeTransaction(transaction);
+            return resp.getReceipt(this.services.client);
         }
         catch (e) {
             this.logger.error(e,
@@ -125,9 +198,9 @@ export default class TestUtils {
         }
     };
 
-    getRecordResponseDetails = async (resp: TransactionResponse, client: Client) => {
+    getRecordResponseDetails = async (resp: TransactionResponse) => {
         this.logger.info(`Retrieve record for ${resp.transactionId.toString()}`);
-        const record = await resp.getRecord(client);
+        const record = await resp.getRecord(this.services.client);
         const nanoString = record.consensusTimestamp.nanos.toString();
         const executedTimestamp = `${record.consensusTimestamp.seconds}.${nanoString.padStart(9, '0')}`;
         const transactionId = record.transactionId;
@@ -143,71 +216,41 @@ export default class TestUtils {
     };
 
     callSupportedRelayMethod = async (methodName: string, params: any[]) => {
-        const resp = await this.callRelay(this.relayClient, methodName, params);
-        this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.result)}`);
-
-        expect(resp.data).to.have.property('result');
-        expect(resp.data.id).to.be.equal('2');
-
-        return resp;
+        const res = await this.callRelay(methodName, params);
+        this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
+        return res;
     };
 
     callFailingRelayMethod = async (methodName: string, params: any[]) => {
-        const resp = await this.callRelay(this.relayClient, methodName, params);
-        this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.error)}`);
-
-        expect(resp.data).to.have.property('error');
-        expect(resp.data.id).to.be.equal('2');
-
-        return resp;
+        try {
+            const res = await this.callRelay(methodName, params);
+            this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
+            Assertions.expectedError();
+        }
+        catch (err) {
+            Assertions.failedResponce(err);
+            return err;
+        }
     };
 
     callUnsupportedRelayMethod = async (methodName: string, params: any[]) => {
-        const resp = await this.callRelay(this.relayClient, methodName, params);
-        this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(resp.data.error)}`);
-
-        expect(resp.data).to.have.property('error');
-        expect(resp.data.error.code).to.be.equal(-32601);
-        expect(resp.data.error.name).to.be.equal('Method not found');
-        expect(resp.data.error.message).to.be.equal('Unsupported JSON-RPC method');
-
-        return resp;
-    };
-
-    callRelay = async (client: any, methodName: string, params: any[]) => {
-        this.logger.debug(`[POST] to relay '${methodName}' with params [${params}]`);
-        const resp = await client.post('/', {
-            'id': '2',
-            'jsonrpc': '2.0',
-            'method': methodName,
-            'params': params
-        });
-
-        expect(resp).to.not.be.null;
-        expect(resp).to.have.property('data');
-        expect(resp.data).to.have.property('id');
-        expect(resp.data).to.have.property('jsonrpc');
-        expect(resp.data.jsonrpc).to.be.equal('2.0');
-
-        return resp;
-    };
-
-    setupClient = (key, id) => {
-        const opPrivateKey = PrivateKey.fromString(key);
-        let client: Client;
-
-        const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
-
-        if (hederaNetwork.toLowerCase() in supportedEnvs) {
-            client = Client.forName(hederaNetwork);
-        } else {
-            client = Client.forNetwork(JSON.parse(hederaNetwork));
+        try {
+            const res = await this.callRelay(methodName, params);
+            this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
+            Assertions.expectedError();
         }
-
-        return client.setOperator(AccountId.fromString(id), opPrivateKey);
+        catch (err) {
+            Assertions.unsupportedResponse(err);
+            return err;
+        }
     };
 
-    createEthCompatibleAccount = async (client: Client, privateKeyHex: null | string, initialBalance = 5000) => {
+    callRelay = async (methodName: string, params: any[]) => {
+        this.logger.debug(`[POST] to relay '${methodName}' with params [${params}]`);
+        return await this.provider.send(methodName, params);
+    };
+
+    createEthCompatibleAccount = async (privateKeyHex: null | string, initialBalance = 5000) => {
         let privateKey;
         if (privateKeyHex) {
             privateKey = PrivateKey.fromBytesECDSA(Buffer.from(privateKeyHex, 'hex'));
@@ -225,27 +268,40 @@ export default class TestUtils {
 
         this.logger.info(`Transfer transaction attempt`);
         const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
-            .addHbarTransfer(client.operatorAccountId, new Hbar(initialBalance).negated())
-            .addHbarTransfer(aliasAccountId, new Hbar(initialBalance)), client);
+            .addHbarTransfer(this.services.client.operatorAccountId, new Hbar(initialBalance).negated())
+            .addHbarTransfer(aliasAccountId, new Hbar(initialBalance)));
 
         this.logger.debug(`Get ${aliasAccountId.toString()} receipt`);
-        await aliasCreationResponse.getReceipt(client);
+        await aliasCreationResponse.getReceipt(this.services.client);
 
         const balance = await this.executeQuery(new AccountBalanceQuery()
             .setNodeAccountIds([aliasCreationResponse.nodeId])
-            .setAccountId(aliasAccountId), client);
+            .setAccountId(aliasAccountId));
 
         this.logger.info(`Balances of the new account: ${balance.toString()}`);
 
         const accountInfo = await this.executeQuery(new AccountInfoQuery()
             .setNodeAccountIds([aliasCreationResponse.nodeId])
-            .setAccountId(aliasAccountId), client);
+            .setAccountId(aliasAccountId));
 
         this.logger.info(`New account Info: ${accountInfo.accountId.toString()}`);
-        return { accountInfo, privateKey };
+        return {
+            accountInfo,
+            privateKey,
+            utils: new TestUtils({
+                mirrorNodeClient: this.mirrorNodeClient,
+                logger: this.logger,
+                provider: this.provider,
+                services: {
+                    network: this.servicesNetwork,
+                    key: privateKey.toString(),
+                    accountId: accountInfo.accountId.toString()
+                }
+            })
+        };
     };
 
-    createToken = async (client: Client) => {
+    createToken = async () => {
         const symbol = Math.random().toString(36).slice(2, 6).toUpperCase();
         this.logger.trace(`symbol = ${symbol}`);
         const resp = await this.executeAndGetTransactionReceipt(new TokenCreateTransaction()
@@ -253,7 +309,7 @@ export default class TestUtils {
             .setTokenSymbol(symbol)
             .setDecimals(3)
             .setInitialSupply(1000)
-            .setTreasuryAccountId(client.operatorAccountId), client);
+            .setTreasuryAccountId(this.services.client.operatorAccountId));
 
         this.logger.trace(`get token id from receipt`);
         const tokenId = resp.tokenId;
@@ -261,29 +317,29 @@ export default class TestUtils {
         return tokenId;
     };
 
-    associateAndTransferToken = async (accountId: AccountId, pk: PrivateKey, tokenId, client) => {
+    associateAndTransferToken = async (accountId: AccountId, pk: PrivateKey, tokenId) => {
         this.logger.info(`Associate account ${accountId.toString()} with token ${tokenId.toString()}`);
         await this.executeAndGetTransactionReceipt(
             await new TokenAssociateTransaction()
                 .setAccountId(accountId)
                 .setTokenIds([tokenId])
-                .freezeWith(client)
-                .sign(pk), client);
+                .freezeWith(this.services.client)
+                .sign(pk));
 
         this.logger.debug(
             `Associated account ${accountId.toString()} with token ${tokenId.toString()}`
         );
 
         this.executeAndGetTransactionReceipt(new TransferTransaction()
-            .addTokenTransfer(tokenId, client.operatorAccountId, -10)
-            .addTokenTransfer(tokenId, accountId, 10), client);
+            .addTokenTransfer(tokenId, this.services.client.operatorAccountId, -10)
+            .addTokenTransfer(tokenId, accountId, 10));
 
         this.logger.debug(
-            `Sent 10 tokens from account ${client.operatorAccountId.toString()} to account ${accountId.toString()} on token ${tokenId.toString()}`
+            `Sent 10 tokens from account ${this.services.client.operatorAccountId.toString()} to account ${accountId.toString()} on token ${tokenId.toString()}`
         );
 
         const balances = await this.executeQuery(new AccountBalanceQuery()
-            .setAccountId(accountId), client);
+            .setAccountId(accountId));
 
         this.logger.debug(
             `Token balances for ${accountId.toString()} are ${balances.tokens
@@ -292,26 +348,26 @@ export default class TestUtils {
         );
     };
 
-    sendFileClosingCryptoTransfer = async (accountId: AccountId, client: Client) => {
+    sendFileClosingCryptoTransfer = async (accountId: AccountId) => {
         const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
-            .addHbarTransfer(client.operatorAccountId, new Hbar(1, HbarUnit.Millibar).negated())
-            .addHbarTransfer(accountId, new Hbar(1, HbarUnit.Millibar)), client);
+            .addHbarTransfer(this.services.client.operatorAccountId, new Hbar(1, HbarUnit.Millibar).negated())
+            .addHbarTransfer(accountId, new Hbar(1, HbarUnit.Millibar)));
 
-        await aliasCreationResponse.getReceipt(client);
+        await aliasCreationResponse.getReceipt(this.services.client);
 
         const balance = await this.executeQuery(new AccountBalanceQuery()
             .setNodeAccountIds([aliasCreationResponse.nodeId])
-            .setAccountId(accountId), client);
+            .setAccountId(accountId), this.services.client);
 
         this.logger.info(`Balances of the new account: ${balance.toString()}`);
     };
 
-    createParentContract = async (parentContract, client: Client) => {
+    createParentContract = async (parentContract) => {
         const contractByteCode = (parentContract.deployedBytecode.replace('0x', ''));
 
         const fileReceipt = await this.executeAndGetTransactionReceipt(new FileCreateTransaction()
-            .setKeys([client.operatorPublicKey])
-            .setContents(contractByteCode), client);
+            .setKeys([this.services.client.operatorPublicKey])
+            .setContents(contractByteCode));
 
         // Fetch the receipt for transaction that created the file
         // The file ID is located on the transaction receipt
@@ -326,7 +382,7 @@ export default class TestUtils {
             .setGas(75000)
             .setInitialBalance(100)
             .setBytecodeFileId(fileId)
-            .setAdminKey(client.operatorPublicKey), client);
+            .setAdminKey(this.services.client.operatorPublicKey));
 
         // Fetch the receipt for the transaction that created the contract
 
@@ -338,7 +394,7 @@ export default class TestUtils {
         return contractId;
     };
 
-    executeContractCall = async (contractId, client: Client) => {
+    executeContractCall = async (contractId) => {
         // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
         this.logger.info(`Execute contracts ${contractId}'s createChild method`);
         const contractExecTransactionResponse =
@@ -349,9 +405,9 @@ export default class TestUtils {
                     "createChild",
                     new ContractFunctionParameters()
                         .addUint256(1000)
-                ), client);
+                ));
 
-        const resp = await this.getRecordResponseDetails(contractExecTransactionResponse, client);
+        const resp = await this.getRecordResponseDetails(contractExecTransactionResponse);
         const contractExecuteTimestamp = resp.executedTimestamp;
         const contractExecutedTransactionId = resp.executedTransactionId;
 
@@ -359,11 +415,11 @@ export default class TestUtils {
     };
 
     getBalance = async (address, block = 'latest') => {
-        return await this.JsonRpcProvider.getBalance(address, block);
+        return await this.provider.getBalance(address, block);
     };
 
     signRawTransaction = async (tx: TransactionRequest, privateKey) => {
-        const wallet = new ethers.Wallet(privateKey.toStringRaw(), this.JsonRpcProvider);
+        const wallet = new ethers.Wallet(privateKey.toStringRaw(), this.provider);
         return await wallet.signTransaction(tx);
     };
 
@@ -377,7 +433,7 @@ export default class TestUtils {
      * Returns: The nonce of the account with the provided `evmAddress`
      */
     getAccountNonce = async (evmAddress): Promise<number> => {
-        const nonce = await this.JsonRpcProvider.send('eth_getTransactionCount', [evmAddress, 'latest']);
+        const nonce = await this.provider.send('eth_getTransactionCount', [evmAddress, 'latest']);
         return Number(nonce);
     };
 
@@ -391,44 +447,12 @@ export default class TestUtils {
      */
     sendRawTransaction = async (tx, privateKey): Promise<string> => {
         const signedTx = await this.signRawTransaction(tx, privateKey);
-        const txHash = await this.JsonRpcProvider.send('eth_sendRawTransaction', [signedTx]);
+        const txHash = await this.provider.send('eth_sendRawTransaction', [signedTx]);
 
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
         await this.callMirrorNode(`contracts/results/${txHash}`);
         return txHash;
-    };
-
-    assertTransactionReceipt = (transactionReceipt, transactionRequest, overwriteValues = {}) => {
-        const staticValues = {
-            status: '0x1',
-            logs: [],
-            from: '',
-            ...overwriteValues
-        };
-
-        expect(transactionReceipt.blockHash).to.exist;
-        expect(transactionReceipt.blockHash).to.not.eq('0x0');
-        expect(transactionReceipt.blockNumber).to.exist;
-        expect(Number(transactionReceipt.blockNumber)).to.gt(0);
-        expect(transactionReceipt.cumulativeGasUsed).to.exist;
-        expect(Number(transactionReceipt.cumulativeGasUsed)).to.gt(0);
-        expect(transactionReceipt.gasUsed).to.exist;
-        expect(Number(transactionReceipt.gasUsed)).to.gt(0);
-        expect(transactionReceipt.logsBloom).to.exist;
-        expect(transactionReceipt.logsBloom).to.not.eq('0x0');
-        expect(transactionReceipt.transactionHash).to.exist;
-        expect(transactionReceipt.transactionHash).to.not.eq('0x0');
-        expect(transactionReceipt.transactionIndex).to.exist;
-        expect(transactionReceipt.effectiveGasPrice).to.exist;
-        expect(Number(transactionReceipt.effectiveGasPrice)).to.gt(0);
-        expect(transactionReceipt.status).to.exist;
-        expect(transactionReceipt.logs).to.exist;
-        expect(transactionReceipt.logs.length).to.eq(staticValues.logs.length);
-        expect(transactionReceipt.status).to.eq(staticValues.status);
-        expect(transactionReceipt.from).to.eq(staticValues.from);
-        expect(transactionReceipt.to).to.eq(transactionRequest.to);
-
     };
 }
 
