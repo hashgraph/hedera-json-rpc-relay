@@ -548,6 +548,7 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string): Promise<string> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
+    await this.precheck.gasLimit(transaction);
     await this.precheck.nonce(transaction);
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
