@@ -19,12 +19,13 @@
  */
 
 import { expect } from 'chai';
+import { Registry } from 'prom-client';
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 
 import pino from 'pino';
 const logger = pino();
 
-const Relay = new RelayImpl(logger);
+const Relay = new RelayImpl(logger, new Registry());
 
 describe('Net', async function() {
   it('should execute "net_listening"', async function() {
