@@ -158,7 +158,7 @@ export class MirrorNodeClient {
             }
         }
 
-        this.logger.error(error, 'Unexpected request error');
+        this.logger.error(new Error(error.message), `Mirror Node Response: [GET] ${path} ${error.response.status} status`);
         throw predefined.INTERNAL_ERROR;
     }
 
