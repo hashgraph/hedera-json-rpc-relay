@@ -47,11 +47,11 @@ export interface Eth {
 
   blockNumber(): Promise<string>;
 
-  call(call: any, blockParam: string): Promise<string>;
+  call(call: any, blockParam: string | null): Promise<string>;
 
   coinbase(): JsonRpcError;
 
-  estimateGas(): Promise<string>;
+  estimateGas(transaction:any, blockParam: string| null): Promise<string>;
 
   gasPrice(): Promise<string>;
 

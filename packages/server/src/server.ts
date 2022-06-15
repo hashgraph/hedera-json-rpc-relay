@@ -163,8 +163,8 @@ rpc.use('eth_blockNumber', async () => {
  *
  * returns: Gas used - hex encoded integer
  */
-rpc.use('eth_estimateGas', async () => {
-  return logAndHandleResponse('eth_estimateGas', () => relay.eth().estimateGas());
+rpc.use('eth_estimateGas', async (params: any) => {
+  return logAndHandleResponse('eth_estimateGas', () => relay.eth().estimateGas(params?.[0], params?.[1]));
 });
 
 /**
