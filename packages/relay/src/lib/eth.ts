@@ -49,8 +49,8 @@ export class EthImpl implements Eth {
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-  static defaultGas = 0x3d0900;
-  static gasTxBaseCost = 21_000;
+  static defaultGas = EthImpl.numberTo0x(400_000);
+  static gasTxBaseCost = EthImpl.numberTo0x(21_000);
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
 
@@ -206,13 +206,12 @@ export class EthImpl implements Eth {
    * Estimates the amount of gas to execute a call.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async estimateGas(transaction: any, blockParam: string | null) {
+  async estimateGas(transaction: any, _blockParam: string | null) {
     this.logger.trace('estimateGas()');
     if (!transaction || !transaction.data || transaction.data === '0x') {
-      return EthImpl.numberTo0x(EthImpl.gasTxBaseCost);
+      return EthImpl.gasTxBaseCost;
     } else {
-      // FIXME: For now, we are going to have an arbitrary estimate for non-transfers but in the future we will do something more sophisticated.
-      return EthImpl.numberTo0x(EthImpl.defaultGas);
+      return EthImpl.defaultGas;
     }
   }
 

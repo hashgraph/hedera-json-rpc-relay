@@ -938,25 +938,24 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_estimateGas contract call returns default', async function() {
-    const gas = await ethImpl.estimateGas({input:"0x01"}, null);
-    expect(gas).to.equal(EthImpl.numberTo0x(EthImpl.defaultGas));
+    const gas = await ethImpl.estimateGas({data:"0x01"}, null);
+    expect(gas).to.equal(EthImpl.defaultGas);
   });
 
   it('eth_estimateGas empty call returns transfer cost', async function() {
     const gas = await ethImpl.estimateGas({}, null);
-    expect(gas).to.equal(EthImpl.numberTo0x(EthImpl.gasTxBaseCost));
+    expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
   it('eth_estimateGas empty input transfer cost', async function() {
-    const gas = await ethImpl.estimateGas({input:""}, null);
-    expect(gas).to.equal(EthImpl.numberTo0x(EthImpl.gasTxBaseCost));
+    const gas = await ethImpl.estimateGas({data:""}, null);
+    expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
   it('eth_estimateGas zero input returns transfer cost', async function() {
-    const gas = await ethImpl.estimateGas({input:"0x"}, null);
-    expect(gas).to.equal(EthImpl.numberTo0x(EthImpl.gasTxBaseCost));
+    const gas = await ethImpl.estimateGas({data:"0x"}, null);
+    expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
-
 
   it('eth_gasPrice', async function() {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
