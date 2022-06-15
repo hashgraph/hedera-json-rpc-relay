@@ -65,7 +65,7 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
             setContractCallUpdateMsg('Loading...');
 
             const contract = new ethers.Contract(contractAddress, Greeter.abi, signer);
-            const tx = await contract.setGreeting(contractCallUpdateMsgInput);
+            await contract.setGreeting(contractCallUpdateMsgInput);
 
             setContractCallUpdateMsg('Updated text: ' + contractCallUpdateMsgInput);
             setIsLoading(false);

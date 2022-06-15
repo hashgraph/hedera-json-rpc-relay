@@ -3,9 +3,8 @@ import { Button, Chip, Grid, Typography } from "@mui/material";
 import { Box, Container } from "@mui/system";
 import { ethers } from "ethers";
 
-import useHederaSdkClient from "./hooks/useHederaSdkClient";
+import useHederaSdk from "./hooks/useHederaSdk";
 
-import AccountActivationForm from "./components/AccountActivationForm";
 import ContractInteractions from "./components/ContractInteractions";
 import TransferHTSTokensForm from './components/TransferHTSTokensForm';
 
@@ -18,7 +17,7 @@ function App() {
   const [balance, setBalance] = useState(null);
   const [accountId, setAccountId] = useState(null);
 
-  const { recoveredPublicKeyToAccountId } = useHederaSdkClient();
+  const { recoveredPublicKeyToAccountId } = useHederaSdk();
 
   useEffect(() => {
     if (window.ethereum) {
@@ -46,13 +45,20 @@ function App() {
     return address && Number(balance) > 0;
   }, [address, balance]);
 
-  const fetchAccountBalance = async (address) => {
+  const status = useMemo(() => {
+    return {
+      label: isAccountActivated ? "Account is active" : 'Account not created yet',
+      color: isAccountActivated ? 'success' : 'error'
+    }
+  }, [isAccountActivated])
+
+  const fetchAccountBalance = async (accountAddress) => {
     try {
-      const balance = await window.ethereum.request({
+      const accountBalance = await window.ethereum.request({
         method: "eth_getBalance",
-        params: [address.toString(), "latest"],
+        params: [accountAddress.toString(), "latest"],
       });
-      setBalance(ethers.utils.formatEther(balance));
+      setBalance(ethers.utils.formatEther(accountBalance));
     } catch (error) {
       console.log(error);
     }
@@ -138,7 +144,7 @@ function App() {
             Balance: {balance ? balance + " HBAR" : null}
           </Typography>
           <Typography variant="h6" style={{ wordBreak: 'break-word' }}>
-            Status: {isConnected ? <Chip label={isAccountActivated ? "Account is active" : 'Account not created yet'} color={isAccountActivated ? 'success' : 'error'} /> : null}
+            Status: {isConnected ? <Chip label={status.label} color={status.color} /> : null}
           </Typography>
           <br />
           <Button onClick={showAccountIdHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
@@ -147,10 +153,6 @@ function App() {
           <Typography variant="h6" style={{ wordBreak: 'break-word' }}>
             {alias}
           </Typography>
-
-          {/* <Box sx={{ mt: '2em', mb: '2em' }}>
-            <AccountActivationForm isConnected={isConnected} toAccountId={accountId} alias={alias} isActive={isAccountActivated} evmAddress={address} fetchAccountBalance={fetchAccountBalance} />
-          </Box> */}
 
           {/* Contracts Section */}
           <Box sx={{ mt: '2em', mb: '2em' }}>

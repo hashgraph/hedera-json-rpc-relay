@@ -25,7 +25,7 @@ const TransferHTSTokensForm = ({ signer, isConnected, chain, address }) => {
             setHtsTokenMsg('Loading...');
 
             const contract = new ethers.Contract(htsTokenAddress, ERC20ABI, signer);
-            const call = await contract.transfer(htsTokenReceiverAddress, htsTokenAmount);
+            await contract.transfer(htsTokenReceiverAddress, htsTokenAmount);
 
             setHtsTokenMsg('Done');
             setIsLoading(false);
