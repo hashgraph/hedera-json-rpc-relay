@@ -93,12 +93,12 @@ export class SDKClient {
             help: 'Relay operator balance gauge',
             labelNames: ['mode', 'type'],
             registers: [register],
-            async collect() {
-                // Invoked when the registry collects its metrics' values.
-                // This can be synchronous or it can return a promise/be an async function.
-                const balance = await getOperatorAccountBalance();
-                this.set(balance);
-            },
+            // async collect() {
+            //     // Invoked when the registry collects its metrics' values.
+            //     // This can be synchronous or it can return a promise/be an async function.
+            //     const balance = await getOperatorAccountBalance();
+            //     this.set(balance);
+            // },
         });
     }
 
