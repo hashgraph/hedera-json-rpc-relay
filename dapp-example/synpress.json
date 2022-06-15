@@ -1,0 +1,23 @@
+{
+    "baseUrl": "http://localhost:3000",
+    "userAgent": "synpress",
+    "retries": { "runMode": 0, "openMode": 0 },
+    "integrationFolder": "tests/e2e",
+    "screenshotsFolder": "screenshots",
+    "videosFolder": "videos",
+    "video": true,
+    "chromeWebSecurity": true,
+    "viewportWidth": 1366,
+    "viewportHeight": 850,
+    "component": {
+      "componentFolder": ".",
+      "testFiles": "**/*spec.{js,jsx,ts,tsx}"
+    },
+    "env": {
+      "coverage": false
+    },
+    "defaultCommandTimeout": 50000,
+    "pageLoadTimeout": 40000,
+    "requestTimeout": 40000,
+    "supportFile": "tests/support/index.js"
+  }

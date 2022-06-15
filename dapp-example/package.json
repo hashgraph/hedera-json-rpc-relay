@@ -12,10 +12,17 @@
     "react-dom": "^18.1.0",
     "react-scripts": "5.0.1"
   },
+  "devDependencies": {
+    "@synthetixio/synpress": "^1.2.0",
+    "@testing-library/cypress": "^8.0.3",
+    "cypress": "^9.5.3",
+    "cypress-wait-until": "^1.7.2",
+    "env-cmd": "^10.1.0"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "env-cmd -f ../.env npx synpress run -cf synpress.json",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
