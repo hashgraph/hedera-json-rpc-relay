@@ -143,7 +143,7 @@ function App() {
             Status: {isConnected ? <Chip label={status.label} color={status.color} /> : null}
           </Typography>
           <br />
-          <Button onClick={showAccountIdHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
+          <Button id="showAliasBtn" onClick={showAccountIdHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
             Show alias
           </Button>
           <Typography variant="h6" style={{ wordBreak: 'break-word' }}>
