@@ -20,7 +20,7 @@
         ]
     },
     "scripts": {
-        "acceptancetest": "ts-mocha ./packages/server/tests/acceptance/all.spec.ts --exit",
+        "acceptancetest": "ts-mocha packages/server/tests/acceptance/rpc.spec.ts --exit",
         "build": "npx lerna run build",
         "build-and-test": "npx lerna run build && npx lerna run test",
         "build:docker": "docker build . -t ${npm_package_name}",
