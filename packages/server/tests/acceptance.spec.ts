@@ -437,7 +437,7 @@ describe('RPC Server Acceptance Tests', async function () {
         }, ethCompPrivateKey3);
 
         const res = await utils.callFailingRelayMethod('eth_sendRawTransaction', [signedTx]);
-        expect(res.data.error.message).to.be.equal('Internal error');
+        expect(res.data.error.message).to.be.equal('Unknown error invoking RPC');
         expect(res.data.error.code).to.be.equal(-32603);
     });
 
@@ -449,7 +449,7 @@ describe('RPC Server Acceptance Tests', async function () {
         }, ethCompPrivateKey3);
 
         const res = await utils.callFailingRelayMethod('eth_sendRawTransaction', [signedTx]);
-        expect(res.data.error.message).to.be.equal('Internal error');
+        expect(res.data.error.message).to.be.equal('Unknown error invoking RPC');
         expect(res.data.error.code).to.be.equal(-32603);
     });
 
