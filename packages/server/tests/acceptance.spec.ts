@@ -133,7 +133,7 @@ describe('RPC Server Acceptance Tests', async function () {
                 logger.error(error, `Request failed`);
 
                 // if retry condition is not specified, by default idempotent requests are retried
-                return error.response.status === 400 || error.response.status === 404;
+                return error.response?.status === 400 || error.response?.status === 404;
             }
         });
 
@@ -382,22 +382,22 @@ describe('RPC Server Acceptance Tests', async function () {
         await utils.callUnsupportedRelayMethod('eth_submitHashrate', []);
     });
 
-    it('should execute "eth_getBalance" for newly created account with 5000 HBAR', async function () {
-        const accountResponse = await utils.createEthCompatibleAccount(client, null, 5000);
+    it('should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {
+        const accountResponse = await utils.createEthCompatibleAccount(client, null, 10);
         const accountInfo = accountResponse.accountInfo;
         const mirrorResponse = await utils.callMirrorNode(`accounts/${accountInfo.accountId}`);
         const mirrorAccount = mirrorResponse.data;
         const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x10f0777f464e77a2400');
+        expect(res.data.result).to.eq('0x854eb28c18422400');
     });
 
     it('should execute "eth_getBalance" with account alias', async function () {
-        const accountResponse = await utils.createEthCompatibleAccount(client, null, 5000);
+        const accountResponse = await utils.createEthCompatibleAccount(client, null, 10);
         const accountInfo = accountResponse.accountInfo;
         const mirrorResponse = await utils.callMirrorNode(`accounts/${accountInfo.accountId}`);
         const mirrorAccount = mirrorResponse.data;
         const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorAccount.alias, 'latest']);
-        expect(res.data.result).to.eq('0x10f0777f464e77a2400');
+        expect(res.data.result).to.eq('0x854eb28c18422400');
     });
 
     it('should execute "eth_getBalance" for non-existing address', async function () {
@@ -407,23 +407,23 @@ describe('RPC Server Acceptance Tests', async function () {
 
     it('should execute "eth_getBalance" for contract', async function () {
         const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorContract.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x56bc75e2d63100000');
+        expect(res.data.result).to.eq('0xde0b6b3a7640000');
     });
 
     it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
-        const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 5000);
+        const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 10);
         const accountId = accountInfo.accountId.toString();
         const evmAddress = utils.idToEvmAddress(accountId);
 
         // wait for the account to be imported in the Mirror Node
         await utils.callMirrorNode(`accounts/${accountId}`);
         const res = await utils.callSupportedRelayMethod('eth_getBalance', [evmAddress, 'latest']);
-        expect(res.data.result).to.eq('0x10f0777f464e77a2400');
+        expect(res.data.result).to.eq('0x854eb28c18422400');
     });
 
     it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
         const res = await utils.callSupportedRelayMethod('eth_getBalance', [utils.idToEvmAddress(contractId.toString()), 'latest']);
-        expect(res.data.result).to.eq('0x56bc75e2d63100000');
+        expect(res.data.result).to.eq('0xde0b6b3a7640000');
     });
 
     it('should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {

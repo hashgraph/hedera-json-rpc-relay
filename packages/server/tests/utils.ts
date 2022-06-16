@@ -207,7 +207,7 @@ export default class TestUtils {
         return client.setOperator(AccountId.fromString(id), opPrivateKey);
     };
 
-    createEthCompatibleAccount = async (client: Client, privateKeyHex: null | string, initialBalance = 5000) => {
+    createEthCompatibleAccount = async (client: Client, privateKeyHex: null | string, initialBalance = 10) => {
         let privateKey;
         if (privateKeyHex) {
             privateKey = PrivateKey.fromBytesECDSA(Buffer.from(privateKeyHex, 'hex'));
@@ -342,7 +342,7 @@ export default class TestUtils {
                 new ContractFunctionParameters()
             )
             .setGas(75000)
-            .setInitialBalance(100)
+            .setInitialBalance(1)
             .setBytecodeFileId(fileId)
             .setAdminKey(client.operatorPublicKey), client);
 
