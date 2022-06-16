@@ -29,7 +29,7 @@ import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import { MirrorNode } from '../../src/lib/mirrorNode';
-import {expectUnsupportedMethod} from '../helpers';
+import { expectUnsupportedMethod } from '../helpers';
 
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
@@ -63,28 +63,34 @@ const verifyBlockConstants = (block: Block) => {
   expect(block.uncles).to.deep.equal([]);
 };
 
+let mock: MockAdapter;
+let mirrorNodeInstance: MirrorNodeClient;
+
 describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
 
-  // mock axios
-  const instance = axios.create({
-    baseURL: 'https://localhost:5551/api/v1',
-    responseType: 'json' as const,
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    timeout: 10 * 1000
+  let ethImpl: EthImpl;
+  this.beforeAll(() => {
+    // mock axios
+    const instance = axios.create({
+      baseURL: 'https://localhost:5551/api/v1',
+      responseType: 'json' as const,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 10 * 1000
+    });
+
+    // @ts-ignore
+    mock = new MockAdapter(instance, { onNoMatch: "throwException" });
+    // @ts-ignore
+    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
+    // @ts-ignore
+    ethImpl = new EthImpl(null, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
   });
 
-  // @ts-ignore
-  const mock = new MockAdapter(instance, { onNoMatch: "throwException" });
-  // @ts-ignore
-  const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
-  // @ts-ignore
-  const ethImpl = new EthImpl(null, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
-
   const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
-  const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;  
+  const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;
   const blockHash2 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6c`;
   const blockHash3 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6d`;
   const blockHashPreviousTrimmed = '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298';
@@ -214,22 +220,26 @@ describe('Eth calls using MirrorNode', async function () {
     'v': 1
   };
 
-  const defaultDetailedContractResults2 = {...defaultDetailedContractResults, ...{
-    'timestamp': contractTimestamp2,
-    'block_hash': blockHash2,
-    'block_number': blockNumber2,
-    'hash': contractHash2
-  }};
+  const defaultDetailedContractResults2 = {
+    ...defaultDetailedContractResults, ...{
+      'timestamp': contractTimestamp2,
+      'block_hash': blockHash2,
+      'block_number': blockNumber2,
+      'hash': contractHash2
+    }
+  };
 
-  const defaultDetailedContractResults3 = {...defaultDetailedContractResults, ...{
-    'timestamp': contractTimestamp2,
-    'block_hash': blockHash3,
-    'block_number': blockNumber3,
-    'hash': contractHash3,
-    'contract_id': contractId2,
-  }};
+  const defaultDetailedContractResults3 = {
+    ...defaultDetailedContractResults, ...{
+      'timestamp': contractTimestamp2,
+      'block_hash': blockHash3,
+      'block_number': blockNumber3,
+      'hash': contractHash3,
+      'contract_id': contractId2,
+    }
+  };
 
-  const detailedContractResultNotFound = {"_status":{"messages":[{"message":"No correlating transaction"}]}};
+  const detailedContractResultNotFound = { "_status": { "messages": [{ "message": "No correlating transaction" }] } };
 
   const defaultDetailedContractResultsWithNullNullableValues = {
     ...defaultDetailedContractResults,
@@ -372,7 +382,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_getBlockByNumber with zero transactions', async function () {
     // mirror node request mocks
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
-    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, { 'results': []});
+    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, { 'results': [] });
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
     expect(result).to.exist;
     if (result == null) return;
@@ -431,8 +441,8 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.equal(null);
   });
 
-  it('eth_getBlockByNumber with latest tag', async function() {
-    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
+  it('eth_getBlockByNumber with latest tag', async function () {
+    mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
     const result = await ethImpl.getBlockByNumber('latest', false);
@@ -442,8 +452,8 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.number).equal(blockNumberHex);
   });
 
-  it('eth_getBlockByNumber with pending tag', async function() {
-    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
+  it('eth_getBlockByNumber with pending tag', async function () {
+    mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
 
@@ -454,7 +464,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.number).equal(blockNumberHex);
   });
 
-  it('eth_getBlockByNumber with earliest tag', async function() {
+  it('eth_getBlockByNumber with earliest tag', async function () {
     mock.onGet(`blocks/0`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
 
@@ -465,7 +475,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.number).equal(blockNumberHex);
   });
 
-  it('eth_getBlockByNumber with hex number', async function() {
+  it('eth_getBlockByNumber with hex number', async function () {
     mock.onGet(`blocks/3735929054`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
 
@@ -569,7 +579,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockTransactionCountByNumber with latest tag', async function () {
     // mirror node request mocks
-    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
+    mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('latest');
@@ -578,7 +588,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockTransactionCountByNumber with pending tag', async function () {
     // mirror node request mocks
-    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
+    mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('pending');
@@ -658,7 +668,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getTransactionByBlockNumberAndIndex with latest tag', async function () {
     // mirror node request mocks
-    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
+    mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
     mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
 
@@ -675,7 +685,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getTransactionByBlockNumberAndIndex with match pending tag', async function () {
     // mirror node request mocks
-    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
+    mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
     mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
 
@@ -712,7 +722,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('0xdeadc0de' +
-        '', defaultBlock.count);
+      '', defaultBlock.count);
     expect(result).to.exist;
     if (result == null) return;
 
@@ -807,14 +817,14 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(404, detailedContractResultNotFound);
       mock.onGet(`contracts/${contractId2}/results/${contractTimestamp2}`).reply(404, detailedContractResultNotFound);
 
-      const result = await ethImpl.getLogs(null, null, null, null ,null);
+      const result = await ethImpl.getLogs(null, null, null, null, null);
       expect(result).to.exist;
       expect(result.length).to.eq(0);
     });
 
     it('error when retrieving logs', async function () {
-      mock.onGet(`contracts/results/logs`).reply(400, {"_status":{"messages":[{"message":"Mocked error"}]}});
-      const result = await ethImpl.getLogs(null, null, null, null ,null);
+      mock.onGet(`contracts/results/logs`).reply(400, { "_status": { "messages": [{ "message": "Mocked error" }] } });
+      const result = await ethImpl.getLogs(null, null, null, null, null);
       expect(result).to.exist;
       expect(result.length).to.eq(0);
     });
@@ -825,7 +835,7 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
       mock.onGet(`contracts/${contractId2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults3);
 
-      const result = await ethImpl.getLogs(null, null, null, null ,null);
+      const result = await ethImpl.getLogs(null, null, null, null, null);
       expect(result).to.exist;
 
       expect(result.length).to.eq(4);
@@ -889,9 +899,9 @@ describe('Eth calls using MirrorNode', async function () {
       };
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
       mock.onGet(
-          `contracts/results/logs` +
-          `?topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
-          `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}`
+        `contracts/results/logs` +
+        `?topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
+        `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}`
       ).reply(200, filteredLogs);
       mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
         blocks: [defaultBlock]
@@ -905,7 +915,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
   });
 
-  it('eth_feeHistory', async function() {
+  it('eth_feeHistory', async function () {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
     const feeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
     expect(feeHistory).to.exist;
@@ -918,7 +928,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(rewards[1]).to.equal('0x0');
   });
 
-  it('eth_feeHistory verify cached value', async function() {
+  it('eth_feeHistory verify cached value', async function () {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
     const firstFeeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
     expect(firstFeeHistory).to.exist;
@@ -935,27 +945,27 @@ describe('Eth calls using MirrorNode', async function () {
     expect(firstFeeHistory).to.equal(secondFeeHistory);
   });
 
-  it('eth_estimateGas contract call returns default', async function() {
-    const gas = await ethImpl.estimateGas({data:"0x01"}, null);
+  it('eth_estimateGas contract call returns default', async function () {
+    const gas = await ethImpl.estimateGas({ data: "0x01" }, null);
     expect(gas).to.equal(EthImpl.defaultGas);
   });
 
-  it('eth_estimateGas empty call returns transfer cost', async function() {
+  it('eth_estimateGas empty call returns transfer cost', async function () {
     const gas = await ethImpl.estimateGas({}, null);
     expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
-  it('eth_estimateGas empty input transfer cost', async function() {
-    const gas = await ethImpl.estimateGas({data:""}, null);
+  it('eth_estimateGas empty input transfer cost', async function () {
+    const gas = await ethImpl.estimateGas({ data: "" }, null);
     expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
-  it('eth_estimateGas zero input returns transfer cost', async function() {
-    const gas = await ethImpl.estimateGas({data:"0x"}, null);
+  it('eth_estimateGas zero input returns transfer cost', async function () {
+    const gas = await ethImpl.estimateGas({ data: "0x" }, null);
     expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
-  it('eth_gasPrice', async function() {
+  it('eth_gasPrice', async function () {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
 
     const weiBars = await ethImpl.gasPrice();
@@ -963,7 +973,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(weiBars).to.equal(EthImpl.numberTo0x(expectedWeiBars));
   });
 
-  it('eth_gasPrice with cached value', async function() {
+  it('eth_gasPrice with cached value', async function () {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
 
     const firstGasResult = await ethImpl.gasPrice();
@@ -978,7 +988,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(firstGasResult).to.equal(secondGasResult);
   });
 
-  it('eth_gasPrice with no EthereumTransaction gas returned', async function() {
+  it('eth_gasPrice with no EthereumTransaction gas returned', async function () {
     const partialNetworkFees = Object.assign({}, defaultNetworkFees);
     partialNetworkFees.fees.splice(2);
 
@@ -991,7 +1001,7 @@ describe('Eth calls using MirrorNode', async function () {
     }
   });
 
-  it('eth_gasPrice with no network fees records found', async function() {
+  it('eth_gasPrice with no network fees records found', async function () {
     mock.onGet(`network/fees`).reply(404, {
       "_status": {
         "messages": [
@@ -1013,21 +1023,11 @@ describe('Eth calls using MirrorNode', async function () {
 describe('Eth', async function () {
   this.timeout(10000);
 
-  const instance = axios.create({
-    baseURL: 'https://localhost:5551/api/v1',
-    responseType: 'json' as const,
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    timeout: 10 * 1000
+  let ethImpl: EthImpl;
+  this.beforeAll(() => {
+    // @ts-ignore
+    ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger);
   });
-
-  // @ts-ignore
-  const mock = new MockAdapter(instance, { onNoMatch: "throwException" });
-  // @ts-ignore
-  const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
-  // @ts-ignore
-  const ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger);
 
   const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
   const defaultTransaction = {
@@ -1079,7 +1079,7 @@ describe('Eth', async function () {
   const defaultDetailedContractResultByHash = {
     "amount": 2000000000,
     "bloom":
-        "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
     "call_result": "0x0606",
     "contract_id": "0.0.5001",
     "created_contract_ids": ["0.0.7001"],
@@ -1193,12 +1193,12 @@ describe('Eth', async function () {
   });
 
   const unsupportedMethods = [
-      'submitHashrate',
-      'signTransaction',
-      'sign',
-      'sendTransaction',
-      'protocolVersion',
-      'coinbase'
+    'submitHashrate',
+    'signTransaction',
+    'sign',
+    'sendTransaction',
+    'protocolVersion',
+    'coinbase'
   ];
 
   unsupportedMethods.forEach(method => {

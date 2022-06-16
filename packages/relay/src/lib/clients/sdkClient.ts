@@ -80,15 +80,21 @@ export class SDKClient {
         this.clientMain = clientMain;
         this.logger = logger;
         this.register = register;
+
+        // clear and create metrics in registry
+        const metricHistogramName = 'rpc_relay_consensusnode_response';
+        register.removeSingleMetric(metricHistogramName);
         this.consensusNodeClientHistorgram = new Histogram({
-            name: 'rpc_relay_consensusnode_response',
+            name: metricHistogramName,
             help: 'Relay consensusnode mode type status cost histogram',
             labelNames: ['mode', 'type', 'status'],
             registers: [register]
         });
 
+        const metricGaugeName = 'rpc_relay_operator_balance';
+        register.removeSingleMetric(metricHistogramName);
         this.operatorAccountGauge = new Gauge({
-            name: 'rpc_relay_operator_balance',
+            name: metricGaugeName,
             help: 'Relay operator balance gauge',
             labelNames: ['mode', 'type'],
             registers: [register],
