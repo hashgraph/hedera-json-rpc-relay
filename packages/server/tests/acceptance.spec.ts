@@ -31,7 +31,8 @@ import {BigNumber} from "ethers";
 
 
 // local resources
-import parentContract from './parentContract/Parent.json';
+import parentContract from './contracts/Parent.json';
+import basicContract from './contracts/Basic.json';
 import app from '../src/server';
 import TestUtils from './utils';
 
@@ -565,8 +566,9 @@ describe('RPC Server Acceptance Tests', async function () {
     });
 
     it('should execute "eth_getCode" for existing contract evm_address', async function () {
-        const res = await utils.callSupportedRelayMethod('eth_getCode', [mirrorContract.evm_address]);
-        expect(res.data.result).to.eq(parentContract.deployedBytecode);
+        const evmAddress = await utils.deployContract(basicContract, client, process.env.OPERATOR_KEY_MAIN);
+        const res = await utils.callSupportedRelayMethod('eth_getCode', [evmAddress]);
+        expect(res.data.result).to.eq(basicContract.deployedBytecode);
     });
 
     it('should fail "eth_getCode" for non-existing contract', async function () {

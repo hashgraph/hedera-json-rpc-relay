@@ -306,6 +306,26 @@ export default class TestUtils {
         this.logger.info(`Balances of the new account: ${balance.toString()}`);
     };
 
+    deployContract = async(contract, client: Client, privateKey) => {
+        const fileCreateTx = new FileCreateTransaction()
+            .setContents(contract.bytecode)
+            .setKeys([client.operatorPublicKey])
+            .freezeWith(client);
+        const fileCreateSign = await fileCreateTx.sign(PrivateKey.fromString(privateKey));
+        const fileCreateSubmit = await fileCreateSign.execute(client);
+        const fileCreateRx = await fileCreateSubmit.getReceipt(client);
+        const bytecodeFileId = fileCreateRx.fileId;
+        const contractInstantiateTx = new ContractCreateTransaction()
+            .setBytecodeFileId(bytecodeFileId)
+            .setGas(100000);
+        const contractInstantiateSubmit = await contractInstantiateTx.execute(client);
+        const contractInstantiateRx = await contractInstantiateSubmit.getReceipt(client);
+        const contractId = contractInstantiateRx.contractId;
+        const contractAddress = contractId.toSolidityAddress();
+
+        return contractAddress;
+    };
+
     createParentContract = async (parentContract, client: Client) => {
         const contractByteCode = (parentContract.deployedBytecode.replace('0x', ''));
 

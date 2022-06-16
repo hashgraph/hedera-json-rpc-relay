@@ -388,8 +388,8 @@ export class EthImpl implements Eth {
     // FIXME: This has to be reimplemented to get the data from the mirror node.
     this.logger.trace('getCode(address=%s, blockNumber=%s)', address, blockNumber);
     try {
-      const contractData = await this.mirrorNodeClient.getContract(address);
-      return contractData?.bytecode || '0x0';
+      const bytecode = await this.sdkClient.getContractByteCode(0, 0, address);
+      return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       // handle INVALID_CONTRACT_ID
       if (e?.status?._code === Status.InvalidContractId._code) {
