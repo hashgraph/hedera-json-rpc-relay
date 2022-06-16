@@ -55,7 +55,6 @@ export default class MirrorClient {
             }
         });
 
-        this.logger = this.logger.child({ name: 'rpc-acceptance-test' });
         this.client = mirrorNodeClient;
     }
 
