@@ -320,10 +320,8 @@ export default class TestUtils {
             .setGas(100000);
         const contractInstantiateSubmit = await contractInstantiateTx.execute(client);
         const contractInstantiateRx = await contractInstantiateSubmit.getReceipt(client);
-        const contractId = contractInstantiateRx.contractId;
-        const contractAddress = contractId.toSolidityAddress();
 
-        return contractAddress;
+        return contractInstantiateRx;
     };
 
     createParentContract = async (parentContract, client: Client) => {
