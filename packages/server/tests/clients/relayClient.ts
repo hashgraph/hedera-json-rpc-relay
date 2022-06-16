@@ -21,6 +21,7 @@
 import { ethers, providers } from 'ethers';
 import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
+import { expect } from 'chai';
 
 export default class RelayClient {
 
@@ -45,7 +46,25 @@ export default class RelayClient {
     };
 
     /**
-     * Calls the specified methodName and asserts that it is not expected
+     * Calls the specified methodName with the provided params and asserts that it fails
+     * @param methodName
+     * @param params
+     */
+    async callFailing(methodName: string, params: any[]) {
+        try {
+            const res = await this.call(methodName, params);
+            this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
+            Assertions.expectedError();
+        } catch (err) {
+            const parsedError = JSON.parse(err.body);
+            expect(parsedError.error.message).to.be.equal('Unknown error invoking RPC');
+            expect(parsedError.error.code).to.be.equal(-32603);
+            return err;
+        }
+    }
+
+    /**
+     * Calls the specified methodName and asserts that it is not supported
      * @param methodName
      * @param params
      */

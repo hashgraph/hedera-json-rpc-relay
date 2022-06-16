@@ -149,19 +149,6 @@ export default class ServicesClient {
         );
     }
 
-    async sendFileClosingCryptoTransfer(accountId: AccountId) {
-        const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
-            .addHbarTransfer(this._thisAccountId(), new Hbar(1, HbarUnit.Millibar).negated())
-            .addHbarTransfer(accountId, new Hbar(1, HbarUnit.Millibar)));
-
-        await aliasCreationResponse?.getReceipt(this.client);
-
-        const balance = await this.executeQuery(new AccountBalanceQuery()
-            .setAccountId(accountId));
-
-        this.logger.info(`Balances of the new account: ${balance.toString()}`);
-    };
-
     async createParentContract(contractJson) {
         const contractByteCode = (contractJson.deployedBytecode.replace('0x', ''));
 
