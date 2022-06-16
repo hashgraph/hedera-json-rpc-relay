@@ -18,16 +18,16 @@
  *
  */
 
-import {Eth} from '../index';
+import { Eth } from '../index';
 import { ContractId, Status, Hbar, EthereumTransaction } from '@hashgraph/sdk';
-import {BigNumber} from '@hashgraph/sdk/lib/Transfer';
-import {Logger} from 'pino';
+import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { Logger } from 'pino';
 import { Block, CachedBlock, Transaction, Log } from './model';
-import {MirrorNode} from './mirrorNode';
-import {MirrorNodeClient, SDKClient} from './clients';
-import {JsonRpcError, predefined} from './errors';
+import { MirrorNode } from './mirrorNode';
+import { MirrorNodeClient, SDKClient } from './clients';
+import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
-import {Precheck} from './precheck';
+import { Precheck } from './precheck';
 
 const _ = require('lodash');
 const cache = require('js-cache');
@@ -594,7 +594,7 @@ export class EthImpl implements Eth {
    * @param call
    * @param blockParam
    */
-  async call(call: any, blockParam: string | null) {
+  async call(call: any, blockParam: string | null): Promise<string | JsonRpcError> {
     // FIXME: In the future this will be implemented by making calls to the mirror node. For the
     //        time being we'll eat the cost and ask the main consensus nodes instead.
 
@@ -626,13 +626,14 @@ export class EthImpl implements Eth {
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
     } catch (e: any) {
-      // handle NOT_SUPPORTED precheck error
-      if (e.message !== 0 && e.message.includes('NOT_SUPPORTED')) {
-        this.logger.warn(`${e.message}, transaction: ${JSON.stringify(call)}`);
-        return null;
+      // handle client error
+      let resolvedError = e;
+      if (e.status && e.status._code) {
+        resolvedError = new Error(e.message);
       }
-
-      throw e;
+      
+      this.logger.error(resolvedError, 'Failed to successfully submit contractCallQuery');
+      return predefined.INTERNAL_ERROR;
     }
   }
 
@@ -781,7 +782,7 @@ export class EthImpl implements Eth {
     } else {
       blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
     }
-    
+
     if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
       // block not found
       return null;

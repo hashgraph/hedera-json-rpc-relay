@@ -109,13 +109,6 @@ export class SDKClient {
         });
     }
 
-    async getOperatorAccountBalance(): Promise<Hbar> {
-        const accountBalance = await (new AccountBalanceQuery()
-            .setAccountId(this.clientMain.operatorAccountId!))
-            .execute(this.clientMain);
-        return accountBalance.hbars;
-    }
-
     async getAccountBalance(account: string): Promise<AccountBalance> {
         return this.executeQuery(new AccountBalanceQuery()
             .setAccountId(AccountId.fromString(account)), this.clientMain);
@@ -209,9 +202,8 @@ export class SDKClient {
 
         const cost = await contractCallQuery
             .getCost(this.clientMain);
-        const contractResult = await this.executeQuery(contractCallQuery
+        return this.executeQuery(contractCallQuery
             .setQueryPayment(cost), this.clientMain);
-        return contractResult;
     }
 
     private convertGasPriceToTinyBars = (feeComponents: FeeComponents | undefined, exchangeRates: ExchangeRates) => {
