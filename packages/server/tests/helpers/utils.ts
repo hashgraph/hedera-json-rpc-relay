@@ -23,10 +23,6 @@ import Assertions from './assertions';
 
 export class Utils {
 
-    static prune0x = (input: string): string => {
-        return input.startsWith('0x') ? input.substring(2) : input;
-    };
-
     static toHex = (num) => {
         return parseInt(num).toString(16);
     };
@@ -43,18 +39,7 @@ export class Utils {
         ].join('');
     };
 
-    // callFailingRelayMethod = async (methodName: string, params: any[]) => {
-    //     try {
-    //         const res = await this.callRelay(methodName, params);
-    //         this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
-    //         Assertions.expectedError();
-    //     } catch (err) {
-    //         Assertions.failedResponce(err);
-    //         return err;
-    //     }
-    // };
-
-    static  subtractBigNumberHexes = (hex1, hex2) => {
+    static subtractBigNumberHexes = (hex1, hex2) => {
         return BigNumber.from(hex1).sub(BigNumber.from(hex2));
     };
 
