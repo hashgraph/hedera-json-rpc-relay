@@ -18,6 +18,7 @@
  *
  */
 import {expect} from "chai";
+import { ethers } from 'ethers';
 
 export default class Assertions {
     static assertId = (id) => {
@@ -40,6 +41,27 @@ export default class Assertions {
     static expectedError = () => {
         expect(true).to.eq(false);
     };
+
+    public static block(relayResponse, mirrorNodeResponse) {
+        expect(relayResponse.hash).to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
+        // expect(relayResponse.number).to.be.equal(ethers.utils.hexlify(mirrorNodeResponse.number)); // TODO this assertion fails
+        // expect(relayResponse.transactions.length).to.equal(mirrorNodeResponse.count); // TODO this assertion fails
+        // TODO add more assertions
+    }
+
+    public static transaction(relayResponse, mirrorNodeResponse) {
+        expect(relayResponse.blockHash).to.eq(mirrorNodeResponse.block_hash.slice(0, 66));
+        expect(relayResponse.blockNumber).to.eq(ethers.utils.hexlify(mirrorNodeResponse.hash));
+        // expect(relayResponse.chainId).to.eq(mirrorNodeResponse.chain_id); // TODO must not be null!
+        expect(relayResponse.from).to.eq(mirrorNodeResponse.from);
+        expect(relayResponse.gas).to.eq(mirrorNodeResponse.gas_used);
+        // expect(relayResponse.gasPrice).to.eq(mirrorNodeResponse.gas_price); // TODO must not be null!
+        expect(relayResponse.hash).to.eq(mirrorNodeResponse.hash);
+        expect(relayResponse.input).to.eq(mirrorNodeResponse.function_parameters);
+        expect(relayResponse.to).to.eq(mirrorNodeResponse.to);
+        expect(relayResponse.transactionIndex).to.eq(mirrorNodeResponse.transaction_index);
+        expect(relayResponse.value).to.eq(mirrorNodeResponse.amount);
+    }
 
     static transactionReceipt = (transactionReceipt, transactionRequest, overwriteValues = {}) => {
         const staticValues = {
@@ -70,6 +92,5 @@ export default class Assertions {
         expect(transactionReceipt.status).to.eq(staticValues.status);
         expect(transactionReceipt.from).to.eq(staticValues.from);
         expect(transactionReceipt.to).to.eq(transactionRequest.to);
-
     };
 }

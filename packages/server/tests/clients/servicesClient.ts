@@ -40,6 +40,7 @@ import {
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Utils } from '../helpers/utils';
+import { ethers } from 'ethers';
 
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
@@ -86,14 +87,8 @@ export default class ServicesClient {
     };
 
     async executeAndGetTransactionReceipt(transaction: Transaction) {
-        let resp;
-        try {
-            resp = await this.executeTransaction(transaction);
-            return resp.getReceipt(this.client);
-        } catch (e) {
-            this.logger.error(e,
-                `Error retrieving receipt for ${resp === undefined ? transaction.constructor.name : resp.transactionId.toString()} transaction`);
-        }
+        const resp = await this.executeTransaction(transaction);
+        return resp?.getReceipt(this.client);
     };
 
     async getRecordResponseDetails(resp: TransactionResponse) {
@@ -119,8 +114,8 @@ export default class ServicesClient {
             .setTreasuryAccountId(this._thisAccountId()));
 
         this.logger.trace(`get token id from receipt`);
-        const tokenId = resp.tokenId;
-        this.logger.info(`token id = ${tokenId.toString()}`);
+        const tokenId = resp?.tokenId;
+        this.logger.info(`token id = ${tokenId?.toString()}`);
         return tokenId;
     };
 
@@ -176,8 +171,8 @@ export default class ServicesClient {
 
         // Fetch the receipt for transaction that created the file
         // The file ID is located on the transaction receipt
-        const fileId = fileReceipt.fileId;
-        this.logger.info(`contract bytecode file: ${fileId.toString()}`);
+        const fileId = fileReceipt?.fileId;
+        this.logger.info(`contract bytecode file: ${fileId?.toString()}`);
 
         // Create the contract
         const contractReceipt = await this.executeAndGetTransactionReceipt(new ContractCreateTransaction()
@@ -186,15 +181,13 @@ export default class ServicesClient {
             )
             .setGas(75000)
             .setInitialBalance(100)
-            .setBytecodeFileId(fileId)
+            .setBytecodeFileId(fileId || "")
             .setAdminKey(this.client.operatorPublicKey || this.DEFAULT_KEY));
 
-        // Fetch the receipt for the transaction that created the contract
-
         // The contract ID is located on the transaction receipt
-        const contractId = contractReceipt.contractId;
+        const contractId = contractReceipt?.contractId;
 
-        this.logger.info(`new contract ID: ${contractId.toString()}`);
+        this.logger.info(`new contract ID: ${contractId?.toString()}`);
 
         return contractId;
     };
@@ -202,6 +195,7 @@ export default class ServicesClient {
     async executeContractCall(contractId) {
         // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
         this.logger.info(`Execute contracts ${contractId}'s createChild method`);
+        console.log(contractId);
         const contractExecTransactionResponse =
             await this.executeTransaction(new ContractExecuteTransaction()
                 .setContractId(contractId)
@@ -209,7 +203,7 @@ export default class ServicesClient {
                 .setFunction(
                     'createChild',
                     new ContractFunctionParameters()
-                        .addUint256(1000)
+                        .addUint256(1)
                 ));
 
         // @ts-ignore
@@ -220,7 +214,7 @@ export default class ServicesClient {
         return { contractExecuteTimestamp, contractExecutedTransactionId };
     };
 
-    async createAliasAccount(initialBalance = 10) {
+    async createAliasAccount(initialBalance = 1000) {
         const privateKey = PrivateKey.generateECDSA();
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
@@ -247,13 +241,14 @@ export default class ServicesClient {
         return {
             alias: aliasAccountId,
             accountId: accountInfo.accountId,
-            address: Utils.idToEvmAddress(aliasAccountId),
+            address: Utils.idToEvmAddress(aliasAccountId.toString()),
             client: new ServicesClient(
                 this.network,
                 accountInfo.accountId.toString(),
                 privateKey.toString(),
                 this.logger.child({ name: `services-client` })
-            )
+            ),
+            wallet: new ethers.Wallet(privateKey.toStringRaw())
         };
 
     };

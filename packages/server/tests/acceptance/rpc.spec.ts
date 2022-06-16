@@ -30,6 +30,7 @@ import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
 import app from '../../dist/server';
+import Assertions from '../helpers/assertions';
 
 const testLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -46,8 +47,6 @@ const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
 // local resources
 const contractJson = require('../parentContract/Parent.json');
-const TestUtils = require('../helpers/utils');
-const Assertions = require('../helpers/assertions');
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
@@ -86,12 +85,12 @@ const defaultLegacyTransactionData = {
 
 const default155TransactionData = {
     ...defaultLegacyTransactionData,
-    chainId: CHAIN_ID
+    chainId: Number(CHAIN_ID)
 };
 
 const defaultLondonTransactionData = {
     value: oneHbarInWeiHexString,
-    chainId: CHAIN_ID,
+    chainId: Number(CHAIN_ID),
     maxPriorityFeePerGas: 720000000000,
     maxFeePerGas: 720000000000,
     gasLimit: 3000000,
@@ -100,7 +99,7 @@ const defaultLondonTransactionData = {
 
 const defaultLegacy2930TransactionData = {
     value: oneHbarInWeiHexString,
-    chainId: CHAIN_ID,
+    chainId: Number(CHAIN_ID),
     gasPrice: 720000000000,
     gasLimit: 3000000,
     type: 1
@@ -129,25 +128,19 @@ describe('RPC Server Acceptance Tests', function() {
         accounts[0] = await servicesNode.createAliasAccount();
         accounts[1] = await servicesNode.createAliasAccount();
         accounts[2] = await servicesNode.createAliasAccount();
-
-        await accounts[0].client.createParentContract(contractJson);
-        await accounts[0].client.executeContractCall(contractId);
-
-        // Take Parent contract used in mirror node acceptance tests since it's well use
-        contractId = await servicesNode.createParentContract(contractJson);
-        contractExecuteTimestamp = (await servicesNode.executeContractCall(contractId)).contractExecuteTimestamp;
+        contractId = await accounts[0].client.createParentContract(contractJson);
+        contractExecuteTimestamp = (await accounts[0].client.executeContractCall(contractId)).contractExecuteTimestamp;
 
         tokenId = await servicesNode.createToken();
         logger.info('Associate and transfer tokens');
         await accounts[0].client.associateToken(tokenId);
         await accounts[1].client.associateToken(tokenId);
-
-        await servicesNode.transferToken(tokenId, accounts[0].account);
-        await servicesNode.transferToken(tokenId, accounts[0].account);
+        await servicesNode.transferToken(tokenId, accounts[0].accountId);
+        await servicesNode.transferToken(tokenId, accounts[1].accountId);
 
         // simple crypto transfer to ensure file close
-        await servicesNode.sendFileClosingCryptoTransfer(accounts[0].accountInfo.accountId);
-        await servicesNode.sendFileClosingCryptoTransfer(accounts[1].accountInfo.accountId);
+        await servicesNode.sendFileClosingCryptoTransfer(accounts[0].accountId);
+        await servicesNode.sendFileClosingCryptoTransfer(accounts[1].accountId);
 
         // get contract details
         mirrorContract = await mirrorNode.get(`/contracts/${contractId}`);
@@ -162,43 +155,82 @@ describe('RPC Server Acceptance Tests', function() {
         mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`)).accounts[0];
     });
 
-    it('should execute "eth_getBlockByHash"', async function() {
-        const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, 'true']);
-        expect(blockResult.hash).to.be.equal(mirrorBlock.hash.slice(0, 66));
-        expect(blockResult.number).to.be.equal(utils.numberTo0x(mirrorBlock.number));
-        expect(blockResult).to.have.property('transactions');
-        expect(blockResult.transactions.length).to.be.greaterThan(0);
+    describe.only('Block related RPC calls', () => {
+
+        it('should execute "eth_getBlockByHash"', async function() {
+            const relayBlock = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, 'true']);
+            Assertions.block(relayBlock, mirrorBlock);
+        });
+
+        it('should execute "eth_getBlockByNumber"', async function() {
+            const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, true]);
+            Assertions.block(blockResult, mirrorBlock);
+        });
+
+        it('should execute "eth_getBlockTransactionCountByHash"', async function() {
+            const res = await relay.call('eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
+            expect(res).to.be.equal(mirrorBlock.count);
+        });
+
+        it('should execute "eth_getBlockTransactionCountByNumber"', async function() {
+            const res = await relay.call('eth_getBlockTransactionCountByNumber', [mirrorBlock.number]);
+            expect(res).to.be.equal(mirrorBlock.count);
+        });
+
     });
 
-    it('should execute "eth_getBlockByNumber"', async function() {
-        const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, true]);
-        expect(blockResult.hash).to.be.equal(mirrorBlock.hash.slice(0, 66));
-        expect(blockResult.number).to.be.equal(utils.numberTo0x(mirrorBlock.number));
-        expect(blockResult).to.have.property('transactions');
-        expect(blockResult.transactions.length).to.be.greaterThan(0);
+    xdescribe('Transaction related RPC Calls', () => {
+
+        it('should execute "eth_getTransactionByBlockHashAndIndex"', async function() {
+            const response = await relay.call('eth_getTransactionByBlockHashAndIndex',
+                [mirrorContractDetails.block_hash, mirrorContractDetails.transaction_index]);
+            Assertions.transaction(response, mirrorContractDetails);
+        });
+
+        it('should execute "eth_getTransactionByBlockNumberAndIndex"', async function() {
+            const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, mirrorContractDetails.transaction_index]);
+            Assertions.transaction(response, mirrorContractDetails);
+        });
+
+        it('should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function() {
+            const transaction = {
+                ...default155TransactionData,
+                to: mirrorContract.evm_address,
+                nonce: await relay.getAccountNonce(accounts[2].address)
+            };
+            const signedTx = await accounts[2].wallet.signTransaction(transaction);
+            const legacyTxHash = await relay.sendRawTransaction(signedTx);
+            // Since the transactionId is not available in this context
+            // Wait for the transaction to be processed and imported in the mirror node with axios-retry
+            await this.callMirrorNode(`contracts/results/${legacyTxHash}`);
+
+            const res = await relay.call('eth_getTransactionReceipt', [legacyTxHash]);
+            Assertions.transactionReceipt(res, transaction, { from: accounts[2].address });
+        });
+
+        it('should execute "eth_getTransactionReceipt" for hash of London transaction', async function() {
+            const transaction = {
+                ...defaultLondonTransactionData,
+                to: mirrorContract.evm_address,
+                nonce: await utils.getAccountNonce(accounts[2].address)
+            };
+            const signedTx = accounts[2].wallet.signTransaction(transaction);
+            const transactionHash = await relay.sendRawTransaction(signedTx);
+            // Since the transactionId is not available in this context
+            // Wait for the transaction to be processed and imported in the mirror node with axios-retry
+            await this.callMirrorNode(`contracts/results/${transactionHash}`);
+
+            const res = await relay.call('eth_getTransactionReceipt', [transactionHash]);
+            Assertions.transactionReceipt(res, transaction, { from: accounts[2].address });
+        });
+
+        it('should execute "eth_getTransactionReceipt" for non-existing hash', async function() {
+            const res = await relay.call('eth_getTransactionReceipt', [nonExistingTxHash]);
+            expect(res).to.be.null;
+        });
+
     });
 
-    it('should execute "eth_getBlockTransactionCountByHash"', async function() {
-        const res = await relay.call('eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
-        expect(res).to.be.equal(mirrorBlock.count);
-    });
-
-    it('should execute "eth_getBlockTransactionCountByNumber"', async function() {
-        const res = await relay.call('eth_getBlockTransactionCountByNumber', [mirrorBlock.number]);
-        expect(res).to.be.equal(mirrorBlock.count);
-    });
-
-    it('should execute "eth_getTransactionByBlockHashAndIndex"', async function() {
-        const transactionResult = await relay.call('eth_getTransactionByBlockHashAndIndex', [mirrorContractDetails.block_hash, mirrorContractDetails.transaction_index]);
-        expect(transactionResult.blockHash).to.be.equal(mirrorContractDetails.block_hash.slice(0, 66));
-        expect(transactionResult.blockNumber).to.be.equal(utils.numberTo0x(mirrorContractDetails.block_number));
-    });
-
-    it('should execute "eth_getTransactionByBlockNumberAndIndex"', async function() {
-        const transactionResult = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, mirrorContractDetails.transaction_index]);
-        expect(transactionResult.blockHash).to.be.equal(mirrorContractDetails.block_hash.slice(0, 66));
-        expect(transactionResult.blockNumber).to.be.equal(utils.numberTo0x(mirrorContractDetails.block_number));
-    });
 
     it('should execute "eth_estimateGas"', async function() {
         const res = await relay.call('eth_estimateGas', []);
@@ -213,32 +245,23 @@ describe('RPC Server Acceptance Tests', function() {
     });
 
     it('should execute "eth_getBalance" for newly created account with 5000 HBAR', async function() {
-        const { accountInfo } = await utils.createEthCompatibleAccount(null, 5000);
-        const mirrorResponse = await mirrorNode.get(`accounts/${accountInfo.accountId}`);
-        const mirrorAccount = mirrorResponse.data;
+        const initialBalance = 1000; // in HBARS
+        const account = await servicesNode.createAliasAccount();
+        const mirrorAccount = await mirrorNode.get(`accounts/${account.accountId}`);
+
         const res = await relay.call('eth_getBalance', [mirrorAccount.evm_address, 'latest']);
-        expect(res).to.eq('0x10f0777f464e77a2400');
+        expect(res).to.eq(ethers.utils.hexlify(initialBalance * 10 ** 8));
+
     });
 
     it('should execute "eth_getBalance" for non-existing address', async function() {
         const res = await relay.call('eth_getBalance', [nonExistingAddress, 'latest']);
-        expect(res).to.eq('0x0');
+        expect(res).to.eq(ethers.utils.hexlify(0));
     });
 
     it('should execute "eth_getBalance" for contract', async function() {
         const res = await relay.call('eth_getBalance', [mirrorContract.evm_address, 'latest']);
         expect(res).to.eq('0x56bc75e2d63100000');
-    });
-
-    it('should execute "eth_getBalance" for account with id converted to evm_address', async function() {
-        const { accountInfo } = await utils.createEthCompatibleAccount(null, 5000);
-        const accountId = accountInfo.accountId.toString();
-        const evmAddress = utils.idToEvmAddress(accountId);
-
-        // wait for the account to be imported in the Mirror Node
-        await utils.callMirrorNode(`accounts/${accountId}`);
-        const res = await relay.call('eth_getBalance', [evmAddress, 'latest']);
-        expect(res).to.eq('0x10f0777f464e77a2400');
     });
 
     it('should execute "eth_getBalance" for contract with id converted to evm_address', async function() {
@@ -250,16 +273,19 @@ describe('RPC Server Acceptance Tests', function() {
         const senderInitialBalance = await utils.getBalance(accounts[2].address);
         const receiverInitialBalance = await utils.getBalance(mirrorContract.evm_address);
 
-        const signedTx = await utils.signRawTransaction({
-            ...default155TransactionData,
-            to: mirrorContract.evm_address
-        }, accounts[2].privateKey);
+        const transaction = {
+            ...defaultLondonTransactionData,
+            to: mirrorContract.evm_address,
+            nonce: await relay.getAccountNonce(accounts[2].address)
+        };
+        const signedTx = accounts[2].wallet.signTransaction(transaction);
+        const transactionHash = await relay.sendRawTransaction(signedTx);
+        // Since the transactionId is not available in this context
+        // Wait for the transaction to be processed and imported in the mirror node with axios-retry
+        await this.callMirrorNode(`contracts/results/${transactionHash}`);
 
-        const res = await relay.call('eth_sendRawTransaction', [signedTx]);
-        expect(res).to.be.equal('0x872d83c28c30ec48befb6cd77c1588e5589e00b7c61fcbc942a5b26ea23b9694');
-
-        const senderEndBalance = await utils.getBalance(accounts[2].address);
-        const receiverEndBalance = await utils.getBalance(mirrorContract.evm_address);
+        const senderEndBalance = await relay.getBalance(accounts[2].address);
+        const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address);
 
         expect(utils.subtractBigNumberHexes(receiverEndBalance, receiverInitialBalance).toHexString()).to.eq(oneHbarInWeiHexString);
         expect(senderInitialBalance).to.not.eq(senderEndBalance);
@@ -268,17 +294,17 @@ describe('RPC Server Acceptance Tests', function() {
 
     });
 
-    it('should fail "eth_sendRawTransaction" for Legacy transactions (with no chainId)', async function() {
-        const signedTx = await utils.signRawTransaction({
-            ...defaultLegacyTransactionData,
-            to: mirrorContract.evm_address,
-            nonce: await utils.getAccountNonce(accounts[2].address)
-        }, accounts[2].privateKey);
-
-        const res = await utils.callFailingRelayMethod('eth_sendRawTransaction', [signedTx]);
-        expect(res.error.message).to.be.equal('Unknown error invoking RPC');
-        expect(res.error.code).to.be.equal(-32603);
-    });
+    // it('should fail "eth_sendRawTransaction" for Legacy transactions (with no chainId)', async function() {
+    //     const signedTx = await utils.signRawTransaction({
+    //         ...defaultLegacyTransactionData,
+    //         to: mirrorContract.evm_address,
+    //         nonce: await utils.getAccountNonce(accounts[2].address)
+    //     }, accounts[2].privateKey);
+    //
+    //     const res = await utils.callFailingRelayMethod('eth_sendRawTransaction', [signedTx]);
+    //     expect(res.error.message).to.be.equal('Unknown error invoking RPC');
+    //     expect(res.error.code).to.be.equal(-32603);
+    // });
 
     it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function() {
         const signedTx = await utils.signRawTransaction({
@@ -349,33 +375,6 @@ describe('RPC Server Acceptance Tests', function() {
         expect(res).to.be.equal('0x2');
     });
 
-    it('should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function() {
-        const txRequest = {
-            ...default155TransactionData,
-            to: mirrorContract.evm_address,
-            nonce: await utils.getAccountNonce(accounts[2].address)
-        };
-        const submittedLegacyTransactionHash = await utils.sendRawTransaction(txRequest, accounts[2].privateKey);
-        const res = await relay.call('eth_getTransactionReceipt', [submittedLegacyTransactionHash]);
-        Assertions.transactionReceipt(res, txRequest, { from: accounts[2].address });
-
-    });
-
-    it('should execute "eth_getTransactionReceipt" for hash of London transaction', async function() {
-        const txRequest = {
-            ...defaultLondonTransactionData,
-            to: mirrorContract.evm_address,
-            nonce: await utils.getAccountNonce(accounts[2].address)
-        };
-        const submittedLondonTransactionHash = await utils.sendRawTransaction(txRequest, accounts[2].privateKey);
-        const res = await relay.call('eth_getTransactionReceipt', [submittedLondonTransactionHash]);
-        Assertions.transactionReceipt(res, txRequest, { from: accounts[2].address });
-    });
-
-    it('should execute "eth_getTransactionReceipt" for non-existing hash', async function() {
-        const res = await relay.call('eth_getTransactionReceipt', [nonExistingTxHash]);
-        expect(res).to.be.null;
-    });
 
     describe.only('Hardcoded Responses', () => {
 

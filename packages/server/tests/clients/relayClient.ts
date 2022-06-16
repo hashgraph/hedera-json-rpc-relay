@@ -81,4 +81,15 @@ export default class RelayClient {
         return Number(nonce);
     };
 
+    /**
+     * This invokes the relay logic from eth.ts/sendRawTransaction.
+     *
+     * Returns: Transaction hash
+     * @param signedTx
+     */
+    async sendRawTransaction (signedTx): Promise<string> {
+        this.logger.debug(`[POST] to relay for eth_sendRawTransaction`);
+        return this.provider.send('eth_sendRawTransaction', [signedTx]);
+    };
+
 }
