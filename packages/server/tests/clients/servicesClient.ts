@@ -39,18 +39,21 @@ import {
     TransferTransaction
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
+import { Utils } from '../helpers/utils';
 
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
 export default class ServicesClient {
 
     private readonly DEFAULT_KEY = new Key();
+    private readonly logger: Logger;
+    private readonly network: string;
 
     public readonly client: Client;
-    private readonly logger: Logger;
 
     constructor(network: string, accountId: string, key: string, logger: Logger) {
         this.logger = logger;
+        this.network = network;
 
         if (!network) network = '{}';
         const opPrivateKey = PrivateKey.fromString(key);
@@ -112,8 +115,8 @@ export default class ServicesClient {
             .setTokenName(`relay-acceptance token ${symbol}`)
             .setTokenSymbol(symbol)
             .setDecimals(3)
-            .setInitialSupply(1000)
-            .setTreasuryAccountId(this.client.operatorAccountId || '0.0.0'));
+            .setInitialSupply(new Hbar(1000).toTinybars())
+            .setTreasuryAccountId(this._thisAccountId()));
 
         this.logger.trace(`get token id from receipt`);
         const tokenId = resp.tokenId;
@@ -121,40 +124,39 @@ export default class ServicesClient {
         return tokenId;
     };
 
-    async associateAndTransferToken(accountId: AccountId, pk: PrivateKey, tokenId) {
-        this.logger.info(`Associate account ${accountId.toString()} with token ${tokenId.toString()}`);
+    async associateToken(tokenId) {
         await this.executeAndGetTransactionReceipt(
             await new TokenAssociateTransaction()
-                .setAccountId(accountId)
-                .setTokenIds([tokenId])
-                .freezeWith(this.client)
-                .sign(pk));
+                .setAccountId(this._thisAccountId())
+                .setTokenIds([tokenId]));
 
         this.logger.debug(
-            `Associated account ${accountId.toString()} with token ${tokenId.toString()}`
+            `Associated account ${this._thisAccountId()} with token ${tokenId.toString()}`
         );
+    }
 
+    async transferToken(tokenId, recipient: AccountId, amount= 10) {
         await this.executeAndGetTransactionReceipt(new TransferTransaction()
-            .addTokenTransfer(tokenId, this.client.operatorAccountId || '0.0.0', -10)
-            .addTokenTransfer(tokenId, accountId, 10));
+            .addTokenTransfer(tokenId, this._thisAccountId(), -amount)
+            .addTokenTransfer(tokenId, recipient, amount));
 
         this.logger.debug(
-            `Sent 10 tokens from account ${this.client.operatorAccountId?.toString()} to account ${accountId.toString()} on token ${tokenId.toString()}`
+            `Sent 10 tokens from account ${this._thisAccountId()} to account ${recipient.toString()} on token ${tokenId.toString()}`
         );
 
         const balances = await this.executeQuery(new AccountBalanceQuery()
-            .setAccountId(accountId));
+            .setAccountId(recipient));
 
         this.logger.debug(
-            `Token balances for ${accountId.toString()} are ${balances.tokens
+            `Token balances for ${recipient.toString()} are ${balances.tokens
                 .toString()
                 .toString()}`
         );
-    };
+    }
 
     async sendFileClosingCryptoTransfer(accountId: AccountId) {
         const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
-            .addHbarTransfer(this.client.operatorAccountId || '0.0.0', new Hbar(1, HbarUnit.Millibar).negated())
+            .addHbarTransfer(this._thisAccountId(), new Hbar(1, HbarUnit.Millibar).negated())
             .addHbarTransfer(accountId, new Hbar(1, HbarUnit.Millibar)));
 
         await aliasCreationResponse?.getReceipt(this.client);
@@ -165,8 +167,8 @@ export default class ServicesClient {
         this.logger.info(`Balances of the new account: ${balance.toString()}`);
     };
 
-    async createParentContract(parentContract) {
-        const contractByteCode = (parentContract.deployedBytecode.replace('0x', ''));
+    async createParentContract(contractJson) {
+        const contractByteCode = (contractJson.deployedBytecode.replace('0x', ''));
 
         const fileReceipt = await this.executeAndGetTransactionReceipt(new FileCreateTransaction()
             .setKeys([this.client.operatorPublicKey || this.DEFAULT_KEY])
@@ -218,19 +220,17 @@ export default class ServicesClient {
         return { contractExecuteTimestamp, contractExecutedTransactionId };
     };
 
-    async createAliasAccount(privateKeyHex: null | string, initialBalance = 5000) {
-        const privateKey = privateKeyHex ?
-            PrivateKey.fromBytesECDSA(Buffer.from(privateKeyHex, 'hex')) : PrivateKey.generateECDSA();
+    async createAliasAccount(initialBalance = 10) {
+        const privateKey = PrivateKey.generateECDSA();
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
 
         this.logger.trace(`New Eth compatible privateKey: ${privateKey}`);
         this.logger.trace(`New Eth compatible publicKey: ${publicKey}`);
         this.logger.debug(`New Eth compatible account ID: ${aliasAccountId.toString()}`);
-        this.logger.info(`Transfer transaction attempt`);
 
         const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
-            .addHbarTransfer(this.client.operatorAccountId || '0.0.0', new Hbar(initialBalance).negated())
+            .addHbarTransfer(this._thisAccountId(), new Hbar(initialBalance).negated())
             .addHbarTransfer(aliasAccountId, new Hbar(initialBalance)));
 
         this.logger.debug(`Get ${aliasAccountId.toString()} receipt`);
@@ -245,19 +245,22 @@ export default class ServicesClient {
         this.logger.info(`New account Info: ${accountInfo.accountId.toString()}`);
 
         return {
-            accountInfo,
-            privateKey,
-            utils: new TestUtils({
-                mirrorNodeClient: this.mirrorNodeClient,
-                provider: this.provider,
-                services: {
-                    network: this.servicesNetwork,
-                    key: privateKey.toString(),
-                    accountId: accountInfo.accountId.toString()
-                }
-            })
+            alias: aliasAccountId,
+            accountId: accountInfo.accountId,
+            address: Utils.idToEvmAddress(aliasAccountId),
+            client: new ServicesClient(
+                this.network,
+                accountInfo.accountId.toString(),
+                privateKey.toString(),
+                this.logger.child({ name: `services-client` })
+            )
         };
+
     };
+
+    _thisAccountId() {
+        return this.client.operatorAccountId || AccountId.fromString('0.0.0');
+    }
 
 }
 

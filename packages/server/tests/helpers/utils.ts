@@ -18,43 +18,20 @@
  *
  */
 
-import { BigNumber, ethers } from 'ethers';
-import type { TransactionRequest } from '@ethersproject/abstract-provider';
+import { BigNumber } from 'ethers';
 import Assertions from './assertions';
-import { JsonRpcProvider } from '@ethersproject/providers';
 
-export default class TestUtils {
-    public readonly provider: JsonRpcProvider;
+export class Utils {
 
-    constructor(args: {
-        // Uses the JsonRpcProvided if it is provided, otherwise initializes a new one with serverUrl
-        provider?: JsonRpcProvider
-        serverUrl?: string,
-
-        // Services options
-        services: {
-            network: string,
-            key: string,
-            accountId: string
-        },
-    }) {
-        if (!args.provider) {
-            this.provider = new ethers.providers.JsonRpcProvider(args.serverUrl);
-        } else {
-            this.provider = args.provider;
-        }
-
-    }
-
-    prune0x = (input: string): string => {
+    static prune0x = (input: string): string => {
         return input.startsWith('0x') ? input.substring(2) : input;
     };
 
-    toHex = (num) => {
+    static toHex = (num) => {
         return parseInt(num).toString(16);
     };
 
-    idToEvmAddress = (id): string => {
+    static idToEvmAddress = (id): string => {
         Assertions.assertId(id);
         const [shard, realm, num] = id.split('.');
 
@@ -77,12 +54,8 @@ export default class TestUtils {
     //     }
     // };
 
-    signRawTransaction = async (tx: TransactionRequest, privateKey) => {
-        const wallet = new ethers.Wallet(privateKey.toStringRaw(), this.provider);
-        return await wallet.signTransaction(tx);
-    };
-
-    subtractBigNumberHexes = (hex1, hex2) => {
+    static  subtractBigNumberHexes = (hex1, hex2) => {
         return BigNumber.from(hex1).sub(BigNumber.from(hex2));
     };
+
 }

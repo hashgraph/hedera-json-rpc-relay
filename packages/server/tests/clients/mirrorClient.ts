@@ -60,7 +60,7 @@ export default class MirrorClient {
 
     async get(path: string) {
         this.logger.debug(`[GET] MirrorNode ${path} endpoint`);
-        return this.client.get(path);
+        return (await this.client.get(path)).data;
     };
 
 }
