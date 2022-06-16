@@ -77,17 +77,6 @@ export default class TestUtils {
     //     }
     // };
 
-    // callUnsupportedRelayMethod = async (methodName: string, params: any[]) => {
-    //     try {
-    //         const res = await this.callRelay(methodName, params);
-    //         this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
-    //         Assertions.expectedError();
-    //     } catch (err) {
-    //         Assertions.unsupportedResponse(err);
-    //         return err;
-    //     }
-    // };
-
     signRawTransaction = async (tx: TransactionRequest, privateKey) => {
         const wallet = new ethers.Wallet(privateKey.toStringRaw(), this.provider);
         return await wallet.signTransaction(tx);

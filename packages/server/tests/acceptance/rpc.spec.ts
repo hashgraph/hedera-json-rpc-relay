@@ -126,7 +126,6 @@ describe('RPC Server Acceptance Tests', function() {
         logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
         relayServer = app.listen({ port: process.env.SERVER_PORT });
 
-        // set up mirror node contents
         // logger.info('Submit eth account create transactions via crypto transfers');
         // 1. Crypto create with alias - metamask flow
 
@@ -331,16 +330,6 @@ describe('RPC Server Acceptance Tests', function() {
         expect(BigNumber.from(senderInitialBalance).sub(BigNumber.from(senderEndBalance)).gt(0)).to.eq(true);
     });
 
-    it('should execute "eth_syncing"', async function() {
-        const res = await relay.call('eth_syncing', []);
-        expect(res).to.be.equal(false);
-    });
-
-    it('should execute "web3_client_version"', async function() {
-        const res = await relay.call('web3_client_version', []);
-        expect(res).to.contain('relay/');
-    });
-
     it('should execute "eth_getTransactionCount" primary', async function() {
         const res = await relay.call('eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, mirrorContractDetails.block_number]);
         expect(res).to.be.equal('0x0');
@@ -459,6 +448,16 @@ describe('RPC Server Acceptance Tests', function() {
         it('should execute "eth_submitWork"', async function() {
             const res = await relay.call('eth_submitWork', []);
             expect(res).to.be.equal(false);
+        });
+
+        it('should execute "eth_syncing"', async function() {
+            const res = await relay.call('eth_syncing', []);
+            expect(res).to.be.equal(false);
+        });
+
+        it('should execute "web3_client_version"', async function() {
+            const res = await relay.call('web3_client_version', []);
+            expect(res).to.contain('relay/');
         });
 
     });
