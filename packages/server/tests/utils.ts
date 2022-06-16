@@ -198,7 +198,7 @@ export default class TestUtils {
 
         const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
 
-        if (hederaNetwork.toLowerCase() in supportedEnvs) {
+        if (supportedEnvs.includes(hederaNetwork.toLowerCase())) {
             client = Client.forName(hederaNetwork);
         } else {
             client = Client.forNetwork(JSON.parse(hederaNetwork));
@@ -207,7 +207,7 @@ export default class TestUtils {
         return client.setOperator(AccountId.fromString(id), opPrivateKey);
     };
 
-    createEthCompatibleAccount = async (client: Client, privateKeyHex: null | string, initialBalance = 5000) => {
+    createEthCompatibleAccount = async (client: Client, privateKeyHex: null | string, initialBalance = 10) => {
         let privateKey;
         if (privateKeyHex) {
             privateKey = PrivateKey.fromBytesECDSA(Buffer.from(privateKeyHex, 'hex'));
@@ -223,10 +223,11 @@ export default class TestUtils {
         this.logger.trace(`New Eth compatible publicKey: ${publicKey}`);
         this.logger.debug(`New Eth compatible account ID: ${aliasAccountId.toString()}`);
 
-        this.logger.info(`Transfer transaction attempt`);
+        const hbarAmount = new Hbar(initialBalance);
+        this.logger.info(`Auto create transfer transaction of ${hbarAmount}`);
         const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
-            .addHbarTransfer(client.operatorAccountId, new Hbar(initialBalance).negated())
-            .addHbarTransfer(aliasAccountId, new Hbar(initialBalance)), client);
+            .addHbarTransfer(client.operatorAccountId, hbarAmount.negated())
+            .addHbarTransfer(aliasAccountId, hbarAmount), client);
 
         this.logger.debug(`Get ${aliasAccountId.toString()} receipt`);
         await aliasCreationResponse.getReceipt(client);
@@ -275,8 +276,8 @@ export default class TestUtils {
         );
 
         this.executeAndGetTransactionReceipt(new TransferTransaction()
-            .addTokenTransfer(tokenId, client.operatorAccountId, -10)
-            .addTokenTransfer(tokenId, accountId, 10), client);
+            .addTokenTransfer(tokenId, client.operatorAccountId, -1)
+            .addTokenTransfer(tokenId, accountId, 1), client);
 
         this.logger.debug(
             `Sent 10 tokens from account ${client.operatorAccountId.toString()} to account ${accountId.toString()} on token ${tokenId.toString()}`

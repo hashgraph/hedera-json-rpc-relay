@@ -27,7 +27,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import pino from 'pino';
 import shell from 'shelljs';
-import {BigNumber} from "ethers";
+import { BigNumber } from "ethers";
 
 
 // local resources
@@ -59,6 +59,7 @@ const nonExistingAddress = '0x5555555555555555555555555555555555555555';
 const nonExistingTxHash = '0x5555555555555555555555555555555555555555555555555555555555555555';
 const defaultChainId = Number(process.env.CHAIN_ID);
 const oneHbarInWeiHexString = `0x0de0b6b3a7640000`;
+const defaultRelayEndpoint = 'http://localhost:7546';
 
 const defaultLegacyTransactionData = {
     value: oneHbarInWeiHexString,
@@ -134,8 +135,9 @@ describe('RPC Server Acceptance Tests', async function () {
             }
         });
 
+        const relayUrl = process.env['E2E_RELAY_HOST'] || defaultRelayEndpoint;
         const relayClient = Axios.create({
-            baseURL: 'http://localhost:7546',
+            baseURL: relayUrl,
             responseType: 'json' as const,
             headers: {
                 'Content-Type': 'application/json'
@@ -146,7 +148,7 @@ describe('RPC Server Acceptance Tests', async function () {
 
         utils = new TestUtils({
             logger,
-            jsonRpcProviderUrl: 'http://localhost:7546',
+            jsonRpcProviderUrl: relayUrl,
             mirrorNodeClient,
             relayClient
         });
@@ -226,8 +228,10 @@ describe('RPC Server Acceptance Tests', async function () {
         mirrorSecondaryAccount = mirrorSecondaryAccountResponse.data.accounts[0];
 
         // start relay
-        logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
-        this.testServer = app.listen({ port: process.env.SERVER_PORT });
+        if (relayUrl === defaultRelayEndpoint) {
+            logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
+            this.testServer = app.listen({ port: process.env.SERVER_PORT });
+        }
     });
 
     after(function () {
@@ -373,12 +377,12 @@ describe('RPC Server Acceptance Tests', async function () {
         await utils.callUnsupportedRelayMethod('eth_submitHashrate', []);
     });
 
-    it('should execute "eth_getBalance" for newly created account with 5000 HBAR', async function () {
-        const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 5000);
+    it('should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {
+        const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 10);
         const mirrorResponse = await utils.callMirrorNode(`accounts/${accountInfo.accountId}`);
         const mirrorAccount = mirrorResponse.data;
         const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorAccount.evm_address, 'latest']);
-        expect(res.data.result).to.eq('0x10f0777f464e77a2400');
+        expect(res.data.result).to.eq('0x854eb28c18422400');
     });
 
     it('should execute "eth_getBalance" for non-existing address', async function () {
@@ -392,14 +396,14 @@ describe('RPC Server Acceptance Tests', async function () {
     });
 
     it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
-        const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 5000);
+        const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 10);
         const accountId = accountInfo.accountId.toString();
         const evmAddress = utils.idToEvmAddress(accountId);
 
         // wait for the account to be imported in the Mirror Node
         await utils.callMirrorNode(`accounts/${accountId}`);
         const res = await utils.callSupportedRelayMethod('eth_getBalance', [evmAddress, 'latest']);
-        expect(res.data.result).to.eq('0x10f0777f464e77a2400');
+        expect(res.data.result).to.eq('0x854eb28c18422400');
     });
 
     it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
@@ -460,7 +464,7 @@ describe('RPC Server Acceptance Tests', async function () {
         const signedTx = await utils.signRawTransaction({
             ...defaultLondonTransactionData,
             to: mirrorContract.evm_address,
-            nonce:  await utils.getAccountNonce(ethCompAccountEvmAddr3)
+            nonce: await utils.getAccountNonce(ethCompAccountEvmAddr3)
         }, ethCompPrivateKey3);
 
         const res = await utils.callSupportedRelayMethod('eth_sendRawTransaction', [signedTx]);
