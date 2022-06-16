@@ -52,7 +52,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`baseUrl` is exposed and correct', async () => {
     const domain = process.env.MIRROR_NODE_URL.replace(/^https?:\/\//, "");
-    const prodMirrorNodeInstance = new MirrorNodeClient(domain, logger.child({ name: `mirror-node` }));
+    const prodMirrorNodeInstance = new MirrorNodeClient(domain, logger.child({ name: `mirror-node` }), null);
     expect(prodMirrorNodeInstance.baseUrl).to.eq(`https://${domain}/api/v1/`);
   });
 

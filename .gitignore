@@ -4,6 +4,8 @@ pnpm-lock.yaml
 tsconfig.tsbuildinfo
 .env
 .idea
+.vscode/
+.devcontainer/
 packages/relay/coverage/**
 packages/server/coverage/**
 packages/relay/.nyc_output/**

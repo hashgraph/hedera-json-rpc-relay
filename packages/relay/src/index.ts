@@ -47,7 +47,7 @@ export interface Eth {
 
   blockNumber(): Promise<string>;
 
-  call(call: any, blockParam: string | null): Promise<string>;
+  call(call: any, blockParam: string | null): Promise<string | JsonRpcError>;
 
   coinbase(): JsonRpcError;
 
@@ -101,7 +101,7 @@ export interface Eth {
 
   protocolVersion(): JsonRpcError;
 
-  sendRawTransaction(transaction: string): Promise<string>;
+  sendRawTransaction(transaction: string): Promise<string | JsonRpcError>;
 
   sendTransaction(): JsonRpcError;
 
