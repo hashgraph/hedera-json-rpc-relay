@@ -37,15 +37,15 @@ const mainLogger = pino({
   }
 });
 const logger = mainLogger.child({ name: 'rpc-server' });
+const register = new Registry();
 
-const relay: Relay = new RelayImpl(logger);
+const relay: Relay = new RelayImpl(logger, register);
 const cors = require('koa-cors');
 const app = new Koa();
 const rpc = koaJsonRpc();
 
 const responseSuccessStatusCode = '200';
 const responseInternalErrorCode = '-32603';
-const register = new Registry();
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
 
 const methodResponseHistogram = new Histogram({
@@ -163,8 +163,8 @@ rpc.use('eth_blockNumber', async () => {
  *
  * returns: Gas used - hex encoded integer
  */
-rpc.use('eth_estimateGas', async () => {
-  return logAndHandleResponse('eth_estimateGas', () => relay.eth().estimateGas());
+rpc.use('eth_estimateGas', async (params: any) => {
+  return logAndHandleResponse('eth_estimateGas', () => relay.eth().estimateGas(params?.[0], params?.[1]));
 });
 
 /**

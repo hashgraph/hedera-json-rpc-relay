@@ -47,11 +47,11 @@ export interface Eth {
 
   blockNumber(): Promise<string>;
 
-  call(call: any, blockParam: string): Promise<string>;
+  call(call: any, blockParam: string | null): Promise<string | JsonRpcError>;
 
   coinbase(): JsonRpcError;
 
-  estimateGas(): Promise<string>;
+  estimateGas(transaction:any, blockParam: string| null): Promise<string>;
 
   gasPrice(): Promise<string>;
 
@@ -101,7 +101,7 @@ export interface Eth {
 
   protocolVersion(): JsonRpcError;
 
-  sendRawTransaction(transaction: string): Promise<string>;
+  sendRawTransaction(transaction: string): Promise<string | JsonRpcError>;
 
   sendTransaction(): JsonRpcError;
 

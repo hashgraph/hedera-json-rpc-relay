@@ -23,6 +23,7 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
+import { Registry } from 'prom-client';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
@@ -30,14 +31,12 @@ import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import { MirrorNode } from '../../src/lib/mirrorNode';
 import {expectUnsupportedMethod} from '../helpers';
 
-const cache = require('js-cache');
-
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 const logger = pino();
-
-const Relay = new RelayImpl(logger);
+const registry = new Registry();
+const Relay = new RelayImpl(logger, registry);
 
 const validateHash = (hash: string, len?: number) => {
   let regex;
@@ -80,7 +79,7 @@ describe('Eth calls using MirrorNode', async function () {
   // @ts-ignore
   const mock = new MockAdapter(instance, { onNoMatch: "throwException" });
   // @ts-ignore
-  const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);
+  const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
   // @ts-ignore
   const ethImpl = new EthImpl(null, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
 
@@ -89,7 +88,6 @@ describe('Eth calls using MirrorNode', async function () {
   const blockHash2 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6c`;
   const blockHash3 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6d`;
   const blockHashPreviousTrimmed = '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298';
-  const blockHashPrevious = `${blockHashPreviousTrimmed}dc2dfa10f51bcbaab8ae23bc6d662a0b`;
   const blockNumber = 3;
   const blockNumber2 = 4;
   const blockNumber3 = 5;
@@ -911,6 +909,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
     const feeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
     expect(feeHistory).to.exist;
+    if (feeHistory == null) return;
     expect(feeHistory['baseFeePerGasArray'][0]).to.equal('0x84b6a5c400');
     expect(feeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
     expect(feeHistory['oldestBlockNumber']).to.equal('0x0');
@@ -923,6 +922,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
     const firstFeeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
     expect(firstFeeHistory).to.exist;
+    if (firstFeeHistory == null) return;
     expect(firstFeeHistory['baseFeePerGasArray'][0]).to.equal('0x84b6a5c400');
     expect(firstFeeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
     expect(firstFeeHistory['oldestBlockNumber']).to.equal('0x0');
@@ -933,6 +933,26 @@ describe('Eth calls using MirrorNode', async function () {
     const secondFeeHistory = await ethImpl.feeHistory(2, 'latest', [25, 75]);
 
     expect(firstFeeHistory).to.equal(secondFeeHistory);
+  });
+
+  it('eth_estimateGas contract call returns default', async function() {
+    const gas = await ethImpl.estimateGas({data:"0x01"}, null);
+    expect(gas).to.equal(EthImpl.defaultGas);
+  });
+
+  it('eth_estimateGas empty call returns transfer cost', async function() {
+    const gas = await ethImpl.estimateGas({}, null);
+    expect(gas).to.equal(EthImpl.gasTxBaseCost);
+  });
+
+  it('eth_estimateGas empty input transfer cost', async function() {
+    const gas = await ethImpl.estimateGas({data:""}, null);
+    expect(gas).to.equal(EthImpl.gasTxBaseCost);
+  });
+
+  it('eth_estimateGas zero input returns transfer cost', async function() {
+    const gas = await ethImpl.estimateGas({data:"0x"}, null);
+    expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
   it('eth_gasPrice', async function() {
@@ -966,7 +986,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     try {
       await ethImpl.gasPrice();
-    } catch (error) {
+    } catch (error: any) {
       expect(error.message).to.equal('Error encountered estimating the gas price');
     }
   });
@@ -984,7 +1004,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     try {
       await ethImpl.gasPrice();
-    } catch (error) {
+    } catch (error: any) {
       expect(error.message).to.equal('Error encountered estimating the gas price');
     }
   });

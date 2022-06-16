@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { ContractId, Status, Hbar } from '@hashgraph/sdk';
+import { ContractId, Status, Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, CachedBlock, Transaction, Log } from './model';
@@ -49,7 +49,8 @@ export class EthImpl implements Eth {
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-  static defaultGas = 0x3d0900;
+  static defaultGas = EthImpl.numberTo0x(400_000);
+  static gasTxBaseCost = EthImpl.numberTo0x(21_000);
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
 
@@ -203,20 +204,15 @@ export class EthImpl implements Eth {
 
   /**
    * Estimates the amount of gas to execute a call.
-   *
-   * TODO: API signature is not right, some kind of call info needs to be passed through:
-   *   "params": [{
-   *     "from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
-   *     "to": "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
-   *     "gas": "0x76c0",
-   *     "gasPrice": "0x9184e72a000",
-   *     "value": "0x9184e72a",
-   *     "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"}],
    */
-  async estimateGas() {
-    // FIXME: For now, we are going to have a rough estimate but in the future we can do something more sophisticated.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async estimateGas(transaction: any, _blockParam: string | null) {
     this.logger.trace('estimateGas()');
-    return EthImpl.numberTo0x(EthImpl.defaultGas);
+    if (!transaction || !transaction.data || transaction.data === '0x') {
+      return EthImpl.gasTxBaseCost;
+    } else {
+      return EthImpl.defaultGas;
+    }
   }
 
   /**
@@ -546,19 +542,18 @@ export class EthImpl implements Eth {
    *
    * @param transaction
    */
-  async sendRawTransaction(transaction: string): Promise<string> {
+  async sendRawTransaction(transaction: string): Promise<string | JsonRpcError> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
     await this.precheck.nonce(transaction);
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
     try {
-      // Convert from 0xabc format into a raw Uint8Array of bytes and execute the transaction
       const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer);
 
       try {
         // Wait for the record from the execution.
-        const record = await this.sdkClient.getRecord(contractExecuteResponse);
+        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name);
         if (record.ethereumHash == null) {
           throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
         }
@@ -582,14 +577,14 @@ export class EthImpl implements Eth {
         return txHash;
       } catch (e) {
         this.logger.error(e,
-          'Failed sendRawTransaction during receipt retrieval for transaction %s, returning computed hash', transaction);
+          'Failed sendRawTransaction during record retrieval for transaction %s, returning computed hash', transaction);
         //Return computed hash if unable to retrieve EthereumHash from record due to error
         return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
       }
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error(e,
         'Failed to successfully submit sendRawTransaction for transaction %s', transaction);
-      throw e;
+      return predefined.INTERNAL_ERROR;
     }
   }
 
@@ -599,7 +594,7 @@ export class EthImpl implements Eth {
    * @param call
    * @param blockParam
    */
-  async call(call: any, blockParam: string) {
+  async call(call: any, blockParam: string | null): Promise<string | JsonRpcError> {
     // FIXME: In the future this will be implemented by making calls to the mirror node. For the
     //        time being we'll eat the cost and ask the main consensus nodes instead.
 
@@ -630,9 +625,15 @@ export class EthImpl implements Eth {
 
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
-    } catch (e) {
-      this.logger.error(e, `Failed to handle call cleanly for transaction ${JSON.stringify(call)}`);
-      throw e;
+    } catch (e: any) {
+      // handle client error
+      let resolvedError = e;
+      if (e.status && e.status._code) {
+        resolvedError = new Error(e.message);
+      }
+      
+      this.logger.error(resolvedError, 'Failed to successfully submit contractCallQuery');
+      return predefined.INTERNAL_ERROR;
     }
   }
 
@@ -781,7 +782,7 @@ export class EthImpl implements Eth {
     } else {
       blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
     }
-    
+
     if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
       // block not found
       return null;
