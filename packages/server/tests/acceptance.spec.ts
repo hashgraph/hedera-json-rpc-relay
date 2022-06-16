@@ -177,7 +177,7 @@ describe('RPC Server Acceptance Tests', async function () {
         const { accountInfo: primaryAccountInfo, privateKey: primaryKey } = await utils.createEthCompatibleAccount(client, privateKeyHex1);
         const { accountInfo: secondaryAccountInfo, privateKey: secondaryKey } = await utils.createEthCompatibleAccount(client, privateKeyHex2);
 
-        const ethCompatibleAccount3 = await utils.createEthCompatibleAccount(client, privateKeyHex3);
+        const ethCompatibleAccount3 = await utils.createEthCompatibleAccount(client, privateKeyHex3, 20);
         ethCompPrivateKey3 = ethCompatibleAccount3.privateKey;
         ethCompAccountInfo3 = ethCompatibleAccount3.accountInfo;
         ethCompAccountEvmAddr3 = utils.idToEvmAddress(ethCompAccountInfo3.accountId.toString());
