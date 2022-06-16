@@ -105,6 +105,7 @@ let ethCompPrivateKey3;
 let ethCompAccountInfo3;
 let ethCompAccountEvmAddr3;
 let mirrorAccount3;
+let basicContractReceipt;
 
 describe('RPC Server Acceptance Tests', async function () {
     this.timeout(240 * 1000);
@@ -194,6 +195,9 @@ describe('RPC Server Acceptance Tests', async function () {
         logger.info('Create parent contract with AccountOne');
         await utils.createParentContract(parentContract, accOneClient);
         await utils.executeContractCall(contractId, accOneClient);
+
+        logger.info('Create basic contract');
+        basicContractReceipt = await utils.deployContract(basicContract, client, process.env.OPERATOR_KEY_MAIN);
 
         logger.info('Create token');
         // 3. Token create
@@ -378,53 +382,48 @@ describe('RPC Server Acceptance Tests', async function () {
         await utils.callUnsupportedRelayMethod('eth_submitHashrate', []);
     });
 
-    describe("eth_getBalance", async function () {
-        let accountInfo;
-        let mirrorAccount;
+    it('should execute "eth_getBalance" for newly created account with 5000 HBAR', async function () {
+        const accountResponse = await utils.createEthCompatibleAccount(client, null, 5000);
+        const accountInfo = accountResponse.accountInfo;
+        const mirrorResponse = await utils.callMirrorNode(`accounts/${accountInfo.accountId}`);
+        const mirrorAccount = mirrorResponse.data;
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorAccount.evm_address, 'latest']);
+        expect(res.data.result).to.eq('0x10f0777f464e77a2400');
+    });
 
-        before( async function() {
-            const accountResponse = await utils.createEthCompatibleAccount(client, null, 5000);
-            accountInfo = accountResponse.accountInfo;
-            const mirrorResponse = await utils.callMirrorNode(`accounts/${accountInfo.accountId}`);
-            mirrorAccount = mirrorResponse.data;
-        });
+    it('should execute "eth_getBalance" with account alias', async function () {
+        const accountResponse = await utils.createEthCompatibleAccount(client, null, 5000);
+        const accountInfo = accountResponse.accountInfo;
+        const mirrorResponse = await utils.callMirrorNode(`accounts/${accountInfo.accountId}`);
+        const mirrorAccount = mirrorResponse.data;
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorAccount.alias, 'latest']);
+        expect(res.data.result).to.eq('0x10f0777f464e77a2400');
+    });
 
-        it('should execute "eth_getBalance" for newly created account with 5000 HBAR', async function () {
-            const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorAccount.evm_address, 'latest']);
-            expect(res.data.result).to.eq('0x10f0777f464e77a2400');
-        });
+    it('should execute "eth_getBalance" for non-existing address', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [nonExistingAddress, 'latest']);
+        expect(res.data.result).to.eq('0x0');
+    });
 
-        it('should execute "eth_getBalance" with account alias', async function () {
-            const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorAccount.alias, 'latest']);
-            expect(res.data.result).to.eq('0x10f0777f464e77a2400');
-        });
+    it('should execute "eth_getBalance" for contract', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorContract.evm_address, 'latest']);
+        expect(res.data.result).to.eq('0x56bc75e2d63100000');
+    });
 
-        it('should execute "eth_getBalance" for non-existing address', async function () {
-            const res = await utils.callSupportedRelayMethod('eth_getBalance', [nonExistingAddress, 'latest']);
-            expect(res.data.result).to.eq('0x0');
-        });
+    it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
+        const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 5000);
+        const accountId = accountInfo.accountId.toString();
+        const evmAddress = utils.idToEvmAddress(accountId);
 
-        it('should execute "eth_getBalance" for contract', async function () {
-            const res = await utils.callSupportedRelayMethod('eth_getBalance', [mirrorContract.evm_address, 'latest']);
-            expect(res.data.result).to.eq('0x5a34a38fc00a00000');
-        });
+        // wait for the account to be imported in the Mirror Node
+        await utils.callMirrorNode(`accounts/${accountId}`);
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [evmAddress, 'latest']);
+        expect(res.data.result).to.eq('0x10f0777f464e77a2400');
+    });
 
-        it('should execute "eth_getBalance" for account with id converted to evm_address', async function () {
-            const { accountInfo } = await utils.createEthCompatibleAccount(client, null, 5000);
-            const accountId = accountInfo.accountId.toString();
-            const evmAddress = utils.idToEvmAddress(accountId);
-
-            // wait for the account to be imported in the Mirror Node
-            await utils.callMirrorNode(`accounts/${accountId}`);
-            const res = await utils.callSupportedRelayMethod('eth_getBalance', [evmAddress, 'latest']);
-            expect(res.data.result).to.eq('0x10f0777f464e77a2400');
-        });
-
-        it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
-            const res = await utils.callSupportedRelayMethod('eth_getBalance', [utils.idToEvmAddress(contractId.toString()), 'latest']);
-            expect(res.data.result).to.eq('0x5a34a38fc00a00000');
-        });
-
+    it('should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getBalance', [utils.idToEvmAddress(contractId.toString()), 'latest']);
+        expect(res.data.result).to.eq('0x56bc75e2d63100000');
     });
 
     it('should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
@@ -589,38 +588,30 @@ describe('RPC Server Acceptance Tests', async function () {
         expect(res.data.result).to.be.null;
     });
 
-    describe("eth_getCode", async function() {
-        let contractReceipt;
+    it('should execute "eth_getCode" for contract evm_address', async function () {
+        const evmAddress = basicContractReceipt.contractId.toSolidityAddress();
+        const res = await utils.callSupportedRelayMethod('eth_getCode', [evmAddress]);
+        expect(res.data.result).to.eq(basicContract.deployedBytecode);
+    });
 
-        before(async function() {
-            contractReceipt = await utils.deployContract(basicContract, client, process.env.OPERATOR_KEY_MAIN);
-        });
+    it('should execute "eth_getCode" for contract with id converted to evm_address', async function () {
+        const evmAddress = utils.idToEvmAddress(basicContractReceipt.contractId.toString());
+        const res = await utils.callSupportedRelayMethod('eth_getCode', [evmAddress]);
+        expect(res.data.result).to.eq(basicContract.deployedBytecode);
+    });
 
-        it('should execute "eth_getCode" for contract evm_address', async function () {
-            const evmAddress = contractReceipt.contractId.toSolidityAddress();
-            const res = await utils.callSupportedRelayMethod('eth_getCode', [evmAddress]);
-            expect(res.data.result).to.eq(basicContract.deployedBytecode);
-        });
+    it('should fail "eth_getCode" for non-existing contract', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getCode', [nonExistingAddress]);
+        expect(res.data.result).to.eq('0x0');
+    });
 
-        it('should execute "eth_getCode" for contract with id converted to evm_address', async function () {
-            const evmAddress = utils.idToEvmAddress(contractReceipt.contractId.toString());
-            const res = await utils.callSupportedRelayMethod('eth_getCode', [evmAddress]);
-            expect(res.data.result).to.eq(basicContract.deployedBytecode);
-        });
+    it('should fail "eth_getCode" for account evm_address', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getCode', [ethCompAccountEvmAddr3]);
+        expect(res.data.result).to.eq('0x0');
+    });
 
-        it('should fail "eth_getCode" for non-existing contract', async function () {
-            const res = await utils.callSupportedRelayMethod('eth_getCode', [nonExistingAddress]);
-            expect(res.data.result).to.eq('0x0');
-        });
-
-        it('should fail "eth_getCode" for account evm_address', async function () {
-            const res = await utils.callSupportedRelayMethod('eth_getCode', [ethCompAccountEvmAddr3]);
-            expect(res.data.result).to.eq('0x0');
-        });
-
-        it('should fail "eth_getCode" for account alias', async function () {
-            const res = await utils.callSupportedRelayMethod('eth_getCode', [mirrorPrimaryAccount.alias]);
-            expect(res.data.result).to.eq('0x0');
-        });
+    it('should fail "eth_getCode" for account alias', async function () {
+        const res = await utils.callSupportedRelayMethod('eth_getCode', [mirrorPrimaryAccount.alias]);
+        expect(res.data.result).to.eq('0x0');
     });
 });
