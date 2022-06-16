@@ -243,7 +243,7 @@ describe('RPC Server Acceptance Tests', async function () {
         if (useLocalNode === 'true') {
             // stop local-node
             logger.info('Shutdown local node');
-            // shell.exec('npx hedera-local stop');
+            shell.exec('npx hedera-local stop');
         }
 
         // stop relay
