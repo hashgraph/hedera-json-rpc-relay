@@ -62,21 +62,17 @@ export class Precheck {
    * @param transaction
    */
   async gasLimit(transaction: string) {
-    const BLOCK_GAS_LIMIT: BigNumber = BigNumber.from(15_000_000);
+    const BLOCK_GAS_LIMIT = 15_000_000;
 
     const tx = ethers.utils.parseTransaction(transaction);
+    const gasLimit = tx.gasLimit.toNumber();
 
     const intrinsicGasCost = this.transactionIntrinsicGasCost(tx.data, tx.to);
 
-    if (tx.gasLimit > BLOCK_GAS_LIMIT) {
+    if (gasLimit > BLOCK_GAS_LIMIT) {
       throw predefined.GAS_LIMIT_TOO_HIGH;
-    } else if (tx.gasLimit < intrinsicGasCost) {
+    } else if (gasLimit < intrinsicGasCost) {
       throw predefined.GAS_LIMIT_TOO_LOW;
-    }
-
-    // @ts-ignore
-    if (accountInfo && accountInfo.ethereum_nonce > tx.nonce) {
-      throw predefined.NONCE_TOO_LOW;
     }
   }
 
@@ -101,6 +97,6 @@ export class Precheck {
     const nonZeros = data.length - zeros;
     const cost = TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
 
-    return BigNumber.from(isCreate ? cost + TX_CREATE_EXTRA : cost);
+    return isCreate ? cost + TX_CREATE_EXTRA : cost;
   }
 }
