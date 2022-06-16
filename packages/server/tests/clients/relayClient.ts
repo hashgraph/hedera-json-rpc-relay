@@ -20,6 +20,7 @@
 
 import { ethers, providers } from 'ethers';
 import { Logger } from 'pino';
+import Assertions from '../helpers/assertions';
 
 export default class RelayClient {
 
@@ -41,6 +42,22 @@ export default class RelayClient {
         const result = await this.provider.send(methodName, params);
         this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(result)}`);
         return result;
+    };
+
+    /**
+     * Calls the specified methodName and asserts that it is not expected
+     * @param methodName
+     * @param params
+     */
+    async callUnsupported(methodName: string, params: any[]) {
+        try {
+            const res = await this.call(methodName, params);
+            this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
+            Assertions.expectedError();
+        } catch (err) {
+            Assertions.unsupportedResponse(err);
+            return err;
+        }
     };
 
     /**
