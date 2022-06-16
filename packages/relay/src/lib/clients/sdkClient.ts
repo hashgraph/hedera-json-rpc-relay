@@ -38,7 +38,6 @@ import {
     FeeComponents,
     Query,
     Transaction,
-    Hbar,
     TransactionRecord,
     TransactionReceipt,
     Status
