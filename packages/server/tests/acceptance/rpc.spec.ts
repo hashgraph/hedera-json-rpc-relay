@@ -24,16 +24,28 @@ import dotenv from 'dotenv';
 import path from 'path';
 import shell from 'shelljs';
 import { BigNumber, ethers } from 'ethers';
-import RelayClient from '../clients/relayClient';
 
 import pino from 'pino';
-const logger = pino();
+import ServicesClient from '../clients/servicesClient';
+import MirrorClient from '../clients/mirrorClient';
+import RelayClient from '../clients/relayClient';
+import app from '../../dist/server';
 
-const ServicesClient = require('../clients/servicesClient');
-const MirrorClient = require('../clients/mirrorClient');
+const testLogger = pino({
+    name: 'hedera-json-rpc-relay',
+    level: process.env.LOG_LEVEL || 'trace',
+    transport: {
+        target: 'pino-pretty',
+        options: {
+            colorize: true,
+            translateTime: true
+        }
+    }
+});
+const logger = testLogger.child({ name: 'rpc-acceptance-test' });
+
 // local resources
 const parentContract = require('../parentContract/Parent.json');
-const app = require('../../src/server');
 const TestUtils = require('../helpers/utils');
 const Assertions = require('../helpers/assertions');
 
@@ -61,7 +73,7 @@ let accountEvmAddr;
 const accounts: any[] = [];
 
 const USE_LOCAL_NODE = process.env.LOCAL_NODE || 'true';
-const CHAIN_ID = Number(process.env.CHAIN_ID);
+const CHAIN_ID = process.env.CHAIN_ID || 0;
 const NETWORK = process.env.HEDERA_NETWORK || '';
 const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
 const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
@@ -96,7 +108,7 @@ const defaultLegacy2930TransactionData = {
     type: 1
 };
 
-describe('RPC Server Acceptance Tests', async function() {
+describe('RPC Server Acceptance Tests', function() {
     this.timeout(240 * 1000); // 240 seconds
 
     let relayServer; // Relay Server
@@ -104,7 +116,7 @@ describe('RPC Server Acceptance Tests', async function() {
     const mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-client` }));
     const relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-client` }));
 
-    before(async function() {
+    before(() => {
 
         if (USE_LOCAL_NODE === 'true') {
             runLocalHederaNetwork();
@@ -114,7 +126,6 @@ describe('RPC Server Acceptance Tests', async function() {
         logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
         relayServer = app.listen({ port: process.env.SERVER_PORT });
 
-        // set up mirror node contents
         // logger.info('Submit eth account create transactions via crypto transfers');
         // 1. Crypto create with alias - metamask flow
 
@@ -319,16 +330,6 @@ describe('RPC Server Acceptance Tests', async function() {
         expect(BigNumber.from(senderInitialBalance).sub(BigNumber.from(senderEndBalance)).gt(0)).to.eq(true);
     });
 
-    it('should execute "eth_syncing"', async function() {
-        const res = await relay.call('eth_syncing', []);
-        expect(res).to.be.equal(false);
-    });
-
-    it('should execute "web3_client_version"', async function() {
-        const res = await relay.call('web3_client_version', []);
-        expect(res).to.contain('relay/');
-    });
-
     it('should execute "eth_getTransactionCount" primary', async function() {
         const res = await relay.call('eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, mirrorContractDetails.block_number]);
         expect(res).to.be.equal('0x0');
@@ -392,11 +393,11 @@ describe('RPC Server Acceptance Tests', async function() {
         expect(res).to.be.null;
     });
 
-    describe('Hardcoded Responses', () => {
+    describe.only('Hardcoded Responses', () => {
 
         it('should execute "eth_chainId"', async function() {
             const res = await relay.call('eth_chainId', [null]);
-            expect(res).to.be.equal(ethers.utils.hexlify(CHAIN_ID));
+            expect(res).to.be.equal(CHAIN_ID);
         });
 
         it('should execute "net_listening"', async function() {
@@ -406,7 +407,7 @@ describe('RPC Server Acceptance Tests', async function() {
 
         it('should execute "net_version"', async function() {
             const res = await relay.call('net_version', []);
-            expect(res).to.be.equal(ethers.utils.hexlify(CHAIN_ID));
+            expect(res).to.be.equal(CHAIN_ID);
         });
 
         it('should execute "eth_getUncleByBlockHashAndIndex"', async function() {
@@ -449,36 +450,46 @@ describe('RPC Server Acceptance Tests', async function() {
             expect(res).to.be.equal(false);
         });
 
+        it('should execute "eth_syncing"', async function() {
+            const res = await relay.call('eth_syncing', []);
+            expect(res).to.be.equal(false);
+        });
+
+        it('should execute "web3_client_version"', async function() {
+            const res = await relay.call('web3_client_version', []);
+            expect(res).to.contain('relay/');
+        });
+
     });
 
-    describe('Unsupported RPC Endpoints', () => {
+    describe.only('Unsupported RPC Endpoints', () => {
 
         it('should not support "eth_submitHashrate"', async function() {
-            await utils.callUnsupportedRelayMethod('eth_submitHashrate', []);
+            await relay.callUnsupported('eth_submitHashrate', []);
         });
 
         it('should not support "eth_getWork"', async function() {
-            await utils.callUnsupportedRelayMethod('eth_getWork', []);
+            await relay.callUnsupported('eth_getWork', []);
         });
 
         it('should not support "eth_coinbase"', async function() {
-            await utils.callUnsupportedRelayMethod('eth_coinbase', []);
+            await relay.callUnsupported('eth_coinbase', []);
         });
 
         it('should not support "eth_sendTransaction"', async function() {
-            await utils.callUnsupportedRelayMethod('eth_sendTransaction', []);
+            await relay.callUnsupported('eth_sendTransaction', []);
         });
 
         it('should not support "eth_protocolVersion"', async function() {
-            await utils.callUnsupportedRelayMethod('eth_protocolVersion', []);
+            await relay.callUnsupported('eth_protocolVersion', []);
         });
 
         it('should not support "eth_sign"', async function() {
-            await utils.callUnsupportedRelayMethod('eth_sign', []);
+            await relay.callUnsupported('eth_sign', []);
         });
 
         it('should not support "eth_signTransaction"', async function() {
-            await utils.callUnsupportedRelayMethod('eth_signTransaction', []);
+            await relay.callUnsupported('eth_signTransaction', []);
         });
     });
 
