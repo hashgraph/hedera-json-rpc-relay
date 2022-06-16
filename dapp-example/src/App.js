@@ -146,7 +146,7 @@ function App() {
           <Button id="showAliasBtn" onClick={showAccountIdHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
             Show alias
           </Button>
-          <Typography variant="h6" style={{ wordBreak: 'break-word' }}>
+          <Typography id="aliasField" variant="h6" style={{ wordBreak: 'break-word' }}>
             {alias}
           </Typography>
 

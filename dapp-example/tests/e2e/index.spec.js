@@ -24,6 +24,14 @@ describe('Test User Login', function () {
         cy.get('#btnUpdateGreeting').should('not.be.disabled');
     });
 
+    it('Show alias', function() {
+        resetMetamaskConnection();
+
+        cy.get('#showAliasBtn').should('not.be.disabled').click();
+        cy.confirmMetamaskSignatureRequest();
+        cy.waitUntil(() => cy.get('#aliasField').invoke('text').should('have.length', 66));
+    });
+
     it('Deploy contract', function() {
         resetMetamaskConnection();
 
