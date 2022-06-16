@@ -28,6 +28,7 @@ import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
+import { Registry } from 'prom-client';
 
 export class RelayImpl implements Relay {
   private static chainIds = {
@@ -41,7 +42,7 @@ export class RelayImpl implements Relay {
   private readonly netImpl: Net;
   private readonly ethImpl: Eth;
 
-  constructor(logger: Logger) {
+  constructor(logger: Logger, register: Registry) {
     dotenv.config({ path: findConfig('.env') || '' });
     logger.info('Configurations successully loaded');
 
@@ -60,10 +61,11 @@ export class RelayImpl implements Relay {
 
     const mirrorNodeClient = new MirrorNodeClient(
       process.env.MIRROR_NODE_URL || '',
-      logger.child({ name: `mirror-node` })
+      logger.child({ name: `mirror-node` }),
+      register
     );
 
-    const sdkClient = new SDKClient(this.clientMain);
+    const sdkClient = new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), register);
 
     this.ethImpl = new EthImpl(
       sdkClient,
