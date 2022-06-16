@@ -195,7 +195,6 @@ export default class ServicesClient {
     async executeContractCall(contractId) {
         // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
         this.logger.info(`Execute contracts ${contractId}'s createChild method`);
-        console.log(contractId);
         const contractExecTransactionResponse =
             await this.executeTransaction(new ContractExecuteTransaction()
                 .setContractId(contractId)
@@ -237,11 +236,10 @@ export default class ServicesClient {
         const accountInfo = await this.executeQuery(new AccountInfoQuery()
             .setAccountId(aliasAccountId));
         this.logger.info(`New account Info: ${accountInfo.accountId.toString()}`);
-
         return {
             alias: aliasAccountId,
             accountId: accountInfo.accountId,
-            address: Utils.idToEvmAddress(aliasAccountId.toString()),
+            address: accountInfo.contractAccountId,
             client: new ServicesClient(
                 this.network,
                 accountInfo.accountId.toString(),
