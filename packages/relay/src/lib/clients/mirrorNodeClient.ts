@@ -123,8 +123,11 @@ export class MirrorNodeClient {
         this.logger = logger;
         this.register = register;
 
+        // clear and create metric in registry
+        const metricHistogramName = 'rpc_relay_mirror_response';
+        register.removeSingleMetric(metricHistogramName);
         this.mirrorResponseHistogram = new Histogram({
-            name: 'rpc_relay_mirror_response',
+            name: metricHistogramName,
             help: 'Mirror node response method statusCode latency histogram',
             labelNames: ['method', 'statusCode'],
             registers: [register]
@@ -291,9 +294,9 @@ export class MirrorNodeClient {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`, 
-        MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT,
-        [400, 404]);
+        return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`,
+            MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT,
+            [400, 404]);
     }
 
     public async getNetworkFees(timestamp?: string, order?: string) {
@@ -301,9 +304,9 @@ export class MirrorNodeClient {
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         this.setQueryParam(queryParamObject, 'order', order);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT}${queryParams}`, 
-        MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT,
-        [400, 404]);
+        return this.request(`${MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT}${queryParams}`,
+            MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT,
+            [400, 404]);
     }
 
     private static getContractResultsByAddressPath(address: string) {
