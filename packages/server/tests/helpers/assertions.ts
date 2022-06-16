@@ -18,7 +18,7 @@
  *
  */
 import {expect} from "chai";
-import { ethers } from 'ethers';
+import { Utils } from './utils';
 
 export default class Assertions {
     static assertId = (id) => {
@@ -51,12 +51,12 @@ export default class Assertions {
 
     public static transaction(relayResponse, mirrorNodeResponse) {
         expect(relayResponse.blockHash).to.eq(mirrorNodeResponse.block_hash.slice(0, 66));
-        expect(relayResponse.blockNumber).to.eq(ethers.utils.hexlify(mirrorNodeResponse.hash));
+        expect(relayResponse.blockNumber).to.eq(Utils.numberTo0x(mirrorNodeResponse.block_number));
         // expect(relayResponse.chainId).to.eq(mirrorNodeResponse.chain_id); // TODO must not be null!
         expect(relayResponse.from).to.eq(mirrorNodeResponse.from);
         expect(relayResponse.gas).to.eq(mirrorNodeResponse.gas_used);
         // expect(relayResponse.gasPrice).to.eq(mirrorNodeResponse.gas_price); // TODO must not be null!
-        expect(relayResponse.hash).to.eq(mirrorNodeResponse.hash);
+        expect(relayResponse.hash).to.eq(mirrorNodeResponse.hash.slice(0, 66));
         expect(relayResponse.input).to.eq(mirrorNodeResponse.function_parameters);
         expect(relayResponse.to).to.eq(mirrorNodeResponse.to);
         expect(relayResponse.transactionIndex).to.eq(mirrorNodeResponse.transaction_index);
