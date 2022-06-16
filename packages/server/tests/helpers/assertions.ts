@@ -44,7 +44,7 @@ export default class Assertions {
 
     public static block(relayResponse, mirrorNodeResponse) {
         expect(relayResponse.hash).to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
-        // expect(relayResponse.number).to.be.equal(ethers.utils.hexlify(mirrorNodeResponse.number)); // TODO this assertion fails
+        expect(relayResponse.number).to.be.equal(Utils.numberTo0x(mirrorNodeResponse.number));
         // expect(relayResponse.transactions.length).to.equal(mirrorNodeResponse.count); // TODO this assertion fails
         // TODO add more assertions
     }
