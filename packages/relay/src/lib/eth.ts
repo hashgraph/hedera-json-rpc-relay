@@ -18,16 +18,16 @@
  *
  */
 
-import {Eth} from '../index';
-import { ContractId, Status, Hbar } from '@hashgraph/sdk';
-import {BigNumber} from '@hashgraph/sdk/lib/Transfer';
-import {Logger} from 'pino';
+import { Eth } from '../index';
+import { ContractId, Status, Hbar, EthereumTransaction } from '@hashgraph/sdk';
+import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { Logger } from 'pino';
 import { Block, CachedBlock, Transaction, Log } from './model';
-import {MirrorNode} from './mirrorNode';
-import {MirrorNodeClient, SDKClient} from './clients';
-import {JsonRpcError, predefined} from './errors';
+import { MirrorNode } from './mirrorNode';
+import { MirrorNodeClient, SDKClient } from './clients';
+import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
-import {Precheck} from './precheck';
+import { Precheck } from './precheck';
 
 const _ = require('lodash');
 const cache = require('js-cache');
@@ -542,19 +542,18 @@ export class EthImpl implements Eth {
    *
    * @param transaction
    */
-  async sendRawTransaction(transaction: string): Promise<string> {
+  async sendRawTransaction(transaction: string): Promise<string | JsonRpcError> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
     await this.precheck.nonce(transaction);
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
     try {
-      // Convert from 0xabc format into a raw Uint8Array of bytes and execute the transaction
       const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer);
 
       try {
         // Wait for the record from the execution.
-        const record = await this.sdkClient.getRecord(contractExecuteResponse);
+        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name);
         if (record.ethereumHash == null) {
           throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
         }
@@ -578,14 +577,14 @@ export class EthImpl implements Eth {
         return txHash;
       } catch (e) {
         this.logger.error(e,
-          'Failed sendRawTransaction during receipt retrieval for transaction %s, returning computed hash', transaction);
+          'Failed sendRawTransaction during record retrieval for transaction %s, returning computed hash', transaction);
         //Return computed hash if unable to retrieve EthereumHash from record due to error
         return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
       }
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error(e,
         'Failed to successfully submit sendRawTransaction for transaction %s', transaction);
-      throw e;
+      return predefined.INTERNAL_ERROR;
     }
   }
 
@@ -595,7 +594,7 @@ export class EthImpl implements Eth {
    * @param call
    * @param blockParam
    */
-  async call(call: any, blockParam: string | null) {
+  async call(call: any, blockParam: string | null): Promise<string | JsonRpcError> {
     // FIXME: In the future this will be implemented by making calls to the mirror node. For the
     //        time being we'll eat the cost and ask the main consensus nodes instead.
 
@@ -626,9 +625,15 @@ export class EthImpl implements Eth {
 
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
-    } catch (e) {
-      this.logger.error(e, `Failed to handle call cleanly for transaction ${JSON.stringify(call)}`);
-      throw e;
+    } catch (e: any) {
+      // handle client error
+      let resolvedError = e;
+      if (e.status && e.status._code) {
+        resolvedError = new Error(e.message);
+      }
+      
+      this.logger.error(resolvedError, 'Failed to successfully submit contractCallQuery');
+      return predefined.INTERNAL_ERROR;
     }
   }
 
@@ -777,7 +782,7 @@ export class EthImpl implements Eth {
     } else {
       blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
     }
-    
+
     if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
       // block not found
       return null;

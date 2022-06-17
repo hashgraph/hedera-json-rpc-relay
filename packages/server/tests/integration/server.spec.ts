@@ -23,7 +23,7 @@ import Axios from 'axios';
 import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
-import app from '../dist/server.js';
+import app from '../../dist/server.js';
 
 describe('RPC Server', async function() {
   this.timeout(60 * 1000);
