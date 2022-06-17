@@ -17,10 +17,11 @@
  * limitations under the License.
  *
  */
-import {expect} from "chai";
+import { expect } from 'chai';
 import { Utils } from './utils';
 
 export default class Assertions {
+
     static assertId = (id) => {
         const [shard, realm, num] = id.split('.');
         expect(shard).to.not.be.null;
@@ -28,12 +29,7 @@ export default class Assertions {
         expect(num).to.not.be.null;
     };
 
-    static failedResponce = (resp: any) => {
-        expect(resp).to.have.property('error');
-    };
-
     static unsupportedResponse = (resp: any) => {
-        Assertions.failedResponce(resp);
         expect(resp.error.code).to.eq(-32601);
         expect(resp.error.message).to.eq('Unsupported JSON-RPC method');
     };
@@ -45,17 +41,16 @@ export default class Assertions {
     public static block(relayResponse, mirrorNodeResponse) {
         expect(relayResponse.hash).to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
         expect(relayResponse.number).to.be.equal(Utils.numberTo0x(mirrorNodeResponse.number));
-        // expect(relayResponse.transactions.length).to.equal(mirrorNodeResponse.count); // TODO this assertion fails
-        // TODO add more assertions
+        // expect(relayResponse.transactions.length).to.equal(mirrorNodeResponse.count); // FIXME this assertion fails
     }
 
     public static transaction(relayResponse, mirrorNodeResponse) {
         expect(relayResponse.blockHash).to.eq(mirrorNodeResponse.block_hash.slice(0, 66));
         expect(relayResponse.blockNumber).to.eq(Utils.numberTo0x(mirrorNodeResponse.block_number));
-        // expect(relayResponse.chainId).to.eq(mirrorNodeResponse.chain_id); // TODO must not be null!
+        // expect(relayResponse.chainId).to.eq(mirrorNodeResponse.chain_id); // FIXME must not be null!
         expect(relayResponse.from).to.eq(mirrorNodeResponse.from);
         expect(relayResponse.gas).to.eq(mirrorNodeResponse.gas_used);
-        // expect(relayResponse.gasPrice).to.eq(mirrorNodeResponse.gas_price); // TODO must not be null!
+        // expect(relayResponse.gasPrice).to.eq(mirrorNodeResponse.gas_price); // FIXME must not be null!
         expect(relayResponse.hash).to.eq(mirrorNodeResponse.hash.slice(0, 66));
         expect(relayResponse.input).to.eq(mirrorNodeResponse.function_parameters);
         expect(relayResponse.to).to.eq(mirrorNodeResponse.to);
@@ -93,4 +88,10 @@ export default class Assertions {
         expect(transactionReceipt.from).to.eq(staticValues.from);
         expect(transactionReceipt.to).to.eq(transactionRequest.to);
     };
+
+    static unknownResponse(err) {
+        const parsedError = JSON.parse(err.body);
+        expect(parsedError.error.message).to.be.equal('Unknown error invoking RPC');
+        expect(parsedError.error.code).to.be.equal(-32603);
+    }
 }

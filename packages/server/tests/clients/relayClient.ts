@@ -21,7 +21,6 @@
 import { ethers, providers } from 'ethers';
 import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
-import { expect } from 'chai';
 
 export default class RelayClient {
 
@@ -39,7 +38,6 @@ export default class RelayClient {
      * @param params
      */
     async call(methodName: string, params: any[]) {
-        this.logger.debug(`[POST] to relay '${methodName}' with params [${params}]`);
         const result = await this.provider.send(methodName, params);
         this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(result)}`);
         return result;
@@ -56,10 +54,7 @@ export default class RelayClient {
             this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
             Assertions.expectedError();
         } catch (err) {
-            const parsedError = JSON.parse(err.body);
-            expect(parsedError.error.message).to.be.equal('Unknown error invoking RPC');
-            expect(parsedError.error.code).to.be.equal(-32603);
-            return err;
+            Assertions.unknownResponse(err);
         }
     }
 
@@ -106,7 +101,7 @@ export default class RelayClient {
      * Returns: Transaction hash
      * @param signedTx
      */
-    async sendRawTransaction (signedTx): Promise<string> {
+    async sendRawTransaction(signedTx): Promise<string> {
         this.logger.debug(`[POST] to relay for eth_sendRawTransaction`);
         return this.provider.send('eth_sendRawTransaction', [signedTx]);
     };

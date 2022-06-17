@@ -26,13 +26,13 @@ import shell from 'shelljs';
 import { BigNumber, ethers } from 'ethers';
 
 import pino from 'pino';
-import ServicesClient from '../clients/servicesClient';
+import ServicesClient, { AliasAccount } from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
 import app from '../../dist/server';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
-import { AccountBalanceQuery } from '@hashgraph/sdk';
+import { AccountBalanceQuery, ContractFunctionParameters } from '@hashgraph/sdk';
 
 const testLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -68,13 +68,13 @@ const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
 const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
 const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
 const RELAY_URL = 'http://localhost:7546';
-const ONE_TINYBAR = ethers.utils.parseUnits("1", 10);
+const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
 const NON_EXISTING_ADDRESS = '0x5555555555555555555555555555555555555555';
 
 describe('RPC Server Acceptance Tests', function() {
     this.timeout(240 * 1000); // 240 seconds
 
-    const accounts: any[] = [];
+    const accounts: AliasAccount[] = [];
 
     let relayServer; // Relay Server
     const servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({ name: `services-client` }));
@@ -95,8 +95,10 @@ describe('RPC Server Acceptance Tests', function() {
         accounts[1] = await servicesNode.createAliasAccount();
         accounts[2] = await servicesNode.createAliasAccount();
         contractId = await accounts[0].client.createParentContract(contractJson);
-        contractExecuteTimestamp = (await accounts[0].client.executeContractCall(contractId)).contractExecuteTimestamp;
 
+        const params = new ContractFunctionParameters().addUint256(1);
+        contractExecuteTimestamp = (await accounts[0].client
+            .executeContractCall(contractId, 'createChild', params)).contractExecuteTimestamp;
         tokenId = await servicesNode.createToken();
         logger.info('Associate and transfer tokens');
         await accounts[0].client.associateToken(tokenId);

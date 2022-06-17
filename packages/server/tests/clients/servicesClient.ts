@@ -28,7 +28,6 @@ import {
     ContractFunctionParameters,
     FileCreateTransaction,
     Hbar,
-    HbarUnit,
     Key,
     PrivateKey,
     Query,
@@ -39,7 +38,6 @@ import {
     TransferTransaction
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Utils } from '../helpers/utils';
 import { ethers } from 'ethers';
 
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
@@ -77,9 +75,8 @@ export default class ServicesClient {
 
     async executeTransaction(transaction: Transaction) {
         try {
-            this.logger.info(`Execute ${transaction.constructor.name} transaction`);
             const resp = await transaction.execute(this.client);
-            this.logger.info(`Executed transaction ${resp.transactionId.toString()}`);
+            this.logger.info(`Executed transaction of type ${transaction.constructor.name}. TX ID: ${resp.transactionId.toString()}`);
             return resp;
         } catch (e) {
             this.logger.error(e, `Error executing ${transaction.constructor.name} transaction`);
@@ -103,14 +100,14 @@ export default class ServicesClient {
         return { executedTimestamp, executedTransactionId };
     };
 
-    async createToken() {
+    async createToken(initialSupply = 1000) {
         const symbol = Math.random().toString(36).slice(2, 6).toUpperCase();
         this.logger.trace(`symbol = ${symbol}`);
         const resp = await this.executeAndGetTransactionReceipt(new TokenCreateTransaction()
             .setTokenName(`relay-acceptance token ${symbol}`)
             .setTokenSymbol(symbol)
             .setDecimals(3)
-            .setInitialSupply(new Hbar(1000).toTinybars())
+            .setInitialSupply(new Hbar(initialSupply).toTinybars())
             .setTreasuryAccountId(this._thisAccountId()));
 
         this.logger.trace(`get token id from receipt`);
@@ -130,7 +127,7 @@ export default class ServicesClient {
         );
     }
 
-    async transferToken(tokenId, recipient: AccountId, amount= 10) {
+    async transferToken(tokenId, recipient: AccountId, amount = 10) {
         await this.executeAndGetTransactionReceipt(new TransferTransaction()
             .addTokenTransfer(tokenId, this._thisAccountId(), -amount)
             .addTokenTransfer(tokenId, recipient, amount));
@@ -168,7 +165,7 @@ export default class ServicesClient {
             )
             .setGas(75000)
             .setInitialBalance(100)
-            .setBytecodeFileId(fileId || "")
+            .setBytecodeFileId(fileId || '')
             .setAdminKey(this.client.operatorPublicKey || this.DEFAULT_KEY));
 
         // The contract ID is located on the transaction receipt
@@ -179,17 +176,16 @@ export default class ServicesClient {
         return contractId;
     };
 
-    async executeContractCall(contractId) {
+    async executeContractCall(contractId, functionName: string, params: ContractFunctionParameters, gasLimit = 75000) {
         // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
         this.logger.info(`Execute contracts ${contractId}'s createChild method`);
         const contractExecTransactionResponse =
             await this.executeTransaction(new ContractExecuteTransaction()
                 .setContractId(contractId)
-                .setGas(75000)
+                .setGas(gasLimit)
                 .setFunction(
-                    'createChild',
-                    new ContractFunctionParameters()
-                        .addUint256(1)
+                    functionName,
+                    params
                 ));
 
         // @ts-ignore
@@ -200,7 +196,7 @@ export default class ServicesClient {
         return { contractExecuteTimestamp, contractExecutedTransactionId };
     };
 
-    async createAliasAccount(initialBalance = 1000) {
+    async createAliasAccount(initialBalance = 1000): Promise<AliasAccount> {
         const privateKey = PrivateKey.generateECDSA();
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
@@ -223,19 +219,21 @@ export default class ServicesClient {
         const accountInfo = await this.executeQuery(new AccountInfoQuery()
             .setAccountId(aliasAccountId));
         this.logger.info(`New account Info: ${accountInfo.accountId.toString()}`);
-        return {
-            alias: aliasAccountId,
-            accountId: accountInfo.accountId,
-            address: accountInfo.contractAccountId,
-            client: new ServicesClient(
-                this.network,
-                accountInfo.accountId.toString(),
-                privateKey.toString(),
-                this.logger.child({ name: `services-client` })
-            ),
-            wallet: new ethers.Wallet(privateKey.toStringRaw())
-        };
+        const servicesClient = new ServicesClient(
+            this.network,
+            accountInfo.accountId.toString(),
+            privateKey.toString(),
+            this.logger.child({ name: `services-client` })
+        );
+        const wallet = new ethers.Wallet(privateKey.toStringRaw());
 
+        return new AliasAccount(
+            aliasAccountId,
+            accountInfo.accountId,
+            accountInfo.contractAccountId,
+            servicesClient,
+            wallet
+        );
     };
 
     _thisAccountId() {
@@ -244,3 +242,20 @@ export default class ServicesClient {
 
 }
 
+export class AliasAccount {
+
+    public readonly alias: AccountId;
+    public readonly accountId: AccountId;
+    public readonly address: string;
+    public readonly client: ServicesClient;
+    public readonly wallet: ethers.Wallet;
+
+    constructor(_alias, _accountId, _address, _client, _wallet) {
+        this.alias = _alias;
+        this.accountId = _accountId;
+        this.address = _address;
+        this.client = _client;
+        this.wallet = _wallet;
+    }
+
+}
