@@ -11,7 +11,6 @@ jobs:
   synpress-run:
     name: DApp Integration Tests
     runs-on: ubuntu-latest
-    # container: cypress/browsers:node12.18.3-chrome87-ff82
     permissions:
       contents: write
     steps:
@@ -41,10 +40,10 @@ jobs:
       - name: Install DApp packages
         run: cd ./dapp-example && npm ci
 
-      -name: Run Local Node + RPC Server
+      - name: Run Local Node + RPC Server
         run: npm run integration:prerequisite &
 
-      -name: Run DApp
+      - name: Run DApp
         run: cd ./dapp-example && npm run start &
 
       # - name: 'UI Tests - Chrome'
