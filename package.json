@@ -21,6 +21,7 @@
     },
     "scripts": {
         "acceptancetest": "ts-mocha ./packages/server/tests/acceptance.spec.ts --exit",
+        "integration:prerequisite": "ts-node ./packages/server/tests/prerequisite.ts",
         "build": "npx lerna run build",
         "build-and-test": "npx lerna run build && npx lerna run test",
         "build:docker": "docker build . -t ${npm_package_name}",
