@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+</head>
+
+<body>
+
+<button type="button" class="btn btn-default" id="conenctButton" onclick="connect()">
+    Connect
+</button>
+<br><br>
+<label for="contract">Connected Address:</label>
+<input type="text" class="form-control" id="wallet"
+       placeholder="Press Connect" value="" size="50" enabled="false">
+<br><br>
+<button type="button" class="btn btn-default" id="signMessage" onclick="signMessage()">
+    Sign Message
+</button>
+<br><br>
+<label for="msgHash">Message Hash :</label><input type="text" class="form-control" id="msgHash"
+                                                  placeholder="will be populated by Sign Message" value="" size="75">
+<br>
+
+<br>
+<label for="msgHash">Signature :</label><input type="text" class="form-control" id="signature"
+                                               placeholder="will be populated by Sign Message" size="150" value="">
+
+<br><br>
+<label for="contract">Contract Address:</label>
+<input type="text" class="form-control" id="contract"
+       placeholder="Use 20 byte hex form" value="0x000000000000000000000000000000000000045c" size="50">
+<br><br>
+
+<button type="button" class="btn btn-default" id="verifyMessage" onclick="verifyMessage()">
+    Verify Message
+</button>
+
+<br><br>
+<label for="contract">Extracted Address:</label>
+<input type="text" class="form-control" id="extractedAddress"
+       placeholder="Press Connect" value="" size="50" enabled="false">
+
+<br><br>
+<label for="contract">Validates:</label>
+<input type="text" class="form-control" id="validates"
+       placeholder="Press Connect" value="" size="50" enabled="false">
+
+
+<script src="https://unpkg.com/bn.js@4.11.8/lib/bn.js" type="text/javascript"></script>
+<script src="https://unpkg.com/@enumatech/secp256k1-js@1.0.0/src/secp256k1.js" type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/keccak256@latest/keccak256.js"></script>
+<script src="./ExtractPublicKey.js"></script>
+</body>
+
+</html>
