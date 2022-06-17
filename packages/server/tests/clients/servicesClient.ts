@@ -56,7 +56,7 @@ export default class ServicesClient {
 
         if (!network) network = '{}';
         const opPrivateKey = PrivateKey.fromString(key);
-        if (network.toLowerCase() in supportedEnvs) {
+        if (supportedEnvs.includes(network.toLowerCase())) {
             this.client = Client.forName(network);
         } else {
             this.client = Client.forNetwork(JSON.parse(network));
