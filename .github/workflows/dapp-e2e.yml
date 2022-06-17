@@ -47,9 +47,7 @@ jobs:
         run: cd ./dapp-example && npm run start &
 
       - name: "UI Tests - Chrome"
-        uses: cypress-io/github-action@v4
-        with:
-          run: cd ./dapp-example && npm run test
+        run: cd ./dapp-example && npm run test
           # wait-on: "http://localhost:3000"
           # wait-on-timeout: 120
-          browser: chrome
+          # browser: chrome
