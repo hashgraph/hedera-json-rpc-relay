@@ -23,7 +23,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "env-cmd -f local.env npx synpress run -cf synpress.json",
+    "test": "env-cmd -f local.env npm run test:bootstrap && env-cmd -f local.env npx synpress run -cf synpress.json",
     "test:bootstrap": "node ./tests/support/bootstrap.js",
     "eject": "react-scripts eject"
   },

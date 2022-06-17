@@ -38,21 +38,15 @@ jobs:
       - name: Create .env file
         run: cp ./dapp-example/local.env .env
 
-      - name: Run Local Node + RPC Server
-        run: npm run integration:prerequisite
-
       - name: Install DApp packages
         run: cd ./dapp-example && npm ci
 
-      - name: Run DApp test bootstrap
-        run: cd ./dapp-example && npm run test:bootstrap
-
-      # - name: 'UI Tests - Chrome'
-      #   uses: cypress-io/github-action@v4
-      #   with:
-      #     install: false
-      #     start: cd ./dapp-example && npm run start
-      #     wait-on: 'http://localhost:3000'
-      #     wait-on-timeout: 120
-      #     browser: chrome
-      #   run: cd ./dapp-example && npm run test
+      - name: 'UI Tests - Chrome'
+        uses: cypress-io/github-action@v4
+        with:
+          install: false
+          start: cd ./dapp-example && npm run start, npm run integration:prerequisite
+          wait-on: 'http://localhost:3000', 'http://localhost:7546'
+          wait-on-timeout: 120
+          browser: chrome
+        run: cd ./dapp-example && npm run test
