@@ -46,12 +46,8 @@ jobs:
       - name: Run the dapp
         run: npm start --prefix ./dapp-example/ &
 
-      - name: Edit the permissions
-        run: chmod 777 -R /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local/network-logs/
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Run the dapp tests
-        uses: cypress-io/github-action@v4
-        with:
-          browser: chrome
-          headed: true
-          start: npm install --prefix ./dapp-example/ && npm test --prefix ./dapp-example/
+        run: npm test --prefix ./dapp-example/
