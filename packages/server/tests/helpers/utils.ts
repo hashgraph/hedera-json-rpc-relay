@@ -27,10 +27,6 @@ export class Utils {
         return parseInt(num).toString(16);
     };
 
-    static numberTo0x = (input: number): string => {
-        return `0x${Utils.toHex(input)}`;
-    };
-
     static idToEvmAddress = (id): string => {
         Assertions.assertId(id);
         const [shard, realm, num] = id.split('.');

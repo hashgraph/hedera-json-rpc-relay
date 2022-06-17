@@ -18,7 +18,7 @@
  *
  */
 import { expect } from 'chai';
-import { Utils } from './utils';
+import { ethers } from 'ethers';
 
 export default class Assertions {
 
@@ -40,13 +40,13 @@ export default class Assertions {
 
     public static block(relayResponse, mirrorNodeResponse) {
         expect(relayResponse.hash).to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
-        expect(relayResponse.number).to.be.equal(Utils.numberTo0x(mirrorNodeResponse.number));
+        expect(relayResponse.number).to.be.equal(ethers.utils.hexValue(mirrorNodeResponse.number));
         // expect(relayResponse.transactions.length).to.equal(mirrorNodeResponse.count); // FIXME this assertion fails
     }
 
     public static transaction(relayResponse, mirrorNodeResponse) {
         expect(relayResponse.blockHash).to.eq(mirrorNodeResponse.block_hash.slice(0, 66));
-        expect(relayResponse.blockNumber).to.eq(Utils.numberTo0x(mirrorNodeResponse.block_number));
+        expect(relayResponse.blockNumber).to.eq(ethers.utils.hexValue(mirrorNodeResponse.block_number));
         // expect(relayResponse.chainId).to.eq(mirrorNodeResponse.chain_id); // FIXME must not be null!
         expect(relayResponse.from).to.eq(mirrorNodeResponse.from);
         expect(relayResponse.gas).to.eq(mirrorNodeResponse.gas_used);

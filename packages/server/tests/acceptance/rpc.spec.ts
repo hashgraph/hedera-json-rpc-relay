@@ -67,7 +67,8 @@ const NETWORK = process.env.HEDERA_NETWORK || '';
 const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
 const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
 const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
-const RELAY_URL = 'http://localhost:7546';
+const LOCAL_RELAY_URL = 'http://localhost:7546';
+const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
 const NON_EXISTING_ADDRESS = '0x5555555555555555555555555555555555555555';
 
@@ -87,9 +88,9 @@ describe('RPC Server Acceptance Tests', function() {
             runLocalHederaNetwork();
         }
 
-        // start relay
-        logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
-        relayServer = app.listen({ port: process.env.SERVER_PORT });
+        if (RELAY_URL === LOCAL_RELAY_URL) {
+            runLocalRelay();
+        }
 
         accounts[0] = await servicesNode.createAliasAccount();
         accounts[1] = await servicesNode.createAliasAccount();
@@ -316,7 +317,7 @@ describe('RPC Server Acceptance Tests', function() {
         });
 
         it('should execute "eth_getTransactionCount" for account with non-zero nonce', async function() {
-            const account = await servicesNode.createAliasAccount();
+            const account = await servicesNode.createAliasAccount(10);
             // Wait for account creation to propagate
             await mirrorNode.get(`/accounts/${account.accountId}`);
             const transaction = {
@@ -348,8 +349,8 @@ describe('RPC Server Acceptance Tests', function() {
         expect(res).to.be.equal('0xa7a3582000');
     });
 
-    it('should execute "eth_getBalance" for newly created account with 1000 HBAR', async function() {
-        const account = await servicesNode.createAliasAccount(1000);
+    it('should execute "eth_getBalance" for newly created account with 100 HBAR', async function() {
+        const account = await servicesNode.createAliasAccount(100);
         // Wait for account creation to propagate
         await mirrorNode.get(`/accounts/${account.accountId}`);
 
@@ -357,7 +358,7 @@ describe('RPC Server Acceptance Tests', function() {
         const balance = await servicesNode.executeQuery(new AccountBalanceQuery()
             .setAccountId(account.accountId));
         const balanceInWeiBars = BigNumber.from(balance.hbars.toTinybars().toString()).mul(10 ** 10);
-        expect(res).to.eq(ethers.utils.hexlify(balanceInWeiBars));
+        expect(res).to.eq(ethers.utils.hexValue(balanceInWeiBars));
     });
 
     it('should execute "eth_getBalance" for non-existing address', async function() {
@@ -501,4 +502,11 @@ describe('RPC Server Acceptance Tests', function() {
         shell.exec('npx hedera-local restart');
         logger.trace('Hedera Hashgraph local node env started');
     }
+
+    function runLocalRelay() {
+        // start relay
+        logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
+        relayServer = app.listen({ port: process.env.SERVER_PORT });
+    }
+
 });
