@@ -11,7 +11,7 @@ jobs:
   synpress-run:
     name: DApp Integration Tests
     runs-on: ubuntu-latest
-    container: cypress/browsers:node12.18.3-chrome87-ff82
+    # container: cypress/browsers:node12.18.3-chrome87-ff82
     permissions:
       contents: write
     steps:
