@@ -51,7 +51,7 @@ jobs:
         with:
           browser: chrome
           headed: true
-          start: npm test --prefix ./dapp-example/
+          start: chmod 777 -R /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local/network-logs/ && npm test --prefix ./dapp-example/
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
