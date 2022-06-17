@@ -18,23 +18,29 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
-import { expect } from 'chai';
-import { Registry } from 'prom-client';
-import { RelayImpl } from '@hashgraph/json-rpc-relay';
+import { BigNumber } from 'ethers';
+import Assertions from './assertions';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+export class Utils {
 
-import pino from 'pino';
-const logger = pino();
+    static toHex = (num) => {
+        return parseInt(num).toString(16);
+    };
 
-const Relay = new RelayImpl(logger, new Registry());
+    static idToEvmAddress = (id): string => {
+        Assertions.assertId(id);
+        const [shard, realm, num] = id.split('.');
 
-describe('Web3', async function() {
-  it('should execute "web3_clientVersion"', async function() {
-    const clientVersion = await Relay.web3().clientVersion();
+        return [
+            '0x',
+            this.toHex(shard).padStart(8, '0'),
+            this.toHex(realm).padStart(16, '0'),
+            this.toHex(num).padStart(16, '0')
+        ].join('');
+    };
 
-    expect(clientVersion).to.be.equal('relay/' + process.env.npm_package_version);
-  });
-});
+    static subtractBigNumberHexes = (hex1, hex2) => {
+        return BigNumber.from(hex1).sub(BigNumber.from(hex2));
+    };
+
+}
