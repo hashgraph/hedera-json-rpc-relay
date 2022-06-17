@@ -65,7 +65,10 @@ CHAIN_ID=0x12a
 MIRROR_NODE_URL=http://127.0.0.1:5551
 LOCAL_NODE=true
 SERVER_PORT=7546
+E2E_RELAY_HOST=http://127.0.0.1:7546
 ```
+
+> **_NOTE:_** Acceptance tests can be pointed at a remote location. In this case be sure to appropriately update these values to point away from your local host and to valid deployed services.
 
 #### Run
 
