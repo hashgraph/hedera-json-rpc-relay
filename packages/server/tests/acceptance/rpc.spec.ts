@@ -74,6 +74,7 @@ const NON_EXISTING_ADDRESS = '0x5555555555555555555555555555555555555555';
 const NON_EXISTING_TX_HASH = '0x5555555555555555555555555555555555555555555555555555555555555555';
 const NON_EXISTING_BLOCK_HASH = '0x555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555';
 const NON_EXISTING_BLOCK_NUMBER = 99999999;
+const NON_EXISTING_INDEX = 999999;
 
 describe('RPC Server Acceptance Tests', function() {
     this.timeout(240 * 1000); // 240 seconds
@@ -211,13 +212,25 @@ describe('RPC Server Acceptance Tests', function() {
             Assertions.transaction(response, mirrorContractDetails);
         });
 
+        it('should execute "eth_getTransactionByBlockHashAndIndex" for invalid block hash', async function() {
+            const response = await relay.call('eth_getTransactionByBlockHashAndIndex',
+                [NON_EXISTING_BLOCK_HASH, mirrorContractDetails.transaction_index]);
+            expect(response).to.be.null;
+        });
+
+        it('should execute "eth_getTransactionByBlockHashAndIndex" for invalid index', async function() {
+            const response = await relay.call('eth_getTransactionByBlockHashAndIndex',
+                [mirrorContractDetails.block_hash, NON_EXISTING_INDEX]);
+            expect(response).to.be.null;
+        });
+
         it('should execute "eth_getTransactionByBlockNumberAndIndex"', async function() {
             const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, mirrorContractDetails.transaction_index]);
             Assertions.transaction(response, mirrorContractDetails);
         });
 
         it('should execute "eth_getTransactionByBlockNumberAndIndex" for invalid index', async function() {
-            const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, 999999]);
+            const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, NON_EXISTING_INDEX]);
             expect(response).to.be.null;
         });
 
