@@ -1,24 +1,26 @@
 const HederaSDK = require('@hashgraph/sdk');
 const ethers = require('ethers');
 const hethers = require('@hashgraph/hethers');
+const fs = require('fs');
+const path = require('path');
 
 const client = HederaSDK.Client
-  .forNetwork({
-    '127.0.0.1:50211': '0.0.3'
-  })
-  .setOperator('0.0.2', '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137');
+  .forNetwork(JSON.parse(process.env.HEDERA_NETWORK))
+  .setOperator(process.env.OPERATOR_ID_MAIN, process.env.OPERATOR_KEY_MAIN);
 
 const createAccountFromCompressedPublicKey = async function(compressedPublicKey) {
   const transferTransaction = await (new HederaSDK.TransferTransaction()
     .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(1000))
-    .addHbarTransfer(HederaSDK.AccountId.fromString('0.0.2'), new HederaSDK.Hbar(-1000))
+    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-1000))
     .setNodeAccountIds([HederaSDK.AccountId.fromString('0.0.3')]))
     .execute(client);
 
   const txTransaction = await (new HederaSDK.TransactionRecordQuery()
     .setTransactionId(transferTransaction.transactionId))
     .execute(client);
-  const accountId = txTransaction.transfers[1].accountId.toString();
+
+  const transfer = txTransaction.transfers.find(transfer => !transfer.amount.isNegative() && transfer.accountId.num.toNumber() > 999);
+  const accountId = transfer.accountId.toString();
 
   console.log(`Account has been successfully created: ${accountId}`);
 
@@ -90,7 +92,8 @@ const transferHTSToken = async function(accountId, tokenId) {
   const receiverCompressedKey = receiverWallet._signingKey().compressedPublicKey.replace('0x', '');
   const receiverAccountId = (await createAccountFromCompressedPublicKey(receiverCompressedKey)).accountId;
 
-  const { tokenId } = await createHTSToken();
+  const { tokenId, tokenAddress } = await createHTSToken();
+  fs.writeFileSync(path.resolve(__dirname + '../../../') + '/.htsTokenAddress.json', '{"HTS_ADDRESS":"' + tokenAddress + '"}');
 
   await associateHTSToken(mainAccountId, tokenId, process.env.PRIVATE_KEY);
   await approveHTSToken(mainAccountId, tokenId);

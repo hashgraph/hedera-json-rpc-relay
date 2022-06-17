@@ -25,3 +25,5 @@ yarn-error.log*
 /videos
 /screenshots
 /cypress
+
+.htsTokenAddress.json
