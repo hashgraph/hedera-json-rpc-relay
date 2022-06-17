@@ -40,11 +40,11 @@ jobs:
       - name: Run Local Node + RPC Server
         run: npm run integration:prerequisite &
 
-      - name: Install dependencies
-        run: npm install --prefix ./dapp-example/
+#      - name: Install dependencies
+#        run: npm install --prefix ./dapp-example/
 
-      - name: Run the dapp
-        run: npm start --prefix ./dapp-example/ &
+#      - name: Run the dapp
+#        run: npm start --prefix ./dapp-example/ &
 
       - name: Edit the permissions
         run: sudo chmod 777 -R /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local/network-logs/
@@ -54,4 +54,4 @@ jobs:
         with:
           browser: chrome
           headed: true
-          start: npm test --prefix ./dapp-example/
+          start: npm install --prefix ./dapp-example/ && npm start --prefix ./dapp-example/ & && npm test --prefix ./dapp-example/
