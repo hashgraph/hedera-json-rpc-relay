@@ -46,9 +46,6 @@ jobs:
       - name: Run the dapp
         run: npm start --prefix ./dapp-example/ &
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Run the dapp tests
         uses: cypress-io/github-action@v4
         with:
@@ -56,3 +53,5 @@ jobs:
           headed: true
           start: npm test --prefix ./dapp-example/
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
