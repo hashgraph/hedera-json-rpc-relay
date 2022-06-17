@@ -236,22 +236,18 @@ export default class ServicesClient {
         );
     };
 
-    async deployContract(contract, privateKey, gas = 100000) {
-        const fileCreateTx = new FileCreateTransaction()
+    async deployContract(contract, gas = 100_000) {
+        const fileCreateTx = await (new FileCreateTransaction()
             .setContents(contract.bytecode)
             .setKeys([this.client.operatorPublicKey])
-            .freezeWith(this.client);
-        const fileCreateSign = await fileCreateTx.sign(PrivateKey.fromString(privateKey));
-        const fileCreateSubmit = await fileCreateSign.execute(this.client);
-        const fileCreateRx = await fileCreateSubmit.getReceipt(this.client);
+            .execute(this.client));
+        const fileCreateRx = await fileCreateTx.getReceipt(this.client);
         const bytecodeFileId = fileCreateRx.fileId;
         const contractInstantiateTx = new ContractCreateTransaction()
             .setBytecodeFileId(bytecodeFileId)
             .setGas(gas);
         const contractInstantiateSubmit = await contractInstantiateTx.execute(this.client);
-        const contractInstantiateRx = await contractInstantiateSubmit.getReceipt(this.client);
-
-        return contractInstantiateRx;
+        return contractInstantiateSubmit.getReceipt(this.client);
     };
 
     _thisAccountId() {
