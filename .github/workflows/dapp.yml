@@ -9,7 +9,7 @@ on:
 
 jobs:
   setup-local-hedera:
-    name: Acceptance Tests
+    name: Dapp Tests
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -50,4 +50,7 @@ jobs:
         uses: mxschmitt/action-tmate@v3
 
       - name: Run the dapp tests
+        uses: cypress-io/github-action@v4
+        with:
+          browser: chrome
         run: npm test --prefix ./dapp-example/
