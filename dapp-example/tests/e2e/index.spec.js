@@ -14,7 +14,7 @@ describe('Test User Login', function () {
         cy.switchToCypressWindow();
     };
 
-    it('Connects with Metamask', function() {
+    it.only('Connects with Metamask', function() {
         resetMetamaskConnection();
 
         // check the UI

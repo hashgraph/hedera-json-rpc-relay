@@ -35,6 +35,7 @@
         "ethers": "^5.6.8",
         "shelljs": "^0.8.5",
         "ts-mocha": "^9.0.2",
+        "ts-node": "^10.8.1",
         "typescript": "^4.5.5"
     },
     "scripts": {
@@ -43,7 +44,8 @@
         "compile": "tsc -b tsconfig.json",
         "acceptancetest": "ts-mocha ./tests/acceptance.spec.ts",
         "start": "node dist/index.js",
-        "test": "nyc ts-mocha --recursive ./tests/server.spec.ts"
+        "test": "nyc ts-mocha --recursive ./tests/server.spec.ts",
+        "integration:prerequisite": "ts-node ./tests/prerequisite.ts"
     },
     "nyc": {
         "check-coverage": false,

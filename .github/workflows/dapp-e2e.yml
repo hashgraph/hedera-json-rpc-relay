@@ -1,0 +1,58 @@
+name: DApp Integration Tests
+
+on:
+  pull_request:
+    branches: [ main, release/** ]
+  push:
+    branches: [ main, release/** ]
+    tags: [ v* ]
+
+jobs:
+  synpress-run:
+    name: DApp Integration Tests
+    runs-on: ubuntu-latest
+    container: cypress/browsers:node12.18.3-chrome87-ff82
+    permissions:
+      contents: write
+    steps:
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Lerna Bootstrap
+        run: npm run setup
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Build Typescript
+        run: npx lerna run build
+
+      - name: Create .env file
+        run: cp ./dapp-example/local.env .env
+
+      - name: Run Local Node + RPC Server
+        run: npm run integration:prerequisite
+
+      - name: Install DApp packages
+        run: cd ./dapp-example && npm ci
+
+      - name: Run DApp test bootstrap
+        run: cd ./dapp-example && npm run test:bootstrap
+
+      # - name: 'UI Tests - Chrome'
+      #   uses: cypress-io/github-action@v4
+      #   with:
+      #     install: false
+      #     start: cd ./dapp-example && npm run start
+      #     wait-on: 'http://localhost:3000'
+      #     wait-on-timeout: 120
+      #     browser: chrome
+      #   run: cd ./dapp-example && npm run test
