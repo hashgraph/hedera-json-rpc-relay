@@ -216,6 +216,16 @@ describe('RPC Server Acceptance Tests', function() {
             Assertions.transaction(response, mirrorContractDetails);
         });
 
+        it('should execute "eth_getTransactionByBlockNumberAndIndex" for invalid index', async function() {
+            const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, 999999]);
+            expect(response).to.be.null;
+        });
+
+        it('should execute "eth_getTransactionByBlockNumberAndIndex" for non-exising block number', async function() {
+            const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [NON_EXISTING_BLOCK_NUMBER, mirrorContractDetails.transaction_index]);
+            expect(response).to.be.null;
+        });
+
         it('should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function() {
             const transaction = {
                 ...default155TransactionData,
