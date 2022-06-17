@@ -4,6 +4,18 @@ const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
 
+const randomUppercaseString = (length = 5) => {
+  let result = '';
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const charactersLength = characters.length;
+
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+
+  return result;
+};
+
 const client = HederaSDK.Client
   .forNetwork(JSON.parse(process.env.HEDERA_NETWORK))
   .setOperator(process.env.OPERATOR_ID_MAIN, process.env.OPERATOR_KEY_MAIN);
@@ -11,8 +23,7 @@ const client = HederaSDK.Client
 const createAccountFromCompressedPublicKey = async function(compressedPublicKey) {
   const transferTransaction = await (new HederaSDK.TransferTransaction()
     .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(1000))
-    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-1000))
-    .setNodeAccountIds([HederaSDK.AccountId.fromString('0.0.3')]))
+    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-1000)))
     .execute(client);
 
   const txTransaction = await (new HederaSDK.TransactionRecordQuery()
@@ -31,8 +42,8 @@ const createHTSToken = async function() {
   const expiration = new Date();
   expiration.setDate(expiration.getDate() + 30);
   const tokenCreate = await (await new HederaSDK.TokenCreateTransaction()
-    .setTokenName('HTS_Token')
-    .setTokenSymbol('HTST')
+    .setTokenName(randomUppercaseString(8))
+    .setTokenSymbol(randomUppercaseString(4))
     .setExpirationTime(expiration)
     .setDecimals(8)
     .setInitialSupply(200000000000)
@@ -84,8 +95,6 @@ const transferHTSToken = async function(accountId, tokenId) {
 };
 
 (async () => {
-  console.log(process.env.PRIVATE_KEY);
-  console.log((new Date()).getTime())
   const mainWallet = new ethers.Wallet(process.env.PRIVATE_KEY);
   const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
   const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
