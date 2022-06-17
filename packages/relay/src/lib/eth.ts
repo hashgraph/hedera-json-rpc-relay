@@ -392,12 +392,12 @@ export class EthImpl implements Eth {
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       // handle INVALID_CONTRACT_ID
-      if (e?.status?._code === Status.InvalidContractId._code) {
-        this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0', address, blockNumber);
+      if (e?.status?._code === Status.InvalidContractId._code || e?.message?.includes(Status.InvalidContractId.toString())) {
+        this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0, err code: %s', address, blockNumber, e?.status?._code);
         return '0x0';
       }
 
-      this.logger.error(e, 'Error raised during getCode for address %s', address);
+      this.logger.error(e, 'Error raised during getCode for address %s, err code: %s', address, e?.status?._code);
       throw e;
     }
   }
