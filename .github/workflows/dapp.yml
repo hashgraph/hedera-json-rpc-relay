@@ -37,8 +37,8 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
-      - name: Run the relay
-        run: npm run start
+#      - name: Run the relay
+#        run: npm run start
 
       - name: Run the dapp
         run: npm start --prefix ./dapp-example/
