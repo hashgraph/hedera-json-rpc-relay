@@ -41,7 +41,7 @@ jobs:
         run: npm run start &
 
       - name: Install dependencies
-        run: npm ci --prefix ./dapp-example/
+        run: npm install --prefix ./dapp-example/
 
       - name: Run the dapp
         run: npm start --prefix ./dapp-example/ &
