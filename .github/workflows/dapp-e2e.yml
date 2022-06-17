@@ -41,12 +41,19 @@ jobs:
       - name: Install DApp packages
         run: cd ./dapp-example && npm ci
 
-      - name: 'UI Tests - Chrome'
-        uses: cypress-io/github-action@v4
-        with:
-          install: false
-          start: cd ./dapp-example && npm run start, npm run integration:prerequisite
-          wait-on: 'http://localhost:3000', 'http://localhost:7546'
-          wait-on-timeout: 120
-          browser: chrome
-        run: cd ./dapp-example && npm run test
+      -name: Run Local Node + RPC Server
+        run: |
+          npm run integration:prerequisite &
+
+      -name: Run DApp
+        run: |
+          cd ./dapp-example && npm run start &
+
+      # - name: 'UI Tests - Chrome'
+      #   uses: cypress-io/github-action@v4
+      #   with:
+      #     start: cd ./dapp-example && npm run start
+      #     wait-on: 'http://localhost:3000'
+      #     wait-on-timeout: 120
+      #     browser: chrome
+      #   run: cd ./dapp-example && npm run test
