@@ -46,8 +46,11 @@ jobs:
       - name: Run DApp
         run: cd ./dapp-example && npm run start &
 
-      - name: "UI Tests - Chrome"
-        run: cd ./dapp-example && npm run test
+      - name: Bootstrap DApp accounts
+        run: cd ./dapp-example && npm run test:bootstrap
+
+      # - name: "UI Tests - Chrome"
+      #   run: cd ./dapp-example && npm run test
           # wait-on: "http://localhost:3000"
           # wait-on-timeout: 120
           # browser: chrome
