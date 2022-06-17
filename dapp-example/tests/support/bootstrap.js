@@ -82,6 +82,7 @@ const transferHTSToken = async function(accountId, tokenId) {
 };
 
 (async () => {
+  console.log(process.env.PRIVATE_KEY)
   const mainWallet = new ethers.Wallet(process.env.PRIVATE_KEY);
   const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
   const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;

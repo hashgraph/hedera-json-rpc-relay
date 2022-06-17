@@ -16,7 +16,6 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
     shell.exec('npx hedera-local restart');
     console.log('Hedera Hashgraph local node env started');
 
-    process.env['SERVER_PORT'] = process.env.SERVER_PORT || '7546';
     console.log(`Start relay on port ${process.env.SERVER_PORT}`);
-    const testServer = app.listen({ port: process.env.SERVER_PORT });
+    shell.exec('npm run start');
 })();
