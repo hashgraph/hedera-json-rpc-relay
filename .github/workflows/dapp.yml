@@ -40,9 +40,6 @@ jobs:
       - name: Run Local Node + RPC Server
         run: npm run integration:prerequisite &
 
-#      - name: Run the relay
-#        run: npm run start &
-
       - name: Install dependencies
         run: npm install --prefix ./dapp-example/
 

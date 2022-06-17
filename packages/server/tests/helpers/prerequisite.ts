@@ -1,4 +1,4 @@
-import app from '../src/server';
+import app from '../../src/server';
 import shell from 'shelljs';
 import dotenv from 'dotenv';
 import path from 'path';
