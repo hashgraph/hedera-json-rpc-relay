@@ -698,7 +698,12 @@ export class EthImpl implements Eth {
         receiptResponse.created_contract_ids.length > 0
           ? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress())
           : undefined;
-      const answer = {
+
+
+      // support stricter go-eth client which requires the transaction hash property on logs
+      const logs = receiptResponse.logs.map(log => ({ ...log, transactionHash: receiptResponse.hash}));
+
+      const receipt = {
         blockHash: receiptResponse.block_hash.substring(0, 66),
         blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
         from: receiptResponse.from,
@@ -706,7 +711,7 @@ export class EthImpl implements Eth {
         cumulativeGasUsed: EthImpl.numberTo0x(receiptResponse.block_gas_used),
         gasUsed: EthImpl.numberTo0x(receiptResponse.gas_used),
         contractAddress: createdContract,
-        logs: receiptResponse.logs,
+        logs: logs,
         logsBloom: receiptResponse.bloom,
         transactionHash: receiptResponse.hash,
         transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
@@ -714,8 +719,10 @@ export class EthImpl implements Eth {
         root: receiptResponse.root,
         status: receiptResponse.status,
       };
-      this.logger.trace(`receipt for ${hash} found in block ${answer.blockNumber}`);
-      return answer;
+
+
+      this.logger.trace(`receipt for ${hash} found in block ${receipt.blockNumber}`);
+      return receipt;
     }
   }
 
