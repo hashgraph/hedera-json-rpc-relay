@@ -40,6 +40,9 @@ jobs:
 #      - name: Run the relay
 #        run: npm run start
 
+      - name: Install dependencies
+        run: npm install --prefix ./dapp-example/
+
       - name: Run the dapp
         run: npm start --prefix ./dapp-example/
 
