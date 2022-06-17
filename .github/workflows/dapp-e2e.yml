@@ -2,10 +2,10 @@ name: DApp Integration Tests
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [main, release/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+    branches: [main, release/**]
+    tags: [v*]
 
 jobs:
   synpress-run:
@@ -46,11 +46,10 @@ jobs:
       - name: Run DApp
         run: cd ./dapp-example && npm run start &
 
-      # - name: 'UI Tests - Chrome'
-      #   uses: cypress-io/github-action@v4
-      #   with:
-      #     start: cd ./dapp-example && npm run start
-      #     wait-on: 'http://localhost:3000'
-      #     wait-on-timeout: 120
-      #     browser: chrome
-      #   run: cd ./dapp-example && npm run test
+      - name: "UI Tests - Chrome"
+        uses: cypress-io/github-action@v4
+        with:
+          run: cd ./dapp-example && npm run test
+          # wait-on: "http://localhost:3000"
+          # wait-on-timeout: 120
+          browser: chrome
