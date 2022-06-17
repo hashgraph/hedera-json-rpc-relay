@@ -19,7 +19,7 @@ const createAccountFromCompressedPublicKey = async function(compressedPublicKey)
     .setTransactionId(transferTransaction.transactionId))
     .execute(client);
 
-  const transfer = txTransaction.transfers.find(transfer => !transfer.amount.isNegative() && transfer.accountId.num.toNumber() > 999);
+  const transfer = txTransaction.transfers.find(trans => !trans.amount.isNegative() && trans.accountId.num.toNumber() > 999);
   const accountId = transfer.accountId.toString();
 
   console.log(`Account has been successfully created: ${accountId}`);
@@ -84,6 +84,8 @@ const transferHTSToken = async function(accountId, tokenId) {
 };
 
 (async () => {
+  console.log(process.env.PRIVATE_KEY);
+  console.log((new Date()).getTime())
   const mainWallet = new ethers.Wallet(process.env.PRIVATE_KEY);
   const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
   const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
@@ -103,4 +105,6 @@ const transferHTSToken = async function(accountId, tokenId) {
 
   await transferHTSToken(mainAccountId, tokenId);
   await transferHTSToken(receiverAccountId, tokenId);
+
+  process.exit(0);
 })();
