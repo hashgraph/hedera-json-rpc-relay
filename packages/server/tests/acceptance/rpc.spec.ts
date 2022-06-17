@@ -124,9 +124,19 @@ describe('RPC Server Acceptance Tests', function() {
     describe('Block related RPC calls', () => {
 
         let mirrorBlock;
+        let mirrorContractResults;
+        let mirrorTransactions : any[] = [];
 
         before(async () => {
             mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`)).blocks[0];
+            const timestampQuery = `timestamp=gte:${mirrorBlock.timestamp.from}&timestamp=lte:${mirrorBlock.timestamp.to}`;
+            mirrorContractResults = (await mirrorNode.get(`/contracts/results?${timestampQuery}`)).transactions;
+
+            for (let i = 0; i < mirrorContractResults.length; i++) {
+                const res = mirrorContractResults[i];
+                mirrorTransactions.push( (await mirrorNode.get(`/contracts/${res.contract_id}/results/${res.timestamp}`)) );
+            }
+
         });
 
         it('should execute "eth_getBlockByHash"', async function() {

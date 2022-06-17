@@ -39,7 +39,14 @@ export default class Assertions {
         expect(true).to.eq(false);
     };
 
-    public static block(relayResponse, mirrorNodeResponse) {
+    /**
+     *
+     * @param relayResponse
+     * @param mirrorNodeResponse
+     * @param mirrorTransactions
+     * @param hydratedTransactions - aka showDetails flag
+     */
+    public static block(relayResponse, mirrorNodeResponse, mirrorTransactions, hydratedTransactions = false) {
         expect(relayResponse.hash).to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
         expect(relayResponse.number).to.be.equal(ethers.utils.hexValue(mirrorNodeResponse.number));
         // expect(relayResponse.transactions.length).to.equal(mirrorNodeResponse.count); // FIXME this assertion fails
