@@ -24,6 +24,8 @@ import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
+import sinon from 'sinon';
+import cache from 'js-cache';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
@@ -34,6 +36,7 @@ import { expectUnsupportedMethod } from '../helpers';
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
+import { SDKClient } from '../../src/lib/clients';
 const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
@@ -65,6 +68,7 @@ const verifyBlockConstants = (block: Block) => {
 
 let mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
+let sdkClientStub;
 
 describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
@@ -85,8 +89,15 @@ describe('Eth calls using MirrorNode', async function () {
     mock = new MockAdapter(instance, { onNoMatch: "throwException" });
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
+    sdkClientStub = sinon.createStubInstance(SDKClient);
     // @ts-ignore
-    ethImpl = new EthImpl(null, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
+    ethImpl = new EthImpl(sdkClientStub, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
+  });
+
+  this.beforeEach(() => {
+    // reset cache and mock
+    cache.clear();
+    mock.reset();
   });
 
   const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
@@ -945,6 +956,49 @@ describe('Eth calls using MirrorNode', async function () {
     expect(firstFeeHistory).to.equal(secondFeeHistory);
   });
 
+  it('eth_feeHistory on mirror 404', async function () {
+    mock.onGet(`network/fees`).reply(404, {
+      _status: {
+        messages: [{ message: 'Not found' }]
+      }
+    });
+
+    const fauxGasTinyBars = 25_000;
+    const fauxGasWeiBarHex = '0xe35fa931a000';
+    sdkClientStub.getTinyBarGasFee.returns(fauxGasTinyBars);
+
+    const feeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
+    expect(feeHistory).to.exist;
+    if (feeHistory == null) return;
+    expect(feeHistory['baseFeePerGasArray'][0]).to.equal(fauxGasWeiBarHex);
+    expect(feeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
+    expect(feeHistory['oldestBlockNumber']).to.equal('0x0');
+    const rewards = feeHistory['reward'][0];
+    expect(rewards[0]).to.equal('0x0');
+    expect(rewards[1]).to.equal('0x0');
+  });
+
+  it('eth_feeHistory on mirror 500', async function () {
+    mock.onGet(`network/fees`).reply(500, {
+      _status: {
+        messages: [{ message: 'Internal error' }]
+      }
+    });
+
+    const fauxGasTinyBars = 35_000;
+    const fauxGasWeiBarHex = '0x13e52b9abe000';
+    sdkClientStub.getTinyBarGasFee.returns(fauxGasTinyBars);
+
+    const feeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
+    if (feeHistory == null) return;
+    expect(feeHistory['baseFeePerGasArray'][0]).to.equal(fauxGasWeiBarHex);
+    expect(feeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
+    expect(feeHistory['oldestBlockNumber']).to.equal('0x0');
+    const rewards = feeHistory['reward'][0];
+    expect(rewards[0]).to.equal('0x0');
+    expect(rewards[1]).to.equal('0x0');
+  });
+
   it('eth_estimateGas contract call returns default', async function () {
     const gas = await ethImpl.estimateGas({ data: "0x01" }, null);
     expect(gas).to.equal(EthImpl.defaultGas);
@@ -999,6 +1053,25 @@ describe('Eth calls using MirrorNode', async function () {
     } catch (error: any) {
       expect(error.message).to.equal('Error encountered estimating the gas price');
     }
+  });
+
+  it('eth_gasPrice with mirror node return network fees found', async function () {
+    mock.onGet(`network/fees`).reply(404, {
+      "_status": {
+        "messages": [
+          {
+            "message": "Not found"
+          }
+        ]
+      }
+    });
+
+    const fauxGasTinyBars = 35_000;
+    const fauxGasWeiBarHex = '0x13e52b9abe000';
+    sdkClientStub.getTinyBarGasFee.returns(fauxGasTinyBars);
+
+    const gas = await ethImpl.gasPrice();
+    expect(gas).to.equal(fauxGasWeiBarHex);
   });
 
   it('eth_gasPrice with no network fees records found', async function () {
