@@ -151,12 +151,12 @@ export class EthImpl implements Eth {
 
     try {
       networkFees = await this.mirrorNodeClient.getNetworkFees();
+      this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
     } catch (e: any) {
-      this.logger.debug(`Failed to retrieve Network fees from Mirror Node`);
+      this.logger.warn(e, `Mirror Node threw an error retrieving fees. Fallback to network`);
     }
 
     if (_.isNil(networkFees)) {
-      this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
       networkFees = {
         fees: [
           {
