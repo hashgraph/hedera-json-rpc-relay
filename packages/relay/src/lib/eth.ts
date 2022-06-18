@@ -128,6 +128,7 @@ export class EthImpl implements Eth {
    * Gets the fee history.
    */
   async feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number> | null) {
+    console.log(`feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
     this.logger.trace(`feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
     try {
       let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
@@ -147,9 +148,18 @@ export class EthImpl implements Eth {
   }
 
   private async getFeeWeibars() {
-    let networkFees = await this.mirrorNodeClient.getNetworkFees();
+    let networkFees;
+
+    try {
+      networkFees = await this.mirrorNodeClient.getNetworkFees();
+      console.log(`*** called mirrorNodeClient.getNetworkFees(): ${JSON.stringify(networkFees)}`);
+    } catch (e: any) {
+      console.log(`*** Failed to retrieve Network fees from Mirror Node`);
+      this.logger.debug(`Failed to retrieve Network fees from Mirror Node`);
+    }
 
     if (_.isNil(networkFees)) {
+      console.log(`*** Mirror Node returned no fees. Fallback to network`);
       this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
       networkFees = {
         fees: [
