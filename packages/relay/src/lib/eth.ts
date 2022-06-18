@@ -151,7 +151,9 @@ export class EthImpl implements Eth {
 
     try {
       networkFees = await this.mirrorNodeClient.getNetworkFees();
-      this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
+      if (_.isNil(networkFees)) {
+        this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
+      }
     } catch (e: any) {
       this.logger.warn(e, `Mirror Node threw an error retrieving fees. Fallback to network`);
     }
@@ -637,7 +639,7 @@ export class EthImpl implements Eth {
       if (e.status && e.status._code) {
         resolvedError = new Error(e.message);
       }
-      
+
       this.logger.error(resolvedError, 'Failed to successfully submit contractCallQuery');
       return predefined.INTERNAL_ERROR;
     }
@@ -707,7 +709,7 @@ export class EthImpl implements Eth {
 
 
       // support stricter go-eth client which requires the transaction hash property on logs
-      const logs = receiptResponse.logs.map(log => ({ ...log, transactionHash: receiptResponse.hash}));
+      const logs = receiptResponse.logs.map(log => ({ ...log, transactionHash: receiptResponse.hash }));
 
       const receipt = {
         blockHash: receiptResponse.block_hash.substring(0, 66),
