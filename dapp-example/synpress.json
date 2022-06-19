@@ -5,7 +5,7 @@
     "integrationFolder": "tests/e2e",
     "screenshotsFolder": "screenshots",
     "videosFolder": "videos",
-    "video": true,
+    "video": false,
     "chromeWebSecurity": true,
     "viewportWidth": 1366,
     "viewportHeight": 850,

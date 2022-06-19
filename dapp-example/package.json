@@ -16,7 +16,7 @@
   "devDependencies": {
     "@synthetixio/synpress": "^1.2.0",
     "@testing-library/cypress": "^8.0.3",
-    "cypress": "^9.5.3",
+    "cypress": "^10.1.0",
     "cypress-wait-until": "^1.7.2",
     "env-cmd": "^10.1.0"
   },
