@@ -33,7 +33,9 @@ jobs:
         run: npm ci
 
       - name: Create .env file
-        run: cp ./packages/server/tests/localAcceptance.env .env
+        run: |
+          cp ./packages/server/tests/localAcceptance.env ./dapp-example/.env
+          cp ./packages/server/tests/localAcceptance.env .env
 
       - name: Lerna Bootstrap
         run: npm run setup
