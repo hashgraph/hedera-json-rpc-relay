@@ -2,10 +2,10 @@ name: Dapp Tests
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [main, release/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+    branches: [main, release/**]
+    tags: [v*]
 
 jobs:
   setup-local-hedera:
@@ -46,16 +46,12 @@ jobs:
 
       - name: Build the local node
         run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
-        env:
-          NETWORK_NODE_IMAGE_TAG: '0.26.2'
-          HAVEGED_IMAGE_TAG: '0.26.2'
-          MIRROR_IMAGE_TAG: '0.28.0'
 
       - name: Run Local Node + RPC Server
         run: npm run integration:prerequisite &
 
-      - name: Install dependencies
-        run: npm install --prefix ./dapp-example/
+      - name: Install dapp dependencies
+        run: cd ./dapp-example/ && npm ci
 
       - name: Run the dapp
         run: npm start --prefix ./dapp-example/ &
