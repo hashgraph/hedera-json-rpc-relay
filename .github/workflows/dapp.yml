@@ -48,7 +48,7 @@ jobs:
         uses: mxschmitt/action-tmate@v3
 
       - name: Build the local node
-        run: docker-compose build
+        run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
 
       - name: Run Local Node + RPC Server
         run: npm run integration:prerequisite &
