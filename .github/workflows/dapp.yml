@@ -47,8 +47,15 @@ jobs:
       - name: Build the local node
         run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
 
-      - name: Run Local Node + RPC Server
-        run: npm run integration:prerequisite &
+      - name: Run Local Node
+        run: npx hedera-local start
+        env:
+          "NETWORK_NODE_IMAGE_TAG": "0.26.2"
+          "HAVEGED_IMAGE_TAG": "0.26.2"
+          "MIRROR_IMAGE_TAG": "0.58.0"
+
+      - name: RPC Server
+        run: npm run start &
 
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
