@@ -44,6 +44,9 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Build the local node
         run: docker-compose build
 
