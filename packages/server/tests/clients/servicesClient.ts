@@ -35,7 +35,8 @@ import {
     TokenCreateTransaction,
     Transaction,
     TransactionResponse,
-    TransferTransaction
+    TransferTransaction,
+    ContractCreateFlow
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
@@ -236,18 +237,13 @@ export default class ServicesClient {
         );
     };
 
-    async deployContract(contract, gas = 100_000) {
-        const fileCreateTx = await (new FileCreateTransaction()
-            .setContents(contract.bytecode)
-            .setKeys([this.client.operatorPublicKey])
+    async deployContract(contract, gas = 100_000, constructorParameters:Uint8Array = new Uint8Array()) {
+        const contractCreate = await (new ContractCreateFlow()
+            .setGas(gas)
+            .setBytecode(contract.bytecode)
+            .setConstructorParameters(constructorParameters)
             .execute(this.client));
-        const fileCreateRx = await fileCreateTx.getReceipt(this.client);
-        const bytecodeFileId = fileCreateRx.fileId;
-        const contractInstantiateTx = new ContractCreateTransaction()
-            .setBytecodeFileId(bytecodeFileId)
-            .setGas(gas);
-        const contractInstantiateSubmit = await contractInstantiateTx.execute(this.client);
-        return contractInstantiateSubmit.getReceipt(this.client);
+        return contractCreate.getReceipt(this.client);
     };
 
     _thisAccountId() {
