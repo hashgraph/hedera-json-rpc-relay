@@ -6,6 +6,8 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const USE_LOCAL_NODE = process.env.LOCAL_NODE || 'true';
+const LOCAL_RELAY_URL = 'http://localhost:7546';
+const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 
 (function () {
   if (USE_LOCAL_NODE) {
@@ -18,7 +20,9 @@ const USE_LOCAL_NODE = process.env.LOCAL_NODE || 'true';
     console.log('Start local node');
     shell.exec('npx hedera-local restart');
     console.log('Hedera Hashgraph local node env started');
+  }
 
+  if (RELAY_URL === LOCAL_RELAY_URL) {
     console.log(`Start relay on port ${process.env.SERVER_PORT}`);
     shell.exec('npm run start');
   }
