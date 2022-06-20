@@ -96,26 +96,25 @@ const transferHTSToken = async function(accountId, tokenId) {
 };
 
 (async () => {
-  console.log(randomUppercaseString());
-  // const mainWallet = new ethers.Wallet(process.env.PRIVATE_KEY);
-  // const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
-  // const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
-  //
-  // const receiverWallet = new ethers.Wallet(process.env.RECEIVER_PRIVATE_KEY);
-  // const receiverCompressedKey = receiverWallet._signingKey().compressedPublicKey.replace('0x', '');
-  // const receiverAccountId = (await createAccountFromCompressedPublicKey(receiverCompressedKey)).accountId;
-  //
-  // const { tokenId, tokenAddress } = await createHTSToken();
-  // fs.writeFileSync(path.resolve(__dirname + '../../../') + '/.htsTokenAddress.json', '{"HTS_ADDRESS":"' + tokenAddress + '"}');
-  //
-  // await associateHTSToken(mainAccountId, tokenId, process.env.PRIVATE_KEY);
-  // await approveHTSToken(mainAccountId, tokenId);
-  //
-  // await associateHTSToken(receiverAccountId, tokenId, process.env.RECEIVER_PRIVATE_KEY);
-  // await approveHTSToken(receiverAccountId, tokenId);
-  //
-  // await transferHTSToken(mainAccountId, tokenId);
-  // await transferHTSToken(receiverAccountId, tokenId);
-  //
-  // process.exit(0);
+  const mainWallet = new ethers.Wallet(process.env.PRIVATE_KEY);
+  const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
+  const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
+
+  const receiverWallet = new ethers.Wallet(process.env.RECEIVER_PRIVATE_KEY);
+  const receiverCompressedKey = receiverWallet._signingKey().compressedPublicKey.replace('0x', '');
+  const receiverAccountId = (await createAccountFromCompressedPublicKey(receiverCompressedKey)).accountId;
+
+  const { tokenId, tokenAddress } = await createHTSToken();
+  fs.writeFileSync(path.resolve(__dirname + '../../../') + '/.htsTokenAddress.json', '{"HTS_ADDRESS":"' + tokenAddress + '"}');
+
+  await associateHTSToken(mainAccountId, tokenId, process.env.PRIVATE_KEY);
+  await approveHTSToken(mainAccountId, tokenId);
+
+  await associateHTSToken(receiverAccountId, tokenId, process.env.RECEIVER_PRIVATE_KEY);
+  await approveHTSToken(receiverAccountId, tokenId);
+
+  await transferHTSToken(mainAccountId, tokenId);
+  await transferHTSToken(receiverAccountId, tokenId);
+
+  process.exit(0);
 })();
