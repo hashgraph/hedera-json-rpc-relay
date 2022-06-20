@@ -21,6 +21,6 @@
     "pageLoadTimeout": 40000,
     "requestTimeout": 40000,
     "responseTimeout": 50000,
-    "taskTimeout": 50000,
+    "taskTimeout": 60000,
     "supportFile": "tests/support/index.js"
   }
