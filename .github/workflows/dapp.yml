@@ -44,12 +44,8 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
-      - name: Run Local Node
-        run: npx hedera-local restart
-        env:
-          NETWORK_NODE_IMAGE_TAG: '0.26.2'
-          HAVEGED_IMAGE_TAG: '0.26.2'
-          MIRROR_IMAGE_TAG: '0.28.0'
+      - name: Build the local node
+        run: docker-compose build
 
       - name: Run Local Node + RPC Server
         run: npm run integration:prerequisite &
