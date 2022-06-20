@@ -2,6 +2,8 @@ import 'cypress-wait-until';
 import * as htsData from '../../.htsTokenAddress.json';
 
 describe('Test Core Hedera User Scenarios', function() {
+  this.timeout(180000);
+
   const resetMetamaskConnection = function() {
     cy.disconnectMetamaskWalletFromAllDapps();
     cy.resetMetamaskAccount();
