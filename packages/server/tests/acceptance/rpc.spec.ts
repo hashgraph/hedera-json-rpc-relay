@@ -140,18 +140,28 @@ describe('RPC Server Acceptance Tests', function() {
         });
 
         it('should execute "eth_getBlockByHash", hydrated transactions not specified', async function() {
-            const relayBlock = await relay.call('eth_getBlockByHash', [mirrorBlock.hash]);
-            Assertions.block(relayBlock, mirrorBlock, mirrorTransactions, false);
+            const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
         });
 
         it('should execute "eth_getBlockByHash", hydrated transactions = false', async function() {
-            const relayBlock = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, false]);
-            Assertions.block(relayBlock, mirrorBlock, mirrorTransactions, false);
+            const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, false]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
         });
 
         it('should execute "eth_getBlockByHash", hydrated transactions = true', async function() {
-            const relayBlock = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, true]);
-            Assertions.block(relayBlock, mirrorBlock, mirrorTransactions, true);
+            const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, true]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
+        });
+
+        it('should execute "eth_getBlockByHash" for non-existing hash, hydrated transactions = true', async function() {
+            const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, true]);
+            expect(blockResult).to.be.null;
+        });
+
+        it('should execute "eth_getBlockByHash" for non-existing hash, hydrated transactions = false', async function() {
+            const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, false]);
+            expect(blockResult).to.be.null;
         });
 
         it('should execute "eth_getBlockByNumber", hydrated transactions not specified', async function() {
@@ -167,6 +177,16 @@ describe('RPC Server Acceptance Tests', function() {
         it('should execute "eth_getBlockByNumber", hydrated transactions = true', async function() {
             const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, true]);
             Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
+        });
+
+        it('should execute "eth_getBlockByNumber", hydrated transactions = true', async function() {
+            const blockResult = await relay.call('eth_getBlockByNumber', [NON_EXISTING_BLOCK_NUMBER, true]);
+            expect(blockResult).to.be.null;
+        });
+
+        it('should execute "eth_getBlockByNumber", hydrated transactions = false', async function() {
+            const blockResult = await relay.call('eth_getBlockByNumber', [NON_EXISTING_BLOCK_NUMBER, false]);
+            expect(blockResult).to.be.null;
         });
 
         it('should execute "eth_getBlockTransactionCountByHash"', async function() {
