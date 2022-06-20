@@ -69,14 +69,14 @@ describe('Test User Login', function() {
     cy.waitUntil(() => cy.get('#htsTokenMsg').should('have.text', ' Done '));
   });
 
-  // it('Transfer HBARs', function() {
-  //   resetMetamaskConnection();
-  //
-  //   cy.get('#sendHbarsToField').type('0x54C51b7637BF6fE9709e1e0EBc8b2Ca6a24b0f0A');
-  //   cy.get('#sendHbarsAmountField').type('10000000000000000');
-  //   cy.get('#sendHbarsBtn').should('not.be.disabled').click();
-  //   cy.confirmMetamaskTransaction();
-  //
-  //   cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
-  // });
+  it('Transfer HBARs', function() {
+    resetMetamaskConnection();
+
+    cy.get('#sendHbarsToField').type('0x54C51b7637BF6fE9709e1e0EBc8b2Ca6a24b0f0A');
+    cy.get('#sendHbarsAmountField').type('10000000000000000');
+    cy.get('#sendHbarsBtn').should('not.be.disabled').click();
+    cy.confirmMetamaskTransaction();
+
+    cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
+  });
 });
