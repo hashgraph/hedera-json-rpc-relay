@@ -44,8 +44,8 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
 
       - name: Build the local node
         run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
