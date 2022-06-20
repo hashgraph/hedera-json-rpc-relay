@@ -2,8 +2,6 @@ import 'cypress-wait-until';
 import * as htsData from '../../.htsTokenAddress.json';
 
 describe('Test User Login', function() {
-  this.timeout(900000);
-
   const resetMetamaskConnection = function() {
     cy.disconnectMetamaskWalletFromAllDapps();
     cy.resetMetamaskAccount();
@@ -23,7 +21,7 @@ describe('Test User Login', function() {
     cy.get('#btnDeployContract').should('not.be.disabled');
     cy.get('#btnReadGreeting').should('not.be.disabled');
     cy.get('#btnUpdateGreeting').should('not.be.disabled');
-  });
+  }).timeout(180000);
 
   it('Show alias', function() {
     resetMetamaskConnection();
@@ -31,7 +29,7 @@ describe('Test User Login', function() {
     cy.get('#showAliasBtn').should('not.be.disabled').click();
     cy.confirmMetamaskSignatureRequest();
     cy.waitUntil(() => cy.get('#aliasField').invoke('text').should('have.length', 66));
-  });
+  }).timeout(180000);
 
   it('Deploy contract', function() {
     resetMetamaskConnection();
@@ -54,7 +52,7 @@ describe('Test User Login', function() {
     // test the updated msg
     cy.get('#btnReadGreeting').should('not.be.disabled').click();
     cy.waitUntil(() => cy.get('#contractViewMsg').should('have.text', ' Result: updated_text '));
-  });
+  }).timeout(180000);
 
   it('Transfer HTS token', function() {
     resetMetamaskConnection();
@@ -67,7 +65,7 @@ describe('Test User Login', function() {
     cy.confirmMetamaskTransaction();
 
     cy.waitUntil(() => cy.get('#htsTokenMsg').should('have.text', ' Done '));
-  });
+  }).timeout(180000);
 
   it('Transfer HBARs', function() {
     resetMetamaskConnection();
@@ -78,5 +76,5 @@ describe('Test User Login', function() {
     cy.confirmMetamaskTransaction();
 
     cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
-  });
+  }).timeout(180000);
 });
