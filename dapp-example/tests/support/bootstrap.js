@@ -3,6 +3,7 @@ const ethers = require('ethers');
 const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
@@ -10,7 +11,7 @@ const randomUppercaseString = (length = 5) => {
   const charactersLength = characters.length;
 
   for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    result += characters.charAt(crypto.randomInt(charactersLength));
   }
 
   return result;
@@ -95,25 +96,26 @@ const transferHTSToken = async function(accountId, tokenId) {
 };
 
 (async () => {
-  const mainWallet = new ethers.Wallet(process.env.PRIVATE_KEY);
-  const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
-  const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
-
-  const receiverWallet = new ethers.Wallet(process.env.RECEIVER_PRIVATE_KEY);
-  const receiverCompressedKey = receiverWallet._signingKey().compressedPublicKey.replace('0x', '');
-  const receiverAccountId = (await createAccountFromCompressedPublicKey(receiverCompressedKey)).accountId;
-
-  const { tokenId, tokenAddress } = await createHTSToken();
-  fs.writeFileSync(path.resolve(__dirname + '../../../') + '/.htsTokenAddress.json', '{"HTS_ADDRESS":"' + tokenAddress + '"}');
-
-  await associateHTSToken(mainAccountId, tokenId, process.env.PRIVATE_KEY);
-  await approveHTSToken(mainAccountId, tokenId);
-
-  await associateHTSToken(receiverAccountId, tokenId, process.env.RECEIVER_PRIVATE_KEY);
-  await approveHTSToken(receiverAccountId, tokenId);
-
-  await transferHTSToken(mainAccountId, tokenId);
-  await transferHTSToken(receiverAccountId, tokenId);
-
-  process.exit(0);
+  console.log(randomUppercaseString());
+  // const mainWallet = new ethers.Wallet(process.env.PRIVATE_KEY);
+  // const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
+  // const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
+  //
+  // const receiverWallet = new ethers.Wallet(process.env.RECEIVER_PRIVATE_KEY);
+  // const receiverCompressedKey = receiverWallet._signingKey().compressedPublicKey.replace('0x', '');
+  // const receiverAccountId = (await createAccountFromCompressedPublicKey(receiverCompressedKey)).accountId;
+  //
+  // const { tokenId, tokenAddress } = await createHTSToken();
+  // fs.writeFileSync(path.resolve(__dirname + '../../../') + '/.htsTokenAddress.json', '{"HTS_ADDRESS":"' + tokenAddress + '"}');
+  //
+  // await associateHTSToken(mainAccountId, tokenId, process.env.PRIVATE_KEY);
+  // await approveHTSToken(mainAccountId, tokenId);
+  //
+  // await associateHTSToken(receiverAccountId, tokenId, process.env.RECEIVER_PRIVATE_KEY);
+  // await approveHTSToken(receiverAccountId, tokenId);
+  //
+  // await transferHTSToken(mainAccountId, tokenId);
+  // await transferHTSToken(receiverAccountId, tokenId);
+  //
+  // process.exit(0);
 })();
