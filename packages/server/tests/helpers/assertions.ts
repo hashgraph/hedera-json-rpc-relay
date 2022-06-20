@@ -22,6 +22,16 @@ import { ethers } from 'ethers';
 import { Utils } from './utils';
 
 export default class Assertions {
+    static emptyHex = '0x';
+    static zeroHex = '0x0';
+    static zeroHex8Byte = '0x0000000000000000';
+    static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
+    static zeroAddressHex = '0x0000000000000000000000000000000000000000';
+    static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    static defaultGas = Utils.numberTo0x(400_000);
+    static gasTxBaseCost = Utils.numberTo0x(21_000);
+    static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
+
 
     static assertId = (id) => {
         const [shard, realm, num] = id.split('.');
@@ -47,9 +57,62 @@ export default class Assertions {
      * @param hydratedTransactions - aka showDetails flag
      */
     public static block(relayResponse, mirrorNodeResponse, mirrorTransactions, hydratedTransactions = false) {
+        // Assert static values
+        expect(relayResponse.baseFeePerGas).to.be.equal(Assertions.zeroHex);
+        expect(relayResponse.difficulty).to.be.equal(Assertions.zeroHex);
+        expect(relayResponse.extraData).to.be.equal(Assertions.emptyHex);
+        expect(relayResponse.miner).to.be.equal(Assertions.zeroAddressHex);
+        expect(relayResponse.mixHash).to.be.equal(Assertions.emptyArrayHex);
+        expect(relayResponse.nonce).to.be.equal(Assertions.zeroHex8Byte);
+        expect(relayResponse.receiptsRoot).to.be.equal(Assertions.emptyArrayHex);
+        expect(relayResponse.sha3Uncles).to.be.equal(Assertions.emptyArrayHex);
+        expect(relayResponse.stateRoot).to.be.equal(Assertions.emptyArrayHex);
+        expect(relayResponse.totalDifficulty).to.be.equal(Assertions.zeroHex);
+        expect(relayResponse.uncles).to.be.exist;
+        expect(relayResponse.uncles.length).to.eq(0);
+        expect(relayResponse.logsBloom).to.eq(Assertions.emptyBloom);
+
+        // Assert dynamic values
         expect(relayResponse.hash).to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
         expect(relayResponse.number).to.be.equal(ethers.utils.hexValue(mirrorNodeResponse.number));
-        // expect(relayResponse.transactions.length).to.equal(mirrorNodeResponse.count); // FIXME this assertion fails
+        expect(relayResponse.transactions.length).to.equal(mirrorTransactions.length);
+        expect(relayResponse.parentHash).to.equal(mirrorNodeResponse.previous_hash.slice(0, 66));
+        expect(relayResponse.size).to.equal(Utils.numberTo0x(mirrorNodeResponse.size | 0));
+
+        let maxGasLimit = 0;
+        let gasUsed = 0;
+        let timestamp = 0;
+
+        for (const result of mirrorTransactions) {
+            maxGasLimit = result.gas_limit > maxGasLimit ? result.gas_limit : maxGasLimit;
+            gasUsed += result.gas_used;
+            if (timestamp === 0) {
+                timestamp = result.timestamp.substring(0, result.timestamp.indexOf('.'));
+            }
+        }
+
+        expect(relayResponse.gasLimit).to.equal(Utils.numberTo0x(maxGasLimit));
+        expect(relayResponse.gasUsed).to.equal(Utils.numberTo0x(gasUsed));
+        expect(relayResponse.timestamp).to.equal(Utils.numberTo0x(Number(timestamp)));
+
+        if (relayResponse.transactions.length) {
+            expect(relayResponse.transactionsRoot).to.equal(mirrorNodeResponse.hash.slice(0, 66));
+        }
+        else {
+            expect(relayResponse.transactionsRoot).to.equal(Assertions.ethEmptyTrie);
+        }
+
+        // Assert transactions
+        for (const i in relayResponse.transactions) {
+            const tx = relayResponse.transactions[i];
+            const mirrorTx = mirrorTransactions[i];
+            if ( hydratedTransactions ) {
+                Assertions.transaction(tx, mirrorTx);
+            }
+            else {
+                expect(tx).to.eq(mirrorTx.hash.slice(0, 66));
+            }
+        }
     }
 
     public static transaction(relayResponse, mirrorNodeResponse) {

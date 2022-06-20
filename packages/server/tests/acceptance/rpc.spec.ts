@@ -130,7 +130,7 @@ describe('RPC Server Acceptance Tests', function() {
         before(async () => {
             mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`)).blocks[0];
             const timestampQuery = `timestamp=gte:${mirrorBlock.timestamp.from}&timestamp=lte:${mirrorBlock.timestamp.to}`;
-            mirrorContractResults = (await mirrorNode.get(`/contracts/results?${timestampQuery}`)).transactions;
+            mirrorContractResults = (await mirrorNode.get(`/contracts/results?${timestampQuery}`)).results;
 
             for (let i = 0; i < mirrorContractResults.length; i++) {
                 const res = mirrorContractResults[i];
@@ -139,14 +139,34 @@ describe('RPC Server Acceptance Tests', function() {
 
         });
 
-        it('should execute "eth_getBlockByHash"', async function() {
-            const relayBlock = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, 'true']);
-            Assertions.block(relayBlock, mirrorBlock);
+        it('should execute "eth_getBlockByHash", hydrated transactions not specified', async function() {
+            const relayBlock = await relay.call('eth_getBlockByHash', [mirrorBlock.hash]);
+            Assertions.block(relayBlock, mirrorBlock, mirrorTransactions, false);
         });
 
-        it('should execute "eth_getBlockByNumber"', async function() {
+        it('should execute "eth_getBlockByHash", hydrated transactions = false', async function() {
+            const relayBlock = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, false]);
+            Assertions.block(relayBlock, mirrorBlock, mirrorTransactions, false);
+        });
+
+        it('should execute "eth_getBlockByHash", hydrated transactions = true', async function() {
+            const relayBlock = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, true]);
+            Assertions.block(relayBlock, mirrorBlock, mirrorTransactions, true);
+        });
+
+        it('should execute "eth_getBlockByNumber", hydrated transactions not specified', async function() {
+            const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
+        });
+
+        it('should execute "eth_getBlockByNumber", hydrated transactions = false', async function() {
+            const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, false]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
+        });
+
+        it('should execute "eth_getBlockByNumber", hydrated transactions = true', async function() {
             const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, true]);
-            Assertions.block(blockResult, mirrorBlock);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
         });
 
         it('should execute "eth_getBlockTransactionCountByHash"', async function() {
