@@ -19,8 +19,14 @@
  */
 import { expect } from 'chai';
 import { ethers } from 'ethers';
+import { Utils } from './utils';
 
 export default class Assertions {
+    static emptyHex = '0x';
+    static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
+    static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
+
 
     static assertId = (id) => {
         const [shard, realm, num] = id.split('.');
@@ -38,10 +44,70 @@ export default class Assertions {
         expect(true).to.eq(false);
     };
 
-    public static block(relayResponse, mirrorNodeResponse) {
+    /**
+     *
+     * @param relayResponse
+     * @param mirrorNodeResponse
+     * @param mirrorTransactions
+     * @param hydratedTransactions - aka showDetails flag
+     */
+    public static block(relayResponse, mirrorNodeResponse, mirrorTransactions, hydratedTransactions = false) {
+        // Assert static values
+        expect(relayResponse.baseFeePerGas).to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.difficulty).to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.extraData).to.be.equal(Assertions.emptyHex);
+        expect(relayResponse.miner).to.be.equal(ethers.constants.AddressZero);
+        expect(relayResponse.mixHash).to.be.equal(Assertions.emptyHex);
+        expect(relayResponse.nonce).to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.receiptsRoot).to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.sha3Uncles).to.be.equal(Assertions.emptyArrayHex);
+        expect(relayResponse.stateRoot).to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.totalDifficulty).to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.uncles).to.be.exist;
+        expect(relayResponse.uncles.length).to.eq(0);
+        expect(relayResponse.logsBloom).to.eq(Assertions.emptyBloom);
+
+        // Assert dynamic values
         expect(relayResponse.hash).to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
         expect(relayResponse.number).to.be.equal(ethers.utils.hexValue(mirrorNodeResponse.number));
-        // expect(relayResponse.transactions.length).to.equal(mirrorNodeResponse.count); // FIXME this assertion fails
+        expect(relayResponse.transactions.length).to.equal(mirrorTransactions.length);
+        expect(relayResponse.parentHash).to.equal(mirrorNodeResponse.previous_hash.slice(0, 66));
+        expect(relayResponse.size).to.equal(ethers.utils.hexValue(mirrorNodeResponse.size | 0));
+
+        let maxGasLimit = 0;
+        let gasUsed = 0;
+        let timestamp = 0;
+
+        for (const result of mirrorTransactions) {
+            maxGasLimit = result.gas_limit > maxGasLimit ? result.gas_limit : maxGasLimit;
+            gasUsed += result.gas_used;
+            if (timestamp === 0) {
+                timestamp = result.timestamp.substring(0, result.timestamp.indexOf('.'));
+            }
+        }
+
+        expect(relayResponse.gasLimit).to.equal(ethers.utils.hexValue(maxGasLimit));
+        expect(relayResponse.gasUsed).to.equal(ethers.utils.hexValue(gasUsed));
+        expect(relayResponse.timestamp).to.equal(ethers.utils.hexValue(Number(timestamp)));
+
+        if (relayResponse.transactions.length) {
+            expect(relayResponse.transactionsRoot).to.equal(mirrorNodeResponse.hash.slice(0, 66));
+        }
+        else {
+            expect(relayResponse.transactionsRoot).to.equal(Assertions.ethEmptyTrie);
+        }
+
+        // Assert transactions
+        for (const i in relayResponse.transactions) {
+            const tx = relayResponse.transactions[i];
+            const mirrorTx = mirrorTransactions[i];
+            if ( hydratedTransactions ) {
+                Assertions.transaction(tx, mirrorTx);
+            }
+            else {
+                expect(tx).to.eq(mirrorTx.hash.slice(0, 66));
+            }
+        }
     }
 
     public static transaction(relayResponse, mirrorNodeResponse) {
@@ -58,35 +124,52 @@ export default class Assertions {
         expect(relayResponse.value).to.eq(mirrorNodeResponse.amount);
     }
 
-    static transactionReceipt = (transactionReceipt, transactionRequest, overwriteValues = {}) => {
-        const staticValues = {
-            status: '0x1',
-            logs: [],
-            from: '',
-            ...overwriteValues
-        };
-
+    static transactionReceipt = (transactionReceipt, mirrorResult) => {
         expect(transactionReceipt.blockHash).to.exist;
         expect(transactionReceipt.blockHash).to.not.eq('0x0');
+        expect(transactionReceipt.blockHash).to.eq(mirrorResult.block_hash.slice(0, 66));
+
         expect(transactionReceipt.blockNumber).to.exist;
         expect(Number(transactionReceipt.blockNumber)).to.gt(0);
+        expect(transactionReceipt.blockNumber).to.eq(ethers.utils.hexValue(mirrorResult.block_number));
+
         expect(transactionReceipt.cumulativeGasUsed).to.exist;
         expect(Number(transactionReceipt.cumulativeGasUsed)).to.gt(0);
+        expect(Number(transactionReceipt.cumulativeGasUsed)).to.eq(mirrorResult.block_gas_used);
+
         expect(transactionReceipt.gasUsed).to.exist;
         expect(Number(transactionReceipt.gasUsed)).to.gt(0);
+        expect(Number(transactionReceipt.gasUsed)).to.eq(mirrorResult.gas_used);
+
         expect(transactionReceipt.logsBloom).to.exist;
         expect(transactionReceipt.logsBloom).to.not.eq('0x0');
+        expect(transactionReceipt.logsBloom).to.eq(mirrorResult.bloom);
+
         expect(transactionReceipt.transactionHash).to.exist;
         expect(transactionReceipt.transactionHash).to.not.eq('0x0');
+        expect(transactionReceipt.transactionHash).to.eq(mirrorResult.hash);
+
         expect(transactionReceipt.transactionIndex).to.exist;
+        expect(Number(transactionReceipt.transactionIndex)).to.eq(mirrorResult.transaction_index);
+
         expect(transactionReceipt.effectiveGasPrice).to.exist;
         expect(Number(transactionReceipt.effectiveGasPrice)).to.gt(0);
+        const effectiveGas = mirrorResult.max_fee_per_gas === undefined || mirrorResult.max_fee_per_gas == '0x'
+            ? mirrorResult.gas_price
+            : mirrorResult.max_fee_per_gas;
+        const mirrorEffectiveGasPrice = Utils.tinyBarsToWeibars(effectiveGas);
+        expect(transactionReceipt.effectiveGasPrice).to.eq(mirrorEffectiveGasPrice);
+
         expect(transactionReceipt.status).to.exist;
+        expect(transactionReceipt.status).to.eq(mirrorResult.status);
+
         expect(transactionReceipt.logs).to.exist;
-        expect(transactionReceipt.logs.length).to.eq(staticValues.logs.length);
-        expect(transactionReceipt.status).to.eq(staticValues.status);
-        expect(transactionReceipt.from).to.eq(staticValues.from);
-        expect(transactionReceipt.to).to.eq(transactionRequest.to);
+        expect(transactionReceipt.logs.length).to.eq(mirrorResult.logs.length);
+        expect(transactionReceipt.logs).to.deep.eq(mirrorResult.logs);
+
+        expect(transactionReceipt.from).to.eq(mirrorResult.from);
+
+        expect(transactionReceipt.to).to.eq(mirrorResult.to);
     };
 
     static unknownResponse(err) {
