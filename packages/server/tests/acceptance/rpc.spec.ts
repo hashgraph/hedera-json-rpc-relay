@@ -154,13 +154,13 @@ describe('RPC Server Acceptance Tests', function() {
             Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
         });
 
-        it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = true', async function() {
-            const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, true]);
+        it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = false', async function() {
+            const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, false]);
             expect(blockResult).to.be.null;
         });
 
-        it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = false', async function() {
-            const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, false]);
+        it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = true', async function() {
+            const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, true]);
             expect(blockResult).to.be.null;
         });
 
