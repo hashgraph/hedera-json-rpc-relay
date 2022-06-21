@@ -164,7 +164,7 @@ export default class ServicesClient {
                 new ContractFunctionParameters()
             )
             .setGas(75000)
-            .setInitialBalance(100)
+            .setInitialBalance(1)
             .setBytecodeFileId(fileId || '')
             .setAdminKey(this.client.operatorPublicKey || this.DEFAULT_KEY));
 
@@ -196,7 +196,7 @@ export default class ServicesClient {
         return { contractExecuteTimestamp, contractExecutedTransactionId };
     };
 
-    async createAliasAccount(initialBalance = 1000): Promise<AliasAccount> {
+    async createAliasAccount(initialBalance = 10): Promise<AliasAccount> {
         const privateKey = PrivateKey.generateECDSA();
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
@@ -234,6 +234,20 @@ export default class ServicesClient {
             servicesClient,
             wallet
         );
+    };
+
+    async deployContract(contract, gas = 100_000) {
+        const fileCreateTx = await (new FileCreateTransaction()
+            .setContents(contract.bytecode)
+            .setKeys([this.client.operatorPublicKey])
+            .execute(this.client));
+        const fileCreateRx = await fileCreateTx.getReceipt(this.client);
+        const bytecodeFileId = fileCreateRx.fileId;
+        const contractInstantiateTx = new ContractCreateTransaction()
+            .setBytecodeFileId(bytecodeFileId)
+            .setGas(gas);
+        const contractInstantiateSubmit = await contractInstantiateTx.execute(this.client);
+        return contractInstantiateSubmit.getReceipt(this.client);
     };
 
     _thisAccountId() {

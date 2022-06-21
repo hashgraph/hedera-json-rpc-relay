@@ -48,7 +48,8 @@ const testLogger = pino({
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
 // local resources
-const contractJson = require('../parentContract/Parent.json');
+import parentContractJson from '../contracts/Parent.json';
+import basicContractJson from '../contracts/Basic.json';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
@@ -69,7 +70,10 @@ const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
 const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
+
 const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
+const ONE_WEIBAR = ethers.utils.parseUnits('1', 18);
+
 const NON_EXISTING_ADDRESS = '0x5555555555555555555555555555555555555555';
 
 describe('RPC Server Acceptance Tests', function() {
@@ -94,8 +98,8 @@ describe('RPC Server Acceptance Tests', function() {
 
         accounts[0] = await servicesNode.createAliasAccount();
         accounts[1] = await servicesNode.createAliasAccount();
-        accounts[2] = await servicesNode.createAliasAccount();
-        contractId = await accounts[0].client.createParentContract(contractJson);
+        accounts[2] = await servicesNode.createAliasAccount(20);
+        contractId = await accounts[0].client.createParentContract(parentContractJson);
 
         const params = new ContractFunctionParameters().addUint256(1);
         contractExecuteTimestamp = (await accounts[0].client
@@ -349,8 +353,8 @@ describe('RPC Server Acceptance Tests', function() {
         expect(res).to.be.equal('0xa7a3582000');
     });
 
-    it('should execute "eth_getBalance" for newly created account with 100 HBAR', async function() {
-        const account = await servicesNode.createAliasAccount(100);
+    it('should execute "eth_getBalance" for newly created account with 10 HBAR', async function() {
+        const account = await servicesNode.createAliasAccount(10);
         // Wait for account creation to propagate
         await mirrorNode.get(`/accounts/${account.accountId}`);
 
@@ -368,12 +372,12 @@ describe('RPC Server Acceptance Tests', function() {
 
     it('should execute "eth_getBalance" for contract', async function() {
         const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'latest']);
-        expect(res).to.eq('0x56bc75e2d63100000');
+        expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
     });
 
     it('should execute "eth_getBalance" for contract with id converted to evm_address', async function() {
         const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'latest']);
-        expect(res).to.eq('0x56bc75e2d63100000');
+        expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
     });
 
     describe('Hardcoded RPC Endpoints', () => {
@@ -473,6 +477,46 @@ describe('RPC Server Acceptance Tests', function() {
 
         it('should not support "eth_signTransaction"', async function() {
             await relay.callUnsupported('eth_signTransaction', []);
+        });
+    });
+
+    describe('eth_getCode', () => {
+
+        let basicContract;
+
+        before(async () => {
+            basicContract = await servicesNode.deployContract(basicContractJson);
+            // Wait for creation to propagate
+            await mirrorNode.get(`/contracts/${basicContract.contractId}`);
+        });
+
+        it('should execute "eth_getCode" for contract evm_address', async function () {
+            const evmAddress = basicContract.contractId.toSolidityAddress();
+            const res = await relay.call('eth_getCode', [evmAddress]);
+            expect(res).to.eq(basicContractJson.deployedBytecode);
+        });
+
+        it('should execute "eth_getCode" for contract with id converted to evm_address', async function () {
+            const evmAddress = Utils.idToEvmAddress(basicContract.contractId.toString());
+            const res = await relay.call('eth_getCode', [evmAddress]);
+            expect(res).to.eq(basicContractJson.deployedBytecode);
+        });
+
+        it('should return 0x for non-existing contract on eth_getCode', async function () {
+            const res = await relay.call('eth_getCode', [NON_EXISTING_ADDRESS]);
+            expect(res).to.eq('0x0');
+        });
+
+        it('should return 0x for account evm_address on eth_getCode', async function () {
+            const evmAddress = Utils.idToEvmAddress(accounts[2].accountId.toString());
+            const res = await relay.call('eth_getCode', [evmAddress]);
+            expect(res).to.eq('0x0');
+        });
+
+        it('should return 0x for account alias on eth_getCode', async function () {
+            const alias = Utils.idToEvmAddress(accounts[2].accountId.toString());
+            const res = await relay.call('eth_getCode', [alias]);
+            expect(res).to.eq('0x0');
         });
     });
 
