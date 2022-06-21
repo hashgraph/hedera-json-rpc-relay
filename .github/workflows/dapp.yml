@@ -25,9 +25,8 @@ jobs:
           node-version: 16
 
       - name: Setup xvfb (Linux)
-        run: |
-          sudo apt-get install -y xvfb libgbm1 xdg-utils fonts-liberation libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
-          sudo /usr/bin/Xvfb -screen 0 1280x1024x24 :99 &
+        run: sudo apt-get install -y xvfb libgbm1 xdg-utils fonts-liberation libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+          # sudo /usr/bin/Xvfb -screen 0 1280x1024x24 :99 &
 
       - name: Checkout repo
         uses: actions/checkout@v2
@@ -61,8 +60,5 @@ jobs:
       - name: Run the dapp
         run: npm start --prefix ./dapp-example/ &
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Run the dapp tests
-        run: npm test --prefix ./dapp-example/
+        run: xvfb-run -a --server-args="-screen 0 1280x1024x24" npm test --prefix ./dapp-example/
