@@ -142,7 +142,7 @@ describe('RPC Server Acceptance Tests', function () {
 
         let mirrorBlock;
         let mirrorContractResults;
-        let mirrorTransactions: any[] = [];
+        const mirrorTransactions: any[] = [];
 
         before(async () => {
             mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`)).blocks[0];
@@ -244,11 +244,12 @@ describe('RPC Server Acceptance Tests', function () {
     });
 
     describe('Transaction related RPC Calls', () => {
-
+        const defaultGasPrice = 720_000_000_000;
+        const defaultGasLimit = 3_000_000;
         const defaultLegacyTransactionData = {
             value: ONE_TINYBAR,
-            gasPrice: 7200000000000,
-            gasLimit: 30000000
+            gasPrice: defaultGasPrice,
+            gasLimit: defaultGasLimit
         };
 
         const default155TransactionData = {
@@ -259,17 +260,17 @@ describe('RPC Server Acceptance Tests', function () {
         const defaultLondonTransactionData = {
             value: ONE_TINYBAR,
             chainId: Number(CHAIN_ID),
-            maxPriorityFeePerGas: 7200000000000,
-            maxFeePerGas: 7200000000000,
-            gasLimit: 300000,
+            maxPriorityFeePerGas: defaultGasPrice,
+            maxFeePerGas: defaultGasPrice,
+            gasLimit: defaultGasLimit,
             type: 2
         };
 
         const defaultLegacy2930TransactionData = {
             value: ONE_TINYBAR,
             chainId: Number(CHAIN_ID),
-            gasPrice: 7200000000000,
-            gasLimit: 30000000,
+            gasPrice: defaultGasPrice,
+            gasLimit: defaultGasLimit,
             type: 1
         };
 
