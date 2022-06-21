@@ -92,7 +92,7 @@ export class SDKClient {
         });
 
         const metricGaugeName = 'rpc_relay_operator_balance';
-        register.removeSingleMetric(metricHistogramName);
+        register.removeSingleMetric(metricGaugeName);
         this.operatorAccountGauge = new Gauge({
             name: metricGaugeName,
             help: 'Relay operator balance gauge',

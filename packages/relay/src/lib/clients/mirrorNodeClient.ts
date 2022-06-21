@@ -142,7 +142,7 @@ export class MirrorNodeClient {
         try {
             const response = await this.client.get(path);
             ms = Date.now() - start;
-            this.logger.debug(`Mirror Node Response: [GET] ${path} ${response.status} ${ms} ms`);
+            this.logger.debug(`[GET] ${path} ${response.status} ${ms} ms`);
             this.mirrorResponseHistogram.labels(pathLabel, response.status).observe(ms);
             return response.data;
         } catch (error: any) {
@@ -156,12 +156,12 @@ export class MirrorNodeClient {
     handleError(error: any, path: string, allowedErrorStatuses?: number[]) {
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
             if (error.response && allowedErrorStatuses.indexOf(error.response.status) !== -1) {
-                this.logger.debug(`Mirror Node Response: [GET] ${path} ${error.response.status} status`);
+                this.logger.debug(`[GET] ${path} ${error.response.status} status`);
                 return null;
             }
         }
 
-        this.logger.error(new Error(error.message), `Mirror Node Response: [GET] ${path} ${error.response.status} status`);
+        this.logger.error(new Error(error.message), `[GET] ${path} ${error.response.status} status`);
         throw predefined.INTERNAL_ERROR;
     }
 
