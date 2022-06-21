@@ -26,7 +26,8 @@ jobs:
 
       - name: Setup xvfb (Linux)
         run: |
-          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+          sudo apt-get install -y xvfb libgbm1 xdg-utils fonts-liberation libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+          npm install -g @lhci/cli@0.9.0 lighthouse@9.5.0 sitespeed.io@23.7.0 webdriver-manager@12.1.8
           sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
 
       - name: Checkout repo
