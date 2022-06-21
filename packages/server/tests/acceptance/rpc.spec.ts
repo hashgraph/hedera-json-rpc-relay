@@ -135,12 +135,6 @@ describe('RPC Server Acceptance Tests', function () {
         mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`)).accounts[0];
     });
 
-    this.afterAll(async () => {
-        const endOperatorBalance = await servicesNode.getOperatorBalance();
-        const cost = startOperatorBalance.toTinybars().subtract(endOperatorBalance.toTinybars());
-        logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
-    });
-
     describe('Block related RPC calls', () => {
 
         let mirrorBlock;
@@ -670,7 +664,7 @@ describe('RPC Server Acceptance Tests', function () {
         });
     });
 
-    after(function () {
+    this.afterAll(async () => {
         if (USE_LOCAL_NODE === 'true') {
             // stop local-node
             logger.info('Shutdown local node');
@@ -682,6 +676,10 @@ describe('RPC Server Acceptance Tests', function () {
         if (relayServer !== undefined) {
             relayServer.close();
         }
+
+        const endOperatorBalance = await servicesNode.getOperatorBalance();
+        const cost = startOperatorBalance.toTinybars().subtract(endOperatorBalance.toTinybars());
+        logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
     });
 
     function runLocalHederaNetwork() {
