@@ -34,7 +34,8 @@
         "start": "npx lerna exec --scope @hashgraph/json-rpc-server -- npm run start",
         "start:docker": "docker run --name hedera-relay -d -p 7546:7546 ${npm_package_name}:latest",
         "test": "npx lerna run test",
-        "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts"
+        "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts",
+        "integration:test": "npm test --prefix ./dapp-example/"
     },
     "dependencies": {
         "@types/find-config": "^1.0.1",

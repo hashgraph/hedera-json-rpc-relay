@@ -8,8 +8,8 @@
     "video": false,
     "screenshotOnRunFailure": false,
     "chromeWebSecurity": true,
-    "viewportWidth": 1280,
-    "viewportHeight": 1024,
+    "viewportWidth": 1024,
+    "viewportHeight": 768,
     "component": {
       "componentFolder": ".",
       "testFiles": "**/*spec.{js,jsx,ts,tsx}"

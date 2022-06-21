@@ -58,4 +58,4 @@ jobs:
         run: npm start --prefix ./dapp-example/ &
 
       - name: Run the dapp tests
-        run: xvfb-run --auto-servernum --server-num=1 --server-args="-screen 1 1024x768x24" cd ./dapp-example/ && npm test
+        run: xvfb-run --auto-servernum --server-num=1 --server-args="-screen 1 1024x768x24" npm run integration:test

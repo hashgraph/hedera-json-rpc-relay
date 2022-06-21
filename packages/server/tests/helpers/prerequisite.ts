@@ -22,8 +22,8 @@ const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
     console.log('Hedera Hashgraph local node env started');
   }
 
-  // if (RELAY_URL === LOCAL_RELAY_URL) {
-  //   console.log(`Start relay on port ${process.env.SERVER_PORT}`);
-  //   shell.exec('npm run start');
-  // }
+  if (RELAY_URL === LOCAL_RELAY_URL) {
+    console.log(`Start relay on port ${process.env.SERVER_PORT}`);
+    shell.exec('npm run start');
+  }
 })();
