@@ -147,10 +147,18 @@ export class EthImpl implements Eth {
   }
 
   private async getFeeWeibars() {
-    let networkFees = await this.mirrorNodeClient.getNetworkFees();
+    let networkFees;
+
+    try {
+      networkFees = await this.mirrorNodeClient.getNetworkFees();
+      if (_.isNil(networkFees)) {
+        this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
+      }
+    } catch (e: any) {
+      this.logger.warn(e, `Mirror Node threw an error retrieving fees. Fallback to network`);
+    }
 
     if (_.isNil(networkFees)) {
-      this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
       networkFees = {
         fees: [
           {
@@ -392,12 +400,12 @@ export class EthImpl implements Eth {
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       // handle INVALID_CONTRACT_ID
-      if (e?.status?._code === Status.InvalidContractId._code) {
-        this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0', address, blockNumber);
+      if (e?.status?._code === Status.InvalidContractId._code || e?.message?.includes(Status.InvalidContractId.toString())) {
+        this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0, err code: %s', address, blockNumber, e?.status?._code);
         return '0x0';
       }
 
-      this.logger.error(e, 'Error raised during getCode for address %s', address);
+      this.logger.error(e, 'Error raised during getCode for address %s, err code: %s', address, e?.status?._code);
       throw e;
     }
   }
@@ -631,7 +639,7 @@ export class EthImpl implements Eth {
       if (e.status && e.status._code) {
         resolvedError = new Error(e.message);
       }
-      
+
       this.logger.error(resolvedError, 'Failed to successfully submit contractCallQuery');
       return predefined.INTERNAL_ERROR;
     }
@@ -698,7 +706,12 @@ export class EthImpl implements Eth {
         receiptResponse.created_contract_ids.length > 0
           ? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress())
           : undefined;
-      const answer = {
+
+
+      // support stricter go-eth client which requires the transaction hash property on logs
+      const logs = receiptResponse.logs.map(log => ({ ...log, transactionHash: receiptResponse.hash }));
+
+      const receipt = {
         blockHash: receiptResponse.block_hash.substring(0, 66),
         blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
         from: receiptResponse.from,
@@ -706,7 +719,7 @@ export class EthImpl implements Eth {
         cumulativeGasUsed: EthImpl.numberTo0x(receiptResponse.block_gas_used),
         gasUsed: EthImpl.numberTo0x(receiptResponse.gas_used),
         contractAddress: createdContract,
-        logs: receiptResponse.logs,
+        logs: logs,
         logsBloom: receiptResponse.bloom,
         transactionHash: receiptResponse.hash,
         transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
@@ -714,8 +727,10 @@ export class EthImpl implements Eth {
         root: receiptResponse.root,
         status: receiptResponse.status,
       };
-      this.logger.trace(`receipt for ${hash} found in block ${answer.blockNumber}`);
-      return answer;
+
+
+      this.logger.trace(`receipt for ${hash} found in block ${receipt.blockNumber}`);
+      return receipt;
     }
   }
 
