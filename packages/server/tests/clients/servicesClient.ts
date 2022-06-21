@@ -254,6 +254,12 @@ export default class ServicesClient {
         return this.client.operatorAccountId || AccountId.fromString('0.0.0');
     }
 
+    async getOperatorBalance(): Promise<Hbar> {
+        const accountBalance = await (new AccountBalanceQuery()
+            .setAccountId(this.client.operatorAccountId!))
+            .execute(this.client);
+        return accountBalance.hbars;
+    }
 }
 
 export class AliasAccount {
