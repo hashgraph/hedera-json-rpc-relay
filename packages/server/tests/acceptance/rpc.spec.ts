@@ -154,12 +154,12 @@ describe('RPC Server Acceptance Tests', function() {
             Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
         });
 
-        it('should execute "eth_getBlockByHash" for non-existing hash, hydrated transactions = true', async function() {
+        it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = true', async function() {
             const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, true]);
             expect(blockResult).to.be.null;
         });
 
-        it('should execute "eth_getBlockByHash" for non-existing hash, hydrated transactions = false', async function() {
+        it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = false', async function() {
             const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, false]);
             expect(blockResult).to.be.null;
         });
@@ -179,12 +179,12 @@ describe('RPC Server Acceptance Tests', function() {
             Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
         });
 
-        it('should execute "eth_getBlockByNumber", hydrated transactions = true', async function() {
+        it('should execute "eth_getBlockByNumber" for non existing block number and hydrated transactions = true', async function() {
             const blockResult = await relay.call('eth_getBlockByNumber', [NON_EXISTING_BLOCK_NUMBER, true]);
             expect(blockResult).to.be.null;
         });
 
-        it('should execute "eth_getBlockByNumber", hydrated transactions = false', async function() {
+        it('should execute "eth_getBlockByNumber" for non existing block number and hydrated transactions = false', async function() {
             const blockResult = await relay.call('eth_getBlockByNumber', [NON_EXISTING_BLOCK_NUMBER, false]);
             expect(blockResult).to.be.null;
         });
@@ -217,12 +217,12 @@ describe('RPC Server Acceptance Tests', function() {
             const mirrorBlockNumber = mirrorBlocks.blocks[0].number;
 
             const res = await relay.call('eth_blockNumber', []);
-            expect(res).to.exist;
-            expect(res.startsWith('0x')).to.eq(true);
             const blockNumber = Number(res);
             expect(blockNumber).to.exist;
-            expect(blockNumber).to.be.gt(0);
-            expect(blockNumber).to.be.eq(mirrorBlockNumber);
+
+            // In some rare occasions, the relay block might be equal to the mirror node block + 1
+            // due to the mirror node block updating after it was retrieved and before the relay.call completes
+            expect(blockNumber).to.be.oneOf([mirrorBlockNumber, mirrorBlockNumber + 1]);
         });
     });
 

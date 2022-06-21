@@ -28,8 +28,8 @@ export default class Assertions {
     static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
     static zeroAddressHex = '0x0000000000000000000000000000000000000000';
     static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-    static defaultGas = Utils.numberTo0x(400_000);
-    static gasTxBaseCost = Utils.numberTo0x(21_000);
+    static defaultGas = ethers.utils.hexValue(400_000);
+    static gasTxBaseCost = ethers.utils.hexValue(21_000);
     static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
 
 
@@ -58,16 +58,16 @@ export default class Assertions {
      */
     public static block(relayResponse, mirrorNodeResponse, mirrorTransactions, hydratedTransactions = false) {
         // Assert static values
-        expect(relayResponse.baseFeePerGas).to.be.equal(Assertions.zeroHex);
-        expect(relayResponse.difficulty).to.be.equal(Assertions.zeroHex);
+        expect(relayResponse.baseFeePerGas).to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.difficulty).to.be.equal(ethers.utils.hexValue(0));
         expect(relayResponse.extraData).to.be.equal(Assertions.emptyHex);
-        expect(relayResponse.miner).to.be.equal(Assertions.zeroAddressHex);
-        expect(relayResponse.mixHash).to.be.equal(Assertions.emptyArrayHex);
-        expect(relayResponse.nonce).to.be.equal(Assertions.zeroHex8Byte);
-        expect(relayResponse.receiptsRoot).to.be.equal(Assertions.emptyArrayHex);
+        expect(relayResponse.miner).to.be.equal(ethers.constants.AddressZero);
+        expect(relayResponse.mixHash).to.be.equal(Assertions.emptyArrayHex);        // 0x
+        expect(relayResponse.nonce).to.be.equal(Assertions.zeroHex8Byte);           // 0x0
+        expect(relayResponse.receiptsRoot).to.be.equal(Assertions.emptyArrayHex);   // 0x0
         expect(relayResponse.sha3Uncles).to.be.equal(Assertions.emptyArrayHex);
-        expect(relayResponse.stateRoot).to.be.equal(Assertions.emptyArrayHex);
-        expect(relayResponse.totalDifficulty).to.be.equal(Assertions.zeroHex);
+        expect(relayResponse.stateRoot).to.be.equal(Assertions.emptyArrayHex);      // 0x0
+        expect(relayResponse.totalDifficulty).to.be.equal(ethers.utils.hexValue(0));
         expect(relayResponse.uncles).to.be.exist;
         expect(relayResponse.uncles.length).to.eq(0);
         expect(relayResponse.logsBloom).to.eq(Assertions.emptyBloom);
@@ -77,7 +77,7 @@ export default class Assertions {
         expect(relayResponse.number).to.be.equal(ethers.utils.hexValue(mirrorNodeResponse.number));
         expect(relayResponse.transactions.length).to.equal(mirrorTransactions.length);
         expect(relayResponse.parentHash).to.equal(mirrorNodeResponse.previous_hash.slice(0, 66));
-        expect(relayResponse.size).to.equal(Utils.numberTo0x(mirrorNodeResponse.size | 0));
+        expect(relayResponse.size).to.equal(ethers.utils.hexValue(mirrorNodeResponse.size | 0));
 
         let maxGasLimit = 0;
         let gasUsed = 0;
@@ -91,9 +91,9 @@ export default class Assertions {
             }
         }
 
-        expect(relayResponse.gasLimit).to.equal(Utils.numberTo0x(maxGasLimit));
-        expect(relayResponse.gasUsed).to.equal(Utils.numberTo0x(gasUsed));
-        expect(relayResponse.timestamp).to.equal(Utils.numberTo0x(Number(timestamp)));
+        expect(relayResponse.gasLimit).to.equal(ethers.utils.hexValue(maxGasLimit));
+        expect(relayResponse.gasUsed).to.equal(ethers.utils.hexValue(gasUsed));
+        expect(relayResponse.timestamp).to.equal(ethers.utils.hexValue(Number(timestamp)));
 
         if (relayResponse.transactions.length) {
             expect(relayResponse.transactionsRoot).to.equal(mirrorNodeResponse.hash.slice(0, 66));
@@ -136,7 +136,7 @@ export default class Assertions {
 
         expect(transactionReceipt.blockNumber).to.exist;
         expect(Number(transactionReceipt.blockNumber)).to.gt(0);
-        expect(transactionReceipt.blockNumber).to.eq(Utils.numberTo0x(mirrorResult.block_number));
+        expect(transactionReceipt.blockNumber).to.eq(ethers.utils.hexValue(mirrorResult.block_number));
 
         expect(transactionReceipt.cumulativeGasUsed).to.exist;
         expect(Number(transactionReceipt.cumulativeGasUsed)).to.gt(0);

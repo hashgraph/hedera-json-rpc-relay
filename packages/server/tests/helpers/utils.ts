@@ -18,17 +18,13 @@
  *
  */
 
-import { BigNumber } from 'ethers';
+import { ethers, BigNumber } from 'ethers';
 import Assertions from './assertions';
 
 export class Utils {
 
     static toHex = (num) => {
         return parseInt(num).toString(16);
-    };
-
-    static numberTo0x = (input: number): string => {
-        return `0x${Utils.toHex(input)}`;
     };
 
     static idToEvmAddress = (id): string => {
@@ -48,7 +44,7 @@ export class Utils {
     };
 
     static tinyBarsToWeibars = (value) => {
-        return Utils.numberTo0x(Number.parseInt(value) * 10_000_000_000);
+        return ethers.utils.hexValue(ethers.utils.parseUnits(Number(value).toString(), 10));
     };
 
 }
