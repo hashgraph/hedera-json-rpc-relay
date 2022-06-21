@@ -22,9 +22,8 @@ jobs:
           node-version: 16
 
       - name: Setup xvfb (Linux)
-        run: |
-          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
-          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
+        run: sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+          # sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
 
       - name: Checkout repo
         uses: actions/checkout@v2
@@ -46,14 +45,11 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
-      # - name: Build the local node
-      #   run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
+      - name: Build the local node
+        run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
 
-      - name: Run Local Node
-        run: npm run integration:prerequisite
-
-      - name: Run RPC Server
-        run: npm run start &
+      - name: Run Local Node + RPC Server
+        run: npm run integration:prerequisite &
 
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
@@ -62,4 +58,4 @@ jobs:
         run: npm start --prefix ./dapp-example/ &
 
       - name: Run the dapp tests
-        run: npm test --prefix ./dapp-example/
+        run: xvfb-run --auto-servernum --server-num=1 --server-args="-screen 1 1024x768x24" cd ./dapp-example/ && npm test
