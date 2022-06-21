@@ -60,5 +60,8 @@ jobs:
       - name: Run the dapp
         run: npm start --prefix ./dapp-example/ &
 
+      - name: Run the dapp bootstrap script
+        run: npm run bootstrap-tests --prefix ./dapp-example/
+
       - name: Run the dapp tests
-        run: xvfb-run -a --server-args="-screen 0 1280x1024x24" npm test --prefix ./dapp-example/
+        run: xvfb-run -a --server-args="-screen 0 1280x1024x24" npm run only-tests --prefix ./dapp-example/
