@@ -15,6 +15,9 @@ jobs:
       contents: write
     env:
       DISPLAY: :99
+      QT_X11_NO_MITSHM: 1
+      _X11_NO_MITSHM: 1
+      _MITSHM: 0
     steps:
       - name: Setup node
         uses: actions/setup-node@v2
