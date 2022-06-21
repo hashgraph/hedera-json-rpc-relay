@@ -47,7 +47,7 @@ jobs:
         run: npx lerna run build
 
       - name: Build the local node
-        run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
+        run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose up -d
 
       - name: Run Local Node + RPC Server
         run: npm run integration:prerequisite &
