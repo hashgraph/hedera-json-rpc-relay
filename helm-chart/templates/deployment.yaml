@@ -19,6 +19,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}    
       labels:
+        app:  {{ template "json-rpc-relay.name" . }}
         {{- include "json-rpc-relay.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
@@ -32,6 +33,61 @@ spec:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+          - name: HEDERA_NETWORK
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: HEDERA_NETWORK
+                optional: false
+          - name: OPERATOR_ID_MAIN
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: OPERATOR_ID_MAIN
+                optional: false
+          - name: OPERATOR_KEY_MAIN
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: OPERATOR_KEY_MAIN
+                optional: false
+          - name: OPERATOR_ID_ETH_SENDRAWTRANSACTION
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: OPERATOR_ID_ETH_SENDRAWTRANSACTION
+                optional: true
+          - name: OPERATOR_KEY_ETH_SENDRAWTRANSACTION
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: OPERATOR_KEY_ETH_SENDRAWTRANSACTION
+                optional: true
+          - name: CHAIN_ID
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: CHAIN_ID
+                optional: false
+          - name: MIRROR_NODE_URL
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: MIRROR_NODE_URL
+                optional: false
+          - name: LOCAL_NODE
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: LOCAL_NODE
+                optional: false
+          - name: SERVER_PORT
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: SERVER_PORT
+                optional: false               
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
@@ -42,17 +98,9 @@ spec:
           # readinessProbe:
           #   httpGet:
           #     path: /
-          #     port: jsonrpcrelay
-        volumeMounts:
-          - name: config-env
-            mountPath: /home/node/app/.env
-            readOnly: true                         
+          #     port: jsonrpcrelay                      
         resources: 
           {{- toYaml .Values.resources | indent 12 }}
-      volumes:
-        - name: config-env
-          secret:
-            secretName: {{ include "json-rpc-relay.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
