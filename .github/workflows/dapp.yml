@@ -46,11 +46,14 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
-      - name: Build the local node
-        run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
+      # - name: Build the local node
+      #   run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
 
-      - name: Run Local Node + RPC Server
-        run: npm run integration:prerequisite &
+      - name: Run Local Node
+        run: npm run integration:prerequisite
+
+      - name: Run RPC Server
+        run: npm run start &
 
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
