@@ -90,6 +90,7 @@ describe('RPC Server Acceptance Tests', function () {
     const servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({ name: `acctest-services-client` }));
     const mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `acctest-mirror-node-client` }));
     const relay = new RelayClient(RELAY_URL, logger.child({ name: `acctest-relay-client` }));
+    
     this.beforeAll(async () => {
         // configuration details
         logger.info('Acceptance Tests Configurations successfully loaded');
@@ -99,7 +100,6 @@ describe('RPC Server Acceptance Tests', function () {
         logger.info(`OPERATOR_ID_MAIN: ${process.env.OPERATOR_ID_MAIN}`);
         logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
         logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
-        startOperatorBalance = await servicesNode.getOperatorBalance();
 
 
         if (USE_LOCAL_NODE === 'true') {
@@ -109,6 +109,9 @@ describe('RPC Server Acceptance Tests', function () {
         if (RELAY_URL === LOCAL_RELAY_URL) {
             runLocalRelay();
         }
+
+        // cache start balance
+        startOperatorBalance = await servicesNode.getOperatorBalance();
 
         accounts[0] = await servicesNode.createAliasAccount(20);
         accounts[1] = await servicesNode.createAliasAccount();
@@ -664,7 +667,7 @@ describe('RPC Server Acceptance Tests', function () {
         });
     });
 
-    this.afterAll(async () => {
+    this.afterAll(async () =>  {
         if (USE_LOCAL_NODE === 'true') {
             // stop local-node
             logger.info('Shutdown local node');
