@@ -67,4 +67,5 @@ jobs:
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
+          timeout_minutes: 10
           command: xvfb-run -a --server-args="-screen 0 1280x1024x24" npm run only-tests --prefix ./dapp-example/
