@@ -64,4 +64,7 @@ jobs:
         run: npm run bootstrap-tests --prefix ./dapp-example/
 
       - name: Run the dapp tests
-        run: xvfb-run -a --server-args="-screen 0 1280x1024x24" npm run only-tests --prefix ./dapp-example/
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          command: xvfb-run -a --server-args="-screen 0 1280x1024x24" npm run only-tests --prefix ./dapp-example/
