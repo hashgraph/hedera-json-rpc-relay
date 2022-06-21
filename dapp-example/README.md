@@ -2,6 +2,11 @@
 
 Simple implementation of React + Metamask + Hedera Hashgraph
 
+## Prerequisite
+You must have running:
+- JSON-RPC Relay on port :7546
+- Hedera Local Node
+
 ## Setup & Install
 
 In the project directory, you can run:
@@ -10,6 +15,19 @@ In the project directory, you can run:
 2. Run `npm start`
 
 Dapp should be available at [http://localhost:3000](http://localhost:3000)
+
+## Integration Tests
+1. Run `npm run test`
+2. Configure .env file
+```
+NETWORK_NAME=           # name of the network to be added in metamask
+RPC_URL=                # the url of RPC Relay
+SYMBOL=                 # the symbol of native token
+CHAIN_ID=               # the chain id
+IS_TESTNET=             # is public testnet
+PRIVATE_KEY=            # private key of the main account
+RECEIVER_PRIVATE_KEY=   # private key of the receiver account
+```
 
 Available operations:
 - [x] Connect with Metamask
