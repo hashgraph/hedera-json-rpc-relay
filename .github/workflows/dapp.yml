@@ -68,19 +68,14 @@ jobs:
           cd ./dapp-example/ && npm ci
           npm install -g serve
 
-      - name: Run the dapp
-        run: |
-          cd ./dapp-example/ && npm run build
-          cd ./dapp-example/ && serve -s build &
-        # npm start --prefix ./dapp-example/ &
-        env:
-          CI: false
+      # - name: Run the dapp
+      #   run: npm start --prefix ./dapp-example/ &
 
       - name: Run the dapp bootstrap script
         run: npm run bootstrap-tests --prefix ./dapp-example/
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
 
       # - name: Cypress tests
       #   uses: cypress-io/github-action@v2
@@ -98,4 +93,4 @@ jobs:
         with:
           max_attempts: 3
           timeout_minutes: 10
-          command: npm run only-tests --prefix ./dapp-example/
+          command: npm run ci-tests --prefix ./dapp-example/
