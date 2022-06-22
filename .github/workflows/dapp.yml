@@ -71,8 +71,8 @@ jobs:
       - name: Run the dapp bootstrap script
         run: npm run bootstrap-tests --prefix ./dapp-example/
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
 
       - name: Run the dapp tests
         uses: nick-fields/retry@v2
