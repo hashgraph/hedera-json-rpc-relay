@@ -66,13 +66,14 @@ jobs:
         run: |
           cd ./dapp-example/ && npm ci
           npm install -g serve
-          npx cypress info
 
       - name: Run the dapp
         run: |
           cd ./dapp-example/ && npm run build
           cd ./dapp-example/ && serve -s build &
         # npm start --prefix ./dapp-example/ &
+        env:
+          CI: false
 
       - name: Run the dapp bootstrap script
         run: npm run bootstrap-tests --prefix ./dapp-example/
