@@ -60,7 +60,7 @@ jobs:
           MIRROR_IMAGE_TAG': "0.58.0"
 
       - name: Run RPC Server
-        run: npm run integration:prerequisite &
+        run: npm run integration:prerequisite
 
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
