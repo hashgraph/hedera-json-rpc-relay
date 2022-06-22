@@ -13,21 +13,21 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      DISPLAY: :99
-      QT_X11_NO_MITSHM: 1
-      _X11_NO_MITSHM: 1
-      _MITSHM: 0
+    # env:
+      # DISPLAY: :99
+      # QT_X11_NO_MITSHM: 1
+      # _X11_NO_MITSHM: 1
+      # _MITSHM: 0
     steps:
       - name: Setup node
         uses: actions/setup-node@v2
         with:
           node-version: 16
 
-      - name: Setup xvfb (Linux)
-        run:
-          sudo apt-get install -y xvfb libgbm1 xdg-utils fonts-liberation libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
-          sudo /usr/bin/Xvfb -screen 0 1280x1024x24 :99 &
+      # - name: Setup xvfb (Linux)
+      #   run:
+      #     sudo apt-get install -y xvfb libgbm1 xdg-utils fonts-liberation libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+          # sudo /usr/bin/Xvfb -screen 0 1280x1024x24 :99 &
 
       - name: Checkout repo
         uses: actions/checkout@v2
@@ -78,9 +78,12 @@ jobs:
         uses: cypress-io/github-action@v2
         with:
           browser: chrome
+          install: false
           working-directory: dapp-example
           start: npm start
           wait-on: 'http://localhost:3000'
+        # env:
+        #   DISPLAY: :99
       # - name: Run the dapp tests
       #   uses: nick-fields/retry@v2
       #   with:
