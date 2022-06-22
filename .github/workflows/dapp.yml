@@ -14,21 +14,21 @@ jobs:
     permissions:
       contents: write
     env:
-      DISPLAY: :99
-      QT_X11_NO_MITSHM: 1
-      _X11_NO_MITSHM: 1
-      _MITSHM: 0
-      DBUS_SESSION_BUS_ADDRESS: /dev/null
+      # DISPLAY: :99
+      # QT_X11_NO_MITSHM: 1
+      # _X11_NO_MITSHM: 1
+      # _MITSHM: 0
+      # DBUS_SESSION_BUS_ADDRESS: /dev/null
     steps:
       - name: Setup node
         uses: actions/setup-node@v2
         with:
           node-version: 16
 
-      - name: Setup xvfb (Linux)
-        run: |
-          sudo apt-get install -y libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libgconf-2-4 libnss3 libxss1 libasound2 libxtst6 xauth xvfb
-          Xvfb -screen 0 1024x768x24 :99 &
+      # - name: Setup xvfb (Linux)
+      #   run: |
+      #     sudo apt-get install -y libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libgconf-2-4 libnss3 libxss1 libasound2 libxtst6 xauth xvfb
+      #     Xvfb -screen 0 1024x768x24 :99 &
 
       - name: Checkout repo
         uses: actions/checkout@v2
@@ -66,10 +66,10 @@ jobs:
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
 
-      - name: Build the dapp
-        run: npm run build --prefix ./dapp-example/
-        env:
-          CI: false
+      # - name: Build the dapp
+      #   run: npm run build --prefix ./dapp-example/
+      #   env:
+      #     CI: false
 
       # - name: Run the dapp
       #   run: npm start --prefix ./dapp-example/ &
@@ -80,20 +80,21 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      # - name: Cypress tests
-      #   uses: cypress-io/github-action@v2
-      #   with:
-      #     browser: chrome
-      #     install: false
-      #     headed: true
-      #     working-directory: dapp-example
-      #     start: npm start
-      #     wait-on: 'http://localhost:3000'
-      #     config-file: synpress.json
-
-      - name: Run the dapp tests
-        uses: nick-fields/retry@v2
+      - name: Cypress tests
+        uses: cypress-io/github-action@v4
         with:
-          max_attempts: 3
-          timeout_minutes: 10
-          command: npm run ci-tests --prefix ./dapp-example/
+          browser: chrome
+          install: false
+          headed: true
+          working-directory: dapp-example
+          build: npm run build
+          start: npm run start-prod
+          wait-on: 'http://localhost:3000'
+          # config-file: synpress.json
+
+      # - name: Run the dapp tests
+      #   uses: nick-fields/retry@v2
+      #   with:
+      #     max_attempts: 3
+      #     timeout_minutes: 10
+      #     command: npm run ci-tests --prefix ./dapp-example/

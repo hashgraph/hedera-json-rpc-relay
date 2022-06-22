@@ -28,7 +28,8 @@
     "bootstrap-tests": "env-cmd node tests/support/bootstrap.js",
     "only-tests": "env-cmd npx synpress run -cf synpress.json",
     "test": "npm run bootstrap-tests && npm run only-tests",
-    "ci-tests": "start-server-and-test 'http-server build -p 3000 -a localhost' 3000 only-tests",
+    "ci-tests": "start-server-and-test start-prod 3000 only-tests",
+    "start-prod": "http-server build -p 3000 -a localhost",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
