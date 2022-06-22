@@ -53,7 +53,7 @@ const validateHash = (hash: string, len?: number) => {
 };
 
 const verifyBlockConstants = (block: Block) => {
-  expect(block.baseFeePerGas).equal(EthImpl.zeroHex);
+  expect(block.baseFeePerGas).equal('0x84b6a5c400');
   expect(block.difficulty).equal(EthImpl.zeroHex);
   expect(block.extraData).equal(EthImpl.emptyHex);
   expect(block.miner).equal(EthImpl.zeroAddressHex);
@@ -371,6 +371,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
     mock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
     expect(result).to.exist;
     if (result == null) return;
@@ -394,6 +395,7 @@ describe('Eth calls using MirrorNode', async function () {
     // mirror node request mocks
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, { 'results': [] });
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
     expect(result).to.exist;
     if (result == null) return;
@@ -418,6 +420,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsWithNullNullableValues);
     mock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResultsWithNullNullableValues);
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), true);
     expect(result).to.exist;
     if (result == null) return;
@@ -456,6 +459,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber('latest', false);
     expect(result).to.exist;
     if (result == null) return;
@@ -467,6 +471,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByNumber('pending', false);
     expect(result).to.exist;
@@ -478,6 +483,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_getBlockByNumber with earliest tag', async function () {
     mock.onGet(`blocks/0`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByNumber('earliest', false);
     expect(result).to.exist;
@@ -489,6 +495,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_getBlockByNumber with hex number', async function () {
     mock.onGet(`blocks/3735929054`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByNumber('0xdeadc0de', false);
     expect(result).to.exist;
@@ -503,6 +510,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
     mock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, false);
     expect(result).to.exist;
@@ -529,6 +537,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsWithNullNullableValues);
     mock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResultsWithNullNullableValues);
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
     expect(result).to.exist;
