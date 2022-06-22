@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: write
     env:
-      DISPLAY: :99
+      # DISPLAY: :99
       QT_X11_NO_MITSHM: 1
       _X11_NO_MITSHM: 1
       _MITSHM: 0
@@ -74,19 +74,21 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      # - name: Cypress tests
-      #   uses: cypress-io/github-action@v2
-      #   with:
-      #     browser: chrome
-      #     install: false
-      #     working-directory: dapp-example
-      #     start: npm start
-      #     wait-on: 'http://localhost:3000'
+      - name: Cypress tests
+        uses: cypress-io/github-action@v2
+        with:
+          browser: chrome
+          install: false
+          headed: true
+          working-directory: dapp-example
+          start: npm start
+          wait-on: 'http://localhost:3000'
+          config-file: synpress.json
         # env:
         #   DISPLAY: :99
-      - name: Run the dapp tests
-        uses: nick-fields/retry@v2
-        with:
-          max_attempts: 3
-          timeout_minutes: 10
-          command: npm run only-tests --prefix ./dapp-example/
+      # - name: Run the dapp tests
+      #   uses: nick-fields/retry@v2
+      #   with:
+      #     max_attempts: 3
+      #     timeout_minutes: 10
+      #     command: npm run only-tests --prefix ./dapp-example/
