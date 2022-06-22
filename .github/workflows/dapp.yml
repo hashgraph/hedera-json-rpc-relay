@@ -66,7 +66,7 @@ jobs:
       - name: Build & Run the dapp
         run: |
           npm run build --prefix ./dapp-example/
-          npm run start-prod --prefix ./dapp-example/
+          npm run start-prod --prefix ./dapp-example/ &
         env:
           CI: false
 
