@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
+    # env:
       # DISPLAY: :99
       # QT_X11_NO_MITSHM: 1
       # _X11_NO_MITSHM: 1
