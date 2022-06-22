@@ -59,6 +59,9 @@ jobs:
           HAVEGED_IMAGE_TAG': "0.26.2"
           MIRROR_IMAGE_TAG': "0.58.0"
 
+      - name: Run RPC Server
+        run: npm run integration:prerequisite &
+
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
 
@@ -68,12 +71,9 @@ jobs:
       - name: Run the dapp bootstrap script
         run: npm run bootstrap-tests --prefix ./dapp-example/
 
-      - name: Run RPC Server
-        run: npm run integration:prerequisite
-
-      # - name: Run the dapp tests
-      #   uses: nick-fields/retry@v2
-      #   with:
-      #     max_attempts: 3
-      #     timeout_minutes: 10
-      #     command: xvfb-run -a --server-args="-screen 0 1280x1024x24" npm run only-tests --prefix ./dapp-example/
+      - name: Run the dapp tests
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 10
+          command: xvfb-run -a --server-args="-screen 0 1280x1024x24" npm run only-tests --prefix ./dapp-example/
