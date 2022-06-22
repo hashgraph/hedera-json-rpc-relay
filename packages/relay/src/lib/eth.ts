@@ -840,7 +840,7 @@ export class EthImpl implements Eth {
     const blockHash = blockResponse.hash.substring(0, 66);
     const transactionArray = showDetails ? transactionObjects : transactionHashes;
     return new Block({
-      baseFeePerGas: EthImpl.numberTo0x(0), //TODO should be gasPrice
+      baseFeePerGas: await this.gasPrice(),
       difficulty: EthImpl.zeroHex,
       extraData: EthImpl.emptyHex,
       gasLimit: EthImpl.numberTo0x(maxGasLimit),
