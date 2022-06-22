@@ -69,7 +69,7 @@ spec:
               secretKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: CHAIN_ID
-                optional: false
+                optional: true
           - name: MIRROR_NODE_URL
             valueFrom:
               secretKeyRef:
