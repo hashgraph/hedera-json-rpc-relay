@@ -4,20 +4,16 @@ import * as htsData from '../../.htsTokenAddress.json';
 describe('Test Core Hedera User Scenarios', function() {
   this.timeout(180000);
 
-  const resetMetamaskConnection = function() {
-    cy.wait(15000);
-    cy.disconnectMetamaskWalletFromAllDapps();
-    cy.resetMetamaskAccount();
-
+  const connectToMetamask = function() {
     cy.visit('http://localhost:3000');
     cy.contains('Connect Account').click();
     cy.switchToMetamaskWindow();
-    cy.acceptMetamaskAccess().should('be.true');
+    cy.acceptMetamaskAccess();
     cy.switchToCypressWindow();
   };
 
   it('Connects with Metamask', function() {
-    resetMetamaskConnection();
+    connectToMetamask();
 
     // check the UI
     cy.get('#showAliasBtn').should('not.be.disabled');
@@ -27,7 +23,9 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Show alias', function() {
-    resetMetamaskConnection();
+    // connectToMetamask();
+    cy.visit('http://localhost:3000');
+    cy.contains('Connect Account').click();
 
     cy.get('#showAliasBtn').should('not.be.disabled').click();
     cy.confirmMetamaskSignatureRequest();
@@ -35,7 +33,9 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Deploy contract', function() {
-    resetMetamaskConnection();
+    // connectToMetamask();
+    cy.visit('http://localhost:3000');
+    cy.contains('Connect Account').click();
 
     // deploy the contract
     cy.get('#btnDeployContract').should('not.be.disabled').click();
@@ -58,7 +58,9 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Transfer HTS token', function() {
-    resetMetamaskConnection();
+    // connectToMetamask();
+    cy.visit('http://localhost:3000');
+    cy.contains('Connect Account').click();
 
     // test the HTS transfer
     cy.get('#htsTokenAddressField').type(htsData.HTS_ADDRESS);
@@ -71,7 +73,9 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Transfer HBARs', function() {
-    resetMetamaskConnection();
+    // connectToMetamask();
+    cy.visit('http://localhost:3000');
+    cy.contains('Connect Account').click();
 
     cy.get('#sendHbarsToField').type('0x54C51b7637BF6fE9709e1e0EBc8b2Ca6a24b0f0A');
     cy.get('#sendHbarsAmountField').type('10000000000000000');
