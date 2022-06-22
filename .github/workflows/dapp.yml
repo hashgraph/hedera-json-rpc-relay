@@ -25,7 +25,8 @@ jobs:
           node-version: 16
 
       - name: Setup xvfb (Linux)
-        run: sudo apt-get install -y xvfb libgbm1 xdg-utils fonts-liberation libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+        run:
+          sudo apt-get install -y xvfb libgbm1 xdg-utils fonts-liberation libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
           # sudo /usr/bin/Xvfb -screen 0 1280x1024x24 :99 &
 
       - name: Checkout repo
@@ -48,11 +49,18 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
-      - name: Build the local node
-        run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
+      # - name: Build the local node
+      #   run: cd /home/runner/work/hedera-json-rpc-relay/hedera-json-rpc-relay/node_modules/@hashgraph/hedera-local && docker-compose build
 
-      - name: Run Local Node + RPC Server
-        run: npm run integration:prerequisite &
+      - name: Run Local Node
+        run: npx hedera-local restart
+        env:
+          NETWORK_NODE_IMAGE_TAG': "0.26.2"
+          HAVEGED_IMAGE_TAG': "0.26.2"
+          MIRROR_IMAGE_TAG': "0.58.0"
+
+      - name: Run RPC Server
+        run: npm run start &
 
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
