@@ -63,10 +63,16 @@ jobs:
         run: npm run integration:prerequisite &
 
       - name: Install dapp dependencies
-        run: cd ./dapp-example/ && npm ci
+        run: |
+          cd ./dapp-example/ && npm ci
+          npm install -g serve
+          npx cypress info
 
-      # - name: Run the dapp
-      #   run: npm start --prefix ./dapp-example/ &
+      - name: Run the dapp
+        run: |
+          cd ./dapp-example/ && npm run build
+          cd ./dapp-example/ && serve -s build &
+        # npm start --prefix ./dapp-example/ &
 
       - name: Run the dapp bootstrap script
         run: npm run bootstrap-tests --prefix ./dapp-example/
@@ -74,21 +80,20 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      - name: Cypress tests
-        uses: cypress-io/github-action@v2
-        with:
-          browser: chrome
-          install: false
-          headed: true
-          working-directory: dapp-example
-          start: npm start
-          wait-on: 'http://localhost:3000'
-          config-file: synpress.json
-        # env:
-        #   DISPLAY: :99
-      # - name: Run the dapp tests
-      #   uses: nick-fields/retry@v2
+      # - name: Cypress tests
+      #   uses: cypress-io/github-action@v2
       #   with:
-      #     max_attempts: 3
-      #     timeout_minutes: 10
-      #     command: npm run only-tests --prefix ./dapp-example/
+      #     browser: chrome
+      #     install: false
+      #     headed: true
+      #     working-directory: dapp-example
+      #     start: npm start
+      #     wait-on: 'http://localhost:3000'
+      #     config-file: synpress.json
+
+      - name: Run the dapp tests
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 10
+          command: npm run only-tests --prefix ./dapp-example/
