@@ -19,6 +19,7 @@
     "cypress": "^10.1.0",
     "cypress-wait-until": "^1.7.2",
     "env-cmd": "^10.1.0",
+    "http-server": "^14.1.1",
     "start-server-and-test": "^1.14.0"
   },
   "scripts": {
@@ -27,7 +28,7 @@
     "bootstrap-tests": "env-cmd node tests/support/bootstrap.js",
     "only-tests": "env-cmd npx synpress run -cf synpress.json",
     "test": "npm run bootstrap-tests && npm run only-tests",
-    "ci-tests": "start-server-and-test start http://localhost:3000 only-tests",
+    "ci-tests": "start-server-and-test 'http-server build -p 3000 -a localhost' 3000 only-tests",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

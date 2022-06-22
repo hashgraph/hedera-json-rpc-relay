@@ -64,9 +64,12 @@ jobs:
         run: npm run integration:prerequisite &
 
       - name: Install dapp dependencies
-        run: |
-          cd ./dapp-example/ && npm ci
-          npm install -g serve
+        run: cd ./dapp-example/ && npm ci
+
+      - name: Build the dapp
+        run: npm run build --prefix ./dapp-example/
+        env:
+          CI: false
 
       # - name: Run the dapp
       #   run: npm start --prefix ./dapp-example/ &
