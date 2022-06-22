@@ -65,8 +65,8 @@ jobs:
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
 
-      - name: Run the dapp
-        run: npm start --prefix ./dapp-example/ &
+      # - name: Run the dapp
+      #   run: npm start --prefix ./dapp-example/ &
 
       - name: Run the dapp bootstrap script
         run: npm run bootstrap-tests --prefix ./dapp-example/
