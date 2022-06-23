@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Chip, Grid, Typography } from "@mui/material";
+import { Button, Chip, Grid, TextField, Typography } from '@mui/material';
 import { Box, Container } from "@mui/system";
 import { ethers } from "ethers";
 
@@ -15,6 +15,9 @@ function App() {
   const [chain, setChain] = useState(null);
   const [alias, setAlias] = useState('');
   const [balance, setBalance] = useState(null);
+  const [hbarsAmount, setHbarsAmount] = useState(0);
+  const [hbarsToAddress, setHbarsToAddress] = useState('');
+  const [sendHbarMsg, setSendHbarMsg] = useState(null);
 
   const { recoveredPublicKeyToAccountId } = useHederaSdk();
 
@@ -31,6 +34,9 @@ function App() {
         setBalance(null);
         setAlias('')
         setChain(chainId)
+        setHbarsAmount(0)
+        setHbarsToAddress('')
+        setHbarsToAddress(null)
       });
     }
   }, []);
@@ -111,6 +117,14 @@ function App() {
     }
   }, [signer, address]);
 
+  const sendHbarsBtnHandle = useCallback(async () => {
+    await signer.sendTransaction({
+      to: hbarsToAddress,
+      value: hbarsAmount
+    });
+    setSendHbarMsg('Done');
+  }, [signer, hbarsToAddress, hbarsAmount]);
+
   return (
     <Container>
       {errorMessage ? (
@@ -143,12 +157,39 @@ function App() {
             Status: {isConnected ? <Chip label={status.label} color={status.color} /> : null}
           </Typography>
           <br />
-          <Button onClick={showAccountIdHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
+          <Button id="showAliasBtn" onClick={showAccountIdHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
             Show alias
           </Button>
-          <Typography variant="h6" style={{ wordBreak: 'break-word' }}>
+          <Typography id="aliasField" variant="h6" style={{ wordBreak: 'break-word' }}>
             {alias}
           </Typography>
+          <br />
+
+          <Typography variant="h5" sx={{ textDecoration: 'underline' }}> Send HBARs </Typography>
+          <TextField
+            id="sendHbarsToField"
+            fullWidth
+            label="To"
+            sx={{ m: 1 }}
+            variant="standard"
+            value={hbarsToAddress}
+            onChange={(e) => setHbarsToAddress(e.target.value)}
+          />
+          <TextField
+            id="sendHbarsAmountField"
+            fullWidth
+            label="Amount"
+            sx={{ m: 1 }}
+            variant="standard"
+            type="number"
+            value={hbarsAmount}
+            onChange={(e) => setHbarsAmount(e.target.value)}
+          />
+          <Button id="sendHbarsBtn" onClick={sendHbarsBtnHandle} disabled={!isConnected} size="medium" variant="contained" color="primary">
+            Send
+          </Button>
+          <br />
+          <Typography id="sendHbarMsg" variant="h6"> {sendHbarMsg} </Typography>
 
           {/* Contracts Section */}
           <Box sx={{ mt: '2em', mb: '2em' }}>
