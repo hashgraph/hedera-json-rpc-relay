@@ -58,7 +58,7 @@ const verifyBlockConstants = (block: Block) => {
   expect(block.extraData).equal(EthImpl.emptyHex);
   expect(block.miner).equal(EthImpl.zeroAddressHex);
   expect(block.mixHash).equal(EthImpl.zeroHex32Byte);
-  expect(block.nonce).equal(EthImpl.zeroHex);
+  expect(block.nonce).equal(EthImpl.zeroHex8Byte);
   expect(block.receiptsRoot).equal(EthImpl.zeroHex32Byte);
   expect(block.sha3Uncles).equal(EthImpl.emptyArrayHex);
   expect(block.stateRoot).equal(EthImpl.zeroHex32Byte);

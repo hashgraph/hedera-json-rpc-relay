@@ -850,7 +850,7 @@ export class EthImpl implements Eth {
       logsBloom: EthImpl.emptyBloom, //TODO calculate full block boom in mirror node
       miner: EthImpl.zeroAddressHex,
       mixHash: EthImpl.zeroHex32Byte,
-      nonce: EthImpl.zeroHex,
+      nonce: EthImpl.zeroHex8Byte,
       number: EthImpl.numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
       receiptsRoot: EthImpl.zeroHex32Byte,
