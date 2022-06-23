@@ -27,6 +27,7 @@ import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
 import app from '../../dist/server';
+import {Hbar} from "@hashgraph/sdk";
 
 const testLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -50,6 +51,7 @@ const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
 const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
+let startOperatorBalance: Hbar;
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -62,6 +64,15 @@ describe('RPC Server Acceptance Tests', function () {
     global.logger = logger;
 
     before(async () => {
+        // configuration details
+        logger.info('Acceptance Tests Configurations successfully loaded');
+        logger.info(`LOCAL_NODE: ${process.env.LOCAL_NODE}`);
+        logger.info(`CHAIN_ID: ${process.env.CHAIN_ID}`);
+        logger.info(`HEDERA_NETWORK: ${process.env.HEDERA_NETWORK}`);
+        logger.info(`OPERATOR_ID_MAIN: ${process.env.OPERATOR_ID_MAIN}`);
+        logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
+        logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
+
 
         if (USE_LOCAL_NODE === 'true') {
             runLocalHederaNetwork();
@@ -71,9 +82,16 @@ describe('RPC Server Acceptance Tests', function () {
             runLocalRelay();
         }
 
+        // cache start balance
+        startOperatorBalance = global.servicesNode.getOperatorBalance();
     });
 
-    after(function () {
+    after(async function () {
+        const endOperatorBalance = await global.servicesNode.getOperatorBalance();
+        const cost = startOperatorBalance.toTinybars().subtract(endOperatorBalance.toTinybars());
+        logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
+
+
         if (USE_LOCAL_NODE === 'true') {
             // stop local-node
             logger.info('Shutdown local node');

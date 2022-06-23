@@ -19,7 +19,7 @@
  */
 
 // external resources
-import { BN, constants, expectEvent, expectRevert} from '@openzeppelin/test-helpers';
+import { BN, constants, expectEvent } from '@openzeppelin/test-helpers';
 import { AliasAccount } from '../clients/servicesClient';
 import { ethers, BigNumber } from 'ethers';
 
@@ -27,21 +27,29 @@ import ERC20MockJson from '../contracts/ERC20Mock.json';
 import ERC20DecimalsMockJson from '../contracts/ERC20DecimalsMock.json';
 
 import {expect} from "chai";
-const { ZERO_ADDRESS } = constants;
+const { ZERO_ADDRESS, MAX_UINT256 } = constants;
 import {
     shouldBehaveLikeERC20,
     shouldBehaveLikeERC20Transfer,
     shouldBehaveLikeERC20Approve,
 } from '../helpers/erc20.behaviour';
 
+
 describe('ERC20 Acceptance Tests', function () {
-    this.timeout(240 * 1000); // 240 seconds
+    this.timeout(20 * 1000); // 240 seconds
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
 
     // @ts-ignore
     const {servicesNode, mirrorNode, relay, logger} = global;
 
+    const expectRevert = async (promise, revertReason) => {
+        const tx = await promise;
+        // await tx.wait();
+        const mirrorReceipt = await mirrorNode.get(`/contracts/results/${tx.hash}`);
+        expect(mirrorReceipt).to.exist;
+        expect(mirrorReceipt.result).to.eq(revertReason);
+    }
 
     // cached entities
     const accounts: AliasAccount[] = [];
@@ -73,7 +81,6 @@ describe('ERC20 Acceptance Tests', function () {
         // await contract.deployed();
         const contractResult = await mirrorNode.get(`/contracts/results/${contract.deployTransaction.hash}`);
         const mirrorContract = await mirrorNode.get(`/contracts/${contractResult.contract_id}`);
-
         contract = new ethers.Contract(mirrorContract.evm_address, contractJson.abi, accounts[0].wallet);
         return contract;
     };
@@ -154,9 +161,11 @@ describe('ERC20 Acceptance Tests', function () {
 
             describe('transfer from', function () {
                 let spender;
+                let spenderWallet;
 
                 before(async function () {
-                    spender = recipient;
+                    spender = accounts[1].address;
+                    spenderWallet = accounts[1].wallet;
                 });
 
                 describe('when the token owner is not the zero address', function () {
@@ -166,26 +175,28 @@ describe('ERC20 Acceptance Tests', function () {
                     });
 
                     describe('when the recipient is not the zero address', function () {
-                        let to, contract2;
+                        let to;
                         before(async function () {
                             to = anotherAccount;
                         });
 
                         describe('when the spender has enough allowance', function () {
-                            beforeEach(async function () {
-                                contract.connect(initialHolder);
+                            before(async function () {
                                 await contract.approve(spender, initialSupply, { from: initialHolder });
                             });
 
                             describe('when the token owner has enough balance', function () {
-                                let amount;
+                                let amount, tx;
                                 before(async function () {
                                     amount = initialSupply;
                                 });
 
                                 it('transfers the requested amount', async function () {
-                                    const transferTx = await contract.connect(accounts[1].wallet).transferFrom(tokenOwner, to, amount);
-                                    await transferTx.wait();
+                                    tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount);
+
+                                    // await transferTx.wait();
+                                    await mirrorNode.get(`/contracts/results/${tx.hash}`);
+
                                     const ownerBalance = await contract.balanceOf(tokenOwner);
                                     const toBalance = await contract.balanceOf(to);
                                     expect(ownerBalance.toString()).to.be.equal('0');
@@ -193,20 +204,20 @@ describe('ERC20 Acceptance Tests', function () {
                                 });
 
                                 it('decreases the spender allowance', async function () {
-                                    await contract.connect(accounts[1].wallet).transferFrom(tokenOwner, to, amount);
-                                    const balance = await contract.allowance(tokenOwner, spender);
-                                    expect(balance.toString()).to.be.equal('0');
+                                    const allowance = await contract.allowance(tokenOwner, spender);
+                                    expect(allowance.toString()).to.be.equal('0');
                                 });
 
-                                it('emits a transfer event', async function () {
+                                xit('emits a transfer event', async function () {
+                                    const txReceipt = await relay.call('eth_getTransactionReceipt', [tx.hash]);
                                     expectEvent(
-                                        await contract.transferFrom(tokenOwner, to, amount, { from: spender }),
+                                        txReceipt,
                                         'Transfer',
-                                        { from: tokenOwner, to: to, value: amount },
+                                        {from: tokenOwner, to: to, value: amount},
                                     );
                                 });
 
-                                it('emits an approval event', async function () {
+                                xit('emits an approval event', async function () {
                                     expectEvent(
                                         await contract.transferFrom(tokenOwner, to, amount, { from: spender }),
                                         'Approval',
@@ -225,8 +236,8 @@ describe('ERC20 Acceptance Tests', function () {
 
                                 it('reverts', async function () {
                                     await expectRevert(
-                                        contract.transferFrom(tokenOwner, to, amount, { from: spender }),
-                                        `${errorPrefix}: transfer amount exceeds balance`,
+                                        contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                        'CONTRACT_REVERT_EXECUTED'
                                     );
                                 });
                             });
@@ -251,8 +262,8 @@ describe('ERC20 Acceptance Tests', function () {
 
                                 it('reverts', async function () {
                                     await expectRevert(
-                                        contract.transferFrom(tokenOwner, to, amount, { from: spender }),
-                                        `${errorPrefix}: insufficient allowance`,
+                                        contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                        `CONTRACT_REVERT_EXECUTED`,
                                     );
                                 });
                             });
@@ -269,8 +280,8 @@ describe('ERC20 Acceptance Tests', function () {
 
                                 it('reverts', async function () {
                                     await expectRevert(
-                                        contract.transferFrom(tokenOwner, to, amount, { from: spender }),
-                                        `${errorPrefix}: transfer amount exceeds balance`,
+                                        contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                        `CONTRACT_REVERT_EXECUTED`,
                                     );
                                 });
                             });
@@ -284,7 +295,9 @@ describe('ERC20 Acceptance Tests', function () {
                             it('does not decrease the spender allowance', async function () {
                                 await contract.transferFrom(tokenOwner, to, 1, { from: spender });
 
-                                expect(await contract.allowance(tokenOwner, spender)).to.be.bignumber.equal(MAX_UINT256);
+                                const allowance = await contract.allowance(tokenOwner, spender);
+
+                                expect(allowance.toString()).to.be.equal(MAX_UINT256.toString());
                             });
 
                             it('does not emit an approval event', async function () {
@@ -297,18 +310,18 @@ describe('ERC20 Acceptance Tests', function () {
                     });
 
                     describe('when the recipient is the zero address', function () {
-                        let amount, to;
+                        let amount, to, tokenOwnerWallet;
 
                         beforeEach(async function () {
                             amount = initialSupply;
                             to = ZERO_ADDRESS;
-                            await contract.approve(spender, amount, { from: tokenOwner });
+                            tokenOwnerWallet = accounts[0].wallet;
+                            await contract.connect(tokenOwnerWallet).approve(spender, amount);
                         });
 
                         it('reverts', async function () {
-                            await expectRevert(contract.transferFrom(
-                                tokenOwner, to, amount, { from: spender }), `${errorPrefix}: transfer to the zero address`,
-                            );
+                            await expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                `CONTRACT_REVERT_EXECUTED`);
                         });
                     });
                 });

@@ -63,8 +63,6 @@ function shouldBehaveLikeERC20 (contract, errorPrefix, initialSupply, initialHol
                         });
 
                         it('decreases the spender allowance', async function () {
-                            await contract.transferFrom(tokenOwner, to, amount, { from: spender });
-
                             expect(await contract.allowance(tokenOwner, spender)).to.be.bignumber.equal('0');
                         });
 
