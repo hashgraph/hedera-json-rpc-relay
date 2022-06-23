@@ -57,7 +57,8 @@ export default class MirrorClient {
 
                 // if retry condition is not specified, by default idempotent requests are retried
                 return error?.response?.status === 400 || error?.response?.status === 404;
-            }
+            },
+            shouldResetTimeout: true,
         });
 
         this.client = mirrorNodeClient;

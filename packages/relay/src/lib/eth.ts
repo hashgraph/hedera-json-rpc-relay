@@ -840,7 +840,7 @@ export class EthImpl implements Eth {
     const blockHash = blockResponse.hash.substring(0, 66);
     const transactionArray = showDetails ? transactionObjects : transactionHashes;
     return new Block({
-      baseFeePerGas: EthImpl.numberTo0x(0), //TODO should be gasPrice
+      baseFeePerGas: await this.gasPrice(),
       difficulty: EthImpl.zeroHex,
       extraData: EthImpl.emptyHex,
       gasLimit: EthImpl.numberTo0x(maxGasLimit),
@@ -848,15 +848,15 @@ export class EthImpl implements Eth {
       hash: blockHash,
       logsBloom: EthImpl.emptyBloom, //TODO calculate full block boom in mirror node
       miner: EthImpl.zeroAddressHex,
-      mixHash: EthImpl.emptyArrayHex,
-      nonce: EthImpl.zeroHex8Byte,
+      mixHash: EthImpl.emptyHex,
+      nonce: EthImpl.zeroHex,
       number: EthImpl.numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
-      receiptsRoot: EthImpl.emptyArrayHex,
+      receiptsRoot: EthImpl.zeroHex,
       timestamp: EthImpl.numberTo0x(Number(timestamp)),
       sha3Uncles: EthImpl.emptyArrayHex,
       size: EthImpl.numberTo0x(blockResponse.size | 0),
-      stateRoot: EthImpl.emptyArrayHex,
+      stateRoot: EthImpl.zeroHex,
       totalDifficulty: EthImpl.zeroHex,
       transactions: transactionArray,
       transactionsRoot: transactionArray.length == 0 ? EthImpl.ethEmptyTrie : blockHash,

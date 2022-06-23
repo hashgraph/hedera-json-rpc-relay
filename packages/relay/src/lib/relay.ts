@@ -119,7 +119,7 @@ export class RelayImpl implements Relay {
       default: {
         if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
           client = client.setOperator(
-            AccountId.fromString(process.env.OPERATOR_ID_MAIN),
+            AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()),
             PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
           );
         }

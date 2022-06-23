@@ -18,7 +18,7 @@
  *
  */
 
-import { BigNumber } from 'ethers';
+import { ethers, BigNumber } from 'ethers';
 import Assertions from './assertions';
 
 export class Utils {
@@ -41,6 +41,10 @@ export class Utils {
 
     static subtractBigNumberHexes = (hex1, hex2) => {
         return BigNumber.from(hex1).sub(BigNumber.from(hex2));
+    };
+
+    static tinyBarsToWeibars = (value) => {
+        return ethers.utils.hexValue(ethers.utils.parseUnits(Number(value).toString(), 10));
     };
 
 }

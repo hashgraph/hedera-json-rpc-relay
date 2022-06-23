@@ -24,7 +24,7 @@ import { BigNumber, ethers } from 'ethers';
 import { AliasAccount } from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
-import { AccountBalanceQuery, ContractFunctionParameters } from '@hashgraph/sdk';
+import { AccountBalanceQuery, ContractFunctionParameters, Hbar } from '@hashgraph/sdk';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
@@ -48,12 +48,49 @@ describe('RPC Server Acceptance Tests', function () {
     let mirrorContractDetails;
     let mirrorPrimaryAccount;
     let mirrorSecondaryAccount;
+    let startOperatorBalance: Hbar;
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
     const ONE_WEIBAR = ethers.utils.parseUnits('1', 18);
 
-    before(async () => {
+const NON_EXISTING_ADDRESS = '0x5555555555555555555555555555555555555555';
+const NON_EXISTING_TX_HASH = '0x5555555555555555555555555555555555555555555555555555555555555555';
+const NON_EXISTING_BLOCK_HASH = '0x555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555';
+const NON_EXISTING_BLOCK_NUMBER = 99999999;
+const NON_EXISTING_INDEX = 999999;
+
+describe('RPC Server Acceptance Tests', function() {
+    this.timeout(240 * 1000); // 240 seconds
+
+    const accounts: AliasAccount[] = [];
+
+    let relayServer; // Relay Server
+    const servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({ name: `services-client` }));
+    const mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-client` }));
+    const relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-client` }));
+
+    this.beforeAll(async () => {
+        // configuration details
+        logger.info('Acceptance Tests Configurations successfully loaded');
+        logger.info(`LOCAL_NODE: ${process.env.LOCAL_NODE}`);
+        logger.info(`CHAIN_ID: ${process.env.CHAIN_ID}`);
+        logger.info(`HEDERA_NETWORK: ${process.env.HEDERA_NETWORK}`);
+        logger.info(`OPERATOR_ID_MAIN: ${process.env.OPERATOR_ID_MAIN}`);
+        logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
+        logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
+
+        if (USE_LOCAL_NODE === 'true') {
+            runLocalHederaNetwork();
+        }
+
+        if (RELAY_URL === LOCAL_RELAY_URL) {
+            runLocalRelay();
+        }
+
+        // cache start balance
+        startOperatorBalance = await servicesNode.getOperatorBalance();
+
         accounts[0] = await servicesNode.createAliasAccount();
         accounts[1] = await servicesNode.createAliasAccount();
         accounts[2] = await servicesNode.createAliasAccount(20);
@@ -82,24 +119,79 @@ describe('RPC Server Acceptance Tests', function () {
     describe('Block related RPC calls', () => {
 
         let mirrorBlock;
+        let mirrorContractResults;
+        const mirrorTransactions: any[] = [];
 
         before(async () => {
             mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`)).blocks[0];
+            const timestampQuery = `timestamp=gte:${mirrorBlock.timestamp.from}&timestamp=lte:${mirrorBlock.timestamp.to}`;
+            mirrorContractResults = (await mirrorNode.get(`/contracts/results?${timestampQuery}`)).results;
+
+            for (let i = 0; i < mirrorContractResults.length; i++) {
+                const res = mirrorContractResults[i];
+                mirrorTransactions.push((await mirrorNode.get(`/contracts/${res.contract_id}/results/${res.timestamp}`)));
+            }
+
+        });
+
+        it('should execute "eth_getBlockByHash", hydrated transactions not specified', async function () {
+            const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
+        });
+
+        it('should execute "eth_getBlockByHash", hydrated transactions = false', async function () {
+            const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, false]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
+        });
+
+        it('should execute "eth_getBlockByHash", hydrated transactions = true', async function () {
+            const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, true]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
+        });
+
+        it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = false', async function () {
+            const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, false]);
+            expect(blockResult).to.be.null;
         });
 
         it('should execute "eth_getBlockByHash"', async function () {
             const relayBlock = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, 'true']);
             Assertions.block(relayBlock, mirrorBlock);
+
+        it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = true', async function () {
+            const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, true]);
+            expect(blockResult).to.be.null;
+        });
+
+        it('should execute "eth_getBlockTransactionCountByHash" for non-existing block hash', async function () {
+            const res = await relay.call('eth_getBlockTransactionCountByHash', [NON_EXISTING_BLOCK_HASH]);
+            expect(res).to.be.null;
         });
 
         it('should execute "eth_getBlockByNumber"', async function () {
-            const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, true]);
-            Assertions.block(blockResult, mirrorBlock);
+        it('should execute "eth_getBlockByNumber", hydrated transactions not specified', async function () {
+            const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
         });
 
-        it('should execute "eth_getBlockTransactionCountByHash"', async function () {
-            const res = await relay.call('eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
-            expect(res).to.be.equal(mirrorBlock.count);
+        it('should execute "eth_getBlockByNumber", hydrated transactions = false', async function () {
+            const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, false]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
+        });
+
+        it('should execute "eth_getBlockByNumber", hydrated transactions = true', async function () {
+            const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, true]);
+            Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
+        });
+
+        it('should execute "eth_getBlockByNumber" for non existing block number and hydrated transactions = true', async function () {
+            const blockResult = await relay.call('eth_getBlockByNumber', [NON_EXISTING_BLOCK_NUMBER, true]);
+            expect(blockResult).to.be.null;
+        });
+
+        it('should execute "eth_getBlockByNumber" for non existing block number and hydrated transactions = false', async function () {
+            const blockResult = await relay.call('eth_getBlockByNumber', [NON_EXISTING_BLOCK_NUMBER, false]);
+            expect(blockResult).to.be.null;
         });
 
         it('should execute "eth_getBlockTransactionCountByNumber"', async function () {
@@ -107,14 +199,47 @@ describe('RPC Server Acceptance Tests', function () {
             expect(res).to.be.equal(mirrorBlock.count);
         });
 
+        it('should execute "eth_getBlockTransactionCountByNumber" for non-existing block number', async function () {
+            const res = await relay.call('eth_getBlockTransactionCountByNumber', [NON_EXISTING_BLOCK_NUMBER]);
+            expect(res).to.be.null;
+        });
+
+        it('should execute "eth_getBlockTransactionCountByHash"', async function () {
+            const res = await relay.call('eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
+            expect(res).to.be.equal(mirrorBlock.count);
+        });
+
+        it('should execute "eth_getBlockTransactionCountByHash" for non-existing block hash', async function () {
+            const res = await relay.call('eth_getBlockTransactionCountByHash', [NON_EXISTING_BLOCK_HASH]);
+            expect(res).to.be.null;
+        });
+
+        it('should execute "eth_getBlockTransactionCountByNumber"', async function () {
+
+        it('should execute "eth_blockNumber"', async function () {
+
+            const mirrorBlocks = await mirrorNode.get(`blocks`);
+            expect(mirrorBlocks).to.have.property('blocks');
+            expect(mirrorBlocks.blocks.length).to.gt(0);
+            const mirrorBlockNumber = mirrorBlocks.blocks[0].number;
+
+            const res = await relay.call('eth_blockNumber', []);
+            const blockNumber = Number(res);
+            expect(blockNumber).to.exist;
+
+            // In some rare occasions, the relay block might be equal to the mirror node block + 1
+            // due to the mirror node block updating after it was retrieved and before the relay.call completes
+            expect(blockNumber).to.be.oneOf([mirrorBlockNumber, mirrorBlockNumber + 1]);
+        });
     });
 
     describe('Transaction related RPC Calls', () => {
-
+        const defaultGasPrice = Assertions.defaultGasPrice;
+        const defaultGasLimit = 3_000_000;
         const defaultLegacyTransactionData = {
             value: ONE_TINYBAR,
-            gasPrice: 720000000000,
-            gasLimit: 3000000
+            gasPrice: defaultGasPrice,
+            gasLimit: defaultGasLimit
         };
 
         const default155TransactionData = {
@@ -125,17 +250,17 @@ describe('RPC Server Acceptance Tests', function () {
         const defaultLondonTransactionData = {
             value: ONE_TINYBAR,
             chainId: Number(CHAIN_ID),
-            maxPriorityFeePerGas: 720000000000,
-            maxFeePerGas: 720000000000,
-            gasLimit: 300000,
+            maxPriorityFeePerGas: defaultGasPrice,
+            maxFeePerGas: defaultGasPrice,
+            gasLimit: defaultGasLimit,
             type: 2
         };
 
         const defaultLegacy2930TransactionData = {
             value: ONE_TINYBAR,
             chainId: Number(CHAIN_ID),
-            gasPrice: 720000000000,
-            gasLimit: 3000000,
+            gasPrice: defaultGasPrice,
+            gasLimit: defaultGasLimit,
             type: 1
         };
 
@@ -145,9 +270,31 @@ describe('RPC Server Acceptance Tests', function () {
             Assertions.transaction(response, mirrorContractDetails);
         });
 
+        it('should execute "eth_getTransactionByBlockHashAndIndex" for invalid block hash', async function () {
+            const response = await relay.call('eth_getTransactionByBlockHashAndIndex',
+                [NON_EXISTING_BLOCK_HASH, mirrorContractDetails.transaction_index]);
+            expect(response).to.be.null;
+        });
+
+        it('should execute "eth_getTransactionByBlockHashAndIndex" for invalid index', async function () {
+            const response = await relay.call('eth_getTransactionByBlockHashAndIndex',
+                [mirrorContractDetails.block_hash, NON_EXISTING_INDEX]);
+            expect(response).to.be.null;
+        });
+
         it('should execute "eth_getTransactionByBlockNumberAndIndex"', async function () {
             const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, mirrorContractDetails.transaction_index]);
             Assertions.transaction(response, mirrorContractDetails);
+        });
+
+        it('should execute "eth_getTransactionByBlockNumberAndIndex" for invalid index', async function () {
+            const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, NON_EXISTING_INDEX]);
+            expect(response).to.be.null;
+        });
+
+        it('should execute "eth_getTransactionByBlockNumberAndIndex" for non-exising block number', async function () {
+            const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [NON_EXISTING_BLOCK_NUMBER, mirrorContractDetails.transaction_index]);
+            expect(response).to.be.null;
         });
 
         it('should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
@@ -160,11 +307,11 @@ describe('RPC Server Acceptance Tests', function () {
             const legacyTxHash = await relay.sendRawTransaction(signedTx);
             // Since the transactionId is not available in this context
             // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-            await mirrorNode.get(`contracts/results/${legacyTxHash}`);
+            const mirrorResult = await mirrorNode.get(`contracts/results/${legacyTxHash}`);
 
             const res = await relay.call('eth_getTransactionReceipt', [legacyTxHash]);
             // FIXME here we must assert that the alias address is the `from` / `to` and not the `0x` prefixed one
-            Assertions.transactionReceipt(res, transaction, {from: Utils.idToEvmAddress(accounts[2].accountId.toString())});
+            Assertions.transactionReceipt(res, mirrorResult);
         });
 
         it('should execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
@@ -177,16 +324,15 @@ describe('RPC Server Acceptance Tests', function () {
             const transactionHash = await relay.sendRawTransaction(signedTx);
             // Since the transactionId is not available in this context
             // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-            await mirrorNode.get(`contracts/results/${transactionHash}`);
+            const mirrorResult = await mirrorNode.get(`contracts/results/${transactionHash}`);
 
             const res = await relay.call('eth_getTransactionReceipt', [transactionHash]);
             // FIXME here we must assert that the alias address is the `from` / `to` and not the `0x` prefixed one
-            Assertions.transactionReceipt(res, transaction, {from: Utils.idToEvmAddress(accounts[2].accountId.toString())});
+            Assertions.transactionReceipt(res, mirrorResult);
         });
 
         it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {
-            const nonExistingTxHash = '0x5555555555555555555555555555555555555555555555555555555555555555';
-            const res = await relay.call('eth_getTransactionReceipt', [nonExistingTxHash]);
+            const res = await relay.call('eth_getTransactionReceipt', [NON_EXISTING_TX_HASH]);
             expect(res).to.be.null;
         });
 
@@ -279,7 +425,7 @@ describe('RPC Server Acceptance Tests', function () {
         });
 
         it('should execute "eth_getTransactionCount" for account with non-zero nonce', async function () {
-            const account = await servicesNode.createAliasAccount(10);
+            const account = await servicesNode.createAliasAccount();
             // Wait for account creation to propagate
             await mirrorNode.get(`/accounts/${account.accountId}`);
             const transaction = {
@@ -296,6 +442,25 @@ describe('RPC Server Acceptance Tests', function () {
 
             const res = await relay.call('eth_getTransactionCount', [account.address, 'latest']);
             expect(res).to.be.equal('0x1');
+        });
+
+        it('should execute "eth_getTransactionByHash" for existing transaction', async function () {
+            const transaction = {
+                ...defaultLondonTransactionData,
+                to: mirrorContract.evm_address,
+                nonce: await relay.getAccountNonce(accounts[2].address)
+            };
+            const signedTx = await accounts[2].wallet.signTransaction(transaction);
+            const transactionHash = await relay.sendRawTransaction(signedTx);
+            const mirrorTransaction = await mirrorNode.get(`/contracts/results/${transactionHash}`);
+
+            const res = await relay.call('eth_getTransactionByHash', [transactionHash]);
+            Assertions.transaction(res, mirrorTransaction);
+        });
+
+        it('should execute "eth_getTransactionByHash" for non-existing transaction and return null', async function () {
+            const res = await relay.call('eth_getTransactionByHash', [NON_EXISTING_TX_HASH]);
+            expect(res).to.be.null;
         });
     });
 
@@ -339,6 +504,11 @@ describe('RPC Server Acceptance Tests', function () {
     });
 
     describe('Hardcoded RPC Endpoints', () => {
+        let mirrorBlock;
+
+        before(async () => {
+            mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`)).blocks[0];
+        });
 
         it('should execute "eth_chainId"', async function () {
             const res = await relay.call('eth_chainId', [null]);
@@ -356,12 +526,22 @@ describe('RPC Server Acceptance Tests', function () {
         });
 
         it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
-            const res = await relay.call('eth_getUncleByBlockHashAndIndex', []);
+            const res = await relay.call('eth_getUncleByBlockHashAndIndex', [mirrorBlock.hash, 0]);
+            expect(res).to.be.null;
+        });
+
+        it('should execute "eth_getUncleByBlockHashAndIndex" for non-existing block hash and index=0', async function () {
+            const res = await relay.call('eth_getUncleByBlockHashAndIndex', [NON_EXISTING_BLOCK_HASH, 0]);
             expect(res).to.be.null;
         });
 
         it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
-            const res = await relay.call('eth_getUncleByBlockNumberAndIndex', []);
+            const res = await relay.call('eth_getUncleByBlockNumberAndIndex', [mirrorBlock.number, 0]);
+            expect(res).to.be.null;
+        });
+
+        it('should execute "eth_getUncleByBlockNumberAndIndex" for non-existing block number and index=0', async function () {
+            const res = await relay.call('eth_getUncleByBlockNumberAndIndex', [NON_EXISTING_BLOCK_NUMBER, 0]);
             expect(res).to.be.null;
         });
 
@@ -477,4 +657,42 @@ describe('RPC Server Acceptance Tests', function () {
             expect(res).to.eq('0x0');
         });
     });
+
+    this.afterAll(async () =>  {
+        const endOperatorBalance = await servicesNode.getOperatorBalance();
+        const cost = startOperatorBalance.toTinybars().subtract(endOperatorBalance.toTinybars());
+        logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
+
+        if (USE_LOCAL_NODE === 'true') {
+            // stop local-node
+            logger.info('Shutdown local node');
+            shell.exec('npx hedera-local stop');
+        }
+
+        // stop relay
+        logger.info('Stop relay');
+        if (relayServer !== undefined) {
+            relayServer.close();
+        }
+    });
+
+    function runLocalHederaNetwork() {
+        // set env variables for docker images until local-node is updated
+        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.26.2';
+        process.env['HAVEGED_IMAGE_TAG'] = '0.26.2';
+        process.env['MIRROR_IMAGE_TAG'] = '0.58.0';
+        logger.trace(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
+
+        // start local-node
+        logger.debug('Start local node');
+        shell.exec('npx hedera-local restart');
+        logger.trace('Hedera Hashgraph local node env started');
+    }
+
+    function runLocalRelay() {
+        // start relay
+        logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
+        relayServer = app.listen({ port: process.env.SERVER_PORT });
+    }
+
 });
