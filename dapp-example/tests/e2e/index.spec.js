@@ -5,7 +5,6 @@ describe('Test Core Hedera User Scenarios', function() {
   this.timeout(180000);
 
   const resetMetamaskConnection = function() {
-    // cy.wait(30000);
     cy.disconnectMetamaskWalletFromAllDapps();
     cy.resetMetamaskAccount();
 
