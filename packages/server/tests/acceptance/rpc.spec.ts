@@ -668,6 +668,26 @@ describe('RPC Server Acceptance Tests', function () {
         });
     });
 
+    describe('Gas Price related RPC endpoints', () => {
+        it('should call eth_feeHistory', async function() {
+            const res = await relay.call('eth_feeHistory', []);
+
+            expect(res.baseFeePerGasArray).to.exist.to.be.an('Array');
+            expect(res.gasUsedRatioArray).to.exist.to.be.an('Array');
+            expect(res.oldestBlockNumber).to.exist;
+            expect(res.baseFeePerGasArray[0]).to.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
+            expect(res.gasUsedRatioArray[0]).to.equal('0.5');
+            expect(res.oldestBlockNumber).to.equal('0x0');
+        });
+
+        it('should call eth_gasPrice', async function() {
+            const res = await relay.call('eth_gasPrice', []);
+
+            expect(res).to.exist;
+            expect(res).to.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
+        });
+    });
+
     this.afterAll(async () =>  {
         const endOperatorBalance = await servicesNode.getOperatorBalance();
         const cost = startOperatorBalance.toTinybars().subtract(endOperatorBalance.toTinybars());
