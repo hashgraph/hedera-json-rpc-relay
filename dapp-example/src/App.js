@@ -15,7 +15,7 @@ function App() {
   const [chain, setChain] = useState(null);
   const [alias, setAlias] = useState('');
   const [balance, setBalance] = useState(null);
-  const [hbarsAmount, setHbarsAmount] = useState('');
+  const [hbarsAmount, setHbarsAmount] = useState(0);
   const [hbarsToAddress, setHbarsToAddress] = useState('');
   const [sendHbarMsg, setSendHbarMsg] = useState(null);
 
@@ -34,8 +34,8 @@ function App() {
         setBalance(null);
         setAlias('')
         setChain(chainId)
-        setHbarsAmount(null)
-        setHbarsToAddress(null)
+        setHbarsAmount(0)
+        setHbarsToAddress('')
         setHbarsToAddress(null)
       });
     }
@@ -181,6 +181,7 @@ function App() {
             label="Amount"
             sx={{ m: 1 }}
             variant="standard"
+            type="number"
             value={hbarsAmount}
             onChange={(e) => setHbarsAmount(e.target.value)}
           />
