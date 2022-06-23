@@ -244,7 +244,7 @@ describe('RPC Server Acceptance Tests', function () {
     });
 
     describe('Transaction related RPC Calls', () => {
-        const defaultGasPrice = 720_000_000_000;
+        const defaultGasPrice = Assertions.defaultGasPrice;
         const defaultGasLimit = 3_000_000;
         const defaultLegacyTransactionData = {
             value: ONE_TINYBAR,

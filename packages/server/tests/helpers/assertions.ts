@@ -26,6 +26,7 @@ export default class Assertions {
     static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
     static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
     static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
+    static defaultGasPrice = 720_000_000_000;
 
 
     static assertId = (id) => {
@@ -53,7 +54,7 @@ export default class Assertions {
      */
     public static block(relayResponse, mirrorNodeResponse, mirrorTransactions, hydratedTransactions = false) {
         // Assert static values
-        expect(relayResponse.baseFeePerGas).to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.baseFeePerGas).to.be.equal(ethers.utils.hexValue(this.defaultGasPrice));
         expect(relayResponse.difficulty).to.be.equal(ethers.utils.hexValue(0));
         expect(relayResponse.extraData).to.be.equal(Assertions.emptyHex);
         expect(relayResponse.miner).to.be.equal(ethers.constants.AddressZero);
