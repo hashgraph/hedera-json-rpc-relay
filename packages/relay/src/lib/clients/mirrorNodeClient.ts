@@ -70,7 +70,7 @@ export class MirrorNodeClient {
         DESC: 'desc'
     };
 
-    private static badGatewayHttpStatusCode = 502;
+    private static unknownServerErrorHttpStatusCode = 567;
 
     /**
      * The logger used for logging all output from this class.
@@ -149,7 +149,7 @@ export class MirrorNodeClient {
             return response.data;
         } catch (error: any) {
             ms = Date.now() - start;
-            const effectiveStatusCode = error.response !== undefined ? error.response.status : MirrorNodeClient.badGatewayHttpStatusCode;            
+            const effectiveStatusCode = error.response !== undefined ? error.response.status : MirrorNodeClient.unknownServerErrorHttpStatusCode;            
             this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
             this.handleError(error, path, effectiveStatusCode, allowedErrorStatuses);
         }
