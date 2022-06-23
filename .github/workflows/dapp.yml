@@ -50,13 +50,6 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
-      # - name: Run Local Node
-      #   run: npx hedera-local restart
-      #   env:
-      #     NETWORK_NODE_IMAGE_TAG': "0.26.2"
-      #     HAVEGED_IMAGE_TAG': "0.26.2"
-      #     MIRROR_IMAGE_TAG': "0.58.0"
-
       - name: Run RPC Server
         run: npm run integration:prerequisite &
 
@@ -70,29 +63,12 @@ jobs:
         env:
           CI: false
 
-      # - name: Run the dapp
-      #   run: npm start --prefix ./dapp-example/ &
-
       - name: Run the dapp bootstrap script
-        run: npm run bootstrap-tests --prefix ./dapp-example/
-
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-
-      # - name: Cypress tests
-      #   uses: cypress-io/github-action@v2
-      #   with:
-      #     browser: chrome
-      #     install: false
-      #     headed: true
-      #     working-directory: dapp-example
-      #     start: npm start
-      #     wait-on: 'http://localhost:3000'
-      #     config-file: synpress.json
+        run: npm run bootstrap --prefix ./dapp-example/
 
       - name: Run the dapp tests
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
           timeout_minutes: 10
-          command: npm run only-tests --prefix ./dapp-example/
+          command: npm run test --prefix ./dapp-example/

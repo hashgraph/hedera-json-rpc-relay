@@ -23,8 +23,8 @@ const client = HederaSDK.Client
 
 const createAccountFromCompressedPublicKey = async function(compressedPublicKey) {
   const transferTransaction = await (new HederaSDK.TransferTransaction()
-    .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(1000))
-    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-1000)))
+    .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(100))
+    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-100)))
     .execute(client);
 
   const txTransaction = await (new HederaSDK.TransactionRecordQuery()

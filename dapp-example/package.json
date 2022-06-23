@@ -24,9 +24,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "bootstrap-tests": "env-cmd node tests/support/bootstrap.js",
-    "only-tests": "env-cmd npx synpress run -cf synpress.json",
-    "test": "npm run bootstrap-tests && npm run only-tests",
+    "bootstrap": "env-cmd node tests/support/bootstrap.js",
+    "test": "env-cmd npx synpress run -cf synpress.json",
     "start-prod": "http-server build -p 3000 -a localhost",
     "eject": "react-scripts eject"
   },
