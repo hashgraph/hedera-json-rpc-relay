@@ -69,6 +69,6 @@ jobs:
       - name: Run the dapp tests
         uses: nick-fields/retry@v2
         with:
-          max_attempts: 3
+          max_attempts: 10
           timeout_minutes: 10
           command: npm run test --prefix ./dapp-example/
