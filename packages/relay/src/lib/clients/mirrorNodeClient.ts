@@ -70,7 +70,7 @@ export class MirrorNodeClient {
         DESC: 'desc'
     };
 
-    private static httpCodeInternalServerError = 500;
+    private static badGatewayHttpStatusCode = 502;
 
     /**
      * The logger used for logging all output from this class.
@@ -149,7 +149,7 @@ export class MirrorNodeClient {
             return response.data;
         } catch (error: any) {
             ms = Date.now() - start;
-            const effectiveStatusCode = error.response !== undefined ? error.response.status : MirrorNodeClient.httpCodeInternalServerError;            
+            const effectiveStatusCode = error.response !== undefined ? error.response.status : MirrorNodeClient.badGatewayHttpStatusCode;            
             this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
             this.handleError(error, path, effectiveStatusCode, allowedErrorStatuses);
         }
@@ -159,7 +159,7 @@ export class MirrorNodeClient {
     handleError(error: any, path: string, effectiveStatusCode: number, allowedErrorStatuses?: number[]) {
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
             if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
-                this.logger.debug(`[GET] ${path} ${error.response.status} status`);
+                this.logger.debug(`[GET] ${path} ${effectiveStatusCode} status`);
                 return null;
             }
         }
