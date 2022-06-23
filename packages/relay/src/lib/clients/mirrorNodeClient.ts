@@ -70,6 +70,8 @@ export class MirrorNodeClient {
         DESC: 'desc'
     };
 
+    private static httpCodeInternalServerError = 500;
+
     /**
      * The logger used for logging all output from this class.
      * @private
@@ -147,21 +149,22 @@ export class MirrorNodeClient {
             return response.data;
         } catch (error: any) {
             ms = Date.now() - start;
-            this.mirrorResponseHistogram.labels(pathLabel, error.response.status).observe(ms);
-            this.handleError(error, path, allowedErrorStatuses);
+            const effectiveStatusCode = error.response !== undefined ? error.response.status : MirrorNodeClient.httpCodeInternalServerError;            
+            this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
+            this.handleError(error, path, effectiveStatusCode, allowedErrorStatuses);
         }
         return null;
     }
 
-    handleError(error: any, path: string, allowedErrorStatuses?: number[]) {
+    handleError(error: any, path: string, effectiveStatusCode: number, allowedErrorStatuses?: number[]) {
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
-            if (error.response && allowedErrorStatuses.indexOf(error.response.status) !== -1) {
+            if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
                 this.logger.debug(`[GET] ${path} ${error.response.status} status`);
                 return null;
             }
         }
 
-        this.logger.error(new Error(error.message), `[GET] ${path} ${error.response.status} status`);
+        this.logger.error(new Error(error.message), `[GET] ${path} ${effectiveStatusCode} status`);
         throw predefined.INTERNAL_ERROR;
     }
 
