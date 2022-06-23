@@ -23,6 +23,7 @@ import { Utils } from './utils';
 
 export default class Assertions {
     static emptyHex = '0x';
+    static zeroHex32Byte = '0x0000000000000000000000000000000000000000000000000000000000000000';
     static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
     static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
     static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
@@ -57,11 +58,11 @@ export default class Assertions {
         expect(relayResponse.difficulty).to.be.equal(ethers.utils.hexValue(0));
         expect(relayResponse.extraData).to.be.equal(Assertions.emptyHex);
         expect(relayResponse.miner).to.be.equal(ethers.constants.AddressZero);
-        expect(relayResponse.mixHash).to.be.equal(Assertions.emptyHex);
+        expect(relayResponse.mixHash).to.be.equal(Assertions.zeroHex32Byte);
         expect(relayResponse.nonce).to.be.equal(ethers.utils.hexValue(0));
-        expect(relayResponse.receiptsRoot).to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.receiptsRoot).to.be.equal(Assertions.zeroHex32Byte);
         expect(relayResponse.sha3Uncles).to.be.equal(Assertions.emptyArrayHex);
-        expect(relayResponse.stateRoot).to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.stateRoot).to.be.equal(Assertions.zeroHex32Byte);
         expect(relayResponse.totalDifficulty).to.be.equal(ethers.utils.hexValue(0));
         expect(relayResponse.uncles).to.be.exist;
         expect(relayResponse.uncles.length).to.eq(0);
