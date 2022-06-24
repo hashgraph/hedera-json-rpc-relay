@@ -65,7 +65,8 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
             setContractCallUpdateMsg('Loading...');
 
             const contract = new ethers.Contract(contractAddress, Greeter.abi, signer);
-            await contract.setGreeting(contractCallUpdateMsgInput);
+            const tx = await contract.setGreeting(contractCallUpdateMsgInput);
+            await tx.wait();
 
             setContractCallUpdateMsg('Updated text: ' + contractCallUpdateMsgInput);
             setIsLoading(false);
@@ -83,20 +84,21 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
             <br />
             <Typography variant="h6"> Source: <Link href="https://github.com/NomicFoundation/hardhat/blob/master/packages/hardhat-core/sample-projects/basic/contracts/Greeter.sol" rel="noreferrer" target="_blank">Greeter.sol</Link> </Typography>
 
-            <Button onClick={deployContractHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
+            <Button id="btnDeployContract" onClick={deployContractHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
                 Deploy contract
             </Button>
             <br />
             <Typography variant="h6"> {deployContractMsg} </Typography>
             <br />
             <br />
-            <Button onClick={contractCallViewHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
+            <Button id="btnReadGreeting" onClick={contractCallViewHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
                 Read greeting
             </Button>
             <br />
-            <Typography variant="h6"> {contractCallViewMsg} </Typography>
+            <Typography id="contractViewMsg" variant="h6"> {contractCallViewMsg} </Typography>
             <br />
             <TextField
+                id="updateGreetingText"
                 fullWidth
                 label="Greeting message"
                 sx={{ m: 1 }}
@@ -105,11 +107,11 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
                 onChange={(e) => setContractCallUpdateMsgInput(e.target.value)}
             />
             <br />
-            <Button onClick={contractCallUpdateHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
+            <Button id="btnUpdateGreeting" onClick={contractCallUpdateHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
                 Update greeting
             </Button>
             <br />
-            <Typography variant="h6"> {contractCallUpdateMsg} </Typography>
+            <Typography id="contractUpdateMsg" variant="h6"> {contractCallUpdateMsg} </Typography>
         </>
     );
 }

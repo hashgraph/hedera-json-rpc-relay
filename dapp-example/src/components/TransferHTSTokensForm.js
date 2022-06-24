@@ -42,6 +42,7 @@ const TransferHTSTokensForm = ({ signer, isConnected, chain, address }) => {
             <br />
             <Typography variant="h6" color='orange'> Make sure that the receiving address is associated to the specified HTS token </Typography>
             <TextField
+                id="htsTokenAddressField"
                 fullWidth
                 label="Token address"
                 sx={{ m: 1 }}
@@ -51,6 +52,7 @@ const TransferHTSTokensForm = ({ signer, isConnected, chain, address }) => {
             />
             <br />
             <TextField
+                id="htsReceiverAddressField"
                 fullWidth
                 label="Receiver address"
                 sx={{ m: 1 }}
@@ -60,6 +62,7 @@ const TransferHTSTokensForm = ({ signer, isConnected, chain, address }) => {
             />
             <br />
             <TextField
+                id="htsTokenAmountField"
                 fullWidth
                 label="Amount"
                 sx={{ m: 1 }}
@@ -69,11 +72,11 @@ const TransferHTSTokensForm = ({ signer, isConnected, chain, address }) => {
                 onChange={(e) => setHtsTokenAmount(e.target.value)}
             />
             <br />
-            <Button onClick={htsTokenTransfer} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
+            <Button id="htsTokenTransferBtn" onClick={htsTokenTransfer} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
                 Transfer
             </Button>
             <br />
-            <Typography variant="h6"> {htsTokenMsg} </Typography>
+            <Typography id="htsTokenMsg" variant="h6"> {htsTokenMsg} </Typography>
         </>
     )
 }

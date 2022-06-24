@@ -46,6 +46,7 @@ export class EthImpl implements Eth {
   static emptyHex = '0x';
   static zeroHex = '0x0';
   static zeroHex8Byte = '0x0000000000000000';
+  static zeroHex32Byte = '0x0000000000000000000000000000000000000000000000000000000000000000';
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
@@ -848,15 +849,15 @@ export class EthImpl implements Eth {
       hash: blockHash,
       logsBloom: EthImpl.emptyBloom, //TODO calculate full block boom in mirror node
       miner: EthImpl.zeroAddressHex,
-      mixHash: EthImpl.emptyHex,
-      nonce: EthImpl.zeroHex,
+      mixHash: EthImpl.zeroHex32Byte,
+      nonce: EthImpl.zeroHex8Byte,
       number: EthImpl.numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
-      receiptsRoot: EthImpl.zeroHex,
+      receiptsRoot: EthImpl.zeroHex32Byte,
       timestamp: EthImpl.numberTo0x(Number(timestamp)),
       sha3Uncles: EthImpl.emptyArrayHex,
       size: EthImpl.numberTo0x(blockResponse.size | 0),
-      stateRoot: EthImpl.zeroHex,
+      stateRoot: EthImpl.zeroHex32Byte,
       totalDifficulty: EthImpl.zeroHex,
       transactions: transactionArray,
       transactionsRoot: transactionArray.length == 0 ? EthImpl.ethEmptyTrie : blockHash,
