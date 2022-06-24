@@ -970,22 +970,22 @@ export class EthImpl implements Eth {
     }
     const logs = result.logs;
 
-    // Find all unique contractId and timestamp pairs and for each one make mirror node request
+    // Find unique contract execution timestamp and for each one make mirror node request
     const promises: Promise<any>[] = [];
     const uniquePairs = {};
 
     for (let i = 0; i < logs.length; i++) {
       const log = logs[i];
-      const pair = `${log.contract_id}-${log.timestamp}`;
-      if (uniquePairs[pair] === undefined) {
-        uniquePairs[pair] = [i];
+      const timestamp = `${log.timestamp}`;
+      if (uniquePairs[timestamp] === undefined) {
+        uniquePairs[timestamp] = [i];
         promises.push(this.mirrorNodeClient.getContractResultsDetails(
           log.contract_id,
           log.timestamp
         ));
       }
       else {
-        uniquePairs[pair].push(i);
+        uniquePairs[timestamp].push(i);
       }
     }
 
@@ -994,8 +994,9 @@ export class EthImpl implements Eth {
       const contractsResultsDetails = await Promise.all(promises);
       for (let i = 0; i < contractsResultsDetails.length; i++) {
         const detail = contractsResultsDetails[i];
-        const pair = `${detail.contract_id}-${detail.timestamp}`;
-        const uPair = uniquePairs[pair] || [];
+        // retrieve set of logs for each timestamp
+        const timestamp = `${detail.timestamp}`;
+        const uPair = uniquePairs[timestamp] || [];
         for (let p = 0; p < uPair.length; p++) {
           const logIndex = uPair[p];
           const log = logs[logIndex];
