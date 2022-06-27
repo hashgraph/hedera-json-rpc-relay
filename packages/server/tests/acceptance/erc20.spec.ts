@@ -28,28 +28,29 @@ import ERC20DecimalsMockJson from '../contracts/ERC20DecimalsMock.json';
 
 import {expect} from "chai";
 const { ZERO_ADDRESS, MAX_UINT256 } = constants;
-import {
-    shouldBehaveLikeERC20,
-    shouldBehaveLikeERC20Transfer,
-    shouldBehaveLikeERC20Approve,
-} from '../helpers/erc20.behaviour';
+const MAX_UINT = 2**256 - 1;
+import Assertions from '../helpers/assertions';
 
 
 describe('ERC20 Acceptance Tests', function () {
-    this.timeout(20 * 1000); // 240 seconds
+    this.timeout(240 * 1000); // 240 seconds
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
 
     // @ts-ignore
     const {servicesNode, mirrorNode, relay, logger} = global;
 
-    const expectRevert = async (promise, revertReason) => {
+    const expectRevert = async (promise, code) => {
         const tx = await promise;
-        // await tx.wait();
-        const mirrorReceipt = await mirrorNode.get(`/contracts/results/${tx.hash}`);
-        expect(mirrorReceipt).to.exist;
-        expect(mirrorReceipt.result).to.eq(revertReason);
-    }
+        try {
+            const receipt = await tx.wait();
+            Assertions.expectedError();
+        }
+        catch(e:any) {
+            expect(e).to.exist;
+            expect(e.code).to.eq(code);
+        }
+    };
 
     // cached entities
     const accounts: AliasAccount[] = [];
@@ -65,9 +66,6 @@ describe('ERC20 Acceptance Tests', function () {
     const initialSupply = BigNumber.from(10000);
 
     const createContract = async (constructorArgs:any[] = [], contractJson) => {
-        // contract = await servicesNode.deployContract(erc20Json, 2000000, new Uint8Array(), initialSupply);
-        // const initialBalance = BigNumber.from(new Hbar(100).toTinybars().toString()).mul(10 ** 10);
-
         const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, accounts[0].wallet);
         let contract = await factory.deploy(...constructorArgs, {
             chainId: Number(CHAIN_ID),
@@ -77,8 +75,9 @@ describe('ERC20 Acceptance Tests', function () {
             type: 2
         });
 
-        // FIXME Temporary workaround until .deployed() and .wait() issues are resolved
-        // await contract.deployed();
+        await contract.deployed();
+
+        // FIXME no mirror node calls should be made
         const contractResult = await mirrorNode.get(`/contracts/results/${contract.deployTransaction.hash}`);
         const mirrorContract = await mirrorNode.get(`/contracts/${contractResult.contract_id}`);
         contract = new ethers.Contract(mirrorContract.evm_address, contractJson.abi, accounts[0].wallet);
@@ -151,14 +150,6 @@ describe('ERC20 Acceptance Tests', function () {
                 });
             });
 
-            // describe('transfer', function () {
-            //     shouldBehaveLikeERC20Transfer(contract, errorPrefix, initialHolder, recipient, initialSupply,
-            //         function (from, to, value) {
-            //             return contract.transfer(to, value, { from });
-            //         },
-            //     );
-            // });
-
             describe('transfer from', function () {
                 let spender;
                 let spenderWallet;
@@ -186,17 +177,14 @@ describe('ERC20 Acceptance Tests', function () {
                             });
 
                             describe('when the token owner has enough balance', function () {
-                                let amount, tx;
+                                let amount, tx, receipt;
                                 before(async function () {
                                     amount = initialSupply;
+                                    tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount);
+                                    receipt = await tx.wait();
                                 });
 
                                 it('transfers the requested amount', async function () {
-                                    tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount);
-
-                                    // await transferTx.wait();
-                                    await mirrorNode.get(`/contracts/results/${tx.hash}`);
-
                                     const ownerBalance = await contract.balanceOf(tokenOwner);
                                     const toBalance = await contract.balanceOf(to);
                                     expect(ownerBalance.toString()).to.be.equal('0');
@@ -208,18 +196,17 @@ describe('ERC20 Acceptance Tests', function () {
                                     expect(allowance.toString()).to.be.equal('0');
                                 });
 
-                                xit('emits a transfer event', async function () {
-                                    const txReceipt = await relay.call('eth_getTransactionReceipt', [tx.hash]);
+                                it('emits a transfer event', async function () {
                                     expectEvent(
-                                        txReceipt,
+                                        receipt,
                                         'Transfer',
                                         {from: tokenOwner, to: to, value: amount},
                                     );
                                 });
 
-                                xit('emits an approval event', async function () {
+                                it('emits an approval event', async function () {
                                     expectEvent(
-                                        await contract.transferFrom(tokenOwner, to, amount, { from: spender }),
+                                        receipt,
                                         'Approval',
                                         { owner: tokenOwner, spender: spender, value: await contract.allowance(tokenOwner, spender) },
                                     );
@@ -237,7 +224,7 @@ describe('ERC20 Acceptance Tests', function () {
                                 it('reverts', async function () {
                                     await expectRevert(
                                         contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                        'CONTRACT_REVERT_EXECUTED'
+                                        'CALL_EXCEPTION'
                                     );
                                 });
                             });
@@ -263,7 +250,7 @@ describe('ERC20 Acceptance Tests', function () {
                                 it('reverts', async function () {
                                     await expectRevert(
                                         contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                        `CONTRACT_REVERT_EXECUTED`,
+                                        `CALL_EXCEPTION`,
                                     );
                                 });
                             });
@@ -281,15 +268,15 @@ describe('ERC20 Acceptance Tests', function () {
                                 it('reverts', async function () {
                                     await expectRevert(
                                         contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                        `CONTRACT_REVERT_EXECUTED`,
+                                        `CALL_EXCEPTION`,
                                     );
                                 });
                             });
                         });
 
-                        describe('when the spender has unlimited allowance', function () {
+                        xdescribe('when the spender has unlimited allowance', function () {
                             beforeEach(async function () {
-                                await contract.approve(spender, MAX_UINT256, { from: initialHolder });
+                                await contract.approve(spender, MAX_UINT, { from: initialHolder });
                             });
 
                             it('does not decrease the spender allowance', async function () {
@@ -297,7 +284,7 @@ describe('ERC20 Acceptance Tests', function () {
 
                                 const allowance = await contract.allowance(tokenOwner, spender);
 
-                                expect(allowance.toString()).to.be.equal(MAX_UINT256.toString());
+                                expect(allowance.toString()).to.be.equal(MAX_UINT.toString());
                             });
 
                             it('does not emit an approval event', async function () {
@@ -321,12 +308,12 @@ describe('ERC20 Acceptance Tests', function () {
 
                         it('reverts', async function () {
                             await expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                `CONTRACT_REVERT_EXECUTED`);
+                                `CALL_EXCEPTION`);
                         });
                     });
                 });
 
-                describe('when the token owner is the zero address', function () {
+                xdescribe('when the token owner is the zero address', function () {
                     let amount, tokenOwner, to;
 
                     beforeEach(async function () {
@@ -344,282 +331,6 @@ describe('ERC20 Acceptance Tests', function () {
                     });
                 });
             });
-
-            // describe('approve', function () {
-            //     shouldBehaveLikeERC20Approve(contract, errorPrefix, initialHolder, recipient, initialSupply,
-            //         function (owner, spender, amount) {
-            //             return contract.approve(spender, amount, { from: owner });
-            //         },
-            //     );
-            // });
         });
-
-        // it('test test', function () {
-        //     shouldBehaveLikeERC20(contract, 'ERC20', initialSupply, initialHolder, recipient, anotherAccount);
-        // });
-
-        // describe('decrease allowance', function () {
-        //     describe('when the spender is not the zero address', function () {
-        //         const spender = recipient;
-        //
-        //         function shouldDecreaseApproval(amount) {
-        //             describe('when there was no approved amount before', function () {
-        //                 it('reverts', async function () {
-        //                     await expectRevert(contract.decreaseAllowance(
-        //                         spender, amount, {from: initialHolder}), 'ERC20: decreased allowance below zero',
-        //                     );
-        //                 });
-        //             });
-        //
-        //             describe('when the spender had an approved amount', function () {
-        //                 const approvedAmount = amount;
-        //
-        //                 beforeEach(async function () {
-        //                     await contract.approve(spender, approvedAmount, {from: initialHolder});
-        //                 });
-        //
-        //                 it('emits an approval event', async function () {
-        //                     expectEvent(
-        //                         await contract.decreaseAllowance(spender, approvedAmount, {from: initialHolder}),
-        //                         'Approval',
-        //                         {owner: initialHolder, spender: spender, value: new BN(0)},
-        //                     );
-        //                 });
-        //
-        //                 it('decreases the spender allowance subtracting the requested amount', async function () {
-        //                     await contract.decreaseAllowance(spender, approvedAmount.sub(1), {from: initialHolder});
-        //
-        //                     expect(await contract.allowance(initialHolder, spender)).to.be.bignumber.equal('1');
-        //                 });
-        //
-        //                 it('sets the allowance to zero when all allowance is removed', async function () {
-        //                     await contract.decreaseAllowance(spender, approvedAmount, {from: initialHolder});
-        //                     expect(await contract.allowance(initialHolder, spender)).to.be.bignumber.equal('0');
-        //                 });
-        //
-        //                 it('reverts when more than the full allowance is removed', async function () {
-        //                     await expectRevert(
-        //                         contract.decreaseAllowance(spender, approvedAmount.add(1), {from: initialHolder}),
-        //                         'ERC20: decreased allowance below zero',
-        //                     );
-        //                 });
-        //             });
-        //         }
-        //
-        //         describe('when the sender has enough balance', function () {
-        //             const amount = initialSupply;
-        //
-        //             shouldDecreaseApproval(amount);
-        //         });
-        //
-        //         describe('when the sender does not have enough balance', function () {
-        //             const amount = initialSupply.add(1);
-        //
-        //             shouldDecreaseApproval(amount);
-        //         });
-        //     });
-        //
-        //     describe('when the spender is the zero address', function () {
-        //         const amount = initialSupply;
-        //         const spender = ZERO_ADDRESS;
-        //
-        //         it('reverts', async function () {
-        //             await expectRevert(contract.decreaseAllowance(
-        //                 spender, amount, {from: initialHolder}), 'ERC20: decreased allowance below zero',
-        //             );
-        //         });
-        //     });
-        // });
-
-        /*
-
-        describe('increase allowance', function () {
-            const amount = initialSupply;
-
-            describe('when the spender is not the zero address', function () {
-                const spender = recipient;
-
-                describe('when the sender has enough balance', function () {
-                    it('emits an approval event', async function () {
-                        expectEvent(
-                            await contract.increaseAllowance(spender, amount, {from: initialHolder}),
-                            'Approval',
-                            {owner: initialHolder, spender: spender, value: amount},
-                        );
-                    });
-
-                    describe('when there was no approved amount before', function () {
-                        it('approves the requested amount', async function () {
-                            await contract.increaseAllowance(spender, amount, {from: initialHolder});
-
-                            expect(await contract.allowance(initialHolder, spender)).to.be.bignumber.equal(amount);
-                        });
-                    });
-
-                    describe('when the spender had an approved amount', function () {
-                        beforeEach(async function () {
-                            await contract.approve(spender, new BN(1), {from: initialHolder});
-                        });
-
-                        it('increases the spender allowance adding the requested amount', async function () {
-                            await contract.increaseAllowance(spender, amount, {from: initialHolder});
-
-                            expect(await contract.allowance(initialHolder, spender)).to.be.bignumber.equal(amount.add(1));
-                        });
-                    });
-                });
-
-                describe('when the sender does not have enough balance', function () {
-                    const amount = initialSupply.add(1);
-
-                    it('emits an approval event', async function () {
-                        expectEvent(
-                            await contract.increaseAllowance(spender, amount, {from: initialHolder}),
-                            'Approval',
-                            {owner: initialHolder, spender: spender, value: amount},
-                        );
-                    });
-
-                    describe('when there was no approved amount before', function () {
-                        it('approves the requested amount', async function () {
-                            await contract.increaseAllowance(spender, amount, {from: initialHolder});
-
-                            expect(await contract.allowance(initialHolder, spender)).to.be.bignumber.equal(amount);
-                        });
-                    });
-
-                    describe('when the spender had an approved amount', function () {
-                        beforeEach(async function () {
-                            await contract.approve(spender, new BN(1), {from: initialHolder});
-                        });
-
-                        it('increases the spender allowance adding the requested amount', async function () {
-                            await contract.increaseAllowance(spender, amount, {from: initialHolder});
-
-                            expect(await contract.allowance(initialHolder, spender)).to.be.bignumber.equal(amount.add(1));
-                        });
-                    });
-                });
-            });
-
-            describe('when the spender is the zero address', function () {
-                const spender = ZERO_ADDRESS;
-
-                it('reverts', async function () {
-                    await expectRevert(
-                        contract.increaseAllowance(spender, amount, {from: initialHolder}), 'ERC20: approve to the zero address',
-                    );
-                });
-            });
-        });
-
-        describe('_mint', function () {
-            const amount = new BN(50);
-            it('rejects a null account', async function () {
-                await expectRevert(
-                    contract.mint(ZERO_ADDRESS, amount), 'ERC20: mint to the zero address',
-                );
-            });
-
-            describe('for a non zero account', function () {
-                beforeEach('minting', async function () {
-                    this.receipt = await contract.mint(recipient, amount);
-                });
-
-                it('increments totalSupply', async function () {
-                    const expectedSupply = initialSupply.add(amount);
-                    expect(await contract.totalSupply()).to.be.bignumber.equal(expectedSupply);
-                });
-
-                it('increments recipient balance', async function () {
-                    expect(await contract.balanceOf(recipient)).to.be.bignumber.equal(amount);
-                });
-
-                it('emits Transfer event', async function () {
-                    const event = expectEvent(
-                        this.receipt,
-                        'Transfer',
-                        {from: ZERO_ADDRESS, to: recipient},
-                    );
-
-                    expect(event.args.value).to.be.bignumber.equal(amount);
-                });
-            });
-        });
-
-        describe('_burn', function () {
-            it('rejects a null account', async function () {
-                await expectRevert(contract.burn(ZERO_ADDRESS, new BN(1)),
-                    'ERC20: burn from the zero address');
-            });
-
-            describe('for a non zero account', function () {
-                it('rejects burning more than balance', async function () {
-                    await expectRevert(contract.burn(
-                        initialHolder, initialSupply.add(1)), 'ERC20: burn amount exceeds balance',
-                    );
-                });
-
-                const describeBurn = function (description, amount) {
-                    describe(description, function () {
-                        beforeEach('burning', async function () {
-                            this.receipt = await contract.burn(initialHolder, amount);
-                        });
-
-                        it('decrements totalSupply', async function () {
-                            const expectedSupply = initialSupply.sub(amount);
-                            expect(await contract.totalSupply()).to.be.bignumber.equal(expectedSupply);
-                        });
-
-                        it('decrements initialHolder balance', async function () {
-                            const expectedBalance = initialSupply.sub(amount);
-                            expect(await contract.balanceOf(initialHolder)).to.be.bignumber.equal(expectedBalance);
-                        });
-
-                        it('emits Transfer event', async function () {
-                            const event = expectEvent(
-                                this.receipt,
-                                'Transfer',
-                                {from: initialHolder, to: ZERO_ADDRESS},
-                            );
-
-                            expect(event.args.value).to.be.bignumber.equal(amount);
-                        });
-                    });
-                };
-
-                describeBurn('for entire balance', initialSupply);
-                describeBurn('for less amount than balance', initialSupply.sub(1));
-            });
-        });
-
-        describe('_transfer', function () {
-            shouldBehaveLikeERC20Transfer(contract, 'ERC20', initialHolder, recipient, initialSupply, function (from, to, amount) {
-                return contract.transferInternal(from, to, amount);
-            });
-
-            describe('when the sender is the zero address', function () {
-                it('reverts', async function () {
-                    await expectRevert(contract.transferInternal(ZERO_ADDRESS, recipient, initialSupply),
-                        'ERC20: transfer from the zero address',
-                    );
-                });
-            });
-        });
-
-        describe('_approve', function () {
-            shouldBehaveLikeERC20Approve(contract, 'ERC20', initialHolder, recipient, initialSupply, function (owner, spender, amount) {
-                return contract.approveInternal(owner, spender, amount);
-            });
-
-            describe('when the owner is the zero address', function () {
-                it('reverts', async function () {
-                    await expectRevert(contract.approveInternal(ZERO_ADDRESS, recipient, initialSupply),
-                        'ERC20: approve from the zero address',
-                    );
-                });
-            });
-        });
-        */
     });
 });
