@@ -710,7 +710,19 @@ export class EthImpl implements Eth {
 
 
       // support stricter go-eth client which requires the transaction hash property on logs
-      const logs = receiptResponse.logs.map(log => ({ ...log, transactionHash: receiptResponse.hash }));
+      const logs = receiptResponse.logs.map(log => {
+        return new Log({
+          address: log.address,
+          blockHash: receiptResponse.block_hash.substring(0, 66),
+          blockNumber: receiptResponse.block_number,
+          data: log.data,
+          logIndex: log.index,
+          removed: false,
+          topics: log.topics,
+          transactionHash: receiptResponse.hash,
+          transactionIndex: receiptResponse.transaction_index
+        });
+      });
 
       const receipt = {
         blockHash: receiptResponse.block_hash.substring(0, 66),
@@ -1001,7 +1013,7 @@ export class EthImpl implements Eth {
           const log = logs[logIndex];
           logs[logIndex] = new Log({
             address: log.address,
-            blockHash: detail.block_hash,
+            blockHash: detail.block_hash.substring(0, 66),
             blockNumber: detail.block_number,
             data: log.data,
             logIndex: log.index,
