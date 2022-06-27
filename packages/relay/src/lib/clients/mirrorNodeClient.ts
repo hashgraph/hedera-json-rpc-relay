@@ -23,6 +23,7 @@ import { predefined } from '../errors';
 import { Logger } from "pino";
 import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
+import axiosRetry from 'axios-retry';
 
 export interface ILimitOrderParams {
     limit?: number;
@@ -93,7 +94,7 @@ export class MirrorNodeClient {
     protected createAxiosClient(
         baseUrl: string
     ): AxiosInstance {
-        return Axios.create({
+        const axiosClient: AxiosInstance = Axios.create({
             baseURL: baseUrl,
             responseType: 'json' as const,
             headers: {
@@ -101,6 +102,22 @@ export class MirrorNodeClient {
             },
             timeout: 10 * 1000
         });
+
+        // @ts-ignore
+        axiosRetry(axiosClient, {
+            retries: 10,
+            retryDelay: (retryCount) => {
+                this.logger.info(`Retry delay ${retryCount * 1000} s`);
+                return retryCount * 1000;
+            },
+            retryCondition: (error) => {
+                this.logger.error(error, `Request failed`);
+                return error?.response?.status === 400 || error?.response?.status === 404;
+            },
+            shouldResetTimeout: true
+        });
+
+        return axiosClient;
     }
 
     constructor(baseUrl: string, logger: Logger, register: Registry, axiosClient?: AxiosInstance) {

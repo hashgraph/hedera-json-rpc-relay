@@ -40,7 +40,8 @@
         "keyv-file": "^0.2.0",
         "lodash": "^4.17.21",
         "pino": "^7.11.0",
-        "rlp": "^3.0.0"
+        "rlp": "^3.0.0",
+        "axios-retry": "^3.2.5"
     },
     "nyc": {
         "check-coverage": false,
