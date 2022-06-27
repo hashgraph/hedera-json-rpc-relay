@@ -23,6 +23,7 @@ import {
     AccountId,
     AccountInfoQuery,
     Client,
+    ContractCreateFlow,
     ContractCreateTransaction,
     ContractExecuteTransaction,
     ContractFunctionParameters,
@@ -178,7 +179,7 @@ export default class ServicesClient {
 
     async executeContractCall(contractId, functionName: string, params: ContractFunctionParameters, gasLimit = 75000) {
         // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
-        this.logger.info(`Execute contracts ${contractId}'s createChild method`);
+        this.logger.info(`Execute contracts ${contractId}'s ${functionName} method`);
         const contractExecTransactionResponse =
             await this.executeTransaction(new ContractExecuteTransaction()
                 .setContractId(contractId)
@@ -237,14 +238,8 @@ export default class ServicesClient {
     };
 
     async deployContract(contract, gas = 100_000) {
-        const fileCreateTx = await (new FileCreateTransaction()
-            .setContents(contract.bytecode)
-            .setKeys([this.client.operatorPublicKey])
-            .execute(this.client));
-        const fileCreateRx = await fileCreateTx.getReceipt(this.client);
-        const bytecodeFileId = fileCreateRx.fileId;
-        const contractInstantiateTx = new ContractCreateTransaction()
-            .setBytecodeFileId(bytecodeFileId)
+        const contractInstantiateTx = new ContractCreateFlow()
+            .setBytecode(contract.bytecode)
             .setGas(gas);
         const contractInstantiateSubmit = await contractInstantiateTx.execute(this.client);
         return contractInstantiateSubmit.getReceipt(this.client);

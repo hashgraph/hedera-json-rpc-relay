@@ -32,7 +32,7 @@ import RelayClient from '../clients/relayClient';
 import app from '../../dist/server';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
-import { AccountBalanceQuery, ContractFunctionParameters, Hbar } from '@hashgraph/sdk';
+import { AccountBalanceQuery, ContractExecuteTransaction, ContractFunctionParameters, Hbar } from '@hashgraph/sdk';
 
 const testLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -50,6 +50,7 @@ const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
+import erc20ContractJson from '../erc20Contract/ERC20Contract.json';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
@@ -90,7 +91,7 @@ describe('RPC Server Acceptance Tests', function () {
     const servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({ name: `acctest-services-client` }));
     const mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `acctest-mirror-node-client` }));
     const relay = new RelayClient(RELAY_URL, logger.child({ name: `acctest-relay-client` }));
-    
+
     this.beforeAll(async () => {
         // configuration details
         logger.info('Acceptance Tests Configurations successfully loaded');
@@ -669,7 +670,7 @@ describe('RPC Server Acceptance Tests', function () {
     });
 
     describe('Gas Price related RPC endpoints', () => {
-        it('should call eth_feeHistory', async function() {
+        it('should call eth_feeHistory', async function () {
             const res = await relay.call('eth_feeHistory', []);
 
             expect(res.baseFeePerGasArray).to.exist.to.be.an('Array');
@@ -680,7 +681,7 @@ describe('RPC Server Acceptance Tests', function () {
             expect(res.oldestBlockNumber).to.equal('0x0');
         });
 
-        it('should call eth_gasPrice', async function() {
+        it('should call eth_gasPrice', async function () {
             const res = await relay.call('eth_gasPrice', []);
 
             expect(res).to.exist;
@@ -688,7 +689,37 @@ describe('RPC Server Acceptance Tests', function () {
         });
     });
 
-    this.afterAll(async () =>  {
+    describe('ERC 20 test', () => {
+        let erc20Contract;
+
+        before(async () => {
+            erc20Contract = await servicesNode.deployContract(erc20ContractJson);
+            // Wait for creation to propagate
+            await mirrorNode.get(`/contracts/${erc20Contract.contractId}`);
+            logger.info('Deploy ERC 20 contract');
+        });
+
+        it('approve', async function () {
+            // approve
+            const approveParams = new ContractFunctionParameters()
+                .addAddress(tokenId.toSolidityAddress())
+                .addAddress(accounts[0].accountId.toSolidityAddress())
+                .addUint256(10);
+            let contractExecuteTimestamp = (await servicesNode
+                .executeContractCall(erc20Contract.contractId, 'approve', approveParams, 1500000)).contractExecuteTimestamp;
+
+            // transferFrom
+            const allowanceParams = new ContractFunctionParameters()
+                .addAddress(tokenId.toSolidityAddress())
+                .addAddress(accounts[0].accountId.toSolidityAddress())
+                .addAddress(accounts[1].accountId.toSolidityAddress())
+                .addUint256(8);
+            contractExecuteTimestamp = (await accounts[0].client
+                .executeContractCall(erc20Contract.contractId, 'transferFrom', allowanceParams, 1500000)).contractExecuteTimestamp;
+        });
+    });
+
+    this.afterAll(async () => {
         const endOperatorBalance = await servicesNode.getOperatorBalance();
         const cost = startOperatorBalance.toTinybars().subtract(endOperatorBalance.toTinybars());
         logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
