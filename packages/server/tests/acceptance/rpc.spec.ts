@@ -24,13 +24,11 @@ import {BigNumber, ethers} from 'ethers';
 import {AliasAccount} from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
 import {Utils} from '../helpers/utils';
-import {AccountBalanceQuery, ContractFunctionParameters, Hbar} from '@hashgraph/sdk';
+import {AccountBalanceQuery, ContractFunctionParameters} from '@hashgraph/sdk';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
-
-const NON_EXISTING_ADDRESS = '0x5555555555555555555555555555555555555555';
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -61,11 +59,6 @@ describe('RPC Server Acceptance Tests', function () {
 
     describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
-
-        const servicesNode = global.servicesNode;
-        const mirrorNode = global.mirrorNode;
-        const relay = global.relay;
-        const accounts: AliasAccount[] = [];
 
         this.beforeAll(async () => {
             accounts[0] = await servicesNode.createAliasAccount();
