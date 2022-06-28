@@ -37,7 +37,6 @@ describe('ERC20 Acceptance Tests', function () {
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
 
-    // @ts-ignore
     const {servicesNode, mirrorNode, relay} = global;
 
     const expectRevert = async (promise, code) => {
@@ -61,8 +60,6 @@ describe('ERC20 Acceptance Tests', function () {
 
     const name = 'My Token';
     const symbol = 'MTKN';
-
-
     const initialSupply = BigNumber.from(10000);
 
     const createContract = async (constructorArgs:any[] = [], contractJson) => {

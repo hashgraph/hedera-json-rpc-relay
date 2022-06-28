@@ -107,15 +107,14 @@ describe('RPC Server Acceptance Tests', function () {
 
     describe("Acceptance tests", async () => {
 
-        require('./erc20.spec');
+        // require('./erc20.spec');
         // require('./rpc.spec');
-        // const tests = fs.readdirSync(path.resolve(__dirname, './'))
-        //     .filter(test => test !== 'index.spec.ts' && test.endsWith('.spec.ts'))
-        //     .filter(test => test === 'erc20.spec.ts');
-        //
-        // for( const test of tests) {
-        //     require(`./${test}`);
-        // }
+        fs.readdirSync(path.resolve(__dirname, './'))
+            .forEach(test => {
+                if (test !== 'index.spec.ts' && test.endsWith('.spec.ts')) {
+                    require(`./${test}`);
+                }
+            });
     });
 
     function runLocalHederaNetwork() {
