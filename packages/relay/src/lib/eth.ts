@@ -670,7 +670,6 @@ export class EthImpl implements Eth {
       chainId: contractResult.chain_id,
       from: contractResult.from.substring(0, 42),
       gas: contractResult.gas_used,
-      // FIXME mirror node should return null instead of 0x when gas_price is null
       gasPrice: contractResult.gas_price === '0x' ? null : contractResult.gas_price,
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
@@ -910,12 +909,11 @@ export class EthImpl implements Eth {
           chainId: contractResultDetails.chain_id,
           from: contractResultDetails.from.substring(0, 42),
           gas: contractResultDetails.gas_used,
-          // FIXME mirror node should return null instead of 0x when gas_price is null
-          gasPrice: contractResultDetails.gas_price == '0x' ? null : contractResultDetails.gas_price,
+          gasPrice: contractResultDetails.gas_price === '0x' ? null : contractResultDetails.gas_price,
           hash: contractResultDetails.hash.substring(0, 66),
           input: contractResultDetails.function_parameters,
-          maxPriorityFeePerGas: contractResultDetails.max_priority_fee_per_gas,
-          maxFeePerGas: contractResultDetails.max_fee_per_gas,
+          maxPriorityFeePerGas: contractResultDetails.max_priority_fee_per_gas === '0x' ? null : contractResultDetails.max_priority_fee_per_gas,
+          maxFeePerGas: contractResultDetails.max_fee_per_gas === '0x' ? null : contractResultDetails.max_fee_per_gas,
           nonce: contractResultDetails.nonce,
           r: rSig,
           s: sSig,
