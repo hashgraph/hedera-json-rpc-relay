@@ -34,22 +34,7 @@ import Assertions from '../helpers/assertions';
 
 describe('ERC20 Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
-
-    const CHAIN_ID = process.env.CHAIN_ID || 0;
-
     const {servicesNode, mirrorNode, relay} = global;
-
-    const expectRevert = async (promise, code) => {
-        const tx = await promise;
-        try {
-            await tx.wait();
-            Assertions.expectedError();
-        }
-        catch(e:any) {
-            expect(e).to.exist;
-            expect(e.code).to.eq(code);
-        }
-    };
 
     // cached entities
     const accounts: AliasAccount[] = [];
@@ -62,25 +47,6 @@ describe('ERC20 Acceptance Tests', function () {
     const symbol = 'MTKN';
     const initialSupply = BigNumber.from(10000);
 
-    const createContract = async (constructorArgs:any[] = [], contractJson) => {
-        const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, accounts[0].wallet);
-        let contract = await factory.deploy(...constructorArgs, {
-            chainId: Number(CHAIN_ID),
-            maxPriorityFeePerGas: 720000000000,
-            maxFeePerGas: 720000000000,
-            gasLimit: 300000,
-            type: 2
-        });
-
-        await contract.deployed();
-
-        // FIXME mirror node calls should not be made
-        const contractResult = await mirrorNode.get(`/contracts/results/${contract.deployTransaction.hash}`);
-        const mirrorContract = await mirrorNode.get(`/contracts/${contractResult.contract_id}`);
-        contract = new ethers.Contract(mirrorContract.evm_address, contractJson.abi, accounts[0].wallet);
-        return contract;
-    };
-
     before(async () => {
         accounts[0] = await servicesNode.createAliasAccount(2000000000, relay.provider);
         accounts[1] = await servicesNode.createAliasAccount(200, relay.provider);
@@ -90,7 +56,7 @@ describe('ERC20 Acceptance Tests', function () {
         recipient = accounts[1].address;
         anotherAccount = accounts[2].address;
 
-        contract = await createContract([name, symbol, initialHolder, initialSupply], ERC20MockJson);
+        contract = await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson);
     });
 
     describe('Mocked ERC20 Contract', function () {
@@ -116,7 +82,7 @@ describe('ERC20 Acceptance Tests', function () {
 
             it('can set decimals during construction', async function () {
 
-                const decimalsContract = await createContract([name, symbol, decimals], ERC20DecimalsMockJson);
+                const decimalsContract = await deployErc20([name, symbol, decimals], ERC20DecimalsMockJson);
                 expect(await decimalsContract.decimals()).to.be.equal(decimals);
             });
         });
@@ -303,4 +269,29 @@ describe('ERC20 Acceptance Tests', function () {
             });
         });
     });
+
+    const expectRevert = async (promise, code) => {
+        const tx = await promise;
+        try {
+            await tx.wait();
+            Assertions.expectedError();
+        }
+        catch(e:any) {
+            expect(e).to.exist;
+            expect(e.code).to.eq(code);
+        }
+    };
+
+    const deployErc20 = async (constructorArgs:any[] = [], contractJson) => {
+        const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, accounts[0].wallet);
+        let contract = await factory.deploy(...constructorArgs);
+
+        await contract.deployed();
+
+        // FIXME mirror node calls should not be made
+        const contractResult = await mirrorNode.get(`/contracts/results/${contract.deployTransaction.hash}`);
+        const mirrorContract = await mirrorNode.get(`/contracts/${contractResult.contract_id}`);
+        contract = new ethers.Contract(mirrorContract.evm_address, contractJson.abi, accounts[0].wallet);
+        return contract;
+    };
 });
