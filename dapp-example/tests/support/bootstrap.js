@@ -17,9 +17,17 @@ const randomUppercaseString = (length = 5) => {
   return result;
 };
 
-const client = HederaSDK.Client
-  .forNetwork(JSON.parse(process.env.HEDERA_NETWORK))
-  .setOperator(process.env.OPERATOR_ID_MAIN, process.env.OPERATOR_KEY_MAIN);
+const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
+
+let client;
+const network = process.env.HEDERA_NETWORK || '{}';
+if (supportedEnvs.includes(network.toLowerCase())) {
+    client = HederaSDK.Client.forName(network);
+} else {
+    client = HederaSDK.Client.forNetwork(JSON.parse(network));
+}
+
+client.setOperator(process.env.OPERATOR_ID_MAIN, process.env.OPERATOR_KEY_MAIN);
 
 const createAccountFromCompressedPublicKey = async function(compressedPublicKey) {
   const transferTransaction = await (new HederaSDK.TransferTransaction()
