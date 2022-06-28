@@ -19,16 +19,16 @@
  */
 
 // external resources
-import { BN, constants, expectEvent } from '@openzeppelin/test-helpers';
+import { solidity } from "ethereum-waffle";
+import chai, {expect} from "chai";
+chai.use(solidity);
+
 import { AliasAccount } from '../clients/servicesClient';
 import { ethers, BigNumber } from 'ethers';
 
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import ERC20DecimalsMockJson from '../contracts/ERC20DecimalsMock.json';
 
-import {expect} from "chai";
-const { ZERO_ADDRESS, MAX_UINT256 } = constants;
-const MAX_UINT = 2**256 - 1;
 import Assertions from '../helpers/assertions';
 
 
@@ -38,12 +38,12 @@ describe('ERC20 Acceptance Tests', function () {
     const CHAIN_ID = process.env.CHAIN_ID || 0;
 
     // @ts-ignore
-    const {servicesNode, mirrorNode, relay, logger} = global;
+    const {servicesNode, mirrorNode, relay} = global;
 
     const expectRevert = async (promise, code) => {
         const tx = await promise;
         try {
-            const receipt = await tx.wait();
+            await tx.wait();
             Assertions.expectedError();
         }
         catch(e:any) {
@@ -77,7 +77,7 @@ describe('ERC20 Acceptance Tests', function () {
 
         await contract.deployed();
 
-        // FIXME no mirror node calls should be made
+        // FIXME mirror node calls should not be made
         const contractResult = await mirrorNode.get(`/contracts/results/${contract.deployTransaction.hash}`);
         const mirrorContract = await mirrorNode.get(`/contracts/${contractResult.contract_id}`);
         contract = new ethers.Contract(mirrorContract.evm_address, contractJson.abi, accounts[0].wallet);
@@ -125,8 +125,6 @@ describe('ERC20 Acceptance Tests', function () {
         });
 
         describe('should behave like erc20', function() {
-            const errorPrefix = 'ERC20';
-
             describe('total supply', function () {
                 it('returns the total amount of tokens', async function () {
                     const supply = await contract.totalSupply();
@@ -160,15 +158,17 @@ describe('ERC20 Acceptance Tests', function () {
                 });
 
                 describe('when the token owner is not the zero address', function () {
-                    let tokenOwner;
+                    let tokenOwner, tokenOwnerWallet;
                     before(async function () {
                         tokenOwner = initialHolder;
+                        tokenOwnerWallet = accounts[0].wallet;
                     });
 
                     describe('when the recipient is not the zero address', function () {
-                        let to;
+                        let to, toWallet;
                         before(async function () {
                             to = anotherAccount;
+                            toWallet = accounts[2].wallet;
                         });
 
                         describe('when the spender has enough allowance', function () {
@@ -181,7 +181,6 @@ describe('ERC20 Acceptance Tests', function () {
                                 before(async function () {
                                     amount = initialSupply;
                                     tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount);
-                                    receipt = await tx.wait();
                                 });
 
                                 it('transfers the requested amount', async function () {
@@ -197,19 +196,15 @@ describe('ERC20 Acceptance Tests', function () {
                                 });
 
                                 it('emits a transfer event', async function () {
-                                    expectEvent(
-                                        receipt,
-                                        'Transfer',
-                                        {from: tokenOwner, to: to, value: amount},
-                                    );
+                                    await expect(tx)
+                                        .to.emit(contract, 'Transfer')
+                                        .withArgs(tokenOwnerWallet.address, toWallet.address, amount);
                                 });
 
                                 it('emits an approval event', async function () {
-                                    expectEvent(
-                                        receipt,
-                                        'Approval',
-                                        { owner: tokenOwner, spender: spender, value: await contract.allowance(tokenOwner, spender) },
-                                    );
+                                    await expect(tx)
+                                        .to.emit(contract, 'Approval')
+                                        .withArgs(tokenOwnerWallet.address, spenderWallet.address, await contract.allowance(tokenOwner, spender));
                                 });
                             });
 
@@ -274,24 +269,20 @@ describe('ERC20 Acceptance Tests', function () {
                             });
                         });
 
-                        xdescribe('when the spender has unlimited allowance', function () {
+                        describe('when the spender has unlimited allowance', function () {
                             beforeEach(async function () {
-                                await contract.approve(spender, MAX_UINT, { from: initialHolder });
+                                await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256);
                             });
 
                             it('does not decrease the spender allowance', async function () {
-                                await contract.transferFrom(tokenOwner, to, 1, { from: spender });
-
+                                await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
                                 const allowance = await contract.allowance(tokenOwner, spender);
-
-                                expect(allowance.toString()).to.be.equal(MAX_UINT.toString());
+                                expect(allowance.toString()).to.be.equal(ethers.constants.MaxUint256.toString());
                             });
 
                             it('does not emit an approval event', async function () {
-                                expectEvent.notEmitted(
-                                    await contract.transferFrom(tokenOwner, to, 1, { from: spender }),
-                                    'Approval',
-                                );
+                                await expect(await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1))
+                                    .to.not.emit(contract, 'Approval');
                             });
                         });
                     });
@@ -301,7 +292,7 @@ describe('ERC20 Acceptance Tests', function () {
 
                         beforeEach(async function () {
                             amount = initialSupply;
-                            to = ZERO_ADDRESS;
+                            to = ethers.constants.AddressZero;
                             tokenOwnerWallet = accounts[0].wallet;
                             await contract.connect(tokenOwnerWallet).approve(spender, amount);
                         });
@@ -310,24 +301,6 @@ describe('ERC20 Acceptance Tests', function () {
                             await expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                 `CALL_EXCEPTION`);
                         });
-                    });
-                });
-
-                xdescribe('when the token owner is the zero address', function () {
-                    let amount, tokenOwner, to;
-
-                    beforeEach(async function () {
-                        amount = 0;
-                        tokenOwner = ZERO_ADDRESS;
-                        to = recipient;
-                        await contract.approve(spender, amount, { from: tokenOwner });
-                    });
-
-                    it('reverts', async function () {
-                        await expectRevert(
-                            contract.transferFrom(tokenOwner, to, amount, { from: spender }),
-                            'from the zero address',
-                        );
                     });
                 });
             });
