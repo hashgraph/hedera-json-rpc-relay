@@ -111,7 +111,7 @@ describe('RPC Server Acceptance Tests', function () {
         // require('./rpc.spec');
         fs.readdirSync(path.resolve(__dirname, './'))
             .forEach(test => {
-                if (test !== 'index.spec.ts' && test.endsWith('erc20.spec.ts')) {
+                if (test !== 'index.spec.ts' && test.endsWith('.spec.ts')) {
                     require(`./${test}`);
                 }
             });
