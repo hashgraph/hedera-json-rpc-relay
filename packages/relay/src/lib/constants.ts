@@ -38,4 +38,6 @@ export default {
 
     TYPE_CONTRACT: 'contract',
     TYPE_ACCOUNT: 'account',
+
+    MAX_FEE_HISTORY_RESULTS: 1024
 };

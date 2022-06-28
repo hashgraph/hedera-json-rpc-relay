@@ -70,5 +70,10 @@ export const predefined = {
     name: 'Incorrect nonce',
     code: -32006,
     message: 'Incorrect nonce'
+  }),
+  'REQUEST_BEYOND_HEAD_BLOCK': (requested: number, latest: number) => new JsonRpcError({
+    name: 'Incorrect block',
+    code: -32000,
+    message: `Request beyond head block: requested ${requested}, head ${latest}`
   })
 };
