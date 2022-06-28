@@ -438,9 +438,10 @@ describe('RPC Server Acceptance Tests', function () {
                 expect(res).to.not.be.equal('0x0');
             });
 
-            it('should execute "eth_gasPrice"', async function () {
+            it('should call eth_gasPrice', async function() {
                 const res = await relay.call('eth_gasPrice', []);
-                expect(res).to.be.equal('0xa7a3582000');
+                expect(res).to.exist;
+                expect(res).to.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
             });
 
             it('should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {

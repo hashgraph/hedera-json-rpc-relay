@@ -121,6 +121,7 @@ describe('Eth calls using MirrorNode', async function () {
   const contractHash3 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394';
   const contractAddress2 = '0x000000000000000000000000000000000000055e';
   const contractTimestamp2 = '1653077542.701408897';
+  const contractTimestamp3 = '1653088542.123456789';
   const contractId1 = '0.0.5001';
   const contractId2 = '0.0.5002';
 
@@ -242,7 +243,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   const defaultDetailedContractResults3 = {
     ...defaultDetailedContractResults, ...{
-      'timestamp': contractTimestamp2,
+      'timestamp': contractTimestamp3,
       'block_hash': blockHash3,
       'block_number': blockNumber3,
       'hash': contractHash3,
@@ -300,7 +301,7 @@ describe('Eth calls using MirrorNode', async function () {
         "bloom": logBloom3,
         "contract_id": contractId1,
         "data": "0x",
-        "index": 1,
+        "index": 0,
         "topics": [],
         "root_contract_id": "0.0.34806097",
         "timestamp": contractTimestamp2
@@ -310,10 +311,10 @@ describe('Eth calls using MirrorNode', async function () {
         "bloom": logBloom4,
         "contract_id": contractId2,
         "data": "0x",
-        "index": 1,
+        "index": 0,
         "topics": [],
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp2
+        "timestamp": contractTimestamp3
       }
     ]
   };
@@ -853,7 +854,7 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
-      mock.onGet(`contracts/${contractId2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults3);
+      mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, defaultDetailedContractResults3);
 
       const result = await ethImpl.getLogs(null, null, null, null, null);
       expect(result).to.exist;
