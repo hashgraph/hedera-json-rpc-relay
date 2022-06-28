@@ -105,10 +105,11 @@ export class MirrorNodeClient {
 
         // @ts-ignore
         axiosRetry(axiosClient, {
-            retries: 10,
+            retries: 5,
             retryDelay: (retryCount) => {
-                this.logger.info(`Retry delay ${retryCount * 1000} s`);
-                return retryCount * 1000;
+                const delay = retryCount * 1000;
+                this.logger.trace(`Retry delay ${delay} s`);
+                return delay;
             },
             retryCondition: (error) => {
                 this.logger.error(error, `Request failed`);
