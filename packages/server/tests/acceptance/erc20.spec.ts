@@ -34,7 +34,7 @@ import Assertions from '../helpers/assertions';
 
 describe('ERC20 Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
-    const {servicesNode, mirrorNode, relay} = global;
+    const {servicesNode, relay} = global;
 
     // cached entities
     const accounts: AliasAccount[] = [];
@@ -285,13 +285,11 @@ describe('ERC20 Acceptance Tests', function () {
     const deployErc20 = async (constructorArgs:any[] = [], contractJson) => {
         const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, accounts[0].wallet);
         let contract = await factory.deploy(...constructorArgs);
-
         await contract.deployed();
 
-        // FIXME mirror node calls should not be made
-        const contractResult = await mirrorNode.get(`/contracts/results/${contract.deployTransaction.hash}`);
-        const mirrorContract = await mirrorNode.get(`/contracts/${contractResult.contract_id}`);
-        contract = new ethers.Contract(mirrorContract.evm_address, contractJson.abi, accounts[0].wallet);
+        // re-init the contract with the deployed address
+        const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
+        contract = new ethers.Contract(receipt.to, contractJson.abi, accounts[0].wallet);
         return contract;
     };
 });
