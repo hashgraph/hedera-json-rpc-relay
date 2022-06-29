@@ -670,7 +670,7 @@ export class EthImpl implements Eth {
       chainId: contractResult.chain_id,
       from: contractResult.from.substring(0, 42),
       gas: contractResult.gas_used,
-      gasPrice: contractResult.gas_price === '0x' ? null : contractResult.gas_price,
+      gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
       maxPriorityFeePerGas: maxPriorityFee,
@@ -758,6 +758,10 @@ export class EthImpl implements Eth {
 
   static numberTo0x(input: number | BigNumber): string {
     return EthImpl.emptyHex + input.toString(16);
+  }
+
+  private static toNullIfEmptyHex(value: string): string | null {
+    return value === EthImpl.emptyHex ? null : value;
   }
 
   /**
@@ -909,11 +913,11 @@ export class EthImpl implements Eth {
           chainId: contractResultDetails.chain_id,
           from: contractResultDetails.from.substring(0, 42),
           gas: contractResultDetails.gas_used,
-          gasPrice: contractResultDetails.gas_price === '0x' ? null : contractResultDetails.gas_price,
+          gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
           hash: contractResultDetails.hash.substring(0, 66),
           input: contractResultDetails.function_parameters,
-          maxPriorityFeePerGas: contractResultDetails.max_priority_fee_per_gas === '0x' ? null : contractResultDetails.max_priority_fee_per_gas,
-          maxFeePerGas: contractResultDetails.max_fee_per_gas === '0x' ? null : contractResultDetails.max_fee_per_gas,
+          maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
+          maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
           nonce: contractResultDetails.nonce,
           r: rSig,
           s: sSig,

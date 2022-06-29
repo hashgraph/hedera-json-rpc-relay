@@ -30,6 +30,7 @@ import ERC20MockJson from '../contracts/ERC20Mock.json';
 import ERC20DecimalsMockJson from '../contracts/ERC20DecimalsMock.json';
 
 import Assertions from '../helpers/assertions';
+import {Utils} from '../helpers/utils';
 
 
 describe('ERC20 Acceptance Tests', function () {
@@ -43,14 +44,14 @@ describe('ERC20 Acceptance Tests', function () {
     let recipient;
     let anotherAccount;
 
-    const name = 'My Token';
-    const symbol = 'MTKN';
+    const name = Utils.randomString(10);
+    const symbol = Utils.randomString(5);
     const initialSupply = BigNumber.from(10000);
 
     before(async () => {
-        accounts[0] = await servicesNode.createAliasAccount(2000000000, relay.provider);
-        accounts[1] = await servicesNode.createAliasAccount(200, relay.provider);
-        accounts[2] = await servicesNode.createAliasAccount(200, relay.provider);
+        accounts[0] = await servicesNode.createAliasAccount(30, relay.provider);
+        accounts[1] = await servicesNode.createAliasAccount(10, relay.provider);
+        accounts[2] = await servicesNode.createAliasAccount(10, relay.provider);
 
         initialHolder = accounts[0].address;
         recipient = accounts[1].address;

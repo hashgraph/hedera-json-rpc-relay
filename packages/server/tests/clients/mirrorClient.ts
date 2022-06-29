@@ -49,7 +49,7 @@ export default class MirrorClient {
             },
             retryCondition: (error) => {
                 if (error?.response?.status === 404) {
-                    this.logger.info(`Request failed`);
+                    this.logger.debug(`Request failed`);
                 }
                 else {
                     this.logger.error(error, `Request failed`);

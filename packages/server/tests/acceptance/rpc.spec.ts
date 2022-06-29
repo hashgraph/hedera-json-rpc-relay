@@ -601,18 +601,18 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(res).to.eq(basicContractJson.deployedBytecode);
                 });
 
-                it('should return 0x for non-existing contract on eth_getCode', async function () {
+                it('should return 0x0 for non-existing contract on eth_getCode', async function () {
                     const res = await relay.call('eth_getCode', [NON_EXISTING_ADDRESS]);
                     expect(res).to.eq('0x0');
                 });
 
-                it('should return 0x for account evm_address on eth_getCode', async function () {
+                it('should return 0x0 for account evm_address on eth_getCode', async function () {
                     const evmAddress = Utils.idToEvmAddress(accounts[2].accountId.toString());
                     const res = await relay.call('eth_getCode', [evmAddress]);
                     expect(res).to.eq('0x0');
                 });
 
-                it('should return 0x for account alias on eth_getCode', async function () {
+                it('should return 0x0 for account alias on eth_getCode', async function () {
                     const alias = Utils.idToEvmAddress(accounts[2].accountId.toString());
                     const res = await relay.call('eth_getCode', [alias]);
                     expect(res).to.eq('0x0');
