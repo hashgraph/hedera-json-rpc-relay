@@ -47,4 +47,13 @@ export class Utils {
         return ethers.utils.hexValue(ethers.utils.parseUnits(Number(value).toString(), 10));
     };
 
+    static randomString(length) {
+        let result = '';
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        for ( let i = 0; i < length; i++ ) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
 }

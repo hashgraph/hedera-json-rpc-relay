@@ -670,7 +670,7 @@ export class EthImpl implements Eth {
       chainId: contractResult.chain_id,
       from: contractResult.from.substring(0, 42),
       gas: contractResult.gas_used,
-      gasPrice: contractResult.gas_price,
+      gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
       maxPriorityFeePerGas: maxPriorityFee,
@@ -710,7 +710,19 @@ export class EthImpl implements Eth {
 
 
       // support stricter go-eth client which requires the transaction hash property on logs
-      const logs = receiptResponse.logs.map(log => ({ ...log, transactionHash: receiptResponse.hash }));
+      const logs = receiptResponse.logs.map(log => {
+        return new Log({
+          address: log.address,
+          blockHash: receiptResponse.block_hash.substring(0, 66),
+          blockNumber: receiptResponse.block_number,
+          data: log.data,
+          logIndex: log.index,
+          removed: false,
+          topics: log.topics,
+          transactionHash: receiptResponse.hash,
+          transactionIndex: receiptResponse.transaction_index
+        });
+      });
 
       const receipt = {
         blockHash: receiptResponse.block_hash.substring(0, 66),
@@ -746,6 +758,10 @@ export class EthImpl implements Eth {
 
   static numberTo0x(input: number | BigNumber): string {
     return EthImpl.emptyHex + input.toString(16);
+  }
+
+  private static toNullIfEmptyHex(value: string): string | null {
+    return value === EthImpl.emptyHex ? null : value;
   }
 
   /**
@@ -897,11 +913,11 @@ export class EthImpl implements Eth {
           chainId: contractResultDetails.chain_id,
           from: contractResultDetails.from.substring(0, 42),
           gas: contractResultDetails.gas_used,
-          gasPrice: contractResultDetails.gas_price,
+          gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
           hash: contractResultDetails.hash.substring(0, 66),
           input: contractResultDetails.function_parameters,
-          maxPriorityFeePerGas: contractResultDetails.max_priority_fee_per_gas,
-          maxFeePerGas: contractResultDetails.max_fee_per_gas,
+          maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
+          maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
           nonce: contractResultDetails.nonce,
           r: rSig,
           s: sSig,
@@ -1002,7 +1018,7 @@ export class EthImpl implements Eth {
           const log = logs[logIndex];
           logs[logIndex] = new Log({
             address: log.address,
-            blockHash: detail.block_hash,
+            blockHash: detail.block_hash.substring(0, 66),
             blockNumber: detail.block_number,
             data: log.data,
             logIndex: log.index,
