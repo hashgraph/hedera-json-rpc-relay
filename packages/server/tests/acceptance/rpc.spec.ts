@@ -669,15 +669,23 @@ describe('RPC Server Acceptance Tests', function () {
     });
 
     describe('Gas Price related RPC endpoints', () => {
-        it('should call eth_feeHistory', async function() {
-            const res = await relay.call('eth_feeHistory', []);
+        let latestBlock;
 
-            expect(res.baseFeePerGasArray).to.exist.to.be.an('Array');
-            expect(res.gasUsedRatioArray).to.exist.to.be.an('Array');
-            expect(res.oldestBlockNumber).to.exist;
-            expect(res.baseFeePerGasArray[0]).to.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
-            expect(res.gasUsedRatioArray[0]).to.equal('0.5');
-            expect(res.oldestBlockNumber).to.equal('0x0');
+        before(async () => {
+            latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+        });
+
+        it('should call eth_feeHistory with latest block', async function() {
+            const res = await relay.call('eth_feeHistory', ["0x1", "latest", null]);
+            console.log(res);
+            expect(res.baseFeePerGas).to.exist.to.be.an('Array');
+            expect(res.gasUsedRatio).to.exist.to.be.an('Array');
+            expect(res.oldestBlock).to.exist;
+            expect(res.baseFeePerGas.length).to.equal(2);
+            expect(res.gasUsedRatio.length).to.equal(1);
+            expect(res.baseFeePerGas[0]).to.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
+            expect(res.gasUsedRatio[0]).to.equal(`0x${Assertions.defaultGasUsed.toString(16)}`);
+            expect(res.oldestBlock).to.equal(ethers.utils.hexValue(latestBlock.number));
         });
 
         it('should call eth_gasPrice', async function() {
@@ -708,9 +716,9 @@ describe('RPC Server Acceptance Tests', function () {
 
     function runLocalHederaNetwork() {
         // set env variables for docker images until local-node is updated
-        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.26.2';
-        process.env['HAVEGED_IMAGE_TAG'] = '0.26.2';
-        process.env['MIRROR_IMAGE_TAG'] = '0.58.0';
+        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.26.3';
+        process.env['HAVEGED_IMAGE_TAG'] = '0.26.3';
+        process.env['MIRROR_IMAGE_TAG'] = '0.59.0-rc1';
         logger.trace(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
         // start local-node

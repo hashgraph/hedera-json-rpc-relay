@@ -133,7 +133,7 @@ export class EthImpl implements Eth {
     try {
       const latestBlockNumber = await this.translateBlockTag('latest');
       const newestBlockNumber = await this.translateBlockTag(newestBlock);
-  
+
       if (newestBlockNumber > latestBlockNumber) {
         return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
       }
@@ -141,7 +141,7 @@ export class EthImpl implements Eth {
       let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
       if (!feeHistory) {
 
-        feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, rewardPercentiles); 
+        feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles); 
 
         this.logger.trace(`caching ${constants.CACHE_KEY.FEE_HISTORY} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory, constants.CACHE_TTL.ONE_HOUR);
@@ -150,11 +150,29 @@ export class EthImpl implements Eth {
       return feeHistory;
     } catch (e) {
       this.logger.error(e, 'Error constructing default feeHistory');
-      return {};
+      return {
+        baseFeePerGas: [],
+        gasUsedRatio: [],
+        reward: [],
+        oldestBlock: EthImpl.zeroHex
+      };
     }
   }
 
-  private async getFeeHistory(blockCount: number, newestBlockNumber: number, rewardPercentiles: Array<number> | null) {
+  private async getFeeByBlockNumber(blockNumber: number): Promise<string> {
+    let fee = 0;
+
+    try {
+      const block = await this.mirrorNodeClient.getBlock(blockNumber);
+      fee = await this.getFeeWeibars(`lte:${block.timestamp.to}`);
+    } catch (error) {
+      this.logger.warn(error, `Fee history cannot retrieve block or fee. Returning ${fee} fee for block ${blockNumber}`);
+    }
+
+    return EthImpl.numberTo0x(fee);
+  }
+
+  private async getFeeHistory(blockCount: number, newestBlockNumber: number, latestBlockNumber: number, rewardPercentiles: Array<number> | null) {
     blockCount = blockCount > constants.MAX_FEE_HISTORY_RESULTS ? constants.MAX_FEE_HISTORY_RESULTS : blockCount;
 
     if (blockCount === 0) {
@@ -173,19 +191,24 @@ export class EthImpl implements Eth {
       oldestBlock: EthImpl.numberTo0x(oldestBlockNumber),
     };
 
-    // get fees from newest to oldest blocks
-    for(let blockNumber = newestBlockNumber; blockNumber >= oldestBlockNumber; blockNumber--) {
-      let fee = 0;
+    // get fees from oldest to newest blocks
+    for(let blockNumber = oldestBlockNumber; blockNumber <= newestBlockNumber; blockNumber++) {
+      const fee = await this.getFeeByBlockNumber(blockNumber);
 
-      try {
-        const block = await this.mirrorNodeClient.getBlock(blockNumber);
-        fee = await this.getFeeWeibars(`lte:${block.timestamp.to}`);
-      } catch (error) {
-        this.logger.warn(error, `Fee history cannot retrieve block or fee. Returning ${fee} fee for block ${blockNumber}`);
-      }
-
-      feeHistory.baseFeePerGas.push(EthImpl.numberTo0x(fee));
+      feeHistory.baseFeePerGas.push(fee);
       feeHistory.gasUsedRatio.push(EthImpl.defaultGasUsedRatio);
+    }
+
+    // get latest block fee
+    let nextBaseFeePerGas = _.last(feeHistory.baseFeePerGas);
+
+    if (latestBlockNumber > newestBlockNumber) {
+      // get next block fee if the newest block is not the latest
+      nextBaseFeePerGas = await this.getFeeByBlockNumber(newestBlockNumber + 1);
+    }
+    
+    if (nextBaseFeePerGas) {
+      feeHistory.baseFeePerGas.push(nextBaseFeePerGas);
     }
     
     if (shouldIncludeRewards) {
