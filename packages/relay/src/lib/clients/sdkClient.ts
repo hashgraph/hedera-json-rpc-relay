@@ -39,7 +39,8 @@ import {
     Query,
     Transaction,
     TransactionRecord,
-    Status
+    Status,
+    EthereumFlow
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
@@ -185,6 +186,11 @@ export class SDKClient {
     }
 
     async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionResponse> {
+        if (transactionBuffer.length > 4096) {
+            return this.executeTransaction(new EthereumFlow()
+                .setEthereumData(transactionBuffer));
+        }
+
         return this.executeTransaction(new EthereumTransaction()
             .setEthereumData(transactionBuffer));
     }
@@ -257,7 +263,7 @@ export class SDKClient {
         }
     };
 
-    private executeTransaction = async (transaction: Transaction): Promise<TransactionResponse> => {
+    private executeTransaction = async (transaction: Transaction | EthereumFlow): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
         try {
             this.logger.info(`Execute ${transactionType} transaction`);
