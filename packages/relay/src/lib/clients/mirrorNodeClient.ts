@@ -23,7 +23,6 @@ import { predefined } from '../errors';
 import { Logger } from "pino";
 import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
-import axiosRetry from 'axios-retry';
 
 export interface ILimitOrderParams {
     limit?: number;
@@ -101,21 +100,6 @@ export class MirrorNodeClient {
                 'Content-Type': 'application/json'
             },
             timeout: 10 * 1000
-        });
-
-        // @ts-ignore
-        axiosRetry(axiosClient, {
-            retries: 5,
-            retryDelay: (retryCount) => {
-                const delay = retryCount * 1000;
-                this.logger.trace(`Retry delay ${delay} s`);
-                return delay;
-            },
-            retryCondition: (error) => {
-                this.logger.error(error, `Request failed`);
-                return error?.response?.status === 400 || error?.response?.status === 404;
-            },
-            shouldResetTimeout: true
         });
 
         return axiosClient;

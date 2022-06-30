@@ -22,9 +22,9 @@ const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 let client;
 const network = process.env.HEDERA_NETWORK || '{}';
 if (supportedEnvs.includes(network.toLowerCase())) {
-    client = HederaSDK.Client.forName(network);
+  client = HederaSDK.Client.forName(network);
 } else {
-    client = HederaSDK.Client.forNetwork(JSON.parse(network));
+  client = HederaSDK.Client.forNetwork(JSON.parse(network));
 }
 
 client.setOperator(process.env.OPERATOR_ID_MAIN, process.env.OPERATOR_KEY_MAIN);
@@ -34,6 +34,8 @@ const createAccountFromCompressedPublicKey = async function(compressedPublicKey)
     .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(100))
     .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-100)))
     .execute(client);
+
+  await transferTransaction.getReceipt(client);
 
   const txTransaction = await (new HederaSDK.TransactionRecordQuery()
     .setTransactionId(transferTransaction.transactionId))
