@@ -58,11 +58,15 @@ function App() {
 
   const fetchAccountBalance = async (accountAddress) => {
     try {
-      const accountBalance = await window.ethereum.request({
-        method: "eth_getBalance",
-        params: [accountAddress.toString(), "latest"],
-      });
-      setBalance(ethers.utils.formatEther(accountBalance));
+      let balance = null;
+      if (accountAddress) {
+        const accountBalance = await window.ethereum.request({
+          method: "eth_getBalance",
+          params: [accountAddress.toString(), "latest"],
+        });
+        balance = ethers.utils.formatEther(accountBalance);
+      }
+      setBalance(balance);
     } catch (error) {
       console.log(error);
     }
