@@ -23,7 +23,6 @@ import { predefined } from '../errors';
 import { Logger } from "pino";
 import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
-import axiosRetry from 'axios-retry';
 
 export interface ILimitOrderParams {
     limit?: number;
