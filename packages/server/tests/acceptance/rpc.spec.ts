@@ -464,7 +464,7 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(balanceChange.toString()).to.eq(ONE_TINYBAR.toString());
                 });
 
-                it.only('should execute "eth_sendRawTransaction" and deploy a large contract', async function() {
+                it('should execute "eth_sendRawTransaction" and deploy a large contract', async function() {
                     const transaction = {
                         type: 2,
                         chainId: Number(CHAIN_ID),
