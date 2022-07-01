@@ -56,6 +56,8 @@ describe('RPC Server Acceptance Tests', function () {
     const NON_EXISTING_BLOCK_HASH = '0x555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555';
     const NON_EXISTING_BLOCK_NUMBER = 99999999;
     const NON_EXISTING_INDEX = 999999;
+    const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
+    const BASIC_CONTRACT_PING_RESULT = '0x0000000000000000000000000000000000000000000000000000000000000001';
     const EXCHANGE_RATE_FILE_ID = "0.0.112";
     const EXCHANGE_RATE_FILE_CONTENT_DEFAULT = "0a1008b0ea0110f9bb1b1a0608f0cccf9306121008b0ea0110e9c81a1a060880e9cf9306";
     const FEE_SCHEDULE_FILE_ID = "0.0.111";
@@ -80,9 +82,6 @@ describe('RPC Server Acceptance Tests', function () {
             await accounts[1].client.associateToken(tokenId);
             await servicesNode.transferToken(tokenId, accounts[0].accountId);
             await servicesNode.transferToken(tokenId, accounts[1].accountId);
-
-            await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
-            await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
 
             // get contract details
             mirrorContract = await mirrorNode.get(`/contracts/${contractId}`);
@@ -439,7 +438,7 @@ describe('RPC Server Acceptance Tests', function () {
                 expect(res).to.not.be.equal('0x0');
             });
 
-            it('should call eth_gasPrice', async function() {
+            it('should call eth_gasPrice', async function () {
                 const res = await relay.call('eth_gasPrice', []);
                 expect(res).to.exist;
                 expect(res).to.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
@@ -626,6 +625,73 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(res).to.eq('0x0');
                 });
             });
+
+            describe('eth_call', () => {
+                let basicContract, evmAddress;
+
+                before(async () => {
+                    basicContract = await servicesNode.deployContract(basicContractJson);
+                    // Wait for creation to propagate
+                    await mirrorNode.get(`/contracts/${basicContract.contractId}`);
+
+                    evmAddress = `0x${basicContract.contractId.toSolidityAddress()}`;
+                });
+
+                it('should execute "eth_call" request to Basic contract', async function () {
+                    const callData = {
+                        from: accounts[2].address,
+                        to: evmAddress,
+                        gas: 30000,
+                        data: BASIC_CONTRACT_PING_CALL_DATA
+                    };
+
+                    const res = await relay.call('eth_call', [callData]);
+                    expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+                });
+
+                it('should fail "eth_call" for non-existing contract address', async function () {
+                    const callData = {
+                        from: accounts[2].address,
+                        to: NON_EXISTING_ADDRESS,
+                        gas: 30000,
+                        data: BASIC_CONTRACT_PING_CALL_DATA
+                    };
+
+                    await relay.callFailing('eth_call', [callData]);
+                });
+
+                it('should execute "eth_call" without from field', async function () {
+                    const callData = {
+                        to: evmAddress,
+                        gas: 30000,
+                        data: BASIC_CONTRACT_PING_CALL_DATA
+                    };
+
+                    const res = await relay.call('eth_call', [callData]);
+                    expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+                });
+
+                it('should execute "eth_call" without gas field', async function () {
+                    const callData = {
+                        from: accounts[2].address,
+                        to: evmAddress,
+                        data: BASIC_CONTRACT_PING_CALL_DATA
+                    };
+
+                    const res = await relay.call('eth_call', [callData]);
+                    expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+                });
+
+                it('should fail "eth_call" request without data field', async function () {
+                    const callData = {
+                        from: accounts[2].address,
+                        to: evmAddress,
+                        gas: 30000
+                    };
+
+                    await relay.callFailing('eth_call', [callData]);
+                });
+            });
         });
 
         describe('Gas Price related RPC endpoints', () => {
@@ -633,6 +699,8 @@ describe('RPC Server Acceptance Tests', function () {
             let lastBlockAfterUpdate;
     
             before(async () => {
+                await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
+                await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
                 lastBlockBeforeUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
                 await new Promise(resolve => setTimeout(resolve, 4000));
                 await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED);
@@ -643,7 +711,7 @@ describe('RPC Server Acceptance Tests', function () {
             it('should call eth_feeHistory with updated fees', async function() {
                 const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
                 const blockCountHex = ethers.utils.hexValue(blockCountNumber);
-                const defaultGasPriceHex = ethers.utils.hexValue(Assertions.defaultGasPrice);
+                const datedGasPrice = ethers.utils.hexValue(Assertions.datedGasPrice);
                 const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
                 const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
                 const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
@@ -652,7 +720,7 @@ describe('RPC Server Acceptance Tests', function () {
 
                 Assertions.feeHistory(res, {resultCount: blockCountNumber, oldestBlock: oldestBlockNumberHex, chechReward: true});
 
-                expect(res.baseFeePerGas[0]).to.equal(defaultGasPriceHex);
+                expect(res.baseFeePerGas[0]).to.equal(datedGasPrice);
                 expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
                 expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
             });
