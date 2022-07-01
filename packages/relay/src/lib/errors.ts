@@ -70,5 +70,10 @@ export const predefined = {
     name: 'Incorrect nonce',
     code: -32006,
     message: 'Incorrect nonce'
+  }),
+  'UNSUPPORTED_CHAIN_ID': new JsonRpcError({
+    name: 'ChainId not supported',
+    code: -32000,
+    message: 'ChainId not supported'
   })
 };

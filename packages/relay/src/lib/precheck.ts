@@ -21,12 +21,15 @@
 import * as ethers from 'ethers';
 import { predefined } from './errors';
 import { MirrorNodeClient } from './clients';
+import {EthImpl} from "./eth";
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
+  private chain: string;
 
-  constructor(mirrorNodeClient: MirrorNodeClient) {
+  constructor(mirrorNodeClient: MirrorNodeClient, chainId: string) {
     this.mirrorNodeClient = mirrorNodeClient;
+    this.chain = chainId;
   }
 
   /**
@@ -55,5 +58,12 @@ export class Precheck {
     if (accountInfo && accountInfo.ethereum_nonce > tx.nonce) {
       throw predefined.NONCE_TOO_LOW;
     }
+  }
+
+  chainId(transaction: string) {
+    const tx = ethers.utils.parseTransaction(transaction);
+    if (!tx.chainId) return true;
+    const txChainId = EthImpl.prepend0x(Number(tx.chainId).toString(16));
+    return txChainId === this.chain;
   }
 }

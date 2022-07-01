@@ -113,7 +113,7 @@ export class EthImpl implements Eth {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient);
+    this.precheck = new Precheck(mirrorNodeClient, chain);
   }
 
   /**
@@ -554,6 +554,16 @@ export class EthImpl implements Eth {
   async sendRawTransaction(transaction: string): Promise<string | JsonRpcError> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
     await this.precheck.nonce(transaction);
+
+    this.logger.trace('Performing chainId precheck for sendRawTransaction(transaction=%s)', transaction);
+
+    const precheckRes = this.precheck.chainId(transaction);
+    this.logger.debug(precheckRes.toString());
+    if ( !precheckRes ) {
+      this.logger.trace('FAILED chainId precheck for sendRawTransaction(transaction=%s)', transaction);
+      return predefined.UNSUPPORTED_CHAIN_ID;
+    }
+    this.logger.trace('SUCCEEDED chainId precheck for sendRawTransaction(transaction=%s)', transaction);
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
