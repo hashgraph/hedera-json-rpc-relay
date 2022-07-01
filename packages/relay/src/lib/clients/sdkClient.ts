@@ -186,13 +186,8 @@ export class SDKClient {
     }
 
     async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionResponse> {
-        if (transactionBuffer.length > 4096) {
-            return this.executeTransaction(new EthereumFlow()
-                .setEthereumData(transactionBuffer));
-        }
-
-        return this.executeTransaction(new EthereumTransaction()
-            .setEthereumData(transactionBuffer));
+        return this.executeTransaction(new EthereumFlow()
+          .setEthereumData(transactionBuffer));
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number, callerName: string): Promise<ContractFunctionResult> {
