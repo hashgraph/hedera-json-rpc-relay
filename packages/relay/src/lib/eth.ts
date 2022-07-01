@@ -555,15 +555,10 @@ export class EthImpl implements Eth {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
     await this.precheck.nonce(transaction);
 
-    this.logger.trace('Performing chainId precheck for sendRawTransaction(transaction=%s)', transaction);
-
-    const precheckRes = this.precheck.chainId(transaction);
-    this.logger.debug(precheckRes.toString());
-    if ( !precheckRes ) {
-      this.logger.trace('FAILED chainId precheck for sendRawTransaction(transaction=%s)', transaction);
+    if ( !this.precheck.chainId(transaction) ) {
+      this.logger.trace('Failed chainId precheck for sendRawTransaction(transaction=%s)', transaction);
       return predefined.UNSUPPORTED_CHAIN_ID;
     }
-    this.logger.trace('SUCCEEDED chainId precheck for sendRawTransaction(transaction=%s)', transaction);
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
