@@ -53,7 +53,7 @@ describe('Precheck', async function() {
 
         // @ts-ignore
         const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
-        precheck = new Precheck(mirrorNodeInstance, '0x12a');
+        precheck = new Precheck(mirrorNodeInstance, logger, '0x12a');
     });
 
     describe('chainId', async function() {

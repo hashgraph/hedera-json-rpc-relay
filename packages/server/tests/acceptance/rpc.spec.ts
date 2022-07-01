@@ -310,7 +310,7 @@ describe('RPC Server Acceptance Tests', function () {
                         Assertions.expectedError();
                     }
                     catch(e) {
-                        Assertions.jsonRpcError(e, -32000, 'ChainId not supported');
+                        Assertions.jsonRpcError(e, -32000, 'ChainId (0x3e7) not supported. The correct chainId is 0x12a.');
                     }
                 });
 
@@ -340,7 +340,7 @@ describe('RPC Server Acceptance Tests', function () {
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     // FIXME We should not be failing with INTERNAL ERROR but rather user friendly error
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'ChainId not supported');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'ChainId (0x0) not supported. The correct chainId is 0x12a.');
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
