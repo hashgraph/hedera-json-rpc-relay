@@ -970,7 +970,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_feeHistory with max results', async function () {
-    const maxResultsCap = Number(process.env.FEE_HISTORY_MAX_RESULTS);
+    const maxResultsCap = Number(constants.FEE_HISTORY_MAX_RESULTS);
 
     mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [{...defaultBlock, number: 10}]});
     mock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultNetworkFees);
