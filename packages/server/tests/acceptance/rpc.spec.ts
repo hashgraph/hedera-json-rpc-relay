@@ -56,6 +56,8 @@ describe('RPC Server Acceptance Tests', function () {
     const NON_EXISTING_BLOCK_HASH = '0x555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555';
     const NON_EXISTING_BLOCK_NUMBER = 99999999;
     const NON_EXISTING_INDEX = 999999;
+    const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
+    const BASIC_CONTRACT_PING_RESULT = '0x0000000000000000000000000000000000000000000000000000000000000001';
 
     describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
@@ -431,7 +433,7 @@ describe('RPC Server Acceptance Tests', function () {
                 expect(res).to.not.be.equal('0x0');
             });
 
-            it('should call eth_gasPrice', async function() {
+            it('should call eth_gasPrice', async function () {
                 const res = await relay.call('eth_gasPrice', []);
                 expect(res).to.exist;
                 expect(res).to.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
@@ -616,6 +618,73 @@ describe('RPC Server Acceptance Tests', function () {
                     const alias = Utils.idToEvmAddress(accounts[2].accountId.toString());
                     const res = await relay.call('eth_getCode', [alias]);
                     expect(res).to.eq('0x0');
+                });
+            });
+
+            describe('eth_call', () => {
+                let basicContract, evmAddress;
+
+                before(async () => {
+                    basicContract = await servicesNode.deployContract(basicContractJson);
+                    // Wait for creation to propagate
+                    await mirrorNode.get(`/contracts/${basicContract.contractId}`);
+
+                    evmAddress = `0x${basicContract.contractId.toSolidityAddress()}`;
+                });
+
+                it('should execute "eth_call" request to Basic contract', async function () {
+                    const callData = {
+                        from: accounts[2].address,
+                        to: evmAddress,
+                        gas: 30000,
+                        data: BASIC_CONTRACT_PING_CALL_DATA
+                    };
+
+                    const res = await relay.call('eth_call', [callData]);
+                    expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+                });
+
+                it('should fail "eth_call" for non-existing contract address', async function () {
+                    const callData = {
+                        from: accounts[2].address,
+                        to: NON_EXISTING_ADDRESS,
+                        gas: 30000,
+                        data: BASIC_CONTRACT_PING_CALL_DATA
+                    };
+
+                    await relay.callFailing('eth_call', [callData]);
+                });
+
+                it('should execute "eth_call" without from field', async function () {
+                    const callData = {
+                        to: evmAddress,
+                        gas: 30000,
+                        data: BASIC_CONTRACT_PING_CALL_DATA
+                    };
+
+                    const res = await relay.call('eth_call', [callData]);
+                    expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+                });
+
+                it('should execute "eth_call" without gas field', async function () {
+                    const callData = {
+                        from: accounts[2].address,
+                        to: evmAddress,
+                        data: BASIC_CONTRACT_PING_CALL_DATA
+                    };
+
+                    const res = await relay.call('eth_call', [callData]);
+                    expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+                });
+
+                it('should fail "eth_call" request without data field', async function () {
+                    const callData = {
+                        from: accounts[2].address,
+                        to: evmAddress,
+                        gas: 30000
+                    };
+
+                    await relay.callFailing('eth_call', [callData]);
                 });
             });
         });
