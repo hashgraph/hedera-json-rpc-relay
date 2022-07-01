@@ -722,7 +722,7 @@ describe('RPC Server Acceptance Tests', function () {
                 it('should execute "eth_getCode" for contract evm_address', async function () {
                     const evmAddress = basicContract.contractId.toSolidityAddress();
                     const res = await relay.call('eth_getCode', [evmAddress]);
-                        expect(res).to.eq(basicContractJson.deployedBytecode);
+                    expect(res).to.eq(basicContractJson.deployedBytecode);
                 });
 
                 it('should execute "eth_getCode" for contract with id converted to evm_address', async function () {
