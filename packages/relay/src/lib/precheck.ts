@@ -62,7 +62,6 @@ export class Precheck {
 
   chainId(transaction: string) {
     const tx = ethers.utils.parseTransaction(transaction);
-    if (!tx.chainId) return true;
     const txChainId = EthImpl.prepend0x(Number(tx.chainId).toString(16));
     return txChainId === this.chain;
   }

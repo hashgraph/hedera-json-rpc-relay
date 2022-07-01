@@ -340,7 +340,7 @@ describe('RPC Server Acceptance Tests', function () {
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     // FIXME We should not be failing with INTERNAL ERROR but rather user friendly error
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx]);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'ChainId not supported');
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
