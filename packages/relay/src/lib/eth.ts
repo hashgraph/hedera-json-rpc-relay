@@ -55,6 +55,8 @@ export class EthImpl implements Eth {
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasUsedRatio = EthImpl.numberTo0x(0.5);
+  static feeHistoryZeroBlockCountResponse = {gasUsedRatio:null,oldestBlock:EthImpl.zeroHex};
+  static feeHistoryEmptyResponse = {baseFeePerGas:[],gasUsedRatio:[],reward:[],oldestBlock:EthImpl.zeroHex};
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
    * associated with this client will pay for all operations on the main network.
@@ -138,6 +140,12 @@ export class EthImpl implements Eth {
         return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
       }
 
+      blockCount = blockCount > constants.FEE_HISTORY_MAX_RESULTS ? constants.FEE_HISTORY_MAX_RESULTS : blockCount;
+
+      if (blockCount <= 0) {
+        return EthImpl.feeHistoryZeroBlockCountResponse;
+      }
+
       let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
       if (!feeHistory) {
 
@@ -150,12 +158,7 @@ export class EthImpl implements Eth {
       return feeHistory;
     } catch (e) {
       this.logger.error(e, 'Error constructing default feeHistory');
-      return {
-        baseFeePerGas: [],
-        gasUsedRatio: [],
-        reward: [],
-        oldestBlock: EthImpl.zeroHex
-      };
+      return EthImpl.feeHistoryEmptyResponse;
     }
   }
 
@@ -173,15 +176,6 @@ export class EthImpl implements Eth {
   }
 
   private async getFeeHistory(blockCount: number, newestBlockNumber: number, latestBlockNumber: number, rewardPercentiles: Array<number> | null) {
-    blockCount = blockCount > constants.MAX_FEE_HISTORY_RESULTS ? constants.MAX_FEE_HISTORY_RESULTS : blockCount;
-
-    if (blockCount === 0) {
-      return {
-        gasUsedRatio: null,
-        oldestBlock: EthImpl.zeroHex
-      };
-    }
-
     // include newest block number in the total block count
     const oldestBlockNumber = Math.max(0, newestBlockNumber - blockCount + 1);
     const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;

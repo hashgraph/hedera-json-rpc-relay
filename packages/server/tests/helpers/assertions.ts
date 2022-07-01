@@ -28,7 +28,8 @@ export default class Assertions {
     static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
     static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
     static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
-    static defaultGasPrice = 720_000_000_000;
+    static defaultGasPrice = 570_000_000_000;
+    static updatedGasPrice = 640_000_000_000;
     static defaultGasUsed = 0.5;
 
     static assertId = (id) => {
@@ -174,6 +175,23 @@ export default class Assertions {
 
         expect(transactionReceipt.to).to.eq(mirrorResult.to);
     };
+
+    public static feeHistory(res: any, expected: any) {
+        expect(res.baseFeePerGas).to.exist.to.be.an('Array');
+        expect(res.gasUsedRatio).to.exist.to.be.an('Array');
+        expect(res.oldestBlock).to.exist;
+        expect(res.baseFeePerGas.length).to.equal(expected.resultCount + 1);
+        expect(res.gasUsedRatio.length).to.equal(expected.resultCount);
+        
+        expect(res.oldestBlock).to.equal(expected.oldestBlock);
+
+        res.gasUsedRatio.map((gasRatio: string) => expect(gasRatio).to.equal(`0x${Assertions.defaultGasUsed.toString(16)}`))
+
+        if (expected.checkReward) {
+            expect(res.reward).to.exist.to.be.an('Array');
+            expect(res.reward.length).to.equal(expected.resultCount);
+        }
+    }
 
     static unknownResponse(err) {
         const parsedError = JSON.parse(err.body);

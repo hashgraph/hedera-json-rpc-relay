@@ -39,5 +39,5 @@ export default {
     TYPE_CONTRACT: 'contract',
     TYPE_ACCOUNT: 'account',
 
-    MAX_FEE_HISTORY_RESULTS: 1024
+    FEE_HISTORY_MAX_RESULTS: Number(process.env.FEE_HISTORY_MAX_RESULTS || 10) 
 };

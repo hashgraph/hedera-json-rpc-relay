@@ -56,6 +56,11 @@ describe('RPC Server Acceptance Tests', function () {
     const NON_EXISTING_BLOCK_HASH = '0x555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555';
     const NON_EXISTING_BLOCK_NUMBER = 99999999;
     const NON_EXISTING_INDEX = 999999;
+    const EXCHANGE_RATE_FILE_ID = "0.0.112";
+    const EXCHANGE_RATE_FILE_CONTENT_DEFAULT = "0a1008b0ea0110f9bb1b1a0608f0cccf9306121008b0ea0110e9c81a1a060880e9cf9306";
+    const FEE_SCHEDULE_FILE_ID = "0.0.111";
+    const FEE_SCHEDULE_FILE_CONTENT_DEFAULT = "0a280a0a08541a061a04408888340a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 853000
+    const FEE_SCHEDULE_FILE_CONTENT_UPDATED = "0a280a0a08541a061a0440a8953a0a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 953000
 
     describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
@@ -75,6 +80,9 @@ describe('RPC Server Acceptance Tests', function () {
             await accounts[1].client.associateToken(tokenId);
             await servicesNode.transferToken(tokenId, accounts[0].accountId);
             await servicesNode.transferToken(tokenId, accounts[1].accountId);
+
+            await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
+            await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
 
             // get contract details
             mirrorContract = await mirrorNode.get(`/contracts/${contractId}`);
@@ -621,30 +629,41 @@ describe('RPC Server Acceptance Tests', function () {
         });
 
         describe('Gas Price related RPC endpoints', () => {
-            let latestBlock;
+            let lastBlockBeforeUpdate;
+            let lastBlockAfterUpdate;
     
             before(async () => {
-                latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                lastBlockBeforeUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED);
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                lastBlockAfterUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
             });
-    
-            it('should call eth_feeHistory with latest block', async function() {
-                const res = await relay.call('eth_feeHistory', ["0x1", "latest", null]);
 
-                expect(res.baseFeePerGas).to.exist.to.be.an('Array');
-                expect(res.gasUsedRatio).to.exist.to.be.an('Array');
-                expect(res.oldestBlock).to.exist;
-                expect(res.baseFeePerGas.length).to.equal(2);
-                expect(res.gasUsedRatio.length).to.equal(1);
-                expect(res.baseFeePerGas[0]).to.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
-                expect(res.gasUsedRatio[0]).to.equal(`0x${Assertions.defaultGasUsed.toString(16)}`);
-                expect(res.oldestBlock).to.equal(ethers.utils.hexValue(latestBlock.number));
+            it('should call eth_feeHistory with updated fees', async function() {
+                const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
+                const blockCountHex = ethers.utils.hexValue(blockCountNumber);
+                const defaultGasPriceHex = ethers.utils.hexValue(Assertions.defaultGasPrice);
+                const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
+                const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
+                const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
+
+                const res = await relay.call('eth_feeHistory', [blockCountHex, newestBlockNumberHex, [0]]);
+
+                Assertions.feeHistory(res, {resultCount: blockCountNumber, oldestBlock: oldestBlockNumberHex, chechReward: true});
+
+                expect(res.baseFeePerGas[0]).to.equal(defaultGasPriceHex);
+                expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
+                expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
             });
-    
-            it('should call eth_gasPrice', async function() {
-                const res = await relay.call('eth_gasPrice', []);
-    
-                expect(res).to.exist;
-                expect(res).to.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
+
+            it('should call eth_feeHistory with zero block count', async function() {
+                const res = await relay.call('eth_feeHistory', ['0x0', 'latest', null]);
+
+                expect(res.reward).to.not.exist;
+                expect(res.baseFeePerGas).to.not.exist;
+                expect(res.gasUsedRatio).to.equal(null);
+                expect(res.oldestBlock).to.equal('0x0');
             });
         });
     });

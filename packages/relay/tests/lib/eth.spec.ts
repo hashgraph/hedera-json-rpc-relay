@@ -969,6 +969,22 @@ describe('Eth calls using MirrorNode', async function () {
     expect(rewards[1]).to.equal('0x0');
   });
 
+  it('eth_feeHistory with max results', async function () {
+    const maxResultsCap = Number(process.env.FEE_HISTORY_MAX_RESULTS);
+
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [{...defaultBlock, number: 10}]});
+    mock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultNetworkFees);
+    Array.from(Array(11).keys()).map(blockNumber => mock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, number: blockNumber}))
+
+    const feeHistory = await ethImpl.feeHistory(200, '0x9', [0]);
+    console.log(feeHistory)
+    expect(feeHistory).to.exist;
+    expect(feeHistory['oldestBlock']).to.equal(`0x0`);
+    expect(feeHistory['reward'].length).to.equal(maxResultsCap);
+    expect(feeHistory['baseFeePerGas'].length).to.equal(maxResultsCap + 1);
+    expect(feeHistory['gasUsedRatio'].length).to.equal(maxResultsCap);
+  });
+
   it('eth_feeHistory verify cached value', async function () {
     const latestBlock = {...defaultBlock, number: blockNumber3};
     const latestFees = defaultNetworkFees;

@@ -36,7 +36,8 @@ import {
     Transaction,
     TransactionResponse,
     TransferTransaction,
-    ContractCreateFlow
+    ContractCreateFlow,
+    FileUpdateTransaction,
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
@@ -263,6 +264,16 @@ export default class ServicesClient {
             .setAccountId(this.client.operatorAccountId!))
             .execute(this.client);
         return accountBalance.hbars;
+    }
+
+    async updateFileContent(fileId: string, content: string): Promise<void> {
+        const response = await new FileUpdateTransaction()
+            .setFileId(fileId)
+            .setContents(Buffer.from(content, 'hex'))
+            .execute(this.client);
+
+        const receipt = await response.getReceipt(this.client);
+        this.logger.info(`File ${fileId} updated with status: ${receipt.status.toString()}`);
     }
 }
 
