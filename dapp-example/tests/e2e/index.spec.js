@@ -26,7 +26,6 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Show alias', function() {
-    resetMetamaskConnection();
 
     cy.get('#showAliasBtn').should('not.be.disabled').click();
     cy.confirmMetamaskSignatureRequest();
@@ -34,7 +33,6 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Deploy contract', function() {
-    resetMetamaskConnection();
 
     // deploy the contract
     cy.get('#btnDeployContract').should('not.be.disabled').click();
@@ -57,12 +55,11 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Transfer HTS token', function() {
-    resetMetamaskConnection();
 
     // test the HTS transfer
     cy.get('#htsTokenAddressField').type(htsData.HTS_ADDRESS);
     cy.get('#htsReceiverAddressField').type('0x54C51b7637BF6fE9709e1e0EBc8b2Ca6a24b0f0A');
-    cy.get('#htsTokenAmountField').type('1000');
+    cy.get('#htsTokenAmountField').clear().type(1000).trigger('change');
     cy.get('#htsTokenTransferBtn').should('not.be.disabled').click();
     cy.confirmMetamaskTransaction();
 
@@ -70,10 +67,10 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Transfer HBARs', function() {
-    resetMetamaskConnection();
+    cy.resetMetamaskAccount();
 
     cy.get('#sendHbarsToField').type('0x54C51b7637BF6fE9709e1e0EBc8b2Ca6a24b0f0A');
-    cy.get('#sendHbarsAmountField').type('10000000000000000');
+    cy.get('#sendHbarsAmountField').clear().type('10000000000000000').trigger('change');
     cy.get('#sendHbarsBtn').should('not.be.disabled').click();
     cy.confirmMetamaskTransaction();
 
