@@ -25,7 +25,6 @@ import {
     Client,
     ContractByteCodeQuery,
     ContractCallQuery,
-    EthereumTransaction,
     ExchangeRates,
     FeeSchedules,
     FileContentsQuery,
