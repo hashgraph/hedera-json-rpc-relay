@@ -29,6 +29,7 @@ import {AccountBalanceQuery, ContractFunctionParameters} from '@hashgraph/sdk';
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
+import logsContractJson from '../contracts/Logs.json';
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -87,6 +88,58 @@ describe('RPC Server Acceptance Tests', function () {
 
             mirrorPrimaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`)).accounts[0];
             mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`)).accounts[0];
+        });
+
+        describe.only('eth_getLogs', () => {
+
+            let log0Block, log4Block, contractAddress;
+
+            it('should deploy a contract', async () => {
+                const logsContract = await servicesNode.deployContract(logsContractJson);
+                const mirrorNodeResp = await mirrorNode.get(`/contracts/${logsContract.contractId}`);
+                expect(mirrorNodeResp).to.have.property('evm_address');
+                expect(mirrorNodeResp.env_address).to.not.be.null;
+                contractAddress = mirrorNodeResp.evm_address;
+
+                const params = new ContractFunctionParameters().addUint256(1);
+                const log0 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log1', params);
+
+                params.addUint256(1);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log2', params);
+
+                params.addUint256(1);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log3', params);
+
+                params.addUint256(1);
+                const log4 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params);
+
+                await new Promise(r => setTimeout(r, 5000));
+
+                const logs = await relay.call('eth_getLogs', [{}]);
+                expect(logs.length).to.equal(5);
+
+                log0Block = await relay.call('eth_getTransactionByHash', [log0.contractExecutedTransactionId]);
+                expect(log0Block).to.have.property('blockNumber');
+
+                log4Block = await relay.call('eth_getTransactionByHash', [log4.contractExecutedTransactionId]);
+                expect(log4Block).to.have.property('blockNumber');
+            });
+
+            it('should be able to use range of `fromBlock` and `toBlock` params', async () => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'fromBlock': log0Block.blockNumber,
+                    'toBlock': log4Block.blockNumber
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+
+                const log0BlockInt = parseInt(log0Block.blockNumber);
+                const log4BlockInt = parseInt(log4Block.blockNumber);
+                for (let i in logs) {
+                    expect(logs[i].blockNumber).to.be.greaterThanOrEqual(log0BlockInt);
+                    expect(logs[i].blockNumber).to.be.lessThanOrEqual(log4BlockInt);
+                }
+            });
         });
 
         describe('Block related RPC calls', () => {
