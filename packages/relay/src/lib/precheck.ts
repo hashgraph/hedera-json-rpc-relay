@@ -76,4 +76,20 @@ export class Precheck {
       chainId: txChainId
     };
   }
+
+  gasPrice(transaction: string, gasPrice: number) {
+    const tx = ethers.utils.parseTransaction(transaction);
+    const minGasPrice = ethers.ethers.BigNumber.from(gasPrice);
+    const txGasPrice = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
+    const passes = txGasPrice.gte(minGasPrice);
+
+    if (!passes) {
+      this.logger.trace('Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)', transaction, txGasPrice, minGasPrice);
+    }
+
+    return {
+      passes,
+      error: predefined.GAS_PRICE_TOO_LOW
+    }
+  }
 }
