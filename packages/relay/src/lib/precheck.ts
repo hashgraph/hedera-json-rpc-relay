@@ -23,7 +23,6 @@ import {JsonRpcError, predefined} from './errors';
 import { MirrorNodeClient } from './clients';
 import {EthImpl} from "./eth";
 import {Logger} from "pino";
-import {BigNumber} from "ethers";
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;

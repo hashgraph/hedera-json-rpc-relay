@@ -19,6 +19,9 @@
  */
 
 import {expect} from "chai";
+import {ethers} from 'ethers';
+
+const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
 
 const expectUnsupportedMethod = (result) => {
     expect(result).to.have.property('code');
@@ -27,6 +30,15 @@ const expectUnsupportedMethod = (result) => {
     expect(result.name).to.be.equal('Method not found');
     expect(result).to.have.property('message');
     expect(result.message).to.be.equal('Unsupported JSON-RPC method');
+};
+
+const expectedError = () => {
+    expect(true).to.eq(false);
+};
+
+const signTransaction = async (transaction, key = defaultPrivateKey) => {
+    const wallet = new ethers.Wallet(key);
+    return wallet.signTransaction(transaction);
 };
 
 const mockData = {
@@ -80,4 +92,4 @@ const mockData = {
     }
 };
 
-export {expectUnsupportedMethod, mockData};
+export {expectUnsupportedMethod, expectedError, signTransaction, mockData};

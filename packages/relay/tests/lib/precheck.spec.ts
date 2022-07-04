@@ -25,14 +25,21 @@ const registry = new Registry();
 import pino from 'pino';
 import {Precheck} from "../../src/lib/precheck";
 import {MirrorNodeClient} from "../../src/lib/clients";
+import {expectedError, signTransaction} from "../helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import {ethers} from "ethers";
 const logger = pino();
 
 describe('Precheck', async function() {
 
     const txWithMatchingChainId = '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad';
     const txWithNonMatchingChainId = '0xf86a0385a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be400801ca06750e92db52fa708e27f94f27e0cfb7f5800f9b657180bb2e94c1520cfb1fb6da01bec6045068b6db38b55017bb8b50166699384bc1791fd8331febab0cf629a2a';
+
+    const oneTinyBar = ethers.utils.parseUnits('1', 10);
+    const defaultGasPrice = 720_000_000_000;
+    const defaultChainId = Number('0x12a');
+
 
     let precheck: Precheck;
     let mock: MockAdapter;
@@ -57,18 +64,80 @@ describe('Precheck', async function() {
     });
 
     describe('chainId', async function() {
-        it('should return true for matching chainId', async function() {
-            const result = precheck.chainId(txWithMatchingChainId);
-            expect(result).to.exist;
-            expect(result.passes).to.eq(true);
-            expect(result.chainId).to.eq('0x12a');
+        it('should pass for matching chainId', async function() {
+            try {
+                precheck.chainId(txWithMatchingChainId);
+            }
+            catch(e) {
+                expect(e).to.not.exist;
+            }
         });
 
-        it('should return false for non-matching chainId', async function() {
-            const result = precheck.chainId(txWithNonMatchingChainId);
-            expect(result).to.exist;
-            expect(result.passes).to.eq(false);
-            expect(result.chainId).to.eq('0x0');
+        it('should not pass for non-matching chainId', async function() {
+            try {
+                precheck.chainId(txWithNonMatchingChainId);
+                expectedError();
+            }
+            catch(e: any) {
+                expect(e).to.exist;
+                expect(e.code).to.eq(-32000);
+                expect(e.message).to.eq('ChainId (0x0) not supported. The correct chainId is 0x12a.');
+            }
         });
+    });
+
+    describe('gasLimit', async function() {
+        const defaultTx = {
+            value: oneTinyBar,
+            gasPrice: defaultGasPrice,
+            chainId: defaultChainId
+        };
+
+        function testFailingGasLimitPrecheck(gasLimits, errorCode, errorMessage) {
+            for (const gasLimit of gasLimits) {
+                it(`should fail for gasLimit: ${gasLimit}`, async function () {
+                    const tx = {
+                        ...defaultTx,
+                        gasLimit: gasLimit
+                    };
+                    const signed = await signTransaction(tx);
+
+                    try {
+                        await precheck.gasLimit(signed);
+                        expectedError();
+                    } catch (e: any) {
+                        expect(e).to.exist;
+                        expect(e.code).to.eq(errorCode);
+                        expect(e.message).to.eq(errorMessage);
+                    }
+                });
+            }
+        }
+
+        function testPassingGasLimitPrecheck(gasLimits) {
+            for (const gasLimit of gasLimits) {
+                it(`should pass for gasLimit: ${gasLimit}`, async function () {
+                    const tx = {
+                        ...defaultTx,
+                        gasLimit: gasLimit
+                    };
+                    const signed = await signTransaction(tx);
+
+                    try {
+                        await precheck.gasLimit(signed);
+                    } catch (e: any) {
+                        expect(e).to.not.exist;
+                    }
+                });
+            }
+        }
+
+        const validGasLimits = [60000, 100000, 500000, 1000000, 5000000, 10000000];
+        const lowGasLimits = [1, 10, 100, 1000, 10000, 30000, 50000];
+        const highGasLimits = [20000000, 100000000, 999999999999];
+
+        testPassingGasLimitPrecheck(validGasLimits);
+        testFailingGasLimitPrecheck(lowGasLimits, -32003, 'Intrinsic gas exceeds gas limit');
+        testFailingGasLimitPrecheck(highGasLimits, -32005, 'Transaction gas limit exceeds block gas limit');
     });
 });
