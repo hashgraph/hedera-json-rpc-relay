@@ -81,9 +81,19 @@ export const predefined = {
     code: -32003,
     message: 'Intrinsic gas exceeds gas limit'
   }),
+  'REQUEST_BEYOND_HEAD_BLOCK': (requested: number, latest: number) => new JsonRpcError({
+    name: 'Incorrect block',
+    code: -32000,
+    message: `Request beyond head block: requested ${requested}, head ${latest}`
+  }),
   'UNSUPPORTED_CHAIN_ID': new JsonRpcError({
     name: 'ChainId not supported',
     code: -32000,
     message: 'ChainId not supported'
-  })
+  }),
+  'GAS_PRICE_TOO_LOW': new JsonRpcError({
+    name: 'Gas price too low',
+    code: -32009,
+    message: 'Gas price below configured minimum gas price'
+  }),
 };

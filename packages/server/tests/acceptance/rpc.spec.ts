@@ -50,6 +50,7 @@ describe('RPC Server Acceptance Tests', function () {
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     const INCORRECT_CHAIN_ID = 999;
+    const GAS_PRICE_TOO_LOW = 1;
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
     const ONE_WEIBAR = ethers.utils.parseUnits('1', 18);
 
@@ -60,6 +61,11 @@ describe('RPC Server Acceptance Tests', function () {
     const NON_EXISTING_INDEX = 999999;
     const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
     const BASIC_CONTRACT_PING_RESULT = '0x0000000000000000000000000000000000000000000000000000000000000001';
+    const EXCHANGE_RATE_FILE_ID = "0.0.112";
+    const EXCHANGE_RATE_FILE_CONTENT_DEFAULT = "0a1008b0ea0110f9bb1b1a0608f0cccf9306121008b0ea0110e9c81a1a060880e9cf9306";
+    const FEE_SCHEDULE_FILE_ID = "0.0.111";
+    const FEE_SCHEDULE_FILE_CONTENT_DEFAULT = "0a280a0a08541a061a04408888340a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 853000
+    const FEE_SCHEDULE_FILE_CONTENT_UPDATED = "0a280a0a08541a061a0440a8953a0a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 953000
 
     describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
@@ -300,6 +306,34 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(res).to.be.null;
                 });
 
+                it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
+                    const transaction = {
+                        ...default155TransactionData,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        chainId: INCORRECT_CHAIN_ID
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    try {
+                        await relay.sendRawTransaction(signedTx);
+                        Assertions.expectedError();
+                    }
+                    catch(e) {
+                        Assertions.jsonRpcError(e, -32000, 'ChainId (0x3e7) not supported. The correct chainId is 0x12a.');
+                    }
+                });
+
+                it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with gas price too low)', async function () {
+                    const transaction = {
+                        ...default155TransactionData,
+                        gasPrice: GAS_PRICE_TOO_LOW,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                });
+
                 it('should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
                     const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address);
                     const transaction = {
@@ -328,6 +362,18 @@ describe('RPC Server Acceptance Tests', function () {
                     await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'ChainId (0x0) not supported. The correct chainId is 0x12a.');
                 });
 
+                it('should fail "eth_sendRawTransaction" for Legacy transactions (with gas price too low)', async function () {
+                    const transaction = {
+                        ...defaultLegacyTransactionData,
+                        chainId: Number(CHAIN_ID),
+                        gasPrice: GAS_PRICE_TOO_LOW,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                });
+
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
                     const transaction = {
                         ...defaultLegacy2930TransactionData,
@@ -336,6 +382,30 @@ describe('RPC Server Acceptance Tests', function () {
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     await relay.callFailing('eth_sendRawTransaction', [signedTx]);
+                });
+
+                it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with gas price too low)', async function () {
+                    const transaction = {
+                        ...defaultLegacy2930TransactionData,
+                        gasPrice: GAS_PRICE_TOO_LOW,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    console.log(transaction);
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                });
+
+                it('should fail "eth_sendRawTransaction" for London transactions (with gas price too low)', async function () {
+                    const transaction = {
+                        ...defaultLondonTransactionData,
+                        maxPriorityFeePerGas: GAS_PRICE_TOO_LOW,
+                        maxFeePerGas: GAS_PRICE_TOO_LOW,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
                 });
 
                 it('should execute "eth_sendRawTransaction" for London transactions', async function () {
@@ -773,6 +843,59 @@ describe('RPC Server Acceptance Tests', function () {
 
                     await relay.callFailing('eth_call', [callData]);
                 });
+            });
+        });
+
+        describe('Gas Price related RPC endpoints', () => {
+            let lastBlockBeforeUpdate;
+            let lastBlockAfterUpdate;
+
+            before(async () => {
+                await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
+                await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
+                lastBlockBeforeUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED);
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                lastBlockAfterUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+            });
+
+            it('should call eth_feeHistory with updated fees', async function() {
+                const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
+                const blockCountHex = ethers.utils.hexValue(blockCountNumber);
+                const datedGasPriceHex = ethers.utils.hexValue(Assertions.datedGasPrice);
+                const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
+                const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
+                const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
+
+                const res = await relay.call('eth_feeHistory', [blockCountHex, newestBlockNumberHex, [0]]);
+
+                Assertions.feeHistory(res, {resultCount: blockCountNumber, oldestBlock: oldestBlockNumberHex, chechReward: true});
+
+                expect(res.baseFeePerGas[0]).to.equal(datedGasPriceHex);
+                expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
+                expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
+            });
+
+            it('should call eth_feeHistory with newest block > latest', async function() {
+                let latestBlock;
+                const newestBlockNumber = lastBlockAfterUpdate.number + 10;
+                const newestBlockNumberHex = ethers.utils.hexValue(newestBlockNumber);
+                try {
+                    latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                    await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
+                } catch (error) {
+                    Assertions.jsonRpcError(error, -32000, `Request beyond head block: requested ${newestBlockNumber}, head ${latestBlock.number}`);
+                }
+            });
+
+            it('should call eth_feeHistory with zero block count', async function() {
+                const res = await relay.call('eth_feeHistory', ['0x0', 'latest', null]);
+
+                expect(res.reward).to.not.exist;
+                expect(res.baseFeePerGas).to.not.exist;
+                expect(res.gasUsedRatio).to.equal(null);
+                expect(res.oldestBlock).to.equal('0x0');
             });
         });
     });
