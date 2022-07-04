@@ -48,13 +48,13 @@ export default class RelayClient {
      * @param methodName
      * @param params
      */
-    async callFailing(methodName: string, params: any[]) {
+    async callFailing(methodName: string, params: any[], expectedCode = -32603, expectedMessage = 'Unknown error invoking RPC') {
         try {
             const res = await this.call(methodName, params);
             this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
             Assertions.expectedError();
         } catch (err) {
-            Assertions.unknownResponse(err);
+            Assertions.jsonRpcError(err, expectedCode, expectedMessage);
         }
     }
 

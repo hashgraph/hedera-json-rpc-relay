@@ -48,6 +48,7 @@ describe('RPC Server Acceptance Tests', function () {
     let mirrorSecondaryAccount;
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
+    const INCORRECT_CHAIN_ID = 999;
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
     const ONE_WEIBAR = ethers.utils.parseUnits('1', 18);
 
@@ -274,7 +275,7 @@ describe('RPC Server Acceptance Tests', function () {
                     const legacyTxHash = await relay.sendRawTransaction(signedTx);
                     // Since the transactionId is not available in this context
                     // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-                    const mirrorResult = await mirrorNode.get(`contracts/results/${legacyTxHash}`);
+                    const mirrorResult = await mirrorNode.get(`/contracts/results/${legacyTxHash}`);
 
                     const res = await relay.call('eth_getTransactionReceipt', [legacyTxHash]);
                     // FIXME here we must assert that the alias address is the `from` / `to` and not the `0x` prefixed one
@@ -291,7 +292,7 @@ describe('RPC Server Acceptance Tests', function () {
                     const transactionHash = await relay.sendRawTransaction(signedTx);
                     // Since the transactionId is not available in this context
                     // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-                    const mirrorResult = await mirrorNode.get(`contracts/results/${transactionHash}`);
+                    const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`);
 
                     const res = await relay.call('eth_getTransactionReceipt', [transactionHash]);
                     // FIXME here we must assert that the alias address is the `from` / `to` and not the `0x` prefixed one
@@ -301,6 +302,23 @@ describe('RPC Server Acceptance Tests', function () {
                 it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {
                     const res = await relay.call('eth_getTransactionReceipt', [NON_EXISTING_TX_HASH]);
                     expect(res).to.be.null;
+                });
+
+                it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
+                    const transaction = {
+                        ...default155TransactionData,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        chainId: INCORRECT_CHAIN_ID
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    try {
+                        await relay.sendRawTransaction(signedTx);
+                        Assertions.expectedError();
+                    }
+                    catch(e) {
+                        Assertions.jsonRpcError(e, -32000, 'ChainId (0x3e7) not supported. The correct chainId is 0x12a.');
+                    }
                 });
 
                 it('should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
@@ -328,8 +346,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    // FIXME We should not be failing with INTERNAL ERROR but rather user friendly error
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx]);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'ChainId (0x0) not supported. The correct chainId is 0x12a.');
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {

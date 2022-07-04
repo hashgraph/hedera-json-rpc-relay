@@ -195,8 +195,15 @@ export default class Assertions {
     }
 
     static unknownResponse(err) {
+        Assertions.jsonRpcError(err, -32603, 'Unknown error invoking RPC');
+    }
+
+    static jsonRpcError(err, code, message) {
+        expect(err).to.exist;
+        expect(err).to.have.property('body');
+
         const parsedError = JSON.parse(err.body);
-        expect(parsedError.error.message).to.be.equal('Unknown error invoking RPC');
-        expect(parsedError.error.code).to.be.equal(-32603);
+        expect(parsedError.error.message).to.be.equal(message);
+        expect(parsedError.error.code).to.be.equal(code);
     }
 }
