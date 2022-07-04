@@ -743,12 +743,14 @@ describe('RPC Server Acceptance Tests', function () {
             });
 
             it('should call eth_feeHistory with newest block > latest', async function() {
+                let latestBlock;
                 const newestBlockNumber = lastBlockAfterUpdate.number + 10;
                 const newestBlockNumberHex = ethers.utils.hexValue(newestBlockNumber);
                 try {
+                    latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
                     await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
                 } catch (error) {
-                    Assertions.jsonRpcError(error, -32000, `Request beyond head block: requested ${newestBlockNumber}, head ${lastBlockAfterUpdate.number}`);
+                    Assertions.jsonRpcError(error, -32000, `Request beyond head block: requested ${newestBlockNumber}, head ${latestBlock.number}`);
                 }                
             });
 
