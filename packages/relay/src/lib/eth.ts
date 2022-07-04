@@ -55,8 +55,8 @@ export class EthImpl implements Eth {
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasUsedRatio = EthImpl.numberTo0x(0.5);
-  static feeHistoryZeroBlockCountResponse = {gasUsedRatio:null,oldestBlock:EthImpl.zeroHex};
-  static feeHistoryEmptyResponse = {baseFeePerGas:[],gasUsedRatio:[],reward:[],oldestBlock:EthImpl.zeroHex};
+  static feeHistoryZeroBlockCountResponse = {gasUsedRatio:null, oldestBlock:EthImpl.zeroHex};
+  static feeHistoryEmptyResponse = {baseFeePerGas:[], gasUsedRatio:[], reward:[], oldestBlock:EthImpl.zeroHex};
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
    * associated with this client will pay for all operations on the main network.
