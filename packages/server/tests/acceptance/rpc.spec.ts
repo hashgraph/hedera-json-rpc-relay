@@ -390,7 +390,7 @@ describe('RPC Server Acceptance Tests', function () {
                     await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
                 });
 
-                it('should execute "eth_sendRawTransaction" for London transactions (with gas price too low)', async function () {
+                it('should fail "eth_sendRawTransaction" for London transactions (with gas price too low)', async function () {
                     const transaction = {
                         ...defaultLondonTransactionData,
                         maxPriorityFeePerGas: GAS_PRICE_TOO_LOW,
