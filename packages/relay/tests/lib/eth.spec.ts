@@ -124,6 +124,7 @@ describe('Eth calls using MirrorNode', async function () {
   const contractTimestamp3 = '1653088542.123456789';
   const contractId1 = '0.0.5001';
   const contractId2 = '0.0.5002';
+  const gasUsedRatio = 0.5;
 
   const defaultBlock = {
     'count': blockTransactionCount,
@@ -937,61 +938,106 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_feeHistory', async function () {
-    mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
-    const feeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
+    const previousBlock = {...defaultBlock, number: blockNumber2, timestamp: {
+      from: '1651560386.060890948',
+      to: '1651560389.060890948'
+    }};
+    const latestBlock = {...defaultBlock, number: blockNumber3};
+    const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
+    const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
+    
+    previousFees.fees[2].gas += 1;
+
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+    mock.onGet(`blocks/${previousBlock.number}`).reply(200, previousBlock);
+    mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+    mock.onGet(`network/fees?timestamp=lte:${previousBlock.timestamp.to}`).reply(200, previousFees);
+    mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
+
+    const feeHistory = await ethImpl.feeHistory(2, 'latest', [25, 75]);
+
     expect(feeHistory).to.exist;
-    if (feeHistory == null) return;
-    expect(feeHistory['baseFeePerGasArray'][0]).to.equal('0x84b6a5c400');
-    expect(feeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
-    expect(feeHistory['oldestBlockNumber']).to.equal('0x0');
+    expect(feeHistory['baseFeePerGas'].length).to.equal(3);
+    expect(feeHistory['gasUsedRatio'].length).to.equal(2);
+    expect(feeHistory['baseFeePerGas'][0]).to.equal('0x870ab1a800');
+    expect(feeHistory['baseFeePerGas'][1]).to.equal('0x84b6a5c400');
+    expect(feeHistory['baseFeePerGas'][2]).to.equal('0x84b6a5c400');
+    expect(feeHistory['gasUsedRatio'][0]).to.equal(`0x${gasUsedRatio.toString(16)}`);
+    expect(feeHistory['oldestBlock']).to.equal(`0x${previousBlock.number.toString(16)}`);
     const rewards = feeHistory['reward'][0];
     expect(rewards[0]).to.equal('0x0');
     expect(rewards[1]).to.equal('0x0');
   });
 
-  it('eth_feeHistory verify cached value', async function () {
-    mock.onGet(`network/fees`).reply(200, defaultNetworkFees);
-    const firstFeeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
-    expect(firstFeeHistory).to.exist;
-    if (firstFeeHistory == null) return;
-    expect(firstFeeHistory['baseFeePerGasArray'][0]).to.equal('0x84b6a5c400');
-    expect(firstFeeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
-    expect(firstFeeHistory['oldestBlockNumber']).to.equal('0x0');
-    const rewards = firstFeeHistory['reward'][0];
-    expect(rewards[0]).to.equal('0x0');
-    expect(rewards[1]).to.equal('0x0');
+  it('eth_feeHistory with max results', async function () {
+    const maxResultsCap = Number(constants.FEE_HISTORY_MAX_RESULTS);
 
-    const secondFeeHistory = await ethImpl.feeHistory(2, 'latest', [25, 75]);
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [{...defaultBlock, number: 10}]});
+    mock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultNetworkFees);
+    Array.from(Array(11).keys()).map(blockNumber => mock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, number: blockNumber}))
+
+    const feeHistory = await ethImpl.feeHistory(200, '0x9', [0]);
+    console.log(feeHistory)
+    expect(feeHistory).to.exist;
+    expect(feeHistory['oldestBlock']).to.equal(`0x0`);
+    expect(feeHistory['reward'].length).to.equal(maxResultsCap);
+    expect(feeHistory['baseFeePerGas'].length).to.equal(maxResultsCap + 1);
+    expect(feeHistory['gasUsedRatio'].length).to.equal(maxResultsCap);
+  });
+
+  it('eth_feeHistory verify cached value', async function () {
+    const latestBlock = {...defaultBlock, number: blockNumber3};
+    const latestFees = defaultNetworkFees;
+        
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+    mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+    mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
+
+    const firstFeeHistory = await ethImpl.feeHistory(1, 'latest', null);
+    const secondFeeHistory = await ethImpl.feeHistory(3, 'latest', null);
+
+    expect(firstFeeHistory).to.exist;
+    expect(firstFeeHistory['baseFeePerGas'][0]).to.equal('0x84b6a5c400');
+    expect(firstFeeHistory['gasUsedRatio'][0]).to.equal(`0x${gasUsedRatio.toString(16)}`);
+    expect(firstFeeHistory['oldestBlock']).to.equal(`0x${latestBlock.number.toString(16)}`);
 
     expect(firstFeeHistory).to.equal(secondFeeHistory);
   });
 
   it('eth_feeHistory on mirror 404', async function () {
-    mock.onGet(`network/fees`).reply(404, {
+    const latestBlock = {...defaultBlock, number: blockNumber3};
+    
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+    mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+    mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(404, {
       _status: {
         messages: [{ message: 'Not found' }]
       }
     });
-
     const fauxGasTinyBars = 25_000;
     const fauxGasWeiBarHex = '0xe35fa931a000';
     sdkClientStub.getTinyBarGasFee.returns(fauxGasTinyBars);
 
     const feeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
+
     expect(feeHistory).to.exist;
-    if (feeHistory == null) return;
-    expect(feeHistory['baseFeePerGasArray'][0]).to.equal(fauxGasWeiBarHex);
-    expect(feeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
-    expect(feeHistory['oldestBlockNumber']).to.equal('0x0');
+
+    expect(feeHistory['baseFeePerGas'][0]).to.equal(fauxGasWeiBarHex);
+    expect(feeHistory['gasUsedRatio'][0]).to.equal(`0x${gasUsedRatio.toString(16)}`);
+    expect(feeHistory['oldestBlock']).to.equal(`0x${latestBlock.number.toString(16)}`);
     const rewards = feeHistory['reward'][0];
     expect(rewards[0]).to.equal('0x0');
     expect(rewards[1]).to.equal('0x0');
   });
 
   it('eth_feeHistory on mirror 500', async function () {
-    mock.onGet(`network/fees`).reply(500, {
+    const latestBlock = {...defaultBlock, number: blockNumber3};
+    
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+    mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+    mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(404, {
       _status: {
-        messages: [{ message: 'Internal error' }]
+        messages: [{ message: 'Not found' }]
       }
     });
 
@@ -999,14 +1045,11 @@ describe('Eth calls using MirrorNode', async function () {
     const fauxGasWeiBarHex = '0x13e52b9abe000';
     sdkClientStub.getTinyBarGasFee.returns(fauxGasTinyBars);
 
-    const feeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
-    if (feeHistory == null) return;
-    expect(feeHistory['baseFeePerGasArray'][0]).to.equal(fauxGasWeiBarHex);
-    expect(feeHistory['gasUsedRatioArray'][0]).to.equal('0.5');
-    expect(feeHistory['oldestBlockNumber']).to.equal('0x0');
-    const rewards = feeHistory['reward'][0];
-    expect(rewards[0]).to.equal('0x0');
-    expect(rewards[1]).to.equal('0x0');
+    const feeHistory = await ethImpl.feeHistory(1, 'latest', null);
+
+    expect(feeHistory['baseFeePerGas'][0]).to.equal(fauxGasWeiBarHex);
+    expect(feeHistory['gasUsedRatio'][0]).to.equal(`0x${gasUsedRatio.toString(16)}`);
+    expect(feeHistory['oldestBlock']).to.equal(`0x${latestBlock.number.toString(16)}`);
   });
 
   it('eth_estimateGas contract call returns default', async function () {

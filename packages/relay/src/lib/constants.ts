@@ -38,4 +38,6 @@ export default {
 
     TYPE_CONTRACT: 'contract',
     TYPE_ACCOUNT: 'account',
+
+    FEE_HISTORY_MAX_RESULTS: Number(process.env.FEE_HISTORY_MAX_RESULTS || 10) 
 };
