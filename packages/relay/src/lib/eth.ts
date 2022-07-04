@@ -629,12 +629,14 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string): Promise<string | JsonRpcError> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
-    await this.precheck.gasLimit(transaction);
-    await this.precheck.nonce(transaction);
 
-    const chainIdPrecheckRes = this.precheck.chainId(transaction);
-    if (!chainIdPrecheckRes.passes) {
-      return chainIdPrecheckRes.error;
+    try {
+      await this.precheck.gasLimit(transaction);
+      await this.precheck.nonce(transaction);
+      this.precheck.chainId(transaction);
+    }
+    catch(e: any) {
+      return e;
     }
 
     const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
