@@ -629,6 +629,12 @@ export class EthImpl implements Eth {
       });
     }
 
+    const gasPrice = await this.getFeeWeibars();
+    const gasPrecheck = this.precheck.gasPrice(transaction, gasPrice);
+    if (!gasPrecheck.passes) {
+      return gasPrecheck.error;
+    }
+
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
     try {

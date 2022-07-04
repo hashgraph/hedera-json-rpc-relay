@@ -49,6 +49,7 @@ describe('RPC Server Acceptance Tests', function () {
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     const INCORRECT_CHAIN_ID = 999;
+    const GAS_PRICE_TOO_LOW = 1;
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
     const ONE_WEIBAR = ethers.utils.parseUnits('1', 18);
 
@@ -321,6 +322,17 @@ describe('RPC Server Acceptance Tests', function () {
                     }
                 });
 
+                it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with gas price too low)', async function () {
+                    const transaction = {
+                        ...default155TransactionData,
+                        gasPrice: GAS_PRICE_TOO_LOW,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                });
+
                 it('should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
                     const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address);
                     const transaction = {
@@ -349,6 +361,18 @@ describe('RPC Server Acceptance Tests', function () {
                     await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'ChainId (0x0) not supported. The correct chainId is 0x12a.');
                 });
 
+                it('should fail "eth_sendRawTransaction" for Legacy transactions (with gas price too low)', async function () {
+                    const transaction = {
+                        ...defaultLegacyTransactionData,
+                        chainId: Number(CHAIN_ID),
+                        gasPrice: GAS_PRICE_TOO_LOW,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                });
+
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
                     const transaction = {
                         ...defaultLegacy2930TransactionData,
@@ -357,6 +381,30 @@ describe('RPC Server Acceptance Tests', function () {
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     await relay.callFailing('eth_sendRawTransaction', [signedTx]);
+                });
+
+                it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with gas price too low)', async function () {
+                    const transaction = {
+                        ...defaultLegacy2930TransactionData,
+                        gasPrice: GAS_PRICE_TOO_LOW,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    console.log(transaction);
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                });
+
+                it('should fail "eth_sendRawTransaction" for London transactions (with gas price too low)', async function () {
+                    const transaction = {
+                        ...defaultLondonTransactionData,
+                        maxPriorityFeePerGas: GAS_PRICE_TOO_LOW,
+                        maxFeePerGas: GAS_PRICE_TOO_LOW,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
                 });
 
                 it('should execute "eth_sendRawTransaction" for London transactions', async function () {

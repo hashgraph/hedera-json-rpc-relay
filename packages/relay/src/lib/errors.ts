@@ -80,5 +80,10 @@ export const predefined = {
     name: 'ChainId not supported',
     code: -32000,
     message: 'ChainId not supported'
-  })
+  }),
+  'GAS_PRICE_TOO_LOW': new JsonRpcError({
+    name: 'Gas price too low',
+    code: -32009,
+    message: 'Gas price below configured minimum gas price'
+  }),
 };
