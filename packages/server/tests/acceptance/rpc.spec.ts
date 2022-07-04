@@ -339,7 +339,6 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    // FIXME We should not be failing with INTERNAL ERROR but rather user friendly error
                     await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'ChainId (0x0) not supported. The correct chainId is 0x12a.');
                 });
 
