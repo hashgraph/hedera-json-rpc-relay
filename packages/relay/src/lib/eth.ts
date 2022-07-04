@@ -627,15 +627,6 @@ export class EthImpl implements Eth {
     catch(e: any) {
       return e;
     }
-    //
-    // const chainIdPrecheckRes = this.precheck.chainId(transaction);
-    // if ( !chainIdPrecheckRes.passes ) {
-    //   return new JsonRpcError({
-    //     name: 'ChainId not supported',
-    //     code: -32000,
-    //     message: `ChainId (${chainIdPrecheckRes.chainId}) not supported. The correct chainId is ${this.chain}.`
-    //   });
-    // }
 
     const gasPrice = await this.getFeeWeibars();
     const gasPrecheck = this.precheck.gasPrice(transaction, gasPrice);

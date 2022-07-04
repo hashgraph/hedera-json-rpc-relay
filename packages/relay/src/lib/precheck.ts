@@ -95,8 +95,8 @@ export class Precheck {
 
     const dataBytes = Buffer.from(data, "hex");
 
-    for (let i=0; i<dataBytes.length; i++) {
-      if (dataBytes[i] == 0) {
+    for (const c of dataBytes) {
+      if (c == 0) {
         zeros++;
       }
     }
