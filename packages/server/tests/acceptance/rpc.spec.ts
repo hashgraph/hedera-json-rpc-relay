@@ -748,13 +748,7 @@ describe('RPC Server Acceptance Tests', function () {
                 try {
                     await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
                 } catch (error) {
-                    expect(error).to.have.property('body');
-                    
-                    const rpcError = JSON.parse(error.body);
-
-                    expect(rpcError.error.code).to.equal(-32000);
-                    expect(rpcError.error.name).to.equal("Incorrect block");
-                    expect(rpcError.error.message).to.equal(`Request beyond head block: requested ${newestBlockNumber}, head ${lastBlockAfterUpdate.number}`);
+                    Assertions.jsonRpcError(error, -32000, `Request beyond head block: requested ${newestBlockNumber}, head ${lastBlockAfterUpdate.number}`);
                 }                
             });
 
