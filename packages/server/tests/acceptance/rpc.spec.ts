@@ -711,7 +711,7 @@ describe('RPC Server Acceptance Tests', function () {
             it('should call eth_feeHistory with updated fees', async function() {
                 const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
                 const blockCountHex = ethers.utils.hexValue(blockCountNumber);
-                const datedGasPrice = ethers.utils.hexValue(Assertions.datedGasPrice);
+                const datedGasPriceHex = ethers.utils.hexValue(Assertions.datedGasPrice);
                 const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
                 const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
                 const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
@@ -720,9 +720,25 @@ describe('RPC Server Acceptance Tests', function () {
 
                 Assertions.feeHistory(res, {resultCount: blockCountNumber, oldestBlock: oldestBlockNumberHex, chechReward: true});
 
-                expect(res.baseFeePerGas[0]).to.equal(datedGasPrice);
+                expect(res.baseFeePerGas[0]).to.equal(datedGasPriceHex);
                 expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
                 expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
+            });
+
+            it('should call eth_feeHistory with newest block > latest', async function() {
+                const newestBlockNumber = lastBlockAfterUpdate.number + 10;
+                const newestBlockNumberHex = ethers.utils.hexValue(newestBlockNumber);
+                try {
+                    await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
+                } catch (error) {
+                    expect(error).to.have.property('body');
+                    
+                    const rpcError = JSON.parse(error.body);
+
+                    expect(rpcError.error.code).to.equal(-32000);
+                    expect(rpcError.error.name).to.equal("Incorrect block");
+                    expect(rpcError.error.message).to.equal(`Request beyond head block: requested ${newestBlockNumber}, head ${lastBlockAfterUpdate.number}`);
+                }                
             });
 
             it('should call eth_feeHistory with zero block count', async function() {
