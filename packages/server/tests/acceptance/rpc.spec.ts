@@ -29,6 +29,7 @@ import {AccountBalanceQuery, ContractFunctionParameters} from '@hashgraph/sdk';
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
+import {JsonRpcError} from "@hashgraph/json-rpc-relay";
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -299,23 +300,6 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(res).to.be.null;
                 });
 
-                it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
-                    const transaction = {
-                        ...default155TransactionData,
-                        to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
-                        chainId: INCORRECT_CHAIN_ID
-                    };
-                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    try {
-                        await relay.sendRawTransaction(signedTx);
-                        Assertions.expectedError();
-                    }
-                    catch(e) {
-                        Assertions.jsonRpcError(e, -32000, 'ChainId (0x3e7) not supported. The correct chainId is 0x12a.');
-                    }
-                });
-
                 it('should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
                     const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address);
                     const transaction = {
@@ -371,6 +355,92 @@ describe('RPC Server Acceptance Tests', function () {
                     const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address);
                     const balanceChange = receiverEndBalance.sub(receiverInitialBalance);
                     expect(balanceChange.toString()).to.eq(ONE_TINYBAR.toString());
+                });
+
+                describe('Prechecks', async function () {
+                    it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
+                        const transaction = {
+                            ...default155TransactionData,
+                            to: mirrorContract.evm_address,
+                            nonce: await relay.getAccountNonce(accounts[2].address),
+                            chainId: INCORRECT_CHAIN_ID
+                        };
+                        const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                        try {
+                            await relay.sendRawTransaction(signedTx);
+                            Assertions.expectedError();
+                        }
+                        catch(e) {
+                            Assertions.jsonRpcError(e, -32000, 'ChainId (0x3e7) not supported. The correct chainId is 0x12a.');
+                        }
+                    });
+
+                    it('should fail "eth_sendRawTransaction" for EIP155 transaction with not enough gas', async function () {
+                        const transaction = {
+                            ...default155TransactionData,
+                            to: mirrorContract.evm_address,
+                            nonce: await relay.getAccountNonce(accounts[2].address),
+                            gasLimit: 100
+                        };
+                        const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                        try {
+                            await relay.sendRawTransaction(signedTx);
+                            Assertions.expectedError();
+                        }
+                        catch(e) {
+                            Assertions.jsonRpcError(e, -32003, 'Intrinsic gas exceeds gas limit');
+                        }
+                    });
+
+                    it('should fail "eth_sendRawTransaction" for EIP155 transaction with a too high gasLimit', async function () {
+                        const transaction = {
+                            ...default155TransactionData,
+                            to: mirrorContract.evm_address,
+                            nonce: await relay.getAccountNonce(accounts[2].address),
+                            gasLimit: 999999999
+                        };
+                        const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                        try {
+                            await relay.sendRawTransaction(signedTx);
+                            Assertions.expectedError();
+                        } catch (e) {
+                            Assertions.jsonRpcError(e, -32005, 'Transaction gas limit exceeds block gas limit');
+                        }
+                    });
+
+
+                    it('should fail "eth_sendRawTransaction" for London transaction with not enough gas', async function () {
+                        const transaction = {
+                            ...defaultLondonTransactionData,
+                            to: mirrorContract.evm_address,
+                            nonce: await relay.getAccountNonce(accounts[2].address),
+                            gasLimit: 100
+                        };
+                        const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                        try {
+                            await relay.sendRawTransaction(signedTx);
+                            Assertions.expectedError();
+                        }
+                        catch(e) {
+                            Assertions.jsonRpcError(e, -32003, 'Intrinsic gas exceeds gas limit');
+                        }
+                    });
+
+                    it('should fail "eth_sendRawTransaction" for London transaction with a too high gasLimit', async function () {
+                        const transaction = {
+                            ...defaultLondonTransactionData,
+                            to: mirrorContract.evm_address,
+                            nonce: await relay.getAccountNonce(accounts[2].address),
+                            gasLimit: 999999999
+                        };
+                        const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                        try {
+                            await relay.sendRawTransaction(signedTx);
+                            Assertions.expectedError();
+                        } catch (e) {
+                            Assertions.jsonRpcError(e, -32005, 'Transaction gas limit exceeds block gas limit');
+                        }
+                    });
                 });
 
                 it('should execute "eth_getTransactionCount" primary', async function () {

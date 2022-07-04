@@ -19,7 +19,7 @@
  */
 
 import * as ethers from 'ethers';
-import { predefined } from './errors';
+import {JsonRpcError, predefined} from './errors';
 import { MirrorNodeClient } from './clients';
 import {EthImpl} from "./eth";
 import {Logger} from "pino";
@@ -73,16 +73,18 @@ export class Precheck {
     const tx = ethers.utils.parseTransaction(transaction);
     const gasLimit = tx.gasLimit.toNumber();
 
-    const intrinsicGasCost = this.transactionIntrinsicGasCost(tx.data, tx.to);
+    const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data, tx.to);
 
     if (gasLimit > BLOCK_GAS_LIMIT) {
+      this.logger.trace('Failed gasLimit precheck for sendRawTransaction(transaction=%s). Gas Limit was too high: %s, block gas limit: %s', transaction, gasLimit, BLOCK_GAS_LIMIT);
       throw predefined.GAS_LIMIT_TOO_HIGH;
     } else if (gasLimit < intrinsicGasCost) {
+      this.logger.trace('Failed gasLimit precheck for sendRawTransaction(transaction=%s). Gas Limit was too low: %s, intrinsic gas cost: %s', transaction, gasLimit, intrinsicGasCost);
       throw predefined.GAS_LIMIT_TOO_LOW;
     }
   }
 
-  private transactionIntrinsicGasCost(data: string, to: string|undefined) {
+  private static transactionIntrinsicGasCost(data: string, to: string|undefined) {
     const TX_DATA_ZERO_COST = 4;
     const ISTANBUL_TX_DATA_NON_ZERO_COST = 16;
     const TX_BASE_COST = 21_000;
@@ -112,11 +114,11 @@ export class Precheck {
     const passes = txChainId === this.chain;
     if (!passes) {
       this.logger.trace('Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)', transaction, txChainId);
+      throw new JsonRpcError({
+        name: 'ChainId not supported',
+        code: -32000,
+        message: `ChainId (${txChainId}) not supported. The correct chainId is ${this.chain}.`
+      });
     }
-
-    return {
-      passes,
-      chainId: txChainId
-    };
   }
 }
