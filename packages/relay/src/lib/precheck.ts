@@ -21,13 +21,19 @@
 import * as ethers from 'ethers';
 import { predefined } from './errors';
 import { MirrorNodeClient } from './clients';
+import {EthImpl} from "./eth";
+import {Logger} from "pino";
 import {BigNumber} from "ethers";
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
+  private chain: string;
+  private readonly logger: Logger;
 
-  constructor(mirrorNodeClient: MirrorNodeClient) {
+  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, chainId: string) {
     this.mirrorNodeClient = mirrorNodeClient;
+    this.chain = chainId;
+    this.logger = logger;
   }
 
   /**
@@ -98,5 +104,19 @@ export class Precheck {
     const cost = TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
 
     return isCreate ? cost + TX_CREATE_EXTRA : cost;
+  }
+
+  chainId(transaction: string) {
+    const tx = ethers.utils.parseTransaction(transaction);
+    const txChainId = EthImpl.prepend0x(Number(tx.chainId).toString(16));
+    const passes = txChainId === this.chain;
+    if (!passes) {
+      this.logger.trace('Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)', transaction, txChainId);
+    }
+
+    return {
+      passes,
+      chainId: txChainId
+    };
   }
 }

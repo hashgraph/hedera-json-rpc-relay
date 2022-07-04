@@ -35,7 +35,8 @@ import {
     TokenCreateTransaction,
     Transaction,
     TransactionResponse,
-    TransferTransaction
+    TransferTransaction,
+    ContractCreateFlow
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
@@ -164,7 +165,7 @@ export default class ServicesClient {
                 new ContractFunctionParameters()
             )
             .setGas(75000)
-            .setInitialBalance(100)
+            .setInitialBalance(1)
             .setBytecodeFileId(fileId || '')
             .setAdminKey(this.client.operatorPublicKey || this.DEFAULT_KEY));
 
@@ -196,7 +197,7 @@ export default class ServicesClient {
         return { contractExecuteTimestamp, contractExecutedTransactionId };
     };
 
-    async createAliasAccount(initialBalance = 1000): Promise<AliasAccount> {
+    async createAliasAccount(initialBalance = 10, provider = null): Promise<AliasAccount> {
         const privateKey = PrivateKey.generateECDSA();
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
@@ -225,7 +226,14 @@ export default class ServicesClient {
             privateKey.toString(),
             this.logger.child({ name: `services-client` })
         );
-        const wallet = new ethers.Wallet(privateKey.toStringRaw());
+
+        let wallet;
+        if (provider) {
+            wallet = new ethers.Wallet(privateKey.toStringRaw(), provider);
+        }
+        else {
+            wallet = new ethers.Wallet(privateKey.toStringRaw());
+        }
 
         return new AliasAccount(
             aliasAccountId,
@@ -236,10 +244,26 @@ export default class ServicesClient {
         );
     };
 
+    async deployContract(contract, gas = 100_000, constructorParameters:Uint8Array = new Uint8Array(), initialBalance = 0) {
+        const contractCreate = await (new ContractCreateFlow()
+            .setGas(gas)
+            .setBytecode(contract.bytecode)
+            .setConstructorParameters(constructorParameters)
+            .setInitialBalance(initialBalance)
+            .execute(this.client));
+        return contractCreate.getReceipt(this.client);
+    };
+
     _thisAccountId() {
         return this.client.operatorAccountId || AccountId.fromString('0.0.0');
     }
 
+    async getOperatorBalance(): Promise<Hbar> {
+        const accountBalance = await (new AccountBalanceQuery()
+            .setAccountId(this.client.operatorAccountId!))
+            .execute(this.client);
+        return accountBalance.hbars;
+    }
 }
 
 export class AliasAccount {

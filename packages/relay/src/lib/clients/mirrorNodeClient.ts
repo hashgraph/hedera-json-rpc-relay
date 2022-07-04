@@ -70,6 +70,8 @@ export class MirrorNodeClient {
         DESC: 'desc'
     };
 
+    private static unknownServerErrorHttpStatusCode = 567;
+
     /**
      * The logger used for logging all output from this class.
      * @private
@@ -91,7 +93,7 @@ export class MirrorNodeClient {
     protected createAxiosClient(
         baseUrl: string
     ): AxiosInstance {
-        return Axios.create({
+        const axiosClient: AxiosInstance = Axios.create({
             baseURL: baseUrl,
             responseType: 'json' as const,
             headers: {
@@ -99,6 +101,8 @@ export class MirrorNodeClient {
             },
             timeout: 10 * 1000
         });
+
+        return axiosClient;
     }
 
     constructor(baseUrl: string, logger: Logger, register: Registry, axiosClient?: AxiosInstance) {
@@ -142,26 +146,27 @@ export class MirrorNodeClient {
         try {
             const response = await this.client.get(path);
             ms = Date.now() - start;
-            this.logger.debug(`Mirror Node Response: [GET] ${path} ${response.status} ${ms} ms`);
+            this.logger.debug(`[GET] ${path} ${response.status} ${ms} ms`);
             this.mirrorResponseHistogram.labels(pathLabel, response.status).observe(ms);
             return response.data;
         } catch (error: any) {
             ms = Date.now() - start;
-            this.mirrorResponseHistogram.labels(pathLabel, error.response.status).observe(ms);
-            this.handleError(error, path, allowedErrorStatuses);
+            const effectiveStatusCode = error.response !== undefined ? error.response.status : MirrorNodeClient.unknownServerErrorHttpStatusCode;            
+            this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
+            this.handleError(error, path, effectiveStatusCode, allowedErrorStatuses);
         }
         return null;
     }
 
-    handleError(error: any, path: string, allowedErrorStatuses?: number[]) {
+    handleError(error: any, path: string, effectiveStatusCode: number, allowedErrorStatuses?: number[]) {
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
-            if (error.response && allowedErrorStatuses.indexOf(error.response.status) !== -1) {
-                this.logger.debug(`Mirror Node Response: [GET] ${path} ${error.response.status} status`);
+            if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
+                this.logger.debug(`[GET] ${path} ${effectiveStatusCode} status`);
                 return null;
             }
         }
 
-        this.logger.error(new Error(error.message), `Mirror Node Response: [GET] ${path} ${error.response.status} status`);
+        this.logger.error(new Error(error.message), `[GET] ${path} ${effectiveStatusCode} status`);
         throw predefined.INTERNAL_ERROR;
     }
 

@@ -46,6 +46,7 @@ export class EthImpl implements Eth {
   static emptyHex = '0x';
   static zeroHex = '0x0';
   static zeroHex8Byte = '0x0000000000000000';
+  static zeroHex32Byte = '0x0000000000000000000000000000000000000000000000000000000000000000';
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
@@ -112,7 +113,7 @@ export class EthImpl implements Eth {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient);
+    this.precheck = new Precheck(mirrorNodeClient, logger, chain);
   }
 
   /**
@@ -147,10 +148,18 @@ export class EthImpl implements Eth {
   }
 
   private async getFeeWeibars() {
-    let networkFees = await this.mirrorNodeClient.getNetworkFees();
+    let networkFees;
+
+    try {
+      networkFees = await this.mirrorNodeClient.getNetworkFees();
+      if (_.isNil(networkFees)) {
+        this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
+      }
+    } catch (e: any) {
+      this.logger.warn(e, `Mirror Node threw an error retrieving fees. Fallback to network`);
+    }
 
     if (_.isNil(networkFees)) {
-      this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
       networkFees = {
         fees: [
           {
@@ -392,12 +401,12 @@ export class EthImpl implements Eth {
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       // handle INVALID_CONTRACT_ID
-      if (e?.status?._code === Status.InvalidContractId._code) {
-        this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0', address, blockNumber);
+      if (e?.status?._code === Status.InvalidContractId._code || e?.message?.includes(Status.InvalidContractId.toString())) {
+        this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0, err code: %s', address, blockNumber, e?.status?._code);
         return '0x0';
       }
 
-      this.logger.error(e, 'Error raised during getCode for address %s', address);
+      this.logger.error(e, 'Error raised during getCode for address %s, err code: %s', address, e?.status?._code);
       throw e;
     }
   }
@@ -547,6 +556,15 @@ export class EthImpl implements Eth {
     await this.precheck.gasLimit(transaction);
     await this.precheck.nonce(transaction);
 
+    const chainIdPrecheckRes = this.precheck.chainId(transaction);
+    if ( !chainIdPrecheckRes.passes ) {
+      return new JsonRpcError({
+        name: 'ChainId not supported',
+        code: -32000,
+        message: `ChainId (${chainIdPrecheckRes.chainId}) not supported. The correct chainId is ${this.chain}.`
+      });
+    }
+
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
     try {
@@ -632,7 +650,7 @@ export class EthImpl implements Eth {
       if (e.status && e.status._code) {
         resolvedError = new Error(e.message);
       }
-      
+
       this.logger.error(resolvedError, 'Failed to successfully submit contractCallQuery');
       return predefined.INTERNAL_ERROR;
     }
@@ -662,7 +680,7 @@ export class EthImpl implements Eth {
       chainId: contractResult.chain_id,
       from: contractResult.from.substring(0, 42),
       gas: contractResult.gas_used,
-      gasPrice: contractResult.gas_price,
+      gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
       maxPriorityFeePerGas: maxPriorityFee,
@@ -699,7 +717,24 @@ export class EthImpl implements Eth {
         receiptResponse.created_contract_ids.length > 0
           ? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress())
           : undefined;
-      const answer = {
+
+
+      // support stricter go-eth client which requires the transaction hash property on logs
+      const logs = receiptResponse.logs.map(log => {
+        return new Log({
+          address: log.address,
+          blockHash: receiptResponse.block_hash.substring(0, 66),
+          blockNumber: receiptResponse.block_number,
+          data: log.data,
+          logIndex: log.index,
+          removed: false,
+          topics: log.topics,
+          transactionHash: receiptResponse.hash,
+          transactionIndex: receiptResponse.transaction_index
+        });
+      });
+
+      const receipt = {
         blockHash: receiptResponse.block_hash.substring(0, 66),
         blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
         from: receiptResponse.from,
@@ -707,7 +742,7 @@ export class EthImpl implements Eth {
         cumulativeGasUsed: EthImpl.numberTo0x(receiptResponse.block_gas_used),
         gasUsed: EthImpl.numberTo0x(receiptResponse.gas_used),
         contractAddress: createdContract,
-        logs: receiptResponse.logs,
+        logs: logs,
         logsBloom: receiptResponse.bloom,
         transactionHash: receiptResponse.hash,
         transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
@@ -715,8 +750,10 @@ export class EthImpl implements Eth {
         root: receiptResponse.root,
         status: receiptResponse.status,
       };
-      this.logger.trace(`receipt for ${hash} found in block ${answer.blockNumber}`);
-      return answer;
+
+
+      this.logger.trace(`receipt for ${hash} found in block ${receipt.blockNumber}`);
+      return receipt;
     }
   }
 
@@ -731,6 +768,10 @@ export class EthImpl implements Eth {
 
   static numberTo0x(input: number | BigNumber): string {
     return EthImpl.emptyHex + input.toString(16);
+  }
+
+  private static toNullIfEmptyHex(value: string): string | null {
+    return value === EthImpl.emptyHex ? null : value;
   }
 
   /**
@@ -826,7 +867,7 @@ export class EthImpl implements Eth {
     const blockHash = blockResponse.hash.substring(0, 66);
     const transactionArray = showDetails ? transactionObjects : transactionHashes;
     return new Block({
-      baseFeePerGas: EthImpl.numberTo0x(0), //TODO should be gasPrice
+      baseFeePerGas: await this.gasPrice(),
       difficulty: EthImpl.zeroHex,
       extraData: EthImpl.emptyHex,
       gasLimit: EthImpl.numberTo0x(maxGasLimit),
@@ -834,15 +875,15 @@ export class EthImpl implements Eth {
       hash: blockHash,
       logsBloom: EthImpl.emptyBloom, //TODO calculate full block boom in mirror node
       miner: EthImpl.zeroAddressHex,
-      mixHash: EthImpl.emptyArrayHex,
+      mixHash: EthImpl.zeroHex32Byte,
       nonce: EthImpl.zeroHex8Byte,
       number: EthImpl.numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
-      receiptsRoot: EthImpl.emptyArrayHex,
+      receiptsRoot: EthImpl.zeroHex32Byte,
       timestamp: EthImpl.numberTo0x(Number(timestamp)),
       sha3Uncles: EthImpl.emptyArrayHex,
       size: EthImpl.numberTo0x(blockResponse.size | 0),
-      stateRoot: EthImpl.emptyArrayHex,
+      stateRoot: EthImpl.zeroHex32Byte,
       totalDifficulty: EthImpl.zeroHex,
       transactions: transactionArray,
       transactionsRoot: transactionArray.length == 0 ? EthImpl.ethEmptyTrie : blockHash,
@@ -882,11 +923,11 @@ export class EthImpl implements Eth {
           chainId: contractResultDetails.chain_id,
           from: contractResultDetails.from.substring(0, 42),
           gas: contractResultDetails.gas_used,
-          gasPrice: contractResultDetails.gas_price,
+          gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
           hash: contractResultDetails.hash.substring(0, 66),
           input: contractResultDetails.function_parameters,
-          maxPriorityFeePerGas: contractResultDetails.max_priority_fee_per_gas,
-          maxFeePerGas: contractResultDetails.max_fee_per_gas,
+          maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
+          maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
           nonce: contractResultDetails.nonce,
           r: rSig,
           s: sSig,
@@ -955,22 +996,22 @@ export class EthImpl implements Eth {
     }
     const logs = result.logs;
 
-    // Find all unique contractId and timestamp pairs and for each one make mirror node request
+    // Find unique contract execution timestamp and for each one make mirror node request
     const promises: Promise<any>[] = [];
     const uniquePairs = {};
 
     for (let i = 0; i < logs.length; i++) {
       const log = logs[i];
-      const pair = `${log.contract_id}-${log.timestamp}`;
-      if (uniquePairs[pair] === undefined) {
-        uniquePairs[pair] = [i];
+      const timestamp = `${log.timestamp}`;
+      if (uniquePairs[timestamp] === undefined) {
+        uniquePairs[timestamp] = [i];
         promises.push(this.mirrorNodeClient.getContractResultsDetails(
           log.contract_id,
           log.timestamp
         ));
       }
       else {
-        uniquePairs[pair].push(i);
+        uniquePairs[timestamp].push(i);
       }
     }
 
@@ -979,14 +1020,15 @@ export class EthImpl implements Eth {
       const contractsResultsDetails = await Promise.all(promises);
       for (let i = 0; i < contractsResultsDetails.length; i++) {
         const detail = contractsResultsDetails[i];
-        const pair = `${detail.contract_id}-${detail.timestamp}`;
-        const uPair = uniquePairs[pair] || [];
+        // retrieve set of logs for each timestamp
+        const timestamp = `${detail.timestamp}`;
+        const uPair = uniquePairs[timestamp] || [];
         for (let p = 0; p < uPair.length; p++) {
           const logIndex = uPair[p];
           const log = logs[logIndex];
           logs[logIndex] = new Log({
             address: log.address,
-            blockHash: detail.block_hash,
+            blockHash: detail.block_hash.substring(0, 66),
             blockNumber: detail.block_number,
             data: log.data,
             logIndex: log.index,

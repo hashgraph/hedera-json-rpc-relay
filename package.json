@@ -9,6 +9,7 @@
         "eslint-config-airbnb-base": "^15.0.0",
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-import": "^2.25.4",
+        "ethereum-waffle": "^3.4.4",
         "lerna": "^4.0.0",
         "nodemon": "^2.0.15",
         "nyc": "^15.1.0",
@@ -20,7 +21,7 @@
         ]
     },
     "scripts": {
-        "acceptancetest": "ts-mocha packages/server/tests/acceptance/*.spec.ts --exit",
+        "acceptancetest": "ts-mocha packages/server/tests/acceptance/index.spec.ts --exit",
         "build": "npx lerna run build",
         "build-and-test": "npx lerna run build && npx lerna run test",
         "build:docker": "docker build . -t ${npm_package_name}",
@@ -33,7 +34,8 @@
         "lint": "npx lerna run lint",
         "start": "npx lerna exec --scope @hashgraph/json-rpc-server -- npm run start",
         "start:docker": "docker run --name hedera-relay -d -p 7546:7546 ${npm_package_name}:latest",
-        "test": "npx lerna run test"
+        "test": "npx lerna run test",
+        "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts"
     },
     "dependencies": {
         "@types/find-config": "^1.0.1",

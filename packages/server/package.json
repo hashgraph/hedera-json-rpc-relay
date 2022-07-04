@@ -1,6 +1,6 @@
 {
     "name": "@hashgraph/json-rpc-server",
-    "version": "0.2.0-SNAPSHOT",
+    "version": "0.3.0-SNAPSHOT",
     "description": "Hedera Hashgraph Ethereum JSON RPC server. Accepts requests for Ethereum JSON RPC 2.0 APIs",
     "main": "dist/index.js",
     "keywords": [],
@@ -35,15 +35,17 @@
         "ethers": "^5.6.8",
         "shelljs": "^0.8.5",
         "ts-mocha": "^9.0.2",
+        "ts-node": "^10.8.1",
         "typescript": "^4.5.5"
     },
     "scripts": {
         "build": "pnpm clean && pnpm compile",
         "clean": "rm -rf ./dist && rm -rf tsconfig.tsbuildinfo",
         "compile": "tsc -b tsconfig.json",
-        "acceptancetest": "ts-mocha tests/acceptance/*.spec.ts",
+        "acceptancetest": "ts-mocha tests/acceptance/index.spec.ts",
         "start": "node dist/index.js",
-        "test": "nyc ts-mocha --recursive ./tests/integration/server.spec.ts"
+        "test": "nyc ts-mocha --recursive ./tests/integration/server.spec.ts",
+        "integration:prerequisite": "ts-node ./tests/helpers/prerequisite.ts"
     },
     "nyc": {
         "check-coverage": false,

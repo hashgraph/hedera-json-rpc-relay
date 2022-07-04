@@ -80,5 +80,10 @@ export const predefined = {
     name: 'gasLimit too low',
     code: -32003,
     message: 'Intrinsic gas exceeds gas limit'
+  }),
+  'UNSUPPORTED_CHAIN_ID': new JsonRpcError({
+    name: 'ChainId not supported',
+    code: -32000,
+    message: 'ChainId not supported'
   })
 };
