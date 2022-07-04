@@ -40,7 +40,6 @@ describe('Precheck', async function() {
     const defaultGasPrice = 720_000_000_000;
     const defaultChainId = Number('0x12a');
 
-
     let precheck: Precheck;
     let mock: MockAdapter;
 
@@ -185,5 +184,29 @@ describe('Precheck', async function() {
         testPassingGasLimitPrecheck(validGasLimits);
         testFailingGasLimitPrecheck(lowGasLimits, -32003, 'Intrinsic gas exceeds gas limit');
         testFailingGasLimitPrecheck(highGasLimits, -32005, 'Transaction gas limit exceeds block gas limit');
+    });
+
+    describe('gas price', async function() {
+        it('should return true for gas price gt to required gas price', async function() {
+            const result = precheck.gasPrice(txWithMatchingChainId, 10);
+            expect(result).to.exist;
+            expect(result.error).to.exist;
+            expect(result.passes).to.eq(true);
+        });
+
+        it('should return true for gas price equal to required gas price', async function() {
+            const result = precheck.gasPrice(txWithMatchingChainId, defaultGasPrice);
+            expect(result).to.exist;
+            expect(result.error).to.exist;
+            expect(result.passes).to.eq(true);
+        });
+
+        it('should return false for gas price not enough', async function() {
+            const minGasPrice = 1000 * constants.TINYBAR_TO_WEIBAR_COEF;
+            const result = precheck.gasPrice(txWithMatchingChainId, minGasPrice);
+            expect(result).to.exist;
+            expect(result.error).to.exist;
+            expect(result.passes).to.eq(false);
+        });
     });
 });
