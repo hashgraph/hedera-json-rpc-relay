@@ -126,6 +126,30 @@ describe('RPC Server Acceptance Tests', function () {
                 expect(log4Block).to.have.property('blockNumber');
             });
 
+            it('should be abe to use `fromBlock` param', async () => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'fromBlock': log4Block.blockNumber
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+
+                const log4BlockInt = parseInt(log4Block.blockNumber);
+                for(let i in logs) {
+                    expect(logs[i].blockNumber).to.be.greaterThanOrEqual(log4BlockInt);
+                }
+            });
+
+            it('should be abe to use `toBlock` param', async () => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'toBlock': log0Block.blockNumber
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+
+                const log0BlockInt = parseInt(log0Block.blockNumber);
+                for(let i in logs) {
+                    expect(logs[i].blockNumber).to.be.lessThanOrEqual(log0BlockInt);
+                }
+            });
+
             it('should be able to use range of `fromBlock` and `toBlock` params', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': log0Block.blockNumber,
@@ -138,6 +162,28 @@ describe('RPC Server Acceptance Tests', function () {
                 for (let i in logs) {
                     expect(logs[i].blockNumber).to.be.greaterThanOrEqual(log0BlockInt);
                     expect(logs[i].blockNumber).to.be.lessThanOrEqual(log4BlockInt);
+                }
+            });
+
+            it('should be able to use `address` param', async() => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'address': contractAddress
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+
+                for(let i in logs) {
+                    expect(logs[i].address).to.equal(contractAddress);
+                }
+            });
+
+            it('should be able to use `blockHash` param', async() => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'blockHash': log0Block.blockHash
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+
+                for(let i in logs) {
+                    expect(logs[i].blockHash).to.equal(log0Block.blockHash);
                 }
             });
         });

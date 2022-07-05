@@ -959,16 +959,25 @@ export class EthImpl implements Eth {
         ];
       }
     }
-    else if (fromBlock && toBlock) {
-      const blocksResult = await this.mirrorNodeClient.getBlocks([
-        `gte:${fromBlock}`,
-        `lte:${toBlock}`
-      ]);
+    else if (fromBlock || toBlock) {
+      const filters = [];
+      let order;
+      if(toBlock) {
+        // @ts-ignore
+        filters.push(`lte:${parseInt(toBlock)}`);
+        order = 'desc';
+      }
+      if(fromBlock) {
+        // @ts-ignore
+        filters.push(`gte:${parseInt(fromBlock)}`);
+        order = 'asc';
+      }
+      const blocksResult = await this.mirrorNodeClient.getBlocks(filters, undefined , {order});
 
       const blocks = blocksResult?.blocks;
       if (blocks?.length) {
-        const firstBlock = blocks[0];
-        const lastBlock = blocks[blocks.length - 1];
+        const firstBlock = (order == 'desc') ? blocks[blocks.length - 1] : blocks[0];
+        const lastBlock = (order == 'desc') ? blocks[0] : blocks[blocks.length - 1];
         params.timestamp = [
           `gte:${firstBlock.timestamp.from}`,
           `lte:${lastBlock.timestamp.to}`
