@@ -115,7 +115,7 @@ export class EthImpl implements Eth {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient, logger, chain);
+    this.precheck = new Precheck(mirrorNodeClient, nodeClient, logger, chain);
   }
 
   /**
@@ -633,6 +633,11 @@ export class EthImpl implements Eth {
     const gasPrecheck = this.precheck.gasPrice(transaction, gasPrice);
     if (!gasPrecheck.passes) {
       return gasPrecheck.error;
+    }
+
+    const balancePrecheck = await this.precheck.balance(transaction);
+    if (!balancePrecheck.passes) {
+      return balancePrecheck.error;
     }
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');

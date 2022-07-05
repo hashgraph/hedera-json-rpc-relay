@@ -275,6 +275,13 @@ export default class ServicesClient {
         const receipt = await response.getReceipt(this.client);
         this.logger.info(`File ${fileId} updated with status: ${receipt.status.toString()}`);
     }
+
+    async getAccountBalanceInWeiBars(account: string | AccountId) {
+        const balance = await this.executeQuery(new AccountBalanceQuery()
+            .setAccountId(account));
+
+        return ethers.BigNumber.from(balance.hbars.toTinybars().toString()).mul(10 ** 10);
+    }
 }
 
 export class AliasAccount {

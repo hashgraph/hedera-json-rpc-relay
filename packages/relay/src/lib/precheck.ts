@@ -20,17 +20,19 @@
 
 import * as ethers from 'ethers';
 import { predefined } from './errors';
-import { MirrorNodeClient } from './clients';
+import { MirrorNodeClient, SDKClient } from './clients';
 import {EthImpl} from "./eth";
 import {Logger} from "pino";
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
+  private sdkClient: SDKClient;
   private chain: string;
   private readonly logger: Logger;
 
-  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, chainId: string) {
+  constructor(mirrorNodeClient: MirrorNodeClient, sdkClient: SDKClient, logger: Logger, chainId: string) {
     this.mirrorNodeClient = mirrorNodeClient;
+    this.sdkClient = sdkClient;
     this.chain = chainId;
     this.logger = logger;
   }
@@ -91,5 +93,34 @@ export class Precheck {
       passes,
       error: predefined.GAS_PRICE_TOO_LOW
     }
+  }
+
+  async balance(transaction: string) {
+    const result = {
+      passes: false,
+      error: predefined.INSUFFICIENT_ACCOUNT_BALANCE
+    };
+
+    const tx = ethers.utils.parseTransaction(transaction);
+    const txGas = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
+    const txTotalValue = tx.value.add(txGas.mul(tx.gasLimit));
+
+    try {
+      const { account }: any = await this.mirrorNodeClient.getAccount(tx.from!);
+      const accountBalance = await this.sdkClient.getAccountBalanceInWeiBar(account);
+
+      result.passes = ethers.ethers.BigNumber.from(accountBalance.toString()).gte(txTotalValue);
+
+      if (!result.passes) {
+        this.logger.trace('Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountBalance=%s)', transaction, txTotalValue, accountBalance);
+      }
+    } catch (error: any) {
+      this.logger.trace('Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)', transaction, txTotalValue, error.message);
+      
+      result.passes = false;
+      result.error = predefined.INTERNAL_ERROR;
+    }
+
+    return result;
   }
 }

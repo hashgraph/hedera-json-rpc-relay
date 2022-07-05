@@ -86,4 +86,9 @@ export const predefined = {
     code: -32009,
     message: 'Gas price below configured minimum gas price'
   }),
+  'INSUFFICIENT_ACCOUNT_BALANCE': new JsonRpcError({
+    name: 'Insufficient account balance',
+    code: -32000,
+    message: 'Insufficient funds for transfer'
+  }),
 };

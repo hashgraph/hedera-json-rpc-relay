@@ -351,6 +351,19 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(balanceChange.toString()).to.eq(ONE_TINYBAR.toString());
                 });
 
+                it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with insufficient balance)', async function () {
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId)
+
+                    const transaction = {
+                        ...default155TransactionData,
+                        to: mirrorContract.evm_address,
+                        value: balanceInWeiBars,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'Insufficient funds for transfer');
+                });
+
                 it('should fail "eth_sendRawTransaction" for Legacy transactions (with no chainId)', async function () {
                     const transaction = {
                         ...defaultLegacyTransactionData,
@@ -390,9 +403,20 @@ describe('RPC Server Acceptance Tests', function () {
                         to: mirrorContract.evm_address,
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
-                    console.log(transaction);
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                });
+
+                it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with insufficient balance)', async function () {
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId)
+                    const transaction = {
+                        ...defaultLegacy2930TransactionData,
+                        value: balanceInWeiBars,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'Insufficient funds for transfer');
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transactions (with gas price too low)', async function () {
@@ -405,6 +429,19 @@ describe('RPC Server Acceptance Tests', function () {
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                });
+
+                it('should fail "eth_sendRawTransaction" for London transactions (with insufficient balance)', async function () {
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId)
+
+                    const transaction = {
+                        ...defaultLondonTransactionData,
+                        value: balanceInWeiBars,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'Insufficient funds for transfer');
                 });
 
                 it('should execute "eth_sendRawTransaction" for London transactions', async function () {
