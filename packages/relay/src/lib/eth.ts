@@ -115,7 +115,7 @@ export class EthImpl implements Eth {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient, logger, chain);
+    this.precheck = new Precheck(mirrorNodeClient, nodeClient, logger, chain);
   }
 
   /**
@@ -622,17 +622,18 @@ export class EthImpl implements Eth {
 
     const chainIdPrecheckRes = this.precheck.chainId(transaction);
     if ( !chainIdPrecheckRes.passes ) {
-      return new JsonRpcError({
-        name: 'ChainId not supported',
-        code: -32000,
-        message: `ChainId (${chainIdPrecheckRes.chainId}) not supported. The correct chainId is ${this.chain}.`
-      });
+      return chainIdPrecheckRes.error;
     }
 
     const gasPrice = await this.getFeeWeibars();
     const gasPrecheck = this.precheck.gasPrice(transaction, gasPrice);
     if (!gasPrecheck.passes) {
       return gasPrecheck.error;
+    }
+
+    const balancePrecheck = await this.precheck.balance(transaction);
+    if (!balancePrecheck.passes) {
+      return balancePrecheck.error;
     }
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
@@ -758,7 +759,7 @@ export class EthImpl implements Eth {
       nonce: contractResult.nonce,
       r: rSig,
       s: sSig,
-      to: contractResult.to.substring(0, 42),
+      to: contractResult.to?.substring(0, 42),
       transactionIndex: contractResult.transaction_index,
       type: contractResult.type,
       v: contractResult.v,

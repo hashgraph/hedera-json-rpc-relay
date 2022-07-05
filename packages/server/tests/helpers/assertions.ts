@@ -19,6 +19,7 @@
  */
 import { expect } from 'chai';
 import { ethers } from 'ethers';
+import { JsonRpcError, predefined } from '../../../relay/src/lib/errors';
 import { Utils } from './utils';
 
 export default class Assertions {
@@ -195,15 +196,15 @@ export default class Assertions {
     }
 
     static unknownResponse(err) {
-        Assertions.jsonRpcError(err, -32603, 'Unknown error invoking RPC');
+        Assertions.jsonRpcError(err, predefined.INTERNAL_ERROR);
     }
 
-    static jsonRpcError(err, code, message) {
+    static jsonRpcError(err: any, expectedError: JsonRpcError) {
         expect(err).to.exist;
         expect(err).to.have.property('body');
 
         const parsedError = JSON.parse(err.body);
-        expect(parsedError.error.message).to.be.equal(message);
-        expect(parsedError.error.code).to.be.equal(code);
+        expect(parsedError.error.message).to.be.equal(expectedError.message);
+        expect(parsedError.error.code).to.be.equal(expectedError.code);
     }
 }
