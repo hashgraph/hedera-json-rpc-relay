@@ -763,7 +763,7 @@ export class EthImpl implements Eth {
       nonce: contractResult.nonce,
       r: rSig,
       s: sSig,
-      to: contractResult.to.substring(0, 42),
+      to: contractResult.to?.substring(0, 42),
       transactionIndex: contractResult.transaction_index,
       type: contractResult.type,
       v: contractResult.v,
