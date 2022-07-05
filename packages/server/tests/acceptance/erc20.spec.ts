@@ -141,7 +141,7 @@ describe('ERC20 Acceptance Tests', function () {
                             });
 
                             describe('when the token owner has enough balance', function () {
-                                let amount, tx, receipt;
+                                let amount, tx;
                                 before(async function () {
                                     amount = initialSupply;
                                     tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount);
@@ -173,16 +173,10 @@ describe('ERC20 Acceptance Tests', function () {
                             });
 
                             describe('when the token owner does not have enough balance', function () {
-                                let amount;
-
-                                beforeEach('reducing balance', async function () {
-                                    amount = initialSupply;
-                                    await contract.transfer(to, 1, { from: tokenOwner });
-                                });
-
                                 it('reverts', async function () {
+                                    await contract.transfer(to, 1, { from: tokenOwner });
                                     await expectRevert(
-                                        contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                        contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply),
                                         'CALL_EXCEPTION'
                                     );
                                 });
@@ -194,39 +188,23 @@ describe('ERC20 Acceptance Tests', function () {
 
                             before(async function () {
                                 allowance = initialSupply.sub(1);
-                            });
-
-                            beforeEach(async function () {
                                 await contract.approve(spender, allowance, { from: tokenOwner });
                             });
 
                             describe('when the token owner has enough balance', function () {
-                                let amount;
-                                before(async function () {
-                                    amount = initialSupply;
-                                });
-
                                 it('reverts', async function () {
                                     await expectRevert(
-                                        contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                        contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply),
                                         `CALL_EXCEPTION`,
                                     );
                                 });
                             });
 
                             describe('when the token owner does not have enough balance', function () {
-                                let amount;
-                                before(async function () {
-                                    amount = allowance;
-                                });
-
-                                beforeEach('reducing balance', async function () {
-                                    await contract.transfer(to, 2, { from: tokenOwner });
-                                });
-
                                 it('reverts', async function () {
+                                    await contract.transfer(to, 2, { from: tokenOwner });
                                     await expectRevert(
-                                        contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                        contract.connect(spenderWallet).transferFrom(tokenOwner, to, allowance),
                                         `CALL_EXCEPTION`,
                                     );
                                 });
@@ -252,16 +230,12 @@ describe('ERC20 Acceptance Tests', function () {
                     });
 
                     describe('when the recipient is the zero address', function () {
-                        let amount, to, tokenOwnerWallet;
-
-                        beforeEach(async function () {
-                            amount = initialSupply;
-                            to = ethers.constants.AddressZero;
-                            tokenOwnerWallet = accounts[0].wallet;
-                            await contract.connect(tokenOwnerWallet).approve(spender, amount);
-                        });
-
                         it('reverts', async function () {
+                            const amount = initialSupply;
+                            const to = ethers.constants.AddressZero;
+                            const tokenOwnerWallet = accounts[0].wallet;
+                            await contract.connect(tokenOwnerWallet).approve(spender, amount);
+
                             await expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                 `CALL_EXCEPTION`);
                         });
