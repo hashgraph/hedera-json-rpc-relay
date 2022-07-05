@@ -29,6 +29,7 @@ import {AccountBalanceQuery, ContractFunctionParameters} from '@hashgraph/sdk';
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
+import { predefined } from '../../../relay/src/lib/errors';
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -318,7 +319,7 @@ describe('RPC Server Acceptance Tests', function () {
                         Assertions.expectedError();
                     }
                     catch(e) {
-                        Assertions.jsonRpcError(e, -32000, 'ChainId (0x3e7) not supported. The correct chainId is 0x12a.');
+                        Assertions.jsonRpcError(e, predefined.UNSUPPORTED_CHAIN_ID(ethers.utils.hexValue(INCORRECT_CHAIN_ID), CHAIN_ID));
                     }
                 });
 
@@ -330,7 +331,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
                 });
 
                 it('should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
@@ -361,7 +362,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'Insufficient funds for transfer');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy transactions (with no chainId)', async function () {
@@ -371,7 +372,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'ChainId (0x0) not supported. The correct chainId is 0x12a.');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.UNSUPPORTED_CHAIN_ID('0x0', CHAIN_ID));
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy transactions (with gas price too low)', async function () {
@@ -383,7 +384,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
@@ -404,7 +405,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with insufficient balance)', async function () {
@@ -416,7 +417,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'Insufficient funds for transfer');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transactions (with gas price too low)', async function () {
@@ -428,7 +429,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transactions (with insufficient balance)', async function () {
@@ -441,7 +442,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'Insufficient funds for transfer');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
                 });
 
                 it('should execute "eth_sendRawTransaction" for London transactions', async function () {
@@ -835,7 +836,7 @@ describe('RPC Server Acceptance Tests', function () {
                     latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
                     await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
                 } catch (error) {
-                    Assertions.jsonRpcError(error, -32000, `Request beyond head block: requested ${newestBlockNumber}, head ${latestBlock.number}`);
+                    Assertions.jsonRpcError(error, predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlock.number));
                 }                
             });
 

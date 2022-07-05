@@ -75,7 +75,7 @@ export class Precheck {
 
     return {
       passes,
-      chainId: txChainId
+      error: predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain)
     };
   }
 

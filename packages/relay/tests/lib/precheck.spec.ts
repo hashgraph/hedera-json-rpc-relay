@@ -65,14 +65,12 @@ describe('Precheck', async function() {
             const result = precheck.chainId(txWithMatchingChainId);
             expect(result).to.exist;
             expect(result.passes).to.eq(true);
-            expect(result.chainId).to.eq('0x12a');
         });
 
         it('should return false for non-matching chainId', async function() {
             const result = precheck.chainId(txWithNonMatchingChainId);
             expect(result).to.exist;
             expect(result.passes).to.eq(false);
-            expect(result.chainId).to.eq('0x0');
         });
     });
 

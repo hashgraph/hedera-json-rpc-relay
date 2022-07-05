@@ -76,10 +76,10 @@ export const predefined = {
     code: -32000,
     message: `Request beyond head block: requested ${requested}, head ${latest}`
   }),
-  'UNSUPPORTED_CHAIN_ID': new JsonRpcError({
+  'UNSUPPORTED_CHAIN_ID': (requested: string | number, current: string | number) => new JsonRpcError({
     name: 'ChainId not supported',
     code: -32000,
-    message: 'ChainId not supported'
+    message: `ChainId (${requested}) not supported. The correct chainId is ${current}`
   }),
   'GAS_PRICE_TOO_LOW': new JsonRpcError({
     name: 'Gas price too low',
