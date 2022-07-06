@@ -72,6 +72,7 @@ export class Precheck {
     const passes = txChainId === this.chain;
     if (!passes) {
       this.logger.trace('Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)', transaction, txChainId);
+      throw predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain);
     }
 
     throw predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain);

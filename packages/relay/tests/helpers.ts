@@ -21,6 +21,7 @@
 import {expect} from "chai";
 import {ethers} from 'ethers';
 
+// Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
 
 const expectUnsupportedMethod = (result) => {
