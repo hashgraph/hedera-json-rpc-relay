@@ -464,6 +464,26 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(balanceChange.toString()).to.eq(ONE_TINYBAR.toString());
                 });
 
+                it('should execute "eth_sendRawTransaction" and deploy a large contract', async function() {
+                    const transaction = {
+                        type: 2,
+                        chainId: Number(CHAIN_ID),
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        maxPriorityFeePerGas: Assertions.defaultGasPrice,
+                        maxFeePerGas: Assertions.defaultGasPrice,
+                        gasLimit: defaultGasLimit,
+                        data: '0x' + '00'.repeat(5121),
+                    };
+
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
+                    const info = await mirrorNode.get(`/contracts/results/${transactionHash}`);
+                    expect(info).to.have.property('contract_id');
+                    expect(info.contract_id).to.not.be.null;
+                    expect(info).to.have.property('created_contract_ids');
+                    expect(info.created_contract_ids.length).to.be.equal(1);
+                });
+
                 it('should execute "eth_getTransactionCount" primary', async function () {
                     const res = await relay.call('eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, mirrorContractDetails.block_number]);
                     expect(res).to.be.equal('0x0');
