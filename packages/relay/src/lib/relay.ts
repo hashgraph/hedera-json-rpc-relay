@@ -111,7 +111,7 @@ export class RelayImpl implements Relay {
           )
         );
       } else {
-        throw new Error(`Invalid 'ETH_SENDRAWTRANSACTION' env variable provided`);
+        logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
       }
     } else {
       if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
@@ -120,7 +120,7 @@ export class RelayImpl implements Relay {
           PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
         );
       } else {
-        throw new Error(`Invalid 'OPERATOR' env variables provided`);
+        logger.warn(`Invalid 'OPERATOR' env variables provided`);
       }
     }
 

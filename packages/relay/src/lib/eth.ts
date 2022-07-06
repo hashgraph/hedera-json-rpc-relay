@@ -309,7 +309,7 @@ export class EthImpl implements Eth {
       let gasPrice: number | undefined = cache.get(constants.CACHE_KEY.GAS_PRICE);
 
       if (!gasPrice) {
-        gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, undefined);
+        gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice);
 
         this.logger.trace(`caching ${constants.CACHE_KEY.GAS_PRICE} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);

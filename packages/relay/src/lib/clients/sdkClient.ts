@@ -39,7 +39,6 @@ import {
     Query,
     Transaction,
     TransactionRecord,
-    TransactionReceipt,
     Status
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
