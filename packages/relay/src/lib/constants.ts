@@ -39,5 +39,11 @@ export default {
     TYPE_CONTRACT: 'contract',
     TYPE_ACCOUNT: 'account',
 
-    FEE_HISTORY_MAX_RESULTS: Number(process.env.FEE_HISTORY_MAX_RESULTS || 10) 
+    FEE_HISTORY_MAX_RESULTS: Number(process.env.FEE_HISTORY_MAX_RESULTS || 10) ,
+
+    BLOCK_GAS_LIMIT: 15_000_000,
+    TX_DATA_ZERO_COST: 4,
+    ISTANBUL_TX_DATA_NON_ZERO_COST: 16,
+    TX_BASE_COST: 21_000,
+    TX_CREATE_EXTRA: 32000,
 };

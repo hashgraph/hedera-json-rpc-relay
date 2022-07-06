@@ -19,10 +19,11 @@
  */
 
 import * as ethers from 'ethers';
-import {JsonRpcError, predefined} from './errors';
+import {predefined} from './errors';
 import { MirrorNodeClient, SDKClient } from './clients';
 import {EthImpl} from "./eth";
 import {Logger} from "pino";
+import constants from './constants';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
@@ -69,29 +70,30 @@ export class Precheck {
    * @param transaction
    */
   async gasLimit(transaction: string) {
-    const BLOCK_GAS_LIMIT = 15_000_000;
-
     const tx = ethers.utils.parseTransaction(transaction);
     const gasLimit = tx.gasLimit.toNumber();
+    const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
 
     const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data, tx.to);
 
-    if (gasLimit > BLOCK_GAS_LIMIT) {
-      this.logger.trace('Failed gasLimit precheck for sendRawTransaction(transaction=%s). Gas Limit was too high: %s, block gas limit: %s', transaction, gasLimit, BLOCK_GAS_LIMIT);
+
+    if (gasLimit > constants.BLOCK_GAS_LIMIT) {
+      this.logger.trace(`${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`, transaction, gasLimit, constants.BLOCK_GAS_LIMIT);
       throw predefined.GAS_LIMIT_TOO_HIGH;
     } else if (gasLimit < intrinsicGasCost) {
-      this.logger.trace('Failed gasLimit precheck for sendRawTransaction(transaction=%s). Gas Limit was too low: %s, intrinsic gas cost: %s', transaction, gasLimit, intrinsicGasCost);
+      this.logger.trace(`${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`, transaction, gasLimit, intrinsicGasCost);
       throw predefined.GAS_LIMIT_TOO_LOW;
     }
   }
 
+  /**
+   * Calculates the intrinsic gas cost based on the number of empty bytes and whether the transaction is CONTRACT_CREATE
+   * @param data
+   * @param to
+   * @private
+   */
   private static transactionIntrinsicGasCost(data: string, to: string|undefined) {
-    const TX_DATA_ZERO_COST = 4;
-    const ISTANBUL_TX_DATA_NON_ZERO_COST = 16;
-    const TX_BASE_COST = 21_000;
-    const TX_CREATE_EXTRA = 32000;
-
-    const isCreate = (to == undefined) ||(to.length == 0);
+    const isCreate = (to == undefined) || (to.length == 0);
 
     let zeros = 0;
 
@@ -104,9 +106,8 @@ export class Precheck {
     }
 
     const nonZeros = data.length - zeros;
-    const cost = TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
-
-    return isCreate ? cost + TX_CREATE_EXTRA : cost;
+    const cost = constants.TX_BASE_COST + constants.TX_DATA_ZERO_COST * zeros + constants.ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
+    return isCreate ? cost + constants.TX_CREATE_EXTRA : cost;
   }
 
   chainId(transaction: string) {
@@ -115,11 +116,7 @@ export class Precheck {
     const passes = txChainId === this.chain;
     if (!passes) {
       this.logger.trace('Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)', transaction, txChainId);
-      throw new JsonRpcError({
-        name: 'ChainId not supported',
-        code: -32000,
-        message: `ChainId (${txChainId}) not supported. The correct chainId is ${this.chain}`
-      });
+      throw predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain);
     }
   }
 
