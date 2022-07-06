@@ -143,6 +143,12 @@ export class Precheck {
     }
   }
 
+  /**
+   * Calculates the intrinsic gas cost based on the number of empty bytes and whether the transaction is CONTRACT_CREATE
+   * @param data
+   * @param to
+   * @private
+   */
   private static transactionIntrinsicGasCost(data: string, to: string | undefined) {
     const isCreate = (to == undefined) || (to.length == 0);
 

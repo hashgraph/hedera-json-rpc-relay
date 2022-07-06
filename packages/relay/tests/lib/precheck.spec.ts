@@ -24,12 +24,13 @@ const registry = new Registry();
 
 import sinon from 'sinon';
 import pino from 'pino';
-import {Precheck} from "../../src/lib/precheck";
-import {MirrorNodeClient, SDKClient} from "../../src/lib/clients";
+import { Precheck } from "../../src/lib/precheck";
+import { expectedError, signTransaction } from "../helpers";
+import { MirrorNodeClient, SDKClient } from "../../src/lib/clients";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import constants from '../../src/lib/constants';
-import {ethers} from "ethers";
+import { ethers } from "ethers";
 const logger = pino();
 
 describe('Precheck', async function() {
@@ -107,27 +108,6 @@ describe('Precheck', async function() {
             expect(result).to.exist;
             expect(result.error).to.exist;
             expect(result.passes).to.eq(false);
-        });
-        
-        it('should pass for matching chainId', async function() {
-            try {
-                precheck.chainId(txWithMatchingChainId);
-            }
-            catch(e) {
-                expect(e).to.not.exist;
-            }
-        });
-
-        it('should not pass for non-matching chainId', async function() {
-            try {
-                precheck.chainId(txWithNonMatchingChainId);
-                expectedError();
-            }
-            catch(e: any) {
-                expect(e).to.exist;
-                expect(e.code).to.eq(-32000);
-                expect(e.message).to.eq('ChainId (0x0) not supported. The correct chainId is 0x12a.');
-            }
         });
     });
 
