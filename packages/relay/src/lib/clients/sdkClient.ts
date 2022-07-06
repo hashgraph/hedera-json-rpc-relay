@@ -80,7 +80,7 @@ export class SDKClient {
         this.clientMain = clientMain;
         this.logger = logger;
         this.register = register;
-        this.operatorAccountId = clientMain.operatorAccountId!.toString();
+        this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
 
         // clear and create metrics in registry
         const metricHistogramName = 'rpc_relay_consensusnode_response';
