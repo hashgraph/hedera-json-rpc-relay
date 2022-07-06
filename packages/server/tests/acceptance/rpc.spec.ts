@@ -480,7 +480,7 @@ describe('RPC Server Acceptance Tests', function () {
                     const info = await mirrorNode.get(`/contracts/results/${transactionHash}`);
                     expect(info).to.have.property('created_contract_ids');
                     expect(info).to.have.property('contract_id');
-                    expect(info.created_contract_ids.length).to.be.greaterThan(0);
+                    expect(info.created_contract_ids.length).to.be.equal(1);
                     expect(info.contract_id).to.not.be.null;
                 });
 
