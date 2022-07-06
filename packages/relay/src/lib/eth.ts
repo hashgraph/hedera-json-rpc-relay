@@ -805,19 +805,19 @@ export class EthImpl implements Eth {
       const logs = receiptResponse.logs.map(log => {
         return new Log({
           address: log.address,
-          blockHash: receiptResponse.block_hash.substring(0, 66),
+          blockHash: EthImpl.toHash32(receiptResponse.block_hash),
           blockNumber: receiptResponse.block_number,
           data: log.data,
           logIndex: log.index,
           removed: false,
           topics: log.topics,
-          transactionHash: receiptResponse.hash,
+          transactionHash: EthImpl.toHash32(receiptResponse.hash),
           transactionIndex: receiptResponse.transaction_index
         });
       });
 
       const receipt = {
-        blockHash: receiptResponse.block_hash.substring(0, 66),
+        blockHash: EthImpl.toHash32(receiptResponse.block_hash),
         blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
         from: receiptResponse.from,
         to: receiptResponse.to,
@@ -826,7 +826,7 @@ export class EthImpl implements Eth {
         contractAddress: createdContract,
         logs: logs,
         logsBloom: receiptResponse.bloom,
-        transactionHash: receiptResponse.hash,
+        transactionHash: EthImpl.toHash32(receiptResponse.hash),
         transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
         effectiveGasPrice: EthImpl.numberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
         root: receiptResponse.root,
@@ -850,6 +850,10 @@ export class EthImpl implements Eth {
 
   static numberTo0x(input: number | BigNumber): string {
     return EthImpl.emptyHex + input.toString(16);
+  }
+
+  static toHash32(value: string): string {
+    return value.substring(0, 66);
   }
 
   private static toNullIfEmptyHex(value: string): string | null {
@@ -1118,13 +1122,13 @@ export class EthImpl implements Eth {
           const log = logs[logIndex];
           logs[logIndex] = new Log({
             address: log.address,
-            blockHash: detail.block_hash.substring(0, 66),
+            blockHash: EthImpl.toHash32(detail.block_hash),
             blockNumber: detail.block_number,
             data: log.data,
             logIndex: log.index,
             removed: false,
             topics: log.topics,
-            transactionHash: detail.hash,
+            transactionHash: EthImpl.toHash32(detail.hash),
             transactionIndex: detail.transaction_index
           });
         }
