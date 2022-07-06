@@ -27,7 +27,7 @@
         "test": "nyc ts-mocha --recursive ./tests/**/*.spec.ts --exit"
     },
     "dependencies": {
-        "@hashgraph/sdk": "^2.16.4-beta.3",
+        "@hashgraph/sdk": "^2.16.6",
         "@keyvhq/core": "^1.6.9",
         "axios": "^0.26.1",
         "buffer": "^6.0.3",
