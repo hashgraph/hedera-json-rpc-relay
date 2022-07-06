@@ -977,7 +977,7 @@ describe('Eth calls using MirrorNode', async function () {
     Array.from(Array(11).keys()).map(blockNumber => mock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, number: blockNumber}))
 
     const feeHistory = await ethImpl.feeHistory(200, '0x9', [0]);
-    console.log(feeHistory)
+
     expect(feeHistory).to.exist;
     expect(feeHistory['oldestBlock']).to.equal(`0x0`);
     expect(feeHistory['reward'].length).to.equal(maxResultsCap);

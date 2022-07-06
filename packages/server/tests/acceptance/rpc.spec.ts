@@ -30,6 +30,7 @@ import {AccountBalanceQuery, ContractFunctionParameters} from '@hashgraph/sdk';
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
 import {JsonRpcError} from "@hashgraph/json-rpc-relay";
+import { predefined } from '../../../relay/src/lib/errors';
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -306,6 +307,34 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(res).to.be.null;
                 });
 
+                it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
+                    const transaction = {
+                        ...default155TransactionData,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        chainId: INCORRECT_CHAIN_ID
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    try {
+                        await relay.sendRawTransaction(signedTx);
+                        Assertions.expectedError();
+                    }
+                    catch(e) {
+                        Assertions.jsonRpcError(e, predefined.UNSUPPORTED_CHAIN_ID(ethers.utils.hexValue(INCORRECT_CHAIN_ID), CHAIN_ID));
+                    }
+                });
+
+                it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with gas price too low)', async function () {
+                    const transaction = {
+                        ...default155TransactionData,
+                        gasPrice: GAS_PRICE_TOO_LOW,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
+                });
+
                 it('should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
                     const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address);
                     const transaction = {
@@ -324,6 +353,19 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(balanceChange.toString()).to.eq(ONE_TINYBAR.toString());
                 });
 
+                it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with insufficient balance)', async function () {
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId)
+
+                    const transaction = {
+                        ...default155TransactionData,
+                        to: mirrorContract.evm_address,
+                        value: balanceInWeiBars,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
+                });
+
                 it('should fail "eth_sendRawTransaction" for Legacy transactions (with no chainId)', async function () {
                     const transaction = {
                         ...defaultLegacyTransactionData,
@@ -331,7 +373,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32000, 'ChainId (0x0) not supported. The correct chainId is 0x12a.');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.UNSUPPORTED_CHAIN_ID('0x0', CHAIN_ID));
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy transactions (with gas price too low)', async function () {
@@ -343,7 +385,7 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
@@ -363,9 +405,20 @@ describe('RPC Server Acceptance Tests', function () {
                         to: mirrorContract.evm_address,
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
-                    console.log(transaction);
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
+                });
+
+                it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with insufficient balance)', async function () {
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId)
+                    const transaction = {
+                        ...defaultLegacy2930TransactionData,
+                        value: balanceInWeiBars,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transactions (with gas price too low)', async function () {
@@ -377,7 +430,20 @@ describe('RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce(accounts[2].address)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
+                });
+
+                it('should fail "eth_sendRawTransaction" for London transactions (with insufficient balance)', async function () {
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId)
+
+                    const transaction = {
+                        ...defaultLondonTransactionData,
+                        value: balanceInWeiBars,
+                        to: mirrorContract.evm_address,
+                        nonce: await relay.getAccountNonce(accounts[2].address)
+                    };
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
                 });
 
                 it('should execute "eth_sendRawTransaction" for London transactions', async function () {
@@ -868,8 +934,8 @@ describe('RPC Server Acceptance Tests', function () {
                     latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
                     await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
                 } catch (error) {
-                    Assertions.jsonRpcError(error, -32000, `Request beyond head block: requested ${newestBlockNumber}, head ${latestBlock.number}`);
-                }
+                    Assertions.jsonRpcError(error, predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlock.number));
+                }                
             });
 
             it('should call eth_feeHistory with zero block count', async function() {

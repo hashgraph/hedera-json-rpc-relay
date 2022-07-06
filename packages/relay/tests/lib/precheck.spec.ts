@@ -22,10 +22,11 @@ import { expect } from 'chai';
 import { Registry } from 'prom-client';
 const registry = new Registry();
 
+import sinon from 'sinon';
 import pino from 'pino';
 import {Precheck} from "../../src/lib/precheck";
-import {MirrorNodeClient} from "../../src/lib/clients";
 import {expectedError, signTransaction} from "../helpers";
+import {MirrorNodeClient, SDKClient} from "../../src/lib/clients";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import {ethers} from "ethers";
@@ -59,7 +60,8 @@ describe('Precheck', async function() {
 
         // @ts-ignore
         const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
-        precheck = new Precheck(mirrorNodeInstance, logger, '0x12a');
+        const sdkInstance = sinon.createStubInstance(SDKClient);
+        precheck = new Precheck(mirrorNodeInstance, sdkInstance, logger, '0x12a');
     });
 
     describe('chainId', async function() {
