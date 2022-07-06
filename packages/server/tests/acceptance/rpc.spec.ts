@@ -478,10 +478,10 @@ describe('RPC Server Acceptance Tests', function () {
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
                     const info = await mirrorNode.get(`/contracts/results/${transactionHash}`);
-                    expect(info).to.have.property('created_contract_ids');
                     expect(info).to.have.property('contract_id');
-                    expect(info.created_contract_ids.length).to.be.equal(1);
                     expect(info.contract_id).to.not.be.null;
+                    expect(info).to.have.property('created_contract_ids');
+                    expect(info.created_contract_ids.length).to.be.equal(1);
                 });
 
                 it('should execute "eth_getTransactionCount" primary', async function () {
