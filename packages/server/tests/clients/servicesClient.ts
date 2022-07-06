@@ -275,6 +275,25 @@ export default class ServicesClient {
         const receipt = await response.getReceipt(this.client);
         this.logger.info(`File ${fileId} updated with status: ${receipt.status.toString()}`);
     }
+
+    async createHTS( args = {
+        tokenName: 'Default Name',
+        symbol: 'HTS',
+        treasuryAccountId: '0.0.2',
+        initialSupply: 5000,
+        adminPublicKey: this.DEFAULT_KEY
+    }) {
+        const {} = args;
+        const transaction = await new TokenCreateTransaction()
+            .setTokenName(args.tokenName)
+            .setTokenSymbol(args.symbol)
+            .setTreasuryAccountId(args.treasuryAccountId)
+            .setInitialSupply(args.initialSupply)
+            .setAdminKey(args.adminPublicKey)
+            .freezeWith(this.client);
+
+        return transaction;
+    }
 }
 
 export class AliasAccount {
