@@ -71,9 +71,24 @@ export const predefined = {
     code: -32006,
     message: 'Incorrect nonce'
   }),
-  'UNSUPPORTED_CHAIN_ID': new JsonRpcError({
+  'REQUEST_BEYOND_HEAD_BLOCK': (requested: number, latest: number) => new JsonRpcError({
+    name: 'Incorrect block',
+    code: -32000,
+    message: `Request beyond head block: requested ${requested}, head ${latest}`
+  }),
+  'UNSUPPORTED_CHAIN_ID': (requested: string | number, current: string | number) => new JsonRpcError({
     name: 'ChainId not supported',
     code: -32000,
-    message: 'ChainId not supported'
-  })
+    message: `ChainId (${requested}) not supported. The correct chainId is ${current}`
+  }),
+  'GAS_PRICE_TOO_LOW': new JsonRpcError({
+    name: 'Gas price too low',
+    code: -32009,
+    message: 'Gas price below configured minimum gas price'
+  }),
+  'INSUFFICIENT_ACCOUNT_BALANCE': new JsonRpcError({
+    name: 'Insufficient account balance',
+    code: -32000,
+    message: 'Insufficient funds for transfer'
+  }),
 };

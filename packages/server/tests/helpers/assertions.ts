@@ -19,6 +19,7 @@
  */
 import { expect } from 'chai';
 import { ethers } from 'ethers';
+import { JsonRpcError, predefined } from '../../../relay/src/lib/errors';
 import { Utils } from './utils';
 
 export default class Assertions {
@@ -29,7 +30,9 @@ export default class Assertions {
     static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
     static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
     static defaultGasPrice = 720_000_000_000;
-
+    static datedGasPrice = 570_000_000_000;
+    static updatedGasPrice = 640_000_000_000;
+    static defaultGasUsed = 0.5;
 
     static assertId = (id) => {
         const [shard, realm, num] = id.split('.');
@@ -175,16 +178,33 @@ export default class Assertions {
         expect(transactionReceipt.to).to.eq(mirrorResult.to);
     };
 
-    static unknownResponse(err) {
-        Assertions.jsonRpcError(err, -32603, 'Unknown error invoking RPC');
+    public static feeHistory(res: any, expected: any) {
+        expect(res.baseFeePerGas).to.exist.to.be.an('Array');
+        expect(res.gasUsedRatio).to.exist.to.be.an('Array');
+        expect(res.oldestBlock).to.exist;
+        expect(res.baseFeePerGas.length).to.equal(expected.resultCount + 1);
+        expect(res.gasUsedRatio.length).to.equal(expected.resultCount);
+        
+        expect(res.oldestBlock).to.equal(expected.oldestBlock);
+
+        res.gasUsedRatio.map((gasRatio: string) => expect(gasRatio).to.equal(`0x${Assertions.defaultGasUsed.toString(16)}`))
+
+        if (expected.checkReward) {
+            expect(res.reward).to.exist.to.be.an('Array');
+            expect(res.reward.length).to.equal(expected.resultCount);
+        }
     }
 
-    static jsonRpcError(err, code, message) {
+    static unknownResponse(err) {
+        Assertions.jsonRpcError(err, predefined.INTERNAL_ERROR);
+    }
+
+    static jsonRpcError(err: any, expectedError: JsonRpcError) {
         expect(err).to.exist;
         expect(err).to.have.property('body');
 
         const parsedError = JSON.parse(err.body);
-        expect(parsedError.error.message).to.be.equal(message);
-        expect(parsedError.error.code).to.be.equal(code);
+        expect(parsedError.error.message).to.be.equal(expectedError.message);
+        expect(parsedError.error.code).to.be.equal(expectedError.code);
     }
 }

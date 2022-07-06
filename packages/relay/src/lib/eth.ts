@@ -54,7 +54,9 @@ export class EthImpl implements Eth {
   static gasTxBaseCost = EthImpl.numberTo0x(21_000);
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
-
+  static defaultGasUsedRatio = EthImpl.numberTo0x(0.5);
+  static feeHistoryZeroBlockCountResponse = {gasUsedRatio:null, oldestBlock:EthImpl.zeroHex};
+  static feeHistoryEmptyResponse = {baseFeePerGas:[], gasUsedRatio:[], reward:[], oldestBlock:EthImpl.zeroHex};
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
    * associated with this client will pay for all operations on the main network.
@@ -113,7 +115,7 @@ export class EthImpl implements Eth {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient, logger, chain);
+    this.precheck = new Precheck(mirrorNodeClient, nodeClient, logger, chain);
   }
 
   /**
@@ -131,11 +133,23 @@ export class EthImpl implements Eth {
   async feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number> | null) {
     this.logger.trace(`feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
     try {
+      const latestBlockNumber = await this.translateBlockTag('latest');
+      const newestBlockNumber = await this.translateBlockTag(newestBlock);
+
+      if (newestBlockNumber > latestBlockNumber) {
+        return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
+      }
+
+      blockCount = blockCount > constants.FEE_HISTORY_MAX_RESULTS ? constants.FEE_HISTORY_MAX_RESULTS : blockCount;
+
+      if (blockCount <= 0) {
+        return EthImpl.feeHistoryZeroBlockCountResponse;
+      }
+
       let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
       if (!feeHistory) {
-        const feeWeibars = await this.getFeeWeibars();
 
-        feeHistory = await this.mirrorNode.getFeeHistory(feeWeibars, blockCount, newestBlock, rewardPercentiles);
+        feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles); 
 
         this.logger.trace(`caching ${constants.CACHE_KEY.FEE_HISTORY} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory, constants.CACHE_TTL.ONE_HOUR);
@@ -144,14 +158,65 @@ export class EthImpl implements Eth {
       return feeHistory;
     } catch (e) {
       this.logger.error(e, 'Error constructing default feeHistory');
+      return EthImpl.feeHistoryEmptyResponse;
     }
   }
 
-  private async getFeeWeibars() {
+  private async getFeeByBlockNumber(blockNumber: number): Promise<string> {
+    let fee = 0;
+
+    try {
+      const block = await this.mirrorNodeClient.getBlock(blockNumber);
+      fee = await this.getFeeWeibars(`lte:${block.timestamp.to}`);
+    } catch (error) {
+      this.logger.warn(error, `Fee history cannot retrieve block or fee. Returning ${fee} fee for block ${blockNumber}`);
+    }
+
+    return EthImpl.numberTo0x(fee);
+  }
+
+  private async getFeeHistory(blockCount: number, newestBlockNumber: number, latestBlockNumber: number, rewardPercentiles: Array<number> | null) {
+    // include newest block number in the total block count
+    const oldestBlockNumber = Math.max(0, newestBlockNumber - blockCount + 1);
+    const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;
+    const feeHistory = {
+      baseFeePerGas: [] as string[],
+      gasUsedRatio: [] as string[],
+      oldestBlock: EthImpl.numberTo0x(oldestBlockNumber),
+    };
+
+    // get fees from oldest to newest blocks
+    for(let blockNumber = oldestBlockNumber; blockNumber <= newestBlockNumber; blockNumber++) {
+      const fee = await this.getFeeByBlockNumber(blockNumber);
+
+      feeHistory.baseFeePerGas.push(fee);
+      feeHistory.gasUsedRatio.push(EthImpl.defaultGasUsedRatio);
+    }
+
+    // get latest block fee
+    let nextBaseFeePerGas = _.last(feeHistory.baseFeePerGas);
+
+    if (latestBlockNumber > newestBlockNumber) {
+      // get next block fee if the newest block is not the latest
+      nextBaseFeePerGas = await this.getFeeByBlockNumber(newestBlockNumber + 1);
+    }
+    
+    if (nextBaseFeePerGas) {
+      feeHistory.baseFeePerGas.push(nextBaseFeePerGas);
+    }
+    
+    if (shouldIncludeRewards) {
+      feeHistory['reward'] = Array(blockCount).fill(Array(rewardPercentiles.length).fill(EthImpl.zeroHex));
+    }
+
+    return feeHistory;
+  }
+
+  private async getFeeWeibars(timestamp?: string) {
     let networkFees;
 
     try {
-      networkFees = await this.mirrorNodeClient.getNetworkFees();
+      networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp);
       if (_.isNil(networkFees)) {
         this.logger.debug(`Mirror Node returned no fees. Fallback to network`);
       }
@@ -557,11 +622,18 @@ export class EthImpl implements Eth {
 
     const chainIdPrecheckRes = this.precheck.chainId(transaction);
     if ( !chainIdPrecheckRes.passes ) {
-      return new JsonRpcError({
-        name: 'ChainId not supported',
-        code: -32000,
-        message: `ChainId (${chainIdPrecheckRes.chainId}) not supported. The correct chainId is ${this.chain}.`
-      });
+      return chainIdPrecheckRes.error;
+    }
+
+    const gasPrice = await this.getFeeWeibars();
+    const gasPrecheck = this.precheck.gasPrice(transaction, gasPrice);
+    if (!gasPrecheck.passes) {
+      return gasPrecheck.error;
+    }
+
+    const balancePrecheck = await this.precheck.balance(transaction);
+    if (!balancePrecheck.passes) {
+      return balancePrecheck.error;
     }
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
@@ -687,7 +759,7 @@ export class EthImpl implements Eth {
       nonce: contractResult.nonce,
       r: rSig,
       s: sSig,
-      to: contractResult.to.substring(0, 42),
+      to: contractResult.to?.substring(0, 42),
       transactionIndex: contractResult.transaction_index,
       type: contractResult.type,
       v: contractResult.v,
