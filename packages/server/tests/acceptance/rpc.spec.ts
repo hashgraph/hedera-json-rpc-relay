@@ -90,7 +90,7 @@ describe('RPC Server Acceptance Tests', function () {
             mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`)).accounts[0];
         });
 
-        describe.only('eth_getLogs', () => {
+        describe('eth_getLogs', () => {
 
             let log0Block, log4Block, contractAddress;
 
@@ -184,6 +184,27 @@ describe('RPC Server Acceptance Tests', function () {
 
                 for(let i in logs) {
                     expect(logs[i].blockHash).to.equal(log0Block.blockHash);
+                }
+            });
+
+            it('should be able to use `topics` param', async() => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'fromBlock': log0Block.blockNumber,
+                    'toBlock': log4Block.blockNumber,
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+                const topic = logs[0].topics[0];
+
+                const logsWithTopic = await relay.call('eth_getLogs', [{
+                    'fromBlock': log0Block.blockNumber,
+                    'toBlock': log4Block.blockNumber,
+                    'topics': [logs[0].topics[0]]
+                }]);
+                expect(logsWithTopic.length).to.be.greaterThan(0);
+
+                for(let i in logsWithTopic) {
+                    expect(logsWithTopic[i].topics.length).to.be.greaterThan(0);
+                    expect(logsWithTopic[i].topics[0]).to.be.equal(topic);
                 }
             });
         });
