@@ -74,8 +74,6 @@ export class Precheck {
       this.logger.trace('Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)', transaction, txChainId);
       throw predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain);
     }
-
-    throw predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain);
   }
 
   gasPrice(transaction: string, gasPrice: number) {
