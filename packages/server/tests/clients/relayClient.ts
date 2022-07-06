@@ -40,7 +40,7 @@ export default class RelayClient {
      */
     async call(methodName: string, params: any[]) {
         const result = await this.provider.send(methodName, params);
-        this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(result)}`);
+        this.logger.trace(`[POST] to relay '${methodName}' with params [${JSON.stringify(params)}] returned ${JSON.stringify(result)}`);
         return result;
     };
 

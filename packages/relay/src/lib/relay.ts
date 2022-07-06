@@ -44,7 +44,7 @@ export class RelayImpl implements Relay {
 
   constructor(logger: Logger, register: Registry) {
     dotenv.config({ path: findConfig('.env') || '' });
-    logger.info('Configurations successully loaded');
+    logger.info('Configurations successfully loaded');
 
     const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
 
@@ -73,7 +73,7 @@ export class RelayImpl implements Relay {
       mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId);
-      
+
     logger.info('Relay running with chainId=%s', chainId);
   }
 
@@ -96,35 +96,35 @@ export class RelayImpl implements Relay {
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
-    
-    logger.info(`SDK client successfully configured to ${JSON.stringify(hederaNetwork)}`);
 
-    switch (type) {
-      case 'eth_sendRawTransaction': {
-        if (
-          process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION &&
-          process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
-        ) {
-          client = client.setOperator(
-            AccountId.fromString(
-              process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION
-            ),
-            PrivateKey.fromString(
-              process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
-            )
-          );
-        }
-        return client;
+    if (type === 'eth_sendRawTransaction') {
+      if (
+        process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION &&
+        process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
+      ) {
+        client = client.setOperator(
+          AccountId.fromString(
+            process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION
+          ),
+          PrivateKey.fromString(
+            process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
+          )
+        );
+      } else {
+        throw new Error(`Invalid 'ETH_SENDRAWTRANSACTION' env variable provided`);
       }
-      default: {
-        if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
-          client = client.setOperator(
-            AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()),
-            PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
-          );
-        }
-        return client;
+    } else {
+      if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
+        client = client.setOperator(
+          AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()),
+          PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
+        );
+      } else {
+        throw new Error(`Invalid 'OPERATOR' env variables provided`);
       }
     }
+
+    logger.info(`SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${client.operatorAccountId}`);
+    return client;
   }
 }
