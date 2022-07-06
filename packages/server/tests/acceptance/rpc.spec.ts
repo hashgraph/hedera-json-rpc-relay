@@ -324,17 +324,6 @@ describe('RPC Server Acceptance Tests', function () {
                     }
                 });
 
-                it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with gas price too low)', async function () {
-                    const transaction = {
-                        ...default155TransactionData,
-                        gasPrice: GAS_PRICE_TOO_LOW,
-                        to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
-                    };
-                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
-                });
-
                 it('should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
                     const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address);
                     const transaction = {
@@ -479,7 +468,7 @@ describe('RPC Server Acceptance Tests', function () {
                             Assertions.expectedError();
                         }
                         catch(e) {
-                            Assertions.jsonRpcError(e, -32000, 'ChainId (0x3e7) not supported. The correct chainId is 0x12a.');
+                            Assertions.jsonRpcError(e, predefined.UNSUPPORTED_CHAIN_ID('0x3e7', '0x12a'));
                         }
                     });
 
@@ -496,7 +485,7 @@ describe('RPC Server Acceptance Tests', function () {
                             Assertions.expectedError();
                         }
                         catch(e) {
-                            Assertions.jsonRpcError(e, -32003, 'Intrinsic gas exceeds gas limit');
+                            Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW);
                         }
                     });
 
@@ -512,7 +501,7 @@ describe('RPC Server Acceptance Tests', function () {
                             await relay.sendRawTransaction(signedTx);
                             Assertions.expectedError();
                         } catch (e) {
-                            Assertions.jsonRpcError(e, -32005, 'Transaction gas limit exceeds block gas limit');
+                            Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH);
                         }
                     });
 
@@ -530,7 +519,7 @@ describe('RPC Server Acceptance Tests', function () {
                             Assertions.expectedError();
                         }
                         catch(e) {
-                            Assertions.jsonRpcError(e, -32003, 'Intrinsic gas exceeds gas limit');
+                            Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW);
                         }
                     });
 
@@ -546,7 +535,7 @@ describe('RPC Server Acceptance Tests', function () {
                             await relay.sendRawTransaction(signedTx);
                             Assertions.expectedError();
                         } catch (e) {
-                            Assertions.jsonRpcError(e, -32005, 'Transaction gas limit exceeds block gas limit');
+                            Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH);
                         }
                     });
 
@@ -558,7 +547,7 @@ describe('RPC Server Acceptance Tests', function () {
                             nonce: await relay.getAccountNonce(accounts[2].address)
                         };
                         const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                        await relay.callFailing('eth_sendRawTransaction', [signedTx], -32009, 'Gas price below configured minimum gas price');
+                        await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
                     });
                 });
 

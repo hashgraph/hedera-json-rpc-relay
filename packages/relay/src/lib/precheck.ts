@@ -118,7 +118,7 @@ export class Precheck {
       throw new JsonRpcError({
         name: 'ChainId not supported',
         code: -32000,
-        message: `ChainId (${txChainId}) not supported. The correct chainId is ${this.chain}.`
+        message: `ChainId (${txChainId}) not supported. The correct chainId is ${this.chain}`
       });
     }
   }

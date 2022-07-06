@@ -82,7 +82,7 @@ describe('Precheck', async function() {
             catch(e: any) {
                 expect(e).to.exist;
                 expect(e.code).to.eq(-32000);
-                expect(e.message).to.eq('ChainId (0x0) not supported. The correct chainId is 0x12a.');
+                expect(e.message).to.eq('ChainId (0x0) not supported. The correct chainId is 0x12a');
             }
         });
     });
