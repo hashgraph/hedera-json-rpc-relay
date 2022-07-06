@@ -905,7 +905,7 @@ describe('Eth calls using MirrorNode', async function () {
       };
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
       mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
-      mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
+      mock.onGet('blocks?block.number=lte:16&block.number=gte:5&order=asc').reply(200, {
         blocks: [defaultBlock]
       });
       const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null);
