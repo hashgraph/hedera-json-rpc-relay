@@ -38,6 +38,7 @@ import {
     TransferTransaction,
     ContractCreateFlow,
     FileUpdateTransaction,
+    TransactionId
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
@@ -241,6 +242,7 @@ export default class ServicesClient {
             accountInfo.accountId,
             accountInfo.contractAccountId,
             servicesClient,
+            privateKey,
             wallet
         );
     };
@@ -281,19 +283,39 @@ export default class ServicesClient {
         symbol: 'HTS',
         treasuryAccountId: '0.0.2',
         initialSupply: 5000,
-        adminPublicKey: this.DEFAULT_KEY
+        adminPublicKey: this.DEFAULT_KEY,
+        accounts: []
     }) {
         const {} = args;
-        const transaction = await new TokenCreateTransaction()
+
+        const expiration = new Date();
+        expiration.setDate(expiration.getDate() + 30);
+        const tokenCreate = await (await new TokenCreateTransaction()
             .setTokenName(args.tokenName)
             .setTokenSymbol(args.symbol)
-            .setTreasuryAccountId(args.treasuryAccountId)
+            .setExpirationTime(expiration)
+            .setDecimals(18)
+            .setTreasuryAccountId(this.client.operatorAccountId)
             .setInitialSupply(args.initialSupply)
-            .setAdminKey(args.adminPublicKey)
-            .freezeWith(this.client);
+            .setTransactionId(TransactionId.generate(this.client.operatorAccountId))
+            .setNodeAccountIds([this.client._network.getNodeAccountIdsForExecute()[0]]))
+            .execute(this.client);
 
-        return transaction;
+        const receipt = await tokenCreate.getReceipt(this.client);
+        return receipt;
     }
+
+    async associateHTSToken(accountId, tokenId, privateKey) {
+        const tokenAssociate = await (await new TokenAssociateTransaction()
+            .setAccountId(accountId)
+            .setTokenIds([tokenId])
+            .freezeWith(this.client)
+            .sign(privateKey))
+            .execute(this.client);
+
+        await tokenAssociate.getReceipt(this.client);
+        this.logger.info(`HTS Token ${tokenId} associated to : ${accountId}`);
+    };
 }
 
 export class AliasAccount {
@@ -302,13 +324,15 @@ export class AliasAccount {
     public readonly accountId: AccountId;
     public readonly address: string;
     public readonly client: ServicesClient;
+    public readonly privateKey: PrivateKey;
     public readonly wallet: ethers.Wallet;
 
-    constructor(_alias, _accountId, _address, _client, _wallet) {
+    constructor(_alias, _accountId, _address, _client, _privateKey, _wallet) {
         this.alias = _alias;
         this.accountId = _accountId;
         this.address = _address;
         this.client = _client;
+        this.privateKey = _privateKey;
         this.wallet = _wallet;
     }
 

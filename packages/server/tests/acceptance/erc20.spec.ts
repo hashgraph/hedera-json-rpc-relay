@@ -60,8 +60,7 @@ describe('ERC20 Acceptance Tests', async function () {
         anotherAccount = accounts[2].address;
 
         contracts.push(await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson));
-        contracts.push(await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson));
-        // contracts.push(await createHTS(name, symbol, initialHolder, initialSupply, initialHolder.publicKey));
+        contracts.push(await createHTS(name, symbol, accounts[0].accountId.toString(), initialSupply, accounts[0].privateKey.publicKey, ERC20MockJson.abi));
     });
 
     for (const i in testTitles) {
@@ -296,8 +295,8 @@ describe('ERC20 Acceptance Tests', async function () {
         return contract;
     };
 
-    const createHTS = async(tokenName, symbol, treasuryAccountId, initialSupply, adminPublicKey) => {
-        const tx = await servicesNode.createHTS({
+    const createHTS = async(tokenName, symbol, treasuryAccountId, initialSupply, adminPublicKey, abi) => {
+        const hts = await servicesNode.createHTS({
             tokenName,
             symbol,
             treasuryAccountId,
@@ -305,6 +304,11 @@ describe('ERC20 Acceptance Tests', async function () {
             adminPublicKey
         });
 
-        return tx;
+        await servicesNode.associateHTSToken(accounts[0].accountId, hts.tokenId, accounts[0].privateKey);
+        await servicesNode.associateHTSToken(accounts[1].accountId, hts.tokenId, accounts[1].privateKey);
+        await servicesNode.associateHTSToken(accounts[2].accountId, hts.tokenId, accounts[2].privateKey);
+
+        const evmAddress = Utils.idToEvmAddress(hts.tokenId.toString());
+        return new ethers.Contract(evmAddress, abi, accounts[0].wallet);
     };
 });
