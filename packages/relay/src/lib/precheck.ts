@@ -133,10 +133,10 @@ export class Precheck {
     return {
       passes,
       error: predefined.GAS_PRICE_TOO_LOW
-    }
+    };
   }
 
-  async balance(transaction: string) {
+  async balance(transaction: string, callerName: string) {
     const result = {
       passes: false,
       error: predefined.INSUFFICIENT_ACCOUNT_BALANCE
@@ -148,7 +148,7 @@ export class Precheck {
 
     try {
       const { account }: any = await this.mirrorNodeClient.getAccount(tx.from!);
-      const accountBalance = await this.sdkClient.getAccountBalanceInWeiBar(account);
+      const accountBalance = await this.sdkClient.getAccountBalanceInWeiBar(account, callerName);
 
       result.passes = ethers.ethers.BigNumber.from(accountBalance.toString()).gte(txTotalValue);
 

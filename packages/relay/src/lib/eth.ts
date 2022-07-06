@@ -55,8 +55,19 @@ export class EthImpl implements Eth {
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasUsedRatio = EthImpl.numberTo0x(0.5);
-  static feeHistoryZeroBlockCountResponse = {gasUsedRatio:null, oldestBlock:EthImpl.zeroHex};
-  static feeHistoryEmptyResponse = {baseFeePerGas:[], gasUsedRatio:[], reward:[], oldestBlock:EthImpl.zeroHex};
+  static feeHistoryZeroBlockCountResponse = { gasUsedRatio: null, oldestBlock: EthImpl.zeroHex };
+  static feeHistoryEmptyResponse = { baseFeePerGas: [], gasUsedRatio: [], reward: [], oldestBlock: EthImpl.zeroHex };
+
+  // endpoint metric callerNames
+  static ethCall = 'eth_call';
+  static ethGasPrice = 'eth_gasPrice';
+  static ethGetBalance = 'eth_getBalance';
+  static ethGetCode = 'eth_getCode';
+  static ethFeeHistory = 'eth_feeHistory';
+  static ethGetTransactionCount = 'eth_getTransactionCount';
+  static ethSendRawTransaction = 'eth_sendRawTransaction';
+
+
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
    * associated with this client will pay for all operations on the main network.
@@ -149,7 +160,7 @@ export class EthImpl implements Eth {
       let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
       if (!feeHistory) {
 
-        feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles); 
+        feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles);
 
         this.logger.trace(`caching ${constants.CACHE_KEY.FEE_HISTORY} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory, constants.CACHE_TTL.ONE_HOUR);
@@ -167,7 +178,7 @@ export class EthImpl implements Eth {
 
     try {
       const block = await this.mirrorNodeClient.getBlock(blockNumber);
-      fee = await this.getFeeWeibars(`lte:${block.timestamp.to}`);
+      fee = await this.getFeeWeibars(EthImpl.ethFeeHistory, `lte:${block.timestamp.to}`);
     } catch (error) {
       this.logger.warn(error, `Fee history cannot retrieve block or fee. Returning ${fee} fee for block ${blockNumber}`);
     }
@@ -186,7 +197,7 @@ export class EthImpl implements Eth {
     };
 
     // get fees from oldest to newest blocks
-    for(let blockNumber = oldestBlockNumber; blockNumber <= newestBlockNumber; blockNumber++) {
+    for (let blockNumber = oldestBlockNumber; blockNumber <= newestBlockNumber; blockNumber++) {
       const fee = await this.getFeeByBlockNumber(blockNumber);
 
       feeHistory.baseFeePerGas.push(fee);
@@ -200,11 +211,11 @@ export class EthImpl implements Eth {
       // get next block fee if the newest block is not the latest
       nextBaseFeePerGas = await this.getFeeByBlockNumber(newestBlockNumber + 1);
     }
-    
+
     if (nextBaseFeePerGas) {
       feeHistory.baseFeePerGas.push(nextBaseFeePerGas);
     }
-    
+
     if (shouldIncludeRewards) {
       feeHistory['reward'] = Array(blockCount).fill(Array(rewardPercentiles.length).fill(EthImpl.zeroHex));
     }
@@ -212,7 +223,7 @@ export class EthImpl implements Eth {
     return feeHistory;
   }
 
-  private async getFeeWeibars(timestamp?: string) {
+  private async getFeeWeibars(callerName: string, timestamp?: string) {
     let networkFees;
 
     try {
@@ -228,7 +239,7 @@ export class EthImpl implements Eth {
       networkFees = {
         fees: [
           {
-            gas: await this.sdkClient.getTinyBarGasFee(),
+            gas: await this.sdkClient.getTinyBarGasFee(callerName),
             'transaction_type': EthImpl.ethTxType
           }
         ]
@@ -298,7 +309,7 @@ export class EthImpl implements Eth {
       let gasPrice: number | undefined = cache.get(constants.CACHE_KEY.GAS_PRICE);
 
       if (!gasPrice) {
-        gasPrice = await this.getFeeWeibars();
+        gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice);
 
         this.logger.trace(`caching ${constants.CACHE_KEY.GAS_PRICE} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
@@ -433,10 +444,10 @@ export class EthImpl implements Eth {
       let weibars: BigNumber | number = 0;
       const result = await this.mirrorNodeClient.resolveEntityType(account);
       if (result?.type === constants.TYPE_ACCOUNT) {
-        weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account);
+        weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account, EthImpl.ethGetBalance);
       }
       else if (result?.type === constants.TYPE_CONTRACT) {
-        weibars = await this.sdkClient.getContractBalanceInWeiBar(result.entity.contract_id);
+        weibars = await this.sdkClient.getContractBalanceInWeiBar(result.entity.contract_id, EthImpl.ethGetBalance);
       }
 
       return EthImpl.numberTo0x(weibars);
@@ -462,7 +473,7 @@ export class EthImpl implements Eth {
     // FIXME: This has to be reimplemented to get the data from the mirror node.
     this.logger.trace('getCode(address=%s, blockNumber=%s)', address, blockNumber);
     try {
-      const bytecode = await this.sdkClient.getContractByteCode(0, 0, address);
+      const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       // handle INVALID_CONTRACT_ID
@@ -600,7 +611,7 @@ export class EthImpl implements Eth {
     } else {
       const result = await this.mirrorNodeClient.resolveEntityType(address);
       if (result?.type === constants.TYPE_ACCOUNT) {
-        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account);
+        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount);
         return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
       }
       else if (result?.type === constants.TYPE_CONTRACT) {
@@ -628,13 +639,13 @@ export class EthImpl implements Eth {
       return e;
     }
 
-    const gasPrice = await this.getFeeWeibars();
+    const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
     const gasPrecheck = this.precheck.gasPrice(transaction, gasPrice);
     if (!gasPrecheck.passes) {
       return gasPrecheck.error;
     }
 
-    const balancePrecheck = await this.precheck.balance(transaction);
+    const balancePrecheck = await this.precheck.balance(transaction, EthImpl.ethSendRawTransaction);
     if (!balancePrecheck.passes) {
       return balancePrecheck.error;
     }
@@ -646,7 +657,7 @@ export class EthImpl implements Eth {
 
       try {
         // Wait for the record from the execution.
-        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name);
+        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction);
         if (record.ethereumHash == null) {
           throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
         }
@@ -714,7 +725,7 @@ export class EthImpl implements Eth {
 
       // Execute the call and get the response
       this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s"', call.to, gas, call.data);
-      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas);
+      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, EthImpl.ethCall);
 
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
@@ -928,12 +939,15 @@ export class EthImpl implements Eth {
         timestamp = result.timestamp.substring(0, result.timestamp.indexOf('.')); // mirrorNode response assures format of ssssssssss.nnnnnnnnn
       }
 
-      const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp);
-      if (transaction !== null) {
-        if (showDetails) {
-          transactionObjects.push(transaction);
-        } else {
-          transactionHashes.push(transaction.hash);
+      // depending on stage of contract execution revert the result.to value may be null
+      if (!_.isNil(result.to)) {
+        const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp);
+        if (transaction !== null) {
+          if (showDetails) {
+            transactionObjects.push(transaction);
+          } else {
+            transactionHashes.push(transaction.hash);
+          }
         }
       }
     }
@@ -981,6 +995,11 @@ export class EthImpl implements Eth {
     }
 
     const contractResult = contractResults.results[0];
+    if (contractResult === undefined) {
+      // contract result not found
+      return null;
+    }
+
     return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp);
   }
 
