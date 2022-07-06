@@ -840,6 +840,10 @@ export class EthImpl implements Eth {
     return EthImpl.emptyHex + input.toString(16);
   }
 
+  static toHash32(value: string): string {
+    return value.substring(0, 66);
+  }
+
   private static toNullIfEmptyHex(value: string): string | null {
     return value === EthImpl.emptyHex ? null : value;
   }
@@ -968,10 +972,6 @@ export class EthImpl implements Eth {
     }
 
     return block.count;
-  }
-
-  private static toHash32(value: string): string {
-    return value.substring(0, 66);
   }
 
   private getTransactionFromContractResults(contractResults: any) {
