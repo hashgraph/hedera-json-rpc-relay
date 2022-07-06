@@ -34,6 +34,8 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
+          - name: CHAIN_ID
+            value: {{ .Values.config.CHAIN_ID | squote }}        
           - name: HEDERA_NETWORK
             valueFrom:
               secretKeyRef:
@@ -63,12 +65,6 @@ spec:
               secretKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: OPERATOR_KEY_ETH_SENDRAWTRANSACTION
-                optional: true
-          - name: CHAIN_ID
-            valueFrom:
-              secretKeyRef:
-                name: {{ include "json-rpc-relay.fullname" . }}
-                key: CHAIN_ID
                 optional: true
           - name: MIRROR_NODE_URL
             valueFrom:
