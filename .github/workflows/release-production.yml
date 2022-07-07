@@ -61,6 +61,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.PACKAGE_NAME }}
+          name: ${{ env.PACKAGE_NAME }}-v${{env.TAG}}
           path: ./*.tgz
           if-no-files-found: error
