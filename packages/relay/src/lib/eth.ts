@@ -1071,8 +1071,8 @@ export class EthImpl implements Eth {
 
       const blocks = blocksResult?.blocks;
       if (blocks?.length) {
-        const firstBlock = (order == 'desc') ? blocks[blocks.length - 1] : blocks[0];
-        const lastBlock = (order == 'desc') ? blocks[0] : blocks[blocks.length - 1];
+        const firstBlock = (order == constants.ORDER.DESC) ? blocks[blocks.length - 1] : blocks[0];
+        const lastBlock = (order == constants.ORDER.DESC) ? blocks[0] : blocks[blocks.length - 1];
         params.timestamp = [
           `gte:${firstBlock.timestamp.from}`,
           `lte:${lastBlock.timestamp.to}`
