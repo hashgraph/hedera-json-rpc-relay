@@ -29,6 +29,7 @@ import {AccountBalanceQuery, ContractFunctionParameters} from '@hashgraph/sdk';
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
+import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors';
 
 describe('RPC Server Acceptance Tests', function () {
@@ -94,6 +95,137 @@ describe('RPC Server Acceptance Tests', function () {
 
             mirrorPrimaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`)).accounts[0];
             mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`)).accounts[0];
+        });
+
+        describe('eth_getLogs', () => {
+
+            let log0Block, log4Block, contractAddress;
+
+            it('should deploy a contract', async () => {
+                const logsContract = await servicesNode.deployContract(logsContractJson);
+                const mirrorNodeResp = await mirrorNode.get(`/contracts/${logsContract.contractId}`);
+                expect(mirrorNodeResp).to.have.property('evm_address');
+                expect(mirrorNodeResp.env_address).to.not.be.null;
+                contractAddress = mirrorNodeResp.evm_address;
+
+                const params = new ContractFunctionParameters().addUint256(1);
+                const log0 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log1', params);
+
+                params.addUint256(1);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log2', params);
+
+                params.addUint256(1);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log3', params);
+
+                params.addUint256(1);
+                const log4 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params);
+
+                await new Promise(r => setTimeout(r, 5000));
+
+                const logs = await relay.call('eth_getLogs', [{}]);
+                expect(logs.length).to.be.greaterThan(0);
+                const txIndexLogIndexMapping: any[] = [];
+                for(let i in logs) {
+                    expect(logs[i]).to.have.property('address');
+                    expect(logs[i]).to.have.property('logIndex');
+
+                    const key = `${logs[i].transactionHash}---${logs[i].logIndex}`;
+                    txIndexLogIndexMapping.push(key);
+                }
+                const uniqueTxIndexLogIndexMapping = txIndexLogIndexMapping.filter((value, index, self) =>
+                    self.indexOf(value) === index
+                );
+                expect(txIndexLogIndexMapping.length).to.equal(uniqueTxIndexLogIndexMapping.length);
+
+                log0Block = await relay.call('eth_getTransactionByHash', [log0.contractExecutedTransactionId]);
+                expect(log0Block).to.have.property('blockNumber');
+
+                log4Block = await relay.call('eth_getTransactionByHash', [log4.contractExecutedTransactionId]);
+                expect(log4Block).to.have.property('blockNumber');
+            });
+
+            it('should be able to use `fromBlock` param', async () => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'fromBlock': log4Block.blockNumber
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+
+                const log4BlockInt = parseInt(log4Block.blockNumber);
+                for(let i in logs) {
+                    expect(logs[i].blockNumber).to.be.greaterThanOrEqual(log4BlockInt);
+                }
+            });
+
+            it('should be able to use `toBlock` param', async () => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'toBlock': log0Block.blockNumber
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+
+                const log0BlockInt = parseInt(log0Block.blockNumber);
+                for(let i in logs) {
+                    expect(logs[i].blockNumber).to.be.lessThanOrEqual(log0BlockInt);
+                }
+            });
+
+            it('should be able to use range of `fromBlock` and `toBlock` params', async () => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'fromBlock': log0Block.blockNumber,
+                    'toBlock': log4Block.blockNumber
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+
+                const log0BlockInt = parseInt(log0Block.blockNumber);
+                const log4BlockInt = parseInt(log4Block.blockNumber);
+                for (let i in logs) {
+                    expect(logs[i].blockNumber).to.be.greaterThanOrEqual(log0BlockInt);
+                    expect(logs[i].blockNumber).to.be.lessThanOrEqual(log4BlockInt);
+                }
+            });
+
+            it('should be able to use `address` param', async() => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'address': contractAddress
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+
+                for(let i in logs) {
+                    expect(logs[i].address).to.equal(contractAddress);
+                }
+            });
+
+            it('should be able to use `blockHash` param', async() => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'blockHash': log0Block.blockHash
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+
+                for(let i in logs) {
+                    expect(logs[i].blockHash).to.equal(log0Block.blockHash);
+                }
+            });
+
+            it('should be able to use `topics` param', async() => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'fromBlock': log0Block.blockNumber,
+                    'toBlock': log4Block.blockNumber,
+                }]);
+                expect(logs.length).to.be.greaterThan(0);
+                const topic = logs[0].topics[0];
+
+                const logsWithTopic = await relay.call('eth_getLogs', [{
+                    'fromBlock': log0Block.blockNumber,
+                    'toBlock': log4Block.blockNumber,
+                    'topics': [logs[0].topics[0]]
+                }]);
+                expect(logsWithTopic.length).to.be.greaterThan(0);
+
+                for(let i in logsWithTopic) {
+                    expect(logsWithTopic[i].topics.length).to.be.greaterThan(0);
+                    expect(logsWithTopic[i].topics[0]).to.be.equal(topic);
+                }
+            });
         });
 
         describe('Block related RPC calls', () => {
@@ -820,7 +952,7 @@ describe('RPC Server Acceptance Tests', function () {
         describe('Gas Price related RPC endpoints', () => {
             let lastBlockBeforeUpdate;
             let lastBlockAfterUpdate;
-    
+
             before(async () => {
                 await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
                 await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
@@ -857,7 +989,7 @@ describe('RPC Server Acceptance Tests', function () {
                     await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
                 } catch (error) {
                     Assertions.jsonRpcError(error, predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlock.number));
-                }                
+                }
             });
 
             it('should call eth_feeHistory with zero block count', async function() {
