@@ -89,6 +89,7 @@ config:
   OPERATOR_KEY_MAIN: ""
   OPERATOR_ID_ETH_SENDRAWTRANSACTION: ""
   OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ""
+  # This value should be in decimal, not hexadecimal format.
   CHAIN_ID: ""
   MIRROR_NODE_URL: ""
   LOG_LEVEL: ""

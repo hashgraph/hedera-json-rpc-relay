@@ -25,7 +25,6 @@ import {
     Client,
     ContractByteCodeQuery,
     ContractCallQuery,
-    EthereumTransaction,
     ExchangeRates,
     FeeSchedules,
     FileContentsQuery,
@@ -39,8 +38,8 @@ import {
     Query,
     Transaction,
     TransactionRecord,
-    TransactionReceipt,
-    Status
+    Status,
+    EthereumFlow
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
@@ -74,12 +73,14 @@ export class SDKClient {
 
     private consensusNodeClientHistorgram;
     private operatorAccountGauge;
+    private operatorAccountId;
 
     // populate with consensusnode requests via SDK
     constructor(clientMain: Client, logger: Logger, register: Registry) {
         this.clientMain = clientMain;
         this.logger = logger;
         this.register = register;
+        this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
 
         // clear and create metrics in registry
         const metricHistogramName = 'rpc_relay_consensusnode_response';
@@ -87,7 +88,7 @@ export class SDKClient {
         this.consensusNodeClientHistorgram = new Histogram({
             name: metricHistogramName,
             help: 'Relay consensusnode mode type status cost histogram',
-            labelNames: ['mode', 'type', 'status'],
+            labelNames: ['mode', 'type', 'status', 'caller'],
             registers: [register]
         });
 
@@ -96,7 +97,7 @@ export class SDKClient {
         this.operatorAccountGauge = new Gauge({
             name: metricGaugeName,
             help: 'Relay operator balance gauge',
-            labelNames: ['mode', 'type'],
+            labelNames: ['mode', 'type', 'accountId'],
             registers: [register],
             async collect() {
                 // Invoked when the registry collects its metrics' values.
@@ -105,59 +106,59 @@ export class SDKClient {
                     const accountBalance = await (new AccountBalanceQuery()
                         .setAccountId(clientMain.operatorAccountId!))
                         .execute(clientMain);
-                    this.set(accountBalance.hbars.toTinybars().toNumber());
+                    this.labels({ 'accountId': clientMain.operatorAccountId!.toString() })
+                        .set(accountBalance.hbars.toTinybars().toNumber());
                 } catch (e: any) {
-                    logger.error(e, `Error collecting operator balance. Setting 0 default`);
-                    this.set(0);
+                    logger.error(e, `Error collecting operator balance. Skipping balance set`);
                 }
             },
         });
     }
 
-    async getAccountBalance(account: string): Promise<AccountBalance> {
+    async getAccountBalance(account: string, callerName: string): Promise<AccountBalance> {
         return this.executeQuery(new AccountBalanceQuery()
-            .setAccountId(AccountId.fromString(account)), this.clientMain);
+            .setAccountId(AccountId.fromString(account)), this.clientMain, callerName);
     }
 
-    async getAccountBalanceInWeiBar(account: string): Promise<BigNumber> {
-        const balance = await this.getAccountBalance(account);
+    async getAccountBalanceInWeiBar(account: string, callerName: string): Promise<BigNumber> {
+        const balance = await this.getAccountBalance(account, callerName);
         return SDKClient.HbarToWeiBar(balance);
     }
 
-    async getAccountInfo(address: string): Promise<AccountInfo> {
+    async getAccountInfo(address: string, callerName: string): Promise<AccountInfo> {
         return this.executeQuery(new AccountInfoQuery()
-            .setAccountId(AccountId.fromString(address)), this.clientMain);
+            .setAccountId(AccountId.fromString(address)), this.clientMain, callerName);
     }
 
-    async getContractByteCode(shard: number | Long, realm: number | Long, address: string): Promise<Uint8Array> {
+    async getContractByteCode(shard: number | Long, realm: number | Long, address: string, callerName: string): Promise<Uint8Array> {
         return this.executeQuery(new ContractByteCodeQuery()
-            .setContractId(ContractId.fromEvmAddress(shard, realm, address)), this.clientMain);
+            .setContractId(ContractId.fromEvmAddress(shard, realm, address)), this.clientMain, callerName);
     }
 
-    async getContractBalance(contract: string): Promise<AccountBalance> {
+    async getContractBalance(contract: string, callerName: string): Promise<AccountBalance> {
         return this.executeQuery(new AccountBalanceQuery()
-            .setContractId(ContractId.fromString(contract)), this.clientMain);
+            .setContractId(ContractId.fromString(contract)), this.clientMain, callerName);
     }
 
-    async getContractBalanceInWeiBar(account: string): Promise<BigNumber> {
-        const balance = await this.getContractBalance(account);
+    async getContractBalanceInWeiBar(account: string, callerName: string): Promise<BigNumber> {
+        const balance = await this.getContractBalance(account, callerName);
         return SDKClient.HbarToWeiBar(balance);
     }
 
-    async getExchangeRate(): Promise<ExchangeRates> {
-        const exchangeFileBytes = await this.getFileIdBytes(constants.EXCHANGE_RATE_FILE_ID);
+    async getExchangeRate(callerName: string): Promise<ExchangeRates> {
+        const exchangeFileBytes = await this.getFileIdBytes(constants.EXCHANGE_RATE_FILE_ID, callerName);
 
         return ExchangeRates.fromBytes(exchangeFileBytes);
     }
 
-    async getFeeSchedule(): Promise<FeeSchedules> {
-        const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID);
+    async getFeeSchedule(callerName: string): Promise<FeeSchedules> {
+        const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID, callerName);
 
         return FeeSchedules.fromBytes(feeSchedulesFileBytes);
     }
 
-    async getTinyBarGasFee(): Promise<number> {
-        const feeSchedules = await this.getFeeSchedule();
+    async getTinyBarGasFee(callerName: string): Promise<number> {
+        const feeSchedules = await this.getFeeSchedule(callerName);
         if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
             throw new Error('Invalid FeeSchedules proto format');
         }
@@ -165,7 +166,7 @@ export class SDKClient {
         for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
             if (schedule.hederaFunctionality?._code === constants.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
                 // get exchange rate & convert to tiny bar
-                const exchangeRates = await this.getExchangeRate();
+                const exchangeRates = await this.getExchangeRate(callerName);
 
                 return this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
             }
@@ -174,9 +175,9 @@ export class SDKClient {
         throw new Error(`${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
     }
 
-    async getFileIdBytes(address: string): Promise<Uint8Array> {
+    async getFileIdBytes(address: string, callerName: string): Promise<Uint8Array> {
         return this.executeQuery(new FileContentsQuery()
-            .setFileId(address), this.clientMain);
+            .setFileId(address), this.clientMain, callerName);
     }
 
     async getRecord(transactionResponse: TransactionResponse) {
@@ -184,11 +185,11 @@ export class SDKClient {
     }
 
     async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionResponse> {
-        return this.executeTransaction(new EthereumTransaction()
-            .setEthereumData(transactionBuffer));
+        return this.executeTransaction(new EthereumFlow()
+          .setEthereumData(transactionBuffer));
     }
 
-    async submitContractCallQuery(to: string, data: string, gas: number): Promise<ContractFunctionResult> {
+    async submitContractCallQuery(to: string, data: string, gas: number, callerName: string): Promise<ContractFunctionResult> {
         const contract = SDKClient.prune0x(to);
         const callData = SDKClient.prune0x(data);
         const contractId = contract.startsWith("00000000000")
@@ -208,7 +209,7 @@ export class SDKClient {
         const cost = await contractCallQuery
             .getCost(this.clientMain);
         return this.executeQuery(contractCallQuery
-            .setQueryPayment(cost), this.clientMain);
+            .setQueryPayment(cost), this.clientMain, callerName);
     }
 
     private convertGasPriceToTinyBars = (feeComponents: FeeComponents | undefined, exchangeRates: ExchangeRates) => {
@@ -223,7 +224,7 @@ export class SDKClient {
         );
     };
 
-    private executeQuery = async (query: Query<any>, client: Client) => {
+    private executeQuery = async (query: Query<any>, client: Client, callerName: string) => {
         try {
             const resp = await query.execute(client);
             this.logger.info(`Consensus Node query response: ${query.constructor.name} ${Status.Success._code}`);
@@ -234,7 +235,8 @@ export class SDKClient {
                 SDKClient.queryMode,
                 query.constructor.name,
                 Status.Success,
-                query._queryPayment?.toTinybars().toNumber());
+                query._queryPayment?.toTinybars().toNumber(),
+                callerName);
             return resp;
         }
         catch (e: any) {
@@ -244,7 +246,8 @@ export class SDKClient {
                 SDKClient.queryMode,
                 query.constructor.name,
                 e.status,
-                query._queryPayment?.toTinybars().toNumber());
+                query._queryPayment?.toTinybars().toNumber(),
+                callerName);
 
             if (e.status && e.status._code) {
                 throw new Error(e.message);
@@ -254,7 +257,7 @@ export class SDKClient {
         }
     };
 
-    private executeTransaction = async (transaction: Transaction): Promise<TransactionResponse> => {
+    private executeTransaction = async (transaction: Transaction | EthereumFlow): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
         try {
             this.logger.info(`Execute ${transactionType} transaction`);
@@ -266,7 +269,7 @@ export class SDKClient {
             const statusCode = e.status ? e.status._code : Status.Unknown._code;
             this.logger.info(`Consensus Node ${transactionType} transaction response: ${statusCode}`);
 
-            // capture sdk transaction response errorsand shorten familiar stack trace
+            // capture sdk transaction response errors and shorten familiar stack trace
             if (e.status && e.status._code) {
                 throw new Error(e.message);
             }
@@ -275,23 +278,7 @@ export class SDKClient {
         }
     };
 
-    private executeAndGetTransactionReceipt = async (transaction: Transaction): Promise<TransactionReceipt> => {
-        let resp;
-        try {
-            resp = await this.executeTransaction(transaction);
-            return resp.getReceipt(this.clientMain);
-        }
-        catch (e: any) {
-            // capture sdk receipt retrieval errors and shorten familiar stack trace
-            if (e.status && e.status._code) {
-                throw new Error(e.message);
-            }
-
-            throw e;
-        }
-    };
-
-    executeGetTransactionRecord = async (resp: TransactionResponse, transactionName: string): Promise<TransactionRecord> => {
+    executeGetTransactionRecord = async (resp: TransactionResponse, transactionName: string, callerName: string): Promise<TransactionRecord> => {
         try {
             if (!resp.getRecord) {
                 throw new Error(`Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
@@ -303,7 +290,8 @@ export class SDKClient {
                 SDKClient.transactionMode,
                 transactionName,
                 transactionRecord.receipt.status,
-                transactionRecord.transactionFee.toTinybars().toNumber());
+                transactionRecord.transactionFee.toTinybars().toNumber(),
+                callerName);
             return transactionRecord;
         }
         catch (e: any) {
@@ -313,7 +301,8 @@ export class SDKClient {
                     SDKClient.transactionMode,
                     transactionName,
                     e.status,
-                    0);
+                    0,
+                    callerName);
 
                 throw new Error(e.message);
             }
@@ -322,46 +311,16 @@ export class SDKClient {
         }
     };
 
-    private captureMetrics = (mode, type, status, cost) => {
+    private captureMetrics = (mode, type, status, cost, caller) => {
         const resolvedCost = cost ? cost : 0;
         this.consensusNodeClientHistorgram.labels(
             mode,
             type,
-            status)
+            status,
+            caller)
             .observe(resolvedCost);
-        this.operatorAccountGauge.labels(mode, type).dec(cost);
+        this.operatorAccountGauge.labels(mode, type, this.operatorAccountId).dec(cost);
     };
-
-    /**
-     * Internal helper method that converts an ethAddress (with, or without a leading 0x)
-     * into an alias friendly AccountId.
-     * @param ethAddress
-     * @private
-     */
-    private static toAccountId(ethAddress: string) {
-        return AccountId.fromEvmAddress(0, 0, SDKClient.prune0x(ethAddress));
-    }
-
-    /**
-   * Internal helper method that converts an ethAddress (with, or without a leading 0x)
-   * into an alias friendly ContractId.
-   * @param ethAddress
-   * @private
-   */
-    private static toContractId(ethAddress: string) {
-        return ContractId.fromSolidityAddress(SDKClient.prepend0x(ethAddress));
-    }
-
-    /**
-     * Internal helper method that prepends a leading 0x if there isn't one.
-     * @param input
-     * @private
-     */
-    private static prepend0x(input: string): string {
-        return input.startsWith('0x')
-            ? input
-            : '0x' + input;
-    }
 
     /**
      * Internal helper method that removes the leading 0x if there is one.
