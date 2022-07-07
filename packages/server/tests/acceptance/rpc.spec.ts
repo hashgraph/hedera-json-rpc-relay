@@ -125,10 +125,18 @@ describe('RPC Server Acceptance Tests', function () {
 
                 const logs = await relay.call('eth_getLogs', [{}]);
                 expect(logs.length).to.be.greaterThan(0);
+                const txIndexLogIndexMapping: any[] = [];
                 for(let i in logs) {
                     expect(logs[i]).to.have.property('address');
                     expect(logs[i]).to.have.property('logIndex');
+
+                    const key = `${logs[i].transactionHash}---${logs[i].logIndex}`;
+                    txIndexLogIndexMapping.push(key);
                 }
+                const uniqueTxIndexLogIndexMapping = txIndexLogIndexMapping.filter((value, index, self) =>
+                    self.indexOf(value) === index
+                );
+                expect(txIndexLogIndexMapping.length).to.equal(uniqueTxIndexLogIndexMapping.length);
 
                 log0Block = await relay.call('eth_getTransactionByHash', [log0.contractExecutedTransactionId]);
                 expect(log0Block).to.have.property('blockNumber');
