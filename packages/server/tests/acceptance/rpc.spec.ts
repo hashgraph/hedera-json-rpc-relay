@@ -125,6 +125,10 @@ describe('RPC Server Acceptance Tests', function () {
 
                 const logs = await relay.call('eth_getLogs', [{}]);
                 expect(logs.length).to.be.greaterThan(0);
+                for(let i in logs) {
+                    expect(logs[i]).to.have.property('address');
+                    expect(logs[i]).to.have.property('logIndex');
+                }
 
                 log0Block = await relay.call('eth_getTransactionByHash', [log0.contractExecutedTransactionId]);
                 expect(log0Block).to.have.property('blockNumber');
@@ -133,7 +137,7 @@ describe('RPC Server Acceptance Tests', function () {
                 expect(log4Block).to.have.property('blockNumber');
             });
 
-            it('should be abe to use `fromBlock` param', async () => {
+            it('should be able to use `fromBlock` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': log4Block.blockNumber
                 }]);
@@ -145,7 +149,7 @@ describe('RPC Server Acceptance Tests', function () {
                 }
             });
 
-            it('should be abe to use `toBlock` param', async () => {
+            it('should be able to use `toBlock` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'toBlock': log0Block.blockNumber
                 }]);

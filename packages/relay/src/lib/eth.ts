@@ -1060,12 +1060,12 @@ export class EthImpl implements Eth {
       if(toBlock) {
         // @ts-ignore
         filters.push(`lte:${parseInt(toBlock)}`);
-        order = 'desc';
+        order = constants.ORDER.DESC;
       }
       if(fromBlock) {
         // @ts-ignore
         filters.push(`gte:${parseInt(fromBlock)}`);
-        order = 'asc';
+        order = constants.ORDER.ASC;
       }
       const blocksResult = await this.mirrorNodeClient.getBlocks(filters, undefined , {order});
 
