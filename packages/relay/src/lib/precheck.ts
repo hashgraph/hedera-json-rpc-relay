@@ -161,7 +161,7 @@ export class Precheck {
       }
     }
 
-    const nonZeros = data.length - zeros;
+    const nonZeros = data.replace('0x', '').length - zeros;
     const cost = constants.TX_BASE_COST + constants.TX_DATA_ZERO_COST * zeros + constants.ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
     return isCreate ? cost + constants.TX_CREATE_EXTRA : cost;
   }
