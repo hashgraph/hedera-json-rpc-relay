@@ -341,12 +341,13 @@ rpc.use('eth_getBlockTransactionCountByNumber', async (params: any) => {
  * returns: Logs - Array of log objects
  */
 rpc.use('eth_getLogs', async (params: any) => {
+  params = params[0] ?? [];
   return logAndHandleResponse('eth_getLogs', () => relay.eth().getLogs(
+    params?.blockHash || null,
     params?.fromBlock || null,
     params?.toBlock || null,
     params?.address || null,
-    params?.topics || null,
-    params?.blockhash || null
+    params?.topics || null
   ));
 });
 
