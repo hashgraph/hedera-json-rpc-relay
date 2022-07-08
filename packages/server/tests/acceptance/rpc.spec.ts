@@ -994,6 +994,17 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
                 });
 
+                it('should fail "eth_call" request without data field', async function () {
+                    const callData = {
+                        from: accounts[2].address,
+                        to: evmAddress,
+                        gas: 30000
+                    };
+
+                    const res = await relay.call('eth_call', [callData]);
+                    expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+                });
+                
                 it('should fail "eth_call" for non-existing contract address', async function () {
                     const callData = {
                         from: accounts[2].address,
@@ -1025,16 +1036,6 @@ describe('RPC Server Acceptance Tests', function () {
 
                     const res = await relay.call('eth_call', [callData]);
                     expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
-                });
-
-                it('should fail "eth_call" request without data field', async function () {
-                    const callData = {
-                        from: accounts[2].address,
-                        to: evmAddress,
-                        gas: 30000
-                    };
-
-                    await relay.callFailing('eth_call', [callData]);
                 });
             });
         });
