@@ -897,7 +897,8 @@ describe('Eth calls using MirrorNode', async function () {
 
     const expectLogData = (res, log, tx) => {
       expect(res.address).to.eq(log.address);
-      expect(res.blockHash).to.eq(tx.block_hash.substring(0, 66));
+      expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
+      expect(res.blockHash.length).to.eq(66);
       expect(res.blockNumber).to.eq(tx.block_number);
       expect(res.data).to.eq(log.data);
       expect(res.logIndex).to.eq(log.index);
@@ -905,6 +906,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(res.topics).to.exist;
       expect(res.topics).to.deep.eq(log.topics);
       expect(res.transactionHash).to.eq(tx.hash);
+      expect(res.transactionHash.length).to.eq(66);
       expect(res.transactionIndex).to.eq(tx.transaction_index);
     };
 

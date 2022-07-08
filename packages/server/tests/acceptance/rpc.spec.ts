@@ -343,7 +343,7 @@ describe('RPC Server Acceptance Tests', function () {
                 });
 
                 it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with insufficient balance)', async function () {
-                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId)
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId);
 
                     const transaction = {
                         ...default155TransactionData,
@@ -399,7 +399,7 @@ describe('RPC Server Acceptance Tests', function () {
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with insufficient balance)', async function () {
-                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId)
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId);
                     const transaction = {
                         ...defaultLegacy2930TransactionData,
                         value: balanceInWeiBars,
@@ -423,7 +423,7 @@ describe('RPC Server Acceptance Tests', function () {
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transactions (with insufficient balance)', async function () {
-                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId)
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId);
 
                     const transaction = {
                         ...defaultLondonTransactionData,

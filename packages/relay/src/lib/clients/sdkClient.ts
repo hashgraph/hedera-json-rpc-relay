@@ -25,7 +25,6 @@ import {
     Client,
     ContractByteCodeQuery,
     ContractCallQuery,
-    EthereumTransaction,
     ExchangeRates,
     FeeSchedules,
     FileContentsQuery,
@@ -39,7 +38,8 @@ import {
     Query,
     Transaction,
     TransactionRecord,
-    Status
+    Status,
+    EthereumFlow
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
@@ -185,8 +185,8 @@ export class SDKClient {
     }
 
     async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionResponse> {
-        return this.executeTransaction(new EthereumTransaction()
-            .setEthereumData(transactionBuffer));
+        return this.executeTransaction(new EthereumFlow()
+          .setEthereumData(transactionBuffer));
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number, callerName: string): Promise<ContractFunctionResult> {
@@ -257,7 +257,7 @@ export class SDKClient {
         }
     };
 
-    private executeTransaction = async (transaction: Transaction): Promise<TransactionResponse> => {
+    private executeTransaction = async (transaction: Transaction | EthereumFlow): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
         try {
             this.logger.info(`Execute ${transactionType} transaction`);
