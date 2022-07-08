@@ -189,9 +189,9 @@ export class SDKClient {
         return transactionResponse.getRecord(this.clientMain);
     }
 
-    async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionResponse> {
+    async submitEthereumTransaction(transactionBuffer: Uint8Array, callerName: string): Promise<TransactionResponse> {
         return this.executeTransaction(new EthereumFlow()
-          .setEthereumData(transactionBuffer));
+          .setEthereumData(transactionBuffer), callerName);
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number, callerName: string): Promise<ContractFunctionResult> {
@@ -265,7 +265,7 @@ export class SDKClient {
         }
     };
 
-    private executeTransaction = async (transaction: Transaction | EthereumFlow): Promise<TransactionResponse> => {
+    private executeTransaction = async (transaction: Transaction | EthereumFlow, callerName: string): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
         try {
             this.logger.info(`Execute ${transactionType} transaction`);
@@ -281,7 +281,7 @@ export class SDKClient {
                 transactionType,
                 statusCode,
                 0,
-                'EthereumTransaction');
+                callerName);
 
             // capture sdk transaction response errors and shorten familiar stack trace
             if (e.status && e.status._code) {

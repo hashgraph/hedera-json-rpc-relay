@@ -669,7 +669,7 @@ export class EthImpl implements Eth {
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
     try {
-      const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer);
+      const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction);
 
       try {
         // Wait for the record from the execution.
