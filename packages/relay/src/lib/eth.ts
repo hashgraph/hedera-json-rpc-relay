@@ -632,8 +632,8 @@ export class EthImpl implements Eth {
 
     try {
       // await this.precheck.gasLimit(transaction);
-      // await this.precheck.nonce(transaction);
-      // this.precheck.chainId(transaction);
+      await this.precheck.nonce(transaction);
+      this.precheck.chainId(transaction);
     }
     catch(e: any) {
       return e;
