@@ -44,7 +44,7 @@ export class Utils {
     };
 
     static tinyBarsToWeibars = (value) => {
-        return ethers.utils.hexValue(ethers.utils.parseUnits(Number(value).toString(), 10));
+        return ethers.utils.parseUnits(Number(value).toString(), 10);
     };
 
     static randomString(length) {
