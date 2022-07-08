@@ -101,14 +101,4 @@ export const predefined = {
     code: -32000,
     message: 'Insufficient funds for transfer'
   }),
-  'GAS_LIMIT_TOO_HIGH': new JsonRpcError({
-    name: 'gasLimit too high',
-    code: -32005,
-    message: 'Transaction gas limit exceeds block gas limit'
-  }),
-  'GAS_LIMIT_TOO_LOW': new JsonRpcError({
-    name: 'gasLimit too low',
-    code: -32003,
-    message: 'Intrinsic gas exceeds gas limit'
-  })
 };

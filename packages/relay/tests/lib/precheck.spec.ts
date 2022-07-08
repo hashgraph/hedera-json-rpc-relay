@@ -178,61 +178,6 @@ describe('Precheck', async function() {
         testFailingGasLimitPrecheck(highGasLimits, -32005, 'Transaction gas limit exceeds block gas limit');
     });
 
-    describe('gasLimit', async function() {
-        const defaultTx = {
-            value: oneTinyBar,
-            gasPrice: defaultGasPrice,
-            chainId: defaultChainId
-        };
-
-        function testFailingGasLimitPrecheck(gasLimits, errorCode, errorMessage) {
-            for (const gasLimit of gasLimits) {
-                it(`should fail for gasLimit: ${gasLimit}`, async function () {
-                    const tx = {
-                        ...defaultTx,
-                        gasLimit: gasLimit
-                    };
-                    const signed = await signTransaction(tx);
-
-                    try {
-                        await precheck.gasLimit(signed);
-                        expectedError();
-                    } catch (e: any) {
-                        expect(e).to.exist;
-                        expect(e.code).to.eq(errorCode);
-                        expect(e.message).to.eq(errorMessage);
-                    }
-                });
-            }
-        }
-
-        function testPassingGasLimitPrecheck(gasLimits) {
-            for (const gasLimit of gasLimits) {
-                it(`should pass for gasLimit: ${gasLimit}`, async function () {
-                    const tx = {
-                        ...defaultTx,
-                        gasLimit: gasLimit
-                    };
-                    const signed = await signTransaction(tx);
-
-                    try {
-                        await precheck.gasLimit(signed);
-                    } catch (e: any) {
-                        expect(e).to.not.exist;
-                    }
-                });
-            }
-        }
-
-        const validGasLimits = [60000, 100000, 500000, 1000000, 5000000, 10000000];
-        const lowGasLimits = [1, 10, 100, 1000, 10000, 30000, 50000];
-        const highGasLimits = [20000000, 100000000, 999999999999];
-
-        testPassingGasLimitPrecheck(validGasLimits);
-        testFailingGasLimitPrecheck(lowGasLimits, -32003, 'Intrinsic gas exceeds gas limit');
-        testFailingGasLimitPrecheck(highGasLimits, -32005, 'Transaction gas limit exceeds block gas limit');
-    });
-
     describe('gas price', async function() {
         it('should return true for gas price gt to required gas price', async function() {
             const result = precheck.gasPrice(txWithMatchingChainId, 10);
