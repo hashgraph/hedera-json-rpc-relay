@@ -114,7 +114,8 @@ export default class ServicesClient {
             .setTokenSymbol(symbol)
             .setDecimals(3)
             .setInitialSupply(new Hbar(initialSupply).toTinybars())
-            .setTreasuryAccountId(this._thisAccountId()));
+            .setTreasuryAccountId(this._thisAccountId())
+            .setTransactionMemo('Relay test token create'));
 
         this.logger.trace(`get token id from receipt`);
         const tokenId = resp?.tokenId;
@@ -126,7 +127,8 @@ export default class ServicesClient {
         await this.executeAndGetTransactionReceipt(
             await new TokenAssociateTransaction()
                 .setAccountId(this._thisAccountId())
-                .setTokenIds([tokenId]));
+                .setTokenIds([tokenId])
+                .setTransactionMemo('Relay test token association'));
 
         this.logger.debug(
             `Associated account ${this._thisAccountId()} with token ${tokenId.toString()}`
@@ -136,7 +138,8 @@ export default class ServicesClient {
     async transferToken(tokenId, recipient: AccountId, amount = 10) {
         await this.executeAndGetTransactionReceipt(new TransferTransaction()
             .addTokenTransfer(tokenId, this._thisAccountId(), -amount)
-            .addTokenTransfer(tokenId, recipient, amount));
+            .addTokenTransfer(tokenId, recipient, amount)
+            .setTransactionMemo('Relay test token transfer'));
 
         this.logger.debug(
             `Sent 10 tokens from account ${this._thisAccountId()} to account ${recipient.toString()} on token ${tokenId.toString()}`
@@ -157,7 +160,8 @@ export default class ServicesClient {
 
         const fileReceipt = await this.executeAndGetTransactionReceipt(new FileCreateTransaction()
             .setKeys([this.client.operatorPublicKey || this.DEFAULT_KEY])
-            .setContents(contractByteCode));
+            .setContents(contractByteCode)
+            .setTransactionMemo('Relay test file create'));
 
         // Fetch the receipt for transaction that created the file
         // The file ID is located on the transaction receipt
@@ -172,7 +176,8 @@ export default class ServicesClient {
             .setGas(75000)
             .setInitialBalance(1)
             .setBytecodeFileId(fileId || '')
-            .setAdminKey(this.client.operatorPublicKey || this.DEFAULT_KEY));
+            .setAdminKey(this.client.operatorPublicKey || this.DEFAULT_KEY)
+            .setTransactionMemo('Relay test contract create'));
 
         // The contract ID is located on the transaction receipt
         const contractId = contractReceipt?.contractId;
@@ -192,7 +197,8 @@ export default class ServicesClient {
                 .setFunction(
                     functionName,
                     params
-                ));
+                )
+                .setTransactionMemo('Relay test contract execution'));
 
         // @ts-ignore
         const resp = await this.getRecordResponseDetails(contractExecTransactionResponse);
@@ -213,7 +219,8 @@ export default class ServicesClient {
 
         const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
             .addHbarTransfer(this._thisAccountId(), new Hbar(initialBalance).negated())
-            .addHbarTransfer(aliasAccountId, new Hbar(initialBalance)));
+            .addHbarTransfer(aliasAccountId, new Hbar(initialBalance))
+            .setTransactionMemo('Relay test crypto transfer'));
 
         this.logger.debug(`Get ${aliasAccountId.toString()} receipt`);
         await aliasCreationResponse?.getReceipt(this.client);
@@ -275,6 +282,7 @@ export default class ServicesClient {
         const response = await new FileUpdateTransaction()
             .setFileId(fileId)
             .setContents(Buffer.from(content, 'hex'))
+            .setTransactionMemo('Relay test update')
             .execute(this.client);
 
         const receipt = await response.getReceipt(this.client);
