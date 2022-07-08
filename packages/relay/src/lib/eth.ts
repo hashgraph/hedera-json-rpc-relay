@@ -631,9 +631,9 @@ export class EthImpl implements Eth {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
 
     try {
-      await this.precheck.gasLimit(transaction);
-      await this.precheck.nonce(transaction);
-      this.precheck.chainId(transaction);
+      // await this.precheck.gasLimit(transaction);
+      // await this.precheck.nonce(transaction);
+      // this.precheck.chainId(transaction);
     }
     catch(e: any) {
       return e;
