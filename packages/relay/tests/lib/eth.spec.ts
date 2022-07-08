@@ -899,7 +899,6 @@ describe('Eth calls using MirrorNode', async function () {
       expect(res.blockHash.length).to.eq(66);
       expect(res.blockNumber).to.eq(tx.block_number);
       expect(res.data).to.eq(log.data);
-      logger.info(`*** blockLogIndexOffset: ${blockLogIndexOffset}, log.index: ${log.index}`);
       expect(res.logIndex).to.eq(blockLogIndexOffset + log.index);
       expect(res.removed).to.eq(false);
       expect(res.topics).to.exist;
@@ -921,7 +920,6 @@ describe('Eth calls using MirrorNode', async function () {
       expectLogData(res, defaultLogs.logs[2], defaultDetailedContractResults2, defaultDetailedContractResults.logs.length);
     };
 
-    logger.info(`*** defaultDetailedContractResults.logs.length: ${defaultDetailedContractResults.logs.length}, defaultDetailedContractResults2.logs.length: ${defaultDetailedContractResults2.logs.length}`);
     const transaction3LogOffset = defaultDetailedContractResults.logs.length + defaultDetailedContractResults2.logs.length;
     const expectLogData4 = (res) => {
       expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3, transaction3LogOffset);

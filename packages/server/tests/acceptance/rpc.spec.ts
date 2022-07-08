@@ -130,7 +130,7 @@ describe('RPC Server Acceptance Tests', function () {
                 for (const i in logs) {
                     expect(logs[i]).to.have.property('address');
                     expect(logs[i]).to.have.property('logIndex');
-                    
+
                     // verify logIndex represents index in block across transactions
                     expect(logs[i].logIndex).to.equal(Number(i));
 
@@ -1024,37 +1024,31 @@ describe('RPC Server Acceptance Tests', function () {
             let lastBlockAfterUpdate;
 
             before(async () => {
+                await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
+                await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
                 lastBlockBeforeUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
                 await new Promise(resolve => setTimeout(resolve, 4000));
+                await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED);
                 await new Promise(resolve => setTimeout(resolve, 4000));
                 lastBlockAfterUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
-
-                // only modify network files on local runs
-                if (CHAIN_ID === '0x12a') {
-                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
-                    await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
-                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED);
-                }
             });
 
-            if (CHAIN_ID === '0x12a') {
-                it('should call eth_feeHistory with updated fees', async function () {
-                    const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
-                    const blockCountHex = ethers.utils.hexValue(blockCountNumber);
-                    const datedGasPriceHex = ethers.utils.hexValue(Assertions.datedGasPrice);
-                    const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
-                    const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
-                    const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
+            it('should call eth_feeHistory with updated fees', async function () {
+                const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
+                const blockCountHex = ethers.utils.hexValue(blockCountNumber);
+                const datedGasPriceHex = ethers.utils.hexValue(Assertions.datedGasPrice);
+                const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
+                const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
+                const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
 
-                    const res = await relay.call('eth_feeHistory', [blockCountHex, newestBlockNumberHex, [0]]);
+                const res = await relay.call('eth_feeHistory', [blockCountHex, newestBlockNumberHex, [0]]);
 
-                    Assertions.feeHistory(res, { resultCount: blockCountNumber, oldestBlock: oldestBlockNumberHex, chechReward: true });
+                Assertions.feeHistory(res, { resultCount: blockCountNumber, oldestBlock: oldestBlockNumberHex, chechReward: true });
 
-                    expect(res.baseFeePerGas[0]).to.equal(datedGasPriceHex);
-                    expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
-                    expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
-                });
-            }
+                expect(res.baseFeePerGas[0]).to.equal(datedGasPriceHex);
+                expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
+                expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
+            });
 
             it('should call eth_feeHistory with newest block > latest', async function () {
                 let latestBlock;
