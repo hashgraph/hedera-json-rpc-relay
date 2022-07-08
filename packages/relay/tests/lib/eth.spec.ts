@@ -204,6 +204,73 @@ describe('Eth calls using MirrorNode', async function () {
     }
   };
 
+  const defaultLogTopics = [
+    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+    "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "0x000000000000000000000000000000000000000000000000000000000208fa13",
+    "0x0000000000000000000000000000000000000000000000000000000000000005"
+  ];
+
+
+  const logBloom1 = '0x1111';
+  const logBloom2 = '0x2222';
+  const logBloom3 = '0x3333';
+  const logBloom4 = '0x4444';
+
+  const defaultLogs1 = [
+    {
+      "address": "0x0000000000000000000000000000000002131951",
+      "bloom": logBloom1,
+      "contract_id": contractId1,
+      "data": "0x",
+      "index": 0,
+      "topics": defaultLogTopics,
+      "root_contract_id": "0.0.34806097",
+      "timestamp": contractTimestamp1
+    },
+    {
+      "address": "0x0000000000000000000000000000000002131951",
+      "bloom": logBloom2,
+      "contract_id": contractId1,
+      "data": "0x",
+      "index": 1,
+      "topics": defaultLogTopics,
+      "root_contract_id": "0.0.34806097",
+      "timestamp": contractTimestamp1
+    }
+  ];
+
+  const defaultLogs2 = [
+    {
+      "address": "0x0000000000000000000000000000000002131951",
+      "bloom": logBloom3,
+      "contract_id": contractId1,
+      "data": "0x",
+      "index": 0,
+      "topics": [],
+      "root_contract_id": "0.0.34806097",
+      "timestamp": contractTimestamp2
+    }
+  ];
+
+  const defaultLogs3 = [
+    {
+      "address": "0x0000000000000000000000000000000002131951",
+      "bloom": logBloom4,
+      "contract_id": contractId2,
+      "data": "0x",
+      "index": 0,
+      "topics": [],
+      "root_contract_id": "0.0.34806097",
+      "timestamp": contractTimestamp3
+    }
+  ];
+
+  const defaultLogsList = defaultLogs1.concat(defaultLogs2).concat(defaultLogs3);
+  const defaultLogs = {
+    "logs": defaultLogsList
+  };
+
   const defaultDetailedContractResults = {
     'access_list': '0x',
     'amount': 2000000000,
@@ -222,21 +289,7 @@ describe('Eth calls using MirrorNode', async function () {
     'gas_price': '0x4a817c80',
     'gas_used': 123,
     'hash': contractHash1,
-    'logs': [
-      {
-        'address': contractAddress1,
-        'bloom': '0x0123',
-        'contract_id': contractId1,
-        'data': '0x0123',
-        'index': 0,
-        'topics': [
-          '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
-          '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
-          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-          '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67'
-        ]
-      },
-    ],
+    'logs': defaultLogs1,
     'max_fee_per_gas': '0x',
     'max_priority_fee_per_gas': '0x',
     'nonce': 1,
@@ -265,7 +318,8 @@ describe('Eth calls using MirrorNode', async function () {
       'timestamp': contractTimestamp2,
       'block_hash': blockHash2,
       'block_number': blockNumber2,
-      'hash': contractHash2
+      'hash': contractHash2,
+      'logs': defaultLogs2
     }
   };
 
@@ -276,6 +330,7 @@ describe('Eth calls using MirrorNode', async function () {
       'block_number': blockNumber3,
       'hash': contractHash3,
       'contract_id': contractId2,
+      'logs': defaultLogs3
     }
   };
 
@@ -289,63 +344,6 @@ describe('Eth calls using MirrorNode', async function () {
 
   const results = defaultContractResults.results;
   const totalGasUsed = EthImpl.numberTo0x(results[0].gas_used + results[1].gas_used);
-
-  const logBloom1 = '0x1111';
-  const logBloom2 = '0x2222';
-  const logBloom3 = '0x3333';
-  const logBloom4 = '0x4444';
-
-  const defaultLogTopics = [
-    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-    "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "0x000000000000000000000000000000000000000000000000000000000208fa13",
-    "0x0000000000000000000000000000000000000000000000000000000000000005"
-  ];
-
-  const defaultLogs = {
-    "logs": [
-      {
-        "address": "0x0000000000000000000000000000000002131951",
-        "bloom": logBloom1,
-        "contract_id": contractId1,
-        "data": "0x",
-        "index": 0,
-        "topics": defaultLogTopics,
-        "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp1
-      },
-      {
-        "address": "0x0000000000000000000000000000000002131951",
-        "bloom": logBloom2,
-        "contract_id": contractId1,
-        "data": "0x",
-        "index": 1,
-        "topics": defaultLogTopics,
-        "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp1
-      },
-      {
-        "address": "0x0000000000000000000000000000000002131951",
-        "bloom": logBloom3,
-        "contract_id": contractId1,
-        "data": "0x",
-        "index": 0,
-        "topics": [],
-        "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp2
-      },
-      {
-        "address": "0x0000000000000000000000000000000002131951",
-        "bloom": logBloom4,
-        "contract_id": contractId2,
-        "data": "0x",
-        "index": 0,
-        "topics": [],
-        "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp3
-      }
-    ]
-  };
 
   const defaultNetworkFees = {
     'fees': [
@@ -895,13 +893,14 @@ describe('Eth calls using MirrorNode', async function () {
 
   describe('eth_getLogs', async function () {
 
-    const expectLogData = (res, log, tx) => {
+    const expectLogData = (res, log, tx, blockLogIndexOffset) => {
       expect(res.address).to.eq(log.address);
       expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
       expect(res.blockHash.length).to.eq(66);
       expect(res.blockNumber).to.eq(tx.block_number);
       expect(res.data).to.eq(log.data);
-      expect(res.logIndex).to.eq(log.index);
+      logger.info(`*** blockLogIndexOffset: ${blockLogIndexOffset}, log.index: ${log.index}`);
+      expect(res.logIndex).to.eq(blockLogIndexOffset + log.index);
       expect(res.removed).to.eq(false);
       expect(res.topics).to.exist;
       expect(res.topics).to.deep.eq(log.topics);
@@ -911,19 +910,21 @@ describe('Eth calls using MirrorNode', async function () {
     };
 
     const expectLogData1 = (res) => {
-      expectLogData(res, defaultLogs.logs[0], defaultDetailedContractResults);
+      expectLogData(res, defaultLogs.logs[0], defaultDetailedContractResults, 0);
     };
 
     const expectLogData2 = (res) => {
-      expectLogData(res, defaultLogs.logs[1], defaultDetailedContractResults);
+      expectLogData(res, defaultLogs.logs[1], defaultDetailedContractResults, 0);
     };
 
     const expectLogData3 = (res) => {
-      expectLogData(res, defaultLogs.logs[2], defaultDetailedContractResults2);
+      expectLogData(res, defaultLogs.logs[2], defaultDetailedContractResults2, defaultDetailedContractResults.logs.length);
     };
 
+    logger.info(`*** defaultDetailedContractResults.logs.length: ${defaultDetailedContractResults.logs.length}, defaultDetailedContractResults2.logs.length: ${defaultDetailedContractResults2.logs.length}`);
+    const transaction3LogOffset = defaultDetailedContractResults.logs.length + defaultDetailedContractResults2.logs.length;
     const expectLogData4 = (res) => {
-      expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3);
+      expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3, transaction3LogOffset);
     };
 
     it('contract results details not found', async function () {

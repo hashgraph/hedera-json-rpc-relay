@@ -19,12 +19,12 @@
  */
 
 // external resources
-import {expect} from 'chai';
-import {BigNumber, ethers} from 'ethers';
-import {AliasAccount} from '../clients/servicesClient';
+import { expect } from 'chai';
+import { BigNumber, ethers } from 'ethers';
+import { AliasAccount } from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
-import {Utils} from '../helpers/utils';
-import {AccountBalanceQuery, ContractFunctionParameters} from '@hashgraph/sdk';
+import { Utils } from '../helpers/utils';
+import { AccountBalanceQuery, ContractFunctionParameters } from '@hashgraph/sdk';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
@@ -39,7 +39,7 @@ describe('RPC Server Acceptance Tests', function () {
     const accounts: AliasAccount[] = [];
 
     // @ts-ignore
-    const {servicesNode, mirrorNode, relay, logger} = global;
+    const { servicesNode, mirrorNode, relay, logger } = global;
 
     // cached entities
     let tokenId;
@@ -127,9 +127,12 @@ describe('RPC Server Acceptance Tests', function () {
                 const logs = await relay.call('eth_getLogs', [{}]);
                 expect(logs.length).to.be.greaterThan(0);
                 const txIndexLogIndexMapping: any[] = [];
-                for(let i in logs) {
+                for (const i in logs) {
                     expect(logs[i]).to.have.property('address');
                     expect(logs[i]).to.have.property('logIndex');
+                    
+                    // verify logIndex represents index in block across transactions
+                    expect(logs[i].logIndex).to.equal(Number(i));
 
                     const key = `${logs[i].transactionHash}---${logs[i].logIndex}`;
                     txIndexLogIndexMapping.push(key);
@@ -153,7 +156,7 @@ describe('RPC Server Acceptance Tests', function () {
                 expect(logs.length).to.be.greaterThan(0);
 
                 const log4BlockInt = parseInt(log4Block.blockNumber);
-                for(let i in logs) {
+                for (let i in logs) {
                     expect(logs[i].blockNumber).to.be.greaterThanOrEqual(log4BlockInt);
                 }
             });
@@ -165,7 +168,7 @@ describe('RPC Server Acceptance Tests', function () {
                 expect(logs.length).to.be.greaterThan(0);
 
                 const log0BlockInt = parseInt(log0Block.blockNumber);
-                for(let i in logs) {
+                for (let i in logs) {
                     expect(logs[i].blockNumber).to.be.lessThanOrEqual(log0BlockInt);
                 }
             });
@@ -185,29 +188,29 @@ describe('RPC Server Acceptance Tests', function () {
                 }
             });
 
-            it('should be able to use `address` param', async() => {
+            it('should be able to use `address` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'address': contractAddress
                 }]);
                 expect(logs.length).to.be.greaterThan(0);
 
-                for(let i in logs) {
+                for (let i in logs) {
                     expect(logs[i].address).to.equal(contractAddress);
                 }
             });
 
-            it('should be able to use `blockHash` param', async() => {
+            it('should be able to use `blockHash` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'blockHash': log0Block.blockHash
                 }]);
                 expect(logs.length).to.be.greaterThan(0);
 
-                for(let i in logs) {
+                for (let i in logs) {
                     expect(logs[i].blockHash).to.equal(log0Block.blockHash);
                 }
             });
 
-            it('should be able to use `topics` param', async() => {
+            it('should be able to use `topics` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': log0Block.blockNumber,
                     'toBlock': log4Block.blockNumber,
@@ -222,7 +225,7 @@ describe('RPC Server Acceptance Tests', function () {
                 }]);
                 expect(logsWithTopic.length).to.be.greaterThan(0);
 
-                for(let i in logsWithTopic) {
+                for (let i in logsWithTopic) {
                     expect(logsWithTopic[i].topics.length).to.be.greaterThan(0);
                     expect(logsWithTopic[i].topics[0]).to.be.equal(topic);
                 }
@@ -451,7 +454,7 @@ describe('RPC Server Acceptance Tests', function () {
                         await relay.sendRawTransaction(signedTx);
                         Assertions.expectedError();
                     }
-                    catch(e) {
+                    catch (e) {
                         Assertions.jsonRpcError(e, predefined.UNSUPPORTED_CHAIN_ID(ethers.utils.hexValue(INCORRECT_CHAIN_ID), CHAIN_ID));
                     }
                 });
@@ -1021,33 +1024,39 @@ describe('RPC Server Acceptance Tests', function () {
             let lastBlockAfterUpdate;
 
             before(async () => {
-                await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
-                await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
                 lastBlockBeforeUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
                 await new Promise(resolve => setTimeout(resolve, 4000));
-                await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED);
                 await new Promise(resolve => setTimeout(resolve, 4000));
                 lastBlockAfterUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+
+                // only modify network files on local runs
+                if (CHAIN_ID === '0x12a') {
+                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
+                    await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
+                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED);
+                }
             });
 
-            it('should call eth_feeHistory with updated fees', async function() {
-                const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
-                const blockCountHex = ethers.utils.hexValue(blockCountNumber);
-                const datedGasPriceHex = ethers.utils.hexValue(Assertions.datedGasPrice);
-                const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
-                const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
-                const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
+            if (CHAIN_ID === '0x12a') {
+                it('should call eth_feeHistory with updated fees', async function () {
+                    const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
+                    const blockCountHex = ethers.utils.hexValue(blockCountNumber);
+                    const datedGasPriceHex = ethers.utils.hexValue(Assertions.datedGasPrice);
+                    const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
+                    const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
+                    const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
 
-                const res = await relay.call('eth_feeHistory', [blockCountHex, newestBlockNumberHex, [0]]);
+                    const res = await relay.call('eth_feeHistory', [blockCountHex, newestBlockNumberHex, [0]]);
 
-                Assertions.feeHistory(res, {resultCount: blockCountNumber, oldestBlock: oldestBlockNumberHex, chechReward: true});
+                    Assertions.feeHistory(res, { resultCount: blockCountNumber, oldestBlock: oldestBlockNumberHex, chechReward: true });
 
-                expect(res.baseFeePerGas[0]).to.equal(datedGasPriceHex);
-                expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
-                expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
-            });
+                    expect(res.baseFeePerGas[0]).to.equal(datedGasPriceHex);
+                    expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
+                    expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
+                });
+            }
 
-            it('should call eth_feeHistory with newest block > latest', async function() {
+            it('should call eth_feeHistory with newest block > latest', async function () {
                 let latestBlock;
                 const newestBlockNumber = lastBlockAfterUpdate.number + 10;
                 const newestBlockNumberHex = ethers.utils.hexValue(newestBlockNumber);
@@ -1059,7 +1068,7 @@ describe('RPC Server Acceptance Tests', function () {
                 }
             });
 
-            it('should call eth_feeHistory with zero block count', async function() {
+            it('should call eth_feeHistory with zero block count', async function () {
                 const res = await relay.call('eth_feeHistory', ['0x0', 'latest', null]);
 
                 expect(res.reward).to.not.exist;
