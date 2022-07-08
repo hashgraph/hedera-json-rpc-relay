@@ -21,8 +21,9 @@
 import * as ethers from 'ethers';
 import { predefined } from './errors';
 import { MirrorNodeClient, SDKClient } from './clients';
-import {EthImpl} from "./eth";
-import {Logger} from "pino";
+import { EthImpl } from "./eth";
+import { Logger } from "pino";
+import constants from './constants';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
@@ -65,18 +66,15 @@ export class Precheck {
     }
   }
 
+
   chainId(transaction: string) {
     const tx = ethers.utils.parseTransaction(transaction);
     const txChainId = EthImpl.prepend0x(Number(tx.chainId).toString(16));
     const passes = txChainId === this.chain;
     if (!passes) {
       this.logger.trace('Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)', transaction, txChainId);
+      throw predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain);
     }
-
-    return {
-      passes,
-      error: predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain)
-    };
   }
 
   gasPrice(transaction: string, gasPrice: number) {
@@ -116,11 +114,55 @@ export class Precheck {
       }
     } catch (error: any) {
       this.logger.trace('Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)', transaction, txTotalValue, error.message);
-      
+
       result.passes = false;
       result.error = predefined.INTERNAL_ERROR;
     }
 
     return result;
+  }
+
+  /**
+   * @param transaction
+   */
+  async gasLimit(transaction: string) {
+    const tx = ethers.utils.parseTransaction(transaction);
+    const gasLimit = tx.gasLimit.toNumber();
+    const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
+
+    const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data, tx.to);
+
+
+    if (gasLimit > constants.BLOCK_GAS_LIMIT) {
+      this.logger.trace(`${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`, transaction, gasLimit, constants.BLOCK_GAS_LIMIT);
+      throw predefined.GAS_LIMIT_TOO_HIGH;
+    } else if (gasLimit < intrinsicGasCost) {
+      this.logger.trace(`${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`, transaction, gasLimit, intrinsicGasCost);
+      throw predefined.GAS_LIMIT_TOO_LOW;
+    }
+  }
+
+  /**
+   * Calculates the intrinsic gas cost based on the number of empty bytes and whether the transaction is CONTRACT_CREATE
+   * @param data
+   * @param to
+   * @private
+   */
+  private static transactionIntrinsicGasCost(data: string, to: string | undefined) {
+    const isCreate = (to == undefined) || (to.length == 0);
+
+    let zeros = 0;
+
+    const dataBytes = Buffer.from(data, "hex");
+
+    for (const c of dataBytes) {
+      if (c == 0) {
+        zeros++;
+      }
+    }
+
+    const nonZeros = data.replace('0x', '').length - zeros;
+    const cost = constants.TX_BASE_COST + constants.TX_DATA_ZERO_COST * zeros + constants.ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
+    return isCreate ? cost + constants.TX_CREATE_EXTRA : cost;
   }
 }

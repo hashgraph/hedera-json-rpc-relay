@@ -50,8 +50,8 @@ export class EthImpl implements Eth {
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-  static defaultGas = EthImpl.numberTo0x(400_000);
-  static gasTxBaseCost = EthImpl.numberTo0x(21_000);
+  static defaultGas = EthImpl.numberTo0x(constants.TX_DEFAULT_GAS);
+  static gasTxBaseCost = EthImpl.numberTo0x(constants.TX_BASE_COST);
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasUsedRatio = EthImpl.numberTo0x(0.5);
@@ -629,11 +629,14 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string): Promise<string | JsonRpcError> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
-    await this.precheck.nonce(transaction);
 
-    const chainIdPrecheckRes = this.precheck.chainId(transaction);
-    if (!chainIdPrecheckRes.passes) {
-      return chainIdPrecheckRes.error;
+    try {
+      await this.precheck.gasLimit(transaction);
+      await this.precheck.nonce(transaction);
+      this.precheck.chainId(transaction);
+    }
+    catch(e: any) {
+      return e;
     }
 
     const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
