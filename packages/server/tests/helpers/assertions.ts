@@ -167,7 +167,7 @@ export default class Assertions {
         expect(transactionReceipt.effectiveGasPrice).to.eq(mirrorEffectiveGasPrice);
 
         expect(transactionReceipt.status).to.exist;
-        expect(transactionReceipt.status).to.eq(mirrorResult.status);
+        expect(transactionReceipt.status).to.eq(Number(mirrorResult.status));
 
         expect(transactionReceipt.logs).to.exist;
         expect(transactionReceipt.logs.length).to.eq(mirrorResult.logs.length);
