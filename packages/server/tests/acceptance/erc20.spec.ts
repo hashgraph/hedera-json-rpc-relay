@@ -32,7 +32,7 @@ import {Utils} from '../helpers/utils';
 
 describe('ERC20 Acceptance Tests', async function () {
     this.timeout(240 * 1000); // 240 seconds
-    const {servicesNode, relay} = global;
+    const {servicesNode, relay, logger} = global;
 
     // cached entities
     const accounts: AliasAccount[] = [];
@@ -46,8 +46,8 @@ describe('ERC20 Acceptance Tests', async function () {
     const initialSupply = BigNumber.from(10000);
 
     const testTitles = [
-        'ERC20 Contract',
-        'HTS token'
+        // {testName: 'ERC20 Contract', expectedBytecode: ERC20MockJson.deployedBytecode},
+        {testName: 'HTS token', expectedBytecode: '0x0'}
     ];
 
     before(async () => {
@@ -59,12 +59,12 @@ describe('ERC20 Acceptance Tests', async function () {
         recipient = accounts[1].address;
         anotherAccount = accounts[2].address;
 
-        contracts.push(await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson));
-        contracts.push(await createHTS(name, symbol, accounts[0].accountId.toString(), initialSupply, accounts[0].privateKey.publicKey, ERC20MockJson.abi));
+        // contracts.push(await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson));
+        contracts.push(await createHTS(name, symbol, accounts[0].accountId.toString(), 10000, accounts[0].privateKey.publicKey, ERC20MockJson.abi));
     });
 
     for (const i in testTitles) {
-        describe(testTitles[i], async function () {
+        describe(testTitles[i].testName, async function () {
             let contract;
 
             before(async function () {
@@ -85,7 +85,7 @@ describe('ERC20 Acceptance Tests', async function () {
 
             it('Relay can execute "eth_getCode" for ERC20 contract with evmAddress', async function () {
                 const res = await relay.call('eth_getCode', [contract.address]);
-                expect(res).to.eq(ERC20MockJson.deployedBytecode);
+                expect(res).to.eq(testTitles[i].expectedBytecode);
             });
 
             describe('should behave like erc20', function() {
@@ -124,27 +124,32 @@ describe('ERC20 Acceptance Tests', async function () {
                     describe('when the token owner is not the zero address', function () {
                         let tokenOwner, tokenOwnerWallet;
                         before(async function () {
-                            tokenOwner = initialHolder;
+                            tokenOwner = accounts[0].address;
                             tokenOwnerWallet = accounts[0].wallet;
                         });
 
                         describe('when the recipient is not the zero address', function () {
                             let to, toWallet;
                             before(async function () {
-                                to = anotherAccount;
+                                to = accounts[2].address;
                                 toWallet = accounts[2].wallet;
                             });
 
                             describe('when the spender has enough allowance', function () {
                                 before(async function () {
-                                    await contract.approve(spender, initialSupply, { from: initialHolder });
+                                    await contract.approve(spender, initialSupply, { from: tokenOwner });
                                 });
 
                                 describe('when the token owner has enough balance', function () {
-                                    let amount, tx, receipt;
+                                    let amount, tx;
                                     before(async function () {
                                         amount = initialSupply;
+                                        const ownerBalance = await contract.balanceOf(tokenOwner);
+                                        const toBalance = await contract.balanceOf(to);
+                                        expect(ownerBalance.toString()).to.be.equal(amount.toString());
+                                        expect(toBalance.toString()).to.be.equal('0');
                                         tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount);
+                                        logger.debug(tx);
                                     });
 
                                     it('transfers the requested amount', async function () {
@@ -308,7 +313,34 @@ describe('ERC20 Acceptance Tests', async function () {
         await servicesNode.associateHTSToken(accounts[1].accountId, hts.tokenId, accounts[1].privateKey);
         await servicesNode.associateHTSToken(accounts[2].accountId, hts.tokenId, accounts[2].privateKey);
 
+        await servicesNode.approveHTSToken(accounts[0].accountId, hts.tokenId);
+        await servicesNode.approveHTSToken(accounts[1].accountId, hts.tokenId);
+        await servicesNode.approveHTSToken(accounts[2].accountId, hts.tokenId);
+
+        await servicesNode.transferHTSToken(accounts[0].accountId, hts.tokenId, 10000);
+        // await servicesNode.transferHTSToken(accounts[1].accountId, hts.tokenId, 10000, accounts[0].accountId);
+        // await servicesNode.transferHTSToken(accounts[2].accountId, hts.tokenId, 10000, accounts[1].accountId);
+        // await servicesNode.transferHTSToken(accounts[0].accountId, hts.tokenId, 10000, accounts[2].accountId);
+        //
+        //
+        // await servicesNode.transferHTSToken(accounts[1].accountId, hts.tokenId, 10000);
+        // await servicesNode.transferHTSToken(servicesNode.client.operatorAccountId, hts.tokenId, 10000, accounts[1].accountId);
+        //
+        // await servicesNode.transferHTSToken(accounts[2].accountId, hts.tokenId, 10000);
+        // await servicesNode.transferHTSToken(servicesNode.client.operatorAccountId, hts.tokenId, 10000, accounts[2].accountId);
+
         const evmAddress = Utils.idToEvmAddress(hts.tokenId.toString());
-        return new ethers.Contract(evmAddress, abi, accounts[0].wallet);
+        const contract = new ethers.Contract(evmAddress, abi, accounts[0].wallet);
+
+        const balance0 = await contract.balanceOf(accounts[0].address);
+        const balance1 = await contract.balanceOf(accounts[1].address);
+        const balance2 = await contract.balanceOf(accounts[2].address);
+
+        logger.info(`balance0: ${balance0}`);
+        logger.info(`balance1: ${balance1}`);
+        logger.info(`balance2: ${balance2}`);
+
+
+        return contract;
     };
 });

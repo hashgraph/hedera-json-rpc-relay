@@ -38,7 +38,8 @@ import {
     TransferTransaction,
     ContractCreateFlow,
     FileUpdateTransaction,
-    TransactionId
+    TransactionId,
+    AccountAllowanceApproveTransaction
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
@@ -316,6 +317,33 @@ export default class ServicesClient {
         await tokenAssociate.getReceipt(this.client);
         this.logger.info(`HTS Token ${tokenId} associated to : ${accountId}`);
     };
+
+    async approveHTSToken(spenderId, tokenId) {
+        const amount = 10000;
+        const tokenApprove = await (new AccountAllowanceApproveTransaction()
+            .addTokenAllowance(tokenId, spenderId, amount))
+            .execute(this.client);
+
+        await tokenApprove.getReceipt(this.client);
+        this.logger.info(`${amount} of HTS Token ${tokenId} can be spent by ${spenderId}`);
+    };
+
+    async transferHTSToken(accountId, tokenId, amount, fromId = this.client.operatorAccountId) {
+        try {
+            const tokenTransfer = await (await new TransferTransaction()
+                .addTokenTransfer(tokenId, fromId, -amount)
+                .addTokenTransfer(tokenId, accountId, amount))
+                .execute(this.client);
+
+            const rec = await tokenTransfer.getReceipt(this.client);
+            this.logger.info(`${amount} of HTS Token ${tokenId} can be spent by ${accountId}`);
+            this.logger.debug(rec);
+        }
+        catch(e) {
+            this.logger.debug(e);
+        }
+    };
+
 }
 
 export class AliasAccount {
