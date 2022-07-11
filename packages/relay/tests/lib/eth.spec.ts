@@ -893,6 +893,61 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.equal(null);
   });
 
+  describe('eth_getBalance', async function() {
+    it('should return cached value', async () => {
+      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000
+        }]
+      });
+      mock.onGet(`contracts/0x000000000000000000000000000000000000055f`).reply(200, null);
+      mock.onGet(`accounts/0x000000000000000000000000000000000000055f`).reply(200, {
+        account: '0x000000000000000000000000000000000000055f'
+      })
+      sdkClientStub.getAccountBalanceInWeiBar.throws({
+        status: {
+          _code: 15
+        }
+      });
+
+      const resNoCache = await ethImpl.getBalance(contractAddress1, null);
+      const resCached = await ethImpl.getBalance(contractAddress1, null);
+      expect(resNoCache).to.equal('0x0');
+      expect(resCached).to.equal('0x0');
+    });
+
+    it('should return non cached value for account', async () => {
+      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000
+        }]
+      });
+      mock.onGet(`contracts/0x000000000000000000000000000000000000055f`).reply(200, null);
+      mock.onGet(`accounts/0x000000000000000000000000000000000000055f`).reply(200, {
+        account: '0x000000000000000000000000000000000000055f'
+      })
+      sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
+
+      const res = await ethImpl.getBalance(contractAddress1, null);
+      expect(res).to.equal('0x3e8');
+    });
+
+    it('should return non cached value for contract', async () => {
+      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000
+        }]
+      });
+      mock.onGet(`contracts/0x000000000000000000000000000000000000055f`).reply(200, {
+        contract_id: '0x000000000000000000000000000000000000055f'
+      });
+      sdkClientStub.getContractBalanceInWeiBar.returns(1000);
+
+      const res = await ethImpl.getBalance(contractAddress1, null);
+      expect(res).to.equal('0x3e8');
+    });
+  });
+
   describe('eth_getLogs', async function () {
 
     const expectLogData = (res, log, tx) => {
