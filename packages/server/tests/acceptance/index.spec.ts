@@ -95,7 +95,7 @@ describe('RPC Server Acceptance Tests', function () {
         if (USE_LOCAL_NODE === 'true') {
             // stop local-node
             logger.info('Shutdown local node');
-            // shell.exec('npx hedera-local stop');
+            shell.exec('npx hedera-local stop');
         }
 
         // stop relay
@@ -108,7 +108,7 @@ describe('RPC Server Acceptance Tests', function () {
     describe("Acceptance tests", async () => {
         fs.readdirSync(path.resolve(__dirname, './'))
             .forEach(test => {
-                if (test !== 'index.spec.ts' && test.endsWith('erc20.spec.ts')) {
+                if (test !== 'index.spec.ts' && test.endsWith('.spec.ts')) {
                     require(`./${test}`);
                 }
             });
