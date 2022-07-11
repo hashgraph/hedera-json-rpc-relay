@@ -39,7 +39,7 @@ import {
     ContractCreateFlow,
     FileUpdateTransaction,
     TransactionId,
-    AccountAllowanceApproveTransaction
+    AccountAllowanceApproveTransaction,
     AccountBalance,
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
