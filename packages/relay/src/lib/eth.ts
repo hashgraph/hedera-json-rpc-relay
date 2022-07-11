@@ -1137,7 +1137,7 @@ export class EthImpl implements Eth {
             blockHash: EthImpl.toHash32(detail.block_hash),
             blockNumber: detail.block_number,
             data: log.data,
-            logIndex: log.index,
+            logIndex: logIndex,
             removed: false,
             topics: log.topics,
             transactionHash: EthImpl.toHash32(detail.hash),
