@@ -21,6 +21,7 @@
 import { ethers, providers } from 'ethers';
 import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
+import { predefined } from '../../../relay/src/lib/errors';
 
 export default class RelayClient {
 
@@ -39,7 +40,7 @@ export default class RelayClient {
      */
     async call(methodName: string, params: any[]) {
         const result = await this.provider.send(methodName, params);
-        this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(result)}`);
+        this.logger.trace(`[POST] to relay '${methodName}' with params [${JSON.stringify(params)}] returned ${JSON.stringify(result)}`);
         return result;
     };
 
@@ -48,13 +49,13 @@ export default class RelayClient {
      * @param methodName
      * @param params
      */
-    async callFailing(methodName: string, params: any[], expectedCode = -32603, expectedMessage = 'Unknown error invoking RPC') {
+    async callFailing(methodName: string, params: any[], expectedRpcError = predefined.INTERNAL_ERROR) {
         try {
             const res = await this.call(methodName, params);
             this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
             Assertions.expectedError();
         } catch (err) {
-            Assertions.jsonRpcError(err, expectedCode, expectedMessage);
+            Assertions.jsonRpcError(err, expectedRpcError);
         }
     }
 

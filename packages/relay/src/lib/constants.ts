@@ -26,6 +26,11 @@ enum CACHE_TTL {
     ONE_HOUR = 3_600_000
 }
 
+enum ORDER {
+    ASC = 'asc',
+    DESC = 'desc'
+}
+
 export default {
     TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
     CACHE_KEY,
@@ -39,5 +44,13 @@ export default {
     TYPE_CONTRACT: 'contract',
     TYPE_ACCOUNT: 'account',
 
-    FEE_HISTORY_MAX_RESULTS: Number(process.env.FEE_HISTORY_MAX_RESULTS || 10) 
+    FEE_HISTORY_MAX_RESULTS: Number(process.env.FEE_HISTORY_MAX_RESULTS || 10),
+    ORDER,
+
+    BLOCK_GAS_LIMIT: 15_000_000,
+    ISTANBUL_TX_DATA_NON_ZERO_COST: 16,
+    TX_BASE_COST: 21_000,
+    TX_DEFAULT_GAS: 400_000,
+    TX_CREATE_EXTRA: 32_000,
+    TX_DATA_ZERO_COST: 4,
 };

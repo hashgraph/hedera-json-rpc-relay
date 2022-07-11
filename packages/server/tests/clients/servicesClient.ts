@@ -40,6 +40,7 @@ import {
     FileUpdateTransaction,
     TransactionId,
     AccountAllowanceApproveTransaction
+    AccountBalance,
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
@@ -47,6 +48,7 @@ import { ethers } from 'ethers';
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
 export default class ServicesClient {
+    static TINYBAR_TO_WEIBAR_COEF = 10_000_000_000;
 
     private readonly DEFAULT_KEY = new Key();
     private readonly logger: Logger;
@@ -277,6 +279,18 @@ export default class ServicesClient {
 
         const receipt = await response.getReceipt(this.client);
         this.logger.info(`File ${fileId} updated with status: ${receipt.status.toString()}`);
+    }
+
+    async getAccountBalance(account: string | AccountId): Promise<AccountBalance> {
+        const accountId = typeof account === "string" ? AccountId.fromString(account) : account;
+        return this.executeQuery(new AccountBalanceQuery()
+            .setAccountId(accountId));
+    }
+
+    async getAccountBalanceInWeiBars(account: string | AccountId) {
+        const balance = await this.getAccountBalance(account);
+
+        return ethers.BigNumber.from(balance.hbars.toTinybars().toString()).mul(ServicesClient.TINYBAR_TO_WEIBAR_COEF);
     }
 
     async createHTS( args = {
