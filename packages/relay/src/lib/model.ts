@@ -103,36 +103,36 @@ export class CachedBlock extends Block {
 
 export class Receipt {
     public readonly transactionHash:string;
-    public readonly transactionIndex:string;
+    public readonly transactionIndex:number;
     public readonly blockHash:string;
-    public readonly blockNumber:string;
+    public readonly blockNumber:number;
     public readonly from:string;
     public readonly to:(undefined|string);
-    public readonly cumulativeGasUsed:string;
-    public readonly gasUsed:string;
+    public readonly cumulativeGasUsed:number;
+    public readonly gasUsed:number;
     public readonly contractAddress:(undefined|string);
     public readonly logs:string[];
     public readonly logsBloom:string;
     public readonly root:(undefined|string);
-    public readonly status:(undefined|string);
-    public readonly effectiveGasPrice:(undefined|string);
+    public readonly status:(undefined|number);
+    public readonly effectiveGasPrice:(undefined|number);
 
     constructor(txHash:string, record:TransactionRecord, block:Block) {
         const gasUsed = record.contractFunctionResult == null ? 0 : record.contractFunctionResult.gasUsed;
         const contractAddress = record.contractFunctionResult == undefined ? undefined : "0x" + record.contractFunctionResult.contractId?.toSolidityAddress();
 
         this.transactionHash = txHash;
-        this.transactionIndex = '0x0';
-        this.blockNumber = block.number;
+        this.transactionIndex = 0;
+        this.blockNumber = Number(block.number);
         this.blockHash = block.hash;
         this.from = '0x';
         // TODO this.to = record.contractFunctionResult?.contractId;
-        this.cumulativeGasUsed = Number(gasUsed).toString(16);
-        this.gasUsed = Number(gasUsed).toString(16);
+        this.cumulativeGasUsed = Number(gasUsed);
+        this.gasUsed = Number(gasUsed);
         this.contractAddress = contractAddress;
         this.logs = [];
         this.logsBloom = '';
-        this.status = record.receipt.status == Status.Success ? "0x1" : "0x0";
+        this.status = record.receipt.status == Status.Success ? 1 : 0;
     }
 }
 
