@@ -23,6 +23,7 @@ import { predefined } from './errors';
 import { MirrorNodeClient, SDKClient } from './clients';
 import {EthImpl} from "./eth";
 import {Logger} from "pino";
+import constants from './constants';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
@@ -107,12 +108,12 @@ export class Precheck {
 
     try {
       const { account }: any = await this.mirrorNodeClient.getAccount(tx.from!);
-      const accountBalance = await this.sdkClient.getAccountBalanceInWeiBar(account, callerName);
+      const tinybars = await this.sdkClient.getAccountBalanceInTinyBar(account, callerName);
 
-      result.passes = ethers.ethers.BigNumber.from(accountBalance.toString()).gte(txTotalValue);
+      result.passes = ethers.ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
 
       if (!result.passes) {
-        this.logger.trace('Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountBalance=%s)', transaction, txTotalValue, accountBalance);
+        this.logger.trace('Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountTinyBarBalance=%s)', transaction, txTotalValue, tinybars);
       }
     } catch (error: any) {
       this.logger.trace('Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)', transaction, txTotalValue, error.message);
