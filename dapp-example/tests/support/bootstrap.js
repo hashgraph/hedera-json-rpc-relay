@@ -28,11 +28,13 @@ if (supportedEnvs.includes(network.toLowerCase())) {
 }
 
 client.setOperator(process.env.OPERATOR_ID_MAIN, process.env.OPERATOR_KEY_MAIN);
+console.log(`SDK setup for ${JSON.stringify(network)} for account: ${process.env.OPERATOR_ID_MAIN}`);
 
 const createAccountFromCompressedPublicKey = async function(compressedPublicKey) {
   const transferTransaction = await (new HederaSDK.TransferTransaction()
-    .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(100))
-    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-100)))
+    .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(10))
+    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-10)))
+    .setTransactionMemo('relay dapp test crypto transfer')
     .execute(client);
 
   await transferTransaction.getReceipt(client);
@@ -61,6 +63,7 @@ const createHTSToken = async function() {
     .setTreasuryAccountId(client.operatorAccountId)
     .setTransactionId(HederaSDK.TransactionId.generate(client.operatorAccountId))
     .setNodeAccountIds([client._network.getNodeAccountIdsForExecute()[0]]))
+    .setTransactionMemo('relay dapp test token create')
     .execute(client);
 
   const receipt = await tokenCreate.getReceipt(client);
@@ -76,6 +79,7 @@ const associateHTSToken = async function(accountId, tokenId, pk) {
   const tokenAssociate = await (await new HederaSDK.TokenAssociateTransaction()
     .setAccountId(accountId)
     .setTokenIds([tokenId])
+    .setTransactionMemo('relay dapp test token associate')
     .freezeWith(client)
     .sign(HederaSDK.PrivateKey.fromStringECDSA(pk)))
     .execute(client);
@@ -88,6 +92,7 @@ const approveHTSToken = async function(spenderId, tokenId) {
   const amount = 100000000000;
   const tokenApprove = await (new HederaSDK.AccountAllowanceApproveTransaction()
     .addTokenAllowance(tokenId, spenderId, amount))
+    .setTransactionMemo('relay dapp test allowance approval')
     .execute(client);
 
   await tokenApprove.getReceipt(client);
@@ -99,6 +104,7 @@ const transferHTSToken = async function(accountId, tokenId) {
   const tokenTransfer = await (await new HederaSDK.TransferTransaction()
     .addTokenTransfer(tokenId, client.operatorAccountId, -amount)
     .addTokenTransfer(tokenId, accountId, amount))
+    .setTransactionMemo('relay dapp test token transfer')
     .execute(client);
 
   await tokenTransfer.getReceipt(client);
@@ -106,21 +112,31 @@ const transferHTSToken = async function(accountId, tokenId) {
 };
 
 (async () => {
-  const mainWallet = new ethers.Wallet(process.env.PRIVATE_KEY);
+  let mainPrivateKeyString = process.env.PRIVATE_KEY;
+  if (mainPrivateKeyString === undefined) {
+    mainPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw()
+  }
+  const mainWallet = new ethers.Wallet(mainPrivateKeyString);
   const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
   const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
+  console.log(`Primary wallet account private: ${mainPrivateKeyString}, public: ${mainCompressedKey}, id: ${mainAccountId}`);
 
-  const receiverWallet = new ethers.Wallet(process.env.RECEIVER_PRIVATE_KEY);
+  let receiverPrivateKeyString = process.env.RECEIVER_PRIVATE_KEY;
+  if (receiverPrivateKeyString === undefined) {
+    receiverPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw()
+  }
+  const receiverWallet = new ethers.Wallet(receiverPrivateKeyString);
   const receiverCompressedKey = receiverWallet._signingKey().compressedPublicKey.replace('0x', '');
   const receiverAccountId = (await createAccountFromCompressedPublicKey(receiverCompressedKey)).accountId;
+  console.log(`Receiver wallet account private: ${receiverPrivateKeyString}, public: ${receiverCompressedKey}, id: ${receiverAccountId}`);
 
   const { tokenId, tokenAddress } = await createHTSToken();
   fs.writeFileSync(path.resolve(__dirname + '../../../') + '/.htsTokenAddress.json', '{"HTS_ADDRESS":"' + tokenAddress + '"}');
 
-  await associateHTSToken(mainAccountId, tokenId, process.env.PRIVATE_KEY);
+  await associateHTSToken(mainAccountId, tokenId, mainPrivateKeyString);
   await approveHTSToken(mainAccountId, tokenId);
 
-  await associateHTSToken(receiverAccountId, tokenId, process.env.RECEIVER_PRIVATE_KEY);
+  await associateHTSToken(receiverAccountId, tokenId, receiverPrivateKeyString);
   await approveHTSToken(receiverAccountId, tokenId);
 
   await transferHTSToken(mainAccountId, tokenId);
