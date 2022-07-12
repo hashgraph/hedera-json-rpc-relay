@@ -440,6 +440,13 @@ export class EthImpl implements Eth {
     //        account balance *and* the account balance for any given block.
     this.logger.trace('getBalance(account=%s, blockNumberOrTag=%s)', account, blockNumberOrTag);
     const blockNumber = await this.translateBlockTag(blockNumberOrTag);
+
+    const cachedLabel = `getBalance.${account}.${blockNumberOrTag}`;
+    const cachedResponse: string | undefined = cache.get(cachedLabel);
+    if (cachedResponse != undefined) {
+      return cachedResponse;
+    }
+
     try {
       let weibars: BigNumber | number = 0;
       const result = await this.mirrorNodeClient.resolveEntityType(account);
@@ -455,6 +462,7 @@ export class EthImpl implements Eth {
       // handle INVALID_ACCOUNT_ID
       if (e?.status?._code === Status.InvalidAccountId._code) {
         this.logger.debug(`Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
+        cache.set(cachedLabel, EthImpl.zeroHex, constants.CACHE_TTL.ONE_HOUR);
         return EthImpl.zeroHex;
       }
 
@@ -472,6 +480,13 @@ export class EthImpl implements Eth {
   async getCode(address: string, blockNumber: string | null) {
     // FIXME: This has to be reimplemented to get the data from the mirror node.
     this.logger.trace('getCode(address=%s, blockNumber=%s)', address, blockNumber);
+
+    const cachedLabel = `getCode.${address}.${blockNumber}`;
+    const cachedResponse: string | undefined = cache.get(cachedLabel);
+    if (cachedResponse != undefined) {
+      return cachedResponse;
+    }
+
     try {
       const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
@@ -479,6 +494,7 @@ export class EthImpl implements Eth {
       // handle INVALID_CONTRACT_ID
       if (e?.status?._code === Status.InvalidContractId._code || e?.message?.includes(Status.InvalidContractId.toString())) {
         this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0, err code: %s', address, blockNumber, e?.status?._code);
+        cache.set(cachedLabel, '0x0', constants.CACHE_TTL.ONE_HOUR);
         return '0x0';
       }
 
