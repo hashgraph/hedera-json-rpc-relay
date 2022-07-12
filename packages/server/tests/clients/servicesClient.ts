@@ -298,47 +298,53 @@ export default class ServicesClient {
         symbol: 'HTS',
         treasuryAccountId: '0.0.2',
         initialSupply: 5000,
-        adminPublicKey: this.DEFAULT_KEY,
-        accounts: []
+        adminPrivateKey: this.DEFAULT_KEY,
     }) {
         const {} = args;
 
         const expiration = new Date();
         expiration.setDate(expiration.getDate() + 30);
+
+        const htsClient = Client.forNetwork(JSON.parse(this.network));
+        htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
+
         const tokenCreate = await (await new TokenCreateTransaction()
             .setTokenName(args.tokenName)
             .setTokenSymbol(args.symbol)
             .setExpirationTime(expiration)
             .setDecimals(18)
-            .setTreasuryAccountId(this.client.operatorAccountId)
+            .setTreasuryAccountId(AccountId.fromString(args.treasuryAccountId))
             .setInitialSupply(args.initialSupply)
-            .setTransactionId(TransactionId.generate(this.client.operatorAccountId))
-            .setNodeAccountIds([this.client._network.getNodeAccountIdsForExecute()[0]]))
-            .execute(this.client);
+            .setTransactionId(TransactionId.generate(AccountId.fromString(args.treasuryAccountId)))
+            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]]))
+            .execute(htsClient);
 
         const receipt = await tokenCreate.getReceipt(this.client);
-        return receipt;
+        return {
+            client: htsClient,
+            receipt
+        };
     }
 
-    async associateHTSToken(accountId, tokenId, privateKey) {
+    async associateHTSToken(accountId, tokenId, privateKey, htsClient) {
         const tokenAssociate = await (await new TokenAssociateTransaction()
             .setAccountId(accountId)
             .setTokenIds([tokenId])
-            .freezeWith(this.client)
+            .freezeWith(htsClient)
             .sign(privateKey))
-            .execute(this.client);
+            .execute(htsClient);
 
-        await tokenAssociate.getReceipt(this.client);
+        await tokenAssociate.getReceipt(htsClient);
         this.logger.info(`HTS Token ${tokenId} associated to : ${accountId}`);
     };
 
-    async approveHTSToken(spenderId, tokenId) {
+    async approveHTSToken(spenderId, tokenId, htsClient) {
         const amount = 10000;
         const tokenApprove = await (new AccountAllowanceApproveTransaction()
             .addTokenAllowance(tokenId, spenderId, amount))
-            .execute(this.client);
+            .execute(htsClient);
 
-        await tokenApprove.getReceipt(this.client);
+        await tokenApprove.getReceipt(htsClient);
         this.logger.info(`${amount} of HTS Token ${tokenId} can be spent by ${spenderId}`);
     };
 

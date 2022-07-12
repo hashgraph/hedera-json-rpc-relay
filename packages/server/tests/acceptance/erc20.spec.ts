@@ -63,7 +63,7 @@ describe('ERC20 Acceptance Tests', async function () {
         anotherAccount = accounts[2].address;
 
         contracts.push(await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson));
-        contracts.push(await createHTS(name, symbol, accounts[0].accountId.toString(), 10000, accounts[0].privateKey.publicKey, ERC20MockJson.abi));
+        contracts.push(await createHTS(name, symbol, accounts[0], 10000, ERC20MockJson.abi, [accounts[1], accounts[2]]));
     });
 
     for (const i in testTitles) {
@@ -338,24 +338,24 @@ describe('ERC20 Acceptance Tests', async function () {
         return contract;
     };
 
-    const createHTS = async(tokenName, symbol, treasuryAccountId, initialSupply, adminPublicKey, abi) => {
-        const hts = await servicesNode.createHTS({
+    const createHTS = async(tokenName, symbol, adminAccount, initialSupply, abi, associatedAccounts) => {
+        const htsResult = await servicesNode.createHTS({
             tokenName,
             symbol,
-            treasuryAccountId,
+            treasuryAccountId: adminAccount.accountId.toString(),
             initialSupply,
-            adminPublicKey
+            adminPrivateKey: adminAccount.privateKey,
         });
 
         // Associate and approve token for all accounts
-        for (const account of accounts) {
-            await servicesNode.associateHTSToken(account.accountId, hts.tokenId, account.privateKey);
-            await servicesNode.approveHTSToken(account.accountId, hts.tokenId);
+        for (const account of associatedAccounts) {
+            await servicesNode.associateHTSToken(account.accountId, htsResult.receipt.tokenId, account.privateKey, htsResult.client);
+            await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId, htsResult.client);
         }
 
         // Setup initial balance of token owner account
-        await servicesNode.transferHTSToken(accounts[0].accountId, hts.tokenId, 10000);
-        const evmAddress = Utils.idToEvmAddress(hts.tokenId.toString());
+        await servicesNode.transferHTSToken(accounts[0].accountId, htsResult.receipt.tokenId, initialSupply, htsResult.client);
+        const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
         const contract = new ethers.Contract(evmAddress, abi, accounts[0].wallet);
 
         return contract;
