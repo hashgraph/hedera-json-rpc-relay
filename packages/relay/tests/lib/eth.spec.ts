@@ -37,6 +37,7 @@ import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
+import { TextEncoder } from 'util';
 const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
@@ -900,10 +901,10 @@ describe('Eth calls using MirrorNode', async function () {
           number: 10000
         }]
       });
-      mock.onGet(`contracts/0x000000000000000000000000000000000000055f`).reply(200, null);
-      mock.onGet(`accounts/0x000000000000000000000000000000000000055f`).reply(200, {
-        account: '0x000000000000000000000000000000000000055f'
-      })
+      mock.onGet(`contracts/${contractAddress1}`).reply(200, null);
+      mock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1
+      });
       sdkClientStub.getAccountBalanceInWeiBar.throws({
         status: {
           _code: 15
@@ -912,8 +913,9 @@ describe('Eth calls using MirrorNode', async function () {
 
       const resNoCache = await ethImpl.getBalance(contractAddress1, null);
       const resCached = await ethImpl.getBalance(contractAddress1, null);
-      expect(resNoCache).to.equal('0x0');
-      expect(resCached).to.equal('0x0');
+      sinon.assert.calledOnce(sdkClientStub.getAccountBalanceInWeiBar);
+      expect(resNoCache).to.equal(EthImpl.zeroHex);
+      expect(resCached).to.equal(EthImpl.zeroHex);
     });
 
     it('should return non cached value for account', async () => {
@@ -922,9 +924,9 @@ describe('Eth calls using MirrorNode', async function () {
           number: 10000
         }]
       });
-      mock.onGet(`contracts/0x000000000000000000000000000000000000055f`).reply(200, null);
-      mock.onGet(`accounts/0x000000000000000000000000000000000000055f`).reply(200, {
-        account: '0x000000000000000000000000000000000000055f'
+      mock.onGet(`contracts/${contractAddress1}`).reply(200, null);
+      mock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1
       })
       sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
 
@@ -938,13 +940,38 @@ describe('Eth calls using MirrorNode', async function () {
           number: 10000
         }]
       });
-      mock.onGet(`contracts/0x000000000000000000000000000000000000055f`).reply(200, {
-        contract_id: '0x000000000000000000000000000000000000055f'
+      mock.onGet(`contracts/${contractAddress1}`).reply(200, {
+        contract_id: contractAddress1
       });
       sdkClientStub.getContractBalanceInWeiBar.returns(1000);
 
       const res = await ethImpl.getBalance(contractAddress1, null);
       expect(res).to.equal('0x3e8');
+    });
+  });
+
+  describe('eth_getCode', async function() {
+    it('should return cached value', async () => {
+      sdkClientStub.getContractByteCode.throws({
+        status: {
+          _code: 16
+        }
+      });
+
+      const resNoCache = await ethImpl.getCode(contractAddress1, null);
+      const resCached = await ethImpl.getCode(contractAddress1, null);
+      sinon.assert.calledOnce(sdkClientStub.getContractByteCode);
+      expect(resNoCache).to.equal(EthImpl.zeroHex);
+      expect(resCached).to.equal(EthImpl.zeroHex);
+    });
+
+    it('should return the bytecode', async () => {
+      const bytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
+
+      sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));
+
+      const res = await ethImpl.getCode(contractAddress1, null);
+      expect(res).to.equal(bytecode);
     });
   });
 
