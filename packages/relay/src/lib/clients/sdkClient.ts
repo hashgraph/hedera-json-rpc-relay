@@ -120,6 +120,11 @@ export class SDKClient {
             .setAccountId(AccountId.fromString(account)), this.clientMain, callerName);
     }
 
+    async getAccountBalanceInTinyBar(account: string, callerName: string): Promise<BigNumber> {
+        const balance = await this.getAccountBalance(account, callerName);
+        return balance.hbars.to(HbarUnit.Tinybar);
+    }
+    
     async getAccountBalanceInWeiBar(account: string, callerName: string): Promise<BigNumber> {
         const balance = await this.getAccountBalance(account, callerName);
         return SDKClient.HbarToWeiBar(balance);
