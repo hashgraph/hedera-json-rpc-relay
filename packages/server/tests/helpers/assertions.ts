@@ -139,13 +139,13 @@ export default class Assertions {
         expect(Number(transactionReceipt.blockNumber)).to.gt(0);
         expect(transactionReceipt.blockNumber).to.eq(ethers.utils.hexValue(mirrorResult.block_number));
 
+        expect(transactionReceipt.cumulativeGasUsed).to.exist;
         expect(Number(transactionReceipt.cumulativeGasUsed)).to.gt(0);
         expect(Number(transactionReceipt.cumulativeGasUsed)).to.eq(mirrorResult.block_gas_used);
-        expect(transactionReceipt.cumulativeGasUsed).to.eq(mirrorResult.block_gas_used);
 
+        expect(transactionReceipt.gasUsed).to.exist;
         expect(Number(transactionReceipt.gasUsed)).to.gt(0);
         expect(Number(transactionReceipt.gasUsed)).to.eq(mirrorResult.gas_used);
-        expect(transactionReceipt.gasUsed).to.eq(mirrorResult.gas_used);
 
         expect(transactionReceipt.logsBloom).to.exist;
         expect(transactionReceipt.logsBloom).to.not.eq('0x0');
@@ -159,7 +159,7 @@ export default class Assertions {
         expect(Number(transactionReceipt.transactionIndex)).to.eq(mirrorResult.transaction_index);
 
         expect(transactionReceipt.effectiveGasPrice).to.exist;
-        expect(transactionReceipt.effectiveGasPrice).to.gt(0);
+        expect(Number(transactionReceipt.effectiveGasPrice)).to.gt(0);
         const effectiveGas = mirrorResult.max_fee_per_gas === undefined || mirrorResult.max_fee_per_gas == '0x'
             ? mirrorResult.gas_price
             : mirrorResult.max_fee_per_gas;
