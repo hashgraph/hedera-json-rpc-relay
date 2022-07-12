@@ -20,6 +20,7 @@
 
 // Used for fake implementation of block history
 import {Status, TransactionRecord} from "@hashgraph/sdk";
+import {EthImpl} from "./eth";
 
 export class Block {
     public readonly timestamp:string = '0x' + new Date().valueOf().toString(16);
@@ -44,7 +45,7 @@ export class Block {
     public readonly totalDifficulty:string = '0x1';
     public readonly transactions:string[] | Transaction[] = [];
     public readonly transactionsRoot:string = '0x0';
-    public readonly uncles:any[] = [];
+    public readonly uncles:string[] = [];
 
     constructor(args?:any) {
         if (args) {
@@ -103,36 +104,36 @@ export class CachedBlock extends Block {
 
 export class Receipt {
     public readonly transactionHash:string;
-    public readonly transactionIndex:number;
+    public readonly transactionIndex:string;
     public readonly blockHash:string;
-    public readonly blockNumber:number;
+    public readonly blockNumber:string;
     public readonly from:string;
     public readonly to:(undefined|string);
-    public readonly cumulativeGasUsed:number;
-    public readonly gasUsed:number;
+    public readonly cumulativeGasUsed:string;
+    public readonly gasUsed:string;
     public readonly contractAddress:(undefined|string);
-    public readonly logs:string[];
+    public readonly logs:Log[];
     public readonly logsBloom:string;
     public readonly root:(undefined|string);
-    public readonly status:(undefined|number);
-    public readonly effectiveGasPrice:(undefined|number);
+    public readonly status:(undefined|string);
+    public readonly effectiveGasPrice:(undefined|string);
 
     constructor(txHash:string, record:TransactionRecord, block:Block) {
-        const gasUsed = record.contractFunctionResult == null ? 0 : record.contractFunctionResult.gasUsed;
+        const gasUsed = EthImpl.numberTo0x(record.contractFunctionResult == null ? 0 : record.contractFunctionResult.gasUsed.toNumber());
         const contractAddress = record.contractFunctionResult == undefined ? undefined : "0x" + record.contractFunctionResult.contractId?.toSolidityAddress();
 
         this.transactionHash = txHash;
-        this.transactionIndex = 0;
-        this.blockNumber = Number(block.number);
+        this.transactionIndex = "0x0";
+        this.blockNumber = block.number;
         this.blockHash = block.hash;
         this.from = '0x';
         // TODO this.to = record.contractFunctionResult?.contractId;
-        this.cumulativeGasUsed = Number(gasUsed);
-        this.gasUsed = Number(gasUsed);
+        this.cumulativeGasUsed = gasUsed;
+        this.gasUsed = gasUsed;
         this.contractAddress = contractAddress;
         this.logs = [];
         this.logsBloom = '';
-        this.status = record.receipt.status == Status.Success ? 1 : 0;
+        this.status = record.receipt.status == Status.Success ? "0x1" : "0x0";
     }
 }
 

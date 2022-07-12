@@ -837,19 +837,19 @@ export class EthImpl implements Eth {
 
       const receipt = {
         blockHash: EthImpl.toHash32(receiptResponse.block_hash),
-        blockNumber: Number(receiptResponse.block_number),
+        blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
         from: receiptResponse.from,
         to: receiptResponse.to,
-        cumulativeGasUsed: Number(receiptResponse.block_gas_used),
-        gasUsed: Number(receiptResponse.gas_used),
+        cumulativeGasUsed: EthImpl.numberTo0x(receiptResponse.block_gas_used),
+        gasUsed: EthImpl.numberTo0x(receiptResponse.gas_used),
         contractAddress: createdContract,
         logs: logs,
         logsBloom: receiptResponse.bloom,
         transactionHash: EthImpl.toHash32(receiptResponse.hash),
-        transactionIndex: Number(receiptResponse.transaction_index),
-        effectiveGasPrice: Number.parseInt(effectiveGas) * 10_000_000_000,
+        transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
+        effectiveGasPrice: EthImpl.numberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
         root: receiptResponse.root,
-        status: Number(receiptResponse.status),
+        status: EthImpl.numberTo0x(receiptResponse.status),
       };
 
 
