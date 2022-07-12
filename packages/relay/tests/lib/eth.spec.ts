@@ -224,7 +224,7 @@ describe('Eth calls using MirrorNode', async function () {
       "bloom": logBloom1,
       "contract_id": contractId1,
       "data": "0x",
-      "index": 0,
+      "index": "0x0",
       "topics": defaultLogTopics,
       "root_contract_id": "0.0.34806097",
       "timestamp": contractTimestamp1
@@ -234,7 +234,7 @@ describe('Eth calls using MirrorNode', async function () {
       "bloom": logBloom2,
       "contract_id": contractId1,
       "data": "0x",
-      "index": 1,
+      "index": "0x1",
       "topics": defaultLogTopics,
       "root_contract_id": "0.0.34806097",
       "timestamp": contractTimestamp1
@@ -247,7 +247,7 @@ describe('Eth calls using MirrorNode', async function () {
       "bloom": logBloom3,
       "contract_id": contractId1,
       "data": "0x",
-      "index": 0,
+      "index": "0x0",
       "topics": [],
       "root_contract_id": "0.0.34806097",
       "timestamp": contractTimestamp2
@@ -260,7 +260,7 @@ describe('Eth calls using MirrorNode', async function () {
       "bloom": logBloom4,
       "contract_id": contractId2,
       "data": "0x",
-      "index": 0,
+      "index": "0x0",
       "topics": [],
       "root_contract_id": "0.0.34806097",
       "timestamp": contractTimestamp3
@@ -981,7 +981,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(res.blockHash.length).to.eq(66);
       expect(res.blockNumber).to.eq(tx.block_number);
       expect(res.data).to.eq(log.data);
-      expect(res.logIndex).to.eq(blockLogIndexOffset + log.index);
+      expect(res.logIndex).to.eq(blockLogIndexOffset + Number(log.index));
       expect(res.removed).to.eq(false);
       expect(res.topics).to.exist;
       expect(res.topics).to.deep.eq(log.topics);
@@ -1333,7 +1333,7 @@ describe('Eth', async function () {
   const defaultTransaction = {
     "accessList": undefined,
     "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
-    "blockNumber": 17,
+    "blockNumber": "0x11",
     "chainId": "0x12a",
     "from": "0x0000000000000000000000000000000000001f41",
     "gas": 123,
@@ -1386,7 +1386,7 @@ describe('Eth', async function () {
       "value_read": "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
       "value_written": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
     }],
-    "status": 1,
+    "status": "0x1",
     "access_list": "0x",
     "block_gas_used": 50000000,
     "chain_id": "0x12a",
@@ -1402,29 +1402,29 @@ describe('Eth', async function () {
 
   const defaultReceipt = {
     "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
-    "blockNumber": defaultDetailedContractResultByHash.block_number,
-    "cumulativeGasUsed": defaultDetailedContractResultByHash.block_gas_used,
-    "effectiveGasPrice": 12500000000000000000,
+    "blockNumber": "0x11",
+    "cumulativeGasUsed": "0x2faf080",
+    "effectiveGasPrice": "0xad78ebc5ac620000",
     "from": "0x0000000000000000000000000000000000001f41",
     "to": "0x0000000000000000000000000000000000001389",
-    "gasUsed": defaultDetailedContractResultByHash.gas_used,
+    "gasUsed": "0x7b",
     "logs": [{
-        "address": "0x0000000000000000000000000000000000001389",
-        "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
-        "blockNumber": 17,
-        "data": "0x0123",
-        "logIndex": 0,
-        "removed": false,
-        "topics": [
-          "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750"
-        ],
-        "transactionHash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
-        "transactionIndex": 1
+      "address": "0x0000000000000000000000000000000000001389",
+      "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
+      "blockNumber": 17,
+      "data": "0x0123",
+      "logIndex": 0,
+      "removed": false,
+      "topics": [
+        "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750"
+      ],
+      "transactionHash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+      "transactionIndex": 1
     }],
     "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-    "status": defaultDetailedContractResultByHash.status,
+    "status": "0x1",
     "transactionHash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
-    "transactionIndex": defaultDetailedContractResultByHash.transaction_index,
+    "transactionIndex": "0x1",
     "contractAddress": "0x0000000000000000000000000000000000001b59",
     "root": undefined
   };
@@ -1597,7 +1597,7 @@ describe('Eth', async function () {
 
       expect(result.accessList).to.eq(defaultTransaction.accessList);
       expect(result.blockHash).to.eq(defaultTransaction.blockHash);
-      expect(result.blockNumber).to.eq(`0x${defaultTransaction.blockNumber.toString(16)}`);
+      expect(result.blockNumber).to.eq(defaultTransaction.blockNumber);
       expect(result.chainId).to.eq(defaultTransaction.chainId);
       expect(result.from).to.eq(defaultTransaction.from);
       expect(result.gas).to.eq(defaultTransaction.gas);
@@ -1631,7 +1631,7 @@ describe('Eth', async function () {
       expect(result).to.exist;
       expect(result.accessList).to.eq(defaultTransaction.accessList);
       expect(result.blockHash).to.eq(defaultTransaction.blockHash);
-      expect(result.blockNumber).to.eq(`0x${defaultTransaction.blockNumber.toString(16)}`);
+      expect(result.blockNumber).to.eq(defaultTransaction.blockNumber);
       expect(result.chainId).to.eq(defaultTransaction.chainId);
       expect(result.from).to.eq(defaultTransaction.from);
       expect(result.gas).to.eq(defaultTransaction.gas);

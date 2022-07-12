@@ -20,7 +20,6 @@
 
 // Used for fake implementation of block history
 import {Status, TransactionRecord} from "@hashgraph/sdk";
-import {EthImpl} from "./eth";
 
 export class Block {
     public readonly timestamp:string = '0x' + new Date().valueOf().toString(16);
@@ -119,17 +118,17 @@ export class Receipt {
     public readonly effectiveGasPrice:(undefined|string);
 
     constructor(txHash:string, record:TransactionRecord, block:Block) {
-        const gasUsed = EthImpl.numberTo0x(record.contractFunctionResult == null ? 0 : record.contractFunctionResult.gasUsed.toNumber());
+        const gasUsed = record.contractFunctionResult == null ? 0 : record.contractFunctionResult.gasUsed;
         const contractAddress = record.contractFunctionResult == undefined ? undefined : "0x" + record.contractFunctionResult.contractId?.toSolidityAddress();
 
         this.transactionHash = txHash;
-        this.transactionIndex = "0x0";
+        this.transactionIndex = '0x0';
         this.blockNumber = block.number;
         this.blockHash = block.hash;
         this.from = '0x';
         // TODO this.to = record.contractFunctionResult?.contractId;
-        this.cumulativeGasUsed = gasUsed;
-        this.gasUsed = gasUsed;
+        this.cumulativeGasUsed = Number(gasUsed).toString(16);
+        this.gasUsed = Number(gasUsed).toString(16);
         this.contractAddress = contractAddress;
         this.logs = [];
         this.logsBloom = '';

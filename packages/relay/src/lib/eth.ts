@@ -849,7 +849,7 @@ export class EthImpl implements Eth {
         transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
         effectiveGasPrice: EthImpl.numberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
         root: receiptResponse.root,
-        status: EthImpl.numberTo0x(receiptResponse.status),
+        status: receiptResponse.status,
       };
 
 

@@ -136,15 +136,15 @@ export default class Assertions {
         expect(transactionReceipt.blockHash).to.eq(mirrorResult.block_hash.slice(0, 66));
 
         expect(transactionReceipt.blockNumber).to.exist;
-        expect(transactionReceipt.blockNumber).to.gt(0);
-        expect(transactionReceipt.blockNumber).to.eq(mirrorResult.block_number);
+        expect(Number(transactionReceipt.blockNumber)).to.gt(0);
+        expect(transactionReceipt.blockNumber).to.eq(ethers.utils.hexValue(mirrorResult.block_number));
 
-        expect(transactionReceipt.cumulativeGasUsed).to.exist;
-        expect(transactionReceipt.cumulativeGasUsed).to.gt(0);
+        expect(Number(transactionReceipt.cumulativeGasUsed)).to.gt(0);
+        expect(Number(transactionReceipt.cumulativeGasUsed)).to.eq(mirrorResult.block_gas_used);
         expect(transactionReceipt.cumulativeGasUsed).to.eq(mirrorResult.block_gas_used);
 
-        expect(transactionReceipt.gasUsed).to.exist;
-        expect(transactionReceipt.gasUsed).to.gt(0);
+        expect(Number(transactionReceipt.gasUsed)).to.gt(0);
+        expect(Number(transactionReceipt.gasUsed)).to.eq(mirrorResult.gas_used);
         expect(transactionReceipt.gasUsed).to.eq(mirrorResult.gas_used);
 
         expect(transactionReceipt.logsBloom).to.exist;
@@ -156,7 +156,7 @@ export default class Assertions {
         expect(transactionReceipt.transactionHash).to.eq(mirrorResult.hash);
 
         expect(transactionReceipt.transactionIndex).to.exist;
-        expect(transactionReceipt.transactionIndex).to.eq(mirrorResult.transaction_index);
+        expect(Number(transactionReceipt.transactionIndex)).to.eq(mirrorResult.transaction_index);
 
         expect(transactionReceipt.effectiveGasPrice).to.exist;
         expect(transactionReceipt.effectiveGasPrice).to.gt(0);
@@ -167,7 +167,7 @@ export default class Assertions {
         expect(transactionReceipt.effectiveGasPrice).to.eq(mirrorEffectiveGasPrice);
 
         expect(transactionReceipt.status).to.exist;
-        expect(transactionReceipt.status).to.eq(Number(mirrorResult.status));
+        expect(transactionReceipt.status).to.eq(mirrorResult.status);
 
         expect(transactionReceipt.logs).to.exist;
         expect(transactionReceipt.logs.length).to.eq(mirrorResult.logs.length);
