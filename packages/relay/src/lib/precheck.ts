@@ -23,6 +23,7 @@ import { predefined } from './errors';
 import { MirrorNodeClient, SDKClient } from './clients';
 import {EthImpl} from "./eth";
 import {Logger} from "pino";
+import constants from './constants';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
