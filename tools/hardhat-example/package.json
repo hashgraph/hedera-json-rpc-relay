@@ -5,6 +5,7 @@
     "hardhat": "^2.10.0"
   },
   "dependencies": {
+    "@hashgraph/hethers": "^1.1.2",
     "dotenv": "^16.0.1"
   }
 }

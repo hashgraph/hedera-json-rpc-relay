@@ -9,7 +9,7 @@ describe('RPC', function() {
     expect(Number(balance)).to.be.greaterThan(0);
   });
   it('should be able to transfer hbars between two accounts', async function() {
-    const provider = new hre.ethers.providers.JsonRpcProvider('http://localhost:7546');
+    const provider = new hre.ethers.providers.JsonRpcProvider(process.env.RELAY_ENDPOINT);
     const walletReceiver = new hre.ethers.Wallet(process.env.RECEIVER_PRIVATE_KEY, provider);
 
     const hbarsBefore = (await walletReceiver.getBalance()).toString();
@@ -17,7 +17,7 @@ describe('RPC', function() {
     const hbarsAfter = (await walletReceiver.getBalance()).toString();
     expect(hbarsBefore).to.not.be.equal(hbarsAfter);
   });
-  it('should be able to deploy a contract', async function() {
+  it.only('should be able to deploy a contract', async function() {
     contractAddress = await hre.run('deploy-contract');
     expect(contractAddress).to.not.be.null;
   });

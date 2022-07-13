@@ -31,7 +31,7 @@ module.exports = {
   defaultNetwork: 'relay',
   networks: {
     relay: {
-      url: 'http://localhost:7546'
+      url: process.env.RELAY_ENDPOINT
     }
   }
 };

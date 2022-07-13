@@ -4,14 +4,13 @@ Simple scripts for basic operations like hbars transfer, balance fetching, and c
 
 ## Prerequisite
 You must have running:
-- JSON-RPC Relay on port :7546
-- Hedera Local Node
+- JSON-RPC Relay
 
 ## Configuration
 
 Create `.env` file based on `.env.example`
 ```
-# ED25519 keys
+# Alias accounts keys
 OPERATOR_PRIVATE_KEY=
 RECEIVER_PRIVATE_KEY=
 
