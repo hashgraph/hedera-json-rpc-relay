@@ -17,7 +17,7 @@ describe('RPC', function() {
     const hbarsAfter = (await walletReceiver.getBalance()).toString();
     expect(hbarsBefore).to.not.be.equal(hbarsAfter);
   });
-  it.only('should be able to deploy a contract', async function() {
+  it('should be able to deploy a contract', async function() {
     contractAddress = await hre.run('deploy-contract');
     expect(contractAddress).to.not.be.null;
   });
