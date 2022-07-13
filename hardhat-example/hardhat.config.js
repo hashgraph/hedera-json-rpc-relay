@@ -3,27 +3,27 @@ require('@nomicfoundation/hardhat-toolbox');
 
 task('show-balance', async () => {
   const showBalance = require('./scripts/showBalance');
-  return await showBalance();
+  return showBalance();
 });
 
 task('transfer-hbars', async () => {
   const transferHbars = require('./scripts/transferHbars');
-  return await transferHbars();
+  return transferHbars();
 });
 
 task('deploy-contract', async () => {
   const deployContract = require('./scripts/deployContract');
-  return await deployContract();
+  return deployContract();
 });
 
-task('contract-view-call', async (taskArgs, hre) => {
+task('contract-view-call', async (taskArgs) => {
   const contractViewCall = require('./scripts/contractViewCall');
-  return await contractViewCall(taskArgs.contractAddress);
+  return contractViewCall(taskArgs.contractAddress);
 });
 
-task('contract-call', async (taskArgs, hre) => {
+task('contract-call', async (taskArgs) => {
   const contractCall = require('./scripts/contractCall');
-  return await contractCall(taskArgs.contractAddress, taskArgs.msg);
+  return contractCall(taskArgs.contractAddress, taskArgs.msg);
 });
 
 module.exports = {
