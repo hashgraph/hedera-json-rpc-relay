@@ -38,6 +38,8 @@ import {
     TransferTransaction,
     ContractCreateFlow,
     FileUpdateTransaction,
+    TransactionId,
+    AccountAllowanceApproveTransaction,
     AccountBalance,
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
@@ -243,6 +245,7 @@ export default class ServicesClient {
             accountInfo.accountId,
             accountInfo.contractAccountId,
             servicesClient,
+            privateKey,
             wallet
         );
     };
@@ -289,6 +292,78 @@ export default class ServicesClient {
 
         return ethers.BigNumber.from(balance.hbars.toTinybars().toString()).mul(ServicesClient.TINYBAR_TO_WEIBAR_COEF);
     }
+
+    async createHTS( args = {
+        tokenName: 'Default Name',
+        symbol: 'HTS',
+        treasuryAccountId: '0.0.2',
+        initialSupply: 5000,
+        adminPrivateKey: this.DEFAULT_KEY,
+    }) {
+        const {} = args;
+
+        const expiration = new Date();
+        expiration.setDate(expiration.getDate() + 30);
+
+        const htsClient = Client.forNetwork(JSON.parse(this.network));
+        htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
+
+        const tokenCreate = await (await new TokenCreateTransaction()
+            .setTokenName(args.tokenName)
+            .setTokenSymbol(args.symbol)
+            .setExpirationTime(expiration)
+            .setDecimals(18)
+            .setTreasuryAccountId(AccountId.fromString(args.treasuryAccountId))
+            .setInitialSupply(args.initialSupply)
+            .setTransactionId(TransactionId.generate(AccountId.fromString(args.treasuryAccountId)))
+            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]]))
+            .execute(htsClient);
+
+        const receipt = await tokenCreate.getReceipt(this.client);
+        return {
+            client: htsClient,
+            receipt
+        };
+    }
+
+    async associateHTSToken(accountId, tokenId, privateKey, htsClient) {
+        const tokenAssociate = await (await new TokenAssociateTransaction()
+            .setAccountId(accountId)
+            .setTokenIds([tokenId])
+            .freezeWith(htsClient)
+            .sign(privateKey))
+            .execute(htsClient);
+
+        await tokenAssociate.getReceipt(htsClient);
+        this.logger.info(`HTS Token ${tokenId} associated to : ${accountId}`);
+    };
+
+    async approveHTSToken(spenderId, tokenId, htsClient) {
+        const amount = 10000;
+        const tokenApprove = await (new AccountAllowanceApproveTransaction()
+            .addTokenAllowance(tokenId, spenderId, amount))
+            .execute(htsClient);
+
+        await tokenApprove.getReceipt(htsClient);
+        this.logger.info(`${amount} of HTS Token ${tokenId} can be spent by ${spenderId}`);
+    };
+
+    async transferHTSToken(accountId, tokenId, amount, fromId = this.client.operatorAccountId) {
+        try {
+            const tokenTransfer = await (await new TransferTransaction()
+                .addTokenTransfer(tokenId, fromId, -amount)
+                .addTokenTransfer(tokenId, accountId, amount))
+                .execute(this.client);
+
+            const rec = await tokenTransfer.getReceipt(this.client);
+            this.logger.info(`${amount} of HTS Token ${tokenId} can be spent by ${accountId}`);
+            this.logger.debug(rec);
+        }
+        catch(e) {
+            this.logger.debug(e);
+        }
+    };
+
 }
 
 export class AliasAccount {
@@ -297,13 +372,15 @@ export class AliasAccount {
     public readonly accountId: AccountId;
     public readonly address: string;
     public readonly client: ServicesClient;
+    public readonly privateKey: PrivateKey;
     public readonly wallet: ethers.Wallet;
 
-    constructor(_alias, _accountId, _address, _client, _wallet) {
+    constructor(_alias, _accountId, _address, _client, _privateKey, _wallet) {
         this.alias = _alias;
         this.accountId = _accountId;
         this.address = _address;
         this.client = _client;
+        this.privateKey = _privateKey;
         this.wallet = _wallet;
     }
 
