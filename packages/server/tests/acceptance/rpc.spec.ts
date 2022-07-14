@@ -29,7 +29,6 @@ import { AccountBalanceQuery, ContractFunctionParameters } from '@hashgraph/sdk'
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
-import {JsonRpcError} from "@hashgraph/json-rpc-relay";
 import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors';
 
@@ -1002,7 +1001,7 @@ describe('RPC Server Acceptance Tests', function () {
                     };
 
                     const res = await relay.call('eth_call', [callData]);
-                    expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+                    expect(res).to.eq('0x'); // confirm no error
                 });
                 
                 it('should fail "eth_call" for non-existing contract address', async function () {
