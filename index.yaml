@@ -3,13 +3,13 @@ entries:
   hedera-json-rpc-relay:
   - apiVersion: v2
     appVersion: 0.3.0-SNAPSHOT
-    created: "2022-07-13T15:33:13.975276-06:00"
+    created: "2022-07-14T13:39:42.016628-06:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: ee9272459c41d7853bbfb1b47175f2cddb4a4802494c605faf148990466db742
     home: https://github.com/hashgraph/hedera-json-rpc-relay
     name: hedera-json-rpc-relay
     type: application
     urls:
-    - https://hashgraph.github.io/hedera-json-rpc-relay/helm-chart/hedera-json-rpc-relay-0.3.0-SNAPSHOT.tgz
+    - https://hashgraph.github.io/hedera-json-rpc-relay/hedera-json-rpc-relay-0.3.0-SNAPSHOT.tgz
     version: 0.3.0-SNAPSHOT
-generated: "2022-07-13T15:33:13.974756-06:00"
+generated: "2022-07-14T13:39:42.016037-06:00"
