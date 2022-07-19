@@ -40,6 +40,9 @@ describe('Precheck', async function() {
 
     const txWithMatchingChainId = '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad';
     const txWithNonMatchingChainId = '0xf86a0385a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be400801ca06750e92db52fa708e27f94f27e0cfb7f5800f9b657180bb2e94c1520cfb1fb6da01bec6045068b6db38b55017bb8b50166699384bc1791fd8331febab0cf629a2a';
+    const txWithValueMoreThanOneTinyBar = '0xf8628080809449858d4445908c12fcf70251d3f4682e8c9c381085174876e800801ba015ec73d3e329c7f5c0228be39bf30758f974d69468847dd507082c89ec453fe2a04124cc1dd6ac07417e7cdbe04cb99d698bddc6ce4d04054dd8978dec3493f3d2';
+    const txWithValueLessThanOneTinybar = '0xf8618080809449858d4445908c12fcf70251d3f4682e8c9c38108405f5e100801ba08249a7664c9290e6896711059d2ab75b10675b8b2ef7da41f4dd94c99f16f587a00110bc057ae0837da17a6f31f5123977f820921e333cb75fbe342583d278327d';
+    const txWithValueLessThanOneTinybarAndNotEmptyData = '0xf8638080809449858d4445908c12fcf70251d3f4682e8c9c3810830186a0831231231ba0d8d47f572b49be8da9866e1979ea8fb8060f885119aff9d457a77be088f03545a00c9c1266548930924f5f8c11854bcc369bda1449d203c86a15840759b61cdffe';
     const oneTinyBar = ethers.utils.parseUnits('1', 10);
     const defaultGasPrice = 720_000_000_000;
     const defaultChainId = Number('0x12a');
@@ -71,6 +74,38 @@ describe('Precheck', async function() {
     this.beforeEach(() => {
         // reset mock
         mock.reset();
+    });
+
+    describe('value', async function() {
+        it('should throw an exception if value is less than 1 tinybar', async function() {
+            let hasError = false;
+            try {
+                precheck.value(txWithValueLessThanOneTinybar);
+            } catch (e) {
+                expect(e).to.exist;
+                expect(e.code).to.eq(-32600);
+                expect(e.message).to.eq('Invalid request');
+                hasError = true;
+            }
+
+            expect(hasError).to.be.true;
+        });
+
+        it('should pass if value is more than 1 tinybar', async function() {
+            try {
+                precheck.value(txWithValueMoreThanOneTinyBar);
+            } catch (e) {
+                expect(e).to.not.exist;
+            }
+        });
+
+        it('should pass if value is less than 1 tinybar and data is not empty', async function() {
+            try {
+                precheck.value(txWithValueLessThanOneTinybarAndNotEmptyData);
+            } catch (e) {
+                expect(e).to.not.exist;
+            }
+        });
     });
 
     describe('chainId', async function() {
