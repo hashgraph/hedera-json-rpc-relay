@@ -28,6 +28,7 @@ import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
 import { Precheck } from './precheck';
+import { ethers } from 'ethers';
 
 const _ = require('lodash');
 const cache = require('js-cache');
@@ -646,23 +647,24 @@ export class EthImpl implements Eth {
   async sendRawTransaction(transaction: string): Promise<string | JsonRpcError> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
 
+    const parsedTx = ethers.utils.parseTransaction(transaction);
     try {
-      await this.precheck.gasLimit(transaction);
-      await this.precheck.nonce(transaction);
-      this.precheck.chainId(transaction);
-      this.precheck.value(transaction);
+      this.precheck.gasLimit(parsedTx);
+      await this.precheck.nonce(parsedTx);
+      this.precheck.chainId(parsedTx);
+      this.precheck.value(parsedTx);
     }
     catch(e: any) {
       return e;
     }
 
     const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
-    const gasPrecheck = this.precheck.gasPrice(transaction, gasPrice);
+    const gasPrecheck = this.precheck.gasPrice(parsedTx, gasPrice);
     if (!gasPrecheck.passes) {
       return gasPrecheck.error;
     }
 
-    const balancePrecheck = await this.precheck.balance(transaction, EthImpl.ethSendRawTransaction);
+    const balancePrecheck = await this.precheck.balance(parsedTx, EthImpl.ethSendRawTransaction);
     if (!balancePrecheck.passes) {
       return balancePrecheck.error;
     }

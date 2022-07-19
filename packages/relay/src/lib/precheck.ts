@@ -38,8 +38,14 @@ export class Precheck {
     this.logger = logger;
   }
 
-  value(transaction: string) {
-    const tx = ethers.utils.parseTransaction(transaction);
+  private static parseTxIfNeeded(transaction: string | ethers.Transaction): ethers.Transaction {
+    return typeof transaction === 'string'
+      ? ethers.utils.parseTransaction(transaction)
+      : transaction;
+  }
+
+  value(transaction: string | ethers.Transaction) {
+    const tx = Precheck.parseTxIfNeeded(transaction);
     if (tx.data === EthImpl.emptyHex && tx.value.lt(constants.TINYBAR_TO_WEIBAR_COEF)) {
       throw predefined.VALUE_TOO_LOW;
     }
@@ -48,8 +54,8 @@ export class Precheck {
   /**
    * @param transaction
    */
-  async nonce(transaction: string) {
-    const tx = ethers.utils.parseTransaction(transaction);
+  async nonce(transaction: string | ethers.Transaction) {
+    const tx = Precheck.parseTxIfNeeded(transaction);
     const rsTx = await ethers.utils.resolveProperties({
       gasPrice: tx.gasPrice,
       gasLimit: tx.gasLimit,
@@ -74,8 +80,8 @@ export class Precheck {
   }
 
 
-  chainId(transaction: string) {
-    const tx = ethers.utils.parseTransaction(transaction);
+  chainId(transaction: string | ethers.Transaction) {
+    const tx = Precheck.parseTxIfNeeded(transaction);
     const txChainId = EthImpl.prepend0x(Number(tx.chainId).toString(16));
     const passes = txChainId === this.chain;
     if (!passes) {
@@ -84,8 +90,8 @@ export class Precheck {
     }
   }
 
-  gasPrice(transaction: string, gasPrice: number) {
-    const tx = ethers.utils.parseTransaction(transaction);
+  gasPrice(transaction: string | ethers.Transaction, gasPrice: number) {
+    const tx = Precheck.parseTxIfNeeded(transaction);
     const minGasPrice = ethers.ethers.BigNumber.from(gasPrice);
     const txGasPrice = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
     const passes = txGasPrice.gte(minGasPrice);
@@ -100,13 +106,12 @@ export class Precheck {
     };
   }
 
-  async balance(transaction: string, callerName: string) {
+  async balance(transaction: string | ethers.Transaction, callerName: string) {
+    const tx = Precheck.parseTxIfNeeded(transaction);
     const result = {
       passes: false,
       error: predefined.INSUFFICIENT_ACCOUNT_BALANCE
     };
-
-    const tx = ethers.utils.parseTransaction(transaction);
     const txGas = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
     const txTotalValue = tx.value.add(txGas.mul(tx.gasLimit));
 
@@ -132,8 +137,8 @@ export class Precheck {
   /**
    * @param transaction
    */
-  async gasLimit(transaction: string) {
-    const tx = ethers.utils.parseTransaction(transaction);
+  gasLimit(transaction: string | ethers.Transaction) {
+    const tx = Precheck.parseTxIfNeeded(transaction);
     const gasLimit = tx.gasLimit.toNumber();
     const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
 
