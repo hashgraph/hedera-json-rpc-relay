@@ -40,7 +40,7 @@ export class Precheck {
 
   value(transaction: string) {
     const tx = ethers.utils.parseTransaction(transaction);
-    if (tx.data === '0x' && tx.value.lt(constants.TINYBAR_TO_WEIBAR_COEF)) {
+    if (tx.data === EthImpl.emptyHex && tx.value.lt(constants.TINYBAR_TO_WEIBAR_COEF)) {
       throw predefined.VALUE_TOO_LOW;
     }
   }
