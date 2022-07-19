@@ -83,8 +83,8 @@ describe('Precheck', async function() {
                 precheck.value(txWithValueLessThanOneTinybar);
             } catch (e) {
                 expect(e).to.exist;
-                expect(e.code).to.eq(-32600);
-                expect(e.message).to.eq('Invalid request');
+                expect(e.code).to.eq(-32602);
+                expect(e.message).to.eq('Value too low');
                 hasError = true;
             }
 

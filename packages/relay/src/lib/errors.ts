@@ -101,4 +101,9 @@ export const predefined = {
     code: -32000,
     message: 'Insufficient funds for transfer'
   }),
+  'VALUE_TOO_LOW': new JsonRpcError({
+    name: 'Value too low',
+    code: -32602,
+    message: 'Value too low'
+  }),
 };
