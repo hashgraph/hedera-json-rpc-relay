@@ -131,7 +131,7 @@ describe('RPC Server Acceptance Tests', function () {
                     expect(logs[i]).to.have.property('logIndex');
 
                     // verify logIndex represents index in block across transactions
-                    expect(logs[i].logIndex).to.equal(Number(i));
+                    expect(logs[i].logIndex).to.equal(ethers.utils.hexValue(Number(i)));
 
                     const key = `${logs[i].transactionHash}---${logs[i].logIndex}`;
                     txIndexLogIndexMapping.push(key);
@@ -156,7 +156,7 @@ describe('RPC Server Acceptance Tests', function () {
 
                 const log4BlockInt = parseInt(log4Block.blockNumber);
                 for (let i in logs) {
-                    expect(logs[i].blockNumber).to.be.greaterThanOrEqual(log4BlockInt);
+                    expect(parseInt(logs[i].blockNumber, 16)).to.be.greaterThanOrEqual(log4BlockInt);
                 }
             });
 
@@ -182,8 +182,8 @@ describe('RPC Server Acceptance Tests', function () {
                 const log0BlockInt = parseInt(log0Block.blockNumber);
                 const log4BlockInt = parseInt(log4Block.blockNumber);
                 for (let i in logs) {
-                    expect(logs[i].blockNumber).to.be.greaterThanOrEqual(log0BlockInt);
-                    expect(logs[i].blockNumber).to.be.lessThanOrEqual(log4BlockInt);
+                    expect(parseInt(logs[i].blockNumber, 16)).to.be.greaterThanOrEqual(log0BlockInt);
+                    expect(parseInt(logs[i].blockNumber, 16)).to.be.lessThanOrEqual(log4BlockInt);
                 }
             });
 
