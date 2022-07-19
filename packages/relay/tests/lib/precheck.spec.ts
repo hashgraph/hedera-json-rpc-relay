@@ -84,7 +84,7 @@ describe('Precheck', async function() {
             } catch (e) {
                 expect(e).to.exist;
                 expect(e.code).to.eq(-32602);
-                expect(e.message).to.eq('Value too low');
+                expect(e.message).to.eq('Value below 10_000_000_000 wei which is 1 tinybar');
                 hasError = true;
             }
 

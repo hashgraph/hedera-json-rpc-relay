@@ -104,6 +104,6 @@ export const predefined = {
   'VALUE_TOO_LOW': new JsonRpcError({
     name: 'Value too low',
     code: -32602,
-    message: 'Value too low'
+    message: 'Value below 1 tinybar which is 10_000_000_000 wei'
   }),
 };
