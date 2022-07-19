@@ -168,7 +168,7 @@ describe('RPC Server Acceptance Tests', function () {
 
                 const log0BlockInt = parseInt(log0Block.blockNumber);
                 for (let i in logs) {
-                    expect(logs[i].blockNumber).to.be.lessThanOrEqual(log0BlockInt);
+                    expect(parseInt(logs[i].blockNumber, 16)).to.be.lessThanOrEqual(log0BlockInt);
                 }
             });
 
