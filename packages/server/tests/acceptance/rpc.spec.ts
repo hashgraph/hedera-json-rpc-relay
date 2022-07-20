@@ -73,9 +73,9 @@ describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
 
         this.beforeAll(async () => {
-            accounts[0] = await servicesNode.createAliasAccount(20);
-            accounts[1] = await servicesNode.createAliasAccount(20);
-            accounts[2] = await servicesNode.createAliasAccount(50);
+            accounts[0] = await servicesNode.createAliasAccount(15);
+            accounts[1] = await servicesNode.createAliasAccount(15);
+            accounts[2] = await servicesNode.createAliasAccount(30);
             contractId = await accounts[0].client.createParentContract(parentContractJson);
 
             const params = new ContractFunctionParameters().addUint256(1);
