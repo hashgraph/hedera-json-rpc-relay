@@ -43,6 +43,9 @@ jobs:
       - name: Run RPC Server
         run: npm run integration:prerequisite &
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Install hardhat compatibility dependencies
         run: cd ./tools/hardhat-example/ && npm ci
 
