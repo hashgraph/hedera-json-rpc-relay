@@ -809,7 +809,7 @@ describe('RPC Server Acceptance Tests', function () {
             it('should call eth_gasPrice', async function () {
                 const res = await relay.call('eth_gasPrice', []);
                 expect(res).to.exist;
-                if (process.env.LOCAL_NODE) {
+                if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
                     expect(res).be.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
                 }
                 else {
@@ -1069,7 +1069,7 @@ describe('RPC Server Acceptance Tests', function () {
         });
 
         // Only run the following tests against a local node since they only work with the genesis account
-        if (process.env.LOCAL_NODE) {
+        if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
             describe('Gas Price related RPC endpoints', () => {
                 let lastBlockBeforeUpdate;
                 let lastBlockAfterUpdate;

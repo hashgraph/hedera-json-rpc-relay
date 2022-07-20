@@ -61,7 +61,7 @@ export default class Assertions {
         // Assert static values
         expect(relayResponse.baseFeePerGas).to.exist;
 
-        if (process.env.LOCAL_NODE) {
+        if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
             expect(relayResponse.baseFeePerGas).to.be.equal(ethers.utils.hexValue(this.defaultGasPrice));
         }
         else {
