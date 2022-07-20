@@ -38,6 +38,13 @@ export class Precheck {
     this.logger = logger;
   }
 
+  value(transaction: string) {
+    const tx = ethers.utils.parseTransaction(transaction);
+    if (tx.data === EthImpl.emptyHex && tx.value.lt(constants.TINYBAR_TO_WEIBAR_COEF)) {
+      throw predefined.VALUE_TOO_LOW;
+    }
+  }
+
   /**
    * @param transaction
    */

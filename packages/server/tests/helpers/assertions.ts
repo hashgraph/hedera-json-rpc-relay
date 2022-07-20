@@ -129,15 +129,15 @@ export default class Assertions {
         expect(relayResponse.blockNumber).to.eq(ethers.utils.hexValue(mirrorNodeResponse.block_number));
         // expect(relayResponse.chainId).to.eq(mirrorNodeResponse.chain_id); // FIXME must not be null!
         expect(relayResponse.from).to.eq(mirrorNodeResponse.from);
-        expect(relayResponse.gas).to.eq(mirrorNodeResponse.gas_used);
+        expect(relayResponse.gas).to.eq(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
         // expect(relayResponse.gasPrice).to.eq(mirrorNodeResponse.gas_price); // FIXME must not be null!
         expect(relayResponse.hash).to.eq(mirrorNodeResponse.hash.slice(0, 66));
         expect(relayResponse.input).to.eq(mirrorNodeResponse.function_parameters);
         if (relayResponse.to || mirrorNodeResponse.to) {
             expect(relayResponse.to).to.eq(mirrorNodeResponse.to);
         }
-        expect(relayResponse.transactionIndex).to.eq(mirrorNodeResponse.transaction_index);
-        expect(relayResponse.value).to.eq(mirrorNodeResponse.amount);
+        expect(relayResponse.transactionIndex).to.eq(ethers.utils.hexValue(mirrorNodeResponse.transaction_index));
+        expect(relayResponse.value).to.eq(ethers.utils.hexValue(mirrorNodeResponse.amount));
     }
 
     static transactionReceipt = (transactionReceipt, mirrorResult) => {
