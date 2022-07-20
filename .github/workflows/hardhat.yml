@@ -45,8 +45,8 @@ jobs:
       - name: Install hardhat dependencies
         run: cd ./tools/hardhat-example/ && npm ci
 
-      - name: Run the dapp bootstrap script
-        run: cd ./tools/hardhat-example/ && npx hardhat test
-
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
+
+      - name: Run the dapp bootstrap script
+        run: cd ./tools/hardhat-example/ && npx hardhat test
