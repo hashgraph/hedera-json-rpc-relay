@@ -1068,18 +1068,6 @@ describe('RPC Server Acceptance Tests', function () {
             });
         });
 
-        describe('eth_feeHistory', () => {
-            it('should call eth_feeHistory', async function () {
-                const res = await relay.call('eth_feeHistory', ['0x1', 'latest', null]);
-                expect(res.baseFeePerGas).to.exist.to.be.an('Array');
-                expect(res.baseFeePerGas.length).to.be.gt(0);
-                expect(res.gasUsedRatio).to.exist.to.be.an('Array');
-                expect(res.gasUsedRatio.length).to.be.gt(0);
-                expect(res.oldestBlock).to.exist;
-                expect(Number(res.oldestBlock)).to.be.gt(0);
-            });
-        });
-
         // Only run the following tests against a local node since they only work with the genesis account
         if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
             describe('Gas Price related RPC endpoints', () => {
@@ -1139,5 +1127,17 @@ describe('RPC Server Acceptance Tests', function () {
                 });
             });
         }
+
+        describe('eth_feeHistory', () => {
+            it('should call eth_feeHistory', async function () {
+                const res = await relay.call('eth_feeHistory', ['0x1', 'latest', null]);
+                expect(res.baseFeePerGas).to.exist.to.be.an('Array');
+                expect(res.baseFeePerGas.length).to.be.gt(0);
+                expect(res.gasUsedRatio).to.exist.to.be.an('Array');
+                expect(res.gasUsedRatio.length).to.be.gt(0);
+                expect(res.oldestBlock).to.exist;
+                expect(Number(res.oldestBlock)).to.be.gt(0);
+            });
+        });
     });
 });
