@@ -21,14 +21,15 @@
 import * as ethers from 'ethers';
 import { predefined } from './errors';
 import { MirrorNodeClient, SDKClient } from './clients';
-import { EthImpl } from "./eth";
-import { Logger } from "pino";
+import { EthImpl } from './eth';
+import { Logger } from 'pino';
 import constants from './constants';
+import { Transaction } from 'ethers';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
   private sdkClient: SDKClient;
-  private chain: string;
+  private readonly chain: string;
   private readonly logger: Logger;
 
   constructor(mirrorNodeClient: MirrorNodeClient, sdkClient: SDKClient, logger: Logger, chainId: string) {
@@ -38,8 +39,13 @@ export class Precheck {
     this.logger = logger;
   }
 
-  value(transaction: string) {
-    const tx = ethers.utils.parseTransaction(transaction);
+  private static parseTxIfNeeded(transaction: string | Transaction): Transaction {
+    return typeof transaction === 'string'
+      ? ethers.utils.parseTransaction(transaction)
+      : transaction;
+  }
+
+  value(tx: Transaction) {
     if (tx.data === EthImpl.emptyHex && tx.value.lt(constants.TINYBAR_TO_WEIBAR_COEF)) {
       throw predefined.VALUE_TOO_LOW;
     }
@@ -47,9 +53,23 @@ export class Precheck {
 
   /**
    * @param transaction
+   * @param gasPrice
    */
-  async nonce(transaction: string) {
-    const tx = ethers.utils.parseTransaction(transaction);
+  async sendRawTransactionCheck(transaction: string, gasPrice: number) {
+    const parsedTx = Precheck.parseTxIfNeeded(transaction);
+
+    this.gasLimit(parsedTx);
+    await this.nonce(parsedTx);
+    this.chainId(parsedTx);
+    this.value(parsedTx);
+    this.gasPrice(parsedTx, gasPrice);
+    await this.balance(parsedTx, EthImpl.ethSendRawTransaction);
+  }
+
+  /**
+   * @param tx
+   */
+  async nonce(tx: Transaction) {
     const rsTx = await ethers.utils.resolveProperties({
       gasPrice: tx.gasPrice,
       gasLimit: tx.gasLimit,
@@ -73,67 +93,66 @@ export class Precheck {
     }
   }
 
-
-  chainId(transaction: string) {
-    const tx = ethers.utils.parseTransaction(transaction);
+  /**
+   * @param tx
+   */
+  chainId(tx: Transaction) {
     const txChainId = EthImpl.prepend0x(Number(tx.chainId).toString(16));
     const passes = txChainId === this.chain;
     if (!passes) {
-      this.logger.trace('Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)', transaction, txChainId);
+      this.logger.trace('Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)', JSON.stringify(tx), txChainId);
       throw predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain);
     }
   }
 
-  gasPrice(transaction: string, gasPrice: number) {
-    const tx = ethers.utils.parseTransaction(transaction);
+  /**
+   * @param tx
+   * @param gasPrice
+   */
+  gasPrice(tx: Transaction, gasPrice: number) {
     const minGasPrice = ethers.ethers.BigNumber.from(gasPrice);
     const txGasPrice = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
     const passes = txGasPrice.gte(minGasPrice);
 
     if (!passes) {
-      this.logger.trace('Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)', transaction, txGasPrice, minGasPrice);
+      this.logger.trace('Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)', JSON.stringify(tx), txGasPrice, minGasPrice);
+      throw predefined.GAS_PRICE_TOO_LOW;
     }
-
-    return {
-      passes,
-      error: predefined.GAS_PRICE_TOO_LOW
-    };
   }
 
-  async balance(transaction: string, callerName: string) {
+  /**
+   * @param tx
+   * @param callerName
+   */
+  async balance(tx: Transaction, callerName: string) {
     const result = {
       passes: false,
       error: predefined.INSUFFICIENT_ACCOUNT_BALANCE
     };
-
-    const tx = ethers.utils.parseTransaction(transaction);
     const txGas = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
     const txTotalValue = tx.value.add(txGas.mul(tx.gasLimit));
+    let tinybars;
 
     try {
       const { account }: any = await this.mirrorNodeClient.getAccount(tx.from!);
-      const tinybars = await this.sdkClient.getAccountBalanceInTinyBar(account, callerName);
+      tinybars = await this.sdkClient.getAccountBalanceInTinyBar(account, callerName);
 
       result.passes = ethers.ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
-
-      if (!result.passes) {
-        this.logger.trace('Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountTinyBarBalance=%s)', transaction, txTotalValue, tinybars);
-      }
     } catch (error: any) {
-      this.logger.trace('Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)', transaction, txTotalValue, error.message);
-
-      result.passes = false;
-      result.error = predefined.INTERNAL_ERROR;
+      this.logger.trace('Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)', JSON.stringify(tx), txTotalValue, error.message);
+      throw predefined.INTERNAL_ERROR;
     }
 
-    return result;
+    if (!result.passes) {
+      this.logger.trace('Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountTinyBarBalance=%s)', JSON.stringify(tx), txTotalValue, tinybars);
+      throw predefined.INSUFFICIENT_ACCOUNT_BALANCE;
+    }
   }
 
   /**
-   * @param transaction
+   * @param tx
    */
-  async gasLimit(transaction: string) {
-    const tx = ethers.utils.parseTransaction(transaction);
+  gasLimit(tx: Transaction) {
     const gasLimit = tx.gasLimit.toNumber();
     const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
 
@@ -141,10 +160,10 @@ export class Precheck {
 
 
     if (gasLimit > constants.BLOCK_GAS_LIMIT) {
-      this.logger.trace(`${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`, transaction, gasLimit, constants.BLOCK_GAS_LIMIT);
+      this.logger.trace(`${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`, JSON.stringify(tx), gasLimit, constants.BLOCK_GAS_LIMIT);
       throw predefined.GAS_LIMIT_TOO_HIGH;
     } else if (gasLimit < intrinsicGasCost) {
-      this.logger.trace(`${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`, transaction, gasLimit, intrinsicGasCost);
+      this.logger.trace(`${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`, JSON.stringify(tx), gasLimit, intrinsicGasCost);
       throw predefined.GAS_LIMIT_TOO_LOW;
     }
   }
@@ -160,7 +179,7 @@ export class Precheck {
 
     let zeros = 0;
 
-    const dataBytes = Buffer.from(data, "hex");
+    const dataBytes = Buffer.from(data, 'hex');
 
     for (const c of dataBytes) {
       if (c == 0) {

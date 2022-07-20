@@ -647,28 +647,14 @@ export class EthImpl implements Eth {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
 
     try {
-      await this.precheck.gasLimit(transaction);
-      await this.precheck.nonce(transaction);
-      this.precheck.chainId(transaction);
-      this.precheck.value(transaction);
+      const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
+      await this.precheck.sendRawTransactionCheck(transaction, gasPrice);
     }
     catch(e: any) {
       return e;
     }
 
-    const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
-    const gasPrecheck = this.precheck.gasPrice(transaction, gasPrice);
-    if (!gasPrecheck.passes) {
-      return gasPrecheck.error;
-    }
-
-    const balancePrecheck = await this.precheck.balance(transaction, EthImpl.ethSendRawTransaction);
-    if (!balancePrecheck.passes) {
-      return balancePrecheck.error;
-    }
-
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
-
     try {
       const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction);
 
