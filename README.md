@@ -123,7 +123,7 @@ To start the relay, a docker container may be created using the following comman
 docker compose up -d
 ```
 
-> **_NOTE:_** If you encounter `unauthorized` when pulling iamge, then ensure you're loggeed in with `docker login ghcr.io` or use a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) to authorize your login.
+> **_NOTE:_** If you encounter `unauthorized` when pulling image, then ensure you're logged in with `docker login ghcr.io` or use a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) to authorize your login.
 
 By default the relay will be made accessible on port `7546`
 
