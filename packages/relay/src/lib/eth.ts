@@ -427,7 +427,7 @@ export class EthImpl implements Eth {
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  getStorageAt(address: string, slot: string, blockNumber: string | null): JsonRpcError {
+  getStorageAt(_address: string, _slot: string, _blockNumber: string | null): JsonRpcError {
     this.logger.trace('getStorageAt()');
     return predefined.UNSUPPORTED_METHOD;
   }
