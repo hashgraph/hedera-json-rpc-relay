@@ -28,7 +28,6 @@ import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
 import { Precheck } from './precheck';
-import { ethers } from 'ethers';
 
 const _ = require('lodash');
 const cache = require('js-cache');
@@ -647,30 +646,15 @@ export class EthImpl implements Eth {
   async sendRawTransaction(transaction: string): Promise<string | JsonRpcError> {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
 
-    const parsedTx = ethers.utils.parseTransaction(transaction);
     try {
-      this.precheck.gasLimit(parsedTx);
-      await this.precheck.nonce(parsedTx);
-      this.precheck.chainId(parsedTx);
-      this.precheck.value(parsedTx);
+      const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
+      await this.precheck.sendRawTransactionCheck(transaction, gasPrice);
     }
     catch(e: any) {
       return e;
     }
 
-    const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
-    const gasPrecheck = this.precheck.gasPrice(parsedTx, gasPrice);
-    if (!gasPrecheck.passes) {
-      return gasPrecheck.error;
-    }
-
-    const balancePrecheck = await this.precheck.balance(parsedTx, EthImpl.ethSendRawTransaction);
-    if (!balancePrecheck.passes) {
-      return balancePrecheck.error;
-    }
-
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
-
     try {
       const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction);
 
