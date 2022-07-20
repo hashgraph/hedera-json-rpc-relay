@@ -26,10 +26,9 @@ jobs:
         run: npm ci
 
       - name: Create .env file
-        run: cp ./packages/server/tests/localAcceptance.env .env
-
-      - name: Create hardhat .env file
-        run: cp ./tools/hardhat-example/.env.example ./tools/hardhat-example/.env
+        run: |
+          cp ./tools/hardhat-example/.env.example ./tools/hardhat-example/.env
+          cp ./packages/server/tests/localAcceptance.env .env
 
       - name: Lerna Bootstrap
         run: npm run setup
@@ -43,11 +42,11 @@ jobs:
       - name: Run RPC Server
         run: npm run integration:prerequisite &
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
-      - name: Install hardhat compatibility dependencies
+      - name: Install hardhat dependencies
         run: cd ./tools/hardhat-example/ && npm ci
 
-      - name: Run tests
+      - name: Run the dapp bootstrap script
         run: cd ./tools/hardhat-example/ && npx hardhat test
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
