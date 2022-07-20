@@ -189,22 +189,25 @@ export class SDKClient {
         return transactionResponse.getRecord(this.clientMain);
     }
 
-    async submitEthereumTransaction(transactionBuffer: Uint8Array): Promise<TransactionResponse> {
+    async submitEthereumTransaction(transactionBuffer: Uint8Array, callerName: string): Promise<TransactionResponse> {
         return this.executeTransaction(new EthereumFlow()
-          .setEthereumData(transactionBuffer));
+          .setEthereumData(transactionBuffer), callerName);
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number, callerName: string): Promise<ContractFunctionResult> {
         const contract = SDKClient.prune0x(to);
-        const callData = SDKClient.prune0x(data);
         const contractId = contract.startsWith("00000000000")
             ? ContractId.fromSolidityAddress(contract)
             : ContractId.fromEvmAddress(0, 0, contract);
 
         const contractCallQuery = new ContractCallQuery()
             .setContractId(contractId)
-            .setFunctionParameters(Buffer.from(callData, 'hex'))
             .setGas(gas);
+
+        // data is optional and can be omitted in which case fallback function will be employed
+        if (data) {
+            contractCallQuery.setFunctionParameters(Buffer.from(SDKClient.prune0x(data), 'hex'));
+        }
 
         if (this.clientMain.operatorAccountId !== null) {
             contractCallQuery
@@ -262,7 +265,7 @@ export class SDKClient {
         }
     };
 
-    private executeTransaction = async (transaction: Transaction | EthereumFlow): Promise<TransactionResponse> => {
+    private executeTransaction = async (transaction: Transaction | EthereumFlow, callerName: string): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
         try {
             this.logger.info(`Execute ${transactionType} transaction`);
@@ -273,6 +276,12 @@ export class SDKClient {
         catch (e: any) {
             const statusCode = e.status ? e.status._code : Status.Unknown._code;
             this.logger.info(`Consensus Node ${transactionType} transaction response: ${statusCode}`);
+            this.captureMetrics(
+                SDKClient.transactionMode,
+                transactionType,
+                statusCode,
+                0,
+                callerName);
 
             // capture sdk transaction response errors and shorten familiar stack trace
             if (e.status && e.status._code) {
