@@ -313,7 +313,15 @@ export default class ServicesClient {
         const expiration = new Date();
         expiration.setDate(expiration.getDate() + 30);
 
-        const htsClient = Client.forNetwork(JSON.parse(this.network));
+        let network = this.network;
+        try {
+            network = JSON.parse(this.network);
+        }
+        catch(e) {
+            // network config is a string and not a valid JSON
+        }
+
+        const htsClient = Client.forNetwork(network);
         htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
 
         const tokenCreate = await (await new TokenCreateTransaction()

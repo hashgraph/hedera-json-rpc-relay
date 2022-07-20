@@ -31,7 +31,7 @@ import pino from 'pino';
 const logger = pino();
 
 describe('MirrorNodeClient', async function () {
-  this.timeout(10000);
+  this.timeout(20000);
 
   // mock axios
   const instance = axios.create({
@@ -40,7 +40,7 @@ describe('MirrorNodeClient', async function () {
     headers: {
       'Content-Type': 'application/json'
     },
-    timeout: 10 * 1000
+    timeout: 20 * 1000
   });
   const mock = new MockAdapter(instance);
   const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), instance);

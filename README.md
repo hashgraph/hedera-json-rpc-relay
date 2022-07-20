@@ -70,9 +70,9 @@ E2E_RELAY_HOST=http://127.0.0.1:7546
 
 The following table highlights some initial configuration values to consider
 
-| Config      | Default | Description           |
-| ------------|-------|-----------------------|
-| `CHAIN_ID`  | `0x12a` | The netowrk chain id. Local and previewnet envs should use `0x12a`. Mainnet and Testnet should use `0x127` and `0x128` respectively |
+| Config      | Default | Description                                                                                                                                       |
+| ------------|-------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `CHAIN_ID`  | `0x12a` | The netowrk chain id. Local and previewnet envs should use `0x12a`. Mainnet, Testnet and Previewnet should use `0x127`, `0x128` and `0x129` respectively |
 
 > **_NOTE:_** Acceptance tests can be pointed at a remote location. In this case be sure to appropriately update these values to point away from your local host and to valid deployed services.
 

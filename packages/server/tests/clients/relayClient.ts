@@ -107,4 +107,10 @@ export default class RelayClient {
         return this.provider.send('eth_sendRawTransaction', [signedTx]);
     };
 
+    /**
+     * Returns the result of eth_gasPrice as a Number.
+     */
+    async gasPrice(): Promise<number> {
+        return Number(await this.call('eth_gasPrice', []));
+    }
 }

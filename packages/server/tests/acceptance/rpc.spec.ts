@@ -67,14 +67,15 @@ describe('RPC Server Acceptance Tests', function () {
     const FEE_SCHEDULE_FILE_ID = "0.0.111";
     const FEE_SCHEDULE_FILE_CONTENT_DEFAULT = "0a280a0a08541a061a04408888340a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 853000
     const FEE_SCHEDULE_FILE_CONTENT_UPDATED = "0a280a0a08541a061a0440a8953a0a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 953000
+    const publicNetworks = ['previewnet', 'testnet', 'mainnet'];
 
     describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
 
         this.beforeAll(async () => {
-            accounts[0] = await servicesNode.createAliasAccount();
-            accounts[1] = await servicesNode.createAliasAccount();
-            accounts[2] = await servicesNode.createAliasAccount(20);
+            accounts[0] = await servicesNode.createAliasAccount(15);
+            accounts[1] = await servicesNode.createAliasAccount(15);
+            accounts[2] = await servicesNode.createAliasAccount(30);
             contractId = await accounts[0].client.createParentContract(parentContractJson);
 
             const params = new ContractFunctionParameters().addUint256(1);
@@ -406,8 +407,10 @@ describe('RPC Server Acceptance Tests', function () {
                     const transaction = {
                         ...default155TransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        gasPrice: await relay.gasPrice()
                     };
+
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const legacyTxHash = await relay.sendRawTransaction(signedTx);
                     // Since the transactionId is not available in this context
@@ -420,11 +423,15 @@ describe('RPC Server Acceptance Tests', function () {
                 });
 
                 it('should execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
+                    const gasPrice = await relay.gasPrice();
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        maxFeePerGas: gasPrice,
+                        maxPriorityFeePerGas: gasPrice
                     };
+
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const transactionHash = await relay.sendRawTransaction(signedTx);
                     // Since the transactionId is not available in this context
@@ -463,7 +470,8 @@ describe('RPC Server Acceptance Tests', function () {
                     const transaction = {
                         ...default155TransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        gasPrice: await relay.gasPrice()
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const transactionHash = await relay.sendRawTransaction(signedTx);
@@ -483,7 +491,8 @@ describe('RPC Server Acceptance Tests', function () {
                         ...default155TransactionData,
                         to: mirrorContract.evm_address,
                         value: balanceInWeiBars,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        gasPrice: await relay.gasPrice()
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
@@ -493,7 +502,8 @@ describe('RPC Server Acceptance Tests', function () {
                     const transaction = {
                         ...defaultLegacyTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        gasPrice: await relay.gasPrice()
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.UNSUPPORTED_CHAIN_ID('0x0', CHAIN_ID));
@@ -515,7 +525,8 @@ describe('RPC Server Acceptance Tests', function () {
                     const transaction = {
                         ...defaultLegacy2930TransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        gasPrice: await relay.gasPrice()
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     await relay.callFailing('eth_sendRawTransaction', [signedTx]);
@@ -538,7 +549,8 @@ describe('RPC Server Acceptance Tests', function () {
                         ...defaultLegacy2930TransactionData,
                         value: balanceInWeiBars,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        gasPrice: await relay.gasPrice()
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
@@ -558,12 +570,15 @@ describe('RPC Server Acceptance Tests', function () {
 
                 it('should fail "eth_sendRawTransaction" for London transactions (with insufficient balance)', async function () {
                     const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId);
+                    const gasPrice = await relay.gasPrice();
 
                     const transaction = {
                         ...defaultLondonTransactionData,
                         value: balanceInWeiBars,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        maxPriorityFeePerGas: gasPrice,
+                        maxFeePerGas: gasPrice,
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
@@ -571,11 +586,14 @@ describe('RPC Server Acceptance Tests', function () {
 
                 it('should execute "eth_sendRawTransaction" for London transactions', async function () {
                     const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address);
+                    const gasPrice = await relay.gasPrice();
 
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        maxPriorityFeePerGas: gasPrice,
+                        maxFeePerGas: gasPrice,
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
@@ -589,12 +607,14 @@ describe('RPC Server Acceptance Tests', function () {
                 });
 
                 it('should execute "eth_sendRawTransaction" and deploy a large contract', async function() {
+                    const gasPrice = await relay.gasPrice();
+
                     const transaction = {
                         type: 2,
                         chainId: Number(CHAIN_ID),
                         nonce: await relay.getAccountNonce(accounts[2].address),
-                        maxPriorityFeePerGas: Assertions.defaultGasPrice,
-                        maxFeePerGas: Assertions.defaultGasPrice,
+                        maxPriorityFeePerGas: gasPrice,
+                        maxFeePerGas: gasPrice,
                         gasLimit: defaultGasLimit,
                         data: '0x' + '00'.repeat(5121),
                     };
@@ -622,7 +642,7 @@ describe('RPC Server Acceptance Tests', function () {
                             Assertions.expectedError();
                         }
                         catch(e) {
-                            Assertions.jsonRpcError(e, predefined.UNSUPPORTED_CHAIN_ID('0x3e7', '0x12a'));
+                            Assertions.jsonRpcError(e, predefined.UNSUPPORTED_CHAIN_ID('0x3e7', CHAIN_ID));
                         }
                     });
 
@@ -631,8 +651,10 @@ describe('RPC Server Acceptance Tests', function () {
                             ...default155TransactionData,
                             to: mirrorContract.evm_address,
                             nonce: await relay.getAccountNonce(accounts[2].address),
-                            gasLimit: 100
+                            gasLimit: 100,
+                            gasPrice: await relay.gasPrice()
                         };
+
                         const signedTx = await accounts[2].wallet.signTransaction(transaction);
                         try {
                             await relay.sendRawTransaction(signedTx);
@@ -648,8 +670,10 @@ describe('RPC Server Acceptance Tests', function () {
                             ...default155TransactionData,
                             to: mirrorContract.evm_address,
                             nonce: await relay.getAccountNonce(accounts[2].address),
-                            gasLimit: 999999999
+                            gasLimit: 999999999,
+                            gasPrice: await relay.gasPrice()
                         };
+
                         const signedTx = await accounts[2].wallet.signTransaction(transaction);
                         try {
                             await relay.sendRawTransaction(signedTx);
@@ -785,7 +809,12 @@ describe('RPC Server Acceptance Tests', function () {
             it('should call eth_gasPrice', async function () {
                 const res = await relay.call('eth_gasPrice', []);
                 expect(res).to.exist;
-                expect(res).to.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
+                if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
+                    expect(res).be.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
+                }
+                else {
+                    expect(Number(res)).to.be.gt(0);
+                }
             });
 
             it('should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {
@@ -1039,56 +1068,75 @@ describe('RPC Server Acceptance Tests', function () {
             });
         });
 
-        describe('Gas Price related RPC endpoints', () => {
-            let lastBlockBeforeUpdate;
-            let lastBlockAfterUpdate;
+        // Only run the following tests against a local node since they only work with the genesis account
+        if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
+            describe('Gas Price related RPC endpoints', () => {
+                let lastBlockBeforeUpdate;
+                let lastBlockAfterUpdate;
 
-            before(async () => {
-                await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
-                await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
-                lastBlockBeforeUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
-                await new Promise(resolve => setTimeout(resolve, 4000));
-                await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED);
-                await new Promise(resolve => setTimeout(resolve, 4000));
-                lastBlockAfterUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                before(async () => {
+                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
+                    await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
+                    lastBlockBeforeUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                    await new Promise(resolve => setTimeout(resolve, 4000));
+                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED);
+                    await new Promise(resolve => setTimeout(resolve, 4000));
+                    lastBlockAfterUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                });
+
+                it('should call eth_feeHistory with updated fees', async function () {
+                    const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
+                    const blockCountHex = ethers.utils.hexValue(blockCountNumber);
+                    const datedGasPriceHex = ethers.utils.hexValue(Assertions.datedGasPrice);
+                    const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
+                    const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
+                    const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
+
+                    const res = await relay.call('eth_feeHistory', [blockCountHex, newestBlockNumberHex, [0]]);
+
+                    Assertions.feeHistory(res, {
+                        resultCount: blockCountNumber,
+                        oldestBlock: oldestBlockNumberHex,
+                        chechReward: true
+                    });
+
+                    expect(res.baseFeePerGas[0]).to.equal(datedGasPriceHex);
+                    expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
+                    expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
+                });
+
+                it('should call eth_feeHistory with newest block > latest', async function () {
+                    let latestBlock;
+                    const newestBlockNumber = lastBlockAfterUpdate.number + 10;
+                    const newestBlockNumberHex = ethers.utils.hexValue(newestBlockNumber);
+                    try {
+                        latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                        await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
+                    } catch (error) {
+                        Assertions.jsonRpcError(error, predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlock.number));
+                    }
+                });
+
+                it('should call eth_feeHistory with zero block count', async function () {
+                    const res = await relay.call('eth_feeHistory', ['0x0', 'latest', null]);
+
+                    expect(res.reward).to.not.exist;
+                    expect(res.baseFeePerGas).to.not.exist;
+                    expect(res.gasUsedRatio).to.equal(null);
+                    expect(res.oldestBlock).to.equal('0x0');
+                });
             });
+        }
 
-            it('should call eth_feeHistory with updated fees', async function () {
-                const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
-                const blockCountHex = ethers.utils.hexValue(blockCountNumber);
-                const datedGasPriceHex = ethers.utils.hexValue(Assertions.datedGasPrice);
-                const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
-                const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
-                const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
-
-                const res = await relay.call('eth_feeHistory', [blockCountHex, newestBlockNumberHex, [0]]);
-
-                Assertions.feeHistory(res, { resultCount: blockCountNumber, oldestBlock: oldestBlockNumberHex, chechReward: true });
-
-                expect(res.baseFeePerGas[0]).to.equal(datedGasPriceHex);
-                expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
-                expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
-            });
-
-            it('should call eth_feeHistory with newest block > latest', async function () {
-                let latestBlock;
-                const newestBlockNumber = lastBlockAfterUpdate.number + 10;
-                const newestBlockNumberHex = ethers.utils.hexValue(newestBlockNumber);
-                try {
-                    latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
-                    await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
-                } catch (error) {
-                    Assertions.jsonRpcError(error, predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlock.number));
-                }
-            });
-
-            it('should call eth_feeHistory with zero block count', async function () {
-                const res = await relay.call('eth_feeHistory', ['0x0', 'latest', null]);
-
-                expect(res.reward).to.not.exist;
-                expect(res.baseFeePerGas).to.not.exist;
-                expect(res.gasUsedRatio).to.equal(null);
-                expect(res.oldestBlock).to.equal('0x0');
+        describe('eth_feeHistory', () => {
+            it('should call eth_feeHistory', async function () {
+                const res = await relay.call('eth_feeHistory', ['0x1', 'latest', null]);
+                expect(res.baseFeePerGas).to.exist.to.be.an('Array');
+                expect(res.baseFeePerGas.length).to.be.gt(0);
+                expect(res.gasUsedRatio).to.exist.to.be.an('Array');
+                expect(res.gasUsedRatio.length).to.be.gt(0);
+                expect(res.oldestBlock).to.exist;
+                expect(Number(res.oldestBlock)).to.be.gt(0);
             });
         });
     });
