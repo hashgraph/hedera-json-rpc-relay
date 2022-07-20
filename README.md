@@ -55,7 +55,7 @@ The relay has a suite of acceptance tests that may be run to confirm E2E operati
 
 As in the case of a fully deployed relay the acceptance tests utilize the `.env` file. See the [Configuration](#configuration) for setup details.
 
-For test context additional fields need to be set. The following example showcases a `hedera-local-node` instance (where values match those noted on [Local Node Network Variables](https://github.com/hashgraph/hedera-local-node#network-variables))
+For test context additional fields need to be set. The following example showcases a `hedera-local-node` instance (where values match those noted on [Local Node Network Variables](https://github.com/hashgraph/hedera-local-node#network-variables)
 
 ```.env
 HEDERA_NETWORK={"127.0.0.1:50211":"0.0.3"}
@@ -71,8 +71,8 @@ E2E_RELAY_HOST=http://127.0.0.1:7546
 The following table highlights some initial configuration values to consider
 
 | Config      | Default | Description                                                                                                                                       |
-| ------------|-------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| `CHAIN_ID`  | `0x12a` | The netowrk chain id. Local and previewnet envs should use `0x12a`. Mainnet, Testnet and Previewnet should use `0x127`, `0x128` and `0x129` respectively |
+| ------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `CHAIN_ID`  | `0x12a` | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively |
 
 > **_NOTE:_** Acceptance tests can be pointed at a remote location. In this case be sure to appropriately update these values to point away from your local host and to valid deployed services.
 
@@ -126,15 +126,26 @@ docker compose up -d
 > **_NOTE:_** If you encounter `unauthorized` when pulling iamge, then ensure you're loggeed in with `docker login ghcr.io` or use a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) to authorize your login.
 
 By default the relay will be made accessible on port `7546`
-A quick tests can be performed to verify the container is up and running
+
+#### Request Test
+The following curl commands may be used to quickly test a running relay instance is function
 
 From a command prompt/terminal run the command
+
 ```shell
 curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":"2","method":"eth_chainId","params":[null]}' http://localhost:7546
 ```
 
 The expected response should be `{"result":"0x12a","jsonrpc":"2.0","id":"2"}`
 Where the `result` value matches the .env `CHAIN_ID` configuration value or the current deault value of `298`
+
+
+```shell
+curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":"2","method":"eth_gasPrice","params":[null]}' http://localhost:7546
+```
+
+The expected response should be of the form `{"result":"0x10bc1576c00","jsonrpc":"2.0","id":"2"}`
+Where result returns a valid hexadecimal number
 
 ### Helm Chart
 
