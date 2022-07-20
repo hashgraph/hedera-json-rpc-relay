@@ -13,12 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      DISPLAY: :99
-      QT_X11_NO_MITSHM: 1
-      _X11_NO_MITSHM: 1
-      _MITSHM: 0
-      DBUS_SESSION_BUS_ADDRESS: /dev/null
     steps:
       - name: Setup node
         uses: actions/setup-node@v2
