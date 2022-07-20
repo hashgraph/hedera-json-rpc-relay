@@ -825,13 +825,13 @@ export class EthImpl implements Eth {
         return new Log({
           address: log.address,
           blockHash: EthImpl.toHash32(receiptResponse.block_hash),
-          blockNumber: receiptResponse.block_number,
+          blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
           data: log.data,
-          logIndex: log.index,
+          logIndex: EthImpl.numberTo0x(log.index),
           removed: false,
           topics: log.topics,
           transactionHash: EthImpl.toHash32(receiptResponse.hash),
-          transactionIndex: receiptResponse.transaction_index
+          transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index)
         });
       });
 
@@ -1151,13 +1151,13 @@ export class EthImpl implements Eth {
           logs[logIndex] = new Log({
             address: log.address,
             blockHash: EthImpl.toHash32(detail.block_hash),
-            blockNumber: detail.block_number,
+            blockNumber: EthImpl.numberTo0x(detail.block_number),
             data: log.data,
-            logIndex: logIndex,
+            logIndex: EthImpl.numberTo0x(logIndex),
             removed: false,
             topics: log.topics,
             transactionHash: EthImpl.toHash32(detail.hash),
-            transactionIndex: detail.transaction_index
+            transactionIndex: EthImpl.numberTo0x(detail.transaction_index)
           });
         }
       }
