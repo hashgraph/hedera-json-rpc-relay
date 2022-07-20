@@ -781,7 +781,7 @@ export class EthImpl implements Eth {
       blockNumber: EthImpl.numberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
       from: contractResult.from.substring(0, 42),
-      gas: contractResult.gas_used,
+      gas: EthImpl.numberTo0x(contractResult.gas_used),
       gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
@@ -791,10 +791,10 @@ export class EthImpl implements Eth {
       r: rSig,
       s: sSig,
       to: contractResult.to?.substring(0, 42),
-      transactionIndex: contractResult.transaction_index,
+      transactionIndex: EthImpl.numberTo0x(contractResult.transaction_index),
       type: contractResult.type,
       v: contractResult.v,
-      value: contractResult.amount,
+      value: EthImpl.numberTo0x(contractResult.amount),
     });
   }
 
@@ -1036,7 +1036,7 @@ export class EthImpl implements Eth {
           blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
           chainId: contractResultDetails.chain_id,
           from: contractResultDetails.from.substring(0, 42),
-          gas: contractResultDetails.gas_used,
+          gas: EthImpl.numberTo0x(contractResultDetails.gas_used),
           gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
           hash: contractResultDetails.hash.substring(0, 66),
           input: contractResultDetails.function_parameters,
@@ -1046,10 +1046,10 @@ export class EthImpl implements Eth {
           r: rSig,
           s: sSig,
           to: contractResultDetails.to.substring(0, 42),
-          transactionIndex: contractResultDetails.transaction_index,
+          transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
           type: contractResultDetails.type,
           v: contractResultDetails.v,
-          value: contractResultDetails.amount,
+          value: EthImpl.numberTo0x(contractResultDetails.amount),
         });
       })
       .catch((e: any) => {
