@@ -4,19 +4,11 @@ import * as htsData from '../../.htsTokenAddress.json';
 describe('Test Core Hedera User Scenarios', function() {
   this.timeout(180000);
 
-  const resetMetamaskConnection = function() {
-    cy.disconnectMetamaskWalletFromAllDapps();
-    cy.resetMetamaskAccount();
-
+  it('Connects with Metamask', function() {
     cy.visit('http://localhost:3000');
     cy.contains('Connect Account').click();
-    cy.switchToMetamaskWindow();
     cy.acceptMetamaskAccess().should('be.true');
     cy.switchToCypressWindow();
-  };
-
-  it('Connects with Metamask', function() {
-    resetMetamaskConnection();
 
     // check the UI
     cy.get('#showAliasBtn').should('not.be.disabled');
