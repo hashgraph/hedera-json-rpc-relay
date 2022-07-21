@@ -203,15 +203,10 @@
         },
         {
             "name": "eth_coinbase",
-            "summary": "Returns the client coinbase address. METHOD NOT SUPPORTED",
+            "summary": "Always returns UNSUPPORTED_METHOD error.",
             "params": [],
             "result": {
-                "name": "Coinbase address",
-                "schema": {
-                    "title": "hex encoded address",
-                    "type": "string",
-                    "pattern": "^0x[0-9,a-f,A-F]{40}$"
-                }
+                "$ref": "#/components/schemas/unsupportedError"
             }
         },
         {
@@ -502,7 +497,7 @@
                 "schema": {
                     "title": "hex encoded unsigned integer",
                     "type": "string",
-                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                    "pattern": "^0x[0-9a-f]{0,64}$"
                 }
             }
         },
@@ -1610,24 +1605,7 @@
         {
             "name": "eth_getUncleByBlockHashAndIndex",
             "summary": "Returns information about a uncle of a block by hash and uncle index position.",
-            "params": [
-                {
-                    "name": "Block hash",
-                    "schema": {
-                        "title": "32 byte hex value",
-                        "type": "string",
-                        "pattern": "^0x([0-9a-f][0-9a-f]){0,32}$"
-                    }
-                },
-                {
-                    "name": "Uncle's index position",
-                    "schema": {
-                        "title": "hex encoded unsigned integer",
-                        "type": "string",
-                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                    }
-                }
-            ],
+            "params": [],
             "result": {
                 "name": "Always returns null. There are no uncles in Hedera.",
                 "schema": {
@@ -1639,22 +1617,7 @@
         {
             "name": "eth_getUncleByBlockNumberAndIndex",
             "summary": "Returns information about a uncle of a block by number and uncle index position.",
-            "params": [
-                {
-                    "name": "Block",
-                    "schema": {
-                        "$ref": "#/components/schemas/blockNumOrTag"
-                    }
-                },
-                {
-                    "name": "Uncle's index position",
-                    "schema": {
-                        "title": "hex encoded unsigned integer",
-                        "type": "string",
-                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                    }
-                }
-            ],
+            "params": [],
             "result": {
                 "name": "Always returns null. There are no uncles in Hedera.",
                 "schema": {
@@ -1666,40 +1629,26 @@
         {
             "name": "eth_getUncleCountByBlockHash",
             "summary": "Returns the number of uncles in a block from a block matching the given block hash.",
-            "params": [
-                {
-                    "name": "Block hash",
-                    "schema": {
-                        "title": "32 byte hex value",
-                        "type": "string",
-                        "pattern": "^0x([0-9a-f][0-9a-f]){0,32}$"
-                    }
-                }
-            ],
+            "params": [],
             "result": {
                 "name": "Always returns '0x0'. There are no uncles in Hedera.",
                 "schema": {
                     "title": "hex encoded unsigned integer",
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "0x0"
                 }
             }
         },
         {
             "name": "eth_getUncleCountByBlockNumber",
             "summary": "Returns the number of transactions in a block matching the given block number.",
-            "params": [
-                {
-                    "name": "Block",
-                    "schema": {
-                        "$ref": "#/components/schemas/blockNumOrTag"
-                    }
-                }
-            ],
+            "params": [],
             "result": {
                 "name": "Always returns '0x0'. There are no uncles in Hedera.",
                 "schema": {
                     "title": "hex encoded unsigned integer",
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "0x0"
                 }
             }
         },
@@ -1720,7 +1669,7 @@
                 "schema": {
                     "title": "Hashrate",
                     "type": "string",
-                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                    "pattern": "0x0"
                 }
             }
         },
@@ -1738,14 +1687,10 @@
         },
         {
             "name": "eth_protocolVersion",
-            "summary": "Returns the current Ethereum protocol version. METHOD NOT SUPPORTED",
+            "summary": "Always returns UNSUPPORTED_METHOD error.",
             "params": [],
             "result": {
-                "name": "Protocol version",
-                "schema": {
-                    "title": "version",
-                    "type": "string"
-                }
+                "$ref": "#/components/schemas/unsupportedError"
             }
         },
         {
@@ -1781,20 +1726,10 @@
         },
         {
             "name": "eth_signTransaction",
-            "summary": "Returns an RLP encoded transaction signed by the specified account.",
+            "summary": "Always returns UNSUPPORTED_METHOD error.",
             "params": [],
             "result": {
-                "name": "Encoded transaction",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "code": {
-                            "title": "Error code",
-                            "type": "number",
-                            "value": -32601
-                        }
-                    }
-                }
+                "$ref": "#/components/schemas/unsupportedError"
             }
         },
         {
@@ -1815,24 +1750,26 @@
         },
         {
             "name": "eth_submitWork",
-            "summary": "Used for submitting a proof-of-work solution. Always returns false",
+            "summary": "Used for submitting a proof-of-work solution.",
             "params": [],
             "result": {
-                "name": "Success",
+                "name": "PoW solution",
                 "schema": {
+                    "title": "No proof-of-work",
+                    "description": "Always returns false.",
                     "type": "boolean"
                 }
             }
         },
         {
             "name": "eth_syncing",
-            "summary": "Returns false.",
+            "summary": "Returns syncing status",
             "params": [],
             "result": {
                 "name": "Syncing status",
                 "schema": {
                     "title": "Not syncing",
-                    "description": "Should always return false if not syncing.",
+                    "description": "Always returns false.",
                     "type": "boolean"
                 }
             }
@@ -1842,9 +1779,10 @@
             "summary": "Returns true if client is actively listening for network connections.",
             "params": [],
             "result": {
-                "name": "Boolean - true when listening, otherwise false.",
+                "name": "Listening status.",
                 "schema": {
-                    "title": "Listening",
+                    "title": "Not listening",
+                    "description": "Always returns false.",
                     "type": "boolean"
                 }
             }
@@ -1869,10 +1807,11 @@
             "result": {
                 "name": "The current client version.",
                 "schema": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "relay/<semanticVersion>"
                 }
             }
-        }        
+        }
     ],
     "components": {
         "schemas": {
