@@ -2,10 +2,510 @@
     "openrpc": "1.0.0",
     "info": {
         "title": "Hedera JSON-RPC Specification",
-        "description": "A specification of the standard interface for Hedera clients.",
-        "version": "0.0.0"
+        "description": "A specification of the implemented Ethereum JSON RPC APIs interface for Hedera clients.",
+        "version": "0.5.0-SNAPSHOT"
     },
     "methods": [
+        {
+            "name": "eth_accounts",
+            "summary": "Returns a list of addresses owned by client.",
+            "params": [],
+            "result": {
+                "name": "Accounts",
+                "schema": {
+                    "title": "Accounts",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/components/schemas/ethAddress"
+                    }
+                }
+            }
+        },
+        {
+            "name": "eth_blockNumber",
+            "summary": "Returns the number of most recent block.",
+            "params": [],
+            "result": {
+                "name": "Block number",
+                "schema": {
+                    "title": "hex encoded unsigned integer",
+                    "type": "string",
+                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                }
+            }
+        },
+        {
+            "name": "eth_call",
+            "summary": "Executes a new message call immediately without creating a transaction on the block chain.",
+            "params": [
+                {
+                    "name": "Transaction",
+                    "required": true,
+                    "schema": {
+                        "title": "Transaction object",
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "type": "object",
+                                "title": "EIP-1559 transaction.",
+                                "required": [
+                                    "type",
+                                    "nonce",
+                                    "gas",
+                                    "to",
+                                    "from",
+                                    "value",
+                                    "maxFeePerGas",
+                                    "maxPriorityFeePerGas",
+                                    "chainId"
+                                ],
+                                "properties": {
+                                    "type": {
+                                        "title": "type",
+                                        "type": "string",
+                                        "pattern": "^0x([0-9,a-f,A-F]?){1,2}$"
+                                    },
+                                    "nonce": {
+                                        "title": "nonce",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "from": {
+                                        "title": "from",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                    },
+                                    "to": {
+                                        "title": "to address",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                    },
+                                    "gas": {
+                                        "title": "gas limit",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "value": {
+                                        "title": "value",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "maxPriorityFeePerGas": {
+                                        "title": "max priority fee per gas",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                        "description": "Maximum fee per gas the sender is willing to pay to miners in wei"
+                                    },
+                                    "maxFeePerGas": {
+                                        "title": "max fee per gas",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                        "description": "The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei"
+                                    },
+                                    "chainId": {
+                                        "title": "chainId",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                        "description": "Chain ID that this transaction is valid on."
+                                    }
+                                }
+                            },
+                            {
+                                "type": "object",
+                                "title": "Legacy transaction.",
+                                "required": [
+                                    "type",
+                                    "nonce",
+                                    "to",
+                                    "from",
+                                    "gas",
+                                    "value",
+                                    "gasPrice",
+                                    "chainId"
+                                ],
+                                "properties": {
+                                    "type": {
+                                        "title": "type",
+                                        "type": "string",
+                                        "pattern": "^0x([0-9,a-f,A-F]?){1,2}$"
+                                    },
+                                    "nonce": {
+                                        "title": "nonce",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "from": {
+                                        "title": "from",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                    },
+                                    "to": {
+                                        "title": "to address",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                    },
+                                    "gas": {
+                                        "title": "gas limit",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "value": {
+                                        "title": "value",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "gasPrice": {
+                                        "title": "gas price",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                        "description": "The gas price willing to be paid by the sender in wei"
+                                    },
+                                    "chainId": {
+                                        "title": "chainId",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                        "description": "Chain ID that this transaction is valid on."
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Block",
+                    "required": false,
+                    "schema": {
+                        "$ref": "#/components/schemas/blockNumOrTag"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Return data",
+                "schema": {
+                    "title": "hex encoded bytes",
+                    "type": "string",
+                    "pattern": "^0x[0-9a-f]*$"
+                }
+            }
+        },
+        {
+            "name": "eth_chainId",
+            "summary": "Returns the chain ID of the current network.",
+            "params": [],
+            "result": {
+                "name": "Chain ID",
+                "schema": {
+                    "title": "hex encoded unsigned integer",
+                    "type": "string",
+                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                }
+            }
+        },
+        {
+            "name": "eth_coinbase",
+            "summary": "Returns the client coinbase address. METHOD NOT SUPPORTED",
+            "params": [],
+            "result": {
+                "name": "Coinbase address",
+                "schema": {
+                    "title": "hex encoded address",
+                    "type": "string",
+                    "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                }
+            }
+        },
+        {
+            "name": "eth_estimateGas",
+            "summary": "Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.",
+            "params": [
+                {
+                    "name": "Transaction",
+                    "required": false,
+                    "schema": {
+                        "title": "Transaction object",
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "type": "object",
+                                "title": "EIP-1559 transaction.",
+                                "required": [
+                                    "type",
+                                    "nonce",
+                                    "gas",
+                                    "to",
+                                    "from",
+                                    "value",
+                                    "maxFeePerGas",
+                                    "maxPriorityFeePerGas",
+                                    "chainId"
+                                ],
+                                "properties": {
+                                    "type": {
+                                        "title": "type",
+                                        "type": "string",
+                                        "pattern": "^0x([0-9,a-f,A-F]?){1,2}$"
+                                    },
+                                    "nonce": {
+                                        "title": "nonce",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "from": {
+                                        "title": "from",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                    },
+                                    "to": {
+                                        "title": "to address",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                    },
+                                    "gas": {
+                                        "title": "gas limit",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "value": {
+                                        "title": "value",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "maxPriorityFeePerGas": {
+                                        "title": "max priority fee per gas",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                        "description": "Maximum fee per gas the sender is willing to pay to miners in wei"
+                                    },
+                                    "maxFeePerGas": {
+                                        "title": "max fee per gas",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                        "description": "The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei"
+                                    },
+                                    "chainId": {
+                                        "title": "chainId",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                        "description": "Chain ID that this transaction is valid on."
+                                    }
+                                }
+                            },
+                            {
+                                "type": "object",
+                                "title": "Legacy transaction.",
+                                "required": [
+                                    "type",
+                                    "nonce",
+                                    "to",
+                                    "from",
+                                    "gas",
+                                    "value",
+                                    "gasPrice",
+                                    "chainId"
+                                ],
+                                "properties": {
+                                    "type": {
+                                        "title": "type",
+                                        "type": "string",
+                                        "pattern": "^0x([0-9,a-f,A-F]?){1,2}$"
+                                    },
+                                    "nonce": {
+                                        "title": "nonce",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "from": {
+                                        "title": "from",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                    },
+                                    "to": {
+                                        "title": "to address",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                    },
+                                    "gas": {
+                                        "title": "gas limit",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "value": {
+                                        "title": "value",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                                    },
+                                    "gasPrice": {
+                                        "title": "gas price",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                        "description": "The gas price willing to be paid by the sender in wei"
+                                    },
+                                    "chainId": {
+                                        "title": "chainId",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                        "description": "Chain ID that this transaction is valid on."
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Block",
+                    "required": false,
+                    "schema": {
+                        "$ref": "#/components/schemas/blockNumOrTag"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Gas used",
+                "schema": {
+                    "title": "hex encoded unsigned integer",
+                    "type": "string",
+                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                }
+            }
+        },
+        {
+            "name": "eth_feeHistory",
+            "summary": "Transaction fee history",
+            "description": "Returns transaction base fee per gas and effective priority fee per gas for the requested/supported block range.",
+            "params": [
+                {
+                    "name": "blockCount",
+                    "description": "Requested range of blocks. Clients will return less than the requested range if not all blocks are available.",
+                    "required": true,
+                    "schema": {
+                        "title": "hex encoded unsigned integer",
+                        "type": "string",
+                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                    }
+                },
+                {
+                    "name": "newestBlock",
+                    "description": "Highest block of the requested range.",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/components/schemas/blockNumOrTag"
+                    }
+                },
+                {
+                    "name": "rewardPercentiles",
+                    "description": "A monotonically increasing list of percentile values. For each block in the requested range, the transactions will be sorted in ascending order by effective tip per gas and the coresponding effective tip for the percentile will be determined, accounting for gas consumed.",
+                    "required": true,
+                    "schema": {
+                        "title": "rewardPercentiles",
+                        "type": "array",
+                        "items": {
+                            "title": "rewardPercentile",
+                            "description": "Floating point value between 0 and 100.",
+                            "type": "number"
+                        }
+                    }
+                }
+            ],
+            "result": {
+                "name": "feeHistoryResult",
+                "description": "Fee history for the returned block range. This can be a subsection of the requested range if not all blocks are available.",
+                "schema": {
+                    "title": "feeHistoryResults",
+                    "description": "Fee history results.",
+                    "type": "object",
+                    "required": [
+                        "oldestBlock",
+                        "baseFeePerGas",
+                        "gasUsedRatio"
+                    ],
+                    "properties": {
+                        "oldestBlock": {
+                            "title": "oldestBlock",
+                            "type": "string",
+                            "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                            "description": "Lowest number block of returned range."
+                        },
+                        "gasUsedRatio": {
+                            "title": "gasUsedRatio",
+                            "description": "An array of gas used ratio.",
+                            "type": "array",
+                            "items": {
+                                "title": "hex encoded unsigned integer",
+                                "type": "string",
+                                "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                            }
+                        },
+                        "baseFeePerGas": {
+                            "title": "baseFeePerGas",
+                            "description": "An array of block base fees per gas. This includes the next block after the newest of the returned range.",
+                            "type": "array",
+                            "items": {
+                                "title": "hex encoded unsigned integer",
+                                "type": "string",
+                                "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                            }
+                        },
+                        "reward": {
+                            "title": "reward",
+                            "description": "A two-dimensional array of effective priority fees per gas at the requested block percentiles.",
+                            "type": "array",
+                            "items": {
+                                "title": "rewardPercentile",
+                                "description": "An array of effective priority fee per gas data points from a single block. All zeroes are returned if the block is empty.",
+                                "type": "array",
+                                "items": {
+                                    "title": "rewardPercentile",
+                                    "type": "string",
+                                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
+                                    "description": "A given percentile sample of effective priority fees per gas from a single block in ascending order, weighted by gas used. Zeroes are returned if the block is empty."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "eth_gasPrice",
+            "summary": "Returns the current price per gas in weibars.",
+            "params": [],
+            "result": {
+                "name": "Gas price",
+                "schema": {
+                    "title": "Gas price",
+                    "type": "string",
+                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                }
+            }
+        },
+        {
+            "name": "eth_getBalance",
+            "summary": "Returns the balance of the account of given address.",
+            "params": [
+                {
+                    "name": "Address",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/components/schemas/ethAddress"
+                    }
+                },
+                {
+                    "name": "Block",
+                    "required": false,
+                    "schema": {
+                        "$ref": "#/components/schemas/blockNumOrTag"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Balance",
+                "schema": {
+                    "title": "hex encoded unsigned integer",
+                    "type": "string",
+                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                }
+            }
+        },
         {
             "name": "eth_getBlockByHash",
             "summary": "Returns information about a block by hash.",
@@ -770,261 +1270,14 @@
             }
         },
         {
-            "name": "eth_getUncleCountByBlockHash",
-            "summary": "Returns the number of uncles in a block from a block matching the given block hash.",
+            "name": "eth_getCode",
+            "summary": "Returns code at a given address.",
             "params": [
                 {
-                    "name": "Block hash",
-                    "schema": {
-                        "title": "32 byte hex value",
-                        "type": "string",
-                        "pattern": "^0x([0-9a-f][0-9a-f]){0,32}$"
-                    }
-                }
-            ],
-            "result": {
-                "name": "Uncles count",
-                "schema": {
-                    "title": "hex encoded unsigned integer",
-                    "type": "string",
-                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                }
-            }
-        },
-        {
-            "name": "eth_getUncleCountByBlockNumber",
-            "summary": "Returns the number of transactions in a block matching the given block number.",
-            "params": [
-                {
-                    "name": "Block",
-                    "schema": {
-                        "$ref": "#/components/schemas/blockNumOrTag"
-                    }
-                }
-            ],
-            "result": {
-                "name": "Uncles count",
-                "schema": {
-                    "title": "hex encoded unsigned integer",
-                    "type": "string",
-                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                }
-            }
-        },
-        {
-            "name": "eth_protocolVersion",
-            "summary": "Returns the current Ethereum protocol version. METHOD NOT SUPPORTED",
-            "params": [],
-            "result": {
-                "name": "Protocol version",
-                "schema": {
-                    "title": "version",
-                    "type": "string"
-                }
-            }
-        },
-        {
-            "name": "eth_chainId",
-            "summary": "Returns the chain ID of the current network.",
-            "params": [],
-            "result": {
-                "name": "Chain ID",
-                "schema": {
-                    "title": "hex encoded unsigned integer",
-                    "type": "string",
-                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                }
-            }
-        },
-        {
-            "name": "eth_syncing",
-            "summary": "Returns false.",
-            "params": [],
-            "result": {
-                "name": "Syncing status",
-                "schema": {
-                    "title": "Not syncing",
-                    "description": "Should always return false if not syncing.",
-                    "type": "boolean"
-                }
-            }
-        },
-        {
-            "name": "eth_coinbase",
-            "summary": "Returns the client coinbase address. METHOD NOT SUPPORTED",
-            "params": [],
-            "result": {
-                "name": "Coinbase address",
-                "schema": {
-                    "title": "hex encoded address",
-                    "type": "string",
-                    "pattern": "^0x[0-9,a-f,A-F]{40}$"
-                }
-            }
-        },
-        {
-            "name": "eth_accounts",
-            "summary": "Returns a list of addresses owned by client.",
-            "params": [],
-            "result": {
-                "name": "Accounts",
-                "schema": {
-                    "title": "Accounts",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/components/schemas/ethAddress"
-                    }
-                }
-            }
-        },
-        {
-            "name": "eth_blockNumber",
-            "summary": "Returns the number of most recent block.",
-            "params": [],
-            "result": {
-                "name": "Block number",
-                "schema": {
-                    "title": "hex encoded unsigned integer",
-                    "type": "string",
-                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                }
-            }
-        },
-        {
-            "name": "eth_call",
-            "summary": "Executes a new message call immediately without creating a transaction on the block chain.",
-            "params": [
-                {
-                    "name": "Transaction",
+                    "name": "Address",
                     "required": true,
                     "schema": {
-                        "title": "Transaction object",
-                        "type": "object",
-                        "oneOf": [
-                            {
-                                "type": "object",
-                                "title": "EIP-1559 transaction.",
-                                "required": [
-                                    "type",
-                                    "nonce",
-                                    "gas",
-                                    "to",
-                                    "from",
-                                    "value",
-                                    "maxFeePerGas",
-                                    "maxPriorityFeePerGas",
-                                    "chainId"
-                                ],
-                                "properties": {
-                                    "type": {
-                                        "title": "type",
-                                        "type": "string",
-                                        "pattern": "^0x([0-9,a-f,A-F]?){1,2}$"
-                                    },
-                                    "nonce": {
-                                        "title": "nonce",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "from": {
-                                        "title": "from",
-                                        "type": "string",
-                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
-                                    },
-                                    "to": {
-                                        "title": "to address",
-                                        "type": "string",
-                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
-                                    },
-                                    "gas": {
-                                        "title": "gas limit",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "value": {
-                                        "title": "value",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "maxPriorityFeePerGas": {
-                                        "title": "max priority fee per gas",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                        "description": "Maximum fee per gas the sender is willing to pay to miners in wei"
-                                    },
-                                    "maxFeePerGas": {
-                                        "title": "max fee per gas",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                        "description": "The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei"
-                                    },
-                                    "chainId": {
-                                        "title": "chainId",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                        "description": "Chain ID that this transaction is valid on."
-                                    }
-                                }
-                            },
-                            {
-                                "type": "object",
-                                "title": "Legacy transaction.",
-                                "required": [
-                                    "type",
-                                    "nonce",
-                                    "to",
-                                    "from",
-                                    "gas",
-                                    "value",
-                                    "gasPrice",
-                                    "chainId"
-                                ],
-                                "properties": {
-                                    "type": {
-                                        "title": "type",
-                                        "type": "string",
-                                        "pattern": "^0x([0-9,a-f,A-F]?){1,2}$"
-                                    },
-                                    "nonce": {
-                                        "title": "nonce",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "from": {
-                                        "title": "from",
-                                        "type": "string",
-                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
-                                    },
-                                    "to": {
-                                        "title": "to address",
-                                        "type": "string",
-                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
-                                    },
-                                    "gas": {
-                                        "title": "gas limit",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "value": {
-                                        "title": "value",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "gasPrice": {
-                                        "title": "gas price",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                        "description": "The gas price willing to be paid by the sender in wei"
-                                    },
-                                    "chainId": {
-                                        "title": "chainId",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                        "description": "Chain ID that this transaction is valid on."
-                                    }
-                                }
-                            }
-                        ]
+                        "$ref": "#/components/schemas/ethAddress"
                     }
                 },
                 {
@@ -1036,275 +1289,11 @@
                 }
             ],
             "result": {
-                "name": "Return data",
+                "name": "Bytecode",
                 "schema": {
                     "title": "hex encoded bytes",
                     "type": "string",
                     "pattern": "^0x[0-9a-f]*$"
-                }
-            }
-        },
-        {
-            "name": "eth_estimateGas",
-            "summary": "Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.",
-            "params": [
-                {
-                    "name": "Transaction",
-                    "required": false,
-                    "schema": {
-                        "title": "Transaction object",
-                        "type": "object",
-                        "oneOf": [
-                            {
-                                "type": "object",
-                                "title": "EIP-1559 transaction.",
-                                "required": [
-                                    "type",
-                                    "nonce",
-                                    "gas",
-                                    "to",
-                                    "from",
-                                    "value",
-                                    "maxFeePerGas",
-                                    "maxPriorityFeePerGas",
-                                    "chainId"
-                                ],
-                                "properties": {
-                                    "type": {
-                                        "title": "type",
-                                        "type": "string",
-                                        "pattern": "^0x([0-9,a-f,A-F]?){1,2}$"
-                                    },
-                                    "nonce": {
-                                        "title": "nonce",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "from": {
-                                        "title": "from",
-                                        "type": "string",
-                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
-                                    },
-                                    "to": {
-                                        "title": "to address",
-                                        "type": "string",
-                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
-                                    },
-                                    "gas": {
-                                        "title": "gas limit",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "value": {
-                                        "title": "value",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "maxPriorityFeePerGas": {
-                                        "title": "max priority fee per gas",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                        "description": "Maximum fee per gas the sender is willing to pay to miners in wei"
-                                    },
-                                    "maxFeePerGas": {
-                                        "title": "max fee per gas",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                        "description": "The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei"
-                                    },
-                                    "chainId": {
-                                        "title": "chainId",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                        "description": "Chain ID that this transaction is valid on."
-                                    }
-                                }
-                            },
-                            {
-                                "type": "object",
-                                "title": "Legacy transaction.",
-                                "required": [
-                                    "type",
-                                    "nonce",
-                                    "to",
-                                    "from",
-                                    "gas",
-                                    "value",
-                                    "gasPrice",
-                                    "chainId"
-                                ],
-                                "properties": {
-                                    "type": {
-                                        "title": "type",
-                                        "type": "string",
-                                        "pattern": "^0x([0-9,a-f,A-F]?){1,2}$"
-                                    },
-                                    "nonce": {
-                                        "title": "nonce",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "from": {
-                                        "title": "from",
-                                        "type": "string",
-                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
-                                    },
-                                    "to": {
-                                        "title": "to address",
-                                        "type": "string",
-                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
-                                    },
-                                    "gas": {
-                                        "title": "gas limit",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "value": {
-                                        "title": "value",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                                    },
-                                    "gasPrice": {
-                                        "title": "gas price",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                        "description": "The gas price willing to be paid by the sender in wei"
-                                    },
-                                    "chainId": {
-                                        "title": "chainId",
-                                        "type": "string",
-                                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                        "description": "Chain ID that this transaction is valid on."
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                },
-                {
-                    "name": "Block",
-                    "required": false,
-                    "schema": {
-                        "$ref": "#/components/schemas/blockNumOrTag"
-                    }
-                }
-            ],
-            "result": {
-                "name": "Gas used",
-                "schema": {
-                    "title": "hex encoded unsigned integer",
-                    "type": "string",
-                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                }
-            }
-        },
-        {
-            "name": "eth_gasPrice",
-            "summary": "Returns the current price per gas in weibars.",
-            "params": [],
-            "result": {
-                "name": "Gas price",
-                "schema": {
-                    "title": "Gas price",
-                    "type": "string",
-                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                }
-            }
-        },
-        {
-            "name": "eth_feeHistory",
-            "summary": "Transaction fee history",
-            "description": "Returns transaction base fee per gas and effective priority fee per gas for the requested/supported block range.",
-            "params": [
-                {
-                    "name": "blockCount",
-                    "description": "Requested range of blocks. Clients will return less than the requested range if not all blocks are available.",
-                    "required": true,
-                    "schema": {
-                        "title": "hex encoded unsigned integer",
-                        "type": "string",
-                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                    }
-                },
-                {
-                    "name": "newestBlock",
-                    "description": "Highest block of the requested range.",
-                    "required": true,
-                    "schema": {
-                        "$ref": "#/components/schemas/blockNumOrTag"
-                    }
-                },
-                {
-                    "name": "rewardPercentiles",
-                    "description": "A monotonically increasing list of percentile values. For each block in the requested range, the transactions will be sorted in ascending order by effective tip per gas and the coresponding effective tip for the percentile will be determined, accounting for gas consumed.",
-                    "required": true,
-                    "schema": {
-                        "title": "rewardPercentiles",
-                        "type": "array",
-                        "items": {
-                            "title": "rewardPercentile",
-                            "description": "Floating point value between 0 and 100.",
-                            "type": "number"
-                        }
-                    }
-                }
-            ],
-            "result": {
-                "name": "feeHistoryResult",
-                "description": "Fee history for the returned block range. This can be a subsection of the requested range if not all blocks are available.",
-                "schema": {
-                    "title": "feeHistoryResults",
-                    "description": "Fee history results.",
-                    "type": "object",
-                    "required": [
-                        "oldestBlock",
-                        "baseFeePerGas",
-                        "gasUsedRatio"
-                    ],
-                    "properties": {
-                        "oldestBlock": {
-                            "title": "oldestBlock",
-                            "type": "string",
-                            "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                            "description": "Lowest number block of returned range."
-                        },
-                        "gasUsedRatio": {
-                            "title": "gasUsedRatio",
-                            "description": "An array of gas used ratio.",
-                            "type": "array",
-                            "items": {
-                                "title": "hex encoded unsigned integer",
-                                "type": "string",
-                                "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                            }
-                        },
-                        "baseFeePerGas": {
-                            "title": "baseFeePerGas",
-                            "description": "An array of block base fees per gas. This includes the next block after the newest of the returned range.",
-                            "type": "array",
-                            "items": {
-                                "title": "hex encoded unsigned integer",
-                                "type": "string",
-                                "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                            }
-                        },
-                        "reward": {
-                            "title": "reward",
-                            "description": "A two-dimensional array of effective priority fees per gas at the requested block percentiles.",
-                            "type": "array",
-                            "items": {
-                                "title": "rewardPercentile",
-                                "description": "An array of effective priority fee per gas data points from a single block. All zeroes are returned if the block is empty.",
-                                "type": "array",
-                                "items": {
-                                    "title": "rewardPercentile",
-                                    "type": "string",
-                                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$",
-                                    "description": "A given percentile sample of effective priority fees per gas from a single block in ascending order, weighted by gas used. Zeroes are returned if the block is empty."
-                                }
-                            }
-                        }
-                    }
                 }
             }
         },
@@ -1390,224 +1379,6 @@
             }
         },
         {
-            "name": "eth_mining",
-            "summary": "Returns whether the client is a miner. We don't mine, so this always returns false.",
-            "params": [],
-            "result": {
-                "name": "Mining status",
-                "schema": {
-                    "title": "miningStatus",
-                    "type": "boolean"
-                }
-            }
-        },
-        {
-            "name": "eth_hashrate",
-            "summary": "Returns the number of hashes per second that the node is mining with. Always returns 0x0.",
-            "params": [],
-            "result": {
-                "name": "Mining status",
-                "schema": {
-                    "title": "Hashrate",
-                    "type": "string",
-                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                }
-            }
-        },
-        {
-            "name": "eth_getWork",
-            "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
-            "result": {
-                "$ref": "#/components/schemas/unsupportedError"
-            }
-        },
-        {
-            "name": "eth_submitWork",
-            "summary": "Used for submitting a proof-of-work solution. Always returns false",
-            "params": [],
-            "result": {
-                "name": "Success",
-                "schema": {
-                    "type": "boolean"
-                }
-            }
-        },
-        {
-            "name": "eth_submitHashrate",
-            "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
-            "result": {
-                "$ref": "#/components/schemas/unsupportedError"
-            }
-        },
-        {
-            "name": "eth_sign",
-            "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
-            "result": {
-                "$ref": "#/components/schemas/unsupportedError"
-            }
-        },
-        {
-            "name": "eth_signTransaction",
-            "summary": "Returns an RLP encoded transaction signed by the specified account.",
-            "params": [],
-            "result": {
-                "name": "Encoded transaction",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "code": {
-                            "title": "Error code",
-                            "type": "number",
-                            "value": -32601
-                        }
-                    }
-                }
-            }
-        },
-        {
-            "name": "eth_getBalance",
-            "summary": "Returns the balance of the account of given address.",
-            "params": [
-                {
-                    "name": "Address",
-                    "required": true,
-                    "schema": {
-                        "$ref": "#/components/schemas/ethAddress"
-                    }
-                },
-                {
-                    "name": "Block",
-                    "required": false,
-                    "schema": {
-                        "$ref": "#/components/schemas/blockNumOrTag"
-                    }
-                }
-            ],
-            "result": {
-                "name": "Balance",
-                "schema": {
-                    "title": "hex encoded unsigned integer",
-                    "type": "string",
-                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                }
-            }
-        },
-        {
-            "name": "eth_getTransactionCount",
-            "summary": "Returns the number of transactions sent from an address.",
-            "params": [
-                {
-                    "name": "Address",
-                    "required": true,
-                    "schema": {
-                        "$ref": "#/components/schemas/ethAddress"
-                    }
-                },
-                {
-                    "name": "Block",
-                    "required": false,
-                    "schema": {
-                        "$ref": "#/components/schemas/blockNumOrTag"
-                    }
-                }
-            ],
-            "result": {
-                "name": "Transaction count",
-                "schema": {
-                    "title": "Transaction count",
-                    "type": "array",
-                    "items": {
-                        "title": "hex encoded unsigned integer",
-                        "type": "string",
-                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
-                    }
-                }
-            }
-        },
-        {
-            "name": "eth_getCode",
-            "summary": "Returns code at a given address.",
-            "params": [
-                {
-                    "name": "Address",
-                    "required": true,
-                    "schema": {
-                        "$ref": "#/components/schemas/ethAddress"
-                    }
-                },
-                {
-                    "name": "Block",
-                    "required": false,
-                    "schema": {
-                        "$ref": "#/components/schemas/blockNumOrTag"
-                    }
-                }
-            ],
-            "result": {
-                "name": "Bytecode",
-                "schema": {
-                    "title": "hex encoded bytes",
-                    "type": "string",
-                    "pattern": "^0x[0-9a-f]*$"
-                }
-            }
-        },
-        {
-            "name": "eth_sendTransaction",
-            "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
-            "result": {
-                "$ref": "#/components/schemas/unsupportedError"
-            }
-        },
-        {
-            "name": "eth_sendRawTransaction",
-            "summary": "Submits a raw transaction.",
-            "params": [
-                {
-                    "name": "Transaction",
-                    "required": true,
-                    "schema": {
-                        "title": "hex encoded bytes",
-                        "type": "string",
-                        "pattern": "^0x[0-9a-f]*$"
-                    }
-                }
-            ],
-            "result": {
-                "name": "Transaction hash",
-                "schema": {
-                    "title": "32 byte hex value",
-                    "type": "string",
-                    "pattern": "^0x([0-9a-f][0-9a-f]){0,32}$"
-                }
-            }
-        },
-        {
-            "name": "eth_getTransactionByHash",
-            "summary": "Returns the information about a transaction requested by transaction hash.",
-            "params": [
-                {
-                    "name": "Transaction hash",
-                    "required": true,
-                    "schema": {
-                        "title": "32 byte hex value",
-                        "type": "string",
-                        "pattern": "^0x([0-9a-f][0-9a-f]){0,32}$"
-                    }
-                }
-            ],
-            "result": {
-                "name": "Transaction information",
-                "schema": {
-                    "$ref": "#/components/schemas/transaction"
-                }
-            }
-        },
-        {
             "name": "eth_getTransactionByBlockHashAndIndex",
             "summary": "Returns information about a transaction by block hash and transaction index position.",
             "params": [
@@ -1662,6 +1433,59 @@
                 "name": "Transaction information",
                 "schema": {
                     "$ref": "#/components/schemas/transaction"
+                }
+            }
+        },
+        {
+            "name": "eth_getTransactionByHash",
+            "summary": "Returns the information about a transaction requested by transaction hash.",
+            "params": [
+                {
+                    "name": "Transaction hash",
+                    "required": true,
+                    "schema": {
+                        "title": "32 byte hex value",
+                        "type": "string",
+                        "pattern": "^0x([0-9a-f][0-9a-f]){0,32}$"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Transaction information",
+                "schema": {
+                    "$ref": "#/components/schemas/transaction"
+                }
+            }
+        },
+        {
+            "name": "eth_getTransactionCount",
+            "summary": "Returns the number of transactions sent from an address.",
+            "params": [
+                {
+                    "name": "Address",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/components/schemas/ethAddress"
+                    }
+                },
+                {
+                    "name": "Block",
+                    "required": false,
+                    "schema": {
+                        "$ref": "#/components/schemas/blockNumOrTag"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Transaction count",
+                "schema": {
+                    "title": "Transaction count",
+                    "type": "array",
+                    "items": {
+                        "title": "hex encoded unsigned integer",
+                        "type": "string",
+                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                    }
                 }
             }
         },
@@ -1782,7 +1606,273 @@
                     }
                 }
             }
-        }
+        },
+        {
+            "name": "eth_getUncleByBlockHashAndIndex",
+            "summary": "Returns information about a uncle of a block by hash and uncle index position.",
+            "params": [
+                {
+                    "name": "Block hash",
+                    "schema": {
+                        "title": "32 byte hex value",
+                        "type": "string",
+                        "pattern": "^0x([0-9a-f][0-9a-f]){0,32}$"
+                    }
+                },
+                {
+                    "name": "Uncle's index position",
+                    "schema": {
+                        "title": "hex encoded unsigned integer",
+                        "type": "string",
+                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Always returns null. There are no uncles in Hedera.",
+                "schema": {
+                    "title": "Uncle's info",
+                    "type": "null"
+                }
+            }
+        },
+        {
+            "name": "eth_getUncleByBlockNumberAndIndex",
+            "summary": "Returns information about a uncle of a block by number and uncle index position.",
+            "params": [
+                {
+                    "name": "Block",
+                    "schema": {
+                        "$ref": "#/components/schemas/blockNumOrTag"
+                    }
+                },
+                {
+                    "name": "Uncle's index position",
+                    "schema": {
+                        "title": "hex encoded unsigned integer",
+                        "type": "string",
+                        "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Always returns null. There are no uncles in Hedera.",
+                "schema": {
+                    "title": "Uncle's info",
+                    "type": "null"
+                }
+            }
+        },
+        {
+            "name": "eth_getUncleCountByBlockHash",
+            "summary": "Returns the number of uncles in a block from a block matching the given block hash.",
+            "params": [
+                {
+                    "name": "Block hash",
+                    "schema": {
+                        "title": "32 byte hex value",
+                        "type": "string",
+                        "pattern": "^0x([0-9a-f][0-9a-f]){0,32}$"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Always returns '0x0'. There are no uncles in Hedera.",
+                "schema": {
+                    "title": "hex encoded unsigned integer",
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "eth_getUncleCountByBlockNumber",
+            "summary": "Returns the number of transactions in a block matching the given block number.",
+            "params": [
+                {
+                    "name": "Block",
+                    "schema": {
+                        "$ref": "#/components/schemas/blockNumOrTag"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Always returns '0x0'. There are no uncles in Hedera.",
+                "schema": {
+                    "title": "hex encoded unsigned integer",
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "eth_getWork",
+            "summary": "Always returns UNSUPPORTED_METHOD error.",
+            "params": [],
+            "result": {
+                "$ref": "#/components/schemas/unsupportedError"
+            }
+        },
+        {
+            "name": "eth_hashrate",
+            "summary": "Returns the number of hashes per second that the node is mining with. Always returns 0x0.",
+            "params": [],
+            "result": {
+                "name": "Mining status",
+                "schema": {
+                    "title": "Hashrate",
+                    "type": "string",
+                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                }
+            }
+        },
+        {
+            "name": "eth_mining",
+            "summary": "Returns whether the client is a miner. We don't mine, so this always returns false.",
+            "params": [],
+            "result": {
+                "name": "Mining status",
+                "schema": {
+                    "title": "miningStatus",
+                    "type": "boolean"
+                }
+            }
+        },
+        {
+            "name": "eth_protocolVersion",
+            "summary": "Returns the current Ethereum protocol version. METHOD NOT SUPPORTED",
+            "params": [],
+            "result": {
+                "name": "Protocol version",
+                "schema": {
+                    "title": "version",
+                    "type": "string"
+                }
+            }
+        },
+        {
+            "name": "eth_sendRawTransaction",
+            "summary": "Submits a raw transaction.",
+            "params": [
+                {
+                    "name": "Transaction",
+                    "required": true,
+                    "schema": {
+                        "title": "hex encoded bytes",
+                        "type": "string",
+                        "pattern": "^0x[0-9a-f]*$"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Transaction hash",
+                "schema": {
+                    "title": "32 byte hex value",
+                    "type": "string",
+                    "pattern": "^0x([0-9a-f][0-9a-f]){0,32}$"
+                }
+            }
+        },
+        {
+            "name": "eth_sendTransaction",
+            "summary": "Always returns UNSUPPORTED_METHOD error.",
+            "params": [],
+            "result": {
+                "$ref": "#/components/schemas/unsupportedError"
+            }
+        },
+        {
+            "name": "eth_signTransaction",
+            "summary": "Returns an RLP encoded transaction signed by the specified account.",
+            "params": [],
+            "result": {
+                "name": "Encoded transaction",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "title": "Error code",
+                            "type": "number",
+                            "value": -32601
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "eth_sign",
+            "summary": "Always returns UNSUPPORTED_METHOD error.",
+            "params": [],
+            "result": {
+                "$ref": "#/components/schemas/unsupportedError"
+            }
+        },
+        {
+            "name": "eth_submitHashrate",
+            "summary": "Always returns UNSUPPORTED_METHOD error.",
+            "params": [],
+            "result": {
+                "$ref": "#/components/schemas/unsupportedError"
+            }
+        },
+        {
+            "name": "eth_submitWork",
+            "summary": "Used for submitting a proof-of-work solution. Always returns false",
+            "params": [],
+            "result": {
+                "name": "Success",
+                "schema": {
+                    "type": "boolean"
+                }
+            }
+        },
+        {
+            "name": "eth_syncing",
+            "summary": "Returns false.",
+            "params": [],
+            "result": {
+                "name": "Syncing status",
+                "schema": {
+                    "title": "Not syncing",
+                    "description": "Should always return false if not syncing.",
+                    "type": "boolean"
+                }
+            }
+        },
+        {
+            "name": "net_listening",
+            "summary": "Returns true if client is actively listening for network connections.",
+            "params": [],
+            "result": {
+                "name": "Boolean - true when listening, otherwise false.",
+                "schema": {
+                    "title": "Listening",
+                    "type": "boolean"
+                }
+            }
+        },
+        {
+            "name": "net_version",
+            "summary": "Returns the current chain id.",
+            "params": [],
+            "result": {
+                "name": "The current chain id.",
+                "schema": {
+                    "title": "hex encoded unsigned integer",
+                    "type": "string",
+                    "pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+                }
+            }
+        },
+        {
+            "name": "web3_clientVersion",
+            "summary": "Returns the current client version.",
+            "params": [],
+            "result": {
+                "name": "The current client version.",
+                "schema": {
+                    "type": "string"
+                }
+            }
+        }        
     ],
     "components": {
         "schemas": {
