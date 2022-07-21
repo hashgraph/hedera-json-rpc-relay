@@ -20,7 +20,7 @@
         "pino-pretty": "^7.6.1"
     },
     "devDependencies": {
-        "@hashgraph/hedera-local": "github:hashgraph/hedera-local-node",
+        "@hashgraph/hedera-local": "^1.1.0",
         "@hashgraph/sdk": "^2.17.0",
         "@koa/cors": "^3.1.0",
         "@types/chai": "^4.3.0",
@@ -44,7 +44,8 @@
         "compile": "tsc -b tsconfig.json",
         "acceptancetest": "ts-mocha tests/acceptance/index.spec.ts",
         "start": "node dist/index.js",
-        "test": "nyc ts-mocha --recursive ./tests/integration/server.spec.ts",
+        "test": "nyc ts-mocha --recursive ./tests/integration/*.spec.ts",
+        "openrpctest": "ts-mocha ./tests/integration/openrpc.spec.ts",
         "integration:prerequisite": "ts-node ./tests/helpers/prerequisite.ts"
     },
     "nyc": {
