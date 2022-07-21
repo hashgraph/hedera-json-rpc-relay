@@ -16,13 +16,14 @@ const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
     process.env['MIRROR_IMAGE_TAG'] = '0.58.0';
     console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
-    // start local-node
+    // start relay, stop relay instance in local-node
     console.log('Start local node');
     shell.exec('npx hedera-local restart');
     console.log('Hedera Hashgraph local node env started');
   }
 
   if (RELAY_URL === LOCAL_RELAY_URL) {
+    shell.exec('docker stop json-rpc-relay');
     console.log(`Start relay on port ${process.env.SERVER_PORT}`);
     app.listen({ port: process.env.SERVER_PORT });
   }
