@@ -93,7 +93,7 @@ describe('ERC20 Acceptance Tests', async function () {
 
             describe('should behave like erc20', function() {
                 describe('total supply', function () {
-                    it('returns the total amount of tokens', async function () {
+                    it('@release returns the total amount of tokens', async function () {
                         const supply = await contract.totalSupply();
                         expect(supply.toString()).to.be.equal(initialSupply.toString());
                     });
@@ -108,7 +108,7 @@ describe('ERC20 Acceptance Tests', async function () {
                     });
 
                     describe('when the requested account has some tokens', function () {
-                        it('returns the total amount of tokens', async function () {
+                        it('@release returns the total amount of tokens', async function () {
                             const balance = await contract.balanceOf(initialHolder);
                             expect(balance.toString()).to.be.equal(initialSupply.toString());
                         });
@@ -144,7 +144,7 @@ describe('ERC20 Acceptance Tests', async function () {
                                     amount = initialSupply;
                                 });
 
-                                it ('contract owner transfers tokens', async function () {
+                                it ('@release contract owner transfers tokens', async function () {
                                     tx = await contract.connect(tokenOwnerWallet).transfer(to, amount);
                                     const ownerBalance = await contract.balanceOf(tokenOwner);
                                     const toBalance = await contract.balanceOf(to);
@@ -275,7 +275,7 @@ describe('ERC20 Acceptance Tests', async function () {
                                     });
                                 });
 
-                                describe('when the spender has unlimited allowance', function () {
+                                describe('@release when the spender has unlimited allowance', function () {
                                     beforeEach(async function () {
                                         await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256);
                                     });
