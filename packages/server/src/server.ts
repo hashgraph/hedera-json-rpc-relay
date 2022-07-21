@@ -23,6 +23,8 @@ import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 
+import fs from 'fs';
+import path from 'path';
 import pino from 'pino';
 
 const mainLogger = pino({
@@ -112,6 +114,18 @@ app.use(async (ctx, next) => {
       logger.error(e);
       throw e;
     }
+  } else {
+    return next();
+  }
+});
+
+/**
+ * openrpc endpoint
+ */
+app.use(async (ctx, next) => {
+  if (ctx.url === '/openrpc') {
+    ctx.status = 200;
+    ctx.body = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../docs/openrpc.json')).toString());
   } else {
     return next();
   }
