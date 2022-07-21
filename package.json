@@ -34,16 +34,18 @@
         "start": "npx lerna exec --scope @hashgraph/json-rpc-server -- npm run start",
         "start:docker": "docker run --name hedera-relay -d -p 7546:7546 ${npm_package_name}:latest",
         "test": "npx lerna run test",
+        "openrpctest": "ts-mocha packages/server/tests/integration/openrpc.spec.ts",
         "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts"
     },
     "dependencies": {
+        "@open-rpc/schema-utils-js": "^1.16.1",
         "@types/find-config": "^1.0.1",
         "keyv-file": "^0.2.0",
         "koa-cors": "^0.0.16",
+        "lerna": "^4.0.0",
         "pino": "^7.11.0",
         "pino-pretty": "^7.6.1",
         "prom-client": "^14.0.1",
-        "typescript": "^4.6.3",
-        "lerna": "^4.0.0"
+        "typescript": "^4.6.3"
     }
 }
