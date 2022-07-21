@@ -46,4 +46,9 @@ jobs:
         run: cd ./tools/hardhat-example/ && npm ci
 
       - name: Run the hardhat tests
-        run: cd ./tools/hardhat-example/ && npx hardhat test
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 10
+          timeout_minutes: 10
+          retry_wait_seconds: 45
+          command: cd ./tools/hardhat-example/ && npx hardhat test
