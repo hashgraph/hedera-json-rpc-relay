@@ -24,6 +24,6 @@ const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 
   if (RELAY_URL === LOCAL_RELAY_URL) {
     console.log(`Start relay on port ${process.env.SERVER_PORT}`);
-    app.listen({ port: process.env.SERVER_PORT });
+    // app.listen({ port: process.env.SERVER_PORT });
   }
 })();
