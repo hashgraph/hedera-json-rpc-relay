@@ -1336,7 +1336,7 @@ describe('Eth', async function () {
     "blockNumber": "0x11",
     "chainId": "0x12a",
     "from": "0x0000000000000000000000000000000000001f41",
-    "gas": 123,
+    "gas": "0x7b",
     "gasPrice": "0x4a817c80",
     "hash": defaultTxHash,
     "input": "0x0707",
@@ -1346,10 +1346,10 @@ describe('Eth', async function () {
     "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
     "to": "0x0000000000000000000000000000000000001389",
-    "transactionIndex": 1,
+    "transactionIndex": "0x1",
     "type": 2,
     "v": 1,
-    "value": 2000000000
+    "value": "0x77359400"
   };
 
   const defaultDetailedContractResultByHash = {
