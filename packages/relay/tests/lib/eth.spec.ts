@@ -979,15 +979,15 @@ describe('Eth calls using MirrorNode', async function () {
       expect(res.address).to.eq(log.address);
       expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
       expect(res.blockHash.length).to.eq(66);
-      expect(res.blockNumber).to.eq(tx.block_number);
+      expect(res.blockNumber).to.eq(EthImpl.numberTo0x(tx.block_number));
       expect(res.data).to.eq(log.data);
-      expect(res.logIndex).to.eq(blockLogIndexOffset + Number(log.index));
+      expect(res.logIndex).to.eq(EthImpl.numberTo0x(blockLogIndexOffset + Number(log.index)));
       expect(res.removed).to.eq(false);
       expect(res.topics).to.exist;
       expect(res.topics).to.deep.eq(log.topics);
       expect(res.transactionHash).to.eq(tx.hash);
       expect(res.transactionHash.length).to.eq(66);
-      expect(res.transactionIndex).to.eq(tx.transaction_index);
+      expect(res.transactionIndex).to.eq(EthImpl.numberTo0x(tx.transaction_index));
     };
 
     const expectLogData1 = (res) => {
@@ -1336,7 +1336,7 @@ describe('Eth', async function () {
     "blockNumber": "0x11",
     "chainId": "0x12a",
     "from": "0x0000000000000000000000000000000000001f41",
-    "gas": 123,
+    "gas": "0x7b",
     "gasPrice": "0x4a817c80",
     "hash": defaultTxHash,
     "input": "0x0707",
@@ -1346,10 +1346,10 @@ describe('Eth', async function () {
     "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
     "to": "0x0000000000000000000000000000000000001389",
-    "transactionIndex": 1,
+    "transactionIndex": "0x1",
     "type": 2,
     "v": 1,
-    "value": 2000000000
+    "value": "0x77359400"
   };
 
   const defaultDetailedContractResultByHash = {
@@ -1411,15 +1411,15 @@ describe('Eth', async function () {
     "logs": [{
       "address": "0x0000000000000000000000000000000000001389",
       "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
-      "blockNumber": 17,
+      "blockNumber": "0x11",
       "data": "0x0123",
-      "logIndex": 0,
+      "logIndex": "0x0",
       "removed": false,
       "topics": [
         "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750"
       ],
       "transactionHash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
-      "transactionIndex": 1
+      "transactionIndex": "0x1"
     }],
     "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
     "status": "0x1",

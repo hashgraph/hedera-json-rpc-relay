@@ -18,7 +18,7 @@
  *
  */
 import { expect } from 'chai';
-import { ethers } from 'ethers';
+import { ethers, BigNumber } from 'ethers';
 import { JsonRpcError, predefined } from '../../../relay/src/lib/errors';
 import { Utils } from './utils';
 
@@ -59,7 +59,15 @@ export default class Assertions {
      */
     public static block(relayResponse, mirrorNodeResponse, mirrorTransactions, hydratedTransactions = false) {
         // Assert static values
-        expect(relayResponse.baseFeePerGas).to.be.equal(ethers.utils.hexValue(this.defaultGasPrice));
+        expect(relayResponse.baseFeePerGas).to.exist;
+
+        if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
+            expect(relayResponse.baseFeePerGas).to.be.equal(ethers.utils.hexValue(this.defaultGasPrice));
+        }
+        else {
+            expect(Number(relayResponse.baseFeePerGas)).to.be.gt(0);
+        }
+
         expect(relayResponse.difficulty).to.be.equal(ethers.utils.hexValue(0));
         expect(relayResponse.extraData).to.be.equal(Assertions.emptyHex);
         expect(relayResponse.miner).to.be.equal(ethers.constants.AddressZero);
@@ -121,13 +129,15 @@ export default class Assertions {
         expect(relayResponse.blockNumber).to.eq(ethers.utils.hexValue(mirrorNodeResponse.block_number));
         // expect(relayResponse.chainId).to.eq(mirrorNodeResponse.chain_id); // FIXME must not be null!
         expect(relayResponse.from).to.eq(mirrorNodeResponse.from);
-        expect(relayResponse.gas).to.eq(mirrorNodeResponse.gas_used);
+        expect(relayResponse.gas).to.eq(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
         // expect(relayResponse.gasPrice).to.eq(mirrorNodeResponse.gas_price); // FIXME must not be null!
         expect(relayResponse.hash).to.eq(mirrorNodeResponse.hash.slice(0, 66));
         expect(relayResponse.input).to.eq(mirrorNodeResponse.function_parameters);
-        expect(relayResponse.to).to.eq(mirrorNodeResponse.to);
-        expect(relayResponse.transactionIndex).to.eq(mirrorNodeResponse.transaction_index);
-        expect(relayResponse.value).to.eq(mirrorNodeResponse.amount);
+        if (relayResponse.to || mirrorNodeResponse.to) {
+            expect(relayResponse.to).to.eq(mirrorNodeResponse.to);
+        }
+        expect(relayResponse.transactionIndex).to.eq(ethers.utils.hexValue(mirrorNodeResponse.transaction_index));
+        expect(relayResponse.value).to.eq(ethers.utils.hexValue(mirrorNodeResponse.amount));
     }
 
     static transactionReceipt = (transactionReceipt, mirrorResult) => {
@@ -164,7 +174,7 @@ export default class Assertions {
             ? mirrorResult.gas_price
             : mirrorResult.max_fee_per_gas;
         const mirrorEffectiveGasPrice = Utils.tinyBarsToWeibars(effectiveGas);
-        expect(transactionReceipt.effectiveGasPrice).to.eq(mirrorEffectiveGasPrice);
+        expect(BigNumber.from(transactionReceipt.effectiveGasPrice).toString()).to.eq(mirrorEffectiveGasPrice.toString());
 
         expect(transactionReceipt.status).to.exist;
         expect(transactionReceipt.status).to.eq(mirrorResult.status);

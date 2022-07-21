@@ -647,28 +647,14 @@ export class EthImpl implements Eth {
     this.logger.trace('sendRawTransaction(transaction=%s)', transaction);
 
     try {
-      await this.precheck.gasLimit(transaction);
-      await this.precheck.nonce(transaction);
-      this.precheck.chainId(transaction);
-      this.precheck.value(transaction);
+      const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
+      await this.precheck.sendRawTransactionCheck(transaction, gasPrice);
     }
     catch(e: any) {
       return e;
     }
 
-    const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
-    const gasPrecheck = this.precheck.gasPrice(transaction, gasPrice);
-    if (!gasPrecheck.passes) {
-      return gasPrecheck.error;
-    }
-
-    const balancePrecheck = await this.precheck.balance(transaction, EthImpl.ethSendRawTransaction);
-    if (!balancePrecheck.passes) {
-      return balancePrecheck.error;
-    }
-
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
-
     try {
       const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction);
 
@@ -781,7 +767,7 @@ export class EthImpl implements Eth {
       blockNumber: EthImpl.numberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
       from: contractResult.from.substring(0, 42),
-      gas: contractResult.gas_used,
+      gas: EthImpl.numberTo0x(contractResult.gas_used),
       gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
@@ -791,10 +777,10 @@ export class EthImpl implements Eth {
       r: rSig,
       s: sSig,
       to: contractResult.to?.substring(0, 42),
-      transactionIndex: contractResult.transaction_index,
+      transactionIndex: EthImpl.numberTo0x(contractResult.transaction_index),
       type: contractResult.type,
       v: contractResult.v,
-      value: contractResult.amount,
+      value: EthImpl.numberTo0x(contractResult.amount),
     });
   }
 
@@ -826,13 +812,13 @@ export class EthImpl implements Eth {
         return new Log({
           address: log.address,
           blockHash: EthImpl.toHash32(receiptResponse.block_hash),
-          blockNumber: receiptResponse.block_number,
+          blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
           data: log.data,
-          logIndex: log.index,
+          logIndex: EthImpl.numberTo0x(log.index),
           removed: false,
           topics: log.topics,
           transactionHash: EthImpl.toHash32(receiptResponse.hash),
-          transactionIndex: receiptResponse.transaction_index
+          transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index)
         });
       });
 
@@ -1036,7 +1022,7 @@ export class EthImpl implements Eth {
           blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
           chainId: contractResultDetails.chain_id,
           from: contractResultDetails.from.substring(0, 42),
-          gas: contractResultDetails.gas_used,
+          gas: EthImpl.numberTo0x(contractResultDetails.gas_used),
           gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
           hash: contractResultDetails.hash.substring(0, 66),
           input: contractResultDetails.function_parameters,
@@ -1046,10 +1032,10 @@ export class EthImpl implements Eth {
           r: rSig,
           s: sSig,
           to: contractResultDetails.to.substring(0, 42),
-          transactionIndex: contractResultDetails.transaction_index,
+          transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
           type: contractResultDetails.type,
           v: contractResultDetails.v,
-          value: contractResultDetails.amount,
+          value: EthImpl.numberTo0x(contractResultDetails.amount),
         });
       })
       .catch((e: any) => {
@@ -1152,13 +1138,13 @@ export class EthImpl implements Eth {
           logs[logIndex] = new Log({
             address: log.address,
             blockHash: EthImpl.toHash32(detail.block_hash),
-            blockNumber: detail.block_number,
+            blockNumber: EthImpl.numberTo0x(detail.block_number),
             data: log.data,
-            logIndex: logIndex,
+            logIndex: EthImpl.numberTo0x(logIndex),
             removed: false,
             topics: log.topics,
             transactionHash: EthImpl.toHash32(detail.hash),
-            transactionIndex: detail.transaction_index
+            transactionIndex: EthImpl.numberTo0x(detail.transaction_index)
           });
         }
       }
