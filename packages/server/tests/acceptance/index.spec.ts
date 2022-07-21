@@ -57,9 +57,9 @@ describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
     let relayServer; // Relay Server
-    global.servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({name: `services-client`}));
-    global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({name: `mirror-node-client`}));
-    global.relay = new RelayClient(RELAY_URL, logger.child({name: `relay-client`}));
+    global.servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({name: `services-test-client`}));
+    global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({name: `mirror-node-test-client`}));
+    global.relay = new RelayClient(RELAY_URL, logger.child({name: `relay-test-client`}));
     global.relayServer = relayServer;
     global.logger = logger;
 
