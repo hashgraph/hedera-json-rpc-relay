@@ -67,12 +67,6 @@ describe('RPC Server Acceptance Tests', function () {
     const FEE_SCHEDULE_FILE_ID = "0.0.111";
     const FEE_SCHEDULE_FILE_CONTENT_DEFAULT = "0a280a0a08541a061a04408888340a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 853000
     const FEE_SCHEDULE_FILE_CONTENT_UPDATED = "0a280a0a08541a061a0440a8953a0a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 953000
-    const publicNetworks = ['previewnet', 'testnet', 'mainnet'];
-
-
-    const NETWORK = process.env.HEDERA_NETWORK || '';
-    const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
-    const PRODUCTION_ENV = supportedEnvs.includes(NETWORK.toLowerCase());
 
     describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
@@ -428,6 +422,7 @@ describe('RPC Server Acceptance Tests', function () {
                 });
 
                 it('@release should execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
+                    const gasPrice = await relay.gasPrice();
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
