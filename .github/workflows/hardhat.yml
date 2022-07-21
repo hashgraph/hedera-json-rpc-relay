@@ -45,5 +45,8 @@ jobs:
       - name: Install hardhat dependencies
         run: cd ./tools/hardhat-example/ && npm ci
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Run the hardhat tests
         run: cd ./tools/hardhat-example/ && npx hardhat test
