@@ -375,8 +375,7 @@ rpc.use('eth_getLogs', async (params: any) => {
  * returns: Value - The storage value
  */
 rpc.use('eth_getStorageAt', async (params: any) => {
-  return logger.debug("eth_getStorageAt");
-  //TODO
+  return logAndHandleResponse("eth_getStorageAt", () => relay.eth().getStorageAt(params?.[0], params?.[1], params?.[2]));
 });
 
 /**
