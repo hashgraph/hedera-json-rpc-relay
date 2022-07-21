@@ -128,7 +128,7 @@ describe('RPC Server Acceptance Tests', function () {
     }
 
     function runLocalRelay() {
-        // start relay
+        // start local relay, stop relay instance in local
         shell.exec('docker stop json-rpc-relay');
         logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
         relayServer = app.listen({port: process.env.SERVER_PORT});
