@@ -606,6 +606,7 @@ describe('RPC Server Acceptance Tests', function () {
                 });
 
                 it('should execute "eth_sendRawTransaction" and deploy a large contract', async function () {
+                    const gasPrice = await relay.gasPrice();
                     const transaction = {
                         type: 2,
                         chainId: Number(CHAIN_ID),
