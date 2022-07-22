@@ -653,7 +653,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber(blockNumber.toString());
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByNumber with no match', async function () {
@@ -677,7 +677,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('latest');
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByNumber with pending tag', async function () {
@@ -686,7 +686,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('pending');
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByNumber with earliest tag', async function () {
@@ -694,7 +694,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/0`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('earliest');
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByNumber with hex number', async function () {
@@ -702,7 +702,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/3735929054`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('0xdeadc0de');
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByHash with match', async function () {
@@ -710,7 +710,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByHash(blockHash);
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByHash with no match', async function () {
@@ -1606,13 +1606,13 @@ describe('Eth', async function () {
       expect(result.input).to.eq(defaultTransaction.input);
       expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
       expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
-      expect(result.nonce).to.eq(defaultTransaction.nonce);
+      expect(result.nonce).to.eq(EthImpl.numberTo0x(defaultTransaction.nonce));
       expect(result.r).to.eq(defaultTransaction.r);
       expect(result.s).to.eq(defaultTransaction.s);
       expect(result.to).to.eq(defaultTransaction.to);
       expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
-      expect(result.type).to.eq(defaultTransaction.type);
-      expect(result.v).to.eq(defaultTransaction.v);
+      expect(result.type).to.eq(EthImpl.numberTo0x(defaultTransaction.type));
+      expect(result.v).to.eq(EthImpl.numberTo0x(defaultTransaction.v));
       expect(result.value).to.eq(defaultTransaction.value);
     });
 
@@ -1640,13 +1640,13 @@ describe('Eth', async function () {
       expect(result.input).to.eq(defaultTransaction.input);
       expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
       expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
-      expect(result.nonce).to.eq(defaultTransaction.nonce);
+      expect(result.nonce).to.eq(EthImpl.numberTo0x(defaultTransaction.nonce));
       expect(result.r).to.be.null;
       expect(result.s).to.be.null;
       expect(result.to).to.eq(defaultTransaction.to);
       expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
-      expect(result.type).to.eq(defaultTransaction.type);
-      expect(result.v).to.eq(defaultTransaction.v);
+      expect(result.type).to.eq(EthImpl.numberTo0x(defaultTransaction.type));
+      expect(result.v).to.eq(EthImpl.numberTo0x(defaultTransaction.v));
       expect(result.value).to.eq(defaultTransaction.value);
     });
   });
