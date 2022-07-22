@@ -57,9 +57,9 @@ describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
     let relayServer; // Relay Server
-    global.servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({name: `services-client`}));
-    global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({name: `mirror-node-client`}));
-    global.relay = new RelayClient(RELAY_URL, logger.child({name: `relay-client`}));
+    global.servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({name: `services-test-client`}));
+    global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({name: `mirror-node-test-client`}));
+    global.relay = new RelayClient(RELAY_URL, logger.child({name: `relay-test-client`}));
     global.relayServer = relayServer;
     global.logger = logger;
 
@@ -116,9 +116,9 @@ describe('RPC Server Acceptance Tests', function () {
 
     function runLocalHederaNetwork() {
         // set env variables for docker images until local-node is updated
-        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.26.3';
-        process.env['HAVEGED_IMAGE_TAG'] = '0.26.3';
-        process.env['MIRROR_IMAGE_TAG'] = '0.59.0-rc1';
+        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.27.4';
+        process.env['HAVEGED_IMAGE_TAG'] = '0.27.4';
+        process.env['MIRROR_IMAGE_TAG'] = '0.60.0';
         logger.trace(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
         // start local-node
@@ -128,7 +128,8 @@ describe('RPC Server Acceptance Tests', function () {
     }
 
     function runLocalRelay() {
-        // start relay
+        // start local relay, stop relay instance in local
+        shell.exec('docker stop json-rpc-relay');
         logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
         relayServer = app.listen({port: process.env.SERVER_PORT});
     }

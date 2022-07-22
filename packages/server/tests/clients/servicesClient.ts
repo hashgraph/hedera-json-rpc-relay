@@ -213,9 +213,7 @@ export default class ServicesClient {
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
 
-        this.logger.trace(`New Eth compatible privateKey: ${privateKey}`);
-        this.logger.trace(`New Eth compatible publicKey: ${publicKey}`);
-        this.logger.debug(`New Eth compatible account ID: ${aliasAccountId.toString()}`);
+        this.logger.trace(`Create new Eth compatible account w privateKey: ${privateKey}, publicKey: ${publicKey}, alias: ${aliasAccountId.toString()} and balance ~${initialBalance} hb`);
 
         const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
             .addHbarTransfer(this._thisAccountId(), new Hbar(initialBalance).negated())

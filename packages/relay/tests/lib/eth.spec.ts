@@ -1503,7 +1503,8 @@ describe('Eth', async function () {
     'sign',
     'sendTransaction',
     'protocolVersion',
-    'coinbase'
+    'coinbase',
+    'getStorageAt',
   ];
 
   unsupportedMethods.forEach(method => {

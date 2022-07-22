@@ -427,6 +427,11 @@ export class EthImpl implements Eth {
     return predefined.UNSUPPORTED_METHOD;
   }
 
+  getStorageAt(address: string, slot: string, blockNumber: string | null): JsonRpcError {
+    this.logger.trace('getStorageAt(address=%s, slot=%s, blockNumber=%s)', address, slot, blockNumber);
+    return predefined.UNSUPPORTED_METHOD;
+  }
+  
   /**
    * Gets the balance of an account as of the given block.
    *
