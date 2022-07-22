@@ -659,9 +659,7 @@ export class EthImpl implements Eth {
         if (record.ethereumHash == null) {
           throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
         }
-        const txHash = EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
-
-        return txHash;
+        return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
       } catch (e) {
         this.logger.error(e,
           'Failed sendRawTransaction during record retrieval for transaction %s, returning computed hash', transaction);
