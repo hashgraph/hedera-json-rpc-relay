@@ -730,10 +730,10 @@ export class EthImpl implements Eth {
           gas = call.gas;
         }
       }
-
+      
       // Execute the call and get the response
-      this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s"', call.to, gas, call.data);
-      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, EthImpl.ethCall);
+      this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s" from "%s"', call.to, gas, call.data, call.from);
+      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall);
 
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
