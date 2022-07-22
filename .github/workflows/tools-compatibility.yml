@@ -1,4 +1,4 @@
-name: Hardhat Compatibility
+name: Tools Compatibility
 
 on:
   pull_request:
@@ -27,6 +27,7 @@ jobs:
 
       - name: Create .env file
         run: |
+          cp ./tools/web3js-example/.env.example ./tools/web3js-example/.env
           cp ./tools/hardhat-example/.env.example ./tools/hardhat-example/.env
           cp ./packages/server/tests/localAcceptance.env .env
 
@@ -52,3 +53,14 @@ jobs:
           timeout_minutes: 10
           retry_wait_seconds: 45
           command: cd ./tools/hardhat-example/ && npx hardhat test
+
+      - name: Install web3js dependencies
+        run: cd ./tools/web3js-example/ && npm ci
+
+      - name: Run the web3js tests
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 10
+          timeout_minutes: 10
+          retry_wait_seconds: 45
+          command: cd ./tools/web3js-example/ && npm run test
