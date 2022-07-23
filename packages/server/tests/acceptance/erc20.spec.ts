@@ -32,7 +32,7 @@ import {Utils} from '../helpers/utils';
 
 describe('ERC20 Acceptance Tests', async function () {
     this.timeout(240 * 1000); // 240 seconds
-    const {servicesNode, relay, logger} = global;
+    const {servicesNode, relay} = global;
 
     // cached entities
     const accounts: AliasAccount[] = [];
@@ -146,6 +146,7 @@ describe('ERC20 Acceptance Tests', async function () {
 
                                 it ('@release contract owner transfers tokens', async function () {
                                     tx = await contract.connect(tokenOwnerWallet).transfer(to, amount);
+                                    await tx.wait();
                                     const ownerBalance = await contract.balanceOf(tokenOwner);
                                     const toBalance = await contract.balanceOf(to);
                                     expect(ownerBalance.toString()).to.be.equal('0');
@@ -164,6 +165,7 @@ describe('ERC20 Acceptance Tests', async function () {
 
                                 it ('other account transfers tokens back to owner', async function () {
                                     tx = await contract.connect(toWallet).transfer(tokenOwner, amount);
+                                    await tx.wait();
                                     const ownerBalance = await contract.balanceOf(tokenOwner);
                                     const toBalance = await contract.balanceOf(to);
                                     expect(ownerBalance.toString()).to.be.equal(amount.toString());
@@ -175,7 +177,7 @@ describe('ERC20 Acceptance Tests', async function () {
                             if (testTitles[i].testName !== HTS) {
                                 describe('when the spender has enough allowance', function () {
                                     before(async function () {
-                                        await contract.connect(tokenOwnerWallet).approve(spender, initialSupply);
+                                        await contract.connect(tokenOwnerWallet).approve(spender, initialSupply).wait();
                                     });
 
                                     describe('when the token owner has enough balance', function () {
@@ -190,6 +192,7 @@ describe('ERC20 Acceptance Tests', async function () {
 
                                         it('transfers the requested amount', async function () {
                                             tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply);
+                                            await tx.wait();
                                             const ownerBalance = await contract.balanceOf(tokenOwner);
                                             const toBalance = await contract.balanceOf(to);
                                             expect(ownerBalance.toString()).to.be.equal('0');
@@ -277,11 +280,11 @@ describe('ERC20 Acceptance Tests', async function () {
 
                                 describe('@release when the spender has unlimited allowance', function () {
                                     beforeEach(async function () {
-                                        await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256);
+                                        await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256).wait();
                                     });
 
                                     it('does not decrease the spender allowance', async function () {
-                                        await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
+                                        await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1).wait();
                                         const allowance = await contract.allowance(tokenOwner, spender);
                                         expect(allowance.toString()).to.be.equal(ethers.constants.MaxUint256.toString());
                                     });
@@ -301,7 +304,7 @@ describe('ERC20 Acceptance Tests', async function () {
                                 amount = initialSupply;
                                 to = ethers.constants.AddressZero;
                                 tokenOwnerWallet = accounts[0].wallet;
-                                await contract.connect(tokenOwnerWallet).approve(spender, amount);
+                                await contract.connect(tokenOwnerWallet).approve(spender, amount).wait();
                             });
 
                             it('reverts', async function () {
@@ -336,7 +339,7 @@ describe('ERC20 Acceptance Tests', async function () {
         const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
         contract = new ethers.Contract(receipt.to, contractJson.abi, accounts[0].wallet);
         return contract;
-    };
+    }
 
     const createHTS = async(tokenName, symbol, adminAccount, initialSupply, abi, associatedAccounts) => {
         const htsResult = await servicesNode.createHTS({
@@ -356,8 +359,6 @@ describe('ERC20 Acceptance Tests', async function () {
         // Setup initial balance of token owner account
         await servicesNode.transferHTSToken(accounts[0].accountId, htsResult.receipt.tokenId, initialSupply, htsResult.client);
         const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
-        const contract = new ethers.Contract(evmAddress, abi, accounts[0].wallet);
-
-        return contract;
+        return new ethers.Contract(evmAddress, abi, accounts[0].wallet);
     };
 });
