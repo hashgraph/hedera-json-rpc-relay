@@ -26,6 +26,9 @@ describe('RPC', function() {
   this.timeout(5 * 60000); // 5 minutes
 
   let contractAddress;
+  const initialMsg = 'initial_msg';
+  const updatedMsg = 'updated_msg';
+
   it('should be able to get the account balance', async function() {
     const showBalance = require('../scripts/showBalance');
 
@@ -47,23 +50,22 @@ describe('RPC', function() {
   it('should be able to deploy a contract', async function() {
     const deployContract = require('../scripts/deployContract');
 
-    contractAddress = await deployContract();
+    contractAddress = await deployContract(initialMsg);
     expect(contractAddress).to.not.be.null;
   });
   it('should be able to make a contract view call', async function() {
     const contractViewCall = require('../scripts/contractViewCall');
 
     const res = await contractViewCall(contractAddress);
-    expect(res).to.be.equal('initial_msg');
+    expect(res).to.be.equal(initialMsg);
   });
   it('should be able to make a contract call', async function() {
     const contractViewCall = require('../scripts/contractViewCall');
     const contractCall = require('../scripts/contractCall');
 
-    const msg = 'updated_msg';
-    await contractCall(contractAddress, msg);
+    await contractCall(contractAddress, updatedMsg);
     const res = await contractViewCall(contractAddress);
 
-    expect(res).to.be.equal(msg);
+    expect(res).to.be.equal(updatedMsg);
   });
 });

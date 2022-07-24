@@ -24,7 +24,7 @@ const Web3 = require('web3');
 const Web3HttpProvider = require('web3-providers-http');
 const hethers = require('@hashgraph/hethers');
 
-module.exports = async () => {
+module.exports = async (contractParam) => {
   const { abi, bytecode } = await JSON.parse(fs.readFileSync(__dirname + '/../contract/Greeter.json'));
 
   const web3 = new Web3(new Web3HttpProvider(process.env.RELAY_ENDPOINT));
@@ -32,7 +32,7 @@ module.exports = async () => {
   const Greeter = new web3.eth.Contract(abi);
   const greeter = await Greeter.deploy({
     data: bytecode,
-    arguments: ['initial_msg']
+    arguments: [contractParam]
   });
   const contract = await greeter.send({
     from: wallet.address,
