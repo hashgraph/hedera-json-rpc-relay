@@ -1318,6 +1318,10 @@
                         "title": "to block",
                         "$ref": "#/components/schemas/uint"
                     },
+                    "blockHash": {
+                        "title": "Block hash",
+                        "$ref": "#/components/schemas/hash32"
+                    },
                     "address": {
                         "title": "Address(es)",
                         "oneOf": [
