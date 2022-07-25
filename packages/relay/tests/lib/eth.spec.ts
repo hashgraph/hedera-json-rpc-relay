@@ -37,6 +37,8 @@ import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { TextEncoder } from 'util';
+import { SDKClientError } from '../../src/lib/errors';
+
 const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
@@ -902,11 +904,7 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet(`accounts/${contractAddress1}`).reply(200, {
         account: contractAddress1
       });
-      sdkClientStub.getAccountBalanceInWeiBar.throws({
-        status: {
-          _code: 15
-        }
-      });
+      sdkClientStub.getAccountBalanceInWeiBar.throws(new SDKClientError("eth_getBalance exception", 15));
 
       const resNoCache = await ethImpl.getBalance(contractAddress1, null);
       const resCached = await ethImpl.getBalance(contractAddress1, null);
@@ -949,11 +947,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   describe('eth_getCode', async function() {
     it('should return cached value', async () => {
-      sdkClientStub.getContractByteCode.throws({
-        status: {
-          _code: 16
-        }
-      });
+      sdkClientStub.getContractByteCode.throws(new SDKClientError("eth_getBalance exception", 16));
 
       const resNoCache = await ethImpl.getCode(contractAddress1, null);
       const resCached = await ethImpl.getCode(contractAddress1, null);

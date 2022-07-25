@@ -45,6 +45,7 @@ import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
 import { Gauge, Histogram, Registry } from 'prom-client';
 import constants from './../constants';
+import { SDKClientError } from '../errors';
 
 const _ = require('lodash');
 
@@ -165,7 +166,7 @@ export class SDKClient {
     async getTinyBarGasFee(callerName: string): Promise<number> {
         const feeSchedules = await this.getFeeSchedule(callerName);
         if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
-            throw new Error('Invalid FeeSchedules proto format');
+            throw new SDKClientError('Invalid FeeSchedules proto format');
         }
 
         for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
@@ -177,7 +178,7 @@ export class SDKClient {
             }
         }
 
-        throw new Error(`${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
+        throw new SDKClientError(`${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
     }
 
     async getFileIdBytes(address: string, callerName: string): Promise<Uint8Array> {
@@ -257,11 +258,7 @@ export class SDKClient {
                 query._queryPayment?.toTinybars().toNumber(),
                 callerName);
 
-            if (e.status && e.status._code) {
-                throw new Error(e.message);
-            }
-
-            throw e;
+            throw new SDKClientError(e.message, e?.status?._code);
         }
     };
 
@@ -283,19 +280,14 @@ export class SDKClient {
                 0,
                 callerName);
 
-            // capture sdk transaction response errors and shorten familiar stack trace
-            if (e.status && e.status._code) {
-                throw new Error(e.message);
-            }
-
-            throw e;
+            throw new SDKClientError(e.message, e?.status?._code);
         }
     };
 
     executeGetTransactionRecord = async (resp: TransactionResponse, transactionName: string, callerName: string): Promise<TransactionRecord> => {
         try {
             if (!resp.getRecord) {
-                throw new Error(`Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
+                throw new SDKClientError(`Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
             }
 
             const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
@@ -317,11 +309,9 @@ export class SDKClient {
                     e.status,
                     0,
                     callerName);
-
-                throw new Error(e.message);
             }
 
-            throw e;
+            throw new SDKClientError(e.message, e?.status?._code);
         }
     };
 
@@ -349,7 +339,7 @@ export class SDKClient {
 
     private static HbarToWeiBar(balance: AccountBalance): BigNumber {
         return balance.hbars
-            .to(HbarUnit.Tinybar)
-            .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
+        .to(HbarUnit.Tinybar)
+        .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
     }
 }
