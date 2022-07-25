@@ -29,8 +29,7 @@ import cache from 'js-cache';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
-import MirrorNodeClient from '../../src/lib/clients/mirrorNodeClient';
-import { MirrorNode } from '../../src/lib/mirrorNode';
+import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import { expectUnsupportedMethod } from '../helpers';
 
 import pino from 'pino';
@@ -91,7 +90,7 @@ describe('Eth calls using MirrorNode', async function () {
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
     sdkClientStub = sinon.createStubInstance(SDKClient);
     // @ts-ignore
-    ethImpl = new EthImpl(sdkClientStub, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
+    ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a');
   });
 
   this.beforeEach(() => {
@@ -1401,7 +1400,7 @@ describe('Eth', async function () {
   let ethImpl: EthImpl;
   this.beforeAll(() => {
     // @ts-ignore
-    ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger);
+    ethImpl = new EthImpl(null, mirrorNodeInstance, logger);
   });
 
   const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
