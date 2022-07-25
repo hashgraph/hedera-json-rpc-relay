@@ -193,6 +193,18 @@
             }
         },
         {
+            "name": "eth_gasPrice",
+            "summary": "Returns the current price per gas in weibars.",
+            "params": [],
+            "result": {
+                "name": "Gas price",
+                "schema": {
+                    "title": "Gas price",
+                    "$ref": "#/components/schemas/uint"
+                }
+            }
+        },
+        {
             "name": "eth_getBalance",
             "summary": "Returns the balance of the account of given address.",
             "params": [

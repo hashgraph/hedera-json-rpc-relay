@@ -156,7 +156,7 @@ describe("Open RPC Specification", function () {
         expect(isValid).to.be.true;
     });
 
-    it('should execute "eth_accounts"', async function () {
+    it('should execute "eth_accounts"', function () {
         const response = ethImpl.accounts();
 
         validateResponseSchema(methodsResponseSchema.eth_accounts, response);
@@ -176,13 +176,13 @@ describe("Open RPC Specification", function () {
         validateResponseSchema(methodsResponseSchema.eth_call, response);
     });
 
-    it('should execute "eth_chainId"', async function () {
+    it('should execute "eth_chainId"', function () {
         const response = ethImpl.chainId();
 
         validateResponseSchema(methodsResponseSchema.eth_chainId, response);
     });
 
-    it('should execute "eth_coinbase"', async function () {
+    it('should execute "eth_coinbase"', function () {
         const response = ethImpl.coinbase();
 
         validateResponseSchema(methodsResponseSchema.eth_coinbase, response);
@@ -198,6 +198,12 @@ describe("Open RPC Specification", function () {
         const response = await ethImpl.feeHistory(1, 'latest', [0]);
 
         validateResponseSchema(methodsResponseSchema.eth_feeHistory, response);
+    });
+
+    it('should execute "eth_gasPrice"', async function () {
+        const response = await ethImpl.gasPrice();
+
+        validateResponseSchema(methodsResponseSchema.eth_gasPrice, response);
     });
 
     it('should execute "eth_getBalance"', async function () {
@@ -410,19 +416,19 @@ describe("Open RPC Specification", function () {
         validateResponseSchema(methodsResponseSchema.eth_syncing, response);
     });
 
-    it('should execute "net_listening"', async function () {
+    it('should execute "net_listening"', function () {
         const response = Relay.net().listening();
 
         validateResponseSchema(methodsResponseSchema.net_listening, response);
     });
 
-    it('should execute "net_version"', async function () {
+    it('should execute "net_version"', function () {
         const response = Relay.net().version()
 
         validateResponseSchema(methodsResponseSchema.net_version, response);
     });
 
-    it('should execute "web3_clientVersion"', async function () {
+    it('should execute "web3_clientVersion"', function () {
         const response = Relay.web3().clientVersion()
 
         validateResponseSchema(methodsResponseSchema.web3_clientVersion, response);
