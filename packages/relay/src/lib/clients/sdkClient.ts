@@ -194,7 +194,7 @@ export class SDKClient {
           .setEthereumData(transactionBuffer), callerName);
     }
 
-    async submitContractCallQuery(to: string, data: string, gas: number, callerName: string): Promise<ContractFunctionResult> {
+    async submitContractCallQuery(to: string, data: string, gas: number, from: string, callerName: string): Promise<ContractFunctionResult> {
         const contract = SDKClient.prune0x(to);
         const contractId = contract.startsWith("00000000000")
             ? ContractId.fromSolidityAddress(contract)
@@ -207,6 +207,10 @@ export class SDKClient {
         // data is optional and can be omitted in which case fallback function will be employed
         if (data) {
             contractCallQuery.setFunctionParameters(Buffer.from(SDKClient.prune0x(data), 'hex'));
+        }
+
+        if (from) {
+            contractCallQuery.setSenderAccountId(AccountId.fromEvmAddress(0,0, from))
         }
 
         if (this.clientMain.operatorAccountId !== null) {
