@@ -778,13 +778,13 @@ export class EthImpl implements Eth {
       input: contractResult.function_parameters,
       maxPriorityFeePerGas: maxPriorityFee,
       maxFeePerGas: maxFee,
-      nonce: EthImpl.numberTo0x(contractResult.nonce),
+      nonce: contractResult.nonce === null ? null : EthImpl.numberTo0x(contractResult.nonce),
       r: rSig,
       s: sSig,
       to: contractResult.to?.substring(0, 42),
       transactionIndex: EthImpl.numberTo0x(contractResult.transaction_index),
-      type: EthImpl.numberTo0x(contractResult.type),
-      v: EthImpl.numberTo0x(contractResult.v),
+      type: contractResult.type === null ? null : EthImpl.numberTo0x(contractResult.type),
+      v: contractResult.v === null ? null : EthImpl.numberTo0x(contractResult.v),
       value: EthImpl.numberTo0x(contractResult.amount),
     });
   }
@@ -1033,13 +1033,13 @@ export class EthImpl implements Eth {
           input: contractResultDetails.function_parameters,
           maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
           maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
-          nonce: EthImpl.numberTo0x(contractResultDetails.nonce),
+          nonce: contractResultDetails.nonce === null ? null : EthImpl.numberTo0x(contractResultDetails.nonce),
           r: rSig,
           s: sSig,
           to: contractResultDetails.to.substring(0, 42),
           transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
-          type: EthImpl.numberTo0x(contractResultDetails.type),
-          v: EthImpl.numberTo0x(contractResultDetails.v),
+          type: contractResultDetails.type === null ? null : EthImpl.numberTo0x(contractResultDetails.type),
+          v: contractResultDetails.v === null ? null : EthImpl.numberTo0x(contractResultDetails.v),
           value: EthImpl.numberTo0x(contractResultDetails.amount),
         });
       })
