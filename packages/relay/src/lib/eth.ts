@@ -22,8 +22,7 @@ import { Eth } from '../index';
 import { ContractId, Status, Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
-import { Block, CachedBlock, Transaction, Log } from './model';
-import { MirrorNode } from './mirrorNode';
+import { Block, Transaction, Log } from './model';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
@@ -77,12 +76,6 @@ export class EthImpl implements Eth {
   private readonly sdkClient: SDKClient;
 
   /**
-   * The mirror node mock
-   * @private
-   */
-  private readonly mirrorNode: MirrorNode;
-
-  /**
    * The interface through which we interact with the mirror node
    * @private
    */
@@ -109,20 +102,17 @@ export class EthImpl implements Eth {
   /**
    * Create a new Eth implementation.
    * @param nodeClient
-   * @param mirrorNode
    * @param mirrorNodeClient
    * @param logger
    * @param chain
    */
   constructor(
     nodeClient: SDKClient,
-    mirrorNode: MirrorNode,
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
     chain: string
   ) {
     this.sdkClient = nodeClient;
-    this.mirrorNode = mirrorNode;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
@@ -669,24 +659,7 @@ export class EthImpl implements Eth {
         if (record.ethereumHash == null) {
           throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
         }
-        const txHash = EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
-
-        // If the transaction succeeded, create a new block for the transaction.
-        const mostRecentBlock = await this.mirrorNode.getMostRecentBlock();
-        this.logger.debug('mostRecentBlock=%o', mostRecentBlock);
-        let block = mostRecentBlock;
-        if (record.receipt.status == Status.Success) {
-          block = new CachedBlock(mostRecentBlock, txHash);
-          this.mirrorNode.storeBlock(block);
-        }
-
-        // Create a receipt. Register the receipt in the cache and return the tx hash
-        if (block == null) {
-          this.logger.error('Failed to get a block for transaction');
-          return '';
-        }
-
-        return txHash;
+        return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
       } catch (e) {
         this.logger.error(e,
           'Failed sendRawTransaction during record retrieval for transaction %s, returning computed hash', transaction);
