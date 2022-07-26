@@ -24,7 +24,8 @@ import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
 import { MirrorNodeClient, SDKClient } from './clients';
-import { JsonRpcError, predefined, SDKClientError } from './errors';
+import { JsonRpcError, predefined } from './errors/JsonRpcError';
+import { SDKClientError } from './errors/SDKClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
 
@@ -233,7 +234,7 @@ export class EthImpl implements Eth {
             'transaction_type': EthImpl.ethTxType
           }
         ]
-      };  
+      };
     }
 
     if (networkFees && Array.isArray(networkFees.fees)) {
@@ -456,7 +457,7 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       if(e instanceof SDKClientError) {
         // handle INVALID_ACCOUNT_ID
-        if (e.statusCode === Status.InvalidAccountId._code) {
+        if (e.isInvalidAccountId()) {
           this.logger.debug(`Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
           cache.set(cachedLabel, EthImpl.zeroHex, constants.CACHE_TTL.ONE_HOUR);
           return EthImpl.zeroHex;
@@ -490,7 +491,7 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       if(e instanceof SDKClientError) {      
         // handle INVALID_CONTRACT_ID
-        if (e.statusCode === Status.InvalidContractId._code || e?.message?.includes(Status.InvalidContractId.toString())) {
+        if (e.isInvalidContractId()) {
           this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0, err code: %s', address, blockNumber, e.statusCode);
           cache.set(cachedLabel, '0x0', constants.CACHE_TTL.ONE_HOUR);
           return '0x0';

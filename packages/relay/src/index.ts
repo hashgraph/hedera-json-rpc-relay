@@ -18,8 +18,8 @@
  *
  */
 
-import {Block, Log, Receipt, Transaction} from './lib/model';
-import {JsonRpcError} from './lib/errors';
+import { Block, Log, Receipt, Transaction } from './lib/model';
+import { JsonRpcError } from './lib/errors/JsonRpcError';
 
 export { JsonRpcError };
 

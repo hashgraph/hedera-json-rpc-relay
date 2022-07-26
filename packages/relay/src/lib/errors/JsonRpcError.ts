@@ -18,8 +18,6 @@
  *
  */
 
-import { Status } from "@hashgraph/sdk";
-
 export class JsonRpcError {
   public code: number;
   public message: string;
@@ -109,27 +107,3 @@ export const predefined = {
     message: 'Value below 10_000_000_000 wei which is 1 tinybar'
   }),
 };
-
-export class SDKClientError extends Error {
-  public statusCode: number;
-
-  constructor(message: string, statusCode?: number) {
-    super(message);
-    this.statusCode = statusCode ? statusCode : Status.Unknown._code;
-    this.name = "SDKClientError";
-
-    Object.setPrototypeOf(this, SDKClientError.prototype);
-  }
-}
-
-export class MirrorNodeClientError extends Error {
-  public statusCode: number;
-
-  constructor(message: string, statusCode: number) {
-    super(message);
-    this.statusCode = statusCode;
-    this.name = "MirrorNodeClientError";
-
-    Object.setPrototypeOf(this, MirrorNodeClientError.prototype);
-  }
-}
