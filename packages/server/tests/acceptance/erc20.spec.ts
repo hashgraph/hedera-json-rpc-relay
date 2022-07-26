@@ -32,7 +32,7 @@ import {Utils} from '../helpers/utils';
 
 describe('ERC20 Acceptance Tests', async function () {
     this.timeout(240 * 1000); // 240 seconds
-    const {servicesNode, relay, logger} = global;
+    const {servicesNode, relay} = global;
 
     // cached entities
     const accounts: AliasAccount[] = [];
@@ -175,7 +175,8 @@ describe('ERC20 Acceptance Tests', async function () {
                             if (testTitles[i].testName !== HTS) {
                                 describe('when the spender has enough allowance', function () {
                                     before(async function () {
-                                        await contract.connect(tokenOwnerWallet).approve(spender, initialSupply);
+                                        const tx = await contract.connect(tokenOwnerWallet).approve(spender, initialSupply);
+                                        await tx.wait();
                                     });
 
                                     describe('when the token owner has enough balance', function () {
@@ -190,6 +191,7 @@ describe('ERC20 Acceptance Tests', async function () {
 
                                         it('transfers the requested amount', async function () {
                                             tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply);
+                                            await tx.wait();
                                             const ownerBalance = await contract.balanceOf(tokenOwner);
                                             const toBalance = await contract.balanceOf(to);
                                             expect(ownerBalance.toString()).to.be.equal('0');
@@ -336,7 +338,7 @@ describe('ERC20 Acceptance Tests', async function () {
         const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
         contract = new ethers.Contract(receipt.to, contractJson.abi, accounts[0].wallet);
         return contract;
-    };
+    }
 
     const createHTS = async(tokenName, symbol, adminAccount, initialSupply, abi, associatedAccounts) => {
         const htsResult = await servicesNode.createHTS({
@@ -356,8 +358,6 @@ describe('ERC20 Acceptance Tests', async function () {
         // Setup initial balance of token owner account
         await servicesNode.transferHTSToken(accounts[0].accountId, htsResult.receipt.tokenId, initialSupply, htsResult.client);
         const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
-        const contract = new ethers.Contract(evmAddress, abi, accounts[0].wallet);
-
-        return contract;
+        return new ethers.Contract(evmAddress, abi, accounts[0].wallet);
     };
 });
