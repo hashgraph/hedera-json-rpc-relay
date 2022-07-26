@@ -34,7 +34,6 @@ import { Registry } from 'prom-client';
 
 import { EthImpl } from '../../src/lib/eth';
 import { SDKClient } from '../../src/lib/clients';
-import { MirrorNode } from '../../src/lib/mirrorNode';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 import openRpcSchema from "../../../../docs/openrpc.json";
@@ -106,7 +105,7 @@ describe("Open RPC Specification", function () {
         mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
         sdkClientStub = sinon.createStubInstance(SDKClient);
         // @ts-ignore
-        ethImpl = new EthImpl(sdkClientStub, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
+        ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a');
 
         // mocked data
         mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
