@@ -26,7 +26,6 @@ import { NetImpl } from './net';
 import { EthImpl } from './eth';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { MirrorNode } from './mirrorNode';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { Registry } from 'prom-client';
 
@@ -57,8 +56,6 @@ export class RelayImpl implements Relay {
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain, chainId);
 
-    const mirrorNode = new MirrorNode(logger.child({ name: `mirror-node` }));
-
     const mirrorNodeClient = new MirrorNodeClient(
       process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
@@ -69,7 +66,6 @@ export class RelayImpl implements Relay {
 
     this.ethImpl = new EthImpl(
       sdkClient,
-      mirrorNode,
       mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId);

@@ -80,27 +80,6 @@ export class Block {
     }
 }
 
-export class CachedBlock extends Block {
-    public readonly parentBlock:Block|null;
-    public readonly transactionHashes:string[] = [];
-
-    constructor(parentBlock:(null | Block), transactionHash:(string|null), args?:any) {
-        super(args);
-        this.parentBlock = parentBlock;
-
-        const num = parentBlock == null ? 0 : parentBlock.getNum() + 1;
-        this.number = '0x' + Number(num).toString(16);
-        this.parentHash = parentBlock == null ? '0x0' : parentBlock.hash;
-        if (transactionHash) {
-            this.transactionHashes.push(transactionHash);
-        }
-
-        const numberAsString = num.toString();
-        const baseHash = "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b";
-        this.hash = baseHash.slice(0, baseHash.length - numberAsString.length) + numberAsString;
-    }
-}
-
 export class Receipt {
     public readonly transactionHash:string;
     public readonly transactionIndex:string;

@@ -30,14 +30,12 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-import { MirrorNode } from '../../src/lib/mirrorNode';
 import { expectUnsupportedMethod } from '../helpers';
 
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
-import { TextEncoder } from 'util';
 const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
@@ -92,7 +90,7 @@ describe('Eth calls using MirrorNode', async function () {
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
     sdkClientStub = sinon.createStubInstance(SDKClient);
     // @ts-ignore
-    ethImpl = new EthImpl(sdkClientStub, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
+    ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a');
   });
 
   this.beforeEach(() => {
@@ -115,6 +113,7 @@ describe('Eth calls using MirrorNode', async function () {
   const gasUsed2 = 800000;
   const maxGasLimit = 250000;
   const maxGasLimitHex = EthImpl.numberTo0x(maxGasLimit);
+  const contractCallData = "0xef641f44"
   const firstTransactionTimestampSeconds = '1653077547';
   const firstTransactionTimestampSecondsHex = EthImpl.numberTo0x(Number(firstTransactionTimestampSeconds));
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
@@ -1318,6 +1317,81 @@ describe('Eth calls using MirrorNode', async function () {
       expect(error.message).to.equal('Error encountered estimating the gas price');
     }
   });
+
+  describe('eth_call', async function () {
+    it('eth_call with no gas', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0)
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+      }, 'latest')
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 400_000, contractAddress1, 'eth_call');
+      expect(result).to.equal("0x00")
+    });
+
+    it('eth_call with no data', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0)
+            }
+          }
+      );
+
+      var result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "gas": maxGasLimitHex
+      }, 'latest')
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, undefined, maxGasLimit, contractAddress1, 'eth_call');
+      expect(result).to.equal("0x00")
+    });
+
+    it('eth_call with no from address', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0)
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest')
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, undefined, 'eth_call');
+      expect(result).to.equal("0x00")
+    });
+
+    it('eth_call with all fields', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0)
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest')
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, contractAddress1, 'eth_call');
+      expect(result).to.equal("0x00")
+    });
+  });
 });
 
 describe('Eth', async function () {
@@ -1326,7 +1400,7 @@ describe('Eth', async function () {
   let ethImpl: EthImpl;
   this.beforeAll(() => {
     // @ts-ignore
-    ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger);
+    ethImpl = new EthImpl(null, mirrorNodeInstance, logger);
   });
 
   const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
