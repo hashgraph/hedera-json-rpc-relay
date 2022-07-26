@@ -53,6 +53,7 @@ module.exports = {
         ],
         `${process.env.RELAY_URL}:${process.env.RELAY_PORT}`
       ),
+      // minimum required gas is 150_000, we recommend doubling it
       gas: 300000
     }
   },
