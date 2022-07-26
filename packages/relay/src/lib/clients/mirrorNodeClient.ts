@@ -167,7 +167,7 @@ export class MirrorNodeClient {
         }
 
         this.logger.error(new Error(error.message), `[GET] ${path} ${effectiveStatusCode} status`);
-        throw predefined.INTERNAL_ERROR;
+        throw error;
     }
 
     public async getAccountLatestTransactionByAddress(idOrAliasOrEvmAddress: string): Promise<object> {

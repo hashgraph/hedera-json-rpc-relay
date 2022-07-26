@@ -18,7 +18,7 @@
  *
  */
 
-import { Relay, RelayImpl, JsonRpcError } from '@hashgraph/json-rpc-relay';
+import { Relay, RelayImpl, JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
@@ -143,10 +143,24 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
     methodResponseHistogram.labels(methodName, status).observe(ms);
     logger.info(`${messagePrefix} ${status} ${ms} ms `);
     return response;
-  } catch (e) {
+  } catch (e: any) {
     ms = Date.now() - start;
     methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
     logger.error(e, `${messagePrefix} ${responseInternalErrorCode} ${ms} ms`);
+
+    // Returned error objects are exposed as a response to the end user.
+    // Thrown errors are masked as INTERNAL_ERROR
+
+    // axios TIMEOUT error
+    if (e.code === 'ECONNABORTED') {
+      return predefined.REQUEST_TIMEOUT;
+    }
+
+    // any JsonRpcError or predefined error
+    else if (e instanceof JsonRpcError) {
+      return e;
+    }
+
     throw e;
   }
 };

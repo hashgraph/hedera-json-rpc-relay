@@ -1057,28 +1057,36 @@ export class EthImpl implements Eth {
   async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | null, topics: any[] | null): Promise<Log[]> {
     const params: any = {};
     if (blockHash) {
-      const block = await this.mirrorNodeClient.getBlock(blockHash);
-      if (block) {
-        params.timestamp = [
-          `gte:${block.timestamp.from}`,
-          `lte:${block.timestamp.to}`
-        ];
+      try {
+        const block = await this.mirrorNodeClient.getBlock(blockHash);
+        if (block) {
+          params.timestamp = [
+            `gte:${block.timestamp.from}`,
+            `lte:${block.timestamp.to}`
+          ];
+        }
       }
-    }
-    else if (fromBlock || toBlock) {
+      catch(e: any) {
+        if (e.response?.status === 404) {
+          return [];
+        }
+
+        throw e;
+      }
+    } else if (fromBlock || toBlock) {
       const filters = [];
       let order;
-      if(toBlock) {
+      if (toBlock) {
         // @ts-ignore
         filters.push(`lte:${parseInt(toBlock)}`);
         order = constants.ORDER.DESC;
       }
-      if(fromBlock) {
+      if (fromBlock) {
         // @ts-ignore
         filters.push(`gte:${parseInt(fromBlock)}`);
         order = constants.ORDER.ASC;
       }
-      const blocksResult = await this.mirrorNodeClient.getBlocks(filters, undefined , {order});
+      const blocksResult = await this.mirrorNodeClient.getBlocks(filters, undefined, {order});
 
       const blocks = blocksResult?.blocks;
       if (blocks?.length) {
@@ -1130,32 +1138,27 @@ export class EthImpl implements Eth {
     }
 
     // Populate the Log objects with block and transaction data from ContractResultsDetails
-    try {
-      const contractsResultsDetails = await Promise.all(promises);
-      for (let i = 0; i < contractsResultsDetails.length; i++) {
-        const detail = contractsResultsDetails[i];
-        // retrieve set of logs for each timestamp
-        const timestamp = `${detail.timestamp}`;
-        const uPair = uniquePairs[timestamp] || [];
-        for (let p = 0; p < uPair.length; p++) {
-          const logIndex = uPair[p];
-          const log = logs[logIndex];
-          logs[logIndex] = new Log({
-            address: log.address,
-            blockHash: EthImpl.toHash32(detail.block_hash),
-            blockNumber: EthImpl.numberTo0x(detail.block_number),
-            data: log.data,
-            logIndex: EthImpl.numberTo0x(logIndex),
-            removed: false,
-            topics: log.topics,
-            transactionHash: EthImpl.toHash32(detail.hash),
-            transactionIndex: EthImpl.numberTo0x(detail.transaction_index)
-          });
-        }
+    const contractsResultsDetails = await Promise.all(promises);
+    for (let i = 0; i < contractsResultsDetails.length; i++) {
+      const detail = contractsResultsDetails[i];
+      // retrieve set of logs for each timestamp
+      const timestamp = `${detail.timestamp}`;
+      const uPair = uniquePairs[timestamp] || [];
+      for (let p = 0; p < uPair.length; p++) {
+        const logIndex = uPair[p];
+        const log = logs[logIndex];
+        logs[logIndex] = new Log({
+          address: log.address,
+          blockHash: EthImpl.toHash32(detail.block_hash),
+          blockNumber: EthImpl.numberTo0x(detail.block_number),
+          data: log.data,
+          logIndex: EthImpl.numberTo0x(logIndex),
+          removed: false,
+          topics: log.topics,
+          transactionHash: EthImpl.toHash32(detail.hash),
+          transactionIndex: EthImpl.numberTo0x(detail.transaction_index)
+        });
       }
-    }
-    catch (e) {
-      return [];
     }
 
     return logs;
