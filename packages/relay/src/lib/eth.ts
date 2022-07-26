@@ -22,8 +22,7 @@ import { Eth } from '../index';
 import { ContractId, Status, Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
-import { Block, CachedBlock, Transaction, Log } from './model';
-import { MirrorNode } from './mirrorNode';
+import { Block, Transaction, Log } from './model';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors';
 import constants from './constants';
@@ -77,12 +76,6 @@ export class EthImpl implements Eth {
   private readonly sdkClient: SDKClient;
 
   /**
-   * The mirror node mock
-   * @private
-   */
-  private readonly mirrorNode: MirrorNode;
-
-  /**
    * The interface through which we interact with the mirror node
    * @private
    */
@@ -109,20 +102,17 @@ export class EthImpl implements Eth {
   /**
    * Create a new Eth implementation.
    * @param nodeClient
-   * @param mirrorNode
    * @param mirrorNodeClient
    * @param logger
    * @param chain
    */
   constructor(
     nodeClient: SDKClient,
-    mirrorNode: MirrorNode,
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
     chain: string
   ) {
     this.sdkClient = nodeClient;
-    this.mirrorNode = mirrorNode;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
@@ -540,7 +530,7 @@ export class EthImpl implements Eth {
    *
    * @param hash
    */
-  async getBlockTransactionCountByHash(hash: string): Promise<number | null> {
+  async getBlockTransactionCountByHash(hash: string): Promise<string | null> {
     this.logger.trace('getBlockTransactionCountByHash(hash=%s, showDetails=%o)', hash);
     return this.mirrorNodeClient
       .getBlock(hash)
@@ -555,7 +545,7 @@ export class EthImpl implements Eth {
    * Gets the number of transaction in a block by its block number.
    * @param blockNumOrTag
    */
-  async getBlockTransactionCountByNumber(blockNumOrTag: string): Promise<number | null> {
+  async getBlockTransactionCountByNumber(blockNumOrTag: string): Promise<string | null> {
     this.logger.trace('getBlockTransactionCountByNumber(blockNum=%s, showDetails=%o)', blockNumOrTag);
     const blockNum = await this.translateBlockTag(blockNumOrTag);
     return this.mirrorNodeClient
@@ -669,24 +659,7 @@ export class EthImpl implements Eth {
         if (record.ethereumHash == null) {
           throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
         }
-        const txHash = EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
-
-        // If the transaction succeeded, create a new block for the transaction.
-        const mostRecentBlock = await this.mirrorNode.getMostRecentBlock();
-        this.logger.debug('mostRecentBlock=%o', mostRecentBlock);
-        let block = mostRecentBlock;
-        if (record.receipt.status == Status.Success) {
-          block = new CachedBlock(mostRecentBlock, txHash);
-          this.mirrorNode.storeBlock(block);
-        }
-
-        // Create a receipt. Register the receipt in the cache and return the tx hash
-        if (block == null) {
-          this.logger.error('Failed to get a block for transaction');
-          return '';
-        }
-
-        return txHash;
+        return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
       } catch (e) {
         this.logger.error(e,
           'Failed sendRawTransaction during record retrieval for transaction %s, returning computed hash', transaction);
@@ -730,10 +703,10 @@ export class EthImpl implements Eth {
           gas = call.gas;
         }
       }
-
+      
       // Execute the call and get the response
-      this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s"', call.to, gas, call.data);
-      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, EthImpl.ethCall);
+      this.logger.debug('Making eth_call on contract %o with gas %d and call data "%s" from "%s"', call.to, gas, call.data, call.from);
+      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall);
 
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
@@ -778,13 +751,13 @@ export class EthImpl implements Eth {
       input: contractResult.function_parameters,
       maxPriorityFeePerGas: maxPriorityFee,
       maxFeePerGas: maxFee,
-      nonce: contractResult.nonce,
+      nonce: EthImpl.nullableNumberTo0x(contractResult.nonce),
       r: rSig,
       s: sSig,
       to: contractResult.to?.substring(0, 42),
       transactionIndex: EthImpl.numberTo0x(contractResult.transaction_index),
-      type: contractResult.type,
-      v: contractResult.v,
+      type: EthImpl.nullableNumberTo0x(contractResult.type),
+      v: EthImpl.nullableNumberTo0x(contractResult.v),
       value: EthImpl.numberTo0x(contractResult.amount),
     });
   }
@@ -861,6 +834,10 @@ export class EthImpl implements Eth {
 
   static numberTo0x(input: number | BigNumber): string {
     return EthImpl.emptyHex + input.toString(16);
+  }
+
+  static nullableNumberTo0x(input: number | BigNumber): string | null {
+    return input === null ? null : EthImpl.numberTo0x(input);
   }
 
   static toHash32(value: string): string {
@@ -997,7 +974,7 @@ export class EthImpl implements Eth {
       return null;
     }
 
-    return block.count;
+    return EthImpl.numberTo0x(block.count);
   }
 
   private getTransactionFromContractResults(contractResults: any) {
@@ -1033,13 +1010,13 @@ export class EthImpl implements Eth {
           input: contractResultDetails.function_parameters,
           maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
           maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
-          nonce: contractResultDetails.nonce,
+          nonce: EthImpl.nullableNumberTo0x(contractResultDetails.nonce),
           r: rSig,
           s: sSig,
           to: contractResultDetails.to.substring(0, 42),
           transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
-          type: contractResultDetails.type,
-          v: contractResultDetails.v,
+          type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
+          v: EthImpl.nullableNumberTo0x(contractResultDetails.v),
           value: EthImpl.numberTo0x(contractResultDetails.amount),
         });
       })

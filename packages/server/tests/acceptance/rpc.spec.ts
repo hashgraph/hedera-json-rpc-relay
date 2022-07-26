@@ -301,7 +301,7 @@ describe('RPC Server Acceptance Tests', function () {
 
             it('@release should execute "eth_getBlockTransactionCountByNumber"', async function () {
                 const res = await relay.call('eth_getBlockTransactionCountByNumber', [mirrorBlock.number]);
-                expect(res).to.be.equal(mirrorBlock.count);
+                expect(res).to.be.equal(ethers.utils.hexValue(mirrorBlock.count));
             });
 
             it('should execute "eth_getBlockTransactionCountByNumber" for non-existing block number', async function () {
@@ -311,7 +311,7 @@ describe('RPC Server Acceptance Tests', function () {
 
             it('@release should execute "eth_getBlockTransactionCountByHash"', async function () {
                 const res = await relay.call('eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
-                expect(res).to.be.equal(mirrorBlock.count);
+                expect(res).to.be.equal(ethers.utils.hexValue(mirrorBlock.count));
             });
 
             it('should execute "eth_getBlockTransactionCountByHash" for non-existing block hash', async function () {

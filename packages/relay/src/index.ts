@@ -61,9 +61,9 @@ export interface Eth {
 
   getBlockByNumber(blockNum: string, showDetails: boolean): Promise<Block | null>;
 
-  getBlockTransactionCountByHash(hash: string): Promise<number | null>;
+  getBlockTransactionCountByHash(hash: string): Promise<string | null>;
 
-  getBlockTransactionCountByNumber(blockNum: string): Promise<number | null>
+  getBlockTransactionCountByNumber(blockNum: string): Promise<string | null>
   
   getCode(address: string, blockNumber: string | null): Promise<string>;
 
