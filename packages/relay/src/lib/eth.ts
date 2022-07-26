@@ -778,13 +778,13 @@ export class EthImpl implements Eth {
       input: contractResult.function_parameters,
       maxPriorityFeePerGas: maxPriorityFee,
       maxFeePerGas: maxFee,
-      nonce: contractResult.nonce === null ? null : EthImpl.numberTo0x(contractResult.nonce),
+      nonce: EthImpl.nullableNumberTo0x(contractResult.nonce),
       r: rSig,
       s: sSig,
       to: contractResult.to?.substring(0, 42),
       transactionIndex: EthImpl.numberTo0x(contractResult.transaction_index),
-      type: contractResult.type === null ? null : EthImpl.numberTo0x(contractResult.type),
-      v: contractResult.v === null ? null : EthImpl.numberTo0x(contractResult.v),
+      type: EthImpl.nullableNumberTo0x(contractResult.type),
+      v: EthImpl.nullableNumberTo0x(contractResult.v),
       value: EthImpl.numberTo0x(contractResult.amount),
     });
   }
@@ -861,6 +861,10 @@ export class EthImpl implements Eth {
 
   static numberTo0x(input: number | BigNumber): string {
     return EthImpl.emptyHex + input.toString(16);
+  }
+
+  static nullableNumberTo0x(input: number | BigNumber): string | null {
+    return input === null ? null : EthImpl.numberTo0x(input);
   }
 
   static toHash32(value: string): string {
@@ -1033,13 +1037,13 @@ export class EthImpl implements Eth {
           input: contractResultDetails.function_parameters,
           maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
           maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
-          nonce: contractResultDetails.nonce === null ? null : EthImpl.numberTo0x(contractResultDetails.nonce),
+          nonce: EthImpl.nullableNumberTo0x(contractResultDetails.nonce),
           r: rSig,
           s: sSig,
           to: contractResultDetails.to.substring(0, 42),
           transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
-          type: contractResultDetails.type === null ? null : EthImpl.numberTo0x(contractResultDetails.type),
-          v: contractResultDetails.v === null ? null : EthImpl.numberTo0x(contractResultDetails.v),
+          type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
+          v: EthImpl.nullableNumberTo0x(contractResultDetails.v),
           value: EthImpl.numberTo0x(contractResultDetails.amount),
         });
       })
