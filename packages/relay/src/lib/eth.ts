@@ -226,14 +226,14 @@ export class EthImpl implements Eth {
     }
 
     if (_.isNil(networkFees)) {
-        networkFees = {
-          fees: [
-            {
-              gas: await this.sdkClient.getTinyBarGasFee(callerName),
-              'transaction_type': EthImpl.ethTxType
-            }
-          ]
-        };  
+      networkFees = {
+        fees: [
+          {
+            gas: await this.sdkClient.getTinyBarGasFee(callerName),
+            'transaction_type': EthImpl.ethTxType
+          }
+        ]
+      };  
     }
 
     if (networkFees && Array.isArray(networkFees.fees)) {
