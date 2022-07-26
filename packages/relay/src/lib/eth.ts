@@ -530,7 +530,7 @@ export class EthImpl implements Eth {
    *
    * @param hash
    */
-  async getBlockTransactionCountByHash(hash: string): Promise<number | null> {
+  async getBlockTransactionCountByHash(hash: string): Promise<string | null> {
     this.logger.trace('getBlockTransactionCountByHash(hash=%s, showDetails=%o)', hash);
     return this.mirrorNodeClient
       .getBlock(hash)
@@ -545,7 +545,7 @@ export class EthImpl implements Eth {
    * Gets the number of transaction in a block by its block number.
    * @param blockNumOrTag
    */
-  async getBlockTransactionCountByNumber(blockNumOrTag: string): Promise<number | null> {
+  async getBlockTransactionCountByNumber(blockNumOrTag: string): Promise<string | null> {
     this.logger.trace('getBlockTransactionCountByNumber(blockNum=%s, showDetails=%o)', blockNumOrTag);
     const blockNum = await this.translateBlockTag(blockNumOrTag);
     return this.mirrorNodeClient
@@ -751,13 +751,13 @@ export class EthImpl implements Eth {
       input: contractResult.function_parameters,
       maxPriorityFeePerGas: maxPriorityFee,
       maxFeePerGas: maxFee,
-      nonce: contractResult.nonce,
+      nonce: EthImpl.nullableNumberTo0x(contractResult.nonce),
       r: rSig,
       s: sSig,
       to: contractResult.to?.substring(0, 42),
       transactionIndex: EthImpl.numberTo0x(contractResult.transaction_index),
-      type: contractResult.type,
-      v: contractResult.v,
+      type: EthImpl.nullableNumberTo0x(contractResult.type),
+      v: EthImpl.nullableNumberTo0x(contractResult.v),
       value: EthImpl.numberTo0x(contractResult.amount),
     });
   }
@@ -834,6 +834,10 @@ export class EthImpl implements Eth {
 
   static numberTo0x(input: number | BigNumber): string {
     return EthImpl.emptyHex + input.toString(16);
+  }
+
+  static nullableNumberTo0x(input: number | BigNumber): string | null {
+    return input === null ? null : EthImpl.numberTo0x(input);
   }
 
   static toHash32(value: string): string {
@@ -970,7 +974,7 @@ export class EthImpl implements Eth {
       return null;
     }
 
-    return block.count;
+    return EthImpl.numberTo0x(block.count);
   }
 
   private getTransactionFromContractResults(contractResults: any) {
@@ -1006,13 +1010,13 @@ export class EthImpl implements Eth {
           input: contractResultDetails.function_parameters,
           maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
           maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
-          nonce: contractResultDetails.nonce,
+          nonce: EthImpl.nullableNumberTo0x(contractResultDetails.nonce),
           r: rSig,
           s: sSig,
           to: contractResultDetails.to.substring(0, 42),
           transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
-          type: contractResultDetails.type,
-          v: contractResultDetails.v,
+          type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
+          v: EthImpl.nullableNumberTo0x(contractResultDetails.v),
           value: EthImpl.numberTo0x(contractResultDetails.amount),
         });
       })
