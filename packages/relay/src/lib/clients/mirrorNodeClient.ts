@@ -151,7 +151,7 @@ export class MirrorNodeClient {
             return response.data;
         } catch (error: any) {
             ms = Date.now() - start;
-        const effectiveStatusCode = error.response !== undefined ? error.response.status : MirrorNodeClient.unknownServerErrorHttpStatusCode;            
+            const effectiveStatusCode = error.response !== undefined ? error.response.status : MirrorNodeClient.unknownServerErrorHttpStatusCode;            
             this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
             this.handleError(error, path, effectiveStatusCode, allowedErrorStatuses);
         }
