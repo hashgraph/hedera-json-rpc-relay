@@ -621,7 +621,7 @@ export class EthImpl implements Eth {
    * @param address
    * @param blockNumOrTag
    */
-  async getTransactionCount(address: string, blockNumOrTag: string): Promise<string> {
+  async getTransactionCount(address: string, blockNumOrTag: string): Promise<string | JsonRpcError> {
     this.logger.trace('getTransactionCount(address=%s, blockNumOrTag=%s)', address, blockNumOrTag);
     const blockNumber = await this.translateBlockTag(blockNumOrTag);
     if (blockNumber === 0) {
@@ -638,7 +638,7 @@ export class EthImpl implements Eth {
         }  
       } catch (e: any) {
         this.logger.error(e, 'Error raised during getTransactionCount for address %s, block number or tag %s', address, blockNumOrTag);
-        throw e;        
+        return predefined.INTERNAL_ERROR;
       }
 
       return EthImpl.numberTo0x(0);

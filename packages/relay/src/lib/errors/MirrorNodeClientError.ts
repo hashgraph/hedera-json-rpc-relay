@@ -29,3 +29,4 @@ export class MirrorNodeClientError extends Error {
       Object.setPrototypeOf(this, MirrorNodeClientError.prototype);
     }
   }
+  
