@@ -79,7 +79,7 @@ export interface Eth {
 
   getTransactionByHash(hash: string): Promise<Transaction | null>;
   
-  getTransactionCount(address: string, blocknum: string): Promise<string>;
+  getTransactionCount(address: string, blocknum: string): Promise<string | JsonRpcError>;
 
   getTransactionReceipt(hash: string): Promise<Receipt | null>;
 
