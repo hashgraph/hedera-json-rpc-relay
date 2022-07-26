@@ -1,0 +1,10 @@
+{
+  "name": "truffle-example",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^2.0.12",
+    "dotenv": "^16.0.1",
+    "truffle": "^5.5.23"
+  }
+}
