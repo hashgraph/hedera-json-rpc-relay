@@ -218,13 +218,13 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT,
-            [400]);
+            [400, 404]);
     }
 
     public async getContractResultsDetails(contractId: string, timestamp: string) {
         return this.request(`${this.getContractResultsDetailsByContractIdAndTimestamp(contractId, timestamp)}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT,
-            [400]);
+            [400, 404]);
     }
 
     public async getContractResultsByAddress(
@@ -237,7 +237,7 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT,
-            [400]);
+            [400, 404]);
     }
 
     public async getContractResultsByAddressAndTimestamp(contractIdOrAddress: string, timestamp: string) {

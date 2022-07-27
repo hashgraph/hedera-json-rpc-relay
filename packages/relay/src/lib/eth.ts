@@ -1137,28 +1137,37 @@ export class EthImpl implements Eth {
       }
     }
 
-    // Populate the Log objects with block and transaction data from ContractResultsDetails
-    const contractsResultsDetails = await Promise.all(promises);
-    for (let i = 0; i < contractsResultsDetails.length; i++) {
-      const detail = contractsResultsDetails[i];
-      // retrieve set of logs for each timestamp
-      const timestamp = `${detail.timestamp}`;
-      const uPair = uniquePairs[timestamp] || [];
-      for (let p = 0; p < uPair.length; p++) {
-        const logIndex = uPair[p];
-        const log = logs[logIndex];
-        logs[logIndex] = new Log({
-          address: log.address,
-          blockHash: EthImpl.toHash32(detail.block_hash),
-          blockNumber: EthImpl.numberTo0x(detail.block_number),
-          data: log.data,
-          logIndex: EthImpl.numberTo0x(logIndex),
-          removed: false,
-          topics: log.topics,
-          transactionHash: EthImpl.toHash32(detail.hash),
-          transactionIndex: EthImpl.numberTo0x(detail.transaction_index)
-        });
+    try {
+      // Populate the Log objects with block and transaction data from ContractResultsDetails
+      const contractsResultsDetails = await Promise.all(promises);
+      for (let i = 0; i < contractsResultsDetails.length; i++) {
+        const detail = contractsResultsDetails[i];
+        // retrieve set of logs for each timestamp
+        const timestamp = `${detail.timestamp}`;
+        const uPair = uniquePairs[timestamp] || [];
+        for (let p = 0; p < uPair.length; p++) {
+          const logIndex = uPair[p];
+          const log = logs[logIndex];
+          logs[logIndex] = new Log({
+            address: log.address,
+            blockHash: EthImpl.toHash32(detail.block_hash),
+            blockNumber: EthImpl.numberTo0x(detail.block_number),
+            data: log.data,
+            logIndex: EthImpl.numberTo0x(logIndex),
+            removed: false,
+            topics: log.topics,
+            transactionHash: EthImpl.toHash32(detail.hash),
+            transactionIndex: EthImpl.numberTo0x(detail.transaction_index)
+          });
+        }
       }
+    }
+    catch(e: any) {
+      if (e.response?.status === 404) {
+        return [];
+      }
+
+      throw e;
     }
 
     return logs;
