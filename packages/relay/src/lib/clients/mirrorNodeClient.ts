@@ -20,7 +20,6 @@
 
 import Axios, { AxiosInstance } from 'axios';
 import { MirrorNodeClientError } from './../errors/MirrorNodeClientError';
-import { predefined } from '../errors/JsonRpcError';
 import { Logger } from "pino";
 import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
