@@ -30,14 +30,14 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-import { MirrorNode } from '../../src/lib/mirrorNode';
 import { expectUnsupportedMethod } from '../helpers';
 
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
-import { TextEncoder } from 'util';
+import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+
 const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
@@ -92,7 +92,7 @@ describe('Eth calls using MirrorNode', async function () {
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
     sdkClientStub = sinon.createStubInstance(SDKClient);
     // @ts-ignore
-    ethImpl = new EthImpl(sdkClientStub, new MirrorNode(logger.child({ name: `mirror-node-faux` })), mirrorNodeInstance, logger, '0x12a');
+    ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a');
   });
 
   this.beforeEach(() => {
@@ -115,6 +115,7 @@ describe('Eth calls using MirrorNode', async function () {
   const gasUsed2 = 800000;
   const maxGasLimit = 250000;
   const maxGasLimitHex = EthImpl.numberTo0x(maxGasLimit);
+  const contractCallData = "0xef641f44"
   const firstTransactionTimestampSeconds = '1653077547';
   const firstTransactionTimestampSecondsHex = EthImpl.numberTo0x(Number(firstTransactionTimestampSeconds));
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
@@ -653,7 +654,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber(blockNumber.toString());
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByNumber with no match', async function () {
@@ -677,7 +678,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('latest');
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByNumber with pending tag', async function () {
@@ -686,7 +687,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('pending');
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByNumber with earliest tag', async function () {
@@ -694,7 +695,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/0`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('earliest');
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByNumber with hex number', async function () {
@@ -702,7 +703,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/3735929054`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByNumber('0xdeadc0de');
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByHash with match', async function () {
@@ -710,7 +711,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
 
     const result = await ethImpl.getBlockTransactionCountByHash(blockHash);
-    expect(result).equal(blockTransactionCount);
+    expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
   it('eth_getBlockTransactionCountByHash with no match', async function () {
@@ -903,11 +904,10 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet(`accounts/${contractAddress1}`).reply(200, {
         account: contractAddress1
       });
-      sdkClientStub.getAccountBalanceInWeiBar.throws({
-        status: {
+      sdkClientStub.getAccountBalanceInWeiBar.throws(new SDKClientError(
+        {status: {
           _code: 15
-        }
-      });
+        }}));
 
       const resNoCache = await ethImpl.getBalance(contractAddress1, null);
       const resCached = await ethImpl.getBalance(contractAddress1, null);
@@ -950,11 +950,9 @@ describe('Eth calls using MirrorNode', async function () {
 
   describe('eth_getCode', async function() {
     it('should return cached value', async () => {
-      sdkClientStub.getContractByteCode.throws({
-        status: {
-          _code: 16
-        }
-      });
+      sdkClientStub.getContractByteCode.throws(new SDKClientError({status: {
+        _code: 16
+      }}));
 
       const resNoCache = await ethImpl.getCode(contractAddress1, null);
       const resCached = await ethImpl.getCode(contractAddress1, null);
@@ -1318,6 +1316,81 @@ describe('Eth calls using MirrorNode', async function () {
       expect(error.message).to.equal('Error encountered estimating the gas price');
     }
   });
+
+  describe('eth_call', async function () {
+    it('eth_call with no gas', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0)
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+      }, 'latest')
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 400_000, contractAddress1, 'eth_call');
+      expect(result).to.equal("0x00")
+    });
+
+    it('eth_call with no data', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0)
+            }
+          }
+      );
+
+      var result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "gas": maxGasLimitHex
+      }, 'latest')
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, undefined, maxGasLimit, contractAddress1, 'eth_call');
+      expect(result).to.equal("0x00")
+    });
+
+    it('eth_call with no from address', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0)
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest')
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, undefined, 'eth_call');
+      expect(result).to.equal("0x00")
+    });
+
+    it('eth_call with all fields', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0)
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest')
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, contractAddress1, 'eth_call');
+      expect(result).to.equal("0x00")
+    });
+  });
 });
 
 describe('Eth', async function () {
@@ -1326,7 +1399,7 @@ describe('Eth', async function () {
   let ethImpl: EthImpl;
   this.beforeAll(() => {
     // @ts-ignore
-    ethImpl = new EthImpl(null, null, mirrorNodeInstance, logger);
+    ethImpl = new EthImpl(null, mirrorNodeInstance, logger);
   });
 
   const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
@@ -1607,13 +1680,13 @@ describe('Eth', async function () {
       expect(result.input).to.eq(defaultTransaction.input);
       expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
       expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
-      expect(result.nonce).to.eq(defaultTransaction.nonce);
+      expect(result.nonce).to.eq(EthImpl.numberTo0x(defaultTransaction.nonce));
       expect(result.r).to.eq(defaultTransaction.r);
       expect(result.s).to.eq(defaultTransaction.s);
       expect(result.to).to.eq(defaultTransaction.to);
       expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
-      expect(result.type).to.eq(defaultTransaction.type);
-      expect(result.v).to.eq(defaultTransaction.v);
+      expect(result.type).to.eq(EthImpl.numberTo0x(defaultTransaction.type));
+      expect(result.v).to.eq(EthImpl.numberTo0x(defaultTransaction.v));
       expect(result.value).to.eq(defaultTransaction.value);
     });
 
@@ -1641,13 +1714,13 @@ describe('Eth', async function () {
       expect(result.input).to.eq(defaultTransaction.input);
       expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
       expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
-      expect(result.nonce).to.eq(defaultTransaction.nonce);
+      expect(result.nonce).to.eq(EthImpl.numberTo0x(defaultTransaction.nonce));
       expect(result.r).to.be.null;
       expect(result.s).to.be.null;
       expect(result.to).to.eq(defaultTransaction.to);
       expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
-      expect(result.type).to.eq(defaultTransaction.type);
-      expect(result.v).to.eq(defaultTransaction.v);
+      expect(result.type).to.eq(EthImpl.numberTo0x(defaultTransaction.type));
+      expect(result.v).to.eq(EthImpl.numberTo0x(defaultTransaction.v));
       expect(result.value).to.eq(defaultTransaction.value);
     });
   });

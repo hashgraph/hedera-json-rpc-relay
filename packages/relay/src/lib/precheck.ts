@@ -19,7 +19,7 @@
  */
 
 import * as ethers from 'ethers';
-import { predefined } from './errors';
+import { predefined } from './errors/JsonRpcError';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { EthImpl } from './eth';
 import { Logger } from 'pino';

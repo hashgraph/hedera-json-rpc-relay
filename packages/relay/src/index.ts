@@ -19,7 +19,7 @@
  */
 
 import { Block, Log, Receipt, Transaction } from './lib/model';
-import { JsonRpcError, predefined } from './lib/errors';
+import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
 
 export { JsonRpcError, predefined };
 
@@ -61,9 +61,9 @@ export interface Eth {
 
   getBlockByNumber(blockNum: string, showDetails: boolean): Promise<Block | null>;
 
-  getBlockTransactionCountByHash(hash: string): Promise<number | null>;
+  getBlockTransactionCountByHash(hash: string): Promise<string | null>;
 
-  getBlockTransactionCountByNumber(blockNum: string): Promise<number | null>
+  getBlockTransactionCountByNumber(blockNum: string): Promise<string | null>
   
   getCode(address: string, blockNumber: string | null): Promise<string>;
 
@@ -79,7 +79,7 @@ export interface Eth {
 
   getTransactionByHash(hash: string): Promise<Transaction | null>;
   
-  getTransactionCount(address: string, blocknum: string): Promise<string>;
+  getTransactionCount(address: string, blocknum: string): Promise<string | JsonRpcError>;
 
   getTransactionReceipt(hash: string): Promise<Receipt | null>;
 

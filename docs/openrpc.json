@@ -131,7 +131,8 @@
                         "items": {
                             "title": "rewardPercentile",
                             "description": "Floating point value between 0 and 100.",
-                            "type": "number"
+                            "type": "number",
+                            "pattern": "^[0-9][0-9]?$|^100$"
                         }
                     }
                 }
@@ -159,7 +160,9 @@
                             "description": "An array of gas used ratio.",
                             "type": "array",
                             "items": {
-                                "$ref": "#/components/schemas/uint"
+                                "title": "hex encoded unsigned integer",
+                                "type": "string",
+                                "pattern": "^0x([1-9a-f]+[0-9a-f]*|0|0.8)$"
                             }
                         },
                         "baseFeePerGas": {
@@ -358,11 +361,7 @@
             "result": {
                 "name": "Log objects",
                 "schema": {
-                    "title": "Filter results",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/components/schemas/FilterResults"
-                    }
+                    "$ref": "#/components/schemas/FilterResults"
                 }
             }
         },
@@ -460,10 +459,7 @@
                 "name": "Transaction count",
                 "schema": {
                     "title": "Transaction count",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/components/schemas/uint"
-                    }
+                    "$ref": "#/components/schemas/uint"
                 }
             }
         },
@@ -683,7 +679,7 @@
                 "name": "The current client version.",
                 "schema": {
                     "type": "string",
-                    "pattern": "relay/<semanticVersion>"
+                    "pattern": "relay\/[0-9]\\.[0-9]\\.[0-9]"
                 }
             }
         }
@@ -1318,6 +1314,10 @@
                         "title": "to block",
                         "$ref": "#/components/schemas/uint"
                     },
+                    "blockHash": {
+                        "title": "Block hash",
+                        "$ref": "#/components/schemas/hash32"
+                    },
                     "address": {
                         "title": "Address(es)",
                         "oneOf": [
@@ -1378,6 +1378,11 @@
                             "title": "Error message",
                             "type": "string",
                             "pattern": "Unsupported JSON-RPC method"
+                        },
+                        "name": {
+                            "title": "Error name",
+                            "type": "string",
+                            "pattern": "Method not found"
                         }
                     }
                 }
