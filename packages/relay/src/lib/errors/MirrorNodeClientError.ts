@@ -21,12 +21,25 @@
 
 export class MirrorNodeClientError extends Error {
     public statusCode: number;
+
+    static statusCodes = {
+        TIMEOUT: 567,
+        NOT_FOUND: 404
+    };
   
     constructor(message: string, statusCode: number) {
       super(message);
       this.statusCode = statusCode;
   
       Object.setPrototypeOf(this, MirrorNodeClientError.prototype);
+    }
+
+    public isTimeout(): boolean {
+        return this.statusCode === MirrorNodeClientError.statusCodes.TIMEOUT;
+    }
+
+    public isNotFound(): boolean {
+        return this.statusCode === MirrorNodeClientError.statusCodes.NOT_FOUND;
     }
   }
   

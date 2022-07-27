@@ -26,6 +26,7 @@ import { Block, Transaction, Log } from './model';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
+import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
 
@@ -1050,7 +1051,7 @@ export class EthImpl implements Eth {
         }
       }
       catch(e: any) {
-        if (e.response?.status === 404) {
+        if (e instanceof MirrorNodeClientError && e.isNotFound()) {
           return [];
         }
 
@@ -1146,7 +1147,7 @@ export class EthImpl implements Eth {
       }
     }
     catch(e: any) {
-      if (e.response?.status === 404) {
+      if (e instanceof MirrorNodeClientError && e.isNotFound()) {
         return [];
       }
 
