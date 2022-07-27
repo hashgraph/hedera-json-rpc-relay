@@ -19,12 +19,13 @@
  */
 
 import { Eth } from '../index';
-import { ContractId, Status, Hbar, EthereumTransaction } from '@hashgraph/sdk';
+import { ContractId, Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
 import { MirrorNodeClient, SDKClient } from './clients';
-import { JsonRpcError, predefined } from './errors';
+import { JsonRpcError, predefined } from './errors/JsonRpcError';
+import { SDKClientError } from './errors/SDKClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
 
@@ -454,11 +455,13 @@ export class EthImpl implements Eth {
 
       return EthImpl.numberTo0x(weibars);
     } catch (e: any) {
-      // handle INVALID_ACCOUNT_ID
-      if (e?.status?._code === Status.InvalidAccountId._code) {
-        this.logger.debug(`Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
-        cache.set(cachedLabel, EthImpl.zeroHex, constants.CACHE_TTL.ONE_HOUR);
-        return EthImpl.zeroHex;
+      if(e instanceof SDKClientError) {
+        // handle INVALID_ACCOUNT_ID
+        if (e.isInvalidAccountId()) {
+          this.logger.debug(`Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
+          cache.set(cachedLabel, EthImpl.zeroHex, constants.CACHE_TTL.ONE_HOUR);
+          return EthImpl.zeroHex;
+        }
       }
 
       this.logger.error(e, 'Error raised during getBalance for account %s', account);
@@ -486,14 +489,18 @@ export class EthImpl implements Eth {
       const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
-      // handle INVALID_CONTRACT_ID
-      if (e?.status?._code === Status.InvalidContractId._code || e?.message?.includes(Status.InvalidContractId.toString())) {
-        this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0, err code: %s', address, blockNumber, e?.status?._code);
-        cache.set(cachedLabel, '0x0', constants.CACHE_TTL.ONE_HOUR);
-        return '0x0';
+      if(e instanceof SDKClientError) {      
+        // handle INVALID_CONTRACT_ID
+        if (e.isInvalidContractId()) {
+          this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0, err code: %s', address, blockNumber, e.statusCode);
+          cache.set(cachedLabel, '0x0', constants.CACHE_TTL.ONE_HOUR);
+          return '0x0';
+        }
+        this.logger.error(e, 'Error raised during getCode for address %s, err code: %s', address, e.statusCode);
+      } else {
+        this.logger.error(e, 'Error raised during getCode for address %s', address);
       }
 
-      this.logger.error(e, 'Error raised during getCode for address %s, err code: %s', address, e?.status?._code);
       throw e;
     }
   }
@@ -614,19 +621,24 @@ export class EthImpl implements Eth {
    * @param address
    * @param blockNumOrTag
    */
-  async getTransactionCount(address: string, blockNumOrTag: string): Promise<string> {
+  async getTransactionCount(address: string, blockNumOrTag: string): Promise<string | JsonRpcError> {
     this.logger.trace('getTransactionCount(address=%s, blockNumOrTag=%s)', address, blockNumOrTag);
     const blockNumber = await this.translateBlockTag(blockNumOrTag);
     if (blockNumber === 0) {
       return '0x0';
     } else {
-      const result = await this.mirrorNodeClient.resolveEntityType(address);
-      if (result?.type === constants.TYPE_ACCOUNT) {
-        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount);
-        return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
-      }
-      else if (result?.type === constants.TYPE_CONTRACT) {
-        return EthImpl.numberTo0x(1);
+      try {
+        const result = await this.mirrorNodeClient.resolveEntityType(address);
+        if (result?.type === constants.TYPE_ACCOUNT) {
+            const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount);
+            return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));  
+        }
+        else if (result?.type === constants.TYPE_CONTRACT) {
+          return EthImpl.numberTo0x(1);
+        }  
+      } catch (e: any) {
+        this.logger.error(e, 'Error raised during getTransactionCount for address %s, block number or tag %s', address, blockNumOrTag);
+        return predefined.INTERNAL_ERROR;
       }
 
       return EthImpl.numberTo0x(0);
@@ -711,13 +723,7 @@ export class EthImpl implements Eth {
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
     } catch (e: any) {
-      // handle client error
-      let resolvedError = e;
-      if (e.status && e.status._code) {
-        resolvedError = new Error(e.message);
-      }
-
-      this.logger.error(resolvedError, 'Failed to successfully submit contractCallQuery');
+      this.logger.error(e, 'Failed to successfully submit contractCallQuery');
       return predefined.INTERNAL_ERROR;
     }
   }

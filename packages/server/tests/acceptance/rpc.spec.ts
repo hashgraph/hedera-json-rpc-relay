@@ -30,7 +30,7 @@ import { AccountBalanceQuery, ContractFunctionParameters } from '@hashgraph/sdk'
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
 import logsContractJson from '../contracts/Logs.json';
-import { predefined } from '../../../relay/src/lib/errors';
+import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds

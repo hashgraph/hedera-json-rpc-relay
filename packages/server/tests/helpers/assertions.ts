@@ -19,7 +19,7 @@
  */
 import { expect } from 'chai';
 import { ethers, BigNumber } from 'ethers';
-import { JsonRpcError, predefined } from '../../../relay/src/lib/errors';
+import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from './utils';
 
 export default class Assertions {
