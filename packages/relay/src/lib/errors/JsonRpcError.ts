@@ -106,4 +106,9 @@ export const predefined = {
     code: -32602,
     message: 'Value below 10_000_000_000 wei which is 1 tinybar'
   }),
+  'REQUEST_TIMEOUT': new JsonRpcError({
+    name: 'Request timeout',
+    code: -32010,
+    message: 'Request timeout. Please try again.'
+  }),
 };

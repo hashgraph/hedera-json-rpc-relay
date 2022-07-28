@@ -19,9 +19,10 @@
  */
 
 import { Block, Log, Receipt, Transaction } from './lib/model';
-import { JsonRpcError } from './lib/errors/JsonRpcError';
+import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
+import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
 
-export { JsonRpcError };
+export { JsonRpcError, predefined, MirrorNodeClientError };
 
 export { RelayImpl } from './lib/relay';
 

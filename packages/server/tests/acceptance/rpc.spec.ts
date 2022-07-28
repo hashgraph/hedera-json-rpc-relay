@@ -209,6 +209,14 @@ describe('RPC Server Acceptance Tests', function () {
                 }
             });
 
+            it('should return empty result for  non-existing `blockHash`', async () => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'blockHash': NON_EXISTING_BLOCK_HASH
+                }]);
+                expect(logs).to.exist;
+                expect(logs.length).to.be.eq(0);
+            });
+
             it('should be able to use `topics` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': log0Block.blockNumber,

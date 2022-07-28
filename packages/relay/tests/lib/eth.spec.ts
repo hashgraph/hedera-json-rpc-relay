@@ -27,7 +27,7 @@ import { Registry } from 'prom-client';
 import sinon from 'sinon';
 import cache from 'js-cache';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-import { RelayImpl } from '@hashgraph/json-rpc-relay';
+import {RelayImpl, predefined, MirrorNodeClientError} from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import { expectUnsupportedMethod } from '../helpers';
@@ -337,6 +337,7 @@ describe('Eth calls using MirrorNode', async function () {
   };
 
   const detailedContractResultNotFound = { "_status": { "messages": [{ "message": "No correlating transaction" }] } };
+  const timeoutError = { "type": "Error", "message": "timeout of 10000ms exceeded" };
 
   const defaultDetailedContractResultsWithNullNullableValues = {
     ...defaultDetailedContractResults,
@@ -1014,6 +1015,51 @@ describe('Eth calls using MirrorNode', async function () {
       const result = await ethImpl.getLogs(null, null, null, null, null);
       expect(result).to.exist;
       expect(result.length).to.eq(0);
+    });
+
+    it('one of contract results details timeouts and throws the expected error', async function () {
+      mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(567, timeoutError);
+      mock.onGet(`contracts/${contractId2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults3);
+
+      try {
+        const result = await ethImpl.getLogs(null, null, null, null, null);
+        expect(true).to.eq(false);
+      } catch (error: any) {
+        expect(error.statusCode).to.equal(MirrorNodeClientError.statusCodes.TIMEOUT);
+      }
+    });
+
+    it('blockHash filter timeouts and throws the expected error', async function () {
+      const filteredLogs = {
+        logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
+      };
+
+      mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
+      mock.onGet(`blocks/${blockHash}`).reply(567, timeoutError);
+
+      try {
+        const result = await ethImpl.getLogs(blockHash, null, null, null, null);
+        expect(true).to.eq(false);
+      } catch (error: any) {
+        expect(error.statusCode).to.equal(MirrorNodeClientError.statusCodes.TIMEOUT);
+      }
+    });
+
+    it('address filter timeouts and throws the expected error', async function () {
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
+      mock.onGet(`contracts/${contractAddress1}/results/logs`).reply(567, timeoutError);
+
+      try {
+        const result = await ethImpl.getLogs(null, null, null, contractAddress1, null);
+        expect(true).to.eq(false);
+      } catch (error: any) {
+        expect(error.statusCode).to.equal(MirrorNodeClientError.statusCodes.TIMEOUT);
+      }
     });
 
     it('error when retrieving logs', async function () {
