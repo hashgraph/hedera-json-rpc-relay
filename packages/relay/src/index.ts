@@ -18,10 +18,11 @@
  *
  */
 
-import {Block, Log, Receipt, Transaction} from './lib/model';
-import {JsonRpcError} from './lib/errors';
+import { Block, Log, Receipt, Transaction } from './lib/model';
+import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
+import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
 
-export { JsonRpcError };
+export { JsonRpcError, predefined, MirrorNodeClientError };
 
 export { RelayImpl } from './lib/relay';
 
@@ -79,7 +80,7 @@ export interface Eth {
 
   getTransactionByHash(hash: string): Promise<Transaction | null>;
   
-  getTransactionCount(address: string, blocknum: string): Promise<string>;
+  getTransactionCount(address: string, blocknum: string): Promise<string | JsonRpcError>;
 
   getTransactionReceipt(hash: string): Promise<Receipt | null>;
 

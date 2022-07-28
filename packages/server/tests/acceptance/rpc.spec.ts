@@ -30,7 +30,7 @@ import { AccountBalanceQuery, ContractFunctionParameters } from '@hashgraph/sdk'
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
 import logsContractJson from '../contracts/Logs.json';
-import { predefined } from '../../../relay/src/lib/errors';
+import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -207,6 +207,14 @@ describe('RPC Server Acceptance Tests', function () {
                 for (let i in logs) {
                     expect(logs[i].blockHash).to.equal(log0Block.blockHash);
                 }
+            });
+
+            it('should return empty result for  non-existing `blockHash`', async () => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'blockHash': NON_EXISTING_BLOCK_HASH
+                }]);
+                expect(logs).to.exist;
+                expect(logs.length).to.be.eq(0);
             });
 
             it('should be able to use `topics` param', async () => {

@@ -19,7 +19,7 @@
  */
 
 import Axios, { AxiosInstance } from 'axios';
-import { predefined } from '../errors';
+import { MirrorNodeClientError } from './../errors/MirrorNodeClientError';
 import { Logger } from "pino";
 import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
@@ -167,7 +167,7 @@ export class MirrorNodeClient {
         }
 
         this.logger.error(new Error(error.message), `[GET] ${path} ${effectiveStatusCode} status`);
-        throw predefined.INTERNAL_ERROR;
+        throw new MirrorNodeClientError(error.message, effectiveStatusCode);
     }
 
     public async getAccountLatestTransactionByAddress(idOrAliasOrEvmAddress: string): Promise<object> {

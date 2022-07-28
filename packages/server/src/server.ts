@@ -18,7 +18,7 @@
  *
  */
 
-import { Relay, RelayImpl, JsonRpcError } from '@hashgraph/json-rpc-relay';
+import { Relay, RelayImpl, JsonRpcError, predefined, MirrorNodeClientError } from '@hashgraph/json-rpc-relay';
 import Koa from 'koa';
 import koaJsonRpc from 'koa-jsonrpc';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
@@ -143,11 +143,21 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
     methodResponseHistogram.labels(methodName, status).observe(ms);
     logger.info(`${messagePrefix} ${status} ${ms} ms `);
     return response;
-  } catch (e) {
+  } catch (e: any) {
     ms = Date.now() - start;
     methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
     logger.error(e, `${messagePrefix} ${responseInternalErrorCode} ${ms} ms`);
-    throw e;
+
+    if (e instanceof MirrorNodeClientError) {
+      if (e.isTimeout()) {
+        return predefined.REQUEST_TIMEOUT;
+      }
+    }
+    else if (e instanceof JsonRpcError) {
+      return e;
+    }
+
+    return predefined.INTERNAL_ERROR;
   }
 };
 

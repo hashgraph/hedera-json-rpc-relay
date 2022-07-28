@@ -45,6 +45,7 @@ import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
 import { Gauge, Histogram, Registry } from 'prom-client';
 import constants from './../constants';
+import { SDKClientError } from './../errors/SDKClientError';
 
 const _ = require('lodash');
 
@@ -165,7 +166,7 @@ export class SDKClient {
     async getTinyBarGasFee(callerName: string): Promise<number> {
         const feeSchedules = await this.getFeeSchedule(callerName);
         if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
-            throw new Error('Invalid FeeSchedules proto format');
+            throw new SDKClientError({}, 'Invalid FeeSchedules proto format');
         }
 
         for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
@@ -177,7 +178,7 @@ export class SDKClient {
             }
         }
 
-        throw new Error(`${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
+        throw new SDKClientError({}, `${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
     }
 
     async getFileIdBytes(address: string, callerName: string): Promise<Uint8Array> {
@@ -252,20 +253,18 @@ export class SDKClient {
             return resp;
         }
         catch (e: any) {
-            const statusCode = e.status ? e.status._code : Status.Unknown._code;
-            this.logger.debug(`Consensus Node query response: ${query.constructor.name} ${statusCode}`);
-            this.captureMetrics(
-                SDKClient.queryMode,
-                query.constructor.name,
-                e.status,
-                query._queryPayment?.toTinybars().toNumber(),
-                callerName);
-
-            if (e.status && e.status._code) {
-                throw new Error(e.message);
+            const sdkClientError = new SDKClientError(e);
+            if(sdkClientError.isValidNetworkError()) {
+                this.logger.debug(`Consensus Node query response: ${query.constructor.name} ${sdkClientError.statusCode}`);
+                this.captureMetrics(
+                    SDKClient.queryMode,
+                    query.constructor.name,
+                    sdkClientError.status,
+                    query._queryPayment?.toTinybars().toNumber(),
+                    callerName);    
             }
 
-            throw e;
+            throw sdkClientError;
         }
     };
 
@@ -278,28 +277,25 @@ export class SDKClient {
             return resp;
         }
         catch (e: any) {
-            const statusCode = e.status ? e.status._code : Status.Unknown._code;
-            this.logger.info(`Consensus Node ${transactionType} transaction response: ${statusCode}`);
-            this.captureMetrics(
-                SDKClient.transactionMode,
-                transactionType,
-                statusCode,
-                0,
-                callerName);
-
-            // capture sdk transaction response errors and shorten familiar stack trace
-            if (e.status && e.status._code) {
-                throw new Error(e.message);
+            const sdkClientError = new SDKClientError(e);
+            if(sdkClientError.isValidNetworkError()) {
+                this.logger.info(`Consensus Node ${transactionType} transaction response: ${sdkClientError.statusCode}`);
+                this.captureMetrics(
+                    SDKClient.transactionMode,
+                    transactionType,
+                    sdkClientError.statusCode,
+                    0,
+                    callerName);
             }
 
-            throw e;
+            throw sdkClientError;
         }
     };
 
     executeGetTransactionRecord = async (resp: TransactionResponse, transactionName: string, callerName: string): Promise<TransactionRecord> => {
         try {
             if (!resp.getRecord) {
-                throw new Error(`Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
+                throw new SDKClientError({}, `Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
             }
 
             const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
@@ -314,18 +310,17 @@ export class SDKClient {
         }
         catch (e: any) {
             // capture sdk record retrieval errors and shorten familiar stack trace
-            if (e.status && e.status._code) {
+            const sdkClientError = new SDKClientError(e);
+            if(sdkClientError.isValidNetworkError()) {
                 this.captureMetrics(
                     SDKClient.transactionMode,
                     transactionName,
-                    e.status,
+                    sdkClientError.status,
                     0,
                     callerName);
-
-                throw new Error(e.message);
             }
 
-            throw e;
+            throw sdkClientError;
         }
     };
 
@@ -353,7 +348,7 @@ export class SDKClient {
 
     private static HbarToWeiBar(balance: AccountBalance): BigNumber {
         return balance.hbars
-            .to(HbarUnit.Tinybar)
-            .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
+        .to(HbarUnit.Tinybar)
+        .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
     }
 }
