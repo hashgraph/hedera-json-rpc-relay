@@ -644,9 +644,12 @@ export class EthImpl implements Eth {
     try {
       const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction);
       await this.precheck.sendRawTransactionCheck(transaction, gasPrice);
-    }
-    catch(e: any) {
-      return e;
+    } catch (e: any) {
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+
+      throw predefined.INTERNAL_ERROR;
     }
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
