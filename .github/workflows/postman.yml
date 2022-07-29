@@ -1,4 +1,4 @@
-name: Postman Tests
+name: Postman Endpoint Tests
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   setup-local-hedera:
-    name: Acceptance Tests
+    name: Postman Endpoint Tests
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -41,7 +41,7 @@ jobs:
         run: npm install -g newman
 
       - name: Run RPC Server
-        run: npm run integration:prerequisite &
+        run: npm run integration:prerequisite
 
       - name: Run the newman script
         run: newman run packages/server/tests/postman.json
