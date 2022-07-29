@@ -37,11 +37,16 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
+      - name: Run RPC Server
+        run: npm run integration:prerequisite &
+
       - name: Install newman
         run: npm install -g newman
 
-      - name: Run RPC Server
-        run: npm run integration:prerequisite
-
-      - name: Run the newman script
-        run: newman run packages/server/tests/postman.json
+      - name: Run the newman script        
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 10
+          timeout_minutes: 10
+          retry_wait_seconds: 45
+          command: newman run packages/server/tests/postman.json
