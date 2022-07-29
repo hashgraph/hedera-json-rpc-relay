@@ -28,7 +28,7 @@ import { ethers, BigNumber } from 'ethers';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import Assertions from '../helpers/assertions';
 import {Utils} from '../helpers/utils';
-
+import { JsonRpcError } from '../../../relay/src/lib/errors/JsonRpcError';
 
 describe('ERC20 Acceptance Tests', async function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -225,10 +225,9 @@ describe('ERC20 Acceptance Tests', async function () {
                                         });
 
                                         it('reverts', async function () {
-                                            await expectRevert(
-                                                contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                                'CALL_EXCEPTION'
-                                            );
+                                            const err = await expect(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount))
+                                                .to.be.reverted;
+                                            Assertions.jsonRpcError(err, new JsonRpcError({name: "SDK Error", message: "CONTRACT_REVERT_EXECUTED", code: -32600}));
                                         });
                                     });
                                 });

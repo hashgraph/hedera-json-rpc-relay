@@ -677,12 +677,24 @@ export class EthImpl implements Eth {
         this.logger.error(e,
           'Failed sendRawTransaction during record retrieval for transaction %s, returning computed hash', transaction);
         //Return computed hash if unable to retrieve EthereumHash from record due to error
-        return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+        // return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+
+        // It should throw a JsonRpc error based on the status from the SDK.
+        // We need some sort of mapping to create the appropriate JsonRpcErrors
+
+        // @ts-ignore
+        throw new JsonRpcError({name: "SDK Error", message: "CONTRACT_REVERT_EXECUTED", code: -32600});
       }
     } catch (e: any) {
       this.logger.error(e,
         'Failed to successfully submit sendRawTransaction for transaction %s', transaction);
-      return predefined.INTERNAL_ERROR;
+
+      if (e instanceof JsonRpcError) {
+        throw e;
+      }
+      else {
+        throw predefined.INTERNAL_ERROR;
+      }
     }
   }
 
