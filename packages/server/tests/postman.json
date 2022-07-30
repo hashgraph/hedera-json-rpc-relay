@@ -39,9 +39,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -79,9 +79,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -119,9 +119,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -159,9 +159,95 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_feeHistory",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result.baseFeePerGas).to.be.an(\"array\");",
+							"    pm.expect(response.result.baseFeePerGas).length(4);",
+							"    pm.expect(response.result.gasUsedRatio).to.be.an(\"array\");",
+							"    pm.expect(response.result.gasUsedRatio).length(3);",
+							"    pm.expect(response.result.oldestBlock).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.result.reward).to.be.an(\"array\");",
+							"    pm.expect(response.result.reward).length(3);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_feeHistory\",\n    \"params\": [3, \"latest\", [25, 75]]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}",
+					"host": [
+						"{{baseUrl}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "eth_gasPrice",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Success\", () => {",
+							"    var response = pm.response.json();",
+							"    pm.expect(response.result).to.match(/^0x[a-f0-9]+$/);",
+							"    pm.expect(response.id).to.equal(\"test_id\");",
+							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_gasPrice\",\n    \"params\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}",
+					"host": [
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -199,9 +285,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -259,9 +345,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -299,9 +385,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -339,9 +425,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -379,9 +465,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -419,9 +505,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -459,9 +545,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -501,9 +587,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -542,9 +628,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -583,9 +669,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -623,9 +709,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -663,9 +749,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -703,9 +789,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -743,9 +829,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -783,9 +869,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -823,9 +909,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -863,9 +949,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}",
+					"raw": "{{baseUrl}}",
 					"host": [
-						"{{base_url}}"
+						"{{baseUrl}}"
 					]
 				}
 			},
@@ -894,7 +980,7 @@
 	],
 	"variable": [
 		{
-			"key": "base_url",
+			"key": "baseUrl",
 			"value": "localhost:7546",
 			"type": "string"
 		}
