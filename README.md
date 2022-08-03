@@ -190,6 +190,34 @@ helm upgrade -f environments/minkube.yaml jrpc-test ./
 kubectl port-forward $POD_NAME 7546:7546
 ```
 
+##### Monitoring
+The hedera-json-rpc-relay ships with a metrics endpoint at `/metrics`.  Here is an example scrape config that can be used by [prometheus](https://prometheus.io/docs/introduction/overview/):
+
+```
+        scrape_configs:
+        - job_name: hedera-json-rpc
+          honor_timestamps: true
+          scrape_interval: 15s
+          scrape_timeout: 10s
+          scheme: http
+          metrics_path: /metrics
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_ip, __meta_kubernetes_pod_container_port_number ]
+              action: replace
+              target_label: __address__
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $1:$2
+            - source_labels: [__meta_kubernetes_namespace]
+              action: replace
+              target_label: namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              action: replace
+              target_label: pod
+```
+Please note that the `/metrics` endpoint is also a default scrape configurations for prometheus.  The `job_name` of `kubernetes-pods` is generally deployed as a default with prometheus; in the case where this scrape_config is present metrics will start getting populated by that scrape_config and no other configurations are necessary.
+              
 ## Support
 
 If you have a question on how to use the product, please see our
