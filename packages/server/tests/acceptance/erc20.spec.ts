@@ -28,6 +28,7 @@ import { ethers, BigNumber } from 'ethers';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import Assertions from '../helpers/assertions';
 import {Utils} from '../helpers/utils';
+import { EthImpl } from "@hashgraph/json-rpc-relay/src/lib/eth";
 
 
 describe('ERC20 Acceptance Tests', async function () {
@@ -50,7 +51,7 @@ describe('ERC20 Acceptance Tests', async function () {
 
     const testTitles = [
         {testName: ERC20, expectedBytecode: ERC20MockJson.deployedBytecode},
-        {testName: HTS, expectedBytecode: '0x0'}
+        {testName: HTS, expectedBytecode: EthImpl.emptyHex}
     ];
 
     before(async () => {
