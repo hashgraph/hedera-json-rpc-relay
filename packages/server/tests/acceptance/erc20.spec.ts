@@ -50,7 +50,7 @@ describe('ERC20 Acceptance Tests', async function () {
 
     const testTitles = [
         {testName: ERC20, expectedBytecode: ERC20MockJson.deployedBytecode},
-        {testName: HTS, expectedBytecode: '0x0'}
+        {testName: HTS, expectedBytecode: '0x'}
     ];
 
     before(async () => {
