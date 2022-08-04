@@ -958,8 +958,8 @@ describe('Eth calls using MirrorNode', async function () {
       const resNoCache = await ethImpl.getCode(contractAddress1, null);
       const resCached = await ethImpl.getCode(contractAddress1, null);
       sinon.assert.calledOnce(sdkClientStub.getContractByteCode);
-      expect(resNoCache).to.equal(EthImpl.zeroHex);
-      expect(resCached).to.equal(EthImpl.zeroHex);
+      expect(resNoCache).to.equal(EthImpl.emptyHex);
+      expect(resCached).to.equal(EthImpl.emptyHex);
     });
 
     it('should return the bytecode', async () => {
