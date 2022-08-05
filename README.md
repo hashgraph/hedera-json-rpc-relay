@@ -1,8 +1,12 @@
 <div align="center">
 
 # Hedera JSON RPC Relay
-
-[![Tests](https://github.com/hashgraph/hedera-json-rpc-relay/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/hashgraph/hedera-json-rpc-relay/actions/workflows/test.yml)
+[![Build](https://github.com/hashgraph/hedera-json-rpc-relay/actions/workflows/test.yml/badge.svg)](https://github.com/hashgraph/hedera-json-rpc-relay/actions)
+[![Latest Version](https://img.shields.io/github/v/tag/hashgraph/hedera-json-rpc-relay?sort=semver&label=version)](README.md)
+[![RPC API Methods](https://img.shields.io/badge/docs-quickstart-green.svg)](docs/rpc-api.md)
+[![Discord](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://hedera.com/discord)
+[![Made With](https://img.shields.io/badge/made_with-typescript-blue)](https://github.com/hashgraph/hederajson-rpc-relay/)
+[![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
 
 </div>
 
