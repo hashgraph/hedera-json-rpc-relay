@@ -500,8 +500,8 @@ export class EthImpl implements Eth {
         // handle INVALID_CONTRACT_ID
         if (e.isInvalidContractId()) {
           this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0, err code: %s', address, blockNumber, e.statusCode);
-          cache.set(cachedLabel, '0x0', constants.CACHE_TTL.ONE_HOUR);
-          return '0x0';
+          cache.set(cachedLabel, EthImpl.emptyHex, constants.CACHE_TTL.ONE_HOUR);
+          return EthImpl.emptyHex;
         }
         this.logger.error(e, 'Error raised during getCode for address %s, err code: %s', address, e.statusCode);
       } else {

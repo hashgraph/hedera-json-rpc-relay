@@ -31,6 +31,7 @@ import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
 import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -989,19 +990,19 @@ describe('RPC Server Acceptance Tests', function () {
 
                 it('should return 0x0 for non-existing contract on eth_getCode', async function () {
                     const res = await relay.call('eth_getCode', [NON_EXISTING_ADDRESS]);
-                    expect(res).to.eq('0x0');
+                    expect(res).to.eq(EthImpl.emptyHex);
                 });
 
                 it('should return 0x0 for account evm_address on eth_getCode', async function () {
                     const evmAddress = Utils.idToEvmAddress(accounts[2].accountId.toString());
                     const res = await relay.call('eth_getCode', [evmAddress]);
-                    expect(res).to.eq('0x0');
+                    expect(res).to.eq(EthImpl.emptyHex);
                 });
 
                 it('should return 0x0 for account alias on eth_getCode', async function () {
                     const alias = Utils.idToEvmAddress(accounts[2].accountId.toString());
                     const res = await relay.call('eth_getCode', [alias]);
-                    expect(res).to.eq('0x0');
+                    expect(res).to.eq(EthImpl.emptyHex);
                 });
             });
 
