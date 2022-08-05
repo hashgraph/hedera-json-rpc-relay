@@ -989,7 +989,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(resCached).to.equal(EthImpl.emptyHex);
     });
 
-    it('should return the deployed_bytecode from the mirror node', async () => {
+    it('should return the runtime_bytecode from the mirror node', async () => {
       mock.onGet(`contracts/${contractAddress1}`).reply(200, defaultContract);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
 
@@ -1000,18 +1000,16 @@ describe('Eth calls using MirrorNode', async function () {
     it('should return the bytecode from SDK if Mirror Node returns 404', async () => {
       mock.onGet(`contracts/${contractAddress1}`).reply(404, defaultContract);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
-
       const res = await ethImpl.getCode(contractAddress1, null);
       expect(res).to.equal(deployedBytecode);
     });
 
-    it('should return the bytecode from SDK if Mirror Node returns empty deployed_bytecode', async () => {
+    it('should return the bytecode from SDK if Mirror Node returns empty runtime_bytecode', async () => {
       mock.onGet(`contracts/${contractAddress1}`).reply(404, {
         ...defaultContract,
-        deployed_bytecode: '0x'
-      }, );
+        runtime_bytecode: EthImpl.emptyHex
+      });
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
-
       const res = await ethImpl.getCode(contractAddress1, null);
       expect(res).to.equal(deployedBytecode);
     });
