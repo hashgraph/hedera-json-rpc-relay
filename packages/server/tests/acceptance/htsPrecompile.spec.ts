@@ -32,7 +32,7 @@ import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
 
 
-describe.only('HTS Precompile Acceptance Tests', async function() {
+describe('HTS Precompile Acceptance Tests', async function() {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, relay } = global;
 
