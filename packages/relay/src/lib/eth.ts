@@ -437,7 +437,7 @@ export class EthImpl implements Eth {
     const limitOrderParams: ILimitOrderParams = { limit:1, order: 'desc' }; 
     const contractResult = await this.mirrorNodeClient.getContractResultsByAddress(address, contractResultsParams, limitOrderParams);
 
-    if (contractResult && contractResult.results && contractResult.results.length > 0) {
+    if (contractResult?.results?.length > 0) {
       // retrieve the contract result details 
       await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
         .then( contractResultDetails => {
@@ -466,7 +466,8 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Gets the end timestamp of a block given a valid block number. otherwise return undefined.
+   * Gets the end timestamp of a block given a valid block number or 'earliest. 
+   * otherwise return undefined.
    *
    * @param blockNumberOrTag
    */
