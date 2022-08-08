@@ -424,30 +424,11 @@ export class EthImpl implements Eth {
    *
    * @param address
    * @param slot
-   * @param blockNumber
+   * @param blockNumberOrTag
    */
-  async getStorageAt(address: string, slot: string, blockNumber: string | null) : Promise<string> {
-    let blockEndTimestamp: string | undefined;
+  async getStorageAt(address: string, slot: string, blockNumberOrTag: string | null) : Promise<string> {
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
-
-    // convert the block number into a timestamp if necessary
-    if (blockNumber && blockNumber !== 'latest' && blockNumber !== 'pending') {
-      let blockResponse: any;
-      if (blockNumber == 'earliest') {
-        blockResponse = await this.mirrorNodeClient.getBlock(0);
-      } else if (blockNumber.length < 32) {
-        // anything less than 32 characters is treated as a number
-        blockResponse = await this.mirrorNodeClient.getBlock(Number(blockNumber));
-      } else {
-        blockResponse = await this.mirrorNodeClient.getBlock(blockNumber);
-      }
-
-      if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
-        // block not found. 
-        throw predefined.NO_SUITABLE_PEERS;
-      }
-      blockEndTimestamp = blockResponse.timestamp?.to;
-    }
+    const blockEndTimestamp: string | undefined  = await this.getBlockEndTimeStamp(blockNumberOrTag);
 
     // retrieve the timestamp of the contract
     const contractResultsParams: IContractResultsParams = blockEndTimestamp 
@@ -479,9 +460,37 @@ export class EthImpl implements Eth {
           );
           throw e;  
         });
-    };
+    }
 
     return result;
+  }
+
+  /**
+   * Gets the end timestamp of a block given a valid block number. otherwise return undefined.
+   *
+   * @param blockNumberOrTag
+   */
+   private async getBlockEndTimeStamp(blockNumberOrTag: string | null): Promise<string | undefined> {
+    let blockEndTimestamp: string | undefined;
+    // convert the block number into a timestamp if necessary
+    if (blockNumberOrTag && blockNumberOrTag !== 'latest' && blockNumberOrTag !== 'pending') {
+      let blockResponse: any;
+      if (blockNumberOrTag == 'earliest') {
+        blockResponse = await this.mirrorNodeClient.getBlock(0);
+      } else if (blockNumberOrTag.length < 32) {
+        // anything less than 32 characters is treated as a number
+        blockResponse = await this.mirrorNodeClient.getBlock(Number(blockNumberOrTag));
+      } else {
+        blockResponse = await this.mirrorNodeClient.getBlock(blockNumberOrTag);
+      }
+
+      if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
+        // block not found. 
+        throw predefined.NO_SUITABLE_PEERS;
+      }
+      blockEndTimestamp = blockResponse.timestamp?.to;
+    }
+    return blockEndTimestamp;
   }
   
   /**
