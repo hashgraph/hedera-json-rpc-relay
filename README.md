@@ -1,8 +1,12 @@
 <div align="center">
 
 # Hedera JSON RPC Relay
-
-[![Tests](https://github.com/hashgraph/hedera-json-rpc-relay/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/hashgraph/hedera-json-rpc-relay/actions/workflows/test.yml)
+[![Build](https://github.com/hashgraph/hedera-json-rpc-relay/actions/workflows/test.yml/badge.svg)](https://github.com/hashgraph/hedera-json-rpc-relay/actions)
+[![Latest Version](https://img.shields.io/github/v/tag/hashgraph/hedera-json-rpc-relay?sort=semver&label=version)](README.md)
+[![RPC API Methods](https://img.shields.io/badge/docs-quickstart-green.svg)](docs/rpc-api.md)
+[![Discord](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://hedera.com/discord)
+[![Made With](https://img.shields.io/badge/made_with-typescript-blue)](https://github.com/hashgraph/hederajson-rpc-relay/)
+[![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
 
 </div>
 
@@ -190,6 +194,34 @@ helm upgrade -f environments/minkube.yaml jrpc-test ./
 kubectl port-forward $POD_NAME 7546:7546
 ```
 
+##### Monitoring
+The hedera-json-rpc-relay ships with a metrics endpoint at `/metrics`.  Here is an example scrape config that can be used by [prometheus](https://prometheus.io/docs/introduction/overview/):
+
+```
+        scrape_configs:
+        - job_name: hedera-json-rpc
+          honor_timestamps: true
+          scrape_interval: 15s
+          scrape_timeout: 10s
+          scheme: http
+          metrics_path: /metrics
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_ip, __meta_kubernetes_pod_container_port_number ]
+              action: replace
+              target_label: __address__
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $1:$2
+            - source_labels: [__meta_kubernetes_namespace]
+              action: replace
+              target_label: namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              action: replace
+              target_label: pod
+```
+Please note that the `/metrics` endpoint is also a default scrape configurations for prometheus.  The `job_name` of `kubernetes-pods` is generally deployed as a default with prometheus; in the case where this scrape_config is present metrics will start getting populated by that scrape_config and no other configurations are necessary.
+              
 ## Support
 
 If you have a question on how to use the product, please see our

@@ -487,15 +487,21 @@ export class EthImpl implements Eth {
     }
 
     try {
-      const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode);
-      return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
+      const contract = await this.mirrorNodeClient.getContract(address);
+      if (contract && contract.runtime_bytecode && contract.runtime_bytecode !== EthImpl.emptyHex) {
+        return contract.runtime_bytecode;
+      }
+      else {
+        const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode);
+        return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
+      }
     } catch (e: any) {
-      if(e instanceof SDKClientError) {      
+      if(e instanceof SDKClientError) {
         // handle INVALID_CONTRACT_ID
         if (e.isInvalidContractId()) {
           this.logger.debug('Unable to find code for contract %s in block "%s", returning 0x0, err code: %s', address, blockNumber, e.statusCode);
-          cache.set(cachedLabel, '0x0', constants.CACHE_TTL.ONE_HOUR);
-          return '0x0';
+          cache.set(cachedLabel, EthImpl.emptyHex, constants.CACHE_TTL.ONE_HOUR);
+          return EthImpl.emptyHex;
         }
         this.logger.error(e, 'Error raised during getCode for address %s, err code: %s', address, e.statusCode);
       } else {
