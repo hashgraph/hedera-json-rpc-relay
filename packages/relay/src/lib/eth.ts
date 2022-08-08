@@ -426,7 +426,7 @@ export class EthImpl implements Eth {
    * @param slot
    * @param blockNumberOrTag
    */
-  async getStorageAt(address: string, slot: string, blockNumberOrTag: string | null) : Promise<string> {
+  async getStorageAt(address: string, slot: string, blockNumberOrTag?: string | null) : Promise<string> {
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
     const blockEndTimestamp: string | undefined  = await this.getBlockEndTimeStamp(blockNumberOrTag);
 
@@ -471,7 +471,7 @@ export class EthImpl implements Eth {
    *
    * @param blockNumberOrTag
    */
-   private async getBlockEndTimeStamp(blockNumberOrTag: string | null): Promise<string | undefined> {
+   private async getBlockEndTimeStamp(blockNumberOrTag?: string | null): Promise<string | undefined> {
     let blockEndTimestamp: string | undefined;
     // convert the block number into a timestamp if necessary
     if (blockNumberOrTag && blockNumberOrTag !== 'latest' && blockNumberOrTag !== 'pending') {
