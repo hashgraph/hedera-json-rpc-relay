@@ -54,6 +54,7 @@ const validateHash = (hash: string, len?: number) => {
 };
 
 const verifyBlockConstants = (block: Block) => {
+  expect(block.gasLimit).equal(EthImpl.numberTo0x(15000000));
   expect(block.baseFeePerGas).equal('0x84b6a5c400');
   expect(block.difficulty).equal(EthImpl.zeroHex);
   expect(block.extraData).equal(EthImpl.emptyHex);
@@ -115,7 +116,9 @@ describe('Eth calls using MirrorNode', async function () {
   const gasUsed2 = 800000;
   const maxGasLimit = 250000;
   const maxGasLimitHex = EthImpl.numberTo0x(maxGasLimit);
-  const contractCallData = "0xef641f44"
+  const contractCallData = "0xef641f44";
+  const blockTimestamp = '1651560386';
+  const blockTimestampHex = EthImpl.numberTo0x(Number(blockTimestamp));
   const firstTransactionTimestampSeconds = '1653077547';
   const firstTransactionTimestampSecondsHex = EthImpl.numberTo0x(Number(firstTransactionTimestampSeconds));
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
@@ -141,7 +144,7 @@ describe('Eth calls using MirrorNode', async function () {
     'previous_hash': '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b',
     'size': null,
     'timestamp': {
-      'from': '1651560386.060890949',
+      'from': `${blockTimestamp}.060890949`,
       'to': '1651560389.060890949'
     }
   };
@@ -435,10 +438,9 @@ describe('Eth calls using MirrorNode', async function () {
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.gasLimit).equal(maxGasLimitHex);
     expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(firstTransactionTimestampSecondsHex);
+    expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(2);
     expect((result.transactions[0] as string)).equal(contractHash1);
     expect((result.transactions[1] as string)).equal(contractHash1);
@@ -459,10 +461,9 @@ describe('Eth calls using MirrorNode', async function () {
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal('0x0');
-    expect(result.gasLimit).equal('0x0');
     expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal('0x0');
+    expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(0);
     expect(result.transactionsRoot).equal(EthImpl.ethEmptyTrie);
 
@@ -484,10 +485,9 @@ describe('Eth calls using MirrorNode', async function () {
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.gasLimit).equal(maxGasLimitHex);
     expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(firstTransactionTimestampSecondsHex);
+    expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(2);
     expect((result.transactions[0] as Transaction).hash).equal(contractHash1);
     expect((result.transactions[1] as Transaction).hash).equal(contractHash1);
@@ -509,10 +509,9 @@ describe('Eth calls using MirrorNode', async function () {
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(EthImpl.numberTo0x(gasUsed1));
-    expect(result.gasLimit).equal(maxGasLimitHex);
     expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(firstTransactionTimestampSecondsHex);
+    expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(0);
 
     // verify expected constants
@@ -598,10 +597,9 @@ describe('Eth calls using MirrorNode', async function () {
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.gasLimit).equal(maxGasLimitHex);
     expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(firstTransactionTimestampSecondsHex);
+    expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(2);
     expect((result.transactions[0] as string)).equal(contractHash1);
     expect((result.transactions[1] as string)).equal(contractHash1);
@@ -625,10 +623,9 @@ describe('Eth calls using MirrorNode', async function () {
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.gasLimit).equal(maxGasLimitHex);
     expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(firstTransactionTimestampSecondsHex);
+    expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(2);
     expect((result.transactions[0] as Transaction).hash).equal(contractHash1);
     expect((result.transactions[1] as Transaction).hash).equal(contractHash1);
@@ -650,10 +647,9 @@ describe('Eth calls using MirrorNode', async function () {
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
     expect(result.gasUsed).equal(EthImpl.numberTo0x(gasUsed1));
-    expect(result.gasLimit).equal(maxGasLimitHex);
     expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(firstTransactionTimestampSecondsHex);
+    expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(0);
 
     // verify expected constants

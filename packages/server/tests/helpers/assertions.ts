@@ -32,6 +32,7 @@ export default class Assertions {
     static defaultGasPrice = 720_000_000_000;
     static datedGasPrice = 570_000_000_000;
     static updatedGasPrice = 640_000_000_000;
+    static maxBlockGasLimit = 15_000_000;
     static defaultGasUsed = 0.5;
 
     static assertId = (id) => {
@@ -80,6 +81,7 @@ export default class Assertions {
         expect(relayResponse.uncles).to.be.exist;
         expect(relayResponse.uncles.length).to.eq(0);
         expect(relayResponse.logsBloom).to.eq(Assertions.emptyBloom);
+        expect(relayResponse.gasLimit).to.equal(ethers.utils.hexValue(Assertions.maxBlockGasLimit));
 
         // Assert dynamic values
         expect(relayResponse.hash).to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
@@ -100,7 +102,6 @@ export default class Assertions {
             }
         }
 
-        expect(relayResponse.gasLimit).to.equal(ethers.utils.hexValue(maxGasLimit));
         expect(relayResponse.gasUsed).to.equal(ethers.utils.hexValue(gasUsed));
         expect(relayResponse.timestamp).to.equal(ethers.utils.hexValue(Number(timestamp)));
 

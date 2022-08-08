@@ -923,6 +923,7 @@ export class EthImpl implements Eth {
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
     const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams });
+    const maxGasLimit = constants.BLOCK_GAS_LIMIT;
 
     if (contractResults === null || contractResults.results === undefined) {
       // contract result not found
@@ -931,18 +932,15 @@ export class EthImpl implements Eth {
 
     // loop over contract function results to calculated aggregated datapoints
     let gasUsed = 0;
-    let maxGasLimit = 0;
-    let timestamp = 0;
+
+
+    // The consensus timestamp of the block, with the nanoseconds part omitted.
+    const timestamp = timestampRange.from.substring(0, timestampRange.from.indexOf('.'));
     const transactionObjects: Transaction[] = [];
     const transactionHashes: string[] = [];
 
     for (const result of contractResults.results) {
-      maxGasLimit = result.gas_limit > maxGasLimit ? result.gas_limit : maxGasLimit;
       gasUsed += result.gas_used;
-      if (timestamp === 0) {
-        // The consensus timestamp of the first transaction in the block, with the nanoseconds part omitted.
-        timestamp = result.timestamp.substring(0, result.timestamp.indexOf('.')); // mirrorNode response assures format of ssssssssss.nnnnnnnnn
-      }
 
       // depending on stage of contract execution revert the result.to value may be null
       if (!_.isNil(result.to)) {
