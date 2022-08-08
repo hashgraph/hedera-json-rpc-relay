@@ -28,8 +28,6 @@ import { AliasAccount } from '../clients/servicesClient';
 import { ethers, BigNumber } from 'ethers';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import BaseHTSJson from '../contracts/BaseHTS.json';
-import Assertions from '../helpers/assertions';
-import { Utils } from '../helpers/utils';
 
 
 describe('HTS Precompile Acceptance Tests', async function() {
@@ -37,7 +35,6 @@ describe('HTS Precompile Acceptance Tests', async function() {
   const { servicesNode, relay } = global;
 
   const accounts: AliasAccount[] = [];
-  // const contracts:[any] = [];
   let baseHTSContract;
   let HTSTokenContract;
 
