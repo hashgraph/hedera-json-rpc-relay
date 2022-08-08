@@ -23,7 +23,7 @@ import { ContractId, Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
-import { MirrorNodeClient, SDKClient } from './clients';
+import { MirrorNodeClient, SDKClient, IContractResultsParams, ILimitOrderParams } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
@@ -419,9 +419,69 @@ export class EthImpl implements Eth {
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  getStorageAt(address: string, slot: string, blockNumber: string | null): JsonRpcError {
-    this.logger.trace('getStorageAt(address=%s, slot=%s, blockNumber=%s)', address, slot, blockNumber);
-    return predefined.UNSUPPORTED_METHOD;
+  /**
+   * Gets the value from a storage position at the given Ethereum address. 
+   *
+   * @param address
+   * @param slot
+   * @param blockNumber
+   */
+  async getStorageAt(address: string, slot: string, blockNumber: string | null) : Promise<string> {
+    let blockEndTimestamp: string | undefined;
+    let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
+
+    // convert the block number into a timestamp if necessary
+    if (blockNumber && blockNumber !== 'latest' && blockNumber !== 'pending') {
+      let blockResponse: any;
+      if (blockNumber == 'earliest') {
+        blockResponse = await this.mirrorNodeClient.getBlock(0);
+      } else if (blockNumber.length < 32) {
+        // anything less than 32 characters is treated as a number
+        blockResponse = await this.mirrorNodeClient.getBlock(Number(blockNumber));
+      } else {
+        blockResponse = await this.mirrorNodeClient.getBlock(blockNumber);
+      }
+
+      if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
+        // block not found. 
+        throw predefined.NO_SUITABLE_PEERS;
+      }
+      blockEndTimestamp = blockResponse.timestamp?.to;
+    }
+
+    // retrieve the timestamp of the contract
+    const contractResultsParams: IContractResultsParams = blockEndTimestamp 
+      ? { timestamp: `lte:${blockEndTimestamp}` } 
+      : {};
+    const limitOrderParams: ILimitOrderParams = { limit:1, order: 'desc' }; 
+    const contractResult = await this.mirrorNodeClient.getContractResultsByAddress(address, contractResultsParams, limitOrderParams);
+
+    if (contractResult && contractResult.results && contractResult.results.length > 0) {
+      // retrieve the contract result details 
+      await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
+        .then( contractResultDetails => {
+          if(contractResultDetails && contractResultDetails.state_changes) {
+            // loop through the state changes to match slot and return value
+            for(const stateChange of contractResultDetails.state_changes) {
+              console.log("Hello");
+              if(stateChange.slot === slot) {
+                result = stateChange.value_written;
+              }
+            }
+          }
+        })
+        .catch( (e: any) => {
+          this.logger.error(
+            e,
+            'Failed to retrieve contract result details for contract address %s at timestamp=%s',
+            address,
+            contractResult.results[0].timestamp,
+          );
+          throw e;  
+        });
+    };
+
+    return result;
   }
   
   /**
