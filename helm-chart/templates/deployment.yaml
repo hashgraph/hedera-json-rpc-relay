@@ -36,12 +36,14 @@ spec:
         env:
           - name: CHAIN_ID
             value: {{ .Values.config.CHAIN_ID | squote }}        
+          # - name: HEDERA_NETWORK
+          #   valueFrom:
+          #     secretKeyRef:
+          #       name: {{ include "json-rpc-relay.fullname" . }}
+          #       key: HEDERA_NETWORK
+          #       optional: false
           - name: HEDERA_NETWORK
-            valueFrom:
-              secretKeyRef:
-                name: {{ include "json-rpc-relay.fullname" . }}
-                key: HEDERA_NETWORK
-                optional: false
+            value: {{ .Values.config.HEDERA_NETWORK | toJson | quote }} 
           - name: OPERATOR_ID_MAIN
             valueFrom:
               secretKeyRef:
@@ -87,14 +89,15 @@ spec:
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
-          # livenessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: jsonrpcrelay
-          # readinessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: jsonrpcrelay                      
+        livenessProbe:
+          httpGet:
+            path: /health/liveness
+            port: jsonrpcrelay
+        readinessProbe:
+          httpGet:
+            path: /health/readiness
+            port: jsonrpcrelay
+          initialDelaySeconds: 30
         resources: 
           {{- toYaml .Values.resources | indent 12 }}
       {{- with .Values.nodeSelector }}
