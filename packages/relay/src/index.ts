@@ -72,7 +72,7 @@ export interface Eth {
 
   getLogs(blockHash: string|null, fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null, requestId?: string): Promise<Log[]>;
 
-  getStorageAt(address: string, slot: string, blockNumber: string|null, requestId?: string): JsonRpcError;
+  getStorageAt(address: string, slot: string, blockNumber: string|null, requestId?: string): Promise<string>;
 
   getTransactionByBlockHashAndIndex(hash: string, index: number, requestId?: string): Promise<Transaction | null>;
 

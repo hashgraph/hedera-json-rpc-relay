@@ -1498,6 +1498,79 @@ describe('Eth calls using MirrorNode', async function () {
       expect(hasError).to.be.true;
     });
   });
+
+  describe('eth_getStorageAt', async function() {
+    it('eth_getStorageAt with match with block', async function () {
+      // mirror node request mocks
+      mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+
+      const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      expect(result).to.exist;
+      if (result == null) return;
+  
+      // verify slot value
+      expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+    });
+
+    it('eth_getStorageAt with match with latest block', async function () {
+      // mirror node request mocks
+      mock.onGet(`contracts/${contractAddress1}/results?limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+
+      const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, "latest");
+      expect(result).to.exist;
+      if (result == null) return;
+  
+      // verify slot value
+      expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+    });
+
+    it('eth_getStorageAt with match null block', async function () {
+      // mirror node request mocks
+      mock.onGet(`contracts/${contractAddress1}/results?limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+
+      const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot);
+      expect(result).to.exist;
+      if (result == null) return;
+  
+      // verify slot value
+      expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+    });
+
+    it('eth_getStorageAt should throw a predefined NO_SUITABLE_PEERS when block not found', async function () {
+
+      let hasError = false;
+      try {
+        mock.onGet(`blocks/${blockNumber}`).reply(200, null);
+        const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));  
+      } catch (e: any) {
+        hasError = true;
+        expect(e.code).to.equal(-32001);
+        expect(e.name).to.equal('Resource not found');
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('eth_getStorageAt should throw error when contract not found', async function () {
+      // mirror node request mocks
+      mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(404, detailedContractResultNotFound);
+
+      let hasError = false;
+      try {
+        const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      } catch (e: any) {
+        hasError = true;
+        expect(e.statusCode).to.equal(404);
+        expect(e.message).to.equal("Request failed with status code 404");
+      }  
+      expect(hasError).to.be.true;
+    });
+  });
 });
 
 describe('Eth', async function () {
@@ -1684,7 +1757,6 @@ describe('Eth', async function () {
     'sendTransaction',
     'protocolVersion',
     'coinbase',
-    'getStorageAt',
   ];
 
   unsupportedMethods.forEach(method => {

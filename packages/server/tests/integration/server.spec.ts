@@ -316,17 +316,6 @@ describe('RPC Server', async function() {
 
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
-
-  it('should execute "eth_getStorageAt"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_getStorageAt',
-      'params': [null]
-    });
-
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
-  });
 });
 
 class BaseTest {

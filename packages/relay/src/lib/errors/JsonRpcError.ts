@@ -111,4 +111,9 @@ export const predefined = {
     code: -32010,
     message: 'Request timeout. Please try again.'
   }),
+  'RESOURCE_NOT_FOUND': new JsonRpcError({
+    name: 'Resource not found',
+    code: -32001,
+    message: 'Requested resource not found'
+  }),
 };
