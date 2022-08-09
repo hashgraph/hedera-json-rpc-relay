@@ -481,35 +481,6 @@ export class EthImpl implements Eth {
 
     return result;
   }
-
-  /**
-   * Gets the end timestamp of a block given a valid block number or 'earliest. 
-   * otherwise return undefined.
-   *
-   * @param blockNumberOrTag
-   */
-   private async getBlockEndTimeStamp(blockNumberOrTag?: string | null): Promise<any | undefined> {
-    let blockEndTimestamp: string | undefined;
-    // convert the block number into a timestamp if necessary
-    if (blockNumberOrTag && blockNumberOrTag !== 'latest' && blockNumberOrTag !== 'pending') {
-      let blockResponse: any;
-      if (blockNumberOrTag == 'earliest') {
-        blockResponse = await this.mirrorNodeClient.getBlock(0);
-      } else if (blockNumberOrTag.length < 32) {
-        // anything less than 32 characters is treated as a number
-        blockResponse = await this.mirrorNodeClient.getBlock(Number(blockNumberOrTag));
-      } else {
-        blockResponse = await this.mirrorNodeClient.getBlock(blockNumberOrTag);
-      }
-
-      if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
-        // block not found. 
-        throw predefined.RESOURCE_NO_FOUND;
-      }
-      blockEndTimestamp = blockResponse.timestamp?.to;
-    }
-    return blockEndTimestamp;
-  }
   
   /**
    * Gets the balance of an account as of the given block.
