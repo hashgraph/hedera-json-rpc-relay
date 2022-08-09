@@ -69,6 +69,10 @@ export class EthImpl implements Eth {
   static ethGetTransactionCount = 'eth_getTransactionCount';
   static ethSendRawTransaction = 'eth_sendRawTransaction';
 
+  // block constants 
+  static blockLatest = 'latest';
+  static blockEarliest = 'earliest';
+  static blockPending = 'pending';
 
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
@@ -139,7 +143,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
     try {
-      const latestBlockNumber = await this.translateBlockTag('latest', requestId);
+      const latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestId);
       const newestBlockNumber = await this.translateBlockTag(newestBlock, requestId);
 
       if (newestBlockNumber > latestBlockNumber) {
@@ -946,9 +950,9 @@ export class EthImpl implements Eth {
    * @private
    */
   private async translateBlockTag(tag: string | null, requestId?: string): Promise<number> {
-    if (tag === null || tag === 'latest' || tag === 'pending') {
+    if (tag === null || tag === EthImpl.blockLatest || tag === EthImpl.blockPending) {
       return Number(await this.blockNumber(requestId));
-    } else if (tag === 'earliest') {
+    } else if (tag === EthImpl.blockEarliest) {
       return 0;
     } else {
       return Number(tag);
@@ -1043,15 +1047,15 @@ export class EthImpl implements Eth {
     let blockResponse: any;
     // Determine if the latest block should be returned and if not then just return null
     if (!returnLatest && 
-      (blockNumberOrTag == null || blockNumberOrTag === 'latest' || blockNumberOrTag === 'pending')) {
+      (blockNumberOrTag == null || blockNumberOrTag === EthImpl.blockLatest || blockNumberOrTag === EthImpl.blockPending)) {
       return null;
     }
 
-    if (blockNumberOrTag == null || blockNumberOrTag === 'latest' || blockNumberOrTag === 'pending') {
+    if (blockNumberOrTag == null || blockNumberOrTag === EthImpl.blockLatest || blockNumberOrTag === EthImpl.blockPending) {
       const blockPromise = this.mirrorNodeClient.getLatestBlock();
       const blockAnswer = await blockPromise;
       blockResponse = blockAnswer.blocks[0];
-    } else if (blockNumberOrTag == 'earliest') {
+    } else if (blockNumberOrTag == EthImpl.blockEarliest) {
       blockResponse = await this.mirrorNodeClient.getBlock(0);
     } else if (blockNumberOrTag.length < 32) {
       // anything less than 32 characters is treated as a number
