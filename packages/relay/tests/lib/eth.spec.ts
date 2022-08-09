@@ -137,7 +137,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   const defaultBlock = {
     'count': blockTransactionCount,
-    'hapi_version': '0.27.0',
+    'hapi_version': '0.28.1',
     'hash': blockHash,
     'name': '2022-05-03T06_46_26.060890949Z.rcd',
     'number': blockNumber,
@@ -146,7 +146,9 @@ describe('Eth calls using MirrorNode', async function () {
     'timestamp': {
       'from': `${blockTimestamp}.060890949`,
       'to': '1651560389.060890949'
-    }
+    },
+    'gas_used': gasUsed1 + gasUsed2,
+    'logs_bloom': '0x'
   };
 
 
@@ -451,7 +453,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockByNumber with zero transactions', async function () {
     // mirror node request mocks
-    mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+    mock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, gas_used: 0});
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, { 'results': [] });
     mock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
@@ -498,7 +500,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockByNumber with block match and contract revert', async function () {
     // mirror node request mocks
-    mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+    mock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, gas_used: gasUsed1});
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResultsRevert);
     mock.onGet('network/fees').reply(200, defaultNetworkFees);
 
@@ -636,7 +638,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockByHash with block match and contract revert', async function () {
     // mirror node request mocks
-    mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
+    mock.onGet(`blocks/${blockHash}`).reply(200, {...defaultBlock, gas_used: gasUsed1});
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResultsRevert);
     mock.onGet('network/fees').reply(200, defaultNetworkFees);
 

@@ -924,15 +924,12 @@ export class EthImpl implements Eth {
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
     const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams });
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
+    const gasUsed = blockResponse.gas_used;
 
     if (contractResults === null || contractResults.results === undefined) {
       // contract result not found
       return null;
     }
-
-    // loop over contract function results to calculated aggregated datapoints
-    let gasUsed = 0;
-
 
     // The consensus timestamp of the block, with the nanoseconds part omitted.
     const timestamp = timestampRange.from.substring(0, timestampRange.from.indexOf('.'));
@@ -940,8 +937,6 @@ export class EthImpl implements Eth {
     const transactionHashes: string[] = [];
 
     for (const result of contractResults.results) {
-      gasUsed += result.gas_used;
-
       // depending on stage of contract execution revert the result.to value may be null
       if (!_.isNil(result.to)) {
         const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp);
