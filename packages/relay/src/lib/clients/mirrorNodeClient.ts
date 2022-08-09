@@ -330,7 +330,7 @@ export class MirrorNodeClient {
             ? { timestamp: `lte:${blockEndTimestamp}` } 
             : {};
         const limitOrderParams: ILimitOrderParams = this.getLimitOrderQueryParam(limit, 'desc'); 
-        return await this.getContractResultsByAddress(address, contractResultsParams, limitOrderParams);
+        return this.getContractResultsByAddress(address, contractResultsParams, limitOrderParams);
     }
 
     getQueryParams(params: object) {

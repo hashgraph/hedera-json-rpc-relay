@@ -23,7 +23,7 @@ import { ContractId, Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
-import { MirrorNodeClient, SDKClient, IContractResultsParams, ILimitOrderParams } from './clients';
+import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
