@@ -44,6 +44,7 @@ import {
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
 import { Gauge, Histogram, Registry } from 'prom-client';
+import { formatRequestIdMessage } from '../../formatters';
 import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
 
@@ -116,54 +117,54 @@ export class SDKClient {
         });
     }
 
-    async getAccountBalance(account: string, callerName: string, requestId?: number): Promise<AccountBalance> {
+    async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
         return this.executeQuery(new AccountBalanceQuery()
             .setAccountId(AccountId.fromString(account)), this.clientMain, callerName, requestId);
     }
 
-    async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: number): Promise<BigNumber> {
+    async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
         const balance = await this.getAccountBalance(account, callerName, requestId);
         return balance.hbars.to(HbarUnit.Tinybar);
     }
     
-    async getAccountBalanceInWeiBar(account: string, callerName: string, requestId?: number): Promise<BigNumber> {
+    async getAccountBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
         const balance = await this.getAccountBalance(account, callerName, requestId);
         return SDKClient.HbarToWeiBar(balance);
     }
 
-    async getAccountInfo(address: string, callerName: string, requestId?: number): Promise<AccountInfo> {
+    async getAccountInfo(address: string, callerName: string, requestId?: string): Promise<AccountInfo> {
         return this.executeQuery(new AccountInfoQuery()
             .setAccountId(AccountId.fromString(address)), this.clientMain, callerName, requestId);
     }
 
-    async getContractByteCode(shard: number | Long, realm: number | Long, address: string, callerName: string, requestId?: number): Promise<Uint8Array> {
+    async getContractByteCode(shard: number | Long, realm: number | Long, address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
         return this.executeQuery(new ContractByteCodeQuery()
             .setContractId(ContractId.fromEvmAddress(shard, realm, address)), this.clientMain, callerName, requestId);
     }
 
-    async getContractBalance(contract: string, callerName: string, requestId?: number): Promise<AccountBalance> {
+    async getContractBalance(contract: string, callerName: string, requestId?: string): Promise<AccountBalance> {
         return this.executeQuery(new AccountBalanceQuery()
             .setContractId(ContractId.fromString(contract)), this.clientMain, callerName, requestId);
     }
 
-    async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: number): Promise<BigNumber> {
+    async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
         const balance = await this.getContractBalance(account, callerName, requestId);
         return SDKClient.HbarToWeiBar(balance);
     }
 
-    async getExchangeRate(callerName: string, requestId?: number): Promise<ExchangeRates> {
+    async getExchangeRate(callerName: string, requestId?: string): Promise<ExchangeRates> {
         const exchangeFileBytes = await this.getFileIdBytes(constants.EXCHANGE_RATE_FILE_ID, callerName, requestId);
 
         return ExchangeRates.fromBytes(exchangeFileBytes);
     }
 
-    async getFeeSchedule(callerName: string, requestId?: number): Promise<FeeSchedules> {
+    async getFeeSchedule(callerName: string, requestId?: string): Promise<FeeSchedules> {
         const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID, callerName, requestId);
 
         return FeeSchedules.fromBytes(feeSchedulesFileBytes);
     }
 
-    async getTinyBarGasFee(callerName: string, requestId?: number): Promise<number> {
+    async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
         const feeSchedules = await this.getFeeSchedule(callerName, requestId);
         if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
             throw new SDKClientError({}, 'Invalid FeeSchedules proto format');
@@ -181,7 +182,7 @@ export class SDKClient {
         throw new SDKClientError({}, `${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
     }
 
-    async getFileIdBytes(address: string, callerName: string, requestId?: number): Promise<Uint8Array> {
+    async getFileIdBytes(address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
         return this.executeQuery(new FileContentsQuery()
             .setFileId(address), this.clientMain, callerName, requestId);
     }
@@ -190,12 +191,12 @@ export class SDKClient {
         return transactionResponse.getRecord(this.clientMain);
     }
 
-    async submitEthereumTransaction(transactionBuffer: Uint8Array, callerName: string, requestId?: number): Promise<TransactionResponse> {
+    async submitEthereumTransaction(transactionBuffer: Uint8Array, callerName: string, requestId?: string): Promise<TransactionResponse> {
         return this.executeTransaction(new EthereumFlow()
           .setEthereumData(transactionBuffer), callerName, requestId);
     }
 
-    async submitContractCallQuery(to: string, data: string, gas: number, from: string, callerName: string, requestId?: number): Promise<ContractFunctionResult> {
+    async submitContractCallQuery(to: string, data: string, gas: number, from: string, callerName: string, requestId?: string): Promise<ContractFunctionResult> {
         const contract = SDKClient.prune0x(to);
         const contractId = contract.startsWith("00000000000")
             ? ContractId.fromSolidityAddress(contract)
@@ -237,8 +238,8 @@ export class SDKClient {
         );
     };
 
-    private executeQuery = async (query: Query<any>, client: Client, callerName: string, requestId?: number) => {
-        const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+    private executeQuery = async (query: Query<any>, client: Client, callerName: string, requestId?: string) => {
+        const requestIdPrefix = formatRequestIdMessage(requestId);
         try {
             const resp = await query.execute(client);
             this.logger.info(`${requestIdPrefix} Consensus Node query response: ${query.constructor.name} ${Status.Success._code}`);
@@ -269,9 +270,9 @@ export class SDKClient {
         }
     };
 
-    private executeTransaction = async (transaction: Transaction | EthereumFlow, callerName: string, requestId?: number): Promise<TransactionResponse> => {
+    private executeTransaction = async (transaction: Transaction | EthereumFlow, callerName: string, requestId?: string): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
-        const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+        const requestIdPrefix = formatRequestIdMessage(requestId);
         try {
             this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
             const resp = await transaction.execute(this.clientMain);
@@ -294,8 +295,8 @@ export class SDKClient {
         }
     };
 
-    executeGetTransactionRecord = async (resp: TransactionResponse, transactionName: string, callerName: string, requestId?: number): Promise<TransactionRecord> => {
-        const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+    executeGetTransactionRecord = async (resp: TransactionResponse, transactionName: string, callerName: string, requestId?: string): Promise<TransactionRecord> => {
+        const requestIdPrefix = formatRequestIdMessage(requestId);
         try {
             if (!resp.getRecord) {
                 throw new SDKClientError({}, `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(resp)}`);

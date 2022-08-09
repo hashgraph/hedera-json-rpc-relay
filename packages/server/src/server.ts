@@ -168,12 +168,11 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
 /**
  * Generates random trace id for requests.
  * 
- * returns: integer
+ * returns: string
  */
- const generateRequestId = () => {
+ const generateRequestId = () :string => {
   return crypto.randomUUID();
 };
-
 
 /**
  * returns: false

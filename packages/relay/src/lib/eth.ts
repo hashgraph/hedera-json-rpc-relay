@@ -29,6 +29,7 @@ import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
+import { formatRequestIdMessage } from '../formatters';
 
 const _ = require('lodash');
 const cache = require('js-cache');
@@ -125,8 +126,8 @@ export class EthImpl implements Eth {
    * This method is implemented to always return an empty array. This is in alignment
    * with the behavior of Infura.
    */
-  accounts(requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  accounts(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} accounts()`);
     return [];
   }
@@ -134,12 +135,12 @@ export class EthImpl implements Eth {
   /**
    * Gets the fee history.
    */
-  async feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number> | null, requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number> | null, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
     try {
-      const latestBlockNumber = await this.translateBlockTag('latest',requestId);
-      const newestBlockNumber = await this.translateBlockTag(newestBlock,requestId);
+      const latestBlockNumber = await this.translateBlockTag('latest', requestId);
+      const newestBlockNumber = await this.translateBlockTag(newestBlock, requestId);
 
       if (newestBlockNumber > latestBlockNumber) {
         return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
@@ -154,7 +155,7 @@ export class EthImpl implements Eth {
       let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
       if (!feeHistory) {
 
-        feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles,requestId);
+        feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
 
         this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.FEE_HISTORY} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory, constants.CACHE_TTL.ONE_HOUR);
@@ -167,11 +168,11 @@ export class EthImpl implements Eth {
     }
   }
 
-  private async getFeeByBlockNumber(blockNumber: number, requestId?: number): Promise<string> {
+  private async getFeeByBlockNumber(blockNumber: number, requestId?: string): Promise<string> {
     let fee = 0;
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     try {
-      const block = await this.mirrorNodeClient.getBlock(blockNumber,requestId);
+      const block = await this.mirrorNodeClient.getBlock(blockNumber, requestId);
       fee = await this.getFeeWeibars(EthImpl.ethFeeHistory, requestId, `lte:${block.timestamp.to}`);
     } catch (error) {
       this.logger.warn(error, `${requestIdPrefix} Fee history cannot retrieve block or fee. Returning ${fee} fee for block ${blockNumber}`);
@@ -180,7 +181,7 @@ export class EthImpl implements Eth {
     return EthImpl.numberTo0x(fee);
   }
 
-  private async getFeeHistory(blockCount: number, newestBlockNumber: number, latestBlockNumber: number, rewardPercentiles: Array<number> | null, requestId?: number) {
+  private async getFeeHistory(blockCount: number, newestBlockNumber: number, latestBlockNumber: number, rewardPercentiles: Array<number> | null, requestId?: string) {
     // include newest block number in the total block count
     const oldestBlockNumber = Math.max(0, newestBlockNumber - blockCount + 1);
     const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;
@@ -192,7 +193,7 @@ export class EthImpl implements Eth {
 
     // get fees from oldest to newest blocks
     for (let blockNumber = oldestBlockNumber; blockNumber <= newestBlockNumber; blockNumber++) {
-      const fee = await this.getFeeByBlockNumber(blockNumber,requestId);
+      const fee = await this.getFeeByBlockNumber(blockNumber, requestId);
 
       feeHistory.baseFeePerGas.push(fee);
       feeHistory.gasUsedRatio.push(EthImpl.defaultGasUsedRatio);
@@ -203,7 +204,7 @@ export class EthImpl implements Eth {
 
     if (latestBlockNumber > newestBlockNumber) {
       // get next block fee if the newest block is not the latest
-      nextBaseFeePerGas = await this.getFeeByBlockNumber(newestBlockNumber + 1,requestId);
+      nextBaseFeePerGas = await this.getFeeByBlockNumber(newestBlockNumber + 1, requestId);
     }
 
     if (nextBaseFeePerGas) {
@@ -217,11 +218,11 @@ export class EthImpl implements Eth {
     return feeHistory;
   }
 
-  private async getFeeWeibars(callerName: string,requestId?: number, timestamp?: string) {
+  private async getFeeWeibars(callerName: string, requestId?: string, timestamp?: string) {
     let networkFees;
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     try {
-      networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp,undefined,requestId);
+      networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp,undefined, requestId);
       if (_.isNil(networkFees)) {
         this.logger.debug(`${requestIdPrefix} Mirror Node returned no fees. Fallback to network`);
       }
@@ -233,7 +234,7 @@ export class EthImpl implements Eth {
       networkFees = {
         fees: [
           {
-            gas: await this.sdkClient.getTinyBarGasFee(callerName,requestId),
+            gas: await this.sdkClient.getTinyBarGasFee(callerName, requestId),
             'transaction_type': EthImpl.ethTxType
           }
         ]
@@ -259,8 +260,8 @@ export class EthImpl implements Eth {
   /**
    * Gets the most recent block number.
    */
-  async blockNumber(requestId?: number): Promise<string> {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async blockNumber(requestId?: string): Promise<string> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} blockNumber()`);
 
     const blocksResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
@@ -277,8 +278,8 @@ export class EthImpl implements Eth {
    * the same value. This can be specified via an environment variable
    * `CHAIN_ID`.
    */
-  chainId(requestId?: number): string {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  chainId(requestId?: string): string {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} chainId()`);
     return this.chain;
   }
@@ -287,8 +288,8 @@ export class EthImpl implements Eth {
    * Estimates the amount of gas to execute a call.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async estimateGas(transaction: any, _blockParam: string | null, requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async estimateGas(transaction: any, _blockParam: string | null, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas()`);
     if (!transaction || !transaction.data || transaction.data === '0x') {
       return EthImpl.gasTxBaseCost;
@@ -300,14 +301,14 @@ export class EthImpl implements Eth {
   /**
    * Gets the current gas price of the network.
    */
-  async gasPrice(requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async gasPrice(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} gasPrice()`);
     try {
       let gasPrice: number | undefined = cache.get(constants.CACHE_KEY.GAS_PRICE);
 
       if (!gasPrice) {
-        gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice,requestId);
+        gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestId);
 
         this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
@@ -323,8 +324,8 @@ export class EthImpl implements Eth {
   /**
    * Gets whether this "Ethereum client" is a miner. We don't mine, so this always returns false.
    */
-  async mining(requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async mining(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} mining()`);
     return false;
   }
@@ -332,8 +333,8 @@ export class EthImpl implements Eth {
   /**
    * TODO Needs docs, or be removed?
    */
-  async submitWork(requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async submitWork(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} submitWork()`);
     return false;
   }
@@ -341,8 +342,8 @@ export class EthImpl implements Eth {
   /**
    * TODO Needs docs, or be removed?
    */
-  async syncing(requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async syncing(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} syncing()`);
     return false;
   }
@@ -350,8 +351,8 @@ export class EthImpl implements Eth {
   /**
    * Always returns null. There are no uncles in Hedera.
    */
-  async getUncleByBlockHashAndIndex(requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getUncleByBlockHashAndIndex(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getUncleByBlockHashAndIndex()`);
     return null;
   }
@@ -359,8 +360,8 @@ export class EthImpl implements Eth {
   /**
    * Always returns null. There are no uncles in Hedera.
    */
-  async getUncleByBlockNumberAndIndex(requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getUncleByBlockNumberAndIndex(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getUncleByBlockNumberAndIndex()`);
     return null;
   }
@@ -368,8 +369,8 @@ export class EthImpl implements Eth {
   /**
    * Always returns '0x0'. There are no uncles in Hedera.
    */
-  async getUncleCountByBlockHash(requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getUncleCountByBlockHash(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getUncleCountByBlockHash()`);
     return EthImpl.zeroHex;
   }
@@ -377,8 +378,8 @@ export class EthImpl implements Eth {
   /**
    * Always returns '0x0'. There are no uncles in Hedera.
    */
-  async getUncleCountByBlockNumber(requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getUncleCountByBlockNumber(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getUncleCountByBlockNumber()`);
     return EthImpl.zeroHex;
   }
@@ -386,8 +387,8 @@ export class EthImpl implements Eth {
   /**
    * TODO Needs docs, or be removed?
    */
-  async hashrate(requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async hashrate(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} hashrate()`);
     return EthImpl.zeroHex;
   }
@@ -395,8 +396,8 @@ export class EthImpl implements Eth {
   /**
    * Always returns UNSUPPORTED_METHOD error.
    */
-  getWork(requestId?: number): JsonRpcError {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  getWork(requestId?: string): JsonRpcError {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getWork()`);
     return predefined.UNSUPPORTED_METHOD;
   }
@@ -404,44 +405,44 @@ export class EthImpl implements Eth {
   /**
    * Unsupported methods always return UNSUPPORTED_METHOD error.
    */
-  submitHashrate(requestId?: number): JsonRpcError {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  submitHashrate(requestId?: string): JsonRpcError {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} submitHashrate()`);
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  signTransaction(requestId?: number): JsonRpcError {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  signTransaction(requestId?: string): JsonRpcError {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} signTransaction()`);
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  sign(requestId?: number): JsonRpcError {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  sign(requestId?: string): JsonRpcError {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} sign()`);
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  sendTransaction(requestId?: number): JsonRpcError {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  sendTransaction(requestId?: string): JsonRpcError {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} sendTransaction()`);
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  protocolVersion(requestId?: number): JsonRpcError {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  protocolVersion(requestId?: string): JsonRpcError {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} protocolVersion()`);
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  coinbase(requestId?: number): JsonRpcError {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  coinbase(requestId?: string): JsonRpcError {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} coinbase()`);
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  getStorageAt(address: string, slot: string, blockNumber: string | null, requestId?: number): JsonRpcError {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  getStorageAt(address: string, slot: string, blockNumber: string | null, requestId?: string): JsonRpcError {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getStorageAt(address=${address}, slot=${slot}, blockNumber=${blockNumber})`, address, slot, blockNumber);
     return predefined.UNSUPPORTED_METHOD;
   }
@@ -452,14 +453,14 @@ export class EthImpl implements Eth {
    * @param account
    * @param blockNumberOrTag
    */
-  async getBalance(account: string, blockNumberOrTag: string | null, requestId?: number) {
+  async getBalance(account: string, blockNumberOrTag: string | null, requestId?: string) {
     // FIXME: This implementation should be replaced so that instead of going to the
     //        consensus nodes we go to the mirror nodes instead. The problem is that
     //        the mirror nodes need to have the ability to give me the **CURRENT**
     //        account balance *and* the account balance for any given block.
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
-    const blockNumber = await this.translateBlockTag(blockNumberOrTag,requestId);
+    const blockNumber = await this.translateBlockTag(blockNumberOrTag, requestId);
 
     const cachedLabel = `getBalance.${account}.${blockNumberOrTag}`;
     const cachedResponse: string | undefined = cache.get(cachedLabel);
@@ -469,7 +470,7 @@ export class EthImpl implements Eth {
 
     try {
       let weibars: BigNumber | number = 0;
-      const result = await this.mirrorNodeClient.resolveEntityType(account,requestId);
+      const result = await this.mirrorNodeClient.resolveEntityType(account, requestId);
       if (result?.type === constants.TYPE_ACCOUNT) {
         weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account, EthImpl.ethGetBalance, requestId);
       }
@@ -499,8 +500,8 @@ export class EthImpl implements Eth {
    * @param address
    * @param blockNumber
    */
-  async getCode(address: string, blockNumber: string | null, requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getCode(address: string, blockNumber: string | null, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     // FIXME: This has to be reimplemented to get the data from the mirror node.
     this.logger.trace(`${requestIdPrefix} getCode(address=${address}, blockNumber=${blockNumber})`);
 
@@ -542,10 +543,10 @@ export class EthImpl implements Eth {
    * @param hash
    * @param showDetails
    */
-  async getBlockByHash(hash: string, showDetails: boolean, requestId?: number): Promise<Block | null> {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getBlockByHash(hash: string, showDetails: boolean, requestId?: string): Promise<Block | null> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
-    return this.getBlock(hash, showDetails,requestId).catch((e: any) => {
+    return this.getBlock(hash, showDetails, requestId).catch((e: any) => {
       this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
       return null;
     });
@@ -556,10 +557,10 @@ export class EthImpl implements Eth {
    * @param blockNumOrTag
    * @param showDetails
    */
-  async getBlockByNumber(blockNumOrTag: string, showDetails: boolean, requestId?: number): Promise<Block | null> {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getBlockByNumber(blockNumOrTag: string, showDetails: boolean, requestId?: string): Promise<Block | null> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
-    return this.getBlock(blockNumOrTag, showDetails,requestId).catch((e: any) => {
+    return this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
       this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
       return null;
     });
@@ -570,11 +571,11 @@ export class EthImpl implements Eth {
    *
    * @param hash
    */
-  async getBlockTransactionCountByHash(hash: string, requestId?: number): Promise<string | null> {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getBlockTransactionCountByHash(hash: string, requestId?: string): Promise<string | null> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByHash(hash=${hash}, showDetails=%o)`);
     return this.mirrorNodeClient
-      .getBlock(hash,requestId)
+      .getBlock(hash, requestId)
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
@@ -586,12 +587,12 @@ export class EthImpl implements Eth {
    * Gets the number of transaction in a block by its block number.
    * @param blockNumOrTag
    */
-  async getBlockTransactionCountByNumber(blockNumOrTag: string, requestId?: number): Promise<string | null> {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getBlockTransactionCountByNumber(blockNumOrTag: string, requestId?: string): Promise<string | null> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByNumber(blockNum=${blockNumOrTag}, showDetails=%o)`);
-    const blockNum = await this.translateBlockTag(blockNumOrTag,requestId);
+    const blockNum = await this.translateBlockTag(blockNumOrTag, requestId);
     return this.mirrorNodeClient
-      .getBlock(blockNum,requestId)
+      .getBlock(blockNum, requestId)
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNum}`, blockNum);
@@ -605,12 +606,12 @@ export class EthImpl implements Eth {
    * @param blockHash
    * @param transactionIndex
    */
-  async getTransactionByBlockHashAndIndex(blockHash: string, transactionIndex: number, requestId?: number): Promise<Transaction | null> {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getTransactionByBlockHashAndIndex(blockHash: string, transactionIndex: number, requestId?: string): Promise<Transaction | null> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionByBlockHashAndIndex(hash=${blockHash}, index=${transactionIndex})`);
     return this.mirrorNodeClient
-      .getContractResults({ blockHash: blockHash, transactionIndex: transactionIndex },undefined,requestId)
-      .then((contractResults) => this.getTransactionFromContractResults(contractResults,requestId))
+      .getContractResults({ blockHash: blockHash, transactionIndex: transactionIndex },undefined, requestId)
+      .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
         this.logger.error(
           e,
@@ -629,14 +630,14 @@ export class EthImpl implements Eth {
   async getTransactionByBlockNumberAndIndex(
     blockNumOrTag: string,
     transactionIndex: number,
-    requestId?: number
+    requestId?: string
   ): Promise<Transaction | null> {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionByBlockNumberAndIndex(blockNum=${blockNumOrTag}, index=${transactionIndex})`);
-    const blockNum = await this.translateBlockTag(blockNumOrTag,requestId);
+    const blockNum = await this.translateBlockTag(blockNumOrTag, requestId);
     return this.mirrorNodeClient
-      .getContractResults({ blockNumber: blockNum, transactionIndex: transactionIndex },undefined,requestId)
-      .then((contractResults) => this.getTransactionFromContractResults(contractResults,requestId))
+      .getContractResults({ blockNumber: blockNum, transactionIndex: transactionIndex },undefined, requestId)
+      .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
         this.logger.error(
           e,
@@ -655,15 +656,15 @@ export class EthImpl implements Eth {
    * @param address
    * @param blockNumOrTag
    */
-  async getTransactionCount(address: string, blockNumOrTag: string, requestId?: number): Promise<string | JsonRpcError> {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getTransactionCount(address: string, blockNumOrTag: string, requestId?: string): Promise<string | JsonRpcError> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionCount(address=${address}, blockNumOrTag=${blockNumOrTag})`);
     const blockNumber = await this.translateBlockTag(blockNumOrTag, requestId);
     if (blockNumber === 0) {
       return '0x0';
     } else {
       try {
-        const result = await this.mirrorNodeClient.resolveEntityType(address,requestId);
+        const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
         if (result?.type === constants.TYPE_ACCOUNT) {
             const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
             return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));  
@@ -685,8 +686,8 @@ export class EthImpl implements Eth {
    *
    * @param transaction
    */
-  async sendRawTransaction(transaction: string, requestId?: number): Promise<string | JsonRpcError> {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} sendRawTransaction(transaction=${transaction})`);
 
     try {
@@ -730,10 +731,10 @@ export class EthImpl implements Eth {
    * @param call
    * @param blockParam
    */
-  async call(call: any, blockParam: string | null, requestId?: number): Promise<string | JsonRpcError> {
+  async call(call: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError> {
     // FIXME: In the future this will be implemented by making calls to the mirror node. For the
     //        time being we'll eat the cost and ask the main consensus nodes instead.
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${call}, blockParam=${blockParam})`, call, blockParam);
     // The "to" address must always be 42 chars.
     if (call.to.length != 42) {
@@ -772,10 +773,10 @@ export class EthImpl implements Eth {
    *
    * @param hash
    */
-  async getTransactionByHash(hash: string, requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getTransactionByHash(hash: string, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionByHash(hash=${hash})`, hash);
-    const contractResult = await this.mirrorNodeClient.getContractResult(hash,requestId);
+    const contractResult = await this.mirrorNodeClient.getContractResult(hash, requestId);
     if (contractResult === null || contractResult.hash === undefined) {
       return null;
     }
@@ -813,10 +814,10 @@ export class EthImpl implements Eth {
    *
    * @param hash
    */
-  async getTransactionReceipt(hash: string, requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async getTransactionReceipt(hash: string, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
-    const receiptResponse = await this.mirrorNodeClient.getContractResult(hash,requestId);
+    const receiptResponse = await this.mirrorNodeClient.getContractResult(hash, requestId);
     if (receiptResponse === null || receiptResponse.hash === undefined) {
       this.logger.trace(`${requestIdPrefix} no receipt for ${hash}`);
       // block not found
@@ -911,7 +912,7 @@ export class EthImpl implements Eth {
    * @param tag null, a number, or 'latest', 'pending', or 'earliest'
    * @private
    */
-  private async translateBlockTag(tag: string | null, requestId?: number): Promise<number> {
+  private async translateBlockTag(tag: string | null, requestId?: string): Promise<number> {
     if (tag === null || tag === 'latest' || tag === 'pending') {
       return Number(await this.blockNumber(requestId));
     } else if (tag === 'earliest') {
@@ -931,19 +932,19 @@ export class EthImpl implements Eth {
    * @param blockHashOrNumber
    * @param showDetails
    */
-  private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: number): Promise<Block | null> {
+  private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: string): Promise<Block | null> {
     let blockResponse: any;
     if (blockHashOrNumber == null || blockHashOrNumber == 'latest' || blockHashOrNumber == 'pending') {
       const blockPromise = this.mirrorNodeClient.getLatestBlock(requestId);
       const blockAnswer = await blockPromise;
       blockResponse = blockAnswer.blocks[0];
     } else if (blockHashOrNumber == 'earliest') {
-      blockResponse = await this.mirrorNodeClient.getBlock(0,requestId);
+      blockResponse = await this.mirrorNodeClient.getBlock(0, requestId);
     } else if (blockHashOrNumber.length < 32) {
       // anything less than 32 characters is treated as a number
-      blockResponse = await this.mirrorNodeClient.getBlock(Number(blockHashOrNumber),requestId);
+      blockResponse = await this.mirrorNodeClient.getBlock(Number(blockHashOrNumber), requestId);
     } else {
-      blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber,requestId);
+      blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber, requestId);
     }
 
     if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
@@ -953,7 +954,7 @@ export class EthImpl implements Eth {
 
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
-    const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams },undefined,requestId);
+    const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams },undefined, requestId);
 
     if (contractResults === null || contractResults.results === undefined) {
       // contract result not found
@@ -977,7 +978,7 @@ export class EthImpl implements Eth {
 
       // depending on stage of contract execution revert the result.to value may be null
       if (!_.isNil(result.to)) {
-        const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp,requestId);
+        const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
         if (transaction !== null) {
           if (showDetails) {
             transactionObjects.push(transaction);
@@ -1024,7 +1025,7 @@ export class EthImpl implements Eth {
     return EthImpl.numberTo0x(block.count);
   }
 
-  private getTransactionFromContractResults(contractResults: any, requestId?: number) {
+  private getTransactionFromContractResults(contractResults: any, requestId?: string) {
     if (contractResults.results === undefined) {
       // contract result not found
       return null;
@@ -1039,10 +1040,10 @@ export class EthImpl implements Eth {
     return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp, requestId);
   }
 
-  private async getTransactionFromContractResult(to: string, timestamp: string, requestId?: number): Promise<Transaction | null> {
+  private async getTransactionFromContractResult(to: string, timestamp: string, requestId?: string): Promise<Transaction | null> {
     // call mirror node by id and timestamp for further details
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
-    return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp,requestId)
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp, requestId)
       .then(contractResultDetails => {
         const rSig = contractResultDetails.r === null ? null : contractResultDetails.r.substring(0, 66);
         const sSig = contractResultDetails.s === null ? null : contractResultDetails.s.substring(0, 66);
@@ -1077,11 +1078,11 @@ export class EthImpl implements Eth {
       });
   }
 
-  async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | null, topics: any[] | null, requestId?: number): Promise<Log[]> {
+  async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
     const params: any = {};
     if (blockHash) {
       try {
-        const block = await this.mirrorNodeClient.getBlock(blockHash,requestId);
+        const block = await this.mirrorNodeClient.getBlock(blockHash, requestId);
         if (block) {
           params.timestamp = [
             `gte:${block.timestamp.from}`,
@@ -1109,7 +1110,7 @@ export class EthImpl implements Eth {
         filters.push(`gte:${parseInt(fromBlock)}`);
         order = constants.ORDER.ASC;
       }
-      const blocksResult = await this.mirrorNodeClient.getBlocks(filters, undefined, {order},requestId);
+      const blocksResult = await this.mirrorNodeClient.getBlocks(filters, undefined, {order}, requestId);
 
       const blocks = blocksResult?.blocks;
       if (blocks?.length) {

@@ -25,6 +25,7 @@ import { EthImpl } from './eth';
 import { Logger } from 'pino';
 import constants from './constants';
 import { Transaction } from 'ethers';
+import { formatRequestIdMessage } from '../formatters';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
@@ -55,7 +56,7 @@ export class Precheck {
    * @param transaction
    * @param gasPrice
    */
-  async sendRawTransactionCheck(transaction: string, gasPrice: number, requestId?: number) {
+  async sendRawTransactionCheck(transaction: string, gasPrice: number, requestId?: string) {
     const parsedTx = Precheck.parseTxIfNeeded(transaction);
 
     this.gasLimit(parsedTx, requestId);
@@ -69,7 +70,7 @@ export class Precheck {
   /**
    * @param tx
    */
-  async nonce(tx: Transaction, requestId?: number) {
+  async nonce(tx: Transaction, requestId?: string) {
     const rsTx = await ethers.utils.resolveProperties({
       gasPrice: tx.gasPrice,
       gasLimit: tx.gasLimit,
@@ -96,8 +97,8 @@ export class Precheck {
   /**
    * @param tx
    */
-  chainId(tx: Transaction, requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  chainId(tx: Transaction, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     const txChainId = EthImpl.prepend0x(Number(tx.chainId).toString(16));
     const passes = txChainId === this.chain;
     if (!passes) {
@@ -110,8 +111,8 @@ export class Precheck {
    * @param tx
    * @param gasPrice
    */
-  gasPrice(tx: Transaction, gasPrice: number, requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  gasPrice(tx: Transaction, gasPrice: number, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     const minGasPrice = ethers.ethers.BigNumber.from(gasPrice);
     const txGasPrice = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
     const passes = txGasPrice.gte(minGasPrice);
@@ -126,8 +127,8 @@ export class Precheck {
    * @param tx
    * @param callerName
    */
-  async balance(tx: Transaction, callerName: string, requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  async balance(tx: Transaction, callerName: string, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     const result = {
       passes: false,
       error: predefined.INSUFFICIENT_ACCOUNT_BALANCE
@@ -137,7 +138,7 @@ export class Precheck {
     let tinybars;
 
     try {
-      const { account }: any = await this.mirrorNodeClient.getAccount(tx.from!,requestId);
+      const { account }: any = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
       tinybars = await this.sdkClient.getAccountBalanceInTinyBar(account, callerName, requestId);
 
       result.passes = ethers.ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
@@ -155,8 +156,8 @@ export class Precheck {
   /**
    * @param tx
    */
-  gasLimit(tx: Transaction, requestId?: number) {
-    const requestIdPrefix = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  gasLimit(tx: Transaction, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     const gasLimit = tx.gasLimit.toNumber();
     const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
 

@@ -18,8 +18,17 @@
  *
  */
 
+import constants from "./lib/constants";
+
 const hashNumber = (num) => {
   return '0x' + num.toString(16);
 };
 
-export { hashNumber };
+  /**
+   * Format message prefix for logger.
+   */
+const formatRequestIdMessage = (requestId?: string): string => {
+    return requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+}
+
+export { hashNumber, formatRequestIdMessage };
