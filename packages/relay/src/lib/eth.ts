@@ -471,9 +471,7 @@ export class EthImpl implements Eth {
         .catch( (e: any) => {
           this.logger.error(
             e,
-            `${requestIdPrefix} Failed to retrieve contract result details for contract address %s at timestamp=%s`,
-            address,
-            contractResult.results[0].timestamp,
+            `${requestIdPrefix} Failed to retrieve contract result details for contract address ${address} at timestamp=${contractResult.results[0].timestamp}`,
           );
           throw e;  
         });
@@ -1045,11 +1043,11 @@ export class EthImpl implements Eth {
     let blockResponse: any;
     // Determine if the latest block should be returned and if not then just return null
     if (!returnLatest && 
-      (blockNumberOrTag == null || blockNumberOrTag == 'latest' || blockNumberOrTag == 'pending')) {
+      (blockNumberOrTag == null || blockNumberOrTag === 'latest' || blockNumberOrTag === 'pending')) {
       return null;
     }
 
-    if (blockNumberOrTag == null || blockNumberOrTag == 'latest' || blockNumberOrTag == 'pending') {
+    if (blockNumberOrTag == null || blockNumberOrTag === 'latest' || blockNumberOrTag === 'pending') {
       const blockPromise = this.mirrorNodeClient.getLatestBlock();
       const blockAnswer = await blockPromise;
       blockResponse = blockAnswer.blocks[0];
