@@ -448,7 +448,8 @@ export class EthImpl implements Eth {
    * @param slot
    * @param blockNumberOrTag
    */
-  async getStorageAt(address: string, slot: string, blockNumberOrTag?: string | null) : Promise<string> {
+  async getStorageAt(address: string, slot: string, blockNumberOrTag?: string | null, requestId?: string) : Promise<string> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
     const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false);
     const blockEndTimestamp = blockResponse?.timestamp?.to;
@@ -470,7 +471,7 @@ export class EthImpl implements Eth {
         .catch( (e: any) => {
           this.logger.error(
             e,
-            'Failed to retrieve contract result details for contract address %s at timestamp=%s',
+            `${requestIdPrefix} Failed to retrieve contract result details for contract address %s at timestamp=%s`,
             address,
             contractResult.results[0].timestamp,
           );
@@ -995,7 +996,7 @@ export class EthImpl implements Eth {
    * @param blockHashOrNumber
    * @param showDetails
    */
-  private async getBlock(blockHashOrNumber: string, showDetails: boolean): Promise<Block | null> {
+  private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: string ): Promise<Block | null> {
     const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true);
 
     const timestampRange = blockResponse.timestamp;
