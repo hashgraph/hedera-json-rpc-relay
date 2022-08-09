@@ -53,4 +53,5 @@ export default {
     TX_DEFAULT_GAS: 400_000,
     TX_CREATE_EXTRA: 32_000,
     TX_DATA_ZERO_COST: 4,
+    REQUEST_ID_STRING: `Request ID: `
 };
