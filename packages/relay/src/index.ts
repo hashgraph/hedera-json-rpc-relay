@@ -46,75 +46,75 @@ export interface Net {
 
 export interface Eth {
 
-  blockNumber(): Promise<string>;
+  blockNumber(requestId?: string): Promise<string>;
 
-  call(call: any, blockParam: string | null): Promise<string | JsonRpcError>;
+  call(call: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError>;
 
-  coinbase(): JsonRpcError;
+  coinbase(requestId?: string): JsonRpcError;
 
-  estimateGas(transaction:any, blockParam: string| null): Promise<string>;
+  estimateGas(transaction:any, blockParam: string| null, requestId?: string): Promise<string>;
 
-  gasPrice(): Promise<string>;
+  gasPrice(requestId?: string): Promise<string>;
 
-  getBalance(account: string, blockNumber: string | null): Promise<string>;
+  getBalance(account: string, blockNumber: string | null, requestId?: string): Promise<string>;
 
-  getBlockByHash(hash: string, showDetails: boolean): Promise<Block | null>;
+  getBlockByHash(hash: string, showDetails: boolean, requestId?: string): Promise<Block | null>;
 
-  getBlockByNumber(blockNum: string, showDetails: boolean): Promise<Block | null>;
+  getBlockByNumber(blockNum: string, showDetails: boolean, requestId?: string): Promise<Block | null>;
 
-  getBlockTransactionCountByHash(hash: string): Promise<string | null>;
+  getBlockTransactionCountByHash(hash: string, requestId?: string): Promise<string | null>;
 
-  getBlockTransactionCountByNumber(blockNum: string): Promise<string | null>
+  getBlockTransactionCountByNumber(blockNum: string, requestId?: string): Promise<string | null>
   
-  getCode(address: string, blockNumber: string | null): Promise<string>;
+  getCode(address: string, blockNumber: string | null, requestId?: string): Promise<string>;
 
-  chainId(): string;
+  chainId(requestId?: string): string;
 
-  getLogs(blockHash: string|null, fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null): Promise<Log[]>;
+  getLogs(blockHash: string|null, fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null, requestId?: string): Promise<Log[]>;
 
   getStorageAt(address: string, slot: string, blockNumber: string|null): Promise<string>;
 
-  getTransactionByBlockHashAndIndex(hash: string, index: number): Promise<Transaction | null>;
+  getTransactionByBlockHashAndIndex(hash: string, index: number, requestId?: string): Promise<Transaction | null>;
 
-  getTransactionByBlockNumberAndIndex(blockNum: string, index: number): Promise<Transaction | null>;
+  getTransactionByBlockNumberAndIndex(blockNum: string, index: number, requestId?: string): Promise<Transaction | null>;
 
-  getTransactionByHash(hash: string): Promise<Transaction | null>;
+  getTransactionByHash(hash: string, requestId?: string): Promise<Transaction | null>;
   
-  getTransactionCount(address: string, blocknum: string): Promise<string | JsonRpcError>;
+  getTransactionCount(address: string, blocknum: string, requestId?: string): Promise<string | JsonRpcError>;
 
-  getTransactionReceipt(hash: string): Promise<Receipt | null>;
+  getTransactionReceipt(hash: string, requestId?: string): Promise<Receipt | null>;
 
-  getUncleByBlockHashAndIndex(): Promise<any>;
+  getUncleByBlockHashAndIndex(requestId?: string): Promise<any>;
 
-  getUncleByBlockNumberAndIndex(): Promise<any>;
+  getUncleByBlockNumberAndIndex(requestId?: string): Promise<any>;
 
-  getUncleCountByBlockHash(): Promise<string>;
+  getUncleCountByBlockHash(requestId?: string): Promise<string>;
 
-  getUncleCountByBlockNumber(): Promise<string>;
+  getUncleCountByBlockNumber(requestId?: string): Promise<string>;
 
-  getWork(): JsonRpcError;
+  getWork(requestId?: string): JsonRpcError;
 
-  feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number>|null): Promise<any>;
+  feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number>|null, requestId?: string): Promise<any>;
 
-  hashrate(): Promise<string>;
+  hashrate(requestId?: string): Promise<string>;
 
-  mining(): Promise<boolean>;
+  mining(requestId?: string): Promise<boolean>;
 
-  protocolVersion(): JsonRpcError;
+  protocolVersion(requestId?: string): JsonRpcError;
 
-  sendRawTransaction(transaction: string): Promise<string | JsonRpcError>;
+  sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError>;
 
-  sendTransaction(): JsonRpcError;
+  sendTransaction(requestId?: string): JsonRpcError;
 
-  sign(): JsonRpcError;
+  sign(requestId?: string): JsonRpcError;
 
-  signTransaction(): JsonRpcError;
+  signTransaction(requestId?: string): JsonRpcError;
 
-  submitHashrate(): JsonRpcError;
+  submitHashrate(requestId?: string): JsonRpcError;
 
-  submitWork(): Promise<boolean>;
+  submitWork(requestId?: string): Promise<boolean>;
 
-  syncing(): Promise<boolean>;
+  syncing(requestId?: string): Promise<boolean>;
 
-  accounts(): Array<any>;
+  accounts(requestId?: string): Array<any>;
 }
