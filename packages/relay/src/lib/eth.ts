@@ -428,14 +428,9 @@ export class EthImpl implements Eth {
    */
   async getStorageAt(address: string, slot: string, blockNumberOrTag?: string | null) : Promise<string> {
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
-    const blockEndTimestamp: string | undefined  = await this.getBlockEndTimeStamp(blockNumberOrTag);
-
-    // retrieve the timestamp of the contract
-    const contractResultsParams: IContractResultsParams = blockEndTimestamp 
-      ? { timestamp: `lte:${blockEndTimestamp}` } 
-      : {};
-    const limitOrderParams: ILimitOrderParams = { limit:1, order: 'desc' }; 
-    const contractResult = await this.mirrorNodeClient.getContractResultsByAddress(address, contractResultsParams, limitOrderParams);
+    const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false);
+    const blockEndTimestamp = blockResponse?.timestamp?.to;
+    const contractResult = await this.mirrorNodeClient.getLatestContractResultsByAddress(address, blockEndTimestamp, 1);
 
     if (contractResult?.results?.length > 0) {
       // retrieve the contract result details 
@@ -443,8 +438,7 @@ export class EthImpl implements Eth {
         .then( contractResultDetails => {
           if(contractResultDetails && contractResultDetails.state_changes) {
             // loop through the state changes to match slot and return value
-            for(const stateChange of contractResultDetails.state_changes) {
-              console.log("Hello");
+            for (const stateChange of contractResultDetails.state_changes) {
               if(stateChange.slot === slot) {
                 result = stateChange.value_written;
               }
@@ -471,7 +465,7 @@ export class EthImpl implements Eth {
    *
    * @param blockNumberOrTag
    */
-   private async getBlockEndTimeStamp(blockNumberOrTag?: string | null): Promise<string | undefined> {
+   private async getBlockEndTimeStamp(blockNumberOrTag?: string | null): Promise<any | undefined> {
     let blockEndTimestamp: string | undefined;
     // convert the block number into a timestamp if necessary
     if (blockNumberOrTag && blockNumberOrTag !== 'latest' && blockNumberOrTag !== 'pending') {
@@ -487,7 +481,7 @@ export class EthImpl implements Eth {
 
       if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
         // block not found. 
-        throw predefined.NO_SUITABLE_PEERS;
+        throw predefined.RESOURCE_NO_FOUND;
       }
       blockEndTimestamp = blockResponse.timestamp?.to;
     }
@@ -971,24 +965,7 @@ export class EthImpl implements Eth {
    * @param showDetails
    */
   private async getBlock(blockHashOrNumber: string, showDetails: boolean): Promise<Block | null> {
-    let blockResponse: any;
-    if (blockHashOrNumber == null || blockHashOrNumber == 'latest' || blockHashOrNumber == 'pending') {
-      const blockPromise = this.mirrorNodeClient.getLatestBlock();
-      const blockAnswer = await blockPromise;
-      blockResponse = blockAnswer.blocks[0];
-    } else if (blockHashOrNumber == 'earliest') {
-      blockResponse = await this.mirrorNodeClient.getBlock(0);
-    } else if (blockHashOrNumber.length < 32) {
-      // anything less than 32 characters is treated as a number
-      blockResponse = await this.mirrorNodeClient.getBlock(Number(blockHashOrNumber));
-    } else {
-      blockResponse = await this.mirrorNodeClient.getBlock(blockHashOrNumber);
-    }
-
-    if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
-      // block not found
-      return null;
-    }
+    const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true);
 
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
@@ -1052,6 +1029,41 @@ export class EthImpl implements Eth {
       transactionsRoot: transactionArray.length == 0 ? EthImpl.ethEmptyTrie : blockHash,
       uncles: [],
     });
+  }
+
+  /**
+   * returns the block response  
+   * otherwise return undefined.
+   *
+   * @param blockNumberOrTag
+   * @param returnLatest
+   */
+  private async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean): Promise<any | null> {
+    let blockResponse: any;
+    // Determine if the latest block should be returned and if not then just return null
+    if (!returnLatest && 
+      (blockNumberOrTag == null || blockNumberOrTag == 'latest' || blockNumberOrTag == 'pending')) {
+      return null;
+    }
+
+    if (blockNumberOrTag == null || blockNumberOrTag == 'latest' || blockNumberOrTag == 'pending') {
+      const blockPromise = this.mirrorNodeClient.getLatestBlock();
+      const blockAnswer = await blockPromise;
+      blockResponse = blockAnswer.blocks[0];
+    } else if (blockNumberOrTag == 'earliest') {
+      blockResponse = await this.mirrorNodeClient.getBlock(0);
+    } else if (blockNumberOrTag.length < 32) {
+      // anything less than 32 characters is treated as a number
+      blockResponse = await this.mirrorNodeClient.getBlock(Number(blockNumberOrTag));
+    } else {
+      blockResponse = await this.mirrorNodeClient.getBlock(blockNumberOrTag);
+    }
+    if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
+      // block not found. 
+      throw predefined.RESOURCE_NO_FOUND;
+    }
+
+    return blockResponse;
   }
 
   private static getTransactionCountFromBlockResponse(block: any) {

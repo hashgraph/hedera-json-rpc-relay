@@ -324,6 +324,15 @@ export class MirrorNodeClient {
             .replace(MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);
     }
 
+    public async getLatestContractResultsByAddress(address: string, blockEndTimestamp: string | undefined, limit: number) {
+        // retrieve the timestamp of the contract
+        const contractResultsParams: IContractResultsParams = blockEndTimestamp 
+            ? { timestamp: `lte:${blockEndTimestamp}` } 
+            : {};
+        const limitOrderParams: ILimitOrderParams = this.getLimitOrderQueryParam(limit, 'desc'); 
+        return await this.getContractResultsByAddress(address, contractResultsParams, limitOrderParams);
+    }
+
     getQueryParams(params: object) {
         let paramString = '';
         for (const [key, value] of Object.entries(params)) {

@@ -1548,13 +1548,13 @@ describe('Eth calls using MirrorNode', async function () {
         const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));  
       } catch (e: any) {
         hasError = true;
-        expect(e.code).to.equal(-32000);
-        expect(e.name).to.equal('No suitable peers available');
+        expect(e.code).to.equal(-32001);
+        expect(e.name).to.equal('Resource not found');
       }
       expect(hasError).to.be.true;
     });
 
-    it('eth_getStorageAt with match with block', async function () {
+    it('eth_getStorageAt should throw error when contract not found', async function () {
       // mirror node request mocks
       mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
       mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);

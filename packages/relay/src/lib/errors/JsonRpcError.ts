@@ -111,9 +111,9 @@ export const predefined = {
     code: -32010,
     message: 'Request timeout. Please try again.'
   }),
-  'NO_SUITABLE_PEERS': new JsonRpcError({
-    name: 'No suitable peers available',
-    code: -32000,
-    message: 'No suitable peers available'
+  'RESOURCE_NO_FOUND': new JsonRpcError({
+    name: 'Resource not found',
+    code: -32001,
+    message: 'Requested resource not found'
   }),
 };
