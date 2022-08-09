@@ -433,7 +433,7 @@ describe('MirrorNodeClient', async function () {
     const address = '0x0000000000000000000000000000000000001f41';
     mock.onGet(`contracts/${address}/results?timestamp=lte:987654.000123456&limit=2&order=desc`).reply(200, { results: [contractResult], links: { next: null } });
 
-    const result = await mirrorNodeInstance.getLatestContractResultsByAddress(address, "987654.000123456", 3);
+    const result = await mirrorNodeInstance.getLatestContractResultsByAddress(address, "987654.000123456", 2);
     expect(result).to.exist;
     expect(result.links).to.exist;
     expect(result.links.next).to.equal(null);
