@@ -39,9 +39,9 @@ describe('HTS Precompile Acceptance Tests', async function() {
   let HTSTokenContract;
 
   before(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(40, relay.provider);
-    accounts[1] = await servicesNode.createAliasAccount(10, relay.provider);
-    accounts[2] = await servicesNode.createAliasAccount(10, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(30, relay.provider);
+    accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
+    accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
     baseHTSContract = await deployBaseHTSContract();
     HTSTokenContract = await createHTSToken();
