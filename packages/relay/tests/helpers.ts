@@ -133,7 +133,9 @@ export const defaultBlock = {
     'timestamp': {
         'from': '1651560386.060890949',
         'to': '1651560389.060890949'
-    }
+    },
+    'gas_used': gasUsed1 + gasUsed2,
+    'logs_bloom': '0x'
 };
 export const defaultContractResults = {
     'results': [

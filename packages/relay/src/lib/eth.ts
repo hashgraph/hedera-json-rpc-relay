@@ -69,7 +69,7 @@ export class EthImpl implements Eth {
   static ethGetTransactionCount = 'eth_getTransactionCount';
   static ethSendRawTransaction = 'eth_sendRawTransaction';
 
-  // block constants 
+  // block constants
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
@@ -446,7 +446,7 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Gets the value from a storage position at the given Ethereum address. 
+   * Gets the value from a storage position at the given Ethereum address.
    *
    * @param address
    * @param slot
@@ -460,7 +460,7 @@ export class EthImpl implements Eth {
     const contractResult = await this.mirrorNodeClient.getLatestContractResultsByAddress(address, blockEndTimestamp, 1);
 
     if (contractResult?.results?.length > 0) {
-      // retrieve the contract result details 
+      // retrieve the contract result details
       await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
         .then( contractResultDetails => {
           if(contractResultDetails && contractResultDetails.state_changes) {
@@ -477,7 +477,7 @@ export class EthImpl implements Eth {
             e,
             `${requestIdPrefix} Failed to retrieve contract result details for contract address ${address} at timestamp=${contractResult.results[0].timestamp}`,
           );
-          throw e;  
+          throw e;
         });
     }
 
@@ -975,27 +975,20 @@ export class EthImpl implements Eth {
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
     const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams },undefined, requestId);
+    const maxGasLimit = constants.BLOCK_GAS_LIMIT;
+    const gasUsed = blockResponse.gas_used;
 
     if (contractResults === null || contractResults.results === undefined) {
       // contract result not found
       return null;
     }
 
-    // loop over contract function results to calculated aggregated datapoints
-    let gasUsed = 0;
-    let maxGasLimit = 0;
-    let timestamp = 0;
+    // The consensus timestamp of the block, with the nanoseconds part omitted.
+    const timestamp = timestampRange.from.substring(0, timestampRange.from.indexOf('.'));
     const transactionObjects: Transaction[] = [];
     const transactionHashes: string[] = [];
 
     for (const result of contractResults.results) {
-      maxGasLimit = result.gas_limit > maxGasLimit ? result.gas_limit : maxGasLimit;
-      gasUsed += result.gas_used;
-      if (timestamp === 0) {
-        // The consensus timestamp of the first transaction in the block, with the nanoseconds part omitted.
-        timestamp = result.timestamp.substring(0, result.timestamp.indexOf('.')); // mirrorNode response assures format of ssssssssss.nnnnnnnnn
-      }
-
       // depending on stage of contract execution revert the result.to value may be null
       if (!_.isNil(result.to)) {
         const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
@@ -1037,7 +1030,7 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * returns the block response  
+   * returns the block response
    * otherwise return undefined.
    *
    * @param blockNumberOrTag
@@ -1046,7 +1039,7 @@ export class EthImpl implements Eth {
   private async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean): Promise<any | null> {
     let blockResponse: any;
     // Determine if the latest block should be returned and if not then just return null
-    if (!returnLatest && 
+    if (!returnLatest &&
       (blockNumberOrTag == null || blockNumberOrTag === EthImpl.blockLatest || blockNumberOrTag === EthImpl.blockPending)) {
       return null;
     }
@@ -1064,7 +1057,7 @@ export class EthImpl implements Eth {
       blockResponse = await this.mirrorNodeClient.getBlock(blockNumberOrTag);
     }
     if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
-      // block not found. 
+      // block not found.
       throw predefined.RESOURCE_NOT_FOUND;
     }
 

@@ -32,6 +32,7 @@ export default class Assertions {
     static defaultGasPrice = 720_000_000_000;
     static datedGasPrice = 570_000_000_000;
     static updatedGasPrice = 640_000_000_000;
+    static maxBlockGasLimit = 15_000_000;
     static defaultGasUsed = 0.5;
 
     static assertId = (id) => {
@@ -80,6 +81,7 @@ export default class Assertions {
         expect(relayResponse.uncles).to.be.exist;
         expect(relayResponse.uncles.length).to.eq(0);
         expect(relayResponse.logsBloom).to.eq(Assertions.emptyBloom);
+        expect(relayResponse.gasLimit).to.equal(ethers.utils.hexValue(Assertions.maxBlockGasLimit));
 
         // Assert dynamic values
         expect(relayResponse.hash).to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
@@ -87,23 +89,8 @@ export default class Assertions {
         expect(relayResponse.transactions.length).to.equal(mirrorTransactions.length);
         expect(relayResponse.parentHash).to.equal(mirrorNodeResponse.previous_hash.slice(0, 66));
         expect(relayResponse.size).to.equal(ethers.utils.hexValue(mirrorNodeResponse.size | 0));
-
-        let maxGasLimit = 0;
-        let gasUsed = 0;
-        let timestamp = 0;
-
-        for (const result of mirrorTransactions) {
-            maxGasLimit = result.gas_limit > maxGasLimit ? result.gas_limit : maxGasLimit;
-            gasUsed += result.gas_used;
-            if (timestamp === 0) {
-                timestamp = result.timestamp.substring(0, result.timestamp.indexOf('.'));
-            }
-        }
-
-        expect(relayResponse.gasLimit).to.equal(ethers.utils.hexValue(maxGasLimit));
-        expect(relayResponse.gasUsed).to.equal(ethers.utils.hexValue(gasUsed));
-        expect(relayResponse.timestamp).to.equal(ethers.utils.hexValue(Number(timestamp)));
-
+        expect(relayResponse.gasUsed).to.equal(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
+        expect(relayResponse.timestamp).to.equal(ethers.utils.hexValue(Number(mirrorNodeResponse.timestamp.from.split('.')[0])));
         if (relayResponse.transactions.length) {
             expect(relayResponse.transactionsRoot).to.equal(mirrorNodeResponse.hash.slice(0, 66));
         }
