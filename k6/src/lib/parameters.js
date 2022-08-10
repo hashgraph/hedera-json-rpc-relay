@@ -21,11 +21,9 @@
 import http from 'k6/http';
 
 import {
-  accountListName,
-  contractListName, messageListName,
-  nftListName,
-  scheduleListName,
-  tokenListName,
+  blocksListName,
+  logListName,
+  resultListName,
   transactionListName
 } from "./constants.js";
 
@@ -73,115 +71,56 @@ const computeProperties = (propertyList, fallback) => {
   return Object.assign(copyResult.envProperties, fallback());
 }
 
-export const computeAccountParameters = (configuration) =>
+export const computeLatestContractResultParameters = (configuration) =>
   computeProperties(
-    ['DEFAULT_ACCOUNT_ID', 'DEFAULT_ACCOUNT_BALANCE', 'DEFAULT_PUBLIC_KEY'],
+    ['DEFAULT_ENTITY_FROM', 'DEFAULT_TIMESTAMP', 'DEFAULT_ENTITY_TO'],
     () => {
-      const accountPath = `${configuration.baseApiUrl}/accounts?balance=true&limit=1&order=desc`;
-      const firstAccount = getFirstEntity(accountPath, accountListName);
+      const contractResultPath = `${configuration.baseApiUrl}/contracts/results?limit=1&order=desc`;
+      const firstResult = getFirstEntity(contractResultPath, resultListName);
+      console.log(`*** latest contract result ${JSON.stringify(firstResult)}`);
       return {
-        DEFAULT_ACCOUNT_ID: firstAccount.account,
-        DEFAULT_ACCOUNT_BALANCE: firstAccount.balance.balance || 0,
-        DEFAULT_PUBLIC_KEY: firstAccount.key.key
+        DEFAULT_ENTITY_FROM: firstResult.from,
+        DEFAULT_TIMESTAMP: firstResult.timestamp,
+        DEFAULT_ENTITY_TO: firstResult.to
       };
     });
 
-export const computeContractParameters = (configuration) =>
+export const computeLatestEthereumTransactionParameters = (configuration) =>
   computeProperties(
-    ['DEFAULT_CONTRACT_ID', 'DEFAULT_CONTRACT_TIMESTAMP'],
+    ['DEFAULT_ETH_TRANSACTION_ID'],
     () => {
-      const contractPath = `${configuration.baseApiUrl}/contracts?limit=1&order=desc`;
-      const firstContract = getFirstEntity(contractPath, contractListName)
+      const transactionResultPath = `${configuration.baseApiUrl}/transactions?transactiontype=ethereumtransaction&limit=1&order=desc&result=success`;
+      const firstResult = getFirstEntity(transactionResultPath, transactionListName);
+      console.log(`*** latest ethereum transaction result ${JSON.stringify(firstResult)}`);
       return {
-        DEFAULT_CONTRACT_ID: firstContract.contract_id,
-        DEFAULT_CONTRACT_TIMESTAMP: firstContract.created_timestamp
+        DEFAULT_ETH_TRANSACTION_ID: firstResult.transaction_id
       };
-    }
-  );
+    });
 
-export const computeNftParameters = (configuration) => {
-  const tokenProperties = computeProperties(
-    ['DEFAULT_NFT_ID'],
-    () => {
-      const tokenPath = `${configuration.baseApiUrl}/tokens?type=NON_FUNGIBLE_UNIQUE&limit=1&order=desc`;
-      const firstNftFromTokenList = getFirstEntity(tokenPath, tokenListName);
-      return {DEFAULT_NFT_ID: firstNftFromTokenList.token_id};
-    }
-  );
-
-  const nftProperties = computeProperties(
-    ['DEFAULT_NFT_SERIAL'],
-    () => {
-      const nftPath = `${configuration.baseApiUrl}/tokens/${tokenProperties.DEFAULT_NFT_ID}/nfts?limit=1&order=desc`;
-      const firstNft = getFirstEntity(nftPath, nftListName);
-      return {DEFAULT_NFT_SERIAL: firstNft.serial_number};
-    }
-  );
-
-  return Object.assign(tokenProperties, nftProperties)
-};
-
-export const computeScheduleParameters = (configuration) =>
+export const computeLatestLogParameters = (configuration) =>
   computeProperties(
-    ['DEFAULT_SCHEDULE_ACCOUNT_ID', 'DEFAULT_SCHEDULE_ID'],
+    ['DEFAULT_CONTRACT_ADDRESS', 'DEFAULT_LOG_TIMESTAMP'],
     () => {
-      const schedulePath = `${configuration.baseApiUrl}/schedules?limit=1&order=desc`;
-      const firstSchedule = getFirstEntity(schedulePath, scheduleListName);
+      const logResultPath = `${configuration.baseApiUrl}/contracts/results/logs?limit=1&order=desc`;
+      const firstResult = getFirstEntity(logResultPath, logListName);
+      console.log(`*** latest log result ${JSON.stringify(firstResult)}`);
       return {
-        DEFAULT_SCHEDULE_ACCOUNT_ID: firstSchedule.creator_account_id,
-        DEFAULT_SCHEDULE_ID: firstSchedule.schedule_id
+        DEFAULT_CONTRACT_ADDRESS: firstResult.address,
+        DEFAULT_LOG_TIMESTAMP: firstResult.timestamp
       };
-    }
-  );
+    });
 
-export const computeFungibleTokenParameters = (configuration) =>
+export const computeLatestBlockParameters = (configuration) =>
   computeProperties(
-    ['DEFAULT_TOKEN_ID'],
+    ['DEFAULT_BLOCK_HASH'],
     () => {
-      const tokenPath = `${configuration.baseApiUrl}/tokens?type=FUNGIBLE_COMMON&limit=1&order=desc`;
-      const firstToken = getFirstEntity(tokenPath, tokenListName);
+      const blockPath = `${configuration.baseApiUrl}/blocks?limit=1&order=desc`;
+      const firstResult = getFirstEntity(blockPath, blocksListName);
+      console.log(`*** latest block result ${JSON.stringify(firstResult)}`);
       return {
-        DEFAULT_TOKEN_ID: firstToken.token_id,
+        DEFAULT_CONTRACT_ID: firstResult.hash
       };
-    }
-  );
-
-export const computeTransactionParameters = (configuration) =>
-  computeProperties(
-    ['DEFAULT_TRANSACTION_ID'],
-    () => {
-      const tokenPath = `${configuration.baseApiUrl}/transactions?limit=1&transactiontype=cryptotransfer&order=desc`;
-      const firstTransaction = getFirstEntity(tokenPath, transactionListName)
-      return {
-        DEFAULT_TRANSACTION_ID: firstTransaction.transaction_id
-      };
-    }
-  );
-
-export const computeTopicInfo = (configuration) => {
-  const transactionProperties = computeProperties(
-    ['DEFAULT_TOPIC_ID'],
-    () => {
-      const transactionPath = `${configuration.baseApiUrl}/transactions?transactiontype=CONSENSUSSUBMITMESSAGE&result=success&limit=1&order=desc`;
-      const DEFAULT_TOPIC_ID = getFirstEntity(transactionPath, transactionListName).entity_id;
-      return {DEFAULT_TOPIC_ID};
-    }
-  );
-
-  const topicProperties = computeProperties(
-    ['DEFAULT_TOPIC_SEQUENCE', 'DEFAULT_TOPIC_TIMESTAMP'],
-    () => {
-      const topicMessagePath = `${configuration.baseApiUrl}/topics/${transactionProperties.DEFAULT_TOPIC_ID}/messages`;
-      const firstTopicMessage = getFirstEntity(topicMessagePath, messageListName);
-      return {
-        DEFAULT_TOPIC_SEQUENCE: firstTopicMessage.sequence_number,
-        DEFAULT_TOPIC_TIMESTAMP: firstTopicMessage.consensus_timestamp
-      };
-    }
-  );
-
-  return Object.assign(transactionProperties, topicProperties);
-};
+    });
 
 export const computeBlockFromNetwork = (rosettaApiUrl, network) =>
   computeProperties(
@@ -205,44 +144,6 @@ export const computeBlockFromNetwork = (rosettaApiUrl, network) =>
       };
     }
   );
-
-export const computeTransactionFromBlock = (rosettaApiUrl, networkIdentifier, blockIdentifier) =>
-  computeProperties(
-    ['DEFAULT_TRANSACTION_HASH'],
-    () => {
-      const requestUrl = `${rosettaApiUrl}/rosetta/block`;
-      const requestBody = {
-        network_identifier: networkIdentifier,
-        block_identifier: blockIdentifier
-      };
-      const response = getValidResponse(requestUrl, requestBody, http.post);
-      const transactions = response.block.transactions;
-      if (!transactions || transactions.length === 0) {
-        throw new Error(`It was not possible to find a transaction with the block identifier: ${JSON.stringify(blockIdentifier)}`);
-      }
-      return {
-        DEFAULT_TRANSACTION_HASH: transactions[0].transaction_identifier.hash
-      };
-    }
-  );
-
-
-export const computeNetworkInfo = (rosettaApiUrl) =>
-  computeProperties(
-    ['DEFAULT_NETWORK'],
-    () => {
-      const requestUrl = `${rosettaApiUrl}/rosetta/network/list`;
-      const response = getValidResponse(requestUrl, {"metadata": {}}, http.post);
-      const networks = response.network_identifiers;
-      if (networks.length === 0) {
-        throw new Error(`It was not possible to find a network at ${rosettaApiUrl}`);
-      }
-      return {
-        DEFAULT_NETWORK: networks[0].network
-      };
-    }
-  );
-
 
 export const setDefaultValuesForEnvParameters = () => {
   __ENV['BASE_URL'] = __ENV['BASE_URL'] || 'http://localhost';

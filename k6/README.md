@@ -1,8 +1,7 @@
 
 # K6 Performance Tests
 
-This module covers the [k6](https://k6.io/) based performance tests for Mirror Node APIs including rest, rosetta,
-and web3.
+This module covers the [k6](https://k6.io/) based performance tests for the Hedera JSON RPC Relay.
 
 ## Install k6
 
@@ -11,8 +10,8 @@ the [official documentation](https://k6.io/docs/getting-started/installation/) t
 
 ## Run The Tests
 
-The tests are organized per API, and they reside in `src/rest`, `src/rosetta`, and `src/web3` respectively. You can run
-the tests of an API as a test suite. You can also run tests one at a time.
+The tests are organized in files matching their method.
+You can run the tests of an API as a test suite, you can also run tests one at a time.
 
 ### Test Suite
 
@@ -21,7 +20,7 @@ To run a test suite, such as rest, use the following command.
 ```shell
 DEFAULT_DURATION=1s \
 DEFAULT_VUS=1 \
-BASE_URL=https://testnet.hashio.io \
+BASE_URL=https://testnet.hashio.io/api \
 DEFAULT_LIMIT=100 k6 run src/rest/apis.js
 ```
 
