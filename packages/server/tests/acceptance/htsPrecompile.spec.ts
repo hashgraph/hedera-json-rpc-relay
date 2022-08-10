@@ -42,17 +42,11 @@ describe('HTS Precompile Acceptance Tests', async function() {
     accounts[0] = await servicesNode.createAliasAccount(40, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(10, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(10, relay.provider);
-  });
 
-  it('should deploy a BaseHTS contract', async function() {
     const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, accounts[0].wallet);
     const baseHTS = await baseHTSFactory.deploy();
     const { contractAddress } = await baseHTS.deployTransaction.wait();
-    expect(contractAddress).to.not.be.null;
-
     baseHTSContract = new ethers.Contract(contractAddress, BaseHTSJson.abi, accounts[0].wallet);
-    expect(baseHTSContract).to.not.be.null;
-    expect(baseHTSContract.address).to.equal(contractAddress);
   });
 
   it('should create a HTS token', async function() {
