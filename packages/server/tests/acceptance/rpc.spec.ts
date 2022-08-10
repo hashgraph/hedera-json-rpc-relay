@@ -1104,23 +1104,23 @@ describe('RPC Server Acceptance Tests', function () {
                     Assertions.feeHistory(res, {
                         resultCount: blockCountNumber,
                         oldestBlock: oldestBlockNumberHex,
-                        chechReward: true
+                        checkReward: true
                     });
-
-                    expect(res.baseFeePerGas[0]).to.equal(datedGasPriceHex);
+                    // We expect all values in the array to be from the mirror node. If there is discrepancy in the blocks, the first value is from the consensus node and it's different from expected.
+                    expect(res.baseFeePerGas[1]).to.equal(datedGasPriceHex);
                     expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
                     expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
                 });
 
                 it('should call eth_feeHistory with newest block > latest', async function () {
                     let latestBlock;
-                    const newestBlockNumber = lastBlockAfterUpdate.number + 10;
-                    const newestBlockNumberHex = ethers.utils.hexValue(newestBlockNumber);
+                    const blocksAhead = 10;
                     try {
                         latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                        const newestBlockNumberHex = ethers.utils.hexValue(latestBlock.number + blocksAhead);
                         await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
                     } catch (error) {
-                        Assertions.jsonRpcError(error, predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlock.number));
+                        Assertions.jsonRpcError(error, predefined.REQUEST_BEYOND_HEAD_BLOCK(latestBlock.number + blocksAhead, latestBlock.number));
                     }
                 });
 

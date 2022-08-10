@@ -414,6 +414,36 @@ describe('MirrorNodeClient', async function () {
     expect(firstResult.to).equal(contractResult.to);
   });
 
+  it('`getLatestContractResultsByAddress` by address no timestamp', async () => {
+    const address = '0x0000000000000000000000000000000000001f41';
+    mock.onGet(`contracts/${address}/results?limit=1&order=desc`).reply(200, { results: [contractResult], links: { next: null } });
+
+    const result = await mirrorNodeInstance.getLatestContractResultsByAddress(address, undefined, 1);
+    expect(result).to.exist;
+    expect(result.links).to.exist;
+    expect(result.links.next).to.equal(null);
+    expect(result.results.length).to.gt(0);
+    const firstResult = result.results[0];
+    expect(firstResult.contract_id).equal(detailedContractResult.contract_id);
+    expect(firstResult.function_parameters).equal(contractResult.function_parameters);
+    expect(firstResult.to).equal(contractResult.to);
+  });
+
+  it('`getLatestContractResultsByAddress` by address with timestamp, limit 2', async () => {
+    const address = '0x0000000000000000000000000000000000001f41';
+    mock.onGet(`contracts/${address}/results?timestamp=lte:987654.000123456&limit=2&order=desc`).reply(200, { results: [contractResult], links: { next: null } });
+
+    const result = await mirrorNodeInstance.getLatestContractResultsByAddress(address, "987654.000123456", 2);
+    expect(result).to.exist;
+    expect(result.links).to.exist;
+    expect(result.links.next).to.equal(null);
+    expect(result.results.length).to.gt(0);
+    const firstResult = result.results[0];
+    expect(firstResult.contract_id).equal(detailedContractResult.contract_id);
+    expect(firstResult.function_parameters).equal(contractResult.function_parameters);
+    expect(firstResult.to).equal(contractResult.to);
+  });
+
   const log = {
     'address': '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
     'bloom': '0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398',
