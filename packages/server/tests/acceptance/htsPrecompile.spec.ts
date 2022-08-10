@@ -43,23 +43,27 @@ describe('HTS Precompile Acceptance Tests', async function() {
     accounts[1] = await servicesNode.createAliasAccount(10, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(10, relay.provider);
 
+    baseHTSContract = await deployBaseHTSContract();
+    HTSTokenContract = await createHTSToken();
+  });
+
+  async function deployBaseHTSContract() {
     const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, accounts[0].wallet);
     const baseHTS = await baseHTSFactory.deploy();
     const { contractAddress } = await baseHTS.deployTransaction.wait();
-    baseHTSContract = new ethers.Contract(contractAddress, BaseHTSJson.abi, accounts[0].wallet);
-  });
 
-  it('should create a HTS token', async function() {
+    return new ethers.Contract(contractAddress, BaseHTSJson.abi, accounts[0].wallet);
+  }
+
+  async function createHTSToken() {
     const tx = await baseHTSContract.createToken(accounts[0].wallet.address, {
       value: ethers.BigNumber.from('20000000000000000000'),
       gasLimit: 1000000
     });
     const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
 
-    expect(tokenAddress).to.not.be.null;
-
-    HTSTokenContract = new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[0].wallet);
-  });
+    return new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[0].wallet);
+  }
 
   it('should associate to a token', async function() {
     const baseHTSContractReceiverWalletFirst = new ethers.Contract(baseHTSContract.address, BaseHTSJson.abi, accounts[1].wallet);
