@@ -21,7 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isErrorResponse} from "./common.js";
 
 const url = __ENV.RELAY_BASE_URL;
 
@@ -41,7 +41,7 @@ const httpParams = {
 const {options, run} = new TestScenarioBuilder()
   .name('eth_getWork') // use unique scenario name among all tests
   .request(() => http.post(url, payload, httpParams))
-  .check('eth_getWork', (r) => isNonErrorResponse(r))
+  .check('eth_getWork', (r) => isErrorResponse(r))
   .build();
 
 export {options, run};

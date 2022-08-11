@@ -41,7 +41,7 @@ const httpParams = {
 const {options, run} = new TestScenarioBuilder()
   .name('eth_coinbase') // use unique scenario name among all tests
   .request(() => http.post(url, payload, httpParams))
-  // .check('eth_coinbase', (r) => isErrorResponse(r)) // should return an error
+  .check('eth_coinbase', (r) => isErrorResponse(r))
   .build();
 
 export {options, run};
