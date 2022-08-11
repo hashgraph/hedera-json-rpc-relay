@@ -1,5 +1,6 @@
 setenv DEFAULT_DURATION 60s
 setenv DEFAULT_VUS 1
-setenv BASE_URL https://previewnet.hashio.io/api
+setenv MIRROR_BASE_URL https://testnet.mirrornode.hedera.com/api/v1
+setenv RELAY_BASE_URL https://testnet.hashio.io/api
 setenv DEFAULT_LIMIT 100
 

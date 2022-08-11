@@ -21,7 +21,6 @@
 import http from 'k6/http';
 
 import {
-  blocksListName,
   logListName,
   resultListName,
   transactionListName
@@ -33,7 +32,7 @@ const getValidResponse = (requestUrl, requestBody, httpVerbMethod) => {
     throw new Error(`${response.status} received when requesting ${requestUrl}`);
   }
   return JSON.parse(response.body);
-}
+};
 
 const getFirstEntity = (entityPath, key) => {
   const body = getValidResponse(entityPath, null, http.get);
@@ -61,7 +60,7 @@ const copyEnvParamsFromEnvMap = (propertyList) => {
     allPropertiesFound,
     envProperties
   };
-}
+};
 
 const computeProperties = (propertyList, fallback) => {
   const copyResult = copyEnvParamsFromEnvMap(propertyList);
@@ -69,7 +68,7 @@ const computeProperties = (propertyList, fallback) => {
     return copyResult.envProperties;
   }
   return Object.assign(copyResult.envProperties, fallback());
-}
+};
 
 export const computeLatestContractResultParameters = (configuration) =>
   computeProperties(
@@ -77,23 +76,27 @@ export const computeLatestContractResultParameters = (configuration) =>
     () => {
       const contractResultPath = `${configuration.baseApiUrl}/contracts/results?limit=1&order=desc`;
       const firstResult = getFirstEntity(contractResultPath, resultListName);
-      console.log(`*** latest contract result ${JSON.stringify(firstResult)}`);
+
       return {
-        DEFAULT_ENTITY_FROM: firstResult.from,
+        DEFAULT_ENTITY_FROM: firstResult.from.substring(0, 42),
         DEFAULT_TIMESTAMP: firstResult.timestamp,
-        DEFAULT_ENTITY_TO: firstResult.to
+        DEFAULT_ENTITY_TO: firstResult.to.substring(0, 42)
       };
     });
 
 export const computeLatestEthereumTransactionParameters = (configuration) =>
   computeProperties(
-    ['DEFAULT_ETH_TRANSACTION_ID'],
+    ['DEFAULT_BLOCK_HASH', 'DEFAULT_ETH_TRANSACTION_ID', 'DEFAULT_TRANSACTION_HASH'],
     () => {
       const transactionResultPath = `${configuration.baseApiUrl}/transactions?transactiontype=ethereumtransaction&limit=1&order=desc&result=success`;
       const firstResult = getFirstEntity(transactionResultPath, transactionListName);
-      console.log(`*** latest ethereum transaction result ${JSON.stringify(firstResult)}`);
+      const contractResultPath = `${configuration.baseApiUrl}/contracts/results/${firstResult.transaction_id}`;
+      const secondResult = getValidResponse(contractResultPath, null, http.get);
+
       return {
-        DEFAULT_ETH_TRANSACTION_ID: firstResult.transaction_id
+        DEFAULT_BLOCK_HASH: secondResult.block_hash.substring(0, 66),
+        DEFAULT_ETH_TRANSACTION_ID: firstResult.transaction_id,
+        DEFAULT_TRANSACTION_HASH: secondResult.hash.substring(0, 66)
       };
     });
 
@@ -103,53 +106,19 @@ export const computeLatestLogParameters = (configuration) =>
     () => {
       const logResultPath = `${configuration.baseApiUrl}/contracts/results/logs?limit=1&order=desc`;
       const firstResult = getFirstEntity(logResultPath, logListName);
-      console.log(`*** latest log result ${JSON.stringify(firstResult)}`);
+      
       return {
         DEFAULT_CONTRACT_ADDRESS: firstResult.address,
         DEFAULT_LOG_TIMESTAMP: firstResult.timestamp
       };
     });
 
-export const computeLatestBlockParameters = (configuration) =>
-  computeProperties(
-    ['DEFAULT_BLOCK_HASH'],
-    () => {
-      const blockPath = `${configuration.baseApiUrl}/blocks?limit=1&order=desc`;
-      const firstResult = getFirstEntity(blockPath, blocksListName);
-      console.log(`*** latest block result ${JSON.stringify(firstResult)}`);
-      return {
-        DEFAULT_CONTRACT_ID: firstResult.hash
-      };
-    });
-
-export const computeBlockFromNetwork = (rosettaApiUrl, network) =>
-  computeProperties(
-    ['DEFAULT_BLOCK_INDEX', 'DEFAULT_BLOCK_HASH'],
-    () => {
-      const requestUrl = `${rosettaApiUrl}/rosetta/network/status`;
-      const requestBody = {
-        "network_identifier": {
-          "blockchain": "Hedera",
-          "network": network,
-          "sub_network_identifier": {
-            "network": "shard 0 realm 0"
-          }
-        },
-        "metadata": {}
-      };
-      const response = getValidResponse(requestUrl, requestBody, http.post);
-      return {
-        DEFAULT_BLOCK_INDEX: parseInt(response.current_block_identifier.index),
-        DEFAULT_BLOCK_HASH: response.current_block_identifier.hash
-      };
-    }
-  );
-
 export const setDefaultValuesForEnvParameters = () => {
-  __ENV['BASE_URL'] = __ENV['BASE_URL'] || 'http://localhost';
+  __ENV['MIRROR_BASE_URL'] = __ENV['MIRROR_BASE_URL'] || 'http://localhost:5551';
+  __ENV['RELAY_BASE_URL'] = __ENV['RELAY_BASE_URL'] || 'http://localhost:7546';
   __ENV['DEFAULT_DURATION'] = __ENV['DEFAULT_DURATION'] || '120s';
   __ENV['DEFAULT_VUS'] = __ENV['DEFAULT_VUS'] || 10;
   __ENV['DEFAULT_LIMIT'] = __ENV['DEFAULT_LIMIT'] || 100;
   __ENV['DEFAULT_PASS_RATE'] = __ENV['DEFAULT_PASS_RATE'] || 0.95;
   __ENV['DEFAULT_MAX_DURATION'] = __ENV['DEFAULT_MAX_DURATION'] || 500;
-}
+};

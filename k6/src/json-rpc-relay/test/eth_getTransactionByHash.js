@@ -22,15 +22,9 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {isNonErrorResponse} from "./common.js";
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const url = __ENV.BASE_URL;
-
-const payload = JSON.stringify({
-  id: 1,
-  jsonrpc: "2.0",
-  method: "eth_getTransactionByHash",
-  params: ["0x5a1f36436526ec806ce858da88319142d97edb9e9a71845217ce5bd80564c00f"]
-});
+const url = __ENV.RELAY_BASE_URL;
 
 const httpParams = {
   headers: {
@@ -40,8 +34,18 @@ const httpParams = {
 
 const {options, run} = new TestScenarioBuilder()
   .name('eth_getTransactionByHash') // use unique scenario name among all tests
-  .request(() => http.post(url, payload, httpParams))
+  .request((testParameters) => {
+    const payload = JSON.stringify({
+      id: 1,
+      jsonrpc: "2.0",
+      method: "eth_getTransactionByHash",
+      params: [testParameters.DEFAULT_TRANSACTION_HASH, "0x0"]
+    });
+    return http.post(url, payload, httpParams);
+  })
   .check('eth_getTransactionByHash', (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

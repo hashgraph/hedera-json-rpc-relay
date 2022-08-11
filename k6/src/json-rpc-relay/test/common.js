@@ -36,4 +36,19 @@ function isNonErrorResponse(response) {
   }
 }
 
-export {isNonErrorResponse};
+function isErrorResponse(response) {
+  //instead of doing multiple type checks,
+  //lets just do the normal path and return false,
+  //if an exception happens.
+  try {
+    if (response.status === 200) {
+      return false;
+    }
+    const body = JSON.parse(response.body);
+    return body.hasOwnProperty(errorField) && !body.hasOwnProperty(resultField);
+  } catch (e) {
+    return false;
+  }
+}
+
+export {isErrorResponse, isNonErrorResponse};

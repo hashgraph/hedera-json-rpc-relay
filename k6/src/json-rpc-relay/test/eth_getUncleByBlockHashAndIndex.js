@@ -23,13 +23,13 @@ import http from "k6/http";
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {isNonErrorResponse} from "./common.js";
 
-const url = __ENV.BASE_URL;
+const url = __ENV.RELAY_BASE_URL;
 
 const payload = JSON.stringify({
   id: 1,
   jsonrpc: "2.0",
   method: "eth_getUncleByBlockHashAndIndex",
-  params: ["0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b", "0x0"]
+  params: []
 });
 
 const httpParams = {

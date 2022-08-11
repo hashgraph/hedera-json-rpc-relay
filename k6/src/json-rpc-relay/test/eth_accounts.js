@@ -23,7 +23,7 @@ import http from "k6/http";
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {isNonErrorResponse} from "./common.js";
 
-const url = __ENV.BASE_URL;
+const url = __ENV.RELAY_BASE_URL;
 
 const payload = JSON.stringify({
   id: 1,

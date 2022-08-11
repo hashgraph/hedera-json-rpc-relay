@@ -22,15 +22,9 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {isNonErrorResponse} from "./common.js";
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const url = __ENV.BASE_URL;
-
-const payload = JSON.stringify({
-  id: 1,
-  jsonrpc: "2.0",
-  method: "eth_getBalance",
-  params: ["0xF8A44f9a4E4c452D25F5aE0F5d7970Ac9522a3C8", "latest"]
-});
+const url = __ENV.RELAY_BASE_URL;
 
 const httpParams = {
   headers: {
@@ -40,8 +34,18 @@ const httpParams = {
 
 const {options, run} = new TestScenarioBuilder()
   .name('eth_getBalance') // use unique scenario name among all tests
-  .request(() => http.post(url, payload, httpParams))
+  .request((testParameters) => {
+    const payload = JSON.stringify({
+      id: 1,
+      jsonrpc: "2.0",
+      method: "eth_getBalance",
+      params: [testParameters.DEFAULT_ENTITY_FROM, "latest"]
+    });
+    return http.post(url, payload, httpParams);
+  })
   .check('eth_getBalance', (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

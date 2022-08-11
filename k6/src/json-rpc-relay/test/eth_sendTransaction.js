@@ -21,15 +21,15 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isErrorResponse} from "./common.js";
 
-const url = __ENV.BASE_URL;
+const url = __ENV.RELAY_BASE_URL;
 
 const payload = JSON.stringify({
   id: 1,
   jsonrpc: "2.0",
   method: "eth_sendTransaction",
-  params: [{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155", "to": "0xd46e8dd67c5d32be8058bb8eb970870f07244567", "gas": "0x76c0", "gasPrice": "0x9184e72a000", "value": "0x9184e72a", "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"}]
+  params: []
 });
 
 const httpParams = {
@@ -41,7 +41,7 @@ const httpParams = {
 const {options, run} = new TestScenarioBuilder()
   .name('eth_sendTransaction') // use unique scenario name among all tests
   .request(() => http.post(url, payload, httpParams))
-  .check('eth_sendTransaction', (r) => isNonErrorResponse(r))
+  .check('eth_sendTransaction', (r) => isErrorResponse(r))
   .build();
 
 export {options, run};

@@ -21,9 +21,9 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isErrorResponse} from "./common.js";
 
-const url = __ENV.BASE_URL;
+const url = __ENV.RELAY_BASE_URL;
 
 const payload = JSON.stringify({
   id: 67,
@@ -41,7 +41,7 @@ const httpParams = {
 const {options, run} = new TestScenarioBuilder()
   .name('eth_protocolVersion') // use unique scenario name among all tests
   .request(() => http.post(url, payload, httpParams))
-  .check('eth_protocolVersion', (r) => isNonErrorResponse(r))
+  .check('eth_protocolVersion', (r) => isErrorResponse(r))
   .build();
 
 export {options, run};

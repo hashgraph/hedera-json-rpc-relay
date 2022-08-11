@@ -21,15 +21,15 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isErrorResponse} from "./common.js";
 
-const url = __ENV.BASE_URL;
+const url = __ENV.RELAY_BASE_URL;
 
 const payload = JSON.stringify({
   id: 73,
   jsonrpc: "2.0",
   method: "eth_submitHashrate",
-  params: ["0x0000000000000000000000000000000000000000000000000000000000500000", "0x59daa26581d0acd1fce254fb7e85952f4c09d0915afd33d3886cd914bc7d283c"]
+  params: []
 });
 
 const httpParams = {
@@ -41,7 +41,7 @@ const httpParams = {
 const {options, run} = new TestScenarioBuilder()
   .name('eth_submitHashrate') // use unique scenario name among all tests
   .request(() => http.post(url, payload, httpParams))
-  .check('eth_submitHashrate', (r) => isNonErrorResponse(r))
+  .check('eth_submitHashrate', (r) => isErrorResponse(r))
   .build();
 
 export {options, run};

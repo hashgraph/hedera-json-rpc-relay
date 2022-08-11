@@ -22,15 +22,9 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {isNonErrorResponse} from "./common.js";
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const url = __ENV.BASE_URL;
-
-const payload = JSON.stringify({
-  id: 1,
-  jsonrpc: "2.0",
-  method: "eth_getTransactionByBlockHashAndIndex",
-  params: ["0x8671c386edcedbe91ed891f268953ebaf1a5cb2964a6d9ceaaa95f1e700e7b97434d3e2e2595973d0a02e2d981be9def", "0x0"]
-});
+const url = __ENV.RELAY_BASE_URL;
 
 const httpParams = {
   headers: {
@@ -40,8 +34,18 @@ const httpParams = {
 
 const {options, run} = new TestScenarioBuilder()
   .name('eth_getTransactionByBlockHashAndIndex') // use unique scenario name among all tests
-  .request(() => http.post(url, payload, httpParams))
+  .request((testParameters) => {
+    const payload = JSON.stringify({
+      id: 1,
+      jsonrpc: "2.0",
+      method: "eth_getTransactionByBlockHashAndIndex",
+      params: [testParameters.DEFAULT_BLOCK_HASH, "0x0"]
+    });
+    return http.post(url, payload, httpParams);
+  })
   .check('eth_getTransactionByBlockHashAndIndex', (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

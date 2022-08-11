@@ -21,15 +21,15 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isErrorResponse} from "./common.js";
 
-const url = __ENV.BASE_URL;
+const url = __ENV.RELAY_BASE_URL;
 
 const payload = JSON.stringify({
   id: 1,
   jsonrpc: "2.0",
   method: "eth_sign",
-  params: ["0x9b2055d370f73ec7d8a03e965129118dc8f5bf83", "0xdeadbeaf"]
+  params: []
 });
 
 const httpParams = {
@@ -41,7 +41,7 @@ const httpParams = {
 const {options, run} = new TestScenarioBuilder()
   .name('eth_sign') // use unique scenario name among all tests
   .request(() => http.post(url, payload, httpParams))
-  .check('eth_sign', (r) => isNonErrorResponse(r))
+  .check('eth_sign', (r) => isErrorResponse(r))
   .build();
 
 export {options, run};

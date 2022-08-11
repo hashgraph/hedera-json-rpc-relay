@@ -22,15 +22,9 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {isNonErrorResponse} from "./common.js";
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const url = __ENV.BASE_URL;
-
-const payload = JSON.stringify({
-  id: 1,
-  jsonrpc: "2.0",
-  method: "eth_getCode",
-  params: ["0x0000000000000000000000000000000002be8a02"]
-});
+const url = __ENV.RELAY_BASE_URL;
 
 const httpParams = {
   headers: {
@@ -40,8 +34,18 @@ const httpParams = {
 
 const {options, run} = new TestScenarioBuilder()
   .name('eth_getCode') // use unique scenario name among all tests
-  .request(() => http.post(url, payload, httpParams))
+  .request((testParameters) => {
+    const payload = JSON.stringify({
+      id: 1,
+      jsonrpc: "2.0",
+      method: "eth_getCode",
+      params: [testParameters.DEFAULT_CONTRACT_ADDRESS]
+    });
+    return http.post(url, payload, httpParams);
+  })
   .check('eth_getCode', (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

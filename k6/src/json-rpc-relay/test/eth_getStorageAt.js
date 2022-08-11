@@ -21,16 +21,10 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isErrorResponse} from "./common.js";
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const url = __ENV.BASE_URL;
-
-const payload = JSON.stringify({
-  id: 1,
-  jsonrpc: "2.0",
-  method: "eth_getStorageAt",
-  params: ["0x295a70b2de5e3953354a6a8344e616ed314d7251", "0x0", "latest"]
-});
+const url = __ENV.RELAY_BASE_URL;
 
 const httpParams = {
   headers: {
@@ -40,8 +34,18 @@ const httpParams = {
 
 const {options, run} = new TestScenarioBuilder()
   .name('eth_getStorageAt') // use unique scenario name among all tests
-  .request(() => http.post(url, payload, httpParams))
-  .check('eth_getStorageAt', (r) => isNonErrorResponse(r))
+  .request((testParameters) => {
+    const payload = JSON.stringify({
+      id: 1,
+      jsonrpc: "2.0",
+      method: "eth_getStorageAt",
+      params: [testParameters.DEFAULT_CONTRACT_ADDRESS, "0x0", "latest"]
+    });
+    return http.post(url, payload, httpParams);
+  })
+  // .check('eth_getStorageAt', (r) => isErrorResponse(r)) // how to scale since dependent on contract
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

@@ -23,13 +23,13 @@ import http from "k6/http";
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {isNonErrorResponse} from "./common.js";
 
-const url = __ENV.BASE_URL;
+const url = __ENV.RELAY_BASE_URL;
 
 const payload = JSON.stringify({
   id: 1,
   jsonrpc: "2.0",
   method: "eth_getTransactionCount",
-  params: ["0xd4161798e72d25c29163eeff866f347a51f5a8b1","22145039"]
+  params: [__ENV.DEFAULT_ENTITY_FROM, 'latest']
 });
 
 const httpParams = {
