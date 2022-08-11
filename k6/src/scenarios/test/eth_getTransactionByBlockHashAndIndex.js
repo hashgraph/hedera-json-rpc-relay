@@ -24,8 +24,6 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {isNonErrorResponse} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const url = __ENV.RELAY_BASE_URL;
-
 const httpParams = {
   headers: {
     'Content-Type': 'application/json',
@@ -41,7 +39,7 @@ const {options, run} = new TestScenarioBuilder()
       method: "eth_getTransactionByBlockHashAndIndex",
       params: [testParameters.DEFAULT_BLOCK_HASH, "0x0"]
     });
-    return http.post(url, payload, httpParams);
+    return http.post(testParameters.RELAY_BASE_URL, payload, httpParams);
   })
   .check('eth_getTransactionByBlockHashAndIndex', (r) => isNonErrorResponse(r))
   .build();

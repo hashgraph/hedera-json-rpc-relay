@@ -38,6 +38,7 @@ const setupTestParameters = () => {
   const testParametersMap = computeTestParameters({baseApiUrl: `${baseApiUrl}/api/v1`});
   return Object.assign(testParametersMap, {
     MIRROR_BASE_URL: baseApiUrl,
+    RELAY_BASE_URL: __ENV['RELAY_BASE_URL'],
     DEFAULT_LIMIT: __ENV.DEFAULT_LIMIT
   });
 };

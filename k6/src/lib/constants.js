@@ -18,10 +18,6 @@
  * ‍
  */
 
-export const blocksListName = "blocks";
-export const contractListName = "contracts";
 export const logListName = "logs";
 export const resultListName = "results";
 export const transactionListName = "transactions";
-export const mirrorUrlPrefix = '/api/v1';
-export const relayUrlPrefix = '/api';

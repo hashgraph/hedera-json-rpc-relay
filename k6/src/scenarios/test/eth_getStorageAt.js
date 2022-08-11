@@ -24,8 +24,6 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {isErrorResponse} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const url = __ENV.RELAY_BASE_URL;
-
 const httpParams = {
   headers: {
     'Content-Type': 'application/json',
@@ -41,9 +39,9 @@ const {options, run} = new TestScenarioBuilder()
       method: "eth_getStorageAt",
       params: [testParameters.DEFAULT_CONTRACT_ADDRESS, "0x0", "latest"]
     });
-    return http.post(url, payload, httpParams);
+    return http.post(testParameters.RELAY_BASE_URL, payload, httpParams);
   })
-  // .check('eth_getStorageAt', (r) => isErrorResponse(r)) // how to scale since dependent on contract
+  .check('eth_getStorageAt', (r) => isErrorResponse(r)) // how to scale since dependent on contract
   .build();
 
 export {options, run};
