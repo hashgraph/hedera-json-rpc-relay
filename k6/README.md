@@ -15,66 +15,30 @@ You can run the tests of an API as a test suite, you can also run tests one at a
 
 ### Test Suite
 
-To run a test suite, such as rest, use the following command.
+To run a test suite, use the following command when pointing to testnet.
 
 ```shell
 DEFAULT_DURATION=1s \
 DEFAULT_VUS=1 \
-BASE_URL=https://testnet.hashio.io/api \
-DEFAULT_LIMIT=100 k6 run src/rest/apis.js
-```
-
-Another option is to have a parameters file named `parameters.env` with the content:
-
-```shell
-export DEFAULT_DURATION=1s
-export DEFAULT_VUS=1
-export BASE_URL=https://testnet.hashio.io
-export DEFAULT_LIMIT=100
-```
-
-And execute k6 after exporting the values for the env variables:
-
-```shell
-source parameters.env
-k6 run src/rest/apis.js
+MIRROR_BASE_URL=https://testnet.mirrornode.hedera.com \
+RELAY_BASE_URL=https://testnet.hashio.io/api \
+DEFAULT_LIMIT=100 k6 run src/scenarios/apis.js
 ```
 
 For non domain specific parameters like:
 
 - DEFAULT_DURATION
 - DEFAULT_VUS
-- BASE_URL
+- MIRROR_BASE_URL
+- RELAY_BASE_URL
 - DEFAULT_LIMIT
+- DEFAULT_CONTRACT_ADDRESS
 
 The value can be set via environment variables. If no value is set, then a sane default will be used.
 
 For domain specific parameters the following rule is used:
 When the value of a parameter is set with an environment variable, the value will be used, but if no value is set for a
 particular parameter, then its value will be found by querying either the rest or rosetta APIs.
-
-The following parameters can be used to configure a rest test:
-
-- DEFAULT_ACCOUNT_ID
-- DEFAULT_ACCOUNT_BALANCE
-- DEFAULT_CONTRACT_ID
-- DEFAULT_CONTRACT_TIMESTAMP
-- DEFAULT_NFT_ID
-- DEFAULT_NFT_SERIAL
-- DEFAULT_PUBLIC_KEY
-- DEFAULT_SCHEDULE_ACCOUNT_ID
-- DEFAULT_SCHEDULE_ID
-- DEFAULT_TOKEN_ID
-- DEFAULT_TOPIC_ID
-- DEFAULT_TOPIC_SEQUENCE
-- DEFAULT_TRANSACTION_ID
-
-The following parameters can be used to configure a rosetta test:
-
-- DEFAULT_BLOCK_INDEX
-- DEFAULT_BLOCK_HASH
-- DEFAULT_NETWORK
-- DEFAULT_TRANSACTION_HASH
 
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
 interfere with each other.
@@ -392,27 +356,55 @@ a scenario divided by the run time of the test suite.
 
 With the test suite mode, a simplified markdown format report `report.md` will also be generated.
 
-| URL | VUS | Pass% | RPS | Avg. Req Duration | Comment |
-|----------|-----|-------|-----|-------------------|---------|
-| /account/balance | 500 | 100.00 | 1390.03/s | 351.87ms | |
-| /block | 500 | 100.00 | 1655.40/s | 300.11ms | |
-| /block/transaction | 500 | 100.00 | 2840.99/s | 164.44ms | |
-| /construction/combine | 500 | 100.00 | 4615.40/s | 73.77ms | |
-| /construction/hash | 500 | 100.00 | 5876.76/s | 49.23ms | |
-| /construction/parse | 500 | 100.00 | 5738.85/s | 50.65ms | |
-| /construction/payloads | 500 | 100.00 | 5508.28/s | 56.44ms | |
-| /construction/preprocess | 500 | 100.00 | 5514.76/s | 52.88ms | |
-| /network/list | 500 | 100.00 | 6479.16/s | 44.77ms | |
-| /network/options | 500 | 100.00 | 5763.35/s | 51.97ms | |
-| /network/status | 500 | 100.00 | 3018.25/s | 160.10ms | |
+| Scenario | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Comment |
+|----------|-----|-------|-----|----------|-------------------|---------|
+| eth_accounts | 1 | 100.00 | 2166.00/s | 2166.00/s | 0.25ms | |
+| eth_blockNumber | 1 | 100.00 | 10.51/s | 10.51/s | 94.58ms | |
+| eth_call | 1 | 100.00 | 8.35/s | 8.35/s | 119.28ms | |
+| eth_chainId | 1 | 100.00 | 2012.49/s | 2012.49/s | 0.27ms | |
+| eth_coinbase | 1 | 100.00 | 1494.00/s | 1494.00/s | 0.36ms | |
+| eth_estimateGas | 1 | 100.00 | 1535.00/s | 1535.00/s | 0.36ms | |
+| eth_feeHistory | 1 | 100.00 | 10.60/s | 10.60/s | 93.87ms | |
+| eth_gasPrice | 1 | 100.00 | 1345.33/s | 1345.33/s | 0.46ms | |
+| eth_getBalance | 1 | 100.00 | 2.50/s | 2.50/s | 399.48ms | |
+| eth_getBlockByHash | 1 | 0.00 | NaN/s | NaN/s | 0.00ms | |
+| eth_getBlockByNumber | 1 | 100.00 | 5.28/s | 5.28/s | 188.62ms | |
+| eth_getBlockTransactionCountByHash | 1 | 0.00 | NaN/s | NaN/s | 0.00ms | |
+| eth_getBlockTransactionCountByNumber | 1 | 100.00 | 4.97/s | 4.97/s | 200.67ms | |
+| eth_getCode | 1 | 100.00 | 3.39/s | 3.39/s | 293.59ms | |
+| eth_getLogs | 1 | 100.00 | 1.99/s | 1.99/s | 502.48ms | |
+| eth_getStorageAt | 1 | 0.00 | 1737.13/s | 0.00/s | 0.33ms | |
+| eth_getTransactionByBlockHashAndIndex | 1 | 100.00 | 10.48/s | 10.48/s | 94.86ms | |
+| eth_getTransactionByBlockNumberAndIndex | 1 | 100.00 | 5.17/s | 5.17/s | 193.04ms | |
+| eth_getTransactionByHash | 1 | 100.00 | 5.46/s | 5.46/s | 182.31ms | |
+| eth_getTransactionCount | 1 | 100.00 | 2.77/s | 2.77/s | 360.07ms | |
+| eth_getTransactionReceipt | 1 | 100.00 | 8.37/s | 8.37/s | 118.73ms | |
+| eth_getUncleByBlockHashAndIndex | 1 | 100.00 | 2325.50/s | 2325.50/s | 0.24ms | |
+| eth_getUncleByBlockNumberAndIndex | 1 | 100.00 | 2336.83/s | 2336.83/s | 0.23ms | |
+| eth_getUncleCountByBlockHash | 1 | 100.00 | 2352.00/s | 2352.00/s | 0.22ms | |
+| eth_getUncleCountByBlockNumber | 1 | 100.00 | 472.89/s | 472.89/s | 0.34ms | |
+| eth_getWork | 1 | 100.00 | 1.71/s | 1.71/s | 0.58ms | |
+| eth_hashrate | 1 | 100.00 | 2300.35/s | 2300.35/s | 0.24ms | |
+| eth_mining | 1 | 100.00 | 2135.00/s | 2135.00/s | 0.25ms | |
+| eth_protocolVersion | 1 | 100.00 | 2283.50/s | 2283.50/s | 0.23ms | |
+| eth_sendRawTransaction | 1 | 100.00 | 0.44/s | 0.44/s | 2292.06ms | |
+| eth_sendTransaction | 1 | 100.00 | 538.55/s | 538.55/s | 0.27ms | |
+| eth_sign | 1 | 100.00 | 2271.36/s | 2271.36/s | 0.24ms | |
+| eth_signTransaction | 1 | 100.00 | 895.51/s | 895.51/s | 0.24ms | |
+| eth_submitHashrate | 1 | 100.00 | 2249.00/s | 2249.00/s | 0.24ms | |
+| eth_submitWork | 1 | 100.00 | 18.46/s | 18.46/s | 0.31ms | |
+| eth_syncing | 1 | 100.00 | 553.25/s | 553.25/s | 0.23ms | |
+| net_listening | 1 | 100.00 | 2372.81/s | 2372.81/s | 0.23ms | |
+| web3_clientVersion | 1 | 100.00 | 2328.00/s | 2328.00/s | 0.23ms | |
+| web3_client_version | 1 | 100.00 | 859.18/s | 859.18/s | 0.23ms | |
 
 ### Single Test
 
-To run a single test, such as the rosetta accountBalance test, just do
+To run a single test, such as the `eth_chainid` test, just do
 
 ```shell
 source src/rosetta/k6.env
-k6 run src/rosetta/test/accountBalance.js
+k6 run src/sceanrios/test/eth_chainid.js
 ```
 
 When it completes, k6 will show a similar summary report. However, there won't be a `report.md` report.
