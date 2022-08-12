@@ -51,4 +51,20 @@ function isErrorResponse(response) {
   }
 }
 
-export {isErrorResponse, isNonErrorResponse};
+const httpParams = {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+};
+
+let requestId = 1;
+function getPayLoad(methodName, paramInput = []) {
+  return JSON.stringify({
+    id: requestId++,
+    jsonrpc: "2.0",
+    method: methodName,
+    params: paramInput
+  });
+}
+
+export {isErrorResponse, isNonErrorResponse, httpParams, getPayLoad};

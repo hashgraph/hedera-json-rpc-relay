@@ -48,7 +48,7 @@ function getMetricNameWithTags(name, ...tags) {
   return tags.length === 0 ? name : `${name}{${tags}}`;
 }
 
-const timeRegex = /^[0-9]+s$/;
+const timeRegex = /^\d+s$/;
 
 function getNextStartTime(startTime, duration, gracefulStop) {
   if (!timeRegex.test(startTime)) {

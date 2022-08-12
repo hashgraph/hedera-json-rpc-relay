@@ -21,27 +21,15 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
 
 const url = __ENV.RELAY_BASE_URL;
 
-const payload = JSON.stringify({
-  id: 1,
-  jsonrpc: "2.0",
-  method: "eth_accounts",
-  params: []
-});
-
-const httpParams = {
-  headers: {
-    'Content-Type': 'application/json',
-  },
-};
-
+const methodName = 'eth_accounts';
 const {options, run} = new TestScenarioBuilder()
-  .name('eth_accounts') // use unique scenario name among all tests
-  .request(() => http.post(url, payload, httpParams))
-  .check('eth_accounts', (r) => isNonErrorResponse(r))
+  .name(methodName) // use unique scenario name among all tests
+  .request(() => http.post(url, getPayLoad(methodName), httpParams))
+  .check(methodName, (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};

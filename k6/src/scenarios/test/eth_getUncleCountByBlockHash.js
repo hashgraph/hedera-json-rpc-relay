@@ -21,27 +21,15 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
 
 const url = __ENV.RELAY_BASE_URL;
 
-const payload = JSON.stringify({
-  id: 1,
-  jsonrpc: "2.0",
-  method: "eth_getUncleCountByBlockHash",
-  params: []
-});
-
-const httpParams = {
-  headers: {
-    'Content-Type': 'application/json',
-  },
-};
-
+const methodName = 'eth_getUncleCountByBlockHash';
 const {options, run} = new TestScenarioBuilder()
-  .name('eth_getUncleCountByBlockHash') // use unique scenario name among all tests
-  .request(() => http.post(url, payload, httpParams))
-  .check('eth_getUncleCountByBlockHash', (r) => isNonErrorResponse(r))
+  .name(methodName) // use unique scenario name among all tests
+  .request(() => http.post(url, getPayLoad(methodName), httpParams))
+  .check(methodName, (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};

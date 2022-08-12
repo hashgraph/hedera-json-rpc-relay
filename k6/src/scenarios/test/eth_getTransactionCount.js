@@ -21,27 +21,16 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const url = __ENV.RELAY_BASE_URL;
-
-const payload = JSON.stringify({
-  id: 1,
-  jsonrpc: "2.0",
-  method: "eth_getTransactionCount",
-  params: [__ENV.DEFAULT_ENTITY_FROM, 'latest']
-});
-
-const httpParams = {
-  headers: {
-    'Content-Type': 'application/json',
-  },
-};
-
+const methodName = 'eth_getTransactionCount';
 const {options, run} = new TestScenarioBuilder()
-  .name('eth_getTransactionCount') // use unique scenario name among all tests
-  .request(() => http.post(url, payload, httpParams))
-  .check('eth_getTransactionCount', (r) => isNonErrorResponse(r))
+  .name(methodName) // use unique scenario name among all tests
+  .request((testParameters) => http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [testParameters.DEFAULT_ENTITY_FROM, 'latest']), httpParams))
+  .check(methodName, (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

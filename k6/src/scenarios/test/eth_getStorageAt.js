@@ -21,27 +21,16 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isErrorResponse} from "./common.js";
+import {isErrorResponse, httpParams, getPayLoad} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const httpParams = {
-  headers: {
-    'Content-Type': 'application/json',
-  },
-};
-
+const methodName = 'eth_getStorageAt';
 const {options, run} = new TestScenarioBuilder()
-  .name('eth_getStorageAt') // use unique scenario name among all tests
+  .name(methodName) // use unique scenario name among all tests
   .request((testParameters) => {
-    const payload = JSON.stringify({
-      id: 1,
-      jsonrpc: "2.0",
-      method: "eth_getStorageAt",
-      params: [testParameters.DEFAULT_CONTRACT_ADDRESS, "0x0", "latest"]
-    });
-    return http.post(testParameters.RELAY_BASE_URL, payload, httpParams);
+    return http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [testParameters.DEFAULT_CONTRACT_ADDRESS, "0x0", "latest"]), httpParams);
   })
-  .check('eth_getStorageAt', (r) => isErrorResponse(r)) // how to scale since dependent on contract
+  .check(methodName, (r) => isErrorResponse(r)) // how to scale since dependent on contract
   .build();
 
 export {options, run};

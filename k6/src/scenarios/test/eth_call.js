@@ -21,27 +21,20 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
 
 const url = __ENV.RELAY_BASE_URL;
 
-const payload = JSON.stringify({
-  id: 1,
-  jsonrpc: "2.0",
-  method: "eth_call",
-  params: [{"from":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b","gas":"0x186a0","to":"0x0000000000000000000000000000000002be87bf","data":"0x8d337b81000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"}, "0x151c8bb"]
-});
-
-const httpParams = {
-  headers: {
-    'Content-Type': 'application/json',
-  },
-};
-
+const methodName = 'eth_call';
 const {options, run} = new TestScenarioBuilder()
-  .name('eth_call') // use unique scenario name among all tests
-  .request(() => http.post(url, payload, httpParams))
-  .check('eth_call', (r) => isNonErrorResponse(r))
+  .name(methodName) // use unique scenario name among all tests
+  .request(() => http.post(
+      url, 
+      getPayLoad(methodName, [{"from":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b","gas":"0x186a0","to":"0x0000000000000000000000000000000002be87bf","data":"0x8d337b81000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"}, "0x151c8bb"]), 
+      httpParams
+    )
+  )
+  .check(methodName, (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};

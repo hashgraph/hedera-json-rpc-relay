@@ -21,27 +21,16 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const httpParams = {
-  headers: {
-    'Content-Type': 'application/json',
-  },
-};
-
+const methodName = 'eth_getTransactionReceipt';
 const {options, run} = new TestScenarioBuilder()
-  .name('eth_getTransactionReceipt') // use unique scenario name among all tests
+  .name(methodName) // use unique scenario name among all tests
   .request((testParameters) => {
-    const payload = JSON.stringify({
-      id: 1,
-      jsonrpc: "2.0",
-      method: "eth_getTransactionReceipt",
-      params: [testParameters.DEFAULT_TRANSACTION_HASH]
-    });
-    return http.post(testParameters.RELAY_BASE_URL, payload, httpParams);
+    return http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [testParameters.DEFAULT_TRANSACTION_HASH]), httpParams);
   })
-  .check('eth_getTransactionReceipt', (r) => isNonErrorResponse(r))
+  .check(methodName, (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};
