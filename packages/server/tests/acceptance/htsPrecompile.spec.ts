@@ -34,17 +34,19 @@ describe('HTS Precompile Acceptance Tests', async function() {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, relay } = global;
 
+  const TX_SUCCESS_CODE = 22;
+
   const accounts: AliasAccount[] = [];
-  let baseHTSContract;
-  let HTSTokenContract;
+  let baseHTSContractAddress;
+  let HTSTokenContractAddress;
 
   before(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(30, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
-    baseHTSContract = await deployBaseHTSContract();
-    HTSTokenContract = await createHTSToken();
+    baseHTSContractAddress = await deployBaseHTSContract();
+    HTSTokenContractAddress = await createHTSToken();
   });
 
   async function deployBaseHTSContract() {
@@ -52,30 +54,38 @@ describe('HTS Precompile Acceptance Tests', async function() {
     const baseHTS = await baseHTSFactory.deploy();
     const { contractAddress } = await baseHTS.deployTransaction.wait();
 
-    return new ethers.Contract(contractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    return contractAddress;
+    // return new ethers.Contract(contractAddress, BaseHTSJson.abi, accounts[0].wallet);
   }
 
   async function createHTSToken() {
-    const tx = await baseHTSContract.createToken(accounts[0].wallet.address, {
+    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const tx = await baseHTSContract.createFungibleTokenPublic(accounts[0].wallet.address, {
       value: ethers.BigNumber.from('20000000000000000000'),
-      gasLimit: 1000000
+      gasLimit: 10000000
     });
     const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
 
-    return new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[0].wallet);
+    return tokenAddress;
+    // return new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[0].wallet);
   }
 
   it('should associate to a token', async function() {
-    const baseHTSContractReceiverWalletFirst = new ethers.Contract(baseHTSContract.address, BaseHTSJson.abi, accounts[1].wallet);
-    expect(baseHTSContractReceiverWalletFirst.associateTokenTo(accounts[1].wallet.address, HTSTokenContract.address, { gasLimit: 10000000 }))
-      .to.not.be.reverted;
+    const baseHTSContractOwner = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const txCO = await baseHTSContractOwner.associateTokenPublic(baseHTSContractAddress, HTSTokenContractAddress, { gasLimit: 10000000 });
+    expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
 
-    const baseHTSContractReceiverWalletSecond = new ethers.Contract(baseHTSContract.address, BaseHTSJson.abi, accounts[2].wallet);
-    expect(baseHTSContractReceiverWalletSecond.associateTokenTo(accounts[2].wallet.address, HTSTokenContract.address, { gasLimit: 10000000 }))
-      .to.not.be.reverted;
+    const baseHTSContractReceiverWalletFirst = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[1].wallet);
+    const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
+    expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
+
+    const baseHTSContractReceiverWalletSecond = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[2].wallet);
+    const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
+    expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
   });
 
   it('should check initial balances', async function() {
+    const HTSTokenContract = new ethers.Contract(HTSTokenContractAddress, ERC20MockJson.abi, accounts[0].wallet);
     expect(await HTSTokenContract.balanceOf(accounts[0].wallet.address)).to.equal(1000);
     expect(await HTSTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(0);
     expect(await HTSTokenContract.balanceOf(accounts[2].wallet.address)).to.equal(0);
@@ -83,11 +93,37 @@ describe('HTS Precompile Acceptance Tests', async function() {
 
   it('should be able to transfer hts tokens between accounts', async function() {
     const amount = 10;
+    const HTSTokenContract = new ethers.Contract(HTSTokenContractAddress, ERC20MockJson.abi, accounts[0].wallet);
+    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+
     const balanceBefore = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
-
-    await baseHTSContract.transferTokenTo(accounts[1].wallet.address, HTSTokenContract.address, amount);
-
+    await baseHTSContract.transferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
     const balanceAfter = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
+
     expect(balanceBefore + amount).to.equal(balanceAfter);
+  });
+
+  it('should be able to check allowance', async function() {
+    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const txBefore = await baseHTSContract.allowancePublic(HTSTokenContractAddress, baseHTSContractAddress, accounts[2].wallet.address);
+    const { responseCode } = (await txBefore.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+
+    expect(responseCode).to.equal(TX_SUCCESS_CODE);
+  });
+
+  it('should be able to approve anyone to spend tokens', async function() {
+    const amount = 13;
+    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+
+    const txBefore = await baseHTSContract.allowancePublic(HTSTokenContractAddress, baseHTSContractAddress, accounts[2].wallet.address);
+    const beforeAmount = (await txBefore.wait()).events.filter(e => e.event === 'AllowanceValue')[0].args.amount.toNumber();
+
+    await baseHTSContract.approvePublic(HTSTokenContractAddress, accounts[2].wallet.address, amount, { gasLimit: 1_000_000 });
+
+    const txAfter = await baseHTSContract.allowancePublic(HTSTokenContractAddress, baseHTSContractAddress, accounts[2].wallet.address);
+    const afterAmount = (await txAfter.wait()).events.filter(e => e.event === 'AllowanceValue')[0].args.amount.toNumber();
+
+    expect(beforeAmount).to.equal(0);
+    expect(afterAmount).to.equal(amount);
   });
 });
