@@ -20,7 +20,7 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-import { Relay, Eth, Net, Web3 } from '../index';
+import { Relay, Eth, Net, Web3, Trace } from '../index';
 import { Web3Impl } from './web3';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
@@ -28,6 +28,7 @@ import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { Registry } from 'prom-client';
+import { TraceImpl } from './trace';
 
 export class RelayImpl implements Relay {
   private static chainIds = {
@@ -40,6 +41,7 @@ export class RelayImpl implements Relay {
   private readonly web3Impl: Web3;
   private readonly netImpl: Net;
   private readonly ethImpl: Eth;
+  private readonly traceImpl: Trace;
 
   constructor(logger: Logger, register: Registry) {
     dotenv.config({ path: findConfig('.env') || '' });
@@ -69,6 +71,8 @@ export class RelayImpl implements Relay {
       mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId);
+    
+    this.traceImpl = new TraceImpl(sdkClient, mirrorNodeClient, logger.child({ name: 'relay-trace' }),);
 
     logger.info('Relay running with chainId=%s', chainId);
   }
@@ -83,6 +87,10 @@ export class RelayImpl implements Relay {
 
   eth(): Eth {
     return this.ethImpl;
+  }
+
+  trace(): Trace {
+    return this.traceImpl;
   }
 
   initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {

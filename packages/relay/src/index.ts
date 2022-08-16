@@ -32,6 +32,8 @@ export interface Relay {
   net(): Net;
 
   eth(): Eth;
+
+  trace(): Trace;
 }
 
 export interface Web3 {
@@ -117,4 +119,8 @@ export interface Eth {
   syncing(requestId?: string): Promise<boolean>;
 
   accounts(requestId?: string): Array<any>;
+}
+
+export interface Trace {
+  filter(fromBlock: string, toBlock: string, fromAddress: string[], toAddress: string[], after: number, count: number, requestId?: string): Promise<Array<any>>;
 }

@@ -580,6 +580,11 @@ rpc.use('eth_coinbase', async () => {
   return logAndHandleResponse("eth_coinbase", (requestId) => relay.eth().coinbase(requestId));
 });
 
+rpc.use('trace_filter', async (params: any) => {
+  params = params[0] ?? [];
+  return logAndHandleResponse("trace_filter", (requestId) => relay.trace().filter(params.fromBlock, params.toBlock, params.fromAddress || [], params.toAddress || [], params.after || 0, params.count || 0, requestId))
+})
+
 app.use(cors());
 
 const rpcApp = rpc.app();
