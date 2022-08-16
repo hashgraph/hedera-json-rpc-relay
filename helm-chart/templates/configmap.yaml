@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "json-rpc-relay.fullname" . }}
+  labels:
+    app:  {{ template "json-rpc-relay.name" . }}
+    {{ include "json-rpc-relay.labels" . | nindent 4 }}
+data:
+{{- if .Values.config.local.HEDERA_NETWORK }}
+  # HEDERA_NETWORK: {{ required "A valid .Values.config.HEDERA_NETWORK must be present" .Values.config.HEDERA_NETWORK | toJson }}
+  HEDERA_NETWORK: {{ .Values.config.local.HEDERA_NETWORK | toJson }}
+{{- else }}
+  HEDERA_NETWORK: "previewnet"
+{{- end }}  
+  OPERATOR_ID_ETH_SENDRAWTRANSACTION: {{ .Values.config.OPERATOR_ID_ETH_SENDRAWTRANSACTION | default (printf "%q" "") }}
+  OPERATOR_KEY_ETH_SENDRAWTRANSACTION: {{ .Values.config.OPERATOR_KEY_ETH_SENDRAWTRANSACTION | default (printf "%q" "") }}
+  MIRROR_NODE_URL: {{ .Values.config.MIRROR_NODE_URL  }}
+  LOCAL_NODE: {{ .Values.config.LOCAL_NODE }}
+  SERVER_PORT: {{ .Values.config.SERVER_PORT }}
+  CHAIN_ID: {{ .Values.config.CHAIN_ID }}
