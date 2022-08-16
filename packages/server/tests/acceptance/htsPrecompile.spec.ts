@@ -39,6 +39,7 @@ describe('HTS Precompile Acceptance Tests', async function() {
   const accounts: AliasAccount[] = [];
   let baseHTSContractAddress;
   let HTSTokenContractAddress;
+  let NftHTSTokenContractAddress;
 
   before(async () => {
     accounts[0] = await servicesNode.createAliasAccount(100, relay.provider);
@@ -47,6 +48,7 @@ describe('HTS Precompile Acceptance Tests', async function() {
 
     baseHTSContractAddress = await deployBaseHTSContract();
     HTSTokenContractAddress = await createHTSToken();
+    NftHTSTokenContractAddress = await createNftHTSToken();
   });
 
   async function deployBaseHTSContract() {
@@ -55,7 +57,6 @@ describe('HTS Precompile Acceptance Tests', async function() {
     const { contractAddress } = await baseHTS.deployTransaction.wait();
 
     return contractAddress;
-    // return new ethers.Contract(contractAddress, BaseHTSJson.abi, accounts[0].wallet);
   }
 
   async function createHTSToken() {
@@ -67,7 +68,17 @@ describe('HTS Precompile Acceptance Tests', async function() {
     const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
 
     return tokenAddress;
-    // return new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[0].wallet);
+  }
+
+  async function createNftHTSToken() {
+    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const tx = await baseHTSContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
+      value: ethers.BigNumber.from('20000000000000000000'),
+      gasLimit: 10000000
+    });
+    const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
+
+    return tokenAddress;
   }
 
   it('should associate to a token', async function() {
@@ -81,6 +92,20 @@ describe('HTS Precompile Acceptance Tests', async function() {
 
     const baseHTSContractReceiverWalletSecond = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[2].wallet);
     const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
+    expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
+  });
+
+  it('should associate to a nft', async function() {
+    const baseHTSContractOwner = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const txCO = await baseHTSContractOwner.associateTokenPublic(baseHTSContractAddress, NftHTSTokenContractAddress, { gasLimit: 10000000 });
+    expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
+
+    const baseHTSContractReceiverWalletFirst = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[1].wallet);
+    const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, NftHTSTokenContractAddress, { gasLimit: 10000000 });
+    expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
+
+    const baseHTSContractReceiverWalletSecond = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[2].wallet);
+    const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, NftHTSTokenContractAddress, { gasLimit: 10000000 });
     expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
   });
 
@@ -105,8 +130,8 @@ describe('HTS Precompile Acceptance Tests', async function() {
 
   it('should be able to check allowance', async function() {
     const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
-    const txBefore = await baseHTSContract.allowancePublic(HTSTokenContractAddress, baseHTSContractAddress, accounts[2].wallet.address);
-    const { responseCode } = (await txBefore.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+    const tx = await baseHTSContract.allowancePublic(HTSTokenContractAddress, baseHTSContractAddress, accounts[2].wallet.address);
+    const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
 
     expect(responseCode).to.equal(TX_SUCCESS_CODE);
   });
@@ -125,5 +150,31 @@ describe('HTS Precompile Acceptance Tests', async function() {
 
     expect(beforeAmount).to.equal(0);
     expect(afterAmount).to.equal(amount);
+  });
+
+  it('should be able to execute setApprovalForAll on nft', async function() {
+    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const tx = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, baseHTSContractAddress, accounts[1].wallet.address));
+    const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+
+    expect(responseCode).to.equal(TX_SUCCESS_CODE);
+  });
+
+  // Depends on https://github.com/hashgraph/hedera-services/pull/3798
+  xit('should be able to execute setApprovalForAllPublic', async function() {
+    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+
+    const txBefore = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, baseHTSContractAddress, accounts[1].wallet.address));
+    const beforeFlag = (await txBefore.wait()).events.filter(e => e.event === 'Approved')[0].args.approved;
+
+    const tx = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, { gasLimit: 5_000_000 });
+    const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+    expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+    const txAfter = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, baseHTSContractAddress, accounts[1].wallet.address));
+    const afterFlag = (await txAfter.wait()).events.filter(e => e.event === 'Approved')[0].args.approved;
+
+    expect(beforeFlag).to.equal(false);
+    expect(afterFlag).to.equal(true);
   });
 });
