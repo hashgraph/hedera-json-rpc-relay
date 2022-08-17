@@ -137,10 +137,14 @@ export class Precheck {
     const txTotalValue = tx.value.add(txGas.mul(tx.gasLimit));
     let tinybars;
 
-    try {
-      const { account }: any = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
-      tinybars = await this.sdkClient.getAccountBalanceInTinyBar(account, callerName, requestId);
+    const accountResponse: any = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
+    if (accountResponse == null) {
+      this.logger.trace(`${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(tx)}, totalValue=${txTotalValue})`);
+      throw predefined.RESOURCE_NOT_FOUND;
+    }
 
+    try {
+      tinybars = await this.sdkClient.getAccountBalanceInTinyBar(accountResponse.account, callerName, requestId);
       result.passes = ethers.ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
     } catch (error: any) {
       this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);
