@@ -25,7 +25,7 @@ import chai, { expect } from 'chai';
 chai.use(solidity);
 
 import { AliasAccount } from '../clients/servicesClient';
-import { ethers, BigNumber } from 'ethers';
+import { ethers } from 'ethers';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import BaseHTSJson from '../contracts/BaseHTS.json';
 
@@ -42,11 +42,14 @@ describe('HTS Precompile Acceptance Tests', async function() {
   let NftHTSTokenContractAddress;
   let NftSerialNumber;
 
-  before(async () => {
+  this.beforeAll(async () => {
     accounts[0] = await servicesNode.createAliasAccount(60, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
+    // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
+    await new Promise(r => setTimeout(r, 5000));
+    
     BaseHTSContractAddress = await deployBaseHTSContract();
     HTSTokenContractAddress = await createHTSToken();
     NftHTSTokenContractAddress = await createNftHTSToken();
