@@ -43,7 +43,7 @@ describe('HTS Precompile Acceptance Tests', async function() {
   let NftSerialNumber;
 
   before(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(60, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
@@ -63,7 +63,7 @@ describe('HTS Precompile Acceptance Tests', async function() {
   async function createHTSToken() {
     const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
     const tx = await baseHTSContract.createFungibleTokenPublic(accounts[0].wallet.address, {
-      value: ethers.BigNumber.from('20000000000000000000'),
+      value: ethers.BigNumber.from('10000000000000000000'),
       gasLimit: 10000000
     });
     const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
@@ -74,7 +74,7 @@ describe('HTS Precompile Acceptance Tests', async function() {
   async function createNftHTSToken() {
     const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
     const tx = await baseHTSContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
-      value: ethers.BigNumber.from('20000000000000000000'),
+      value: ethers.BigNumber.from('10000000000000000000'),
       gasLimit: 10000000
     });
     const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
