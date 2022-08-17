@@ -18,6 +18,7 @@ contract BaseHTS is FeeHelper {
     event ResponseCode(int responseCode);
     event ApprovedAddress(address approved);
     event Approved(bool approved);
+    event MintedToken(uint64 newTotalSupply, int64[] serialNumbers);
 
     function createFungibleTokenPublic(
         address treasury
@@ -135,6 +136,18 @@ contract BaseHTS is FeeHelper {
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
+    }
+
+    function mintTokenPublic(address token, uint64 amount, bytes[] memory metadata) public
+    returns (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) {
+        (responseCode, newTotalSupply, serialNumbers) = HederaTokenService.mintToken(token, amount, metadata);
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit MintedToken(newTotalSupply, serialNumbers);
     }
 
     function isApprovedForAllPublic(address token, address owner, address operator) public returns (int responseCode, bool approved)
