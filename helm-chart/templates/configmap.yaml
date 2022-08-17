@@ -7,10 +7,11 @@ metadata:
     {{ include "json-rpc-relay.labels" . | nindent 4 }}
 data:
 {{- if .Values.config.local.HEDERA_NETWORK }}
-  # HEDERA_NETWORK: {{ required "A valid .Values.config.HEDERA_NETWORK must be present" .Values.config.HEDERA_NETWORK | toJson }}
   HEDERA_NETWORK: {{ .Values.config.local.HEDERA_NETWORK | toJson }}
+{{- else if .Values.config.hosted.HEDERA_NETWORK }}
+  HEDERA_NETWORK: {{ .Values.config.hosted.HEDERA_NETWORK }}
 {{- else }}
-  HEDERA_NETWORK: "previewnet"
+  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in either .Values.config.local.HEDERA_NETWORK or .Values.config.hosted.HEDERA_NETWORK " (or .Values.config.local.HEDERA_NETWORK .Values.config.hosted.HEDERA_NETWORK) }}
 {{- end }}  
   OPERATOR_ID_ETH_SENDRAWTRANSACTION: {{ .Values.config.OPERATOR_ID_ETH_SENDRAWTRANSACTION | default (printf "%q" "") }}
   OPERATOR_KEY_ETH_SENDRAWTRANSACTION: {{ .Values.config.OPERATOR_KEY_ETH_SENDRAWTRANSACTION | default (printf "%q" "") }}
