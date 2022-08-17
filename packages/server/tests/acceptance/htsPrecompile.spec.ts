@@ -38,10 +38,13 @@ describe('HTS Precompile Acceptance Tests', async function() {
   let baseHTSContract;
   let HTSTokenContract;
 
-  before(async () => {
+  this.beforeAll(async () => {
     accounts[0] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
+
+    // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
+    await new Promise(r => setTimeout(r, 5000));
 
     baseHTSContract = await deployBaseHTSContract();
     HTSTokenContract = await createHTSToken();
