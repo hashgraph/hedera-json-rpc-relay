@@ -18,6 +18,10 @@ contract BaseHTS is FeeHelper {
     event ResponseCode(int responseCode);
     event ApprovedAddress(address approved);
     event Approved(bool approved);
+    event FungibleTokenInfo(IHederaTokenService.FungibleTokenInfo tokenInfo);
+    event TokenInfo(IHederaTokenService.TokenInfo tokenInfo);
+    event NonFungibleTokenInfo(IHederaTokenService.NonFungibleTokenInfo tokenInfo);
+    event MintedToken(uint64 newTotalSupply, int64[] serialNumbers);
 
     function createFungibleTokenPublic(
         address treasury
@@ -137,6 +141,18 @@ contract BaseHTS is FeeHelper {
         }
     }
 
+    function mintTokenPublic(address token, uint64 amount, bytes[] memory metadata) public
+    returns (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) {
+        (responseCode, newTotalSupply, serialNumbers) = HederaTokenService.mintToken(token, amount, metadata);
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit MintedToken(newTotalSupply, serialNumbers);
+    }
+
     function isApprovedForAllPublic(address token, address owner, address operator) public returns (int responseCode, bool approved)
     {
         (responseCode, approved) = HederaTokenService.isApprovedForAll(token, owner, operator);
@@ -147,5 +163,41 @@ contract BaseHTS is FeeHelper {
         }
 
         emit Approved(approved);
+    }
+
+    function getFungibleTokenInfoPublic(address token) public returns (int responseCode, IHederaTokenService.FungibleTokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getFungibleTokenInfo(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit FungibleTokenInfo(tokenInfo);
+    }
+
+    function getTokenInfoPublic(address token) public returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getTokenInfo(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenInfo(tokenInfo);
+    }
+
+    function getNonFungibleTokenInfoPublic(address token, int64 serialNumber) public returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getNonFungibleTokenInfo(token, serialNumber);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit NonFungibleTokenInfo(tokenInfo);
     }
 }
