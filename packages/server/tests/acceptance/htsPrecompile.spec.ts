@@ -211,7 +211,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   });
 
   it('should be able to execute getApproved on nft', async function() {
-    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[1].wallet);
 
     const tx = await baseHTSContract.getApprovedPublic(NftHTSTokenContractAddress, NftSerialNumber, { gasLimit: 5_000_000 });
     const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
