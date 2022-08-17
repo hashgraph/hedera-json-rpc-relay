@@ -42,16 +42,6 @@ describe('HTS Precompile Acceptance Tests', async function() {
   let NftHTSTokenContractAddress;
   let NftSerialNumber;
 
-<<<<<<< HEAD
-  before(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(60, relay.provider);
-    accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
-    accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
-
-    BaseHTSContractAddress = await deployBaseHTSContract();
-    HTSTokenContractAddress = await createHTSToken();
-    NftHTSTokenContractAddress = await createNftHTSToken();
-=======
   this.beforeAll(async () => {
     accounts[0] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
@@ -59,10 +49,10 @@ describe('HTS Precompile Acceptance Tests', async function() {
 
     // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise(r => setTimeout(r, 5000));
-
-    baseHTSContract = await deployBaseHTSContract();
-    HTSTokenContract = await createHTSToken();
->>>>>>> 7979197 (Post sdk client submission pre mirror node wait)
+    
+    BaseHTSContractAddress = await deployBaseHTSContract();
+    HTSTokenContractAddress = await createHTSToken();
+    NftHTSTokenContractAddress = await createNftHTSToken();
   });
 
   async function deployBaseHTSContract() {
