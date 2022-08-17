@@ -54,10 +54,13 @@ describe('ERC20 Acceptance Tests', async function () {
         {testName: HTS, expectedBytecode: EthImpl.emptyHex}
     ];
 
-    before(async () => {
+    this.beforeAll(async () => {
         accounts[0] = await servicesNode.createAliasAccount(30, relay.provider);
         accounts[1] = await servicesNode.createAliasAccount(15, relay.provider);
         accounts[2] = await servicesNode.createAliasAccount(15, relay.provider);
+
+        // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
+        await new Promise(r => setTimeout(r, 5000));
 
         initialHolder = accounts[0].address;
         recipient = accounts[1].address;
