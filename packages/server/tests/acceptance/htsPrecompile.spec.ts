@@ -224,11 +224,11 @@ describe('HTS Precompile Acceptance Tests', async function () {
   it('should be able to get non-fungible token info', async () => {
     const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
-    const tx = await baseHTSContract.getNonFungibleTokenInfoPublic(NftHTSTokenContractAddress, 1);
+    const tx = await baseHTSContract.getNonFungibleTokenInfoPublic(NftHTSTokenContractAddress, NftSerialNumber);
 
     const { token, totalSupply } = (await tx.wait()).events.filter(e => e.event === 'NonFungibleTokenInfo')[0].args.tokenInfo.tokenInfo;
 
-    expect(totalSupply.toNumber()).to.equal(1);
+    expect(totalSupply.toNumber()).to.equal(NftSerialNumber);
     expect(token.name).to.equal(TOKEN_NAME);
     expect(token.symbol).to.equal(TOKEN_SYMBOL);
   });
