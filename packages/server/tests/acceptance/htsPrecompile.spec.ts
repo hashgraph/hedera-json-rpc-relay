@@ -40,16 +40,17 @@ describe('HTS Precompile Acceptance Tests', async function () {
   const TOKEN_MAX_SUPPLY = 1000;
 
   const accounts: AliasAccount[] = [];
-  let baseHTSContractAddress;
+  let BaseHTSContractAddress;
   let HTSTokenContractAddress;
   let NftHTSTokenContractAddress;
+  let NftSerialNumber;
 
   before(async () => {
     accounts[0] = await servicesNode.createAliasAccount(100, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
-    baseHTSContractAddress = await deployBaseHTSContract();
+    BaseHTSContractAddress = await deployBaseHTSContract();
     HTSTokenContractAddress = await createHTSToken();
     NftHTSTokenContractAddress = await createNftHTSToken();
   });
@@ -63,7 +64,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   }
 
   async function createHTSToken() {
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
     const tx = await baseHTSContract.createFungibleTokenPublic(accounts[0].wallet.address, {
       value: ethers.BigNumber.from('20000000000000000000'),
       gasLimit: 10000000
@@ -74,7 +75,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   }
 
   async function createNftHTSToken() {
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
     const tx = await baseHTSContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
       value: ethers.BigNumber.from('20000000000000000000'),
       gasLimit: 10000000
@@ -84,30 +85,30 @@ describe('HTS Precompile Acceptance Tests', async function () {
     return tokenAddress;
   }
 
-  it('should associate to a token', async function () {
-    const baseHTSContractOwner = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
-    const txCO = await baseHTSContractOwner.associateTokenPublic(baseHTSContractAddress, HTSTokenContractAddress, { gasLimit: 10000000 });
+  it('should associate to a token', async function() {
+    const baseHTSContractOwner = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, HTSTokenContractAddress, { gasLimit: 10000000 });
     expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
 
-    const baseHTSContractReceiverWalletFirst = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[1].wallet);
+    const baseHTSContractReceiverWalletFirst = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[1].wallet);
     const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
     expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
 
-    const baseHTSContractReceiverWalletSecond = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[2].wallet);
+    const baseHTSContractReceiverWalletSecond = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[2].wallet);
     const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
     expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
   });
 
-  it('should associate to a nft', async function () {
-    const baseHTSContractOwner = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
-    const txCO = await baseHTSContractOwner.associateTokenPublic(baseHTSContractAddress, NftHTSTokenContractAddress, { gasLimit: 10000000 });
+  it('should associate to a nft', async function() {
+    const baseHTSContractOwner = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, NftHTSTokenContractAddress, { gasLimit: 10000000 });
     expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
 
-    const baseHTSContractReceiverWalletFirst = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[1].wallet);
+    const baseHTSContractReceiverWalletFirst = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[1].wallet);
     const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, NftHTSTokenContractAddress, { gasLimit: 10000000 });
     expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
 
-    const baseHTSContractReceiverWalletSecond = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[2].wallet);
+    const baseHTSContractReceiverWalletSecond = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[2].wallet);
     const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, NftHTSTokenContractAddress, { gasLimit: 10000000 });
     expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(22);
   });
@@ -122,7 +123,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   it('should be able to transfer hts tokens between accounts', async function () {
     const amount = 10;
     const HTSTokenContract = new ethers.Contract(HTSTokenContractAddress, ERC20MockJson.abi, accounts[0].wallet);
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
     const balanceBefore = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
     await baseHTSContract.transferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
@@ -131,50 +132,40 @@ describe('HTS Precompile Acceptance Tests', async function () {
     expect(balanceBefore + amount).to.equal(balanceAfter);
   });
 
-  it('should be able to check allowance', async function () {
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
-    const tx = await baseHTSContract.allowancePublic(HTSTokenContractAddress, baseHTSContractAddress, accounts[2].wallet.address);
-    const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
-
-    expect(responseCode).to.equal(TX_SUCCESS_CODE);
-  });
-
-  it('should be able to approve anyone to spend tokens', async function () {
+  it('should be able to approve anyone to spend tokens', async function() {
     const amount = 13;
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
-    const txBefore = await baseHTSContract.allowancePublic(HTSTokenContractAddress, baseHTSContractAddress, accounts[2].wallet.address);
-    const beforeAmount = (await txBefore.wait()).events.filter(e => e.event === 'AllowanceValue')[0].args.amount.toNumber();
+    const txBefore = await baseHTSContract.allowancePublic(HTSTokenContractAddress, BaseHTSContractAddress, accounts[2].wallet.address);
+    const txBeforeReceipt = await txBefore.wait();
+    const beforeAmount = txBeforeReceipt.events.filter(e => e.event === 'AllowanceValue')[0].args.amount.toNumber();
+    const { responseCode } = txBeforeReceipt.events.filter(e => e.event === 'ResponseCode')[0].args;
+    expect(responseCode).to.equal(TX_SUCCESS_CODE);
 
     await baseHTSContract.approvePublic(HTSTokenContractAddress, accounts[2].wallet.address, amount, { gasLimit: 1_000_000 });
 
-    const txAfter = await baseHTSContract.allowancePublic(HTSTokenContractAddress, baseHTSContractAddress, accounts[2].wallet.address);
+    const txAfter = await baseHTSContract.allowancePublic(HTSTokenContractAddress, BaseHTSContractAddress, accounts[2].wallet.address);
     const afterAmount = (await txAfter.wait()).events.filter(e => e.event === 'AllowanceValue')[0].args.amount.toNumber();
 
     expect(beforeAmount).to.equal(0);
     expect(afterAmount).to.equal(amount);
   });
 
-  it('should be able to execute setApprovalForAll on nft', async function () {
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
-    const tx = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, baseHTSContractAddress, accounts[1].wallet.address));
-    const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
-
-    expect(responseCode).to.equal(TX_SUCCESS_CODE);
-  });
-
   // Depends on https://github.com/hashgraph/hedera-services/pull/3798
-  xit('should be able to execute setApprovalForAllPublic', async function () {
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+  xit('should be able to execute setApprovalForAllPublic', async function() {
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
-    const txBefore = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, baseHTSContractAddress, accounts[1].wallet.address));
-    const beforeFlag = (await txBefore.wait()).events.filter(e => e.event === 'Approved')[0].args.approved;
+    const txBefore = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, BaseHTSContractAddress, accounts[1].wallet.address));
+    const txBeforeReceipt = await txBefore.wait();
+    const beforeFlag = txBeforeReceipt.events.filter(e => e.event === 'Approved')[0].args.approved;
+    const responseCodeTxBefore = txBeforeReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+    expect(responseCodeTxBefore).to.equal(TX_SUCCESS_CODE);
 
     const tx = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, { gasLimit: 5_000_000 });
     const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
     expect(responseCode).to.equal(TX_SUCCESS_CODE);
 
-    const txAfter = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, baseHTSContractAddress, accounts[1].wallet.address));
+    const txAfter = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, BaseHTSContractAddress, accounts[1].wallet.address));
     const afterFlag = (await txAfter.wait()).events.filter(e => e.event === 'Approved')[0].args.approved;
 
     expect(beforeFlag).to.equal(false);
@@ -182,7 +173,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   });
 
   it('should be able to get fungible token info', async () => {
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
     const tx = await baseHTSContract.getFungibleTokenInfoPublic(HTSTokenContractAddress);
 
@@ -195,7 +186,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   });
 
   it('should be able to get token info', async () => {
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
     const tx = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress);
 
@@ -207,21 +198,31 @@ describe('HTS Precompile Acceptance Tests', async function () {
     expect(token.symbol).to.equal(TOKEN_SYMBOL);
   });
 
-  it('should be able to mint a NFT', async () => {
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+  it('should be able to mint a nft', async function() {
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
-    const tx = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x01'], { gasLimit: 10000000 });
+    const tx = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x01'], { gasLimit: 5_000_000 });
+    const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+    expect(responseCode).to.equal(TX_SUCCESS_CODE);
 
-    const { newTotalSupply, serialNumbers } = (await tx.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
+    const { serialNumbers } = (await tx.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
+    expect(serialNumbers[0].toNumber()).to.be.greaterThan(0);
+    NftSerialNumber = serialNumbers[0];
+  });
 
-    expect(newTotalSupply.toNumber()).to.equal(1);
-    expect(serialNumbers).to.exist.to.be.an('Array');
-    expect(serialNumbers.length).to.equal(1);
-    expect(serialNumbers[0].toNumber()).to.equal(1);
+  it('should be able to execute getApproved on nft', async function() {
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+
+    const tx = await baseHTSContract.getApprovedPublic(NftHTSTokenContractAddress, NftSerialNumber, { gasLimit: 5_000_000 });
+    const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+    expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+    const { approved } = (await tx.wait()).events.filter(e => e.event === 'ApprovedAddress')[0].args;
+    expect(approved).to.equal('0x0000000000000000000000000000000000000000');
   });
 
   it('should be able to get non-fungible token info', async () => {
-    const baseHTSContract = new ethers.Contract(baseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
     const tx = await baseHTSContract.getNonFungibleTokenInfoPublic(NftHTSTokenContractAddress, 1);
 
