@@ -22,12 +22,13 @@ contract BaseHTS is FeeHelper {
     event TokenInfo(IHederaTokenService.TokenInfo tokenInfo);
     event NonFungibleTokenInfo(IHederaTokenService.NonFungibleTokenInfo tokenInfo);
     event MintedToken(uint64 newTotalSupply, int64[] serialNumbers);
+    event Frozen(bool frozen);
 
     function createFungibleTokenPublic(
         address treasury
     ) public payable {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
-        keys[0] = getSingleKey(0, 0, 1, bytes(""));
+        keys[0] = getSingleKey(0, 2, 1, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000
@@ -51,7 +52,7 @@ contract BaseHTS is FeeHelper {
         address treasury
     ) public payable {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
-        keys[0] = getSingleKey(0, 0, 1, bytes(""));
+        keys[0] = getSingleKey(0, 2, 1, bytes(""));
         keys[1] = getSingleKey(4, 1, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
@@ -199,5 +200,30 @@ contract BaseHTS is FeeHelper {
         }
 
         emit NonFungibleTokenInfo(tokenInfo);
+    }
+
+    function freezeTokenPublic(address token, address account) public returns (int responseCode) {
+        responseCode = HederaTokenService.freezeToken(token, account);
+        emit ResponseCode(responseCode);
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function unfreezeTokenPublic(address token, address account) public returns (int responseCode) {
+        responseCode = HederaTokenService.unfreezeToken(token, account);
+        emit ResponseCode(responseCode);
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function isFrozenPublic(address token, address account) public returns (int responseCode, bool frozen) {
+        (responseCode, frozen) = HederaTokenService.isFrozen(token, account);
+        emit ResponseCode(responseCode);
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+        emit Frozen(frozen);
     }
 }
