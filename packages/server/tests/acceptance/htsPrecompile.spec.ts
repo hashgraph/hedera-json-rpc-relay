@@ -30,11 +30,15 @@ import ERC20MockJson from '../contracts/ERC20Mock.json';
 import BaseHTSJson from '../contracts/BaseHTS.json';
 
 
-describe('HTS Precompile Acceptance Tests', async function() {
+describe('HTS Precompile Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, relay } = global;
 
   const TX_SUCCESS_CODE = 22;
+  const TOKEN_NAME = 'tokenName';
+  const TOKEN_SYMBOL = 'tokenSymbol';
+  const TOKEN_MAX_SUPPLY = 1000;
+  const TOKEN_DECIMALS = 8;
 
   const accounts: AliasAccount[] = [];
   let BaseHTSContractAddress;
@@ -120,7 +124,7 @@ describe('HTS Precompile Acceptance Tests', async function() {
     expect(await HTSTokenContract.balanceOf(accounts[2].wallet.address)).to.equal(0);
   });
 
-  it('should be able to transfer hts tokens between accounts', async function() {
+  it('should be able to transfer hts tokens between accounts', async function () {
     const amount = 10;
     const HTSTokenContract = new ethers.Contract(HTSTokenContractAddress, ERC20MockJson.abi, accounts[0].wallet);
     const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
@@ -172,6 +176,33 @@ describe('HTS Precompile Acceptance Tests', async function() {
     expect(afterFlag).to.equal(true);
   });
 
+  it('should be able to get fungible token info', async () => {
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+
+    const tx = await baseHTSContract.getFungibleTokenInfoPublic(HTSTokenContractAddress);
+
+    const { tokenInfo, decimals } = (await tx.wait()).events.filter(e => e.event === 'FungibleTokenInfo')[0].args.tokenInfo;
+
+    expect(tokenInfo.totalSupply.toNumber()).to.equal(TOKEN_MAX_SUPPLY);
+    expect(decimals).to.equal(TOKEN_DECIMALS);
+    expect(tokenInfo.token.maxSupply).to.equal(TOKEN_MAX_SUPPLY);
+    expect(tokenInfo.token.name).to.equal(TOKEN_NAME);
+    expect(tokenInfo.token.symbol).to.equal(TOKEN_SYMBOL);
+  });
+
+  it('should be able to get token info', async () => {
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+
+    const tx = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress);
+
+    const { token, totalSupply } = (await tx.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+
+    expect(totalSupply.toNumber()).to.equal(TOKEN_MAX_SUPPLY);
+    expect(token.maxSupply).to.equal(TOKEN_MAX_SUPPLY);
+    expect(token.name).to.equal(TOKEN_NAME);
+    expect(token.symbol).to.equal(TOKEN_SYMBOL);
+  });
+
   it('should be able to mint a nft', async function() {
     const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
@@ -185,7 +216,7 @@ describe('HTS Precompile Acceptance Tests', async function() {
   });
 
   it('should be able to execute getApproved on nft', async function() {
-    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[1].wallet);
 
     const tx = await baseHTSContract.getApprovedPublic(NftHTSTokenContractAddress, NftSerialNumber, { gasLimit: 5_000_000 });
     const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
@@ -193,5 +224,18 @@ describe('HTS Precompile Acceptance Tests', async function() {
 
     const { approved } = (await tx.wait()).events.filter(e => e.event === 'ApprovedAddress')[0].args;
     expect(approved).to.equal('0x0000000000000000000000000000000000000000');
+  });
+
+  it('should be able to get non-fungible token info', async () => {
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+
+    const tx = await baseHTSContract.getNonFungibleTokenInfoPublic(NftHTSTokenContractAddress, NftSerialNumber);
+
+    const { tokenInfo, serialNumber } = (await tx.wait()).events.filter(e => e.event === 'NonFungibleTokenInfo')[0].args.tokenInfo;
+
+    expect(tokenInfo.totalSupply.toNumber()).to.equal(NftSerialNumber);
+    expect(serialNumber).to.equal(NftSerialNumber);
+    expect(tokenInfo.token.name).to.equal(TOKEN_NAME);
+    expect(tokenInfo.token.symbol).to.equal(TOKEN_SYMBOL);
   });
 });

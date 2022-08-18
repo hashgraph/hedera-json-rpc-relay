@@ -18,6 +18,9 @@ contract BaseHTS is FeeHelper {
     event ResponseCode(int responseCode);
     event ApprovedAddress(address approved);
     event Approved(bool approved);
+    event FungibleTokenInfo(IHederaTokenService.FungibleTokenInfo tokenInfo);
+    event TokenInfo(IHederaTokenService.TokenInfo tokenInfo);
+    event NonFungibleTokenInfo(IHederaTokenService.NonFungibleTokenInfo tokenInfo);
     event MintedToken(uint64 newTotalSupply, int64[] serialNumbers);
 
     function createFungibleTokenPublic(
@@ -160,5 +163,41 @@ contract BaseHTS is FeeHelper {
         }
 
         emit Approved(approved);
+    }
+
+    function getFungibleTokenInfoPublic(address token) public returns (int responseCode, IHederaTokenService.FungibleTokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getFungibleTokenInfo(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit FungibleTokenInfo(tokenInfo);
+    }
+
+    function getTokenInfoPublic(address token) public returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getTokenInfo(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenInfo(tokenInfo);
+    }
+
+    function getNonFungibleTokenInfoPublic(address token, int64 serialNumber) public returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getNonFungibleTokenInfo(token, serialNumber);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit NonFungibleTokenInfo(tokenInfo);
     }
 }
