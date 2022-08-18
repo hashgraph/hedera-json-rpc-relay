@@ -19,12 +19,14 @@ contract BaseHTS is FeeHelper {
     event ApprovedAddress(address approved);
     event Approved(bool approved);
     event MintedToken(uint64 newTotalSupply, int64[] serialNumbers);
+    event TokenInfo(IHederaTokenService.NonFungibleTokenInfo tokenInfo);
 
     function createFungibleTokenPublic(
         address treasury
     ) public payable {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
         keys[0] = getSingleKey(0, 0, 1, bytes(""));
+        keys[1] = getSingleKey(3, 1, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000
@@ -47,9 +49,10 @@ contract BaseHTS is FeeHelper {
     function createNonFungibleTokenPublic(
         address treasury
     ) public payable {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](3);
         keys[0] = getSingleKey(0, 0, 1, bytes(""));
         keys[1] = getSingleKey(4, 1, bytes(""));
+        keys[2] = getSingleKey(3, 1, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000
@@ -160,5 +163,53 @@ contract BaseHTS is FeeHelper {
         }
 
         emit Approved(approved);
+    }
+
+    function wipeTokenAccountPublic(address token, address account, uint32 amount) public returns (int responseCode)
+    {
+        responseCode = HederaTokenService.wipeTokenAccount(token, account, amount);
+        emit ResponseCode(responseCode);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+    }
+
+    function wipeTokenAccountNFTPublic(address token, address account, int64[] memory serialNumbers) public
+    returns (int responseCode)
+    {
+        responseCode = HederaTokenService.wipeTokenAccountNFT(token, account, serialNumbers);
+        emit ResponseCode(responseCode);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+    }
+
+    function transferNFTPublic(address token, address sender, address receiver, int64 serialNumber) public
+    returns (int responseCode)
+    {
+        responseCode = HederaTokenService.transferNFT(token, sender, receiver, serialNumber);
+        emit ResponseCode(responseCode);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+    }
+
+    function getNonFungibleTokenInfoPublic(address token, int64 serialNumber) public returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getNonFungibleTokenInfo(token, serialNumber);
+        emit ResponseCode(responseCode);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        emit TokenInfo(tokenInfo);
+    }
+
+    function approveNFTPublic(address token, address approved, uint256 serialNumber) public returns (int responseCode)
+    {
+        (responseCode) = HederaTokenService.approveNFT(token, approved, serialNumber);
+        emit ResponseCode(responseCode);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
     }
 }

@@ -204,4 +204,17 @@ export default class Assertions {
         expect(parsedError.error.message).to.be.equal(expectedError.message);
         expect(parsedError.error.code).to.be.equal(expectedError.code);
     }
+
+    static expectRevert = async (promise, code) => {
+        const tx = await promise;
+        try {
+            await tx.wait();
+            Assertions.expectedError();
+        }
+        catch(e:any) {
+            expect(e).to.exist;
+            expect(e.code).to.eq(code);
+        }
+    };
+
 }
