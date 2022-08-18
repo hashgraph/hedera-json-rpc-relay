@@ -88,10 +88,13 @@ describe('RPC Server Acceptance Tests', function () {
             await servicesNode.transferToken(tokenId, accounts[0].accountId);
             await servicesNode.transferToken(tokenId, accounts[1].accountId);
 
+            // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
+            await new Promise(r => setTimeout(r, 5000));
+
             // get contract details
             mirrorContract = await mirrorNode.get(`/contracts/${contractId}`);
 
-            // // get contract details
+            // get contract result details
             mirrorContractDetails = await mirrorNode.get(`/contracts/${contractId}/results/${contractExecuteTimestamp}`);
 
             mirrorPrimaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`)).accounts[0];

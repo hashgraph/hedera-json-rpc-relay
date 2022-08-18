@@ -274,6 +274,27 @@ describe('Precheck', async function() {
             }
         });
 
+        it('should not pass for no account found', async function() {
+            mock.onGet(mirrorAccountsPath).reply(404, {
+                "_status": {
+                    "messages": [
+                        {
+                            "message": "Not found"
+                        }
+                    ]
+                }
+            });
+
+            try {
+                await precheck.balance(parsedTransaction, 'sendRawTransaction');
+                expectedError();
+            } catch(e: any) {
+                expect(e).to.exist;
+                expect(e.code).to.eq(-32001);
+                expect(e.message).to.contain('Requested resource not found');
+            }
+        });
+
         it('should pass for 10 hbar', async function() {
             mock.onGet(mirrorAccountsPath).reply(200, {
                 account: accountId
