@@ -41,15 +41,16 @@ describe('HTS Precompile Acceptance Tests', async function() {
   let HTSTokenContractAddress;
   let NftHTSTokenContractAddress;
   let NftSerialNumber;
+  let HTSTokenWithCustomFeesContractAddress;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(60, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(200, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
     // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise(r => setTimeout(r, 5000));
-    
+
     BaseHTSContractAddress = await deployBaseHTSContract();
     HTSTokenContractAddress = await createHTSToken();
     NftHTSTokenContractAddress = await createNftHTSToken();
@@ -187,11 +188,48 @@ describe('HTS Precompile Acceptance Tests', async function() {
   it('should be able to execute getApproved on nft', async function() {
     const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
-    const tx = await baseHTSContract.getApprovedPublic(NftHTSTokenContractAddress, NftSerialNumber, { gasLimit: 5_000_000 });
+      const tx = await baseHTSContract.getApprovedPublic(NftHTSTokenContractAddress, NftSerialNumber, { gasLimit: 5_000_000 });
     const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
     expect(responseCode).to.equal(TX_SUCCESS_CODE);
 
     const { approved } = (await tx.wait()).events.filter(e => e.event === 'ApprovedAddress')[0].args;
     expect(approved).to.equal('0x0000000000000000000000000000000000000000');
+  });
+
+  it('should be able to create a token with custom fees', async function() {
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const tx = await baseHTSContract.createFungibleTokenWithCustomFeesPublic(accounts[0].wallet.address, HTSTokenContractAddress, {
+      value: ethers.BigNumber.from('20000000000000000000'),
+      gasLimit: 10_000_000
+    });
+    const txReceipt = await tx.wait();
+
+    const { responseCode } = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args;
+    expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+    const { tokenAddress } = txReceipt.events.filter(e => e.event === 'CreatedToken')[0].args;
+    expect(tokenAddress).to.be.not.null;
+
+    HTSTokenWithCustomFeesContractAddress = tokenAddress;
+  });
+
+  it('should be able to get a custom token fees', async function() {
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+
+    const tx = (await baseHTSContract.getTokenCustomFeesPublic(HTSTokenWithCustomFeesContractAddress));
+    const { fixedFees, fractionalFees } = (await tx.wait()).events.filter(e => e.event === 'TokenCustomFees')[0].args;
+
+    expect(fixedFees[0].amount).to.equal(1);
+    expect(fixedFees[0].tokenId).to.equal(HTSTokenContractAddress);
+    expect(fixedFees[0].useHbarsForPayment).to.equal(false);
+    expect(fixedFees[0].useCurrentTokenForPayment).to.equal(false);
+    expect(fixedFees[0].feeCollector).to.equal(accounts[0].wallet.address);
+
+    expect(fractionalFees[0].numerator).to.equal(4);
+    expect(fractionalFees[0].denominator).to.equal(5);
+    expect(fractionalFees[0].minimumAmount).to.equal(10);
+    expect(fractionalFees[0].maximumAmount).to.equal(30);
+    expect(fractionalFees[0].netOfTransfers).to.equal(false);
+    expect(fractionalFees[0].feeCollector).to.equal(accounts[0].wallet.address);
   });
 });
