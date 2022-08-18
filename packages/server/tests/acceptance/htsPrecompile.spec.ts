@@ -38,6 +38,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   const TOKEN_NAME = 'tokenName';
   const TOKEN_SYMBOL = 'tokenSymbol';
   const TOKEN_MAX_SUPPLY = 1000;
+  const TOKEN_DECIMALS = 8;
 
   const accounts: AliasAccount[] = [];
   let BaseHTSContractAddress;
@@ -177,12 +178,13 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
     const tx = await baseHTSContract.getFungibleTokenInfoPublic(HTSTokenContractAddress);
 
-    const { token, totalSupply } = (await tx.wait()).events.filter(e => e.event === 'FungibleTokenInfo')[0].args.tokenInfo.tokenInfo;
+    const { tokenInfo, decimals } = (await tx.wait()).events.filter(e => e.event === 'FungibleTokenInfo')[0].args.tokenInfo;
 
-    expect(totalSupply.toNumber()).to.equal(TOKEN_MAX_SUPPLY);
-    expect(token.maxSupply).to.equal(TOKEN_MAX_SUPPLY);
-    expect(token.name).to.equal(TOKEN_NAME);
-    expect(token.symbol).to.equal(TOKEN_SYMBOL);
+    expect(tokenInfo.totalSupply.toNumber()).to.equal(TOKEN_MAX_SUPPLY);
+    expect(decimals).to.equal(TOKEN_DECIMALS);
+    expect(tokenInfo.token.maxSupply).to.equal(TOKEN_MAX_SUPPLY);
+    expect(tokenInfo.token.name).to.equal(TOKEN_NAME);
+    expect(tokenInfo.token.symbol).to.equal(TOKEN_SYMBOL);
   });
 
   it('should be able to get token info', async () => {
@@ -226,10 +228,11 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
     const tx = await baseHTSContract.getNonFungibleTokenInfoPublic(NftHTSTokenContractAddress, NftSerialNumber);
 
-    const { token, totalSupply } = (await tx.wait()).events.filter(e => e.event === 'NonFungibleTokenInfo')[0].args.tokenInfo.tokenInfo;
+    const { tokenInfo, serialNumber } = (await tx.wait()).events.filter(e => e.event === 'NonFungibleTokenInfo')[0].args.tokenInfo;
 
-    expect(totalSupply.toNumber()).to.equal(NftSerialNumber);
-    expect(token.name).to.equal(TOKEN_NAME);
-    expect(token.symbol).to.equal(TOKEN_SYMBOL);
+    expect(tokenInfo.totalSupply.toNumber()).to.equal(NftSerialNumber);
+    expect(serialNumber).to.equal(NftSerialNumber);
+    expect(tokenInfo.token.name).to.equal(TOKEN_NAME);
+    expect(tokenInfo.token.symbol).to.equal(TOKEN_SYMBOL);
   });
 });
