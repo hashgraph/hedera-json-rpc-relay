@@ -22,12 +22,14 @@ contract BaseHTS is FeeHelper {
     event TokenInfo(IHederaTokenService.TokenInfo tokenInfo);
     event NonFungibleTokenInfo(IHederaTokenService.NonFungibleTokenInfo tokenInfo);
     event MintedToken(uint64 newTotalSupply, int64[] serialNumbers);
+    event PausedToken(bool paused);
+    event UnpausedToken(bool unpaused);
 
     function createFungibleTokenPublic(
         address treasury
     ) public payable {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
-        keys[0] = getSingleKey(0, 0, 1, bytes(""));
+        keys[0] = getSingleKey(0, 6, 1, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000
@@ -51,7 +53,7 @@ contract BaseHTS is FeeHelper {
         address treasury
     ) public payable {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
-        keys[0] = getSingleKey(0, 0, 1, bytes(""));
+        keys[0] = getSingleKey(0, 6, 1, bytes(""));
         keys[1] = getSingleKey(4, 1, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
@@ -199,5 +201,29 @@ contract BaseHTS is FeeHelper {
         }
 
         emit NonFungibleTokenInfo(tokenInfo);
+    }
+
+    function pauseTokenPublic(address token) public returns (int responseCode) {
+        responseCode = this.pauseToken(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit PausedToken(true);
+    }
+
+    function unpauseTokenPublic(address token) public returns (int responseCode) {
+        responseCode = this.unpauseToken(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit UnpausedToken(true);
     }
 }

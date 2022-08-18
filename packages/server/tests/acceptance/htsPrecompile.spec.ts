@@ -238,4 +238,71 @@ describe('HTS Precompile Acceptance Tests', async function () {
     expect(tokenInfo.token.name).to.equal(TOKEN_NAME);
     expect(tokenInfo.token.symbol).to.equal(TOKEN_SYMBOL);
   });
+
+  describe('HTS Precompile Pause/Unpause Tests', async function() {
+
+    it('should be able to pause fungible token', async () => {
+      const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+  
+      const txTokenInfoBefore = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress);
+      const txPause = await baseHTSContract.pauseTokenPublic(HTSTokenContractAddress, {gasLimit: 1000000});
+      const txTokenInfoAfter = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress);
+      
+      const pauseResponse = (await txPause.wait()).events.filter(e => e.event === 'PausedToken')[0].args;
+      const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+      const { pauseStatus: pauseStatusAfter } = (await txTokenInfoAfter.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+  
+      expect(pauseResponse.paused).to.equal(true);
+      expect(pauseStatusBefore).to.equal(false);
+      expect(pauseStatusAfter).to.equal(true);
+    });
+  
+    it('should be able to unpause fungible token', async () => {
+      const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+  
+      const txTokenInfoBefore = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress);
+      const txPause = await baseHTSContract.unpauseTokenPublic(HTSTokenContractAddress, {gasLimit: 1000000});
+      const txTokenInfoAfter = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress);
+      
+      const unpauseResponse = (await txPause.wait()).events.filter(e => e.event === 'UnpausedToken')[0].args;
+      const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+      const { pauseStatus: pauseStatusAfter } = (await txTokenInfoAfter.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+  
+      expect(unpauseResponse.unpaused).to.equal(true);
+      expect(pauseStatusBefore).to.equal(true);
+      expect(pauseStatusAfter).to.equal(false);
+    });
+
+    it('should be able to pause non fungible token', async () => {
+      const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+  
+      const txTokenInfoBefore = await baseHTSContract.getTokenInfoPublic(NftHTSTokenContractAddress);
+      const txPause = await baseHTSContract.pauseTokenPublic(NftHTSTokenContractAddress, {gasLimit: 1000000});
+      const txTokenInfoAfter = await baseHTSContract.getTokenInfoPublic(NftHTSTokenContractAddress);
+      
+      const pauseResponse = (await txPause.wait()).events.filter(e => e.event === 'PausedToken')[0].args;
+      const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+      const { pauseStatus: pauseStatusAfter } = (await txTokenInfoAfter.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+  
+      expect(pauseResponse.paused).to.equal(true);
+      expect(pauseStatusBefore).to.equal(false);
+      expect(pauseStatusAfter).to.equal(true);
+    });
+
+    it('should be able to unpause non fungible token', async () => {
+      const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+  
+      const txTokenInfoBefore = await baseHTSContract.getTokenInfoPublic(NftHTSTokenContractAddress);
+      const txPause = await baseHTSContract.unpauseTokenPublic(NftHTSTokenContractAddress, {gasLimit: 1000000});
+      const txTokenInfoAfter = await baseHTSContract.getTokenInfoPublic(NftHTSTokenContractAddress);
+      
+      const unpauseResponse = (await txPause.wait()).events.filter(e => e.event === 'UnpausedToken')[0].args;
+      const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+      const { pauseStatus: pauseStatusAfter } = (await txTokenInfoAfter.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+  
+      expect(unpauseResponse.unpaused).to.equal(true);
+      expect(pauseStatusBefore).to.equal(true);
+      expect(pauseStatusAfter).to.equal(false);
+    });
+  });
 });
