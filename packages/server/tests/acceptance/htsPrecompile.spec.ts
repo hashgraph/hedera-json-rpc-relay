@@ -54,6 +54,7 @@ describe('HTS Precompile Acceptance Tests', async function() {
     BaseHTSContractAddress = await deployBaseHTSContract();
     HTSTokenContractAddress = await createHTSToken();
     NftHTSTokenContractAddress = await createNftHTSToken();
+    HTSTokenWithCustomFeesContractAddress = await createHTSTokenWithCustomFees();
   });
 
   async function deployBaseHTSContract() {
@@ -84,6 +85,23 @@ describe('HTS Precompile Acceptance Tests', async function() {
     const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
 
     return tokenAddress;
+  }
+
+  async function createHTSTokenWithCustomFees() {
+    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+    const tx = await baseHTSContract.createFungibleTokenWithCustomFeesPublic(accounts[0].wallet.address, HTSTokenContractAddress, {
+      value: ethers.BigNumber.from('20000000000000000000'),
+      gasLimit: 10_000_000
+    });
+    const txReceipt = await tx.wait();
+
+    const { responseCode } = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args;
+    expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+    const { tokenAddress } = txReceipt.events.filter(e => e.event === 'CreatedToken')[0].args;
+    expect(tokenAddress).to.be.not.null;
+
+    HTSTokenWithCustomFeesContractAddress = tokenAddress;
   }
 
   it('should associate to a token', async function() {
@@ -194,23 +212,6 @@ describe('HTS Precompile Acceptance Tests', async function() {
 
     const { approved } = (await tx.wait()).events.filter(e => e.event === 'ApprovedAddress')[0].args;
     expect(approved).to.equal('0x0000000000000000000000000000000000000000');
-  });
-
-  it('should be able to create a token with custom fees', async function() {
-    const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
-    const tx = await baseHTSContract.createFungibleTokenWithCustomFeesPublic(accounts[0].wallet.address, HTSTokenContractAddress, {
-      value: ethers.BigNumber.from('20000000000000000000'),
-      gasLimit: 10_000_000
-    });
-    const txReceipt = await tx.wait();
-
-    const { responseCode } = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args;
-    expect(responseCode).to.equal(TX_SUCCESS_CODE);
-
-    const { tokenAddress } = txReceipt.events.filter(e => e.event === 'CreatedToken')[0].args;
-    expect(tokenAddress).to.be.not.null;
-
-    HTSTokenWithCustomFeesContractAddress = tokenAddress;
   });
 
   it('should be able to get a custom token fees', async function() {
