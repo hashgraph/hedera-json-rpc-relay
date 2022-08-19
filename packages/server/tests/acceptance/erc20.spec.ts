@@ -229,7 +229,7 @@ describe('ERC20 Acceptance Tests', async function () {
                                         });
 
                                         it('reverts', async function () {
-                                            await Assertions.exoectRevert(
+                                            await Assertions.expectRevert(
                                                 contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                                 'CALL_EXCEPTION'
                                             );
@@ -255,7 +255,7 @@ describe('ERC20 Acceptance Tests', async function () {
                                         });
 
                                         it('reverts', async function () {
-                                            await Assertions.exoectRevert(
+                                            await Assertions.expectRevert(
                                                 contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                                 `CALL_EXCEPTION`,
                                             );
@@ -273,7 +273,7 @@ describe('ERC20 Acceptance Tests', async function () {
                                         });
 
                                         it('reverts', async function () {
-                                            await Assertions.exoectRevert(
+                                            await Assertions.expectRevert(
                                                 contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                                 `CALL_EXCEPTION`,
                                             );
@@ -311,7 +311,7 @@ describe('ERC20 Acceptance Tests', async function () {
                             });
 
                             it('reverts', async function () {
-                                await Assertions.exoectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                     `CALL_EXCEPTION`);
                             });
                         });
