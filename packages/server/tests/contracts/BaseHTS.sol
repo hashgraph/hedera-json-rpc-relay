@@ -18,14 +18,21 @@ contract BaseHTS is FeeHelper {
     event ResponseCode(int responseCode);
     event ApprovedAddress(address approved);
     event Approved(bool approved);
+    event FungibleTokenInfo(IHederaTokenService.FungibleTokenInfo tokenInfo);
+    event TokenInfo(IHederaTokenService.TokenInfo tokenInfo);
+    event NonFungibleTokenInfo(IHederaTokenService.NonFungibleTokenInfo tokenInfo);
     event MintedToken(uint64 newTotalSupply, int64[] serialNumbers);
+    event Frozen(bool frozen);
+    event PausedToken(bool paused);
+    event UnpausedToken(bool unpaused);
     event TokenCustomFees(IHederaTokenService.FixedFee[] fixedFees, IHederaTokenService.FractionalFee[] fractionalFees, IHederaTokenService.RoyaltyFee[] royaltyFees);
 
     function createFungibleTokenPublic(
         address treasury
     ) public payable {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
-        keys[0] = getSingleKey(0, 0, 1, bytes(""));
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
+        keys[0] = getSingleKey(0, 6, 1, bytes(""));
+        keys[1] = getSingleKey(2, 1, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000
@@ -48,9 +55,10 @@ contract BaseHTS is FeeHelper {
     function createNonFungibleTokenPublic(
         address treasury
     ) public payable {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
-        keys[0] = getSingleKey(0, 0, 1, bytes(""));
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](3);
+        keys[0] = getSingleKey(0, 6, 1, bytes(""));
         keys[1] = getSingleKey(4, 1, bytes(""));
+        keys[2] = getSingleKey(2, 1, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000
@@ -161,6 +169,91 @@ contract BaseHTS is FeeHelper {
         }
 
         emit Approved(approved);
+    }
+
+    function getFungibleTokenInfoPublic(address token) public returns (int responseCode, IHederaTokenService.FungibleTokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getFungibleTokenInfo(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit FungibleTokenInfo(tokenInfo);
+    }
+
+    function getTokenInfoPublic(address token) public returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getTokenInfo(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenInfo(tokenInfo);
+    }
+
+    function getNonFungibleTokenInfoPublic(address token, int64 serialNumber) public returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getNonFungibleTokenInfo(token, serialNumber);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit NonFungibleTokenInfo(tokenInfo);
+    }
+
+    function freezeTokenPublic(address token, address account) public returns (int responseCode) {
+        responseCode = HederaTokenService.freezeToken(token, account);
+        emit ResponseCode(responseCode);
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function unfreezeTokenPublic(address token, address account) public returns (int responseCode) {
+        responseCode = HederaTokenService.unfreezeToken(token, account);
+        emit ResponseCode(responseCode);
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function isFrozenPublic(address token, address account) public returns (int responseCode, bool frozen) {
+        (responseCode, frozen) = HederaTokenService.isFrozen(token, account);
+        emit ResponseCode(responseCode);
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+        emit Frozen(frozen);
+    }
+
+    function pauseTokenPublic(address token) public returns (int responseCode) {
+        responseCode = this.pauseToken(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit PausedToken(true);
+    }
+
+    function unpauseTokenPublic(address token) public returns (int responseCode) {
+        responseCode = this.unpauseToken(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit UnpausedToken(true);
     }
 
     function createFungibleTokenWithCustomFeesPublic(
