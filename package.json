@@ -22,6 +22,7 @@
     "scripts": {
         "acceptancetest": "ts-mocha packages/server/tests/acceptance/index.spec.ts --exit",
         "acceptancetest:release": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit",
+        "acceptancetest:verify": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@verify' --exit",
         "build": "npx lerna run build",
         "build-and-test": "npx lerna run build && npx lerna run test",
         "build:docker": "docker build . -t ${npm_package_name}",
