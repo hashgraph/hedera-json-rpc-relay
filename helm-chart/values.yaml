@@ -84,8 +84,6 @@ ports:
   containerPort: 7546
 
 config:
-  OPERATOR_ID_ETH_SENDRAWTRANSACTION: ""
-  OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ""
   # This value should be in decimal, not hexadecimal format.
   CHAIN_ID: ""
   MIRROR_NODE_URL: ""
@@ -99,5 +97,7 @@ config:
   #   HEDERA_NETWORK: ""
 secret:
   OPERATOR_ID_MAIN: ""
-  OPERATOR_KEY_MAIN: ""  
+  OPERATOR_KEY_MAIN: ""
+  OPERATOR_ID_ETH_SENDRAWTRANSACTION: ""
+  OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ""  
   

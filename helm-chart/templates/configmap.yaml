@@ -12,9 +12,8 @@ data:
   HEDERA_NETWORK: {{ .Values.config.hosted.HEDERA_NETWORK }}
 {{- else }}
   HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in either .Values.config.local.HEDERA_NETWORK or .Values.config.hosted.HEDERA_NETWORK " (or .Values.config.local.HEDERA_NETWORK .Values.config.hosted.HEDERA_NETWORK) }}
-{{- end }}  
-  OPERATOR_ID_ETH_SENDRAWTRANSACTION: {{ .Values.config.OPERATOR_ID_ETH_SENDRAWTRANSACTION | default (printf "%q" "") }}
-  OPERATOR_KEY_ETH_SENDRAWTRANSACTION: {{ .Values.config.OPERATOR_KEY_ETH_SENDRAWTRANSACTION | default (printf "%q" "") }}
+{{- end }}
+  CHAIN_ID: {{ .valu}} 
   MIRROR_NODE_URL: {{ .Values.config.MIRROR_NODE_URL  }}
   LOCAL_NODE: {{ .Values.config.LOCAL_NODE }}
   SERVER_PORT: {{ .Values.config.SERVER_PORT }}

@@ -42,21 +42,21 @@ spec:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: CHAIN_ID
                 optional: true
-          # - name: HEDERA_NETWORK
-          #   valueFrom:
-          #     configMapKeyRef:
-          #       name: {{ include "json-rpc-relay.fullname" . }}
-          #       key: HEDERA_NETWORK
-          #       optional: false
-          - name: OPERATOR_ID_ETH_SENDRAWTRANSACTION
+          - name: HEDERA_NETWORK
             valueFrom:
               configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: HEDERA_NETWORK
+                optional: false
+          - name: OPERATOR_ID_ETH_SENDRAWTRANSACTION
+            valueFrom:
+              secretKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: OPERATOR_ID_ETH_SENDRAWTRANSACTION
                 optional: true
           - name: OPERATOR_KEY_ETH_SENDRAWTRANSACTION
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: OPERATOR_KEY_ETH_SENDRAWTRANSACTION
                 optional: true
