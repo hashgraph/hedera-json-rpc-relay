@@ -12,8 +12,10 @@ contract BaseHTS is FeeHelper {
     uint initialTotalSupply = 1000;
     uint32 maxSupply = 1000;
     uint decimals = 8;
+    bool freezeDefaultStatus = false;
 
     event CreatedToken(address tokenAddress);
+    event DefaultFreezeStatusChanged(bool freezeStatus);
     event AllowanceValue(uint256 amount);
     event ResponseCode(int responseCode);
     event ApprovedAddress(address approved);
@@ -26,6 +28,8 @@ contract BaseHTS is FeeHelper {
     event PausedToken(bool paused);
     event UnpausedToken(bool unpaused);
     event TokenCustomFees(IHederaTokenService.FixedFee[] fixedFees, IHederaTokenService.FractionalFee[] fractionalFees, IHederaTokenService.RoyaltyFee[] royaltyFees);
+    event TokenDefaultFreezeStatus(bool defaultFreezeStatus);
+    event TokenDefaultKycStatus(bool defaultKycStatus);
 
     function createFungibleTokenPublic(
         address treasury
@@ -40,7 +44,7 @@ contract BaseHTS is FeeHelper {
         );
 
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
-            name, symbol, treasury, memo, true, maxSupply, false, keys, expiry
+            name, symbol, treasury, memo, true, maxSupply, freezeDefaultStatus, keys, expiry
         );
 
         (int responseCode, address tokenAddress) =
@@ -67,7 +71,7 @@ contract BaseHTS is FeeHelper {
         );
 
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
-            name, symbol, treasury, memo, true, maxSupply, false, keys, expiry
+            name, symbol, treasury, memo, true, maxSupply, freezeDefaultStatus, keys, expiry
         );
 
         (int responseCode, address tokenAddress) =
@@ -332,5 +336,29 @@ contract BaseHTS is FeeHelper {
         }
 
         emit TokenCustomFees(fixedFees, fractionalFees, royaltyFees);
+    }
+
+    function getTokenDefaultFreezeStatusPublic(address token) public returns (int responseCode, bool defaultFreezeStatus) {
+        (responseCode, defaultFreezeStatus) = HederaTokenService.getTokenDefaultFreezeStatus(token);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenDefaultFreezeStatus(defaultFreezeStatus);
+    }
+
+    function getTokenDefaultKycStatusPublic(address token) public returns (int responseCode, bool defaultKycStatus) {
+        (responseCode, defaultKycStatus) = HederaTokenService.getTokenDefaultKycStatus(token);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenDefaultKycStatus(defaultKycStatus);
     }
 }
