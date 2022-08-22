@@ -5,12 +5,15 @@
 |----------------------------------------------------------------------|--------|---------|--------|---------|
 | Transfer HBARS                                                       |    ✅   |    ✅    |    ✅   |    ✅    |
 | Contract Deployment                                                  |    ✅   |    ✅    |    ✅   |    ✅    |
-| Can use the contract instance after deploy without re-initialization |    ✅   |    ✅    |    ❌   |    ❌    |
+| Can use the contract instance after deploy without re-initialization |    ✅   |    ✅    |    ⚠️   |    ⚠️    |
 | Contract View Function Call                                          |    ✅   |    ✅    |    ✅   |    ✅    |
 | Contract Function Call                                               |    ✅   |    ✅    |    ✅   |    ✅    |
 
-Note: On contract deployment, most of the tools (e.g. [ethers](https://docs.ethers.io/v5/api/utils/address/#utils--contract-addresses)) pre-compute the contract address on the client-side, based
+Note:
+On contract deployment, most of the tools (e.g. [ethersjs](https://docs.ethers.io/v5/api/utils/address/#utils--contract-addresses)) pre-compute the contract address on the client-side, based
 on sender address and nonce. In the Hedera ecosystem, it's not like that, where it's just the next available id.
+[ethersjs](https://docs.ethers.io/v5/) and therefore Hardhat usage are impacted by this address calculation difference with the details captured here.
+An extra step to retrieve the valid Hedera contract address is required to workaround this challenge, example workarounds are provided below.
 
 #### Option 1
 ```typescript
@@ -19,7 +22,7 @@ const factory = new ethers.ContractFactory(contractJson.abi, contractJson.byteco
 // deploy the contract
 let contract = await factory.deploy();
 
-// wait till the transaction is mined and get the contract address from the receipt
+// wait till the transaction has reached consensus and get the contract address from the receipt
 const { contractAddress } = await contract.deployTransaction.wait();
 
 // re-init the contract with the deployed address
@@ -33,7 +36,7 @@ const factory = new ethers.ContractFactory(contractJson.abi, contractJson.byteco
 // deploy the contract
 let contract = await factory.deploy();
 
-// wait for transaction to be mined
+// wait for transaction to reach consensus
 await contract.deployed();
 
 // get the transaction receipt
