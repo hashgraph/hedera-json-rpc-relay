@@ -84,6 +84,12 @@ contract BaseHTS is FeeHelper {
         emit CreatedToken(tokenAddress);
     }
 
+    function setFreezeDefaultStatus(bool newFreezeStatus) public {
+        freezeDefaultStatus = newFreezeStatus;
+        
+        emit DefaultFreezeStatusChanged(freezeDefaultStatus);
+    }
+    
     function associateTokenPublic(address account, address token) public returns (int responseCode) {
         responseCode = HederaTokenService.associateToken(account, token);
         emit ResponseCode(responseCode);
