@@ -333,4 +333,13 @@ contract BaseHTS is FeeHelper {
 
         emit TokenCustomFees(fixedFees, fractionalFees, royaltyFees);
     }
+
+    function deleteTokenPublic(address token) public returns (int responseCode) {
+        responseCode = HederaTokenService.deleteToken(token);
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
 }

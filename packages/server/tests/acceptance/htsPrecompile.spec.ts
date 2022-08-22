@@ -54,7 +54,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   let HTSTokenWithCustomFeesContractAddress;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(105, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(140, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
@@ -479,5 +479,22 @@ describe('HTS Precompile Acceptance Tests', async function () {
     expect(fractionalFees[0].minimumAmount).to.equal(10);
     expect(fractionalFees[0].maximumAmount).to.equal(30);
     expect(fractionalFees[0].netOfTransfers).to.equal(false);
+  });
+
+  it('should be able to delete a token', async function() {
+    const createdTokenAddress = await createHTSToken();
+
+    const txBefore = (await baseHTSContract.getTokenInfoPublic(createdTokenAddress, { gasLimit: 1000000 }));
+    const tokenInfoBefore = (await txBefore.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+
+    const tx = await baseHTSContract.deleteTokenPublic(createdTokenAddress);
+    const responseCode = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+    expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+    const txAfter = (await baseHTSContract.getTokenInfoPublic(createdTokenAddress, { gasLimit: 1000000 }));
+    const tokenInfoAfter = (await txAfter.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+
+    expect(tokenInfoBefore.deleted).to.equal(false);
+    expect(tokenInfoAfter.deleted).to.equal(true);
   });
 });
