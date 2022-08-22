@@ -12,8 +12,10 @@ contract BaseHTS is FeeHelper {
     uint initialTotalSupply = 1000;
     uint32 maxSupply = 1000;
     uint decimals = 8;
+    bool freezeDefaultStatus = false;
 
     event CreatedToken(address tokenAddress);
+    event DefaultFreezeStatusChanged(bool freezeStatus);
     event AllowanceValue(uint256 amount);
     event ResponseCode(int responseCode);
     event ApprovedAddress(address approved);
@@ -40,7 +42,7 @@ contract BaseHTS is FeeHelper {
         );
 
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
-            name, symbol, treasury, memo, true, maxSupply, false, keys, expiry
+            name, symbol, treasury, memo, true, maxSupply, freezeDefaultStatus, keys, expiry
         );
 
         (int responseCode, address tokenAddress) =
@@ -67,7 +69,7 @@ contract BaseHTS is FeeHelper {
         );
 
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
-            name, symbol, treasury, memo, true, maxSupply, false, keys, expiry
+            name, symbol, treasury, memo, true, maxSupply, freezeDefaultStatus, keys, expiry
         );
 
         (int responseCode, address tokenAddress) =
@@ -78,6 +80,12 @@ contract BaseHTS is FeeHelper {
         }
 
         emit CreatedToken(tokenAddress);
+    }
+
+    function setFreezeDefaultStatus(bool newFreezeStatus) public {
+        freezeDefaultStatus = newFreezeStatus;
+        
+        emit DefaultFreezeStatusChanged(freezeDefaultStatus);
     }
 
     function associateTokenPublic(address account, address token) public returns (int responseCode) {
