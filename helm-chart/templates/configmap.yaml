@@ -18,3 +18,4 @@ data:
   LOCAL_NODE: {{ .Values.config.LOCAL_NODE }}
   SERVER_PORT: {{ .Values.config.SERVER_PORT }}
   CHAIN_ID: {{ .Values.config.CHAIN_ID }}
+  
