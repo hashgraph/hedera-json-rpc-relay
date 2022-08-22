@@ -41,6 +41,12 @@ describe('HTS Precompile Acceptance Tests', async function () {
   const TOKEN_MAX_SUPPLY = 1000;
   const TOKEN_DECIMALS = 8;
 
+  const TOKEN_UPDATE_NAME = 'tokenUpdateName';
+  const TOKEN_UPDATE_SYMBOL = 'tokenUpdateSymbol';
+  const TOKEN_UPDATE_MEMO = 'tokenUpdateMemo';
+  const TOKEN_UPDATE_EXPIRY_SECOND = 10;
+  const TOKEN_UPDATE_EXPIRY_AUTO_RENEW_PERIOD = 9000000;
+
   const accounts: AliasAccount[] = [];
   let BaseHTSContractAddress;
   let HTSTokenContractAddress;
@@ -480,4 +486,53 @@ describe('HTS Precompile Acceptance Tests', async function () {
     expect(fractionalFees[0].maximumAmount).to.equal(30);
     expect(fractionalFees[0].netOfTransfers).to.equal(false);
   });
+
+  xdescribe('HTS update token info test', async function() {
+
+    function checkUpdatedTokenInfo(tokenInfo) {
+      expect(tokenInfo.token.name).to.equal(TOKEN_UPDATE_NAME);
+      expect(tokenInfo.token.symbol).to.equal(TOKEN_UPDATE_SYMBOL);
+      expect(tokenInfo.token.treasury).to.equal(BaseHTSContractAddress);
+      expect(tokenInfo.token.memo).to.equal(TOKEN_UPDATE_MEMO);
+      expect(tokenInfo.token.expiry.second).to.equal(TOKEN_UPDATE_EXPIRY_SECOND);
+      expect(tokenInfo.token.expiry.autoRenewPeriod).to.equal(TOKEN_UPDATE_EXPIRY_AUTO_RENEW_PERIOD);
+    }
+
+    // Depends on https://github.com/hashgraph/hedera-services/pull/3738
+    xit('should update fungible token properties', async function() {  
+      // update contract properties
+      const txUpdate = await baseHTSContractOwner.updateTokenInfoPublic(HTSTokenContractAddress, {
+        name: TOKEN_UPDATE_NAME,
+        symbol: TOKEN_UPDATE_SYMBOL,
+        treasury: `${BaseHTSContractAddress}`,
+        memo: TOKEN_UPDATE_MEMO,
+        expiry: {second: TOKEN_UPDATE_EXPIRY_SECOND, autoRenewAccount: `${BaseHTSContractAddress}`, autoRenewPeriod: TOKEN_UPDATE_EXPIRY_AUTO_RENEW_PERIOD}
+      })
+      const responseCodeUpdate = (await txUpdate.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      expect(responseCodeUpdate).to.equal(TX_SUCCESS_CODE);
+  
+      const tx = await baseHTSContractOwner.getFungibleTokenInfoPublic(HTSTokenContractAddress);
+      const { tokenInfo, decimals } = (await tx.wait()).events.filter(e => e.event === 'FungibleTokenInfo')[0].args.tokenInfo;
+      checkUpdatedTokenInfo(tokenInfo);
+    });
+
+    // Depends on https://github.com/hashgraph/hedera-services/pull/3738
+    xit('should update non-fungible token properties', async function() {  
+      // update contract properties
+      const txUpdate = await baseHTSContractOwner.updateTokenInfoPublic(NftHTSTokenContractAddress, {
+        name: TOKEN_UPDATE_NAME,
+        symbol: TOKEN_UPDATE_SYMBOL,
+        treasury: `${BaseHTSContractAddress}`,
+        memo: TOKEN_UPDATE_MEMO,
+        expiry: {second: TOKEN_UPDATE_EXPIRY_SECOND, autoRenewAccount: `${BaseHTSContractAddress}`, autoRenewPeriod: TOKEN_UPDATE_EXPIRY_AUTO_RENEW_PERIOD}
+      })
+      const responseCodeUpdate = (await txUpdate.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      expect(responseCodeUpdate).to.equal(TX_SUCCESS_CODE);
+  
+      const tx = await baseHTSContractOwner.getNonFungibleTokenInfoPublic(NftHTSTokenContractAddress);
+      const { tokenInfo, decimals } = (await tx.wait()).events.filter(e => e.event === 'NonFungibleTokenInfo')[0].args.tokenInfo;
+      checkUpdatedTokenInfo(tokenInfo);
+    });
+  });
+
 });

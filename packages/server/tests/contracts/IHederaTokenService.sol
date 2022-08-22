@@ -463,6 +463,14 @@ interface IHederaTokenService {
     external
     returns (int64 responseCode, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees, RoyaltyFee[] memory royaltyFees);
 
+    /// Operation to update token info
+    /// @param token The token address
+    /// @param tokenInfo The hedera token info to update token with
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function updateTokenInfo(address token, HederaToken memory tokenInfo)
+    external
+    returns (int responseCode);
+
     /**********************
      * ABIV1 calls        *
      **********************/
