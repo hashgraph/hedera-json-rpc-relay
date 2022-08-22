@@ -229,7 +229,7 @@ describe('ERC20 Acceptance Tests', async function () {
                                         });
 
                                         it('reverts', async function () {
-                                            await expectRevert(
+                                            await Assertions.expectRevert(
                                                 contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                                 'CALL_EXCEPTION'
                                             );
@@ -255,7 +255,7 @@ describe('ERC20 Acceptance Tests', async function () {
                                         });
 
                                         it('reverts', async function () {
-                                            await expectRevert(
+                                            await Assertions.expectRevert(
                                                 contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                                 `CALL_EXCEPTION`,
                                             );
@@ -273,7 +273,7 @@ describe('ERC20 Acceptance Tests', async function () {
                                         });
 
                                         it('reverts', async function () {
-                                            await expectRevert(
+                                            await Assertions.expectRevert(
                                                 contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                                 `CALL_EXCEPTION`,
                                             );
@@ -311,7 +311,7 @@ describe('ERC20 Acceptance Tests', async function () {
                             });
 
                             it('reverts', async function () {
-                                await expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                     `CALL_EXCEPTION`);
                             });
                         });
@@ -321,17 +321,6 @@ describe('ERC20 Acceptance Tests', async function () {
         });
     }
 
-    const expectRevert = async (promise, code) => {
-        const tx = await promise;
-        try {
-            await tx.wait();
-            Assertions.expectedError();
-        }
-        catch(e:any) {
-            expect(e).to.exist;
-            expect(e.code).to.eq(code);
-        }
-    };
 
     async function deployErc20(constructorArgs:any[] = [], contractJson) {
         const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, accounts[0].wallet);
