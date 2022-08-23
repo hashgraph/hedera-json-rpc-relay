@@ -422,13 +422,61 @@ describe('HTS Precompile Acceptance Tests', async function () {
       {
         const tx = await baseHTSContract.wipeTokenAccountNFTPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, serials, { gasLimit: 1_000_000 });
         const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
-        console.log(`Wipe response: ${responseCode}`);
+        expect(responseCode).to.equal(TX_SUCCESS_CODE);
       }
 
       // Get token info after
       {
         const tx = await baseHTSContract.getNonFungibleTokenInfoPublic(NftHTSTokenContractAddress, NftSerialNumber, { gasLimit: 1_000_000 });
         await Assertions.expectRevert(tx, 'CALL_EXCEPTION');
+      }
+    });
+  });
+
+  // FIXME
+  // Key management functionality is not present in the Consensus Node yet
+  xdescribe('HTS Precompile Key management Tests', async function() {
+    it('should be able to execute getTokenKey', async function() {
+        const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
+        const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+        expect(responseCode).to.equal(TX_SUCCESS_CODE);
+        const { key } = (await tx.wait()).events.filter(e => e.event === 'KeyValue')[0].args;
+
+        expect(key).to.exist;
+        expect(key.inheritAccountKey).to.exist;
+        expect(key.contractId).to.eq(HTSTokenContractAddress);
+        expect(key.ed25519).to.exist;
+        expect(key.ECDSA_secp256k1).to.exist;
+        expect(key.delegatableContractId).to.exist;
+    });
+
+    it('should be able to execute updateTokenKeys', async function() {
+      // Get key value before update
+      const getKeyTx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
+      const { key } = (await getKeyTx.wait()).events.filter(e => e.event === 'KeyValue')[0].args;
+
+      const tx = await baseHTSContract.updateTokenKeysPublic(HTSTokenContractAddress, [{
+        keyValue: 6,
+        key
+      }]);
+
+      // Update the key
+      const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+      // Assert updated key
+      {
+        const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 6);
+        const {responseCode} = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+        expect(responseCode).to.equal(TX_SUCCESS_CODE);
+        const {key} = (await tx.wait()).events.filter(e => e.event === 'KeyValue')[0].args;
+
+        expect(key).to.exist;
+        expect(key.inheritAccountKey).to.exist;
+        expect(key.contractId).to.eq(HTSTokenContractAddress);
+        expect(key.ed25519).to.exist;
+        expect(key.ECDSA_secp256k1).to.exist;
+        expect(key.delegatableContractId).to.exist;
       }
     });
   });

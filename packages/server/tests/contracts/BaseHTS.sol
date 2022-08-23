@@ -25,6 +25,7 @@ contract BaseHTS is FeeHelper {
     event Frozen(bool frozen);
     event PausedToken(bool paused);
     event UnpausedToken(bool unpaused);
+    event KeyValue(IHederaTokenService.KeyValue key);
 
     function createFungibleTokenPublic(
         address treasury
@@ -284,5 +285,28 @@ contract BaseHTS is FeeHelper {
         }
 
         emit UnpausedToken(true);
+    }
+
+
+    function getTokenKeyPublic(address token, uint keyType) public returns (int responseCode, IHederaTokenService.KeyValue memory key) {
+        (responseCode, key) = HederaTokenService.getTokenKey(token, keyType);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit KeyValue(key);
+    }
+
+    function updateTokenKeysPublic(address token, IHederaTokenService.TokenKey[] memory keys) public returns (int responseCode) {
+        responseCode = HederaTokenService.updateTokenKeys(token, keys);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
     }
 }
