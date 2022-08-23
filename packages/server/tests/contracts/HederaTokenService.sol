@@ -334,6 +334,17 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (responseCode, frozen) = success ? abi.decode(result, (int32,bool)) : (HederaResponseCodes.UNKNOWN,false);
     }
 
+    /// Query if token account has kyc granted
+    /// @param token The token address to check
+    /// @param account The account address associated with the token
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return kycGranted True if `account` has kyc granted for `token`
+    function isKyc(address token, address account)external returns (int64 responseCode, bool kycGranted){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.isKyc.selector, token, account));
+        (responseCode, kycGranted) = success ? abi.decode(result, (int32,bool)) : (HederaResponseCodes.UNKNOWN,false);
+    }
+
     /// Operation to freeze token account
     /// @param token The token address
     /// @param account The account address to be frozen
@@ -354,6 +365,25 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
+    /// Operation to grant kyc to token account
+    /// @param token The token address
+    /// @param account The account address to grant kyc
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function grantTokenKyc(address token, address account)external returns (int64 responseCode){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.grantTokenKyc.selector, token, account));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Operation to revoke kyc to token account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function revokeTokenKyc(address token, address account)external returns (int64 responseCode){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.revokeTokenKyc.selector, token, account));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
 
     /// Enable or disable approval for a third party ("operator") to manage
     ///  all of `msg.sender`'s assets
