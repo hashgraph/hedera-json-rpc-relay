@@ -536,8 +536,8 @@ describe('HTS Precompile Acceptance Tests', async function () {
       await checkTokenDefaultKYCStatus(baseHTSContractOwner, NftHTSTokenContractAddress, false);
     });
 
-    it('should be able to grant Kyc', async function() {
-      // check if KYC is granted
+    it('should be able to grant KYC, tranfer hts tokens and revoke KYC', async function() {
+      // check if KYC is revoked
       await checkKyc(baseHTSContractOwner, HTSTokenContractAddress, accounts[1].wallet.address, false);
   
       // grant KYC
@@ -547,28 +547,21 @@ describe('HTS Precompile Acceptance Tests', async function () {
   
       // check if KYC is granted
       await checkKyc(baseHTSContractOwner, HTSTokenContractAddress, accounts[1].wallet.address, true);
-    });
-  
-    it('should be able to transfer hts tokens between accounts', async function () {
+
+      // transfer hts
       const amount = 10;
-  
       const balanceBefore = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
       await baseHTSContract.transferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
       const balanceAfter = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
   
       expect(balanceBefore + amount).to.equal(balanceAfter);
-    });
-  
-    it('should be able to revoke Kyc', async function() {
-      // check if KYC is granted
-      await checkKyc(baseHTSContractOwner, HTSTokenContractAddress, accounts[1].wallet.address, true);
-  
+
       // revoke KYC
       const revokeKycTx = await baseHTSContractOwner.revokeTokenKycPublic(HTSTokenContractAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
       const responseCodeRevokeKyc = (await revokeKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       expect(responseCodeRevokeKyc).to.equal(TX_SUCCESS_CODE);
   
-      // check if KYC is granted
+      // check if KYC is revoked
       await checkKyc(baseHTSContractOwner, HTSTokenContractAddress, accounts[1].wallet.address, false);
     });
   });
