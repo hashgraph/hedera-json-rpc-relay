@@ -91,7 +91,7 @@ config:
   # Use config.local.HEDERA_NETWORK when running against a locally hosted hedera network
   # local:
     # config.local.HEDERA_NETWORK should configured as a json set - {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1","$IPv4_ADDR_2:$PORT_2":"$ACCOUNT_ID_2"}
-    # HEDERA_NETWORK: {"192.168.1.10:50211":"0.0.3","192.168.1.11:50211":"0.0.4"}
+    # HEDERA_NETWORK: {"127.0.01:50211":"0.0.3"}
   # Use config.hosted.HEDERA_NETWORK when running against a hosted Hedera network.  Valid options are `previewnet`, `testnet`, and `mainnet`  
   # hosted:
   #   HEDERA_NETWORK: ""
