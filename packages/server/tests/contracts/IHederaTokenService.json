@@ -30,7 +30,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "amount",
+          "name": "allowance",
           "type": "uint256"
         }
       ],
@@ -2299,7 +2299,7 @@
         },
         {
           "internalType": "bool",
-          "name": "isTokenVar",
+          "name": "isToken",
           "type": "bool"
         }
       ],

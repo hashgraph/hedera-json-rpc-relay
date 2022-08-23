@@ -510,12 +510,12 @@ interface IHederaTokenService {
     /// @param owner the owner of the tokens to be spent
     /// @param spender the spender of the tokens
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return amount The amount which spender is still allowed to withdraw from owner.
+    /// @return allowance The amount which spender is still allowed to withdraw from owner.
     function allowance(
         address token,
         address owner,
         address spender
-    ) external returns (int64 responseCode, uint256 amount);
+    ) external returns (int64 responseCode, uint256 allowance);
 
     /// Allow or reaffirm the approved address to transfer an NFT the approved address does not own.
     /// Only Applicable to NFT Tokens
@@ -746,10 +746,10 @@ interface IHederaTokenService {
     /// Query if valid token found for the given address
     /// @param token The token address
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return isTokenVar True if valid token found for the given address
+    /// @return isToken True if valid token found for the given address
     function isToken(address token)
     external returns
-    (int64 responseCode, bool isTokenVar);
+    (int64 responseCode, bool isToken);
 
     /// Query to return the token type for a given address
     /// @param token The token address

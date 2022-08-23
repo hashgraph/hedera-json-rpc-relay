@@ -556,13 +556,13 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// Query if valid token found for the given address
     /// @param token The token address
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return isTokenVar True if valid token found for the given address
+    /// @return isToken True if valid token found for the given address
     function isToken(address token)
     internal returns
-    (int64 responseCode, bool isTokenVar){
+    (int64 responseCode, bool isToken){
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.isToken.selector, token));
-        (responseCode, isTokenVar) = success ? abi.decode(result, (int32,bool)) : (HederaResponseCodes.UNKNOWN,false);
+        (responseCode, isToken) = success ? abi.decode(result, (int32,bool)) : (HederaResponseCodes.UNKNOWN,false);
     }
 
     /// Query to return the token type for a given address
