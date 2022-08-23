@@ -19,6 +19,14 @@ abstract contract HederaTokenService is HederaResponseCodes {
     uint constant FEE_SCHEDULE_KEY_TYPE = 32;
     uint constant PAUSE_KEY_TYPE = 64;
 
+    modifier nonEmptyExpiry(IHederaTokenService.HederaToken memory token)
+    {
+        if (token.expiry.second == 0 && token.expiry.autoRenewPeriod == 0) {
+            token.expiry.autoRenewPeriod = defaultAutoRenewPeriod;
+        }
+        _;
+    }
+
     /// Initiates a Token Transfer
     /// @param tokenTransfers the list of transfers to do
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
@@ -511,78 +519,10 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// Operation to delete token
     /// @param token The token address
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function deleteToken(address token)internal returns (int64 responseCode){
+    function deleteToken(address token) internal returns (int responseCode)
+    {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.deleteToken.selector, token));
         (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
-
-    /// Operation to update token info
-    /// @param token The token address
-    /// @param tokenInfo The hedera token info to update token with
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function updateTokenInfo(address token, IHederaTokenService.HederaToken memory tokenInfo)
-    internal returns (int64 responseCode){
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.updateTokenInfo.selector, token, tokenInfo));
-        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
-    }
-
-    /// Operation to update token expiry info
-    /// @param token The token address
-    /// @param keys The token keys
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function updateTokenKeys(address token, IHederaTokenService.TokenKey[] memory keys)
-    internal returns (int64 responseCode){
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.updateTokenKeys.selector, token, keys));
-        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
-    }
-
-    /// Query token KeyValue
-    /// @param token The token address to check
-    /// @param keyType The keyType of the desired KeyValue
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return key KeyValue info for key of type `keyType`
-    function getTokenKey(address token, uint keyType)
-    internal returns (int64 responseCode, IHederaTokenService.KeyValue memory key){
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.getTokenKey.selector, token, keyType));
-        IHederaTokenService.KeyValue memory defaultKeyValueInfo;
-        (responseCode, key) = success ? abi.decode(result, (int32,IHederaTokenService.KeyValue) ) : (HederaResponseCodes.UNKNOWN, defaultKeyValueInfo);
-    }
-
-
-    /// Query if valid token found for the given address
-    /// @param token The token address
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return isToken True if valid token found for the given address
-    function isToken(address token)
-    internal returns
-    (int64 responseCode, bool isToken){
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.isToken.selector, token));
-        (responseCode, isToken) = success ? abi.decode(result, (int32,bool)) : (HederaResponseCodes.UNKNOWN,false);
-    }
-
-    /// Query to return the token type for a given address
-    /// @param token The token address
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return tokenType the token type. 0 is FUNGIBLE_COMMON, 1 is NON_FUNGIBLE_UNIQUE, -1 is UNRECOGNIZED
-    function getTokenType(address token)
-    internal returns
-    (int64 responseCode, int32 tokenType){
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.getTokenType.selector, token));
-        (responseCode, tokenType) = success ? abi.decode(result, (int32,int32)) : (HederaResponseCodes.UNKNOWN, -1);
-    }
-
-    modifier nonEmptyExpiry(IHederaTokenService.HederaToken memory token)
-    {
-        if (token.expiry.second == 0 && token.expiry.autoRenewPeriod == 0) {
-            token.expiry.autoRenewPeriod = defaultAutoRenewPeriod;
-        }
-        _;
-    }
-
 }

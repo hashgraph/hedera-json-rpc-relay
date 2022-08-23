@@ -12,8 +12,10 @@ contract BaseHTS is FeeHelper {
     uint initialTotalSupply = 1000;
     uint32 maxSupply = 1000;
     uint decimals = 8;
+    bool freezeDefaultStatus = false;
 
     event CreatedToken(address tokenAddress);
+    event DefaultFreezeStatusChanged(bool freezeStatus);
     event AllowanceValue(uint256 amount);
     event ResponseCode(int responseCode);
     event ApprovedAddress(address approved);
@@ -25,6 +27,9 @@ contract BaseHTS is FeeHelper {
     event Frozen(bool frozen);
     event PausedToken(bool paused);
     event UnpausedToken(bool unpaused);
+    event TokenCustomFees(IHederaTokenService.FixedFee[] fixedFees, IHederaTokenService.FractionalFee[] fractionalFees, IHederaTokenService.RoyaltyFee[] royaltyFees);
+    event TokenDefaultFreezeStatus(bool defaultFreezeStatus);
+    event TokenDefaultKycStatus(bool defaultKycStatus);
 
     function createFungibleTokenPublic(
         address treasury
@@ -39,7 +44,7 @@ contract BaseHTS is FeeHelper {
         );
 
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
-            name, symbol, treasury, memo, true, maxSupply, false, keys, expiry
+            name, symbol, treasury, memo, true, maxSupply, freezeDefaultStatus, keys, expiry
         );
 
         (int responseCode, address tokenAddress) =
@@ -66,7 +71,7 @@ contract BaseHTS is FeeHelper {
         );
 
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
-            name, symbol, treasury, memo, true, maxSupply, false, keys, expiry
+            name, symbol, treasury, memo, true, maxSupply, freezeDefaultStatus, keys, expiry
         );
 
         (int responseCode, address tokenAddress) =
@@ -77,6 +82,12 @@ contract BaseHTS is FeeHelper {
         }
 
         emit CreatedToken(tokenAddress);
+    }
+
+    function setFreezeDefaultStatus(bool newFreezeStatus) public {
+        freezeDefaultStatus = newFreezeStatus;
+
+        emit DefaultFreezeStatusChanged(freezeDefaultStatus);
     }
 
     function associateTokenPublic(address account, address token) public returns (int responseCode) {
@@ -284,5 +295,85 @@ contract BaseHTS is FeeHelper {
         }
 
         emit UnpausedToken(true);
+    }
+
+    function createFungibleTokenWithCustomFeesPublic(
+        address treasury,
+        address fixedFeeTokenAddress
+    ) public payable {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        keys[0] = getSingleKey(0, 0, 1, bytes(""));
+
+        IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
+            0, treasury, 8000000
+        );
+
+        IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
+            name, symbol, treasury, memo, true, maxSupply, false, keys, expiry
+        );
+
+        IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](1);
+        fixedFees[0] = IHederaTokenService.FixedFee(1, fixedFeeTokenAddress, false, false, treasury);
+
+        IHederaTokenService.FractionalFee[] memory fractionalFees = new IHederaTokenService.FractionalFee[](1);
+        fractionalFees[0] = IHederaTokenService.FractionalFee(4, 5, 10, 30, false, treasury);
+
+        (int responseCode, address tokenAddress) =
+        HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals, fixedFees, fractionalFees);
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        emit CreatedToken(tokenAddress);
+    }
+
+    function getTokenCustomFeesPublic(address token) public returns (
+        int64 responseCode,
+        IHederaTokenService.FixedFee[] memory fixedFees,
+        IHederaTokenService.FractionalFee[] memory fractionalFees,
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees) {
+        (responseCode, fixedFees, fractionalFees, royaltyFees) = HederaTokenService.getTokenCustomFees(token);
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenCustomFees(fixedFees, fractionalFees, royaltyFees);
+    }
+
+    function getTokenDefaultFreezeStatusPublic(address token) public returns (int responseCode, bool defaultFreezeStatus) {
+        (responseCode, defaultFreezeStatus) = HederaTokenService.getTokenDefaultFreezeStatus(token);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenDefaultFreezeStatus(defaultFreezeStatus);
+    }
+
+    function deleteTokenPublic(address token) public returns (int responseCode) {
+        responseCode = HederaTokenService.deleteToken(token);
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function getTokenDefaultKycStatusPublic(address token) public returns (int responseCode, bool defaultKycStatus) {
+        (responseCode, defaultKycStatus) = HederaTokenService.getTokenDefaultKycStatus(token);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenDefaultKycStatus(defaultKycStatus);
     }
 }
