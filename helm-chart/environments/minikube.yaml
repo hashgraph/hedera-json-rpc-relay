@@ -7,7 +7,7 @@ config:
   MIRROR_NODE_URL: ""
   LOG_LEVEL: ""
   local:
-    HEDERA_NETWORK: {"192.168.1.10:50211":"0.0.3","192.168.1.11:50211":"0.0.4"}
+    HEDERA_NETWORK: {"127.0.01:50211":"0.0.3"}
 
 secret:
   OPERATOR_ID_MAIN: ""
