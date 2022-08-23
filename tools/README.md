@@ -12,7 +12,7 @@
 Note:
 On contract deployment, most of the tools (e.g. [ethersjs](https://docs.ethers.io/v5/api/utils/address/#utils--contract-addresses)) pre-compute the contract address on the client-side, based
 on sender address and nonce. In the Hedera ecosystem, it's not like that, where it's just the next available id.
-[ethersjs](https://docs.ethers.io/v5/) and therefore Hardhat usage are impacted by this address calculation difference with the details captured here.
+[ethersjs](https://docs.ethers.io/v5/) and therefore Hardhat usage are impacted by this address calculation difference with the details captured [here](https://github.com/ethers-io/ethers.js/discussions/3141).
 An extra step to retrieve the valid Hedera contract address is required to workaround this challenge, example workarounds are provided below.
 
 #### Option 1
