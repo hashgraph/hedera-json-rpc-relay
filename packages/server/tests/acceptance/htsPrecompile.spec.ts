@@ -54,7 +54,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   let HTSTokenWithCustomFeesContractAddress;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(140, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(160, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
@@ -264,11 +264,11 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const txBeforeReceipt = await txBefore.wait();
       const responseCodeBefore = txBeforeReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       const isFrozenBefore = txBeforeReceipt.events.filter(e => e.event === 'Frozen')[0].args.frozen;
-  
+
       expect(responseCodeBefore).to.equal(TX_SUCCESS_CODE);
       expect(isFrozenBefore).to.be.equal(expectedValue);
     }
-    
+
     async function checkTokenDefaultFreezeStatus(contractOwner, tokenAddress, expectedValue: boolean) {
       const txTokenDefaultStatus = await contractOwner.getTokenDefaultFreezeStatusPublic(tokenAddress, { gasLimit: 1_000_000 });
       const responseCodeTokenDefaultStatus = (await txTokenDefaultStatus.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
@@ -280,66 +280,66 @@ describe('HTS Precompile Acceptance Tests', async function () {
     it('should be able to freeze and unfreeze fungible token transfers', async function() {
       // expect the token to not be frozen
       await checkTokenFrozen(baseHTSContractOwner, HTSTokenContractAddress, false);
-  
+
       // get token default freeze status
       await checkTokenDefaultFreezeStatus(baseHTSContractOwner, HTSTokenContractAddress, false);
-  
+
       // freeze token
       const freezeTx = await baseHTSContractOwner.freezeTokenPublic(HTSTokenContractAddress, accounts[0].wallet.address, { gasLimit: 1_000_000 });
       const responseCodeFreeze = (await freezeTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       expect(responseCodeFreeze).to.equal(TX_SUCCESS_CODE);
-  
+
       // expect the token to be frozen
       await checkTokenFrozen(baseHTSContractOwner, HTSTokenContractAddress, true);
-  
+
       // unfreeze token
       const unfreezeTx = await baseHTSContractOwner.unfreezeTokenPublic(HTSTokenContractAddress, accounts[0].wallet.address, { gasLimit: 1_000_000 });
       const responseCodeUnfreeze = (await unfreezeTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       expect(responseCodeUnfreeze).to.equal(TX_SUCCESS_CODE);
-      
+
       // expect the token to not be frozen
       await checkTokenFrozen(baseHTSContractOwner, HTSTokenContractAddress, false);
     });
-  
+
     it('should be able to freeze and unfreeze non-fungible token transfers', async function() {
       // expect the token to not be frozen
       await checkTokenFrozen(baseHTSContractOwner, NftHTSTokenContractAddress, false);
-  
+
       // get token default freeze status
       await checkTokenDefaultFreezeStatus(baseHTSContractOwner, NftHTSTokenContractAddress, false);
-  
+
       // freeze token
       const freezeTx = await baseHTSContractOwner.freezeTokenPublic(NftHTSTokenContractAddress, accounts[0].wallet.address, { gasLimit: 1_000_000 });
       const responseCodeFreeze = (await freezeTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       expect(responseCodeFreeze).to.equal(TX_SUCCESS_CODE);
-  
+
       // expect the token to be frozen
       await checkTokenFrozen(baseHTSContractOwner, NftHTSTokenContractAddress, true);
-  
+
       // unfreeze token
       const unfreezeTx = await baseHTSContractOwner.unfreezeTokenPublic(NftHTSTokenContractAddress, accounts[0].wallet.address, { gasLimit: 1_000_000 });
       const responseCodeUnfreeze = (await unfreezeTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       expect(responseCodeUnfreeze).to.equal(TX_SUCCESS_CODE);
-      
+
       // expect the token to not be frozen
       await checkTokenFrozen(baseHTSContractOwner, NftHTSTokenContractAddress, false);
     });
-  
+
     it('should create fungible token with default freeze status true', async function() {
       // change default freeze status
       const txSetDefaultFreezeStatus = await baseHTSContractOwner.setFreezeDefaultStatus(true, { gasLimit: 1_000_000 });
       const newDefaultFreezeStatus = (await txSetDefaultFreezeStatus.wait()).events.filter(e => e.event === 'DefaultFreezeStatusChanged')[0].args.freezeStatus;
-  
+
       expect(newDefaultFreezeStatus).to.equal(true);
-      
+
       // create token with new default freeze status
       const tx = await baseHTSContractOwner.createFungibleTokenPublic(accounts[0].wallet.address, {
         value: ethers.BigNumber.from('10000000000000000000'),
         gasLimit: 10000000
       });
-  
+
       const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
-      
+
       // get token default freeze status
       await checkTokenDefaultFreezeStatus(baseHTSContractOwner, tokenAddress, newDefaultFreezeStatus);
     });
@@ -348,16 +348,16 @@ describe('HTS Precompile Acceptance Tests', async function () {
       // change default freeze status
       const txSetDefaultFreezeStatus = await baseHTSContractOwner.setFreezeDefaultStatus(true, { gasLimit: 1_000_000 });
       const newDefaultFreezeStatus = (await txSetDefaultFreezeStatus.wait()).events.filter(e => e.event === 'DefaultFreezeStatusChanged')[0].args.freezeStatus;
-  
+
       expect(newDefaultFreezeStatus).to.equal(true);
-      
+
       // create non fungible token with new default freeze status
       const tx = await baseHTSContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
         value: ethers.BigNumber.from('10000000000000000000'),
         gasLimit: 10000000
       });
       const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
-      
+
       // get token default freeze status
       await checkTokenDefaultFreezeStatus(baseHTSContractOwner, tokenAddress, newDefaultFreezeStatus);
     });
@@ -550,5 +550,22 @@ describe('HTS Precompile Acceptance Tests', async function () {
     expect(fractionalFees[0].minimumAmount).to.equal(10);
     expect(fractionalFees[0].maximumAmount).to.equal(30);
     expect(fractionalFees[0].netOfTransfers).to.equal(false);
+  });
+
+  it('should be able to delete a token', async function() {
+    const createdTokenAddress = await createHTSToken();
+
+    const txBefore = (await baseHTSContract.getTokenInfoPublic(createdTokenAddress, { gasLimit: 1000000 }));
+    const tokenInfoBefore = (await txBefore.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+
+    const tx = await baseHTSContract.deleteTokenPublic(createdTokenAddress);
+    const responseCode = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+    expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+    const txAfter = (await baseHTSContract.getTokenInfoPublic(createdTokenAddress, { gasLimit: 1000000 }));
+    const tokenInfoAfter = (await txAfter.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
+
+    expect(tokenInfoBefore.deleted).to.equal(false);
+    expect(tokenInfoAfter.deleted).to.equal(true);
   });
 });

@@ -86,10 +86,10 @@ contract BaseHTS is FeeHelper {
 
     function setFreezeDefaultStatus(bool newFreezeStatus) public {
         freezeDefaultStatus = newFreezeStatus;
-        
+
         emit DefaultFreezeStatusChanged(freezeDefaultStatus);
     }
-    
+
     function associateTokenPublic(address account, address token) public returns (int responseCode) {
         responseCode = HederaTokenService.associateToken(account, token);
         emit ResponseCode(responseCode);
@@ -354,6 +354,15 @@ contract BaseHTS is FeeHelper {
         }
 
         emit TokenDefaultFreezeStatus(defaultFreezeStatus);
+    }
+
+    function deleteTokenPublic(address token) public returns (int responseCode) {
+        responseCode = HederaTokenService.deleteToken(token);
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
     }
 
     function getTokenDefaultKycStatusPublic(address token) public returns (int responseCode, bool defaultKycStatus) {
