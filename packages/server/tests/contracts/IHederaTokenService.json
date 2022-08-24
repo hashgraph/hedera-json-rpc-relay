@@ -2051,6 +2051,30 @@
           "internalType": "address",
           "name": "token",
           "type": "address"
+        }
+      ],
+      "name": "getTokenType",
+      "outputs": [
+        {
+          "internalType": "int64",
+          "name": "responseCode",
+          "type": "int64"
+        },
+        {
+          "internalType": "int32",
+          "name": "tokenType",
+          "type": "int32"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
         },
         {
           "internalType": "address",
@@ -2155,6 +2179,30 @@
         {
           "internalType": "bool",
           "name": "kycGranted",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "isToken",
+      "outputs": [
+        {
+          "internalType": "int64",
+          "name": "responseCode",
+          "type": "int64"
+        },
+        {
+          "internalType": "bool",
+          "name": "isTokenFlag",
           "type": "bool"
         }
       ],
