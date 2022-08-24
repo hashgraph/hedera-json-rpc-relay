@@ -538,12 +538,11 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const getKeyTx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
       const { key } = (await getKeyTx.wait()).events.filter(e => e.event === 'KeyValue')[0].args;
 
+      // Update keys. After updating there should be only one key with keyValue = 6. Other keys are removed
       const tx = await baseHTSContract.updateTokenKeysPublic(HTSTokenContractAddress, [{
         keyValue: 6,
         key
       }]);
-
-      // Update the key
       const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
       expect(responseCode).to.equal(TX_SUCCESS_CODE);
 
@@ -560,6 +559,13 @@ describe('HTS Precompile Acceptance Tests', async function () {
         expect(key.ed25519).to.exist;
         expect(key.ECDSA_secp256k1).to.exist;
         expect(key.delegatableContractId).to.exist;
+      }
+
+      // Assert the original key is deleted
+      {
+        const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
+        const {responseCode} = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+        expect(responseCode).to.not.equal(TX_SUCCESS_CODE);
       }
     });
   });
