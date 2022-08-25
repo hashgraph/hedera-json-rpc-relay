@@ -772,7 +772,7 @@ export class EthImpl implements Eth {
     // FIXME: In the future this will be implemented by making calls to the mirror node. For the
     //        time being we'll eat the cost and ask the main consensus nodes instead.
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    this.logger.trace(`${requestIdPrefix} call(hash=${call}, blockParam=${blockParam})`, call, blockParam);
+    this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
     // The "to" address must always be 42 chars.
     if (call.to.length != 42) {
       throw new Error(requestIdPrefix+

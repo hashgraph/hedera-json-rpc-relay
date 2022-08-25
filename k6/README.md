@@ -40,6 +40,14 @@ For domain specific parameters the following rule is used:
 When the value of a parameter is set with an environment variable, the value will be used, but if no value is set for a
 particular parameter, then its value will be found by querying either the rest or rosetta APIs.
 
+#### Full Suite Test
+
+To run all tests, just do
+
+```shell
+k6 run src/sceanrios/apis.js
+```
+
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
 interfere with each other.
 
@@ -398,12 +406,11 @@ With the test suite mode, a simplified markdown format report `report.md` will a
 | web3_clientVersion | 1 | 100.00 | 2328.00/s | 2328.00/s | 0.23ms | |
 | web3_client_version | 1 | 100.00 | 859.18/s | 859.18/s | 0.23ms | |
 
-### Single Test
+#### Single Test
 
 To run a single test, such as the `eth_chainid` test, just do
 
 ```shell
-source src/rosetta/k6.env
 k6 run src/sceanrios/test/eth_chainid.js
 ```
 
