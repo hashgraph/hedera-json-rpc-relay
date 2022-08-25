@@ -148,7 +148,8 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
     logger.info(`${messagePrefix} ${status} ${ms} ms `);
     if (response instanceof JsonRpcError) {
       return new JsonRpcError({name: response.name, code: response.code, message:`${requestIdPrefix} ` + response.message});
-    } return response;
+    } 
+    return response;
   } catch (e: any) {
     ms = Date.now() - start;
     methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
