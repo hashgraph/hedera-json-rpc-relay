@@ -606,7 +606,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   });
 
   xdescribe('HTS Precompile for token check methods', async function() {
-    it('should returns false for isToken with passed contract address', async function() {
+    it('should return false for isToken with passed contract address', async function() {
       const tx = await baseHTSContract.isTokenPublic(BaseHTSContractAddress, { gasLimit: 1000000 });
       const txReceipt = await tx.wait();
 
@@ -616,7 +616,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const isTokenFlag = txReceipt.events.filter(e => e.event === 'IsToken')[0].args.isToken;
       expect(isTokenFlag).to.equal(false);
     });
-    it('should returns true for isToken with passed token address', async function() {
+    it('should return true for isToken with passed token address', async function() {
       const tx = await baseHTSContract.isTokenPublic(HTSTokenContractAddress, { gasLimit: 1000000 });
       const txReceipt = await tx.wait();
 
@@ -626,7 +626,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const isTokenFlag = txReceipt.events.filter(e => e.event === 'IsToken')[0].args.isToken;
       expect(isTokenFlag).to.equal(true);
     });
-    it('should returns 0 for getTokenType with passed HTS token', async function() {
+    it('should return 0 for getTokenType with passed FUNGIBLE_COMMON token', async function() {
       const tx = await baseHTSContract.getTokenTypePublic(HTSTokenContractAddress, { gasLimit: 1000000 });
       const txReceipt = await tx.wait();
 
@@ -636,7 +636,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const tokenType = txReceipt.events.filter(e => e.event === 'TokenType')[0].args.tokenType;
       expect(tokenType).to.equal(0);
     });
-    it('should returns 1 for getTokenType with passed HTS nft token', async function() {
+    it('should return 1 for getTokenType with passed HTS NON_FUNGIBLE_UNIQUE token', async function() {
       const tx = await baseHTSContract.getTokenTypePublic(NftHTSTokenContractAddress, { gasLimit: 1000000 });
       const txReceipt = await tx.wait();
 
@@ -646,7 +646,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const tokenType = txReceipt.events.filter(e => e.event === 'TokenType')[0].args.tokenType;
       expect(tokenType).to.equal(1);
     });
-    it('should throws an exception for getTokenType with passed contract address', async function() {
+    it('should throw an exception for getTokenType with passed contract address', async function() {
       let hasError = false;
       try {
         const tx = await baseHTSContract.getTokenTypePublic(BaseHTSContractAddress, { gasLimit: 1000000 });
