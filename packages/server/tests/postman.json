@@ -604,7 +604,7 @@
 							"    var response = pm.response.json();",
 							"    pm.expect(response.error.code).to.equal(-32601);",
 							"    pm.expect(response.error.name).to.equal(\"Method not found\");",
-							"    pm.expect(response.error.message).to.equal(\"Unsupported JSON-RPC method\");",
+							"    pm.expect(response.error.message.endsWith(\"Unsupported JSON-RPC method\")).to.be.true;",
 							"    pm.expect(response.id).to.equal(\"test_id\");",
 							"    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
 							"});",
