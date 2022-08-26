@@ -27,7 +27,7 @@ export class JsonRpcError {
   constructor(args: { name: string, code: number, message: string }, requestId?: string) {
     this.code = args.code;
     this.name = args.name;
-    this.message = args.message;
+    this.message = requestId ? `[${REQUEST_ID_STRING}${requestId}] ` + args.message : args.message;
   }
 }
 
