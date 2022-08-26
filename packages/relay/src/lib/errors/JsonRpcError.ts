@@ -18,12 +18,13 @@
  *
  */
 
+const REQUEST_ID_STRING = `Request ID: `;
 export class JsonRpcError {
   public code: number;
   public message: string;
   public name: string;
 
-  constructor(args: { name: string, code: number, message: string }) {
+  constructor(args: { name: string, code: number, message: string }, requestId?: string) {
     this.code = args.code;
     this.name = args.name;
     this.message = args.message;
