@@ -350,7 +350,7 @@ class BaseTest {
     expect(response.data.error).to.have.property('code');
     expect(response.data.error.code).to.be.equal(code);
     expect(response.data.error).to.have.property('message');
-    expect(response.data.error.message).to.be.equal(message);
+    expect(response.data.error.message.endsWith(message)).to.be.true;
     if (name) {
       expect(response.data.error).to.have.property('name');
       expect(response.data.error.name).to.be.equal(name);

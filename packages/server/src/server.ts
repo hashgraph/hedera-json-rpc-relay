@@ -146,22 +146,28 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
     ms = Date.now() - start;
     methodResponseHistogram.labels(methodName, status).observe(ms);
     logger.info(`${messagePrefix} ${status} ${ms} ms `);
+    if (response instanceof JsonRpcError) {
+      logger.error(`returning error to sender: ${requestIdPrefix} ${response.message}`)
+      return new JsonRpcError({name: response.name, code: response.code, message: response.message}, requestId);
+    } 
     return response;
   } catch (e: any) {
     ms = Date.now() - start;
     methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
     logger.error(e, `${messagePrefix} ${responseInternalErrorCode} ${ms} ms`);
 
+    let error = predefined.INTERNAL_ERROR;
     if (e instanceof MirrorNodeClientError) {
       if (e.isTimeout()) {
-        return predefined.REQUEST_TIMEOUT;
+        error = predefined.REQUEST_TIMEOUT;
       }
     }
     else if (e instanceof JsonRpcError) {
-      return e;
+      error = e;
     }
 
-    return predefined.INTERNAL_ERROR;
+    logger.error(`returning error to sender: ${requestIdPrefix} ${error.message}`)
+    return new JsonRpcError({name: error.name, code: error.code, message:error.message}, requestId);
   }
 };
 

@@ -44,7 +44,7 @@ export default class Assertions {
 
     static unsupportedResponse = (resp: any) => {
         expect(resp.error.code).to.eq(-32601);
-        expect(resp.error.message).to.eq('Unsupported JSON-RPC method');
+        expect(resp.error.message.endsWith('Unsupported JSON-RPC method')).to.be.true;
     };
 
     static expectedError = () => {
@@ -201,7 +201,7 @@ export default class Assertions {
         expect(err).to.have.property('body');
 
         const parsedError = JSON.parse(err.body);
-        expect(parsedError.error.message).to.be.equal(expectedError.message);
+        expect(parsedError.error.message.endsWith(expectedError.message)).to.be.true;
         expect(parsedError.error.code).to.be.equal(expectedError.code);
     }
 
