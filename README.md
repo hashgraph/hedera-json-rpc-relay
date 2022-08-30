@@ -1,6 +1,7 @@
 <div align="center">
 
 # Hedera JSON RPC Relay
+
 [![Build](https://github.com/hashgraph/hedera-json-rpc-relay/actions/workflows/test.yml/badge.svg)](https://github.com/hashgraph/hedera-json-rpc-relay/actions)
 [![Latest Version](https://img.shields.io/github/v/tag/hashgraph/hedera-json-rpc-relay?sort=semver&label=version)](README.md)
 [![RPC API Methods](https://img.shields.io/badge/docs-quickstart-green.svg)](docs/rpc-api.md)
@@ -20,7 +21,8 @@ the [JSON RPC Specification](https://playground.open-rpc.org/?schemaUrl=https://
 
 ### Pre-requirements
 
-You must have installed 
+You must have installed
+
 - [node (version 16)](https://nodejs.org/en/about/)
 - [npm](https://www.npmjs.com/)
 - [pnpm](https://pnpm.io/)
@@ -70,19 +72,25 @@ MIRROR_NODE_URL=http://127.0.0.1:5551
 LOCAL_NODE=true
 SERVER_PORT=7546
 E2E_RELAY_HOST=http://127.0.0.1:7546
+DEFAULT_RATE_LIMIT = 200
+TIER_1_RATE_LIMIT = 100
+TIER_2_RATE_LIMIT = 200
+TIER_3_RATE_LIMIT = 400
+LIMIT_DURATION = 60000
 ```
 
 The following table highlights some initial configuration values to consider
 
-| Config      | Default | Description                                                                                                                                       |
-| ------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| `CHAIN_ID`  | `0x12a` | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively |
+| Config     | Default | Description                                                                                                                                                                      |
+| ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CHAIN_ID` | `0x12a` | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively |
 
 > **_NOTE:_** Acceptance tests can be pointed at a remote location. In this case be sure to appropriately update these values to point away from your local host and to valid deployed services.
 
 #### Run
 
 Tests may be run using the following command
+
 ```shell
 npm run acceptancetest
 ```
@@ -90,9 +98,11 @@ npm run acceptancetest
 ## Deployment
 
 The Relay supports Docker image building and Docker Compose container management using the provided [Dockerfile](Dockerfile) and [docker-compose](docker-compose.yml) files.
+
 > **_NOTE:_** docker compose is for development purposes only.
 
 ### Image Build (optional)
+
 A new docker image may be created from a local copy of the repo.
 Run the following command, substituting `<owner>` as desired
 
@@ -114,6 +124,7 @@ The relay application currently utilizes [dotenv](https://github.com/motdotla/do
 Key values are pulled from a `.env` file and reference as `process.env.<KEY>` in the application.
 
 To modify the default values
+
 1. Rename [.env.example file](.env.example) to `.env`
 2. Populate the expected fields
 3. Update the `relay` service volumes section in the [docker-compose](docker-compose.yml) file from `./.env.sample:/home/node/app/.env.sample` to `./.env:/home/node/app/.env`
@@ -123,6 +134,7 @@ Custom values provided will now be incorporated on startup of the relay
 ### Starting
 
 To start the relay, a docker container may be created using the following command
+
 ```shell
 docker compose up -d
 ```
@@ -132,6 +144,7 @@ docker compose up -d
 By default the relay will be made accessible on port `7546`
 
 #### Request Test
+
 The following curl commands may be used to quickly test a running relay instance is function
 
 From a command prompt/terminal run the command
@@ -143,7 +156,6 @@ curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":"2","
 The expected response should be `{"result":"0x12a","jsonrpc":"2.0","id":"2"}`
 Where the `result` value matches the .env `CHAIN_ID` configuration value or the current deault value of `298`
 
-
 ```shell
 curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":"2","method":"eth_gasPrice","params":[null]}' http://localhost:7546
 ```
@@ -153,49 +165,62 @@ Where result returns a valid hexadecimal number
 
 ### Helm Chart
 
-This repos `helm-chart` directory contains the templates and values to deploy Hedera's json-rpc relay to a K8s cluster.  This directory is packaged and distributed via helm repo.
+This repos `helm-chart` directory contains the templates and values to deploy Hedera's json-rpc relay to a K8s cluster. This directory is packaged and distributed via helm repo.
 To get started, first install the helm repo:
+
 ```
 helm repo add hedera-json-rpc-relay https://hashgraph.github.io/hedera-json-rpc-relay/charts
 helm repo update
 ```
+
 now install the helm chart:
+
 ```
 helm install [RELEASE_NAME] hedera-json-rpc-relay/hedera-json-rpc-relay -f /path/to/values.yaml
 ```
 
 To see the values that have been deployed:
+
 ```
 helm show values hedera-json-rpc-relay
 ```
+
 Deploy an installation with custom values file:
+
 ```
 helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./helm-chart --debug
 ```
+
 ##### Deploy Helm Chart locally on minikube
 
 1.  Minikube must be running and the set context
-2. GHCR.io requires authorization to pull the image.  This auth will require a Github PAT to be generated
-  * Acquire PAT, username, and, (primary) email address from Github.
-  * Manually create a secret on kubernetes with the following command.  The $ must be replaced
-    ```
-    kubectl create secret docker-registry ghcr-registry-auth \
-    --docker-server=https://ghcr.io \
-    --docker-username=$GH_USERNAME \
-    --docker-password=$GH_PAT \
-    --docker-email=$GH_EMAIL
-    ```
+2.  GHCR.io requires authorization to pull the image. This auth will require a Github PAT to be generated
+
+- Acquire PAT, username, and, (primary) email address from Github.
+- Manually create a secret on kubernetes with the following command. The $ must be replaced
+  ```
+  kubectl create secret docker-registry ghcr-registry-auth \
+  --docker-server=https://ghcr.io \
+  --docker-username=$GH_USERNAME \
+  --docker-password=$GH_PAT \
+  --docker-email=$GH_EMAIL
+  ```
+
 3. Deploy this helm-chart with the addtional [environment/minikube.yaml](environment/minikube.yaml) file
+
 ```
-helm upgrade -f environments/minkube.yaml jrpc-test ./ 
+helm upgrade -f environments/minkube.yaml jrpc-test ./
 ```
+
 4. Port forward the pod IP to localhost
+
 ```
 kubectl port-forward $POD_NAME 7546:7546
 ```
 
 ##### Monitoring
-The hedera-json-rpc-relay ships with a metrics endpoint at `/metrics`.  Here is an example scrape config that can be used by [prometheus](https://prometheus.io/docs/introduction/overview/):
+
+The hedera-json-rpc-relay ships with a metrics endpoint at `/metrics`. Here is an example scrape config that can be used by [prometheus](https://prometheus.io/docs/introduction/overview/):
 
 ```
         scrape_configs:
@@ -220,8 +245,9 @@ The hedera-json-rpc-relay ships with a metrics endpoint at `/metrics`.  Here is 
               action: replace
               target_label: pod
 ```
-Please note that the `/metrics` endpoint is also a default scrape configurations for prometheus.  The `job_name` of `kubernetes-pods` is generally deployed as a default with prometheus; in the case where this scrape_config is present metrics will start getting populated by that scrape_config and no other configurations are necessary.
-              
+
+Please note that the `/metrics` endpoint is also a default scrape configurations for prometheus. The `job_name` of `kubernetes-pods` is generally deployed as a default with prometheus; in the case where this scrape_config is present metrics will start getting populated by that scrape_config and no other configurations are necessary.
+
 ## Support
 
 If you have a question on how to use the product, please see our
