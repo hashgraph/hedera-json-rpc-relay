@@ -100,6 +100,7 @@ config:
   OPERATOR_ID_ETH_SENDRAWTRANSACTION: ""
   OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ""
 
+# Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:
   enabled: false  
 
