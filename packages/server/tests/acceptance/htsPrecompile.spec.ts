@@ -605,7 +605,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  describe.only('CryptoTransfer Tests', async function() {
+  describe('CryptoTransfer Tests', async function() {
     const xferAmount = 10;
     let NftSerialNumber;
     
