@@ -22,6 +22,7 @@ spec:
                 - bash
                 - -c
                 - >-
-                kubectl rollout restart deployment/{{ include "json-rpc-relay.fullname" . }} && 
-                kubectl rollout status deployment/{{ include "json-rpc-relay.fullname" . }}
+                  kubectl rollout restart deployment/{{ include "json-rpc-relay.fullname" . }} && 
+                  kubectl rollout status deployment/{{ include "json-rpc-relay.fullname" . }}
+{{- end }}                
             

@@ -6,8 +6,9 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: { include "json-rpc-relay.serviceAccountName" . }}-restart
+  name: {{ include "json-rpc-relay.serviceAccountName" . }}-restart
 subjects:
   - kind: ServiceAccount
-    name: { include "json-rpc-relay.serviceAccountName" . }}-restart
-    namespace: {{ .Release.Namespace }}  
+    name: {{ include "json-rpc-relay.serviceAccountName" . }}-restart
+    namespace: {{ .Release.Namespace }}
+{{- end }}
