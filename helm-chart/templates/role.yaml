@@ -1,0 +1,11 @@
+{{- if .Values.rolling_restart.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "json-rpc-relay.serviceAccountName" . }}-restart
+rules:
+  - apiGroups: ["apps", "extensions"]
+    resources: ["deployments"]
+    resourceNames: [{{ include "json-rpc-relay.fullname" . }}]
+    verbs: ["get", "list", "patch", "watch"]
+        
