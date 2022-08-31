@@ -100,5 +100,8 @@ config:
   OPERATOR_ID_ETH_SENDRAWTRANSACTION: ""
   OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ""
 
+rolling_restart:
+  enabled: false  
+
 
   
