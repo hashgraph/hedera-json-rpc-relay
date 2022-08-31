@@ -140,6 +140,14 @@ contract BaseHTS is FeeHelper {
         }
     }
 
+    function cryptoTransferPublic(IHederaTokenService.TokenTransferList[] calldata tokenTransferList) public returns (int responseCode) {
+        responseCode = HederaTokenService.cryptoTransfer(tokenTransferList);
+        emit ResponseCode(responseCode);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
     function getApprovedPublic(address token, uint256 serialNumber) public returns (int responseCode, address approved)
     {
         (responseCode, approved) = HederaTokenService.getApproved(token, serialNumber);

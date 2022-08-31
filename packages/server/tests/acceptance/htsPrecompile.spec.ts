@@ -604,4 +604,95 @@ describe('HTS Precompile Acceptance Tests', async function () {
       expect(tokenInfoAfter.deleted).to.equal(true);
     });
   });
+
+  describe.only('CryptoTransfer Tests', async function() {
+    const xferAmount = 10;
+    let NftSerialNumber;
+    
+    async function asscociateAndSetKyc(tokenAddress) {
+      // ensure the tokens are transferable
+      const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, tokenAddress, { gasLimit: 1_000_000 });
+      expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+  
+      const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, tokenAddress, { gasLimit: 1_000_000 });
+      expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const grantKycTx = await baseHTSContractOwner.grantTokenKycPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
+      expect((await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+    }
+
+    it('should be able to transfer fungible tokens', async function() {
+      await asscociateAndSetKyc(HTSTokenContractAddress);
+
+      // setup the transfer
+      const tokenTransferList = [{
+        token: `${HTSTokenContractAddress}`,
+        transfers: [
+          {
+            accountID: `${accounts[1].wallet.address}`,
+            amount: `${xferAmount}`,
+          },
+          {
+            accountID: `${accounts[0].wallet.address}`,
+            amount: `-${xferAmount}`,
+          },
+        ],
+        nftTransfers: [],
+      }];
+      const tx = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+      expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+    });
+
+    it('should be able to transfer non-fungible tokens', async function() {
+      // Mint an NFT
+      const tx = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x03'], { gasLimit: 1_000_000 });
+      expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
+      const { serialNumbers } = (await tx.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
+      NftSerialNumber = serialNumbers[0];
+
+      await asscociateAndSetKyc(NftHTSTokenContractAddress);
+        
+      // setup the transfer
+      const tokenTransferList = [{
+        token: `${NftHTSTokenContractAddress}`,
+        transfers: [],
+        nftTransfers: [{
+          senderAccountID: `${accounts[0].wallet.address}`,
+          receiverAccountID: `${accounts[1].wallet.address}`,
+          serialNumber: NftSerialNumber.toNumber(),
+        }],
+      }];
+      const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+      expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+    });
+
+    it('should fail to transfer fungible and non-fungible tokens', async function() {        
+      // setup the transfer
+      const tokenTransferList = [{
+        token: `${NftHTSTokenContractAddress}`,
+        transfers: [
+          {
+            accountID: `${accounts[1].wallet.address}`,
+            amount: `${xferAmount}`,
+          },
+          {
+            accountID: `${accounts[0].wallet.address}`,
+            amount: `-${xferAmount}`,
+          },
+        ],
+        nftTransfers: [{
+          senderAccountID: `${accounts[0].wallet.address}`,
+          receiverAccountID: `${accounts[1].wallet.address}`,
+          serialNumber: NftSerialNumber.toNumber(),
+        }],
+      }];
+      try {
+        const tx = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+        const response = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;  
+      } catch (error: any) {
+        expect(error.code).to.equal("CALL_EXCEPTION");
+        expect(error.reason).to.equal("transaction failed");
+      }
+    });
+  });
 });
