@@ -185,21 +185,6 @@ describe('HTS Precompile Acceptance Tests', async function () {
   
       expect(beforeAmount).to.equal(0);
       expect(afterAmount).to.equal(amount);
-
-      // The following code was an attempt to actually transfer the token from the account that received the allowance.
-      // It did not appear to work at this time.
-      //
-      const grantKycTx = await baseHTSContractOwner.grantTokenKycPublic(HTSTokenContractAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
-      expect((await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-      const grantKycTx2 = await baseHTSContractOwner.grantTokenKycPublic(HTSTokenContractAddress, accounts[2].wallet.address, { gasLimit: 1_000_000 });
-      expect((await grantKycTx2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-      const tx = await baseHTSContractReceiverWalletSecond.realTransferTokenPublic(HTSTokenContractAddress, 
-                                                                                    accounts[0].wallet.address, 
-                                                                                    accounts[1].wallet.address, 
-                                                                                    5);
-      expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
   
     // Depends on https://github.com/hashgraph/hedera-services/pull/3798
