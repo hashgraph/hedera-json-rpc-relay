@@ -54,7 +54,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   let HTSTokenWithCustomFeesContractAddress;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(160, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(170, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
@@ -76,7 +76,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
   async function deployBaseHTSContract() {
     const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, accounts[0].wallet);
-    const baseHTS = await baseHTSFactory.deploy({gasLimit: 10000000});
+    const baseHTS = await baseHTSFactory.deploy({gasLimit: 15000000});
     const { contractAddress } = await baseHTS.deployTransaction.wait();
 
     return contractAddress;
@@ -185,6 +185,21 @@ describe('HTS Precompile Acceptance Tests', async function () {
   
       expect(beforeAmount).to.equal(0);
       expect(afterAmount).to.equal(amount);
+
+      // The following code was an attempt to actually transfer the token from the account that received the allowance.
+      // It did not appear to work at this time.
+      //
+      // const grantKycTx = await baseHTSContractOwner.grantTokenKycPublic(HTSTokenContractAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
+      // expect((await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      // const grantKycTx2 = await baseHTSContractOwner.grantTokenKycPublic(HTSTokenContractAddress, accounts[2].wallet.address, { gasLimit: 1_000_000 });
+      // expect((await grantKycTx2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      // const tx = await baseHTSContractReceiverWalletSecond.realTransferTokenPublic(HTSTokenContractAddress, 
+      //                                                                               accounts[2].wallet.address, 
+      //                                                                               accounts[1].wallet.address, 
+      //                                                                               5);
+      // expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
   
     // Depends on https://github.com/hashgraph/hedera-services/pull/3798
@@ -606,23 +621,19 @@ describe('HTS Precompile Acceptance Tests', async function () {
   });
 
   describe('CryptoTransfer Tests', async function() {
-    const xferAmount = 10;
     let NftSerialNumber;
+    let NftSerialNumber2;
     
-    async function asscociateAndSetKyc(tokenAddress) {
-      // ensure the tokens are transferable
-      const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, tokenAddress, { gasLimit: 1_000_000 });
-      expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-  
-      const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, tokenAddress, { gasLimit: 1_000_000 });
-      expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
+    async function setKyc(tokenAddress) {
       const grantKycTx = await baseHTSContractOwner.grantTokenKycPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
       expect((await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const grantKycTx2 = await baseHTSContractOwner.grantTokenKycPublic(tokenAddress, accounts[2].wallet.address, { gasLimit: 1_000_000 });
+      expect((await grantKycTx2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     }
 
     it('should be able to transfer fungible tokens', async function() {
-      await asscociateAndSetKyc(HTSTokenContractAddress);
+      await setKyc(HTSTokenContractAddress);
 
       // setup the transfer
       const tokenTransferList = [{
@@ -630,11 +641,15 @@ describe('HTS Precompile Acceptance Tests', async function () {
         transfers: [
           {
             accountID: `${accounts[1].wallet.address}`,
-            amount: `${xferAmount}`,
+            amount: 4,
+          },
+          {
+            accountID: `${accounts[2].wallet.address}`,
+            amount: 6,
           },
           {
             accountID: `${accounts[0].wallet.address}`,
-            amount: `-${xferAmount}`,
+            amount: -10,
           },
         ],
         nftTransfers: [],
@@ -645,12 +660,13 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
     it('should be able to transfer non-fungible tokens', async function() {
       // Mint an NFT
-      const tx = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x03'], { gasLimit: 1_000_000 });
+      const tx = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x03', '0x04'], { gasLimit: 1_000_000 });
       expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
       const { serialNumbers } = (await tx.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
       NftSerialNumber = serialNumbers[0];
+      NftSerialNumber2 = serialNumbers[1];
 
-      await asscociateAndSetKyc(NftHTSTokenContractAddress);
+      await setKyc(NftHTSTokenContractAddress);
         
       // setup the transfer
       const tokenTransferList = [{
@@ -658,6 +674,36 @@ describe('HTS Precompile Acceptance Tests', async function () {
         transfers: [],
         nftTransfers: [{
           senderAccountID: `${accounts[0].wallet.address}`,
+          receiverAccountID: `${accounts[1].wallet.address}`,
+          serialNumber: NftSerialNumber.toNumber(),
+        },
+        {
+          senderAccountID: `${accounts[0].wallet.address}`,
+          receiverAccountID: `${accounts[2].wallet.address}`,
+          serialNumber: NftSerialNumber2.toNumber(),
+        }],
+      }];
+      const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+      expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+    });
+
+    xit('should be able to swap non-fungible tokens', async function() {        
+      const tx = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, { gasLimit: 1_000_000 });
+      expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const tx2 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[2].wallet.address, true, { gasLimit: 1_000_000 });
+      expect((await tx2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const tokenTransferList = [{
+        token: `${NftHTSTokenContractAddress}`,
+        transfers: [],
+        nftTransfers: [{
+          senderAccountID: `${accounts[1].wallet.address}`,
+          receiverAccountID: `${accounts[2].wallet.address}`,
+          serialNumber: NftSerialNumber.toNumber(),
+        },
+        {
+          senderAccountID: `${accounts[2].wallet.address}`,
           receiverAccountID: `${accounts[1].wallet.address}`,
           serialNumber: NftSerialNumber.toNumber(),
         }],
@@ -668,6 +714,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
     it('should fail to transfer fungible and non-fungible tokens', async function() {        
       // setup the transfer
+      const xferAmount = 10;
       const tokenTransferList = [{
         token: `${NftHTSTokenContractAddress}`,
         transfers: [
