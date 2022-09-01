@@ -1,6 +1,6 @@
 # Default values for json-rpc-relay.
 
-replicaCount: 1
+replicaCount: 2
 
 image:
   repository: ghcr.io/hashgraph/hedera-json-rpc-relay
