@@ -95,11 +95,11 @@ spec:
             name: {{ .Values.ports.name  }}
         livenessProbe:
           httpGet:
-            path: /
+            path: /health/liveness
             port: jsonrpcrelay
         readinessProbe:
           httpGet:
-            path: /
+            path: /health/readiness
             port: jsonrpcrelay                      
         resources: 
           {{- toYaml .Values.resources | indent 12 }}
