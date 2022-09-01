@@ -14,5 +14,6 @@ config:
   OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ""
 
 rolling_restart:
-  enabled: true  
+  enabled: true
+  schedule: "0 0 * * *"
 
