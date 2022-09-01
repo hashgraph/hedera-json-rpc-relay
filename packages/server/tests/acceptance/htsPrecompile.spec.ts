@@ -188,7 +188,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   
     // Depends on https://github.com/hashgraph/hedera-services/pull/3798
-    xit('should be able to execute setApprovalForAllPublic', async function() {
+    it('should be able to execute setApprovalForAllPublic', async function() {
       const txBefore = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, BaseHTSContractAddress, accounts[1].wallet.address));
       const txBeforeReceipt = await txBefore.wait();
       const beforeFlag = txBeforeReceipt.events.filter(e => e.event === 'Approved')[0].args.approved;
@@ -420,7 +420,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
   // FIXME
   // Requires a newer version of services than 0.29.0-alpha.1
-  xdescribe('HTS Precompile Wipe Tests', async function() {
+  describe('HTS Precompile Wipe Tests', async function() {
 
     before(async function() {
       const amount = 5;
