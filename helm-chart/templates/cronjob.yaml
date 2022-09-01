@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Forbid
-  schedule: '0 0 * * *'
+  schedule: {{ .Values.rolling_restart.schedule  }}
   jobTemplate:
     spec:
       backoffLimit: 2
