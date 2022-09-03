@@ -424,7 +424,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
     before(async function() {
       const amount = 5;
-      await baseHTSContract.transferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
+      await baseHTSContract.cryptoTransferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
     });
 
     it('should revert if attempting to wipe more tokens than the owned amount', async function() {
@@ -551,7 +551,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       // transfer hts
       const amount = 10;
       const balanceBefore = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
-      await baseHTSContract.transferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
+      await baseHTSContract.cryptoTransferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
       const balanceAfter = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
   
       expect(balanceBefore + amount).to.equal(balanceAfter);
@@ -639,15 +639,15 @@ describe('HTS Precompile Acceptance Tests', async function () {
         ],
         nftTransfers: [],
       }];
-      const tx = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
-      expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+      const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+      expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
 
     it('should be able to transfer non-fungible tokens', async function() {
       // Mint an NFT
-      const tx = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x03', '0x04'], { gasLimit: 1_000_000 });
-      expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
-      const { serialNumbers } = (await tx.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
+      const txMint = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x03', '0x04'], { gasLimit: 1_000_000 });
+      expect((await txMint.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
+      const { serialNumbers } = (await txMint.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
       NftSerialNumber = serialNumbers[0];
       NftSerialNumber2 = serialNumbers[1];
 
@@ -674,10 +674,10 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
     it('should be able to transfer both fungible and non-fungible tokens in single cryptoTransfer', async function() {
       // Mint an NFT
-      const tx = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x05'], { gasLimit: 1_000_000 });
-      expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
-      const { serialNumbers } = (await tx.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
-      NftSerialNumber = serialNumbers[0];
+      const txMint = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x05'], { gasLimit: 1_000_000 });
+      expect((await txMint.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
+      const { serialNumbers } = (await txMint.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
+      const NftSerialNumber = serialNumbers[0];
         
       // setup the transfer
       const tokenTransferList = [{
@@ -707,12 +707,52 @@ describe('HTS Precompile Acceptance Tests', async function () {
       expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
 
-    xit('should be able to swap non-fungible tokens', async function() {        
-      const tx = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, { gasLimit: 1_000_000 });
-      expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+    it('should be able to swap approved fungible tokens', async function() {
+      const txApproval1 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, { gasLimit: 1_000_000 });
+      expect((await txApproval1.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
-      const tx2 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[2].wallet.address, true, { gasLimit: 1_000_000 });
-      expect((await tx2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+      const txApproval2 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[2].wallet.address, true, { gasLimit: 1_000_000 });
+      expect((await txApproval2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      // setup the transfer
+      const tokenTransferList = [{
+        token: `${HTSTokenContractAddress}`,
+        transfers: [
+          {
+            accountID: `${accounts[1].wallet.address}`,
+            amount: 2,
+          },
+          {
+            accountID: `${accounts[2].wallet.address}`,
+            amount: -2,
+          },
+          {
+            accountID: `${accounts[1].wallet.address}`,
+            amount: -2,
+          },
+          {
+            accountID: `${accounts[2].wallet.address}`,
+            amount: 2,
+          },
+        ],
+        nftTransfers: [],
+      }];
+
+      try{
+        const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+        expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+      } catch (error: any) {
+        expect(error.code).to.equal("CALL_EXCEPTION");
+        expect(error.reason).to.equal("transaction failed");
+      }
+    });
+
+    it('should be able to swap approved non-fungible tokens', async function() {        
+      const txApprove1 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, { gasLimit: 1_000_000 });
+      expect((await txApprove1.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const txApprove2 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[2].wallet.address, true, { gasLimit: 1_000_000 });
+      expect((await txApprove2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
       const tokenTransferList = [{
         token: `${NftHTSTokenContractAddress}`,
@@ -725,11 +765,17 @@ describe('HTS Precompile Acceptance Tests', async function () {
         {
           senderAccountID: `${accounts[2].wallet.address}`,
           receiverAccountID: `${accounts[1].wallet.address}`,
-          serialNumber: NftSerialNumber.toNumber(),
+          serialNumber: NftSerialNumber2.toNumber(),
         }],
       }];
-      const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
-      expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      try{
+        const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+        expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);  
+      } catch (error: any) {
+        expect(error.code).to.equal("CALL_EXCEPTION");
+        expect(error.reason).to.equal("transaction failed");
+      }
     });
 
     it('should fail to transfer fungible and non-fungible tokens in a single tokenTransferList', async function() {        
@@ -754,8 +800,8 @@ describe('HTS Precompile Acceptance Tests', async function () {
         }],
       }];
       try {
-        const tx = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
-        const response = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;  
+        const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+        const response = (await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;  
       } catch (error: any) {
         expect(error.code).to.equal("CALL_EXCEPTION");
         expect(error.reason).to.equal("transaction failed");
