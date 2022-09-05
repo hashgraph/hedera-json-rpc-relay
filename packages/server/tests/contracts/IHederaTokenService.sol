@@ -407,6 +407,15 @@ interface IHederaTokenService {
     /// @param token The ID of the token as a solidity address
     function getTokenInfo(address token) external returns (int responseCode, TokenInfo memory tokenInfo);
 
+    /// Query token KeyValue
+    /// @param token The token address to check
+    /// @param keyType The keyType of the desired KeyValue
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return key KeyValue info for key of type `keyType`
+    function getTokenKey(address token, uint keyType)
+    external
+    returns (int64 responseCode, KeyValue memory key);
+
     /// Retrieves non-fungible specific token info for a given NFT
     /// @param token The ID of the token as a solidity address
     /// @param serialNumber The serial number of the NFT for which to retrieve information
@@ -606,4 +615,12 @@ interface IHederaTokenService {
     /// @param token The token address to be deleted
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function deleteToken(address token) external returns (int responseCode);
+
+    /// Operation to update token keys
+    /// @param token The token address
+    /// @param keys The token keys
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function updateTokenKeys(address token, TokenKey[] memory keys)
+    external
+    returns (int64 responseCode);
 }

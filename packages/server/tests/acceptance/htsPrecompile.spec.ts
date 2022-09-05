@@ -54,7 +54,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   let HTSTokenWithCustomFeesContractAddress;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(160, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(200, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
@@ -76,7 +76,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
   async function deployBaseHTSContract() {
     const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, accounts[0].wallet);
-    const baseHTS = await baseHTSFactory.deploy({gasLimit: 10000000});
+    const baseHTS = await baseHTSFactory.deploy({gasLimit: 15000000});
     const { contractAddress } = await baseHTS.deployTransaction.wait();
 
     return contractAddress;
@@ -512,7 +512,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
   // FIXME
   // Key management functionality is not present in the Consensus Node yet
-  xdescribe('HTS Precompile Key management Tests', async function() {
+  describe('HTS Precompile Key management Tests', async function() {
     it('should be able to execute getTokenKey', async function() {
         const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
         const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
@@ -527,7 +527,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
         expect(key.delegatableContractId).to.exist;
     });
 
-    it('should be able to execute updateTokenKeys', async function() {
+    xit('should be able to execute updateTokenKeys', async function() {
       // Get key value before update
       const getKeyTx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
       const { key } = (await getKeyTx.wait()).events.filter(e => e.event === 'KeyValue')[0].args;

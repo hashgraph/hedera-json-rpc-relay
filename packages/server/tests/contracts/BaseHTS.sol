@@ -30,6 +30,7 @@ contract BaseHTS is FeeHelper {
     event TokenCustomFees(IHederaTokenService.FixedFee[] fixedFees, IHederaTokenService.FractionalFee[] fractionalFees, IHederaTokenService.RoyaltyFee[] royaltyFees);
     event TokenDefaultFreezeStatus(bool defaultFreezeStatus);
     event TokenDefaultKycStatus(bool defaultKycStatus);
+    event TokenKey(IHederaTokenService.KeyValue key);
     event KycGranted(bool kycGranted);
 
     function createFungibleTokenPublic(
@@ -410,5 +411,30 @@ contract BaseHTS is FeeHelper {
         if(responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
+    }
+
+    function updateTokenKeysPublic(address token, IHederaTokenService.TokenKey[] memory keys)
+    public returns (int64 responseCode){
+
+        (responseCode) = HederaTokenService.updateTokenKeys(token, keys);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function getTokenKeyPublic(address token, uint keyType)
+    public returns (int64 responseCode, IHederaTokenService.KeyValue memory key){
+        (responseCode, key) = HederaTokenService.getTokenKey(token, keyType);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenKey(key);
     }
 }
