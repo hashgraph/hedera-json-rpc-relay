@@ -30,14 +30,16 @@ contract BaseHTS is FeeHelper {
     event TokenCustomFees(IHederaTokenService.FixedFee[] fixedFees, IHederaTokenService.FractionalFee[] fractionalFees, IHederaTokenService.RoyaltyFee[] royaltyFees);
     event TokenDefaultFreezeStatus(bool defaultFreezeStatus);
     event TokenDefaultKycStatus(bool defaultKycStatus);
+    event KycGranted(bool kycGranted);
 
     function createFungibleTokenPublic(
         address treasury
     ) public payable {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](3);
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](4);
         keys[0] = getSingleKey(0, 6, 1, bytes(""));
-        keys[1] = getSingleKey(2, 1, bytes(""));
-        keys[2] = getSingleKey(3, 1, bytes(""));
+        keys[1] = getSingleKey(1, 1, bytes(""));
+        keys[2] = getSingleKey(2, 1, bytes(""));
+        keys[3] = getSingleKey(3, 1, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000
@@ -60,11 +62,12 @@ contract BaseHTS is FeeHelper {
     function createNonFungibleTokenPublic(
         address treasury
     ) public payable {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](4);
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
         keys[0] = getSingleKey(0, 6, 1, bytes(""));
-        keys[1] = getSingleKey(4, 1, bytes(""));
+        keys[1] = getSingleKey(1, 1, bytes(""));
         keys[2] = getSingleKey(2, 1, bytes(""));
-        keys[3] = getSingleKey(3, 1, bytes(""));
+        keys[3] = getSingleKey(4, 1, bytes(""));
+        keys[4] = getSingleKey(3, 1, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000
@@ -375,5 +378,37 @@ contract BaseHTS is FeeHelper {
         }
 
         emit TokenDefaultKycStatus(defaultKycStatus);
+    }
+
+    function isKycPublic(address token, address account)external returns (int64 responseCode, bool kycGranted){
+        (responseCode, kycGranted) = this.isKyc(token, account);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit KycGranted(kycGranted);
+    }
+
+    function grantTokenKycPublic(address token, address account)external returns (int64 responseCode){
+        (responseCode) = this.grantTokenKyc(token, account);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function revokeTokenKycPublic(address token, address account)external returns (int64 responseCode){
+        (responseCode) = this.revokeTokenKyc(token, account);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
     }
 }

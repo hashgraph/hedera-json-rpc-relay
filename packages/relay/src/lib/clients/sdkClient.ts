@@ -244,7 +244,7 @@ export class SDKClient {
             const resp = await query.execute(client);
             this.logger.info(`${requestIdPrefix} Consensus Node query response: ${query.constructor.name} ${Status.Success._code}`);
             // local free queries will have a '0.0.0' accountId on transactionId
-            this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} query cost ${query._queryPayment}`);
+            this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} query cost: ${query._queryPayment}`);
 
             this.captureMetrics(
                 SDKClient.queryMode,
@@ -303,7 +303,7 @@ export class SDKClient {
             }
 
             const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
-            this.logger.trace(`${requestIdPrefix} ${resp.transactionId.toString()} transaction cost: ${transactionRecord.transactionFee}`);
+            this.logger.trace(`${requestIdPrefix} ${resp.transactionId.toString()} ${callerName} transaction cost: ${transactionRecord.transactionFee}`);
             this.captureMetrics(
                 SDKClient.transactionMode,
                 transactionName,

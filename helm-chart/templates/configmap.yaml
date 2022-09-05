@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "json-rpc-relay.fullname" . }}
+  labels:
+    app:  {{ template "json-rpc-relay.name" . }}
+    {{ include "json-rpc-relay.labels" . | nindent 4 }}
+data:
+{{- if .Values.config.local.HEDERA_NETWORK }}
+  HEDERA_NETWORK: {{ .Values.config.local.HEDERA_NETWORK | toJson }}
+{{- else if .Values.config.hosted.HEDERA_NETWORK }}
+  HEDERA_NETWORK: {{ .Values.config.hosted.HEDERA_NETWORK }}
+{{- else }}
+  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in either .Values.config.local.HEDERA_NETWORK or .Values.config.hosted.HEDERA_NETWORK " (or .Values.config.local.HEDERA_NETWORK .Values.config.hosted.HEDERA_NETWORK) }}
+{{- end }}
+  CHAIN_ID: {{ .valu}} 
+  MIRROR_NODE_URL: {{ .Values.config.MIRROR_NODE_URL  }}
+  LOCAL_NODE: {{ .Values.config.LOCAL_NODE }}
+  SERVER_PORT: {{ .Values.config.SERVER_PORT }}
+  CHAIN_ID: {{ .Values.config.CHAIN_ID }}
+  

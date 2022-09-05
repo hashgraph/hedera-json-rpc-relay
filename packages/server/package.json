@@ -1,6 +1,6 @@
 {
     "name": "@hashgraph/json-rpc-server",
-    "version": "0.7.0-SNAPSHOT",
+    "version": "0.8.0-SNAPSHOT",
     "description": "Hedera Hashgraph Ethereum JSON RPC server. Accepts requests for Ethereum JSON RPC 2.0 APIs",
     "main": "dist/index.js",
     "keywords": [],
@@ -21,7 +21,7 @@
     },
     "devDependencies": {
         "@hashgraph/hedera-local": "^1.1.0",
-        "@hashgraph/sdk": "^2.17.0",
+        "@hashgraph/sdk": "^2.18.0",
         "@koa/cors": "^3.1.0",
         "@types/chai": "^4.3.0",
         "@types/cors": "^2.8.12",
