@@ -118,7 +118,7 @@ contract BaseHTS is FeeHelper {
         emit AllowanceValue(amount);
     }
 
-    function transferTokenPublic(address account, address token, int64 amount) public returns (int responseCode) {
+    function cryptoTransferTokenPublic(address account, address token, int64 amount) public returns (int responseCode) {
         IHederaTokenService.NftTransfer[] memory nftTransfers = new IHederaTokenService.NftTransfer[](0);
 
         IHederaTokenService.AccountAmount memory accountAmountNegative =
@@ -135,6 +135,22 @@ contract BaseHTS is FeeHelper {
         tokenTransferList[0] = tokenTransfer;
 
         responseCode = HederaTokenService.cryptoTransfer(tokenTransferList);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function transferTokenPublic(address token, address sender, address receiver, int64 amount) public returns (int responseCode) {
+        responseCode = HederaTokenService.transferToken(token, sender, receiver, amount);
+        emit ResponseCode(responseCode);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function cryptoTransferPublic(IHederaTokenService.TokenTransferList[] calldata tokenTransferList) public returns (int responseCode) {
+        responseCode = HederaTokenService.cryptoTransfer(tokenTransferList);
+        emit ResponseCode(responseCode);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
