@@ -2,17 +2,23 @@
 pragma solidity ^0.8.0;
 
 contract Greeter {
-  string private greeting;
+    string private greeting;
 
-  constructor(string memory _greeting) {
-    greeting = _greeting;
-  }
+    event GreetingSet(string greeting);
 
-  function greet() public view returns (string memory) {
-    return greeting;
-  }
+    constructor(string memory _greeting) {
+        greeting = _greeting;
 
-  function setGreeting(string memory _greeting) public {
-    greeting = _greeting;
-  }
+        emit GreetingSet(_greeting);
+    }
+
+    function greet() public view returns (string memory) {
+        return greeting;
+    }
+
+    function setGreeting(string memory _greeting) public {
+        greeting = _greeting;
+
+        emit GreetingSet(_greeting);
+    }
 }

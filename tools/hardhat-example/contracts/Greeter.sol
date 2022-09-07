@@ -4,8 +4,10 @@ pragma solidity ^0.8.0;
 contract Greeter {
     string private greeting;
 
+    event GreetingSet(string greeting);
+
     constructor(string memory _greeting) {
-        greeting = _greeting;
+        setGreeting(_greeting);
     }
 
     function greet() public view returns (string memory) {
@@ -14,5 +16,7 @@ contract Greeter {
 
     function setGreeting(string memory _greeting) public {
         greeting = _greeting;
+
+        emit GreetingSet(_greeting);
     }
 }
