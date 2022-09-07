@@ -37,6 +37,8 @@ securityContext: {}
 service:
   type: ClusterIP
   port: 7546
+  annotations: {}
+  annotations_JSON: {}
 
 ingress:
   enabled: false
@@ -90,8 +92,9 @@ config:
   LOG_LEVEL: ""
   # Use config.local.HEDERA_NETWORK when running against a locally hosted hedera network
   # local:
-    # config.local.HEDERA_NETWORK should configured as a json set - {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1","$IPv4_ADDR_2:$PORT_2":"$ACCOUNT_ID_2"}
-    # HEDERA_NETWORK: {"127.0.01:50211":"0.0.3"}
+  #   config.local.HEDERA_NETWORK should configured as a json set - {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1","$IPv4_ADDR_2:$PORT_2":"$ACCOUNT_ID_2"}
+  #   HEDERA_NETWORK: {"127.0.01:50211":"0.0.3"}
+  #   HEDERA_NETWORK: ""
   # Use config.hosted.HEDERA_NETWORK when running against a hosted Hedera network.  Valid options are `previewnet`, `testnet`, and `mainnet`  
   # hosted:
   #   HEDERA_NETWORK: ""
