@@ -29,6 +29,7 @@ if (supportedEnvs.includes(network.toLowerCase())) {
 
 client.setOperator(process.env.OPERATOR_ID_MAIN, process.env.OPERATOR_KEY_MAIN);
 console.log(`SDK setup for ${JSON.stringify(network)} for account: ${process.env.OPERATOR_ID_MAIN}`);
+console.log('Debugging');
 
 const createAccountFromCompressedPublicKey = async function(compressedPublicKey) {
   const transferTransaction = await (new HederaSDK.TransferTransaction()
