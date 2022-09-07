@@ -510,7 +510,6 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  // FIXME
   // Key management functionality is not present in the Consensus Node yet
   describe('HTS Precompile Key management Tests', async function() {
     it('should be able to execute getTokenKey', async function() {
@@ -527,7 +526,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
         expect(key.delegatableContractId).to.exist;
     });
 
-    xit('should be able to execute updateTokenKeys', async function() {
+    it('should be able to execute updateTokenKeys', async function() {
       // Get key value before update
       const getKeyTx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
       const { key } = (await getKeyTx.wait()).events.filter(e => e.event === 'KeyValue')[0].args;
