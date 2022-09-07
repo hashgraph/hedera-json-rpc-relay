@@ -420,7 +420,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
   // FIXME
   // Requires a newer version of services than 0.29.0-alpha.1
-  describe('HTS Precompile Wipe Tests', async function() {
+  xdescribe('HTS Precompile Wipe Tests', async function() {
 
     before(async function() {
       const amount = 5;
