@@ -6,7 +6,7 @@ metadata:
     app:  {{ template "json-rpc-relay.name" . }}
     {{ include "json-rpc-relay.labels" . | nindent 4 }}
 data:
-{{- if .Values.config.local.HEDERA_NETWORK }}
+{{- if and .Values.config.local .Values.config.local.HEDERA_NETWORK }}
   HEDERA_NETWORK: {{ .Values.config.local.HEDERA_NETWORK | toJson }}
 {{- else if .Values.config.hosted.HEDERA_NETWORK }}
   HEDERA_NETWORK: {{ .Values.config.hosted.HEDERA_NETWORK }}
