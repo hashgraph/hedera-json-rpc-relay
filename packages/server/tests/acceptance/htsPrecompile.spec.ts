@@ -605,7 +605,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  xdescribe('HTS Precompile for token check methods', async function() {
+  describe('HTS Precompile for token check methods', async function() {
     it('should return false for isToken with passed contract address', async function() {
       const tx = await baseHTSContract.isTokenPublic(BaseHTSContractAddress, { gasLimit: 1000000 });
       const txReceipt = await tx.wait();
