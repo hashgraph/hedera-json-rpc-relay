@@ -123,7 +123,7 @@ describe('RPC Server Acceptance Tests', function () {
 
         // start local-node
         logger.debug('Start local node');
-        shell.exec('npx hedera-local restart');
+        shell.exec('npx hedera-local restart --d');
         logger.trace('Hedera Hashgraph local node env started');
     }
 
