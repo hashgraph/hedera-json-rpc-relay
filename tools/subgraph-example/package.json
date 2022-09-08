@@ -1,6 +1,6 @@
 {
-  "name": "greeter",
-  "license": "UNLICENSED",
+  "name": "hedera-subgraph-greeter-example",
+  "license": "Apache-2.0",
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",

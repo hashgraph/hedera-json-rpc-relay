@@ -25,7 +25,7 @@ Run `npm run codegen` or `yarn codegen`
 
 Run `npm run graph-local` or `yarn graph-local`
 
-Note: The graph node is configure to run against a local instance of the json-rpc-relay. If you run the graph-node against a local Hedera node, every time you restart the hedera-node it is recommended to do a clean-up of the graph-node. To do this run `npm run graph-local-clean` or `yarn graph-local-clean`
+Note: The graph node is configured to run against a local instance of the json-rpc-relay. If you run the graph-node against a local Hedera node, every time you restart the hedera-node it is recommended to do a clean-up of the graph-node. To do this run `npm run graph-local-clean` or `yarn graph-local-clean`
 
 ### Deploy the subgraph to the local graph-node:
 
