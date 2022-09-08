@@ -18,7 +18,7 @@ const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 
     // start relay, stop relay instance in local-node
     console.log('Start local node');
-    shell.exec('npx hedera restart --d');
+    shell.exec('npx hedera restart');
     console.log('Hedera Hashgraph local node env started');
   }
 
