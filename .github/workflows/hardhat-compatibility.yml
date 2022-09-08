@@ -40,7 +40,7 @@ jobs:
         run: npx lerna run build
 
       - name: Run RPC Server
-        run: npm run integration:prerequisite
+        run: npm run integration:prerequisite &
 
       - name: Install hardhat dependencies
         run: cd ./tools/hardhat-example/ && npm ci
