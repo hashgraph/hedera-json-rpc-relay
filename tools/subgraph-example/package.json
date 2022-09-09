@@ -1,5 +1,5 @@
 {
-  "name": "hedera-subgraph-greeter-example",
+  "name": "@hedera-subgraph-greeter-example",
   "license": "Apache-2.0",
   "scripts": {
     "codegen": "graph codegen",
