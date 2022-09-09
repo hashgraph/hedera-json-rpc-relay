@@ -216,7 +216,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  xdescribe('HTS Precompile Get Token Info Tests', async function() {
+  describe('HTS Precompile Get Token Info Tests', async function() {
     it('should be able to get fungible token info', async () => {
       const tx = await baseHTSContract.getFungibleTokenInfoPublic(HTSTokenContractAddress);
   
@@ -252,7 +252,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  xdescribe('HTS Precompile Freeze/Unfreeze Tests', async function() {
+  describe('HTS Precompile Freeze/Unfreeze Tests', async function() {
     async function checkTokenFrozen(contractOwner, tokenAddress, expectedValue: boolean) {
       const txBefore = await contractOwner.isFrozenPublic(tokenAddress, accounts[0].wallet.address, { gasLimit: 1_000_000 });
       const txBeforeReceipt = await txBefore.wait();
@@ -357,7 +357,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  xdescribe('HTS Precompile Pause/Unpause Tests', async function() {
+  describe('HTS Precompile Pause/Unpause Tests', async function() {
 
     it('should be able to pause fungible token', async () => {
       const txTokenInfoBefore = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress);
@@ -418,9 +418,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  // FIXME
-  // Requires a newer version of services than 0.29.0-alpha.1
-  xdescribe('HTS Precompile Wipe Tests', async function() {
+  describe('HTS Precompile Wipe Tests', async function() {
 
     before(async function() {
       const amount = 5;
@@ -510,7 +508,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  xdescribe('HTS Precompile KYC Tests', async function() {
+  describe('HTS Precompile KYC Tests', async function() {
     async function checkKyc(contractOwner, tokenAddress, accountAddress, expectedValue: boolean) {
       const tx = await contractOwner.isKycPublic(tokenAddress, accountAddress, { gasLimit: 1_000_000 });
       const responseCodeIsKyc = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
@@ -566,7 +564,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  xdescribe('HTS Precompile Custom Fees Tests', async function() {
+  describe('HTS Precompile Custom Fees Tests', async function() {
     it('should be able to get a custom token fees', async function() {
       const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
   
