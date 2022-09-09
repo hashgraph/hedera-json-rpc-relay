@@ -1,0 +1,14 @@
+{{- if .Values.rolling_restart.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "json-rpc-relay.serviceAccountName" . }}-restart
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "json-rpc-relay.serviceAccountName" . }}-restart
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "json-rpc-relay.serviceAccountName" . }}-restart
+    namespace: {{ .Release.Namespace }}
+{{- end }}
