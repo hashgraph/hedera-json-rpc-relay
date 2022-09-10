@@ -30,7 +30,7 @@ import ERC20MockJson from '../contracts_v1/ERC20Mock.json';
 import BaseHTSJson from '../contracts_v1/BaseHTS.json';
 
 
-describe('HTS Precompile Acceptance Tests', async function () {
+describe('HTS Precompile V1 Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, relay } = global;
 
