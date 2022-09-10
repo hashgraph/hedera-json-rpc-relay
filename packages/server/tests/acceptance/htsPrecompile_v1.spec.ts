@@ -49,7 +49,7 @@ describe('HTS Precompile V1 Acceptance Tests', async function () {
   let HTSTokenWithCustomFeesContractAddress;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(30, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(40, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(15, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(15, relay.provider);
 
