@@ -1,6 +1,6 @@
 # Default values for json-rpc-relay.
 
-replicaCount: 1
+replicaCount: 2
 
 image:
   repository: ghcr.io/hashgraph/hedera-json-rpc-relay
@@ -37,6 +37,8 @@ securityContext: {}
 service:
   type: ClusterIP
   port: 7546
+  annotations: {}
+  annotations_JSON: {}
 
 ingress:
   enabled: false
@@ -84,13 +86,26 @@ ports:
   containerPort: 7546
 
 config:
-  HEDERA_NETWORK: ""
-  OPERATOR_ID_MAIN: ""
-  OPERATOR_KEY_MAIN: ""
-  OPERATOR_ID_ETH_SENDRAWTRANSACTION: ""
-  OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ""
   # This value should be in decimal, not hexadecimal format.
   CHAIN_ID: ""
   MIRROR_NODE_URL: ""
   LOG_LEVEL: ""
+  # Use config.local.HEDERA_NETWORK when running against a locally hosted hedera network
+  # local:
+  #   config.local.HEDERA_NETWORK should configured as a json set - {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1","$IPv4_ADDR_2:$PORT_2":"$ACCOUNT_ID_2"}
+  #   HEDERA_NETWORK: {"127.0.01:50211":"0.0.3"}
+  #   HEDERA_NETWORK: ""
+  # Use config.hosted.HEDERA_NETWORK when running against a hosted Hedera network.  Valid options are `previewnet`, `testnet`, and `mainnet`  
+  # hosted:
+  #   HEDERA_NETWORK: ""
+  OPERATOR_ID_MAIN: ""
+  OPERATOR_KEY_MAIN: ""
+  OPERATOR_ID_ETH_SENDRAWTRANSACTION: ""
+  OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ""
+
+# Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
+rolling_restart:
+  enabled: false  
+  schedule: "@daily"
+
   

@@ -33,7 +33,7 @@ import BaseHTSJson from '../contracts/BaseHTS.json';
 
 describe('HTS Precompile Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
-  const { servicesNode, relay } = global;
+  const { servicesNode, mirrorNode, relay } = global;
 
   const TX_SUCCESS_CODE = 22;
   const TOKEN_NAME = 'tokenName';
@@ -54,7 +54,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
   let HTSTokenWithCustomFeesContractAddress;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(160, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(170, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
@@ -76,7 +76,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
   async function deployBaseHTSContract() {
     const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, accounts[0].wallet);
-    const baseHTS = await baseHTSFactory.deploy({gasLimit: 10000000});
+    const baseHTS = await baseHTSFactory.deploy({gasLimit: 15000000});
     const { contractAddress } = await baseHTS.deployTransaction.wait();
 
     return contractAddress;
@@ -188,7 +188,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   
     // Depends on https://github.com/hashgraph/hedera-services/pull/3798
-    xit('should be able to execute setApprovalForAllPublic', async function() {
+    it('should be able to execute setApprovalForAllPublic', async function() {
       const txBefore = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, BaseHTSContractAddress, accounts[1].wallet.address));
       const txBeforeReceipt = await txBefore.wait();
       const beforeFlag = txBeforeReceipt.events.filter(e => e.event === 'Approved')[0].args.approved;
@@ -424,7 +424,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
 
     before(async function() {
       const amount = 5;
-      await baseHTSContract.transferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
+      await baseHTSContract.cryptoTransferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
     });
 
     it('should revert if attempting to wipe more tokens than the owned amount', async function() {
@@ -551,7 +551,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       // transfer hts
       const amount = 10;
       const balanceBefore = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
-      await baseHTSContract.transferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
+      await baseHTSContract.cryptoTransferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
       const balanceAfter = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
   
       expect(balanceBefore + amount).to.equal(balanceAfter);
@@ -586,6 +586,102 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
+  describe('HTS Precompile Token Expiry Info Tests', async function() {
+    const AUTO_RENEW_PERIOD = 8000000;
+    const NEW_AUTO_RENEW_PERIOD = 7999900;
+    const AUTO_RENEW_SECOND = 0;
+
+    //Expiry Info auto renew account returns account id from type - 0x000000000000000000000000000000000000048C
+    //We expect account to be evm address, but because we can't compute one address for the other, we have to make a mirror node query to get expiry info auto renew evm address
+    async function mirrorNodeAddressReq(address){
+      const accountEvmAddress = await mirrorNode.get(`/accounts/${address}?transactiontype=cryptotransfer`);
+      return accountEvmAddress.evm_address;
+    }
+
+    it('should be able to get and update fungible token expiry info', async function() {
+      //get current epoch + auto renew period , which result to expiry info second
+      const epoch = parseInt((Date.now()/1000 + NEW_AUTO_RENEW_PERIOD).toFixed(0));
+
+      // get current expiry info
+      const getTokenExpiryInfoTxBefore = await baseHTSContract.getTokenExpiryInfoPublic(HTSTokenContractAddress);
+      const responseCode = (await getTokenExpiryInfoTxBefore.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      const tokenExpiryInfoBefore = (await getTokenExpiryInfoTxBefore.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
+
+      const renewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoBefore.autoRenewAccount);
+
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+      expect(tokenExpiryInfoBefore.autoRenewPeriod).to.equal(AUTO_RENEW_PERIOD);
+      expect(renewAccountEvmAddress).to.equal(`0x${accounts[0].address}`);
+
+      const expiryInfo = {
+        second: AUTO_RENEW_SECOND,
+        autoRenewAccount: `${BaseHTSContractAddress}`,
+        autoRenewPeriod: NEW_AUTO_RENEW_PERIOD
+      };
+      // update expiry info
+      const updateTokenExpiryInfoTx = (await baseHTSContract.updateTokenExpiryInfoPublic(HTSTokenContractAddress, expiryInfo, { gasLimit: 1_000_000 }));
+      const updateExpiryInfoResponseCode = (await updateTokenExpiryInfoTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+
+      // get updated expiryInfo
+      const getTokenExpiryInfoTxAfter = (await baseHTSContract.getTokenExpiryInfoPublic(HTSTokenContractAddress));
+      const getExpiryInfoResponseCode = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      const tokenExpiryInfoAfter = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
+
+      const newRenewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoAfter.autoRenewAccount);
+      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2).toUpperCase()}`;
+
+      expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
+      expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
+      expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
+      expect(newRenewAccountEvmAddress).to.equal(expectedRenewAddress);
+
+      //use close to with delta 200 seconds, because we don't know the exact second it was set to expiry
+      expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 200);
+    });
+
+    it('should be able to get and update non fungible token expiry info', async function() {
+      //get current epoch + auto renew period , which result to expiry info second
+      const epoch = parseInt((Date.now()/1000 + NEW_AUTO_RENEW_PERIOD).toFixed(0));
+      // get current expiry info
+      const getTokenExpiryInfoTxBefore = (await baseHTSContract.getTokenExpiryInfoPublic(NftHTSTokenContractAddress));
+      const responseCode = (await getTokenExpiryInfoTxBefore.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      const tokenExpiryInfoBefore = (await getTokenExpiryInfoTxBefore.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
+
+      //Expiry Info auto renew account returns account id from type - 0x000000000000000000000000000000000000048C
+      //We expect account to be evm address, but because we can't compute one address for the other, we have to make a mirror node query to get expiry info auto renew evm address
+      const renewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoBefore.autoRenewAccount);
+
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+      expect(tokenExpiryInfoBefore.autoRenewPeriod).to.equal(8000000);
+      expect(renewAccountEvmAddress).to.equal(`0x${accounts[0].address}`);
+
+      // update expiry info
+      const expiryInfo = {
+        second: AUTO_RENEW_SECOND,
+        autoRenewAccount: BaseHTSContractAddress,
+        autoRenewPeriod: NEW_AUTO_RENEW_PERIOD
+      }
+      const updateTokenExpiryInfoTx = (await baseHTSContract.updateTokenExpiryInfoPublic(NftHTSTokenContractAddress, expiryInfo, { gasLimit: 1_000_000 }));
+      const updateExpiryInfoResponseCode = (await updateTokenExpiryInfoTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+
+      // get updated expiryInfo
+      const getTokenExpiryInfoTxAfter = (await baseHTSContract.getTokenExpiryInfoPublic(NftHTSTokenContractAddress));
+      const getExpiryInfoResponseCode = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      const tokenExpiryInfoAfter = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
+
+      const newRenewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoAfter.autoRenewAccount);
+      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2).toUpperCase()}`;
+
+      expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
+      expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
+      expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
+      expect(newRenewAccountEvmAddress).to.equal(expectedRenewAddress);
+
+      //use close to with delta 200 seconds, because we don't know the exact second it was set to expiry
+      expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 200);
+    });
+  });
+
   describe('HTS Precompile Delete Token Tests', async function() {
     it('should be able to delete a token', async function() {
       const createdTokenAddress = await createHTSToken();
@@ -602,6 +698,210 @@ describe('HTS Precompile Acceptance Tests', async function () {
   
       expect(tokenInfoBefore.deleted).to.equal(false);
       expect(tokenInfoAfter.deleted).to.equal(true);
+    });
+  });
+
+  describe('CryptoTransfer Tests', async function() {
+    let NftSerialNumber;
+    let NftSerialNumber2;
+
+    async function setKyc(tokenAddress) {
+      const grantKycTx = await baseHTSContractOwner.grantTokenKycPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
+      expect((await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const grantKycTx2 = await baseHTSContractOwner.grantTokenKycPublic(tokenAddress, accounts[2].wallet.address, { gasLimit: 1_000_000 });
+      expect((await grantKycTx2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+    }
+
+    it('should be able to transfer fungible tokens', async function() {
+      await setKyc(HTSTokenContractAddress);
+
+      // setup the transfer
+      const tokenTransferList = [{
+        token: `${HTSTokenContractAddress}`,
+        transfers: [
+          {
+            accountID: `${accounts[1].wallet.address}`,
+            amount: 4,
+          },
+          {
+            accountID: `${accounts[2].wallet.address}`,
+            amount: 6,
+          },
+          {
+            accountID: `${accounts[0].wallet.address}`,
+            amount: -10,
+          },
+        ],
+        nftTransfers: [],
+      }];
+      const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+      expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+    });
+
+    it('should be able to transfer non-fungible tokens', async function() {
+      // Mint an NFT
+      const txMint = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x03', '0x04'], { gasLimit: 1_000_000 });
+      expect((await txMint.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
+      const { serialNumbers } = (await txMint.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
+      NftSerialNumber = serialNumbers[0];
+      NftSerialNumber2 = serialNumbers[1];
+
+      await setKyc(NftHTSTokenContractAddress);
+
+      // setup the transfer
+      const tokenTransferList = [{
+        token: `${NftHTSTokenContractAddress}`,
+        transfers: [],
+        nftTransfers: [{
+          senderAccountID: `${accounts[0].wallet.address}`,
+          receiverAccountID: `${accounts[1].wallet.address}`,
+          serialNumber: NftSerialNumber.toNumber(),
+        },
+        {
+          senderAccountID: `${accounts[0].wallet.address}`,
+          receiverAccountID: `${accounts[2].wallet.address}`,
+          serialNumber: NftSerialNumber2.toNumber(),
+        }],
+      }];
+      const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+      expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+    });
+
+    it('should be able to transfer both fungible and non-fungible tokens in single cryptoTransfer', async function() {
+      // Mint an NFT
+      const txMint = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x05'], { gasLimit: 1_000_000 });
+      expect((await txMint.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
+      const { serialNumbers } = (await txMint.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
+      const NftSerialNumber = serialNumbers[0];
+
+      // setup the transfer
+      const tokenTransferList = [{
+        token: `${NftHTSTokenContractAddress}`,
+        transfers: [],
+        nftTransfers: [{
+          senderAccountID: `${accounts[0].wallet.address}`,
+          receiverAccountID: `${accounts[1].wallet.address}`,
+          serialNumber: NftSerialNumber.toNumber(),
+        }],
+      },
+      {
+        token: `${HTSTokenContractAddress}`,
+        transfers: [
+          {
+            accountID: `${accounts[1].wallet.address}`,
+            amount: 10,
+          },
+          {
+            accountID: `${accounts[0].wallet.address}`,
+            amount: -10,
+          },
+        ],
+        nftTransfers: [],
+      }];
+      const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+      expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+    });
+
+    it('should fail to swap approved fungible tokens', async function() {
+      const txApproval1 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, { gasLimit: 1_000_000 });
+      expect((await txApproval1.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const txApproval2 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[2].wallet.address, true, { gasLimit: 1_000_000 });
+      expect((await txApproval2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      // setup the transfer
+      const tokenTransferList = [{
+        token: `${HTSTokenContractAddress}`,
+        transfers: [
+          {
+            accountID: `${accounts[1].wallet.address}`,
+            amount: 2,
+          },
+          {
+            accountID: `${accounts[2].wallet.address}`,
+            amount: -2,
+          },
+          {
+            accountID: `${accounts[1].wallet.address}`,
+            amount: -2,
+          },
+          {
+            accountID: `${accounts[2].wallet.address}`,
+            amount: 2,
+          },
+        ],
+        nftTransfers: [],
+      }];
+
+      try{
+        const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+        expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+      } catch (error: any) {
+        expect(error.code).to.equal("CALL_EXCEPTION");
+        expect(error.reason).to.equal("transaction failed");
+      }
+    });
+
+    it('should fail to swap approved non-fungible tokens', async function() {
+      const txApprove1 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, { gasLimit: 1_000_000 });
+      expect((await txApprove1.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const txApprove2 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[2].wallet.address, true, { gasLimit: 1_000_000 });
+      expect((await txApprove2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const tokenTransferList = [{
+        token: `${NftHTSTokenContractAddress}`,
+        transfers: [],
+        nftTransfers: [{
+          senderAccountID: `${accounts[1].wallet.address}`,
+          receiverAccountID: `${accounts[2].wallet.address}`,
+          serialNumber: NftSerialNumber.toNumber(),
+        },
+        {
+          senderAccountID: `${accounts[2].wallet.address}`,
+          receiverAccountID: `${accounts[1].wallet.address}`,
+          serialNumber: NftSerialNumber2.toNumber(),
+        }],
+      }];
+
+      try{
+        const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+        expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+      } catch (error: any) {
+        expect(error.code).to.equal("CALL_EXCEPTION");
+        expect(error.reason).to.equal("transaction failed");
+      }
+    });
+
+    it('should fail to transfer fungible and non-fungible tokens in a single tokenTransferList', async function() {
+      // setup the transfer
+      const xferAmount = 10;
+      const tokenTransferList = [{
+        token: `${NftHTSTokenContractAddress}`,
+        transfers: [
+          {
+            accountID: `${accounts[1].wallet.address}`,
+            amount: `${xferAmount}`,
+          },
+          {
+            accountID: `${accounts[0].wallet.address}`,
+            amount: `-${xferAmount}`,
+          },
+        ],
+        nftTransfers: [{
+          senderAccountID: `${accounts[0].wallet.address}`,
+          receiverAccountID: `${accounts[1].wallet.address}`,
+          serialNumber: NftSerialNumber.toNumber(),
+        }],
+      }];
+      try {
+        const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
+        const response = (await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      } catch (error: any) {
+        expect(error.code).to.equal("CALL_EXCEPTION");
+        expect(error.reason).to.equal("transaction failed");
+      }
     });
   });
 

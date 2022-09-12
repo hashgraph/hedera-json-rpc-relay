@@ -1788,6 +1788,47 @@
           "type": "address"
         }
       ],
+      "name": "getTokenExpiryInfo",
+      "outputs": [
+        {
+          "internalType": "int256",
+          "name": "responseCode",
+          "type": "int256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint32",
+              "name": "second",
+              "type": "uint32"
+            },
+            {
+              "internalType": "address",
+              "name": "autoRenewAccount",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "autoRenewPeriod",
+              "type": "uint32"
+            }
+          ],
+          "internalType": "struct IHederaTokenService.Expiry",
+          "name": "expiryInfo",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
       "name": "getTokenInfo",
       "outputs": [
         {
@@ -2484,6 +2525,47 @@
         }
       ],
       "name": "unpauseToken",
+      "outputs": [
+        {
+          "internalType": "int256",
+          "name": "responseCode",
+          "type": "int256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint32",
+              "name": "second",
+              "type": "uint32"
+            },
+            {
+              "internalType": "address",
+              "name": "autoRenewAccount",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "autoRenewPeriod",
+              "type": "uint32"
+            }
+          ],
+          "internalType": "struct IHederaTokenService.Expiry",
+          "name": "expiryInfo",
+          "type": "tuple"
+        }
+      ],
+      "name": "updateTokenExpiryInfo",
       "outputs": [
         {
           "internalType": "int256",
