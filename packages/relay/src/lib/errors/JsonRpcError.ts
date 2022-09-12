@@ -18,6 +18,8 @@
  *
  */
 
+import constants from "../constants";
+
 const REQUEST_ID_STRING = `Request ID: `;
 export class JsonRpcError {
   public code: number;
@@ -117,4 +119,9 @@ export const predefined = {
     code: -32001,
     message: 'Requested resource not found'
   }),
+  'RANGE_TOO_LONG': new JsonRpcError({
+    name: 'Block range too long',
+    code: -32000,
+    message: `Exceeded maximum block range: ${constants.ETH_GET_LOGS_BLOCK_RANGE_LIMIT}`
+  })
 };
