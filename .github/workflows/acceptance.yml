@@ -8,7 +8,7 @@ on:
     tags: [ v* ]
 
 jobs:
-  acceptance-tests:
+  suite:
     runs-on: ubuntu-latest
     strategy:
       matrix:
