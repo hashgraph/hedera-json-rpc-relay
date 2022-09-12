@@ -113,7 +113,7 @@ const transferHTSToken = async function(accountId, tokenId) {
 
 (async () => {
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
-  if (mainPrivateKeyString === undefined) {
+  if (mainPrivateKeyString === '') {
     mainPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw()
   }
   const mainWallet = new ethers.Wallet(mainPrivateKeyString);
@@ -122,7 +122,7 @@ const transferHTSToken = async function(accountId, tokenId) {
   console.log(`Primary wallet account private: ${mainPrivateKeyString}, public: ${mainCompressedKey}, id: ${mainAccountId}`);
 
   let receiverPrivateKeyString = process.env.RECEIVER_PRIVATE_KEY;
-  if (receiverPrivateKeyString === undefined) {
+  if (receiverPrivateKeyString === '') {
     receiverPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw()
   }
   const receiverWallet = new ethers.Wallet(receiverPrivateKeyString);

@@ -580,4 +580,24 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (responseCode, key) = success ? abi.decode(result, (int32,IHederaTokenService.KeyValue) ) : (HederaResponseCodes.UNKNOWN, defaultKeyValueInfo);
     }
 
+
+    /// Operation to get token expiry info
+    /// @param token The token address
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return expiryInfo The expiry info of the token
+    function getTokenExpiryInfo(address token) external returns (int responseCode, IHederaTokenService.Expiry memory expiryInfo){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenExpiryInfo.selector, token));
+        IHederaTokenService.Expiry memory defaultExpiryInfo;
+        (responseCode, expiryInfo) = success ? abi.decode(result, (int32, IHederaTokenService.Expiry)) : (HederaResponseCodes.UNKNOWN, defaultExpiryInfo);
+    }
+
+    /// Operation to update token expiry info
+    /// @param token The token address
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function updateTokenExpiryInfo(address token, IHederaTokenService.Expiry memory expiryInfo) external returns (int responseCode){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.updateTokenExpiryInfo.selector, token, expiryInfo));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
 }
