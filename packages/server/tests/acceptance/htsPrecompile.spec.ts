@@ -675,7 +675,7 @@ describe('@htsprecompile Acceptance Tests', async function () {
       expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
-      expect(newRenewAccountEvmAddress).to.equal(expectedRenewAddress);
+      expect(newRenewAccountEvmAddress.toUpperCase()).to.equal(expectedRenewAddress);
 
       //use close to with delta 200 seconds, because we don't know the exact second it was set to expiry
       expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 200);
