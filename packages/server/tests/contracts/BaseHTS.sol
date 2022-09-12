@@ -476,4 +476,9 @@ contract BaseHTS is FeeHelper {
 
         emit TokenKey(key);
     }
+
+    function getSingleKeyPublic(uint8 keyType, uint8 keyValueType, address key) public payable {
+        IHederaTokenService.TokenKey memory newKey = getSingleKey(2, 1, bytes(""));
+        emit TokenKey(newKey.key);
+    }
 }
