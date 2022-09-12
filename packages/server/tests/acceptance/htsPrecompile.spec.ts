@@ -33,7 +33,7 @@ import BaseHTSJson from '../contracts/BaseHTS.json';
 
 describe('HTS Precompile Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
-  const { servicesNode, relay } = global;
+  const { servicesNode, mirrorNode, relay } = global;
 
   const TX_SUCCESS_CODE = 22;
   const TOKEN_NAME = 'tokenName';
@@ -583,6 +583,102 @@ describe('HTS Precompile Acceptance Tests', async function () {
       expect(fractionalFees[0].minimumAmount).to.equal(10);
       expect(fractionalFees[0].maximumAmount).to.equal(30);
       expect(fractionalFees[0].netOfTransfers).to.equal(false);
+    });
+  });
+
+  describe('HTS Precompile Token Expiry Info Tests', async function() {
+    const AUTO_RENEW_PERIOD = 8000000;
+    const NEW_AUTO_RENEW_PERIOD = 7999900;
+    const AUTO_RENEW_SECOND = 0;
+
+    //Expiry Info auto renew account returns account id from type - 0x000000000000000000000000000000000000048C
+    //We expect account to be evm address, but because we can't compute one address for the other, we have to make a mirror node query to get expiry info auto renew evm address
+    async function mirrorNodeAddressReq(address){
+      const accountEvmAddress = await mirrorNode.get(`/accounts/${address}?transactiontype=cryptotransfer`);
+      return accountEvmAddress.evm_address;
+    }
+
+    it('should be able to get and update fungible token expiry info', async function() {
+      //get current epoch + auto renew period , which result to expiry info second
+      const epoch = parseInt((Date.now()/1000 + NEW_AUTO_RENEW_PERIOD).toFixed(0));
+
+      // get current expiry info
+      const getTokenExpiryInfoTxBefore = await baseHTSContract.getTokenExpiryInfoPublic(HTSTokenContractAddress);
+      const responseCode = (await getTokenExpiryInfoTxBefore.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      const tokenExpiryInfoBefore = (await getTokenExpiryInfoTxBefore.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
+
+      const renewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoBefore.autoRenewAccount);
+
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+      expect(tokenExpiryInfoBefore.autoRenewPeriod).to.equal(AUTO_RENEW_PERIOD);
+      expect(renewAccountEvmAddress).to.equal(`0x${accounts[0].address}`);
+
+      const expiryInfo = {
+        second: AUTO_RENEW_SECOND,
+        autoRenewAccount: `${BaseHTSContractAddress}`,
+        autoRenewPeriod: NEW_AUTO_RENEW_PERIOD
+      };
+      // update expiry info
+      const updateTokenExpiryInfoTx = (await baseHTSContract.updateTokenExpiryInfoPublic(HTSTokenContractAddress, expiryInfo, { gasLimit: 1_000_000 }));
+      const updateExpiryInfoResponseCode = (await updateTokenExpiryInfoTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+
+      // get updated expiryInfo
+      const getTokenExpiryInfoTxAfter = (await baseHTSContract.getTokenExpiryInfoPublic(HTSTokenContractAddress));
+      const getExpiryInfoResponseCode = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      const tokenExpiryInfoAfter = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
+
+      const newRenewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoAfter.autoRenewAccount);
+      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2).toUpperCase()}`;
+
+      expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
+      expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
+      expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
+      expect(newRenewAccountEvmAddress).to.equal(expectedRenewAddress);
+
+      //use close to with delta 200 seconds, because we don't know the exact second it was set to expiry
+      expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 200);
+    });
+
+    it('should be able to get and update non fungible token expiry info', async function() {
+      //get current epoch + auto renew period , which result to expiry info second
+      const epoch = parseInt((Date.now()/1000 + NEW_AUTO_RENEW_PERIOD).toFixed(0));
+      // get current expiry info
+      const getTokenExpiryInfoTxBefore = (await baseHTSContract.getTokenExpiryInfoPublic(NftHTSTokenContractAddress));
+      const responseCode = (await getTokenExpiryInfoTxBefore.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      const tokenExpiryInfoBefore = (await getTokenExpiryInfoTxBefore.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
+
+      //Expiry Info auto renew account returns account id from type - 0x000000000000000000000000000000000000048C
+      //We expect account to be evm address, but because we can't compute one address for the other, we have to make a mirror node query to get expiry info auto renew evm address
+      const renewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoBefore.autoRenewAccount);
+
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+      expect(tokenExpiryInfoBefore.autoRenewPeriod).to.equal(8000000);
+      expect(renewAccountEvmAddress).to.equal(`0x${accounts[0].address}`);
+
+      // update expiry info
+      const expiryInfo = {
+        second: AUTO_RENEW_SECOND,
+        autoRenewAccount: BaseHTSContractAddress,
+        autoRenewPeriod: NEW_AUTO_RENEW_PERIOD
+      }
+      const updateTokenExpiryInfoTx = (await baseHTSContract.updateTokenExpiryInfoPublic(NftHTSTokenContractAddress, expiryInfo, { gasLimit: 1_000_000 }));
+      const updateExpiryInfoResponseCode = (await updateTokenExpiryInfoTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+
+      // get updated expiryInfo
+      const getTokenExpiryInfoTxAfter = (await baseHTSContract.getTokenExpiryInfoPublic(NftHTSTokenContractAddress));
+      const getExpiryInfoResponseCode = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      const tokenExpiryInfoAfter = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
+
+      const newRenewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoAfter.autoRenewAccount);
+      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2).toUpperCase()}`;
+
+      expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
+      expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
+      expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
+      expect(newRenewAccountEvmAddress).to.equal(expectedRenewAddress);
+
+      //use close to with delta 200 seconds, because we don't know the exact second it was set to expiry
+      expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 200);
     });
   });
 

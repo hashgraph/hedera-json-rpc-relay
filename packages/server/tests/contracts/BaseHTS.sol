@@ -31,6 +31,7 @@ contract BaseHTS is FeeHelper {
     event TokenDefaultFreezeStatus(bool defaultFreezeStatus);
     event TokenDefaultKycStatus(bool defaultKycStatus);
     event KycGranted(bool kycGranted);
+    event TokenExpiryInfo(IHederaTokenService.Expiry expiryInfo);
 
     function createFungibleTokenPublic(
         address treasury
@@ -420,6 +421,28 @@ contract BaseHTS is FeeHelper {
 
     function revokeTokenKycPublic(address token, address account)external returns (int64 responseCode){
         (responseCode) = this.revokeTokenKyc(token, account);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function getTokenExpiryInfoPublic(address token)external returns (int responseCode, IHederaTokenService.Expiry memory expiryInfo){
+        (responseCode, expiryInfo) = this.getTokenExpiryInfo(token);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenExpiryInfo(expiryInfo);
+    }
+
+    function updateTokenExpiryInfoPublic(address token, IHederaTokenService.Expiry memory expiryInfo)external returns (int responseCode){
+        (responseCode) = this.updateTokenExpiryInfo(token, expiryInfo);
 
         emit ResponseCode(responseCode);
 
