@@ -442,6 +442,17 @@ contract BaseHTS is FeeHelper {
         emit IsToken(isTokenFlag);
     }
 
+    function getTokenTypePublic(address token) public returns (int64 responseCode, int32 tokenType) {
+        (responseCode, tokenType) = HederaTokenService.getTokenType(token);
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenType(tokenType);
+    }
+
     function getTokenExpiryInfoPublic(address token)external returns (int responseCode, IHederaTokenService.Expiry memory expiryInfo){
         (responseCode, expiryInfo) = this.getTokenExpiryInfo(token);
 
