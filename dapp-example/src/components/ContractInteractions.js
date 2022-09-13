@@ -27,7 +27,7 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
             setDeployContractMsg('Loading...');
 
             const contractFactory = new ethers.ContractFactory(Greeter.abi, Greeter.bytecode, signer);
-            const contract = await contractFactory.deploy('initial_msg');
+            const contract = await contractFactory.deploy('initial_msg', { gasLimit: 500000 });
             const receipt = await contract.deployTransaction.wait();
             setContractAddress(receipt.contractAddress);
 
