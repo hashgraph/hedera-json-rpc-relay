@@ -510,8 +510,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  // Key management functionality is not present in the Consensus Node yet
-  describe.only('HTS Precompile Key management Tests', async function() {
+  describe('HTS Precompile Key management Tests', async function() {
     it('should be able to execute getTokenKey', async function() {
         const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
         const result = await tx.wait();
@@ -530,50 +529,34 @@ describe('HTS Precompile Acceptance Tests', async function () {
     it('should be able to execute updateTokenKeys', async function() {
       // Get key value before update
       const getKeyTx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
-      const { key } = (await getKeyTx.wait()).events.filter(e => e.event === 'TokenKey')[0].args;
-
-      const getNewKeyTx = await baseHTSContract.getSingleKeyPublic(2, 1, HTSTokenContractAddress);
-      const newKeyResult = await getNewKeyTx.wait();
-      const newKey = newKeyResult.events.filter(e => e.event === 'TokenKey')[0].args.key;
-
+      const originalKey = (await getKeyTx.wait()).events.filter(e => e.event === 'TokenKey')[0].args.key;
+      const updateKey = [
+        false,
+        '0x0000000000000000000000000000000000000000',
+        '0x',
+        '0x03dfcc94dfd843649cc594ada5ac6627031454602aa190223f996de25a05828f36',
+        '0x0000000000000000000000000000000000000000',
+      ];
 
       // Update keys. After updating there should be only one key with keyValue = 6. Other keys are removed
-      const tx = await baseHTSContract.updateTokenKeysPublic(HTSTokenContractAddress, [{
-        keyType: 2,
-        key: newKey
-      }]);
-      const {responseCode} = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
-      expect(Number(responseCode.toString())).to.equal(TX_SUCCESS_CODE);
+      const updateTx = await baseHTSContract.updateTokenKeysPublic(HTSTokenContractAddress, [[ 2, updateKey]]);
+      const updateResponseCode = (await updateTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      expect(Number(updateResponseCode.toString())).to.equal(TX_SUCCESS_CODE);
 
       // Assert updated key
-      try {
-        const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
-        const result = await tx.wait();
-        const {responseCode} = result.events.filter(e => e.event === 'ResponseCode')[0].args;
-        expect(Number(responseCode.toString())).to.equal(TX_SUCCESS_CODE);
-        const {key} = result.events.filter(e => e.event === 'TokenKey')[0].args;
+      const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
+      const result = await tx.wait();
+      const {responseCode} = result.events.filter(e => e.event === 'ResponseCode')[0].args;
+      expect(Number(responseCode.toString())).to.equal(TX_SUCCESS_CODE);
+      const updatedKey = result.events.filter(e => e.event === 'TokenKey')[0].args.key;
 
-        expect(key).to.exist;
-        expect(key.inheritAccountKey).to.eq(false);
-        expect(key.contractId).to.eq('0x0000000000000000000000000000000000000000');
-        expect(key.ed25519).to.eq('0x');
-        expect(key.ECDSA_secp256k1).to.exist;
-        expect(key.delegatableContractId).to.eq('0x0000000000000000000000000000000000000000');
-      }
-      catch(e) {
-        console.log(e);
-      }
-
-      // Assert the original key is deleted
-      try {
-        const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
-        const result = await tx.wait();
-        const {responseCode} = result.events.filter(e => e.event === 'ResponseCode')[0].args;
-        expect(Number(responseCode.toString())).to.equal(TX_SUCCESS_CODE);
-      }
-      catch(e) {
-        console.log(e);
-      }
+      expect(updatedKey).to.exist;
+      expect(updatedKey.inheritAccountKey).to.eq(updateKey[0]);
+      expect(updatedKey.contractId).to.eq(updateKey[1]);
+      expect(updatedKey.ed25519).to.eq(updateKey[2]);
+      expect(updatedKey.ECDSA_secp256k1).to.eq(updateKey[3]);
+      expect(updatedKey.delegatableContractId).to.eq(updateKey[4]);
+      expect(updatedKey.ECDSA_secp256k1).to.not.eq(originalKey.ECDSA_secp256k1);
     });
   });
 
@@ -695,7 +678,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const tokenExpiryInfoAfter = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
 
       const newRenewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoAfter.autoRenewAccount);
-      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2).toUpperCase()}`;
+      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2)}`;
 
       expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
@@ -738,7 +721,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const tokenExpiryInfoAfter = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
 
       const newRenewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoAfter.autoRenewAccount);
-      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2).toUpperCase()}`;
+      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2)}`;
 
       expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
