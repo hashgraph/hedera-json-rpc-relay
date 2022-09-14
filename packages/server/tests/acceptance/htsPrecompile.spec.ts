@@ -31,7 +31,7 @@ import ERC20MockJson from '../contracts/ERC20Mock.json';
 import BaseHTSJson from '../contracts/BaseHTS.json';
 
 
-describe('HTS Precompile Acceptance Tests', async function () {
+describe('@htsprecompile Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, mirrorNode, relay } = global;
 
@@ -628,12 +628,12 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const tokenExpiryInfoAfter = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
 
       const newRenewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoAfter.autoRenewAccount);
-      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2).toUpperCase()}`;
+      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2)}`;
 
       expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
-      expect(newRenewAccountEvmAddress).to.equal(expectedRenewAddress);
+      expect(newRenewAccountEvmAddress.toLowerCase()).to.equal(expectedRenewAddress.toLowerCase());
 
       //use close to with delta 200 seconds, because we don't know the exact second it was set to expiry
       expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 200);
@@ -670,12 +670,12 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const tokenExpiryInfoAfter = (await getTokenExpiryInfoTxAfter.wait()).events.filter(e => e.event === 'TokenExpiryInfo')[0].args.expiryInfo;
 
       const newRenewAccountEvmAddress = await mirrorNodeAddressReq(tokenExpiryInfoAfter.autoRenewAccount);
-      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2).toUpperCase()}`;
+      const expectedRenewAddress = `0x${BaseHTSContractAddress.substring(2)}`;
 
       expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
-      expect(newRenewAccountEvmAddress).to.equal(expectedRenewAddress);
+      expect(newRenewAccountEvmAddress.toLowerCase()).to.equal(expectedRenewAddress.toLowerCase());
 
       //use close to with delta 200 seconds, because we don't know the exact second it was set to expiry
       expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 200);
