@@ -31,7 +31,7 @@ const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
     // shell.exec(`sed -i '' 's/      STREAM_EXTENSION: "rcd"/      STREAM_EXTENSION: "rcd.gz"/' node_modules/@hashgraph/hedera-local/docker-compose.yml`);
     
     console.log('Start local node');
-    shell.exec(`hedera start --d`);
+    shell.exec(`hedera start -d`);
     console.log('Hedera Hashgraph local node env started');
   }
 
