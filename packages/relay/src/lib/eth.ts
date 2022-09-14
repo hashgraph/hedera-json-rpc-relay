@@ -793,11 +793,11 @@ export class EthImpl implements Eth {
         }
       }
 
-      // Gas limit for `eth_call` is 50_000_000, but the Hedera network limit is 15_000_000
-      // With values over 15_000_000 the call will fail with BUSY error
-      if (gas > 15_000_000) {
-        this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to 15_000_000`);
-        gas = 15_000_000;
+      // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
+      // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
+      if (gas > constants.BLOCK_GAS_LIMIT) {
+        this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`);
+        gas = constants.BLOCK_GAS_LIMIT;
       }
 
       // Execute the call and get the response
