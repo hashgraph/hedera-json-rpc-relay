@@ -140,7 +140,7 @@ interface IHederaTokenService {
         // IWA Compatibility. Depends on TokenSupplyType. For tokens of type FUNGIBLE_COMMON - the
         // maximum number of tokens that can be in circulation. For tokens of type NON_FUNGIBLE_UNIQUE -
         // the maximum number of NFTs (serial numbers) that can be minted. This field can never be changed!
-        int64 maxSupply;
+        uint32 maxSupply;
 
         // The default Freeze status (frozen or unfrozen) of Hedera accounts relative to this token. If
         // true, an account must be unfrozen before it can receive the token
@@ -359,8 +359,8 @@ interface IHederaTokenService {
     /// @return tokenAddress the created token's address
     function createFungibleToken(
         HederaToken memory token,
-        uint64 initialTotalSupply,
-        uint32 decimals)
+        uint initialTotalSupply,
+        uint decimals)
     external payable returns (int responseCode, address tokenAddress);
 
     /// Creates a Fungible Token with the specified properties
@@ -374,8 +374,8 @@ interface IHederaTokenService {
     /// @return tokenAddress the created token's address
     function createFungibleTokenWithCustomFees(
         HederaToken memory token,
-        uint64 initialTotalSupply,
-        uint32 decimals,
+        uint initialTotalSupply,
+        uint decimals,
         FixedFee[] memory fixedFees,
         FractionalFee[] memory fractionalFees)
     external payable returns (int responseCode, address tokenAddress);
@@ -406,15 +406,6 @@ interface IHederaTokenService {
     /// Retrieves general token info for a given token
     /// @param token The ID of the token as a solidity address
     function getTokenInfo(address token) external returns (int responseCode, TokenInfo memory tokenInfo);
-
-    /// Query token KeyValue
-    /// @param token The token address to check
-    /// @param keyType The keyType of the desired KeyValue
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return key KeyValue info for key of type `keyType`
-    function getTokenKey(address token, uint keyType)
-    external
-    returns (int64 responseCode, KeyValue memory key);
 
     /// Retrieves non-fungible specific token info for a given NFT
     /// @param token The ID of the token as a solidity address
@@ -626,12 +617,4 @@ interface IHederaTokenService {
     /// @param token The token address
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function updateTokenExpiryInfo(address token, Expiry memory expiryInfo) external returns (int responseCode);
-
-    /// Operation to update token keys
-    /// @param token The token address
-    /// @param keys The token keys
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function updateTokenKeys(address token, TokenKey[] memory keys)
-    external
-    returns (int64 responseCode);
 }
