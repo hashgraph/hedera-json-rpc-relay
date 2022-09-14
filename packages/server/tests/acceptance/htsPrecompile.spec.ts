@@ -54,12 +54,15 @@ describe('HTS Precompile Acceptance Tests', async function () {
   let HTSTokenWithCustomFeesContractAddress;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(200, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(300, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
     // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise(r => setTimeout(r, 5000));
+    await mirrorNode.get(`/accounts/${accounts[0].accountId}`);
+    await mirrorNode.get(`/accounts/${accounts[1].accountId}`);
+    await mirrorNode.get(`/accounts/${accounts[2].accountId}`);
 
     BaseHTSContractAddress = await deployBaseHTSContract();
     HTSTokenContractAddress = await createHTSToken();
@@ -171,22 +174,22 @@ describe('HTS Precompile Acceptance Tests', async function () {
   describe('HTS Precompile Approval Tests', async function() {
     it('should be able to approve anyone to spend tokens', async function() {
       const amount = 13;
-  
+
       const txBefore = await baseHTSContract.allowancePublic(HTSTokenContractAddress, BaseHTSContractAddress, accounts[2].wallet.address);
       const txBeforeReceipt = await txBefore.wait();
       const beforeAmount = txBeforeReceipt.events.filter(e => e.event === 'AllowanceValue')[0].args.amount.toNumber();
       const { responseCode } = txBeforeReceipt.events.filter(e => e.event === 'ResponseCode')[0].args;
       expect(responseCode).to.equal(TX_SUCCESS_CODE);
-  
+
       await baseHTSContract.approvePublic(HTSTokenContractAddress, accounts[2].wallet.address, amount, { gasLimit: 1_000_000 });
-  
+
       const txAfter = await baseHTSContract.allowancePublic(HTSTokenContractAddress, BaseHTSContractAddress, accounts[2].wallet.address);
       const afterAmount = (await txAfter.wait()).events.filter(e => e.event === 'AllowanceValue')[0].args.amount.toNumber();
-  
+
       expect(beforeAmount).to.equal(0);
       expect(afterAmount).to.equal(amount);
     });
-  
+
     // Depends on https://github.com/hashgraph/hedera-services/pull/3798
     it('should be able to execute setApprovalForAllPublic', async function() {
       const txBefore = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, BaseHTSContractAddress, accounts[1].wallet.address));
@@ -194,14 +197,14 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const beforeFlag = txBeforeReceipt.events.filter(e => e.event === 'Approved')[0].args.approved;
       const responseCodeTxBefore = txBeforeReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       expect(responseCodeTxBefore).to.equal(TX_SUCCESS_CODE);
-  
+
       const tx = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, { gasLimit: 5_000_000 });
       const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
       expect(responseCode).to.equal(TX_SUCCESS_CODE);
-  
+
       const txAfter = (await baseHTSContract.isApprovedForAllPublic(NftHTSTokenContractAddress, BaseHTSContractAddress, accounts[1].wallet.address));
       const afterFlag = (await txAfter.wait()).events.filter(e => e.event === 'Approved')[0].args.approved;
-  
+
       expect(beforeFlag).to.equal(false);
       expect(afterFlag).to.equal(true);
     });
@@ -210,7 +213,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const tx = await baseHTSContractReceiverWalletFirst.getApprovedPublic(NftHTSTokenContractAddress, NftSerialNumber, { gasLimit: 5_000_000 });
       const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
       expect(responseCode).to.equal(TX_SUCCESS_CODE);
-  
+
       const { approved } = (await tx.wait()).events.filter(e => e.event === 'ApprovedAddress')[0].args;
       expect(approved).to.equal('0x0000000000000000000000000000000000000000');
     });
@@ -219,32 +222,32 @@ describe('HTS Precompile Acceptance Tests', async function () {
   describe('HTS Precompile Get Token Info Tests', async function() {
     it('should be able to get fungible token info', async () => {
       const tx = await baseHTSContract.getFungibleTokenInfoPublic(HTSTokenContractAddress);
-  
+
       const { tokenInfo, decimals } = (await tx.wait()).events.filter(e => e.event === 'FungibleTokenInfo')[0].args.tokenInfo;
-  
+
       expect(tokenInfo.totalSupply.toNumber()).to.equal(TOKEN_MAX_SUPPLY);
       expect(decimals).to.equal(TOKEN_DECIMALS);
       expect(tokenInfo.token.maxSupply).to.equal(TOKEN_MAX_SUPPLY);
       expect(tokenInfo.token.name).to.equal(TOKEN_NAME);
       expect(tokenInfo.token.symbol).to.equal(TOKEN_SYMBOL);
     });
-  
+
     it('should be able to get token info', async () => {
       const tx = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress);
-  
+
       const { token, totalSupply } = (await tx.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
-  
+
       expect(totalSupply.toNumber()).to.equal(TOKEN_MAX_SUPPLY);
       expect(token.maxSupply).to.equal(TOKEN_MAX_SUPPLY);
       expect(token.name).to.equal(TOKEN_NAME);
       expect(token.symbol).to.equal(TOKEN_SYMBOL);
     });
-  
+
     it('should be able to get non-fungible token info', async () => {
       const tx = await baseHTSContract.getNonFungibleTokenInfoPublic(NftHTSTokenContractAddress, NftSerialNumber);
-  
+
       const { tokenInfo, serialNumber } = (await tx.wait()).events.filter(e => e.event === 'NonFungibleTokenInfo')[0].args.tokenInfo;
-  
+
       expect(tokenInfo.totalSupply.toNumber()).to.equal(NftSerialNumber);
       expect(serialNumber).to.equal(NftSerialNumber);
       expect(tokenInfo.token.name).to.equal(TOKEN_NAME);
@@ -510,62 +513,12 @@ describe('HTS Precompile Acceptance Tests', async function () {
     });
   });
 
-  describe('HTS Precompile Key management Tests', async function() {
-    it('should be able to execute getTokenKey', async function() {
-        const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
-        const result = await tx.wait();
-        const { responseCode } = result.events.filter(e => e.event === 'ResponseCode')[0].args;
-        expect(responseCode).to.equal(TX_SUCCESS_CODE);
-        const { key } = result.events.filter(e => e.event === 'TokenKey')[0].args;
-
-        expect(key).to.exist;
-        expect(key.inheritAccountKey).to.eq(false);
-        expect(key.contractId).to.eq('0x0000000000000000000000000000000000000000');
-        expect(key.ed25519).to.eq('0x');
-        expect(key.ECDSA_secp256k1).to.exist;
-        expect(key.delegatableContractId).to.eq('0x0000000000000000000000000000000000000000');
-    });
-
-    it('should be able to execute updateTokenKeys', async function() {
-      // Get key value before update
-      const getKeyTx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
-      const originalKey = (await getKeyTx.wait()).events.filter(e => e.event === 'TokenKey')[0].args.key;
-      const updateKey = [
-        false,
-        '0x0000000000000000000000000000000000000000',
-        '0x',
-        '0x03dfcc94dfd843649cc594ada5ac6627031454602aa190223f996de25a05828f36',
-        '0x0000000000000000000000000000000000000000',
-      ];
-
-      // Update keys. After updating there should be only one key with keyValue = 6. Other keys are removed
-      const updateTx = await baseHTSContract.updateTokenKeysPublic(HTSTokenContractAddress, [[ 2, updateKey]]);
-      const updateResponseCode = (await updateTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-      expect(Number(updateResponseCode.toString())).to.equal(TX_SUCCESS_CODE);
-
-      // Assert updated key
-      const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
-      const result = await tx.wait();
-      const {responseCode} = result.events.filter(e => e.event === 'ResponseCode')[0].args;
-      expect(Number(responseCode.toString())).to.equal(TX_SUCCESS_CODE);
-      const updatedKey = result.events.filter(e => e.event === 'TokenKey')[0].args.key;
-
-      expect(updatedKey).to.exist;
-      expect(updatedKey.inheritAccountKey).to.eq(updateKey[0]);
-      expect(updatedKey.contractId).to.eq(updateKey[1]);
-      expect(updatedKey.ed25519).to.eq(updateKey[2]);
-      expect(updatedKey.ECDSA_secp256k1).to.eq(updateKey[3]);
-      expect(updatedKey.delegatableContractId).to.eq(updateKey[4]);
-      expect(updatedKey.ECDSA_secp256k1).to.not.eq(originalKey.ECDSA_secp256k1);
-    });
-  });
-
   describe('HTS Precompile KYC Tests', async function() {
     async function checkKyc(contractOwner, tokenAddress, accountAddress, expectedValue: boolean) {
       const tx = await contractOwner.isKycPublic(tokenAddress, accountAddress, { gasLimit: 1_000_000 });
       const responseCodeIsKyc = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       expect(responseCodeIsKyc).to.equal(TX_SUCCESS_CODE);
-  
+
       const isKycGranted = (await tx.wait()).events.filter(e => e.event === 'KycGranted')[0].args.kycGranted;
       expect(isKycGranted).to.equal(expectedValue);
     };
@@ -589,12 +542,12 @@ describe('HTS Precompile Acceptance Tests', async function () {
     it('should be able to grant KYC, tranfer hts tokens and revoke KYC', async function() {
       // check if KYC is revoked
       await checkKyc(baseHTSContractOwner, HTSTokenContractAddress, accounts[1].wallet.address, false);
-  
+
       // grant KYC
-      const grantKycTx = await baseHTSContractOwner.grantTokenKycPublic(HTSTokenContractAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
+      const grantKycTx = await baseHTSContractOwner.grantTokenKycPublic(HTSTokenContractAddress, accounts[1].wallet.address, { gasLimit: 5_000_000 });
       const responseCodeGrantKyc = (await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
-  
+
       // check if KYC is granted
       await checkKyc(baseHTSContractOwner, HTSTokenContractAddress, accounts[1].wallet.address, true);
 
@@ -603,14 +556,14 @@ describe('HTS Precompile Acceptance Tests', async function () {
       const balanceBefore = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
       await baseHTSContract.cryptoTransferTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, amount);
       const balanceAfter = await HTSTokenContract.balanceOf(accounts[1].wallet.address);
-  
+
       expect(balanceBefore + amount).to.equal(balanceAfter);
 
       // revoke KYC
-      const revokeKycTx = await baseHTSContractOwner.revokeTokenKycPublic(HTSTokenContractAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
+      const revokeKycTx = await baseHTSContractOwner.revokeTokenKycPublic(HTSTokenContractAddress, accounts[1].wallet.address, { gasLimit: 5_000_000 });
       const responseCodeRevokeKyc = (await revokeKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       expect(responseCodeRevokeKyc).to.equal(TX_SUCCESS_CODE);
-  
+
       // check if KYC is revoked
       await checkKyc(baseHTSContractOwner, HTSTokenContractAddress, accounts[1].wallet.address, false);
     });
@@ -619,15 +572,15 @@ describe('HTS Precompile Acceptance Tests', async function () {
   describe('HTS Precompile Custom Fees Tests', async function() {
     it('should be able to get a custom token fees', async function() {
       const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
-  
+
       const tx = (await baseHTSContract.getTokenCustomFeesPublic(HTSTokenWithCustomFeesContractAddress));
       const { fixedFees, fractionalFees } = (await tx.wait()).events.filter(e => e.event === 'TokenCustomFees')[0].args;
-  
+
       expect(fixedFees[0].amount).to.equal(1);
       expect(fixedFees[0].tokenId).to.equal(HTSTokenContractAddress);
       expect(fixedFees[0].useHbarsForPayment).to.equal(false);
       expect(fixedFees[0].useCurrentTokenForPayment).to.equal(false);
-  
+
       expect(fractionalFees[0].numerator).to.equal(4);
       expect(fractionalFees[0].denominator).to.equal(5);
       expect(fractionalFees[0].minimumAmount).to.equal(10);
@@ -683,7 +636,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
-      expect(newRenewAccountEvmAddress).to.equal(expectedRenewAddress);
+      expect(newRenewAccountEvmAddress.toUpperCase()).to.equal(expectedRenewAddress.toUpperCase());
 
       //use close to with delta 200 seconds, because we don't know the exact second it was set to expiry
       expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 200);
@@ -726,7 +679,7 @@ describe('HTS Precompile Acceptance Tests', async function () {
       expect(updateExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(getExpiryInfoResponseCode).to.equal(TX_SUCCESS_CODE);
       expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
-      expect(newRenewAccountEvmAddress).to.equal(expectedRenewAddress);
+      expect(newRenewAccountEvmAddress.toUpperCase()).to.equal(expectedRenewAddress.toUpperCase());
 
       //use close to with delta 200 seconds, because we don't know the exact second it was set to expiry
       expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 200);
@@ -736,17 +689,17 @@ describe('HTS Precompile Acceptance Tests', async function () {
   describe('HTS Precompile Delete Token Tests', async function() {
     it('should be able to delete a token', async function() {
       const createdTokenAddress = await createHTSToken();
-  
+
       const txBefore = (await baseHTSContract.getTokenInfoPublic(createdTokenAddress, { gasLimit: 1000000 }));
       const tokenInfoBefore = (await txBefore.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
-  
+
       const tx = await baseHTSContract.deleteTokenPublic(createdTokenAddress);
       const responseCode = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       expect(responseCode).to.equal(TX_SUCCESS_CODE);
-  
+
       const txAfter = (await baseHTSContract.getTokenInfoPublic(createdTokenAddress, { gasLimit: 1000000 }));
       const tokenInfoAfter = (await txAfter.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo;
-  
+
       expect(tokenInfoBefore.deleted).to.equal(false);
       expect(tokenInfoAfter.deleted).to.equal(true);
     });
@@ -953,6 +906,57 @@ describe('HTS Precompile Acceptance Tests', async function () {
         expect(error.code).to.equal("CALL_EXCEPTION");
         expect(error.reason).to.equal("transaction failed");
       }
+    });
+  });
+
+
+  describe('HTS Precompile Key management Tests', async function() {
+    it('should be able to execute getTokenKey', async function() {
+      const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
+      const result = await tx.wait();
+      const { responseCode } = result.events.filter(e => e.event === 'ResponseCode')[0].args;
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+      const { key } = result.events.filter(e => e.event === 'TokenKey')[0].args;
+
+      expect(key).to.exist;
+      expect(key.inheritAccountKey).to.eq(false);
+      expect(key.contractId).to.eq('0x0000000000000000000000000000000000000000');
+      expect(key.ed25519).to.eq('0x');
+      expect(key.ECDSA_secp256k1).to.exist;
+      expect(key.delegatableContractId).to.eq('0x0000000000000000000000000000000000000000');
+    });
+
+    it('should be able to execute updateTokenKeys', async function() {
+      // Get key value before update
+      const getKeyTx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
+      const originalKey = (await getKeyTx.wait()).events.filter(e => e.event === 'TokenKey')[0].args.key;
+      const updateKey = [
+        false,
+        '0x0000000000000000000000000000000000000000',
+        '0x',
+        '0x03dfcc94dfd843649cc594ada5ac6627031454602aa190223f996de25a05828f36',
+        '0x0000000000000000000000000000000000000000',
+      ];
+
+      // Update keys. After updating there should be only one key with keyValue = 6. Other keys are removed
+      const updateTx = await baseHTSContract.updateTokenKeysPublic(HTSTokenContractAddress, [[ 2, updateKey]]);
+      const updateResponseCode = (await updateTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      expect(Number(updateResponseCode.toString())).to.equal(TX_SUCCESS_CODE);
+
+      // Assert updated key
+      const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
+      const result = await tx.wait();
+      const {responseCode} = result.events.filter(e => e.event === 'ResponseCode')[0].args;
+      expect(Number(responseCode.toString())).to.equal(TX_SUCCESS_CODE);
+      const updatedKey = result.events.filter(e => e.event === 'TokenKey')[0].args.key;
+
+      expect(updatedKey).to.exist;
+      expect(updatedKey.inheritAccountKey).to.eq(updateKey[0]);
+      expect(updatedKey.contractId).to.eq(updateKey[1]);
+      expect(updatedKey.ed25519).to.eq(updateKey[2]);
+      expect(updatedKey.ECDSA_secp256k1).to.eq(updateKey[3]);
+      expect(updatedKey.delegatableContractId).to.eq(updateKey[4]);
+      expect(updatedKey.ECDSA_secp256k1).to.not.eq(originalKey.ECDSA_secp256k1);
     });
   });
 });
