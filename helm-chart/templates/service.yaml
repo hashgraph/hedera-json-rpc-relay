@@ -8,9 +8,12 @@ metadata:
   annotations:
 {{ toYaml .Values.service.annotations | nindent 4 }}
 {{- end }}
-{{- if .Values.service.annontations_JSON }}
+# This addes support for an NEG setup where the key is a string but the value is JSON
+{{- if .Values.service.annotations_NEG }}
   annotations:
-{{ .Values.service.annontations_JSON | toJson | nindent 4 }}
+{{- range  $key, $value := .Values.service.annotations_NEG }}
+    {{ $key }}: {{ toJson $value }}
+{{- end }}      
 {{- end }}  
 spec:
   type: {{ .Values.service.type }}

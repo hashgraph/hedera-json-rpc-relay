@@ -38,7 +38,7 @@ service:
   type: ClusterIP
   port: 7546
   annotations: {}
-  annotations_JSON: {}
+  annotations_NEG: {}
 
 ingress:
   enabled: false
