@@ -1181,13 +1181,45 @@ describe('Eth calls using MirrorNode', async function () {
       expectLogData2(result[1]);
     });
 
-    it('with invalid fromBlock filter', async function () {
+    it('with non-existing fromBlock filter', async function () {
       mock.onGet('blocks/5').reply(200, defaultBlock);
       mock.onGet('blocks/16').reply(404, {"_status": { "messages": [{"message": "Not found"}]}});
       const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null);
 
       expect(result).to.exist;
       expect(result).to.be.empty;
+    });
+
+    it('when fromBlock > toBlock', async function () {
+      const fromBlock = {
+        ...defaultBlock,
+        number: '0x10',
+        'timestamp': {
+          'from': `1651560391.060890949`,
+          'to': '1651560393.060890949'
+        },
+      };
+
+      mock.onGet('blocks/16').reply(200, fromBlock);
+      mock.onGet('blocks/5').reply(200, defaultBlock);
+      const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null);
+
+      expect(result).to.exist;
+      expect(result).to.be.empty;
+    });
+
+    it('with block tag', async function () {
+      const filteredLogs = {
+        logs: [defaultLogs.logs[0]]
+      };
+
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/results/logs?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
+      mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
+      const result = await ethImpl.getLogs(null, null, 'latest', null, null);
+
+      expect(result).to.exist;
+      expectLogData1(result[0]);
     });
 
     it('when block range is too large', async function () {
