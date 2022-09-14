@@ -40,7 +40,6 @@ describe('HTS Precompile V1 Acceptance Tests', async function () {
   let BaseHTSContractAddress;
   let HTSTokenContractAddress;
   let NftHTSTokenContractAddress;
-  let HTSTokenContract;
   let baseHTSContract;
   let baseHTSContractOwner;
   let baseHTSContractReceiverWalletFirst;
@@ -54,6 +53,13 @@ describe('HTS Precompile V1 Acceptance Tests', async function () {
 
     // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise(r => setTimeout(r, 5000));
+
+    BaseHTSContractAddress = await deployBaseHTSContract();
+    baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+
+    baseHTSContractOwner = baseHTSContract;
+    baseHTSContractReceiverWalletFirst = baseHTSContract.connect(accounts[1].wallet);
+    baseHTSContractReceiverWalletSecond = baseHTSContract.connect(accounts[2].wallet);
   });
 
   async function deployBaseHTSContract() {
@@ -98,32 +104,9 @@ describe('HTS Precompile V1 Acceptance Tests', async function () {
     return tokenAddress;
   }
 
-  it('should deploy baseHTSContract', async function () {
-    BaseHTSContractAddress = await deployBaseHTSContract();
-  });
-
-  it('should createHTSToken', async function () {
+  it('should create associate to a fungible token', async function() {
     HTSTokenContractAddress = await createHTSToken();
-  });
 
-  it('should createNftHTSToken', async function () {
-    NftHTSTokenContractAddress = await createNftHTSToken();
-  });
-
-  it('should createHTSTokenWithCustomFees', async function () {
-    HTSTokenWithCustomFeesContractAddress = await createHTSTokenWithCustomFees();
-  });
-
-  it('should finsh setting up contracts', async function () {
-    HTSTokenContract = new ethers.Contract(HTSTokenContractAddress, ERC20MockJson.abi, accounts[0].wallet);
-    baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
-
-    baseHTSContractOwner = baseHTSContract;
-    baseHTSContractReceiverWalletFirst = baseHTSContract.connect(accounts[1].wallet);
-    baseHTSContractReceiverWalletSecond = baseHTSContract.connect(accounts[2].wallet);
-  });
-
-  it('should associate to a token', async function() {
     const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, HTSTokenContractAddress, { gasLimit: 1_000_000 });
     expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
@@ -134,7 +117,9 @@ describe('HTS Precompile V1 Acceptance Tests', async function () {
     expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
   });
 
-  it('should associate to a nft', async function() {
+  it('should create and associate to an nft', async function() {
+    NftHTSTokenContractAddress = await createNftHTSToken();
+
     const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, NftHTSTokenContractAddress, { gasLimit: 1_000_000 });
     expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
@@ -145,7 +130,9 @@ describe('HTS Precompile V1 Acceptance Tests', async function () {
     expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
   });
 
-  it('should associate to a token with custom fees', async function() {
+  it('should create and associate to a fungible token with custom fees', async function() {
+    HTSTokenWithCustomFeesContractAddress = await createHTSTokenWithCustomFees();
+
     const baseHTSContractOwner = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
     const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, HTSTokenWithCustomFeesContractAddress, { gasLimit: 1_000_000 });
     expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
