@@ -10,7 +10,7 @@ contract BaseHTS is FeeHelper {
     string symbol = "tokenSymbol";
     string memo = "memo";
     uint64 initialTotalSupply = 1000;
-    int64 maxSupply = 1000;
+    uint32 maxSupply = 1000;
     uint32 decimals = 8;
     bool freezeDefaultStatus = false;
 
