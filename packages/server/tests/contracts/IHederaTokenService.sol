@@ -606,4 +606,15 @@ interface IHederaTokenService {
     /// @param token The token address to be deleted
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function deleteToken(address token) external returns (int responseCode);
+
+    /// Operation to get token expiry info
+    /// @param token The token address
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return expiryInfo The expiry info of the token
+    function getTokenExpiryInfo(address token) external returns (int responseCode, Expiry memory expiryInfo);
+
+    /// Operation to update token expiry info
+    /// @param token The token address
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function updateTokenExpiryInfo(address token, Expiry memory expiryInfo) external returns (int responseCode);
 }

@@ -31,6 +31,7 @@ contract BaseHTS is FeeHelper {
     event TokenDefaultFreezeStatus(bool defaultFreezeStatus);
     event TokenDefaultKycStatus(bool defaultKycStatus);
     event KycGranted(bool kycGranted);
+    event TokenExpiryInfo(IHederaTokenService.Expiry expiryInfo);
 
     function createFungibleTokenPublic(
         address treasury
@@ -118,7 +119,7 @@ contract BaseHTS is FeeHelper {
         emit AllowanceValue(amount);
     }
 
-    function transferTokenPublic(address account, address token, int64 amount) public returns (int responseCode) {
+    function cryptoTransferTokenPublic(address account, address token, int64 amount) public returns (int responseCode) {
         IHederaTokenService.NftTransfer[] memory nftTransfers = new IHederaTokenService.NftTransfer[](0);
 
         IHederaTokenService.AccountAmount memory accountAmountNegative =
@@ -135,6 +136,22 @@ contract BaseHTS is FeeHelper {
         tokenTransferList[0] = tokenTransfer;
 
         responseCode = HederaTokenService.cryptoTransfer(tokenTransferList);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function transferTokenPublic(address token, address sender, address receiver, int64 amount) public returns (int responseCode) {
+        responseCode = HederaTokenService.transferToken(token, sender, receiver, amount);
+        emit ResponseCode(responseCode);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function cryptoTransferPublic(IHederaTokenService.TokenTransferList[] calldata tokenTransferList) public returns (int responseCode) {
+        responseCode = HederaTokenService.cryptoTransfer(tokenTransferList);
+        emit ResponseCode(responseCode);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
@@ -404,6 +421,28 @@ contract BaseHTS is FeeHelper {
 
     function revokeTokenKycPublic(address token, address account)external returns (int64 responseCode){
         (responseCode) = this.revokeTokenKyc(token, account);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function getTokenExpiryInfoPublic(address token)external returns (int responseCode, IHederaTokenService.Expiry memory expiryInfo){
+        (responseCode, expiryInfo) = this.getTokenExpiryInfo(token);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenExpiryInfo(expiryInfo);
+    }
+
+    function updateTokenExpiryInfoPublic(address token, IHederaTokenService.Expiry memory expiryInfo)external returns (int responseCode){
+        (responseCode) = this.updateTokenExpiryInfo(token, expiryInfo);
 
         emit ResponseCode(responseCode);
 
