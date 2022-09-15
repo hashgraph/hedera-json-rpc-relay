@@ -113,7 +113,7 @@ const transferHTSToken = async function(accountId, tokenId) {
 
 (async () => {
   //wait for 10 sec, to be sure that local node is loaded, before trying to create accounts
-  await new Promise(r => setTimeout(r, 10000));
+  await new Promise(r => setTimeout(r, 20000));
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
   if (mainPrivateKeyString === '') {
     mainPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw()
