@@ -26,11 +26,10 @@ chai.use(solidity);
 
 import { AliasAccount } from '../clients/servicesClient';
 import { ethers } from 'ethers';
-import ERC20MockJson from '../contracts/contracts_v1/ERC20Mock.json';
 import BaseHTSJson from '../contracts/contracts_v1/BaseHTS.json';
 
 
-describe('HTS Precompile V1 Acceptance Tests', async function () {
+describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, relay } = global;
 
