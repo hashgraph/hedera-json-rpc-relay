@@ -140,7 +140,7 @@ interface IHederaTokenService {
         // IWA Compatibility. Depends on TokenSupplyType. For tokens of type FUNGIBLE_COMMON - the
         // maximum number of tokens that can be in circulation. For tokens of type NON_FUNGIBLE_UNIQUE -
         // the maximum number of NFTs (serial numbers) that can be minted. This field can never be changed!
-        int64 maxSupply;
+        uint32 maxSupply;
 
         // The default Freeze status (frozen or unfrozen) of Hedera accounts relative to this token. If
         // true, an account must be unfrozen before it can receive the token
@@ -359,8 +359,8 @@ interface IHederaTokenService {
     /// @return tokenAddress the created token's address
     function createFungibleToken(
         HederaToken memory token,
-        uint64 initialTotalSupply,
-        uint32 decimals)
+        uint initialTotalSupply,
+        uint decimals)
     external payable returns (int responseCode, address tokenAddress);
 
     /// Creates a Fungible Token with the specified properties
@@ -374,8 +374,8 @@ interface IHederaTokenService {
     /// @return tokenAddress the created token's address
     function createFungibleTokenWithCustomFees(
         HederaToken memory token,
-        uint64 initialTotalSupply,
-        uint32 decimals,
+        uint initialTotalSupply,
+        uint decimals,
         FixedFee[] memory fixedFees,
         FractionalFee[] memory fractionalFees)
     external payable returns (int responseCode, address tokenAddress);
@@ -443,8 +443,8 @@ interface IHederaTokenService {
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return kycGranted True if `account` has kyc granted for `token`
     function isKyc(address token, address account)
-    external
-    returns (int64 responseCode, bool kycGranted);
+        external
+        returns (int64 responseCode, bool kycGranted);
 
     /// Operation to freeze token account
     /// @param token The token address
@@ -467,16 +467,16 @@ interface IHederaTokenService {
     /// @param account The account address to grant kyc
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function grantTokenKyc(address token, address account)
-    external
-    returns (int64 responseCode);
+        external
+        returns (int64 responseCode);
 
     /// Operation to revoke kyc to token account
     /// @param token The token address
     /// @param account The account address to revoke kyc
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function revokeTokenKyc(address token, address account)
-    external
-    returns (int64 responseCode);
+        external
+        returns (int64 responseCode);
 
     /// Query token custom fees
     /// @param token The token address to check
@@ -617,16 +617,4 @@ interface IHederaTokenService {
     /// @param token The token address
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function updateTokenExpiryInfo(address token, Expiry memory expiryInfo) external returns (int responseCode);
-
-    /// Query if valid token found for the given address
-    /// @param token The token address
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return isTokenFlag True if valid token found for the given address
-    function isToken(address token) external returns (int64 responseCode, bool isTokenFlag);
-
-    /// Query to return the token type for a given address
-    /// @param token The token address
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return tokenType the token type. 0 is FUNGIBLE_COMMON, 1 is NON_FUNGIBLE_UNIQUE, -1 is UNRECOGNIZED
-    function getTokenType(address token) external returns (int64 responseCode, int32 tokenType);
 }

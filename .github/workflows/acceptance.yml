@@ -8,9 +8,11 @@ on:
     tags: [ v* ]
 
 jobs:
-  setup-local-hedera:
-    name: Acceptance Tests
+  suite:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        filter: [ api, erc20, htsprecompile, htsprecompilev1 ]
     permissions:
       contents: write
     steps:
@@ -38,4 +40,4 @@ jobs:
         run: npx lerna run build
 
       - name: Run acceptance tests
-        run: npm run acceptancetest
+        run: npm run acceptancetest:${{ matrix.filter }}

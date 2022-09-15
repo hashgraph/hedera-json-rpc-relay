@@ -116,9 +116,9 @@
                       "type": "bool"
                     },
                     {
-                      "internalType": "uint32",
+                      "internalType": "int64",
                       "name": "maxSupply",
-                      "type": "uint32"
+                      "type": "int64"
                     },
                     {
                       "internalType": "bool",
@@ -427,9 +427,9 @@
                       "type": "bool"
                     },
                     {
-                      "internalType": "uint32",
+                      "internalType": "int64",
                       "name": "maxSupply",
-                      "type": "uint32"
+                      "type": "int64"
                     },
                     {
                       "internalType": "bool",
@@ -909,9 +909,9 @@
                   "type": "bool"
                 },
                 {
-                  "internalType": "uint32",
+                  "internalType": "int64",
                   "name": "maxSupply",
-                  "type": "uint32"
+                  "type": "int64"
                 },
                 {
                   "internalType": "bool",
@@ -1500,9 +1500,9 @@
                       "type": "bool"
                     },
                     {
-                      "internalType": "uint32",
+                      "internalType": "int64",
                       "name": "maxSupply",
-                      "type": "uint32"
+                      "type": "int64"
                     },
                     {
                       "internalType": "bool",
@@ -1782,9 +1782,9 @@
                       "type": "bool"
                     },
                     {
-                      "internalType": "uint32",
+                      "internalType": "int64",
                       "name": "maxSupply",
-                      "type": "uint32"
+                      "type": "int64"
                     },
                     {
                       "internalType": "bool",
@@ -2332,9 +2332,9 @@
                   "type": "bool"
                 },
                 {
-                  "internalType": "uint32",
+                  "internalType": "int64",
                   "name": "maxSupply",
-                  "type": "uint32"
+                  "type": "int64"
                 },
                 {
                   "internalType": "bool",
