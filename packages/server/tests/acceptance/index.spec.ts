@@ -74,7 +74,7 @@ describe('RPC Server Acceptance Tests', function () {
         logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
         
         if (USE_LOCAL_NODE === 'true') {
-            runLocalHederaNetwork();
+            // runLocalHederaNetwork();
         }
 
         if (RELAY_URL === LOCAL_RELAY_URL) {
@@ -94,7 +94,7 @@ describe('RPC Server Acceptance Tests', function () {
         if (USE_LOCAL_NODE === 'true') {
             // stop local-node
             logger.info('Shutdown local node');
-            shell.exec('hedera stop');
+            // shell.exec('hedera stop');
         }
 
         // stop relay

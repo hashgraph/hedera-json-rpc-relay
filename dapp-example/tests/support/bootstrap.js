@@ -36,7 +36,7 @@ const createAccountFromCompressedPublicKey = async function(compressedPublicKey)
     .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-10)))
     .setTransactionMemo('relay dapp test crypto transfer')
     .execute(client);
-    
+
   await transferTransaction.getReceipt(client);
 
   const txTransaction = await (new HederaSDK.TransactionRecordQuery()
@@ -115,7 +115,7 @@ const transferHTSToken = async function(accountId, tokenId) {
   //wait for 10 sec, to be sure that local node is loaded, before trying to create accounts
   await new Promise(r => setTimeout(r, 10000));
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
-  if (mainPrivateKeyString === '' || mainPrivateKeyString === undefined) {
+  if (mainPrivateKeyString === '') {
     mainPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw()
   }
   const mainWallet = new ethers.Wallet(mainPrivateKeyString);

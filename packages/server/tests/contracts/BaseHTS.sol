@@ -110,17 +110,6 @@ contract BaseHTS is FeeHelper {
         }
     }
 
-    function approveNFTPublic(address token, address approved, uint256 serialNumber) public returns (int responseCode)
-    {
-        responseCode = HederaTokenService.approveNFT(token, approved, serialNumber);
-
-        emit ResponseCode(responseCode);
-        
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ();
-        }
-    }
-
     function allowancePublic(address token, address owner, address spender) public returns (int responseCode, uint256 amount) {
         (responseCode, amount) = HederaTokenService.allowance(token, owner, spender);
         emit ResponseCode(responseCode);
@@ -178,6 +167,17 @@ contract BaseHTS is FeeHelper {
         }
 
         emit ApprovedAddress(approved);
+    }
+
+    function approveNFTPublic(address token, address approved, uint256 serialNumber) public returns (int responseCode)
+    {
+        responseCode = HederaTokenService.approveNFT(token, approved, serialNumber);
+
+        emit ResponseCode(responseCode);
+        
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
     }
 
     function setApprovalForAllPublic(address token, address operator, bool approved) public returns (int responseCode)
