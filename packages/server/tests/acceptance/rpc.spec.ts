@@ -33,7 +33,7 @@ import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 
-describe('RPC Server Acceptance Tests', function () {
+describe('@api RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
     const accounts: AliasAccount[] = [];
