@@ -1161,6 +1161,19 @@ describe('@api RPC Server Acceptance Tests', function () {
                     Assertions.jsonRpcError(error, predefined.RATE_LIMIT_EXCEEDED);
                 }
             });
+
+            it('should not throw rate limit exceeded error', async function () {
+                for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
+                    await relay.call('eth_chainId', [null]);
+                }
+
+                //wait until rate limit is reset
+                await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION!)));
+
+                for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
+                    await relay.call('eth_chainId', [null]);
+                }
+            });
         });
     });
 });
