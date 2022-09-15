@@ -32,6 +32,8 @@ contract BaseHTS is FeeHelper {
     event TokenDefaultKycStatus(bool defaultKycStatus);
     event KycGranted(bool kycGranted);
     event TokenExpiryInfo(IHederaTokenService.Expiry expiryInfo);
+    event IsToken(bool isToken);
+    event TokenType(int32 tokenType);
 
     function createFungibleTokenPublic(
         address treasury
@@ -271,7 +273,7 @@ contract BaseHTS is FeeHelper {
     function freezeTokenPublic(address token, address account) public returns (int responseCode) {
         responseCode = HederaTokenService.freezeToken(token, account);
         emit ResponseCode(responseCode);
-        if(responseCode != HederaResponseCodes.SUCCESS) {
+        if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
     }
@@ -279,7 +281,7 @@ contract BaseHTS is FeeHelper {
     function unfreezeTokenPublic(address token, address account) public returns (int responseCode) {
         responseCode = HederaTokenService.unfreezeToken(token, account);
         emit ResponseCode(responseCode);
-        if(responseCode != HederaResponseCodes.SUCCESS) {
+        if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
     }
@@ -287,7 +289,7 @@ contract BaseHTS is FeeHelper {
     function isFrozenPublic(address token, address account) public returns (int responseCode, bool frozen) {
         (responseCode, frozen) = HederaTokenService.isFrozen(token, account);
         emit ResponseCode(responseCode);
-        if(responseCode != HederaResponseCodes.SUCCESS) {
+        if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
         emit Frozen(frozen);
@@ -369,7 +371,7 @@ contract BaseHTS is FeeHelper {
 
         emit ResponseCode(responseCode);
 
-        if(responseCode != HederaResponseCodes.SUCCESS) {
+        if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
 
@@ -390,43 +392,65 @@ contract BaseHTS is FeeHelper {
 
         emit ResponseCode(responseCode);
 
-        if(responseCode != HederaResponseCodes.SUCCESS) {
+        if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
 
         emit TokenDefaultKycStatus(defaultKycStatus);
     }
 
-    function isKycPublic(address token, address account)external returns (int64 responseCode, bool kycGranted){
+    function isKycPublic(address token, address account) external returns (int64 responseCode, bool kycGranted){
         (responseCode, kycGranted) = this.isKyc(token, account);
 
         emit ResponseCode(responseCode);
 
-        if(responseCode != HederaResponseCodes.SUCCESS) {
+        if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
 
         emit KycGranted(kycGranted);
     }
 
-    function grantTokenKycPublic(address token, address account)external returns (int64 responseCode){
+    function grantTokenKycPublic(address token, address account) external returns (int64 responseCode){
         (responseCode) = this.grantTokenKyc(token, account);
 
         emit ResponseCode(responseCode);
 
-        if(responseCode != HederaResponseCodes.SUCCESS) {
+        if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
     }
 
-    function revokeTokenKycPublic(address token, address account)external returns (int64 responseCode){
+    function revokeTokenKycPublic(address token, address account) external returns (int64 responseCode){
         (responseCode) = this.revokeTokenKyc(token, account);
 
         emit ResponseCode(responseCode);
 
-        if(responseCode != HederaResponseCodes.SUCCESS) {
+        if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
+    }
+
+    function isTokenPublic(address token) public returns (int64 responseCode, bool isTokenFlag) {
+        (responseCode, isTokenFlag) = HederaTokenService.isToken(token);
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit IsToken(isTokenFlag);
+    }
+
+    function getTokenTypePublic(address token) public returns (int64 responseCode, int32 tokenType) {
+        (responseCode, tokenType) = HederaTokenService.getTokenType(token);
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenType(tokenType);
     }
 
     function getTokenExpiryInfoPublic(address token)external returns (int responseCode, IHederaTokenService.Expiry memory expiryInfo){

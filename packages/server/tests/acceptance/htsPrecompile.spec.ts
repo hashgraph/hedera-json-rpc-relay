@@ -54,7 +54,7 @@ describe('@htsprecompile Acceptance Tests', async function () {
   let HTSTokenWithCustomFeesContractAddress;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(170, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(200, relay.provider);
     accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
@@ -704,7 +704,7 @@ describe('@htsprecompile Acceptance Tests', async function () {
   describe('CryptoTransfer Tests', async function() {
     let NftSerialNumber;
     let NftSerialNumber2;
-    
+
     async function setKyc(tokenAddress) {
       const grantKycTx = await baseHTSContractOwner.grantTokenKycPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
       expect((await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
@@ -748,7 +748,7 @@ describe('@htsprecompile Acceptance Tests', async function () {
       NftSerialNumber2 = serialNumbers[1];
 
       await setKyc(NftHTSTokenContractAddress);
-        
+
       // setup the transfer
       const tokenTransferList = [{
         token: `${NftHTSTokenContractAddress}`,
@@ -774,7 +774,7 @@ describe('@htsprecompile Acceptance Tests', async function () {
       expect((await txMint.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
       const { serialNumbers } = (await txMint.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
       const NftSerialNumber = serialNumbers[0];
-        
+
       // setup the transfer
       const tokenTransferList = [{
         token: `${NftHTSTokenContractAddress}`,
@@ -843,7 +843,7 @@ describe('@htsprecompile Acceptance Tests', async function () {
       }
     });
 
-    it('should fail to swap approved non-fungible tokens', async function() {        
+    it('should fail to swap approved non-fungible tokens', async function() {
       const txApprove1 = await baseHTSContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, { gasLimit: 1_000_000 });
       expect((await txApprove1.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
@@ -867,14 +867,14 @@ describe('@htsprecompile Acceptance Tests', async function () {
 
       try{
         const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
-        expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);  
+        expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
       } catch (error: any) {
         expect(error.code).to.equal("CALL_EXCEPTION");
         expect(error.reason).to.equal("transaction failed");
       }
     });
 
-    it('should fail to transfer fungible and non-fungible tokens in a single tokenTransferList', async function() {        
+    it('should fail to transfer fungible and non-fungible tokens in a single tokenTransferList', async function() {
       // setup the transfer
       const xferAmount = 10;
       const tokenTransferList = [{
@@ -897,11 +897,64 @@ describe('@htsprecompile Acceptance Tests', async function () {
       }];
       try {
         const txXfer = await baseHTSContract.cryptoTransferPublic(tokenTransferList);
-        const response = (await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;  
+        const response = (await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
       } catch (error: any) {
         expect(error.code).to.equal("CALL_EXCEPTION");
         expect(error.reason).to.equal("transaction failed");
       }
+    });
+  });
+
+  describe('HTS Precompile for token check methods', async function() {
+    it('should return false for isToken with passed contract address', async function() {
+      const tx = await baseHTSContract.isTokenPublic(BaseHTSContractAddress, { gasLimit: 1000000 });
+      const txReceipt = await tx.wait();
+
+      const responseCode = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const isTokenFlag = txReceipt.events.filter(e => e.event === 'IsToken')[0].args.isToken;
+      expect(isTokenFlag).to.equal(false);
+    });
+    it('should return true for isToken with passed token address', async function() {
+      const tx = await baseHTSContract.isTokenPublic(HTSTokenContractAddress, { gasLimit: 1000000 });
+      const txReceipt = await tx.wait();
+
+      const responseCode = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const isTokenFlag = txReceipt.events.filter(e => e.event === 'IsToken')[0].args.isToken;
+      expect(isTokenFlag).to.equal(true);
+    });
+    it('should return 0 for getTokenType with passed FUNGIBLE_COMMON token', async function() {
+      const tx = await baseHTSContract.getTokenTypePublic(HTSTokenContractAddress, { gasLimit: 1000000 });
+      const txReceipt = await tx.wait();
+
+      const responseCode = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const tokenType = txReceipt.events.filter(e => e.event === 'TokenType')[0].args.tokenType;
+      expect(tokenType).to.equal(0);
+    });
+    it('should return 1 for getTokenType with passed HTS NON_FUNGIBLE_UNIQUE token', async function() {
+      const tx = await baseHTSContract.getTokenTypePublic(NftHTSTokenContractAddress, { gasLimit: 1000000 });
+      const txReceipt = await tx.wait();
+
+      const responseCode = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
+      const tokenType = txReceipt.events.filter(e => e.event === 'TokenType')[0].args.tokenType;
+      expect(tokenType).to.equal(1);
+    });
+    it('should throw an exception for getTokenType with passed contract address', async function() {
+      let hasError = false;
+      try {
+        const tx = await baseHTSContract.getTokenTypePublic(BaseHTSContractAddress, { gasLimit: 1000000 });
+        await tx.wait();
+      } catch (e) {
+        hasError = true;
+      }
+      expect(hasError).to.equal(true);
     });
   });
 });
