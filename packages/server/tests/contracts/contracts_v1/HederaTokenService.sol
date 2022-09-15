@@ -154,8 +154,8 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @return tokenAddress the created token's address
     function createFungibleToken(
         IHederaTokenService.HederaToken memory token,
-        uint64 initialTotalSupply,
-        uint32 decimals) nonEmptyExpiry(token)
+        uint initialTotalSupply,
+        uint decimals) nonEmptyExpiry(token)
     internal returns (int responseCode, address tokenAddress) {
         (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector,
@@ -176,8 +176,8 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @return tokenAddress the created token's address
     function createFungibleTokenWithCustomFees(
         IHederaTokenService.HederaToken memory token,
-        uint64 initialTotalSupply,
-        uint32 decimals,
+        uint initialTotalSupply,
+        uint decimals,
         IHederaTokenService.FixedFee[] memory fixedFees,
         IHederaTokenService.FractionalFee[] memory fractionalFees) nonEmptyExpiry(token)
     internal returns (int responseCode, address tokenAddress) {
