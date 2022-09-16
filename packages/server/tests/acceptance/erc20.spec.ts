@@ -50,7 +50,7 @@ describe('@erc20 Acceptance Tests', async function () {
     const HTS = 'HTS token';
 
     const testTitles = [
-        // {testName: ERC20, expectedBytecode: ERC20MockJson.deployedBytecode},
+        {testName: ERC20, expectedBytecode: ERC20MockJson.deployedBytecode},
         {testName: HTS, expectedBytecode: EthImpl.emptyHex}
     ];
 
@@ -66,7 +66,7 @@ describe('@erc20 Acceptance Tests', async function () {
         // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
         await new Promise(r => setTimeout(r, 5000));
 
-        // contracts.push(await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson));
+        contracts.push(await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson));
         contracts.push(await createHTS(name, symbol, accounts[0], 10000, ERC20MockJson.abi, [accounts[1], accounts[2]]));
     });
 
@@ -179,23 +179,17 @@ describe('@erc20 Acceptance Tests', async function () {
                                     receipt = await tx.wait();
                                 });
 
-                                it('emits an approval event', async function () {
-                                    let ownerAddress, spenderAddress;
-                                    const allowance = await contract.allowance(tokenOwner, spender);
-
-                                    if (testTitles[i].testName === HTS) {
-                                        ownerAddress = Utils.idToEvmAddress(accounts[0].accountId.toString());
-                                        spenderAddress = Utils.idToEvmAddress(accounts[1].accountId.toString());
-                                    }
-                                    else {
-                                        ownerAddress = tokenOwnerWallet.address;
-                                        spenderAddress = spenderWallet.address;
-                                    }
-
-                                    await expect(tx)
-                                        .to.emit(contract, 'Approval')
-                                        .withArgs(ownerAddress, spenderAddress, allowance.toNumber());
-                                });
+                                // FIXME there is an issue with the Approval event for HTS tokens in Services.
+                                // Re-enable this test when it is resolved
+                                // Last tested with services image: 0.30.0-alpha.2
+                                if (testTitles[i].testName !== HTS) {
+                                    it('emits an approval event', async function () {
+                                        const allowance = await contract.allowance(tokenOwner, spender);
+                                        await expect(tx)
+                                            .to.emit(contract, 'Approval')
+                                            .withArgs(tokenOwnerWallet.address, spenderWallet.address, allowance);
+                                    });
+                                }
 
                                 describe('when the token owner has enough balance', function () {
                                     let amount, tx;
