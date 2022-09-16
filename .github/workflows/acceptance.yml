@@ -2,17 +2,17 @@ name: Acceptance Tests
 
 on:
   pull_request:
-    branches: [main, release/**]
+    branches: [ main, release/** ]
   push:
-    branches: [main, release/**]
-    tags: [v*]
+    branches: [ main, release/** ]
+    tags: [ v* ]
 
 jobs:
   suite:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        filter: [api, erc20, htsprecompile, htsprecompilev1]
+        filter: [ api, erc20, htsprecompile, htsprecompilev1 ]
     permissions:
       contents: write
     steps:
