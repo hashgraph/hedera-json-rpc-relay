@@ -483,7 +483,7 @@ export class EthImpl implements Eth {
 
     return result;
   }
-  
+
   /**
    * Gets the balance of an account as of the given block.
    *
@@ -704,11 +704,11 @@ export class EthImpl implements Eth {
         const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
         if (result?.type === constants.TYPE_ACCOUNT) {
             const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
-            return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));  
+            return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
         }
         else if (result?.type === constants.TYPE_CONTRACT) {
           return EthImpl.numberTo0x(1);
-        }  
+        }
       } catch (e: any) {
         this.logger.error(e, `${requestIdPrefix} Error raised during getTransactionCount for address ${address}, block number or tag ${blockNumOrTag}`);
         return predefined.INTERNAL_ERROR;
@@ -792,7 +792,14 @@ export class EthImpl implements Eth {
           gas = call.gas;
         }
       }
-      
+
+      // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
+      // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
+      if (gas > constants.BLOCK_GAS_LIMIT) {
+        this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`);
+        gas = constants.BLOCK_GAS_LIMIT;
+      }
+
       // Execute the call and get the response
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}"`, call.to, gas, call.data, call.from);
       const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
