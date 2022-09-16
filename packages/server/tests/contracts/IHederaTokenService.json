@@ -2092,30 +2092,6 @@
           "internalType": "address",
           "name": "token",
           "type": "address"
-        }
-      ],
-      "name": "getTokenType",
-      "outputs": [
-        {
-          "internalType": "int64",
-          "name": "responseCode",
-          "type": "int64"
-        },
-        {
-          "internalType": "int32",
-          "name": "tokenType",
-          "type": "int32"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "token",
-          "type": "address"
         },
         {
           "internalType": "uint256",
@@ -2161,6 +2137,30 @@
           "internalType": "struct IHederaTokenService.KeyValue",
           "name": "key",
           "type": "tuple"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "getTokenType",
+      "outputs": [
+        {
+          "internalType": "int64",
+          "name": "responseCode",
+          "type": "int64"
+        },
+        {
+          "internalType": "int32",
+          "name": "tokenType",
+          "type": "int32"
         }
       ],
       "stateMutability": "nonpayable",
