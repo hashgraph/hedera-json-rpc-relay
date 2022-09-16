@@ -292,16 +292,14 @@ describe('@htsprecompile Acceptance Tests', async function () {
       //approval for accounts[2] to use this NFT
       await baseHTSContract.approveNFTPublic(NftHTSTokenContractAddress, accounts[2].address, NftSerialNumber, { gasLimit: 1_000_000 });
       expect(await NFTokenContract.getApproved(NftSerialNumber)).to.equal(accounts[2].wallet.address);
-    
+
       //transfer NFT to accounts[1] with accounts[2] as signer
       await NFTokenContract.connect(accounts[2].wallet).transferFrom(baseHTSContract.address, accounts[1].wallet.address, NftSerialNumber, { gasLimit: 1_000_000 });
     
       expect(await NFTokenContract.balanceOf(baseHTSContract.address)).to.equal(0);
       expect(await NFTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(1);
     
-      // resseting owner and kyc for the next tests
-      await NFTokenContract.connect(accounts[1].wallet).transferFrom(accounts[1].wallet.address, accounts[0].address, NftSerialNumber, { gasLimit: 1_000_000 });
-    
+      // revoking kyc for the next tests
       {
         const revokeKycTx = await baseHTSContractOwner.revokeTokenKycPublic(NftHTSTokenContractAddress, accounts[0].wallet.address, { gasLimit: 1_000_000 });
         const responseCodeRevokeKyc = (await revokeKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
@@ -849,14 +847,13 @@ describe('@htsprecompile Acceptance Tests', async function () {
     });
 
     it('should be able to transfer non-fungible tokens', async function() {
+      await setKyc(NftHTSTokenContractAddress);
       // Mint an NFT
       const txMint = await baseHTSContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x03', '0x04'], { gasLimit: 1_000_000 });
       expect((await txMint.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
       const { serialNumbers } = (await txMint.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
       NftSerialNumber = serialNumbers[0];
       NftSerialNumber2 = serialNumbers[1];
-
-      await setKyc(NftHTSTokenContractAddress);
 
       // setup the transfer
       const tokenTransferList = [{
