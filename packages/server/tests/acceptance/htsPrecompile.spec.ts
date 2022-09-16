@@ -1063,4 +1063,61 @@ describe('@htsprecompile Acceptance Tests', async function () {
       expect(hasError).to.equal(true);
     });
   });
+
+  describe('HTS update token info test', async function() {
+    const TOKEN_UPDATE_NAME = 'tokenUpdateName';
+    const TOKEN_UPDATE_SYMBOL = 'tokenUpdateSymbol';
+    const TOKEN_UPDATE_MEMO = 'tokenUpdateMemo';
+
+    function setUpdatedValues(token) {
+      token.name = TOKEN_UPDATE_NAME;
+      token.symbol = TOKEN_UPDATE_SYMBOL;
+      token.memo = TOKEN_UPDATE_MEMO;
+      token.treasury = BaseHTSContractAddress;
+    }
+
+    function checkUpdatedTokenInfo(tokenInfo) {
+      expect(tokenInfo.name).to.equal(TOKEN_UPDATE_NAME);
+      expect(tokenInfo.symbol).to.equal(TOKEN_UPDATE_SYMBOL);
+      expect(tokenInfo.treasury).to.equal(BaseHTSContractAddress);
+      expect(tokenInfo.memo).to.equal(TOKEN_UPDATE_MEMO);
+    }
+
+    it('should update fungible token properties', async function() {    
+      const txBeforeInfo = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress, { gasLimit: 1_000_000 });
+      const tokenInfoBefore = ((await txBeforeInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
+
+      const token = {
+        ...tokenInfoBefore, tokenKeys: [{...tokenInfoBefore.tokenKeys[0]}]
+      };
+
+      setUpdatedValues(token);
+
+      // update contract properties
+      const txUpdate = await baseHTSContractOwner.updateTokenInfoPublic(HTSTokenContractAddress, token, { gasLimit: 1_000_000 });
+      expect((await txUpdate.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
+  
+      const txAfterInfo = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress, { gasLimit: 1_000_000 });
+      const tokenInfoAfter = ((await txAfterInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
+      checkUpdatedTokenInfo(tokenInfoAfter);
+    });
+
+    it('should update non-fungible token properties', async function() {  
+      const txBeforeInfo = await baseHTSContract.getTokenInfoPublic(NftHTSTokenContractAddress, { gasLimit: 1_000_000 });
+      const tokenInfoBefore = ((await txBeforeInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
+
+      const token = {
+        ...tokenInfoBefore, tokenKeys: [{...tokenInfoBefore.tokenKeys[0]}]
+      };
+
+      setUpdatedValues(token);
+
+      const txUpdate = await baseHTSContractOwner.updateTokenInfoPublic(NftHTSTokenContractAddress, token, { gasLimit: 1_000_000 });
+      expect((await txUpdate.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
+    
+      const txAfterInfo = await baseHTSContract.getTokenInfoPublic(NftHTSTokenContractAddress, { gasLimit: 1_000_000 });
+      const tokenInfoAfter = ((await txAfterInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
+      checkUpdatedTokenInfo(tokenInfoAfter);
+    });
+  });
 });
