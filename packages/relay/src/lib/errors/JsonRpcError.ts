@@ -117,4 +117,9 @@ export const predefined = {
     code: -32001,
     message: 'Requested resource not found'
   }),
+  'RATE_LIMIT_EXCEEDED': new JsonRpcError({
+    name: 'Rate limit exceeded',
+    code: -32005,
+    message: 'Rate limit exceeded'
+  }),
 };
