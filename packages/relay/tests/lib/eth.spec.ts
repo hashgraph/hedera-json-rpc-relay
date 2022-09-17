@@ -919,57 +919,67 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_getBalance', async function() {
-    it('should return cached value', async () => {
+
+    const defBalance = 99960581137;
+    const defHexBalance = EthImpl.numberTo0x(defBalance * constants.TINYBAR_TO_WEIBAR_COEF)
+    it('should return balance from mirror node', async () => {
+      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000
+        }]
+      });
+      mock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
+        }
+      });
+
+      const resBalance = await ethImpl.getBalance(contractAddress1, null);
+      expect(resBalance).to.equal(defHexBalance);
+    });
+
+    it('should return balance from consensus node', async () => {
       mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
         blocks: [{
           number: 10000
         }]
       });
       mock.onGet(`contracts/${contractAddress1}`).reply(200, null);
-      mock.onGet(`accounts/${contractAddress1}`).reply(200, {
-        account: contractAddress1
+      mock.onGet(`accounts/${contractAddress1}`).reply(404, {
+        _status: {
+          messages: [{ message: 'Not found' }]
+        }
       });
-      sdkClientStub.getAccountBalanceInWeiBar.throws(new SDKClientError(
-        {status: {
-          _code: 15
-        }}));
+
+      const resBalance = await ethImpl.getBalance(contractAddress1, null);
+      expect(resBalance).to.equal(EthImpl.zeroHex);
+    });
+
+    it('should return cached value for mirror nodes', async () => {
+      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000
+        }]
+      });
+      mock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
+        }
+      });
 
       const resNoCache = await ethImpl.getBalance(contractAddress1, null);
+
+      mock.onGet(`accounts/${contractAddress1}`).reply(404, {
+        _status: {
+          messages: [{ message: 'Not found' }]
+        }
+      });
+      
       const resCached = await ethImpl.getBalance(contractAddress1, null);
-      sinon.assert.calledOnce(sdkClientStub.getAccountBalanceInWeiBar);
-      expect(resNoCache).to.equal(EthImpl.zeroHex);
+      expect(resNoCache).to.equal(defHexBalance);
       expect(resCached).to.equal(EthImpl.zeroHex);
-    });
-
-    it('should return non cached value for account', async () => {
-      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
-        blocks: [{
-          number: 10000
-        }]
-      });
-      mock.onGet(`contracts/${contractAddress1}`).reply(200, null);
-      mock.onGet(`accounts/${contractAddress1}`).reply(200, {
-        account: contractAddress1
-      })
-      sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
-
-      const res = await ethImpl.getBalance(contractAddress1, null);
-      expect(res).to.equal('0x3e8');
-    });
-
-    it('should return non cached value for contract', async () => {
-      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
-        blocks: [{
-          number: 10000
-        }]
-      });
-      mock.onGet(`contracts/${contractAddress1}`).reply(200, {
-        contract_id: contractAddress1
-      });
-      sdkClientStub.getContractBalanceInWeiBar.returns(1000);
-
-      const res = await ethImpl.getBalance(contractAddress1, null);
-      expect(res).to.equal('0x3e8');
     });
   });
 

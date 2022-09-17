@@ -256,16 +256,14 @@ export class SDKClient {
         }
         catch (e: any) {
             const sdkClientError = new SDKClientError(e);
-            if(sdkClientError.isValidNetworkError()) {
-                this.logger.debug(`${requestIdPrefix} Consensus Node query response: ${query.constructor.name} ${sdkClientError.statusCode}`);
-                this.captureMetrics(
-                    SDKClient.queryMode,
-                    query.constructor.name,
-                    sdkClientError.status,
-                    query._queryPayment?.toTinybars().toNumber(),
-                    callerName);    
-            }
-
+            this.logger.debug(`${requestIdPrefix} Consensus Node query response: ${query.constructor.name} ${sdkClientError.status}`);
+            this.captureMetrics(
+                SDKClient.queryMode,
+                query.constructor.name,
+                sdkClientError.status,
+                query._queryPayment?.toTinybars().toNumber(),
+                callerName);
+            this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} query cost: ${query._queryPayment}`);
             throw sdkClientError;
         }
     };
@@ -281,15 +279,13 @@ export class SDKClient {
         }
         catch (e: any) {
             const sdkClientError = new SDKClientError(e);
-            if(sdkClientError.isValidNetworkError()) {
-                this.logger.info(`${requestIdPrefix} Consensus Node ${transactionType} transaction response: ${sdkClientError.statusCode}`);
-                this.captureMetrics(
-                    SDKClient.transactionMode,
-                    transactionType,
-                    sdkClientError.statusCode,
-                    0,
-                    callerName);
-            }
+            this.logger.info(`${requestIdPrefix} Consensus Node ${transactionType} transaction response: ${sdkClientError.status}`);
+            this.captureMetrics(
+                SDKClient.transactionMode,
+                transactionType,
+                sdkClientError.status,
+                0,
+                callerName);
 
             throw sdkClientError;
         }
@@ -336,7 +332,7 @@ export class SDKClient {
             status,
             caller)
             .observe(resolvedCost);
-        this.operatorAccountGauge.labels(mode, type, this.operatorAccountId).dec(cost);
+        this.operatorAccountGauge.labels(mode, type, this.operatorAccountId).dec(resolvedCost);
     };
 
     /**
