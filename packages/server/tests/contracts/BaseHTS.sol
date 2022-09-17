@@ -485,4 +485,14 @@ contract BaseHTS is FeeHelper {
             revert();
         }
     }
+
+    function updateTokenInfoPublic(address token, IHederaTokenService.HederaToken memory tokenInfo)external returns (int responseCode){
+        (responseCode) = this.updateTokenInfo(token, tokenInfo);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
 }

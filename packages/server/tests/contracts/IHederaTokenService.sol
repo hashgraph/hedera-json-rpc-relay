@@ -629,4 +629,12 @@ interface IHederaTokenService {
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return tokenType the token type. 0 is FUNGIBLE_COMMON, 1 is NON_FUNGIBLE_UNIQUE, -1 is UNRECOGNIZED
     function getTokenType(address token) external returns (int64 responseCode, int32 tokenType);
+
+    /// Operation to update token info
+    /// @param token The token address
+    /// @param tokenInfo The hedera token info to update token with
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function updateTokenInfo(address token, HederaToken memory tokenInfo)
+        external
+        returns (int64 responseCode);
 }
