@@ -113,6 +113,17 @@ contract BaseHTS is FeeHelper {
         }
     }
 
+    function approveNFTPublic(address token, address approved, uint256 serialNumber) public returns (int responseCode)
+    {
+        responseCode = HederaTokenService.approveNFT(token, approved, serialNumber);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+    }
+
     function allowancePublic(address token, address owner, address spender) public returns (int responseCode, uint256 amount) {
         (responseCode, amount) = HederaTokenService.allowance(token, owner, spender);
         emit ResponseCode(responseCode);
@@ -468,6 +479,16 @@ contract BaseHTS is FeeHelper {
 
     function updateTokenExpiryInfoPublic(address token, IHederaTokenService.Expiry memory expiryInfo)external returns (int responseCode){
         (responseCode) = this.updateTokenExpiryInfo(token, expiryInfo);
+
+        emit ResponseCode(responseCode);
+
+        if(responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function updateTokenInfoPublic(address token, IHederaTokenService.HederaToken memory tokenInfo)external returns (int responseCode){
+        (responseCode) = this.updateTokenInfo(token, tokenInfo);
 
         emit ResponseCode(responseCode);
 

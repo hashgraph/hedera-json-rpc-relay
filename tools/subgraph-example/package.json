@@ -1,0 +1,20 @@
+{
+  "name": "@hedera-subgraph-greeter-example",
+  "license": "Apache-2.0",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ greeter",
+    "create-local": "graph create --node http://localhost:8020/ greeter",
+    "remove-local": "graph remove --node http://localhost:8020/ greeter",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 greeter",
+    "test": "graph test",
+    "graph-local": "docker-compose up",
+    "graph-local-clean": "docker-compose down -v && docker-compose rm -v && rm -rf data/ipfs data/postgres"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.33.0",
+    "@graphprotocol/graph-ts": "0.27.0"
+  },
+  "devDependencies": { "matchstick-as": "0.5.0" }
+}

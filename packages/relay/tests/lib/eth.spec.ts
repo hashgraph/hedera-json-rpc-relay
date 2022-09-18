@@ -1204,7 +1204,7 @@ describe('Eth calls using MirrorNode', async function () {
     const latestBlock = {...defaultBlock, number: blockNumber3};
     const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
     const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
-    
+
     previousFees.fees[2].gas += 1;
 
     mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
@@ -1247,7 +1247,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_feeHistory verify cached value', async function () {
     const latestBlock = {...defaultBlock, number: blockNumber3};
     const latestFees = defaultNetworkFees;
-        
+
     mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
     mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
     mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
@@ -1265,7 +1265,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_feeHistory on mirror 404', async function () {
     const latestBlock = {...defaultBlock, number: blockNumber3};
-    
+
     mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
     mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
     mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(404, {
@@ -1291,7 +1291,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_feeHistory on mirror 500', async function () {
     const latestBlock = {...defaultBlock, number: blockNumber3};
-    
+
     mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
     mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
     mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(404, {
@@ -1408,7 +1408,7 @@ describe('Eth calls using MirrorNode', async function () {
     it('eth_call with no gas', async function () {
       sdkClientStub.submitContractCallQuery.returns({
             asBytes: function () {
-              return Uint8Array.of(0)
+              return Uint8Array.of(0);
             }
           }
       );
@@ -1417,34 +1417,34 @@ describe('Eth calls using MirrorNode', async function () {
         "from": contractAddress1,
         "to": contractAddress2,
         "data": contractCallData,
-      }, 'latest')
+      }, 'latest');
 
       sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 400_000, contractAddress1, 'eth_call');
-      expect(result).to.equal("0x00")
+      expect(result).to.equal("0x00");
     });
 
     it('eth_call with no data', async function () {
       sdkClientStub.submitContractCallQuery.returns({
             asBytes: function () {
-              return Uint8Array.of(0)
+              return Uint8Array.of(0);
             }
           }
       );
 
-      var result = await ethImpl.call({
+      const result = await ethImpl.call({
         "from": contractAddress1,
         "to": contractAddress2,
         "gas": maxGasLimitHex
-      }, 'latest')
+      }, 'latest');
 
       sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, undefined, maxGasLimit, contractAddress1, 'eth_call');
-      expect(result).to.equal("0x00")
+      expect(result).to.equal("0x00");
     });
 
     it('eth_call with no from address', async function () {
       sdkClientStub.submitContractCallQuery.returns({
             asBytes: function () {
-              return Uint8Array.of(0)
+              return Uint8Array.of(0);
             }
           }
       );
@@ -1453,16 +1453,16 @@ describe('Eth calls using MirrorNode', async function () {
         "to": contractAddress2,
         "data": contractCallData,
         "gas": maxGasLimitHex
-      }, 'latest')
+      }, 'latest');
 
       sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, undefined, 'eth_call');
-      expect(result).to.equal("0x00")
+      expect(result).to.equal("0x00");
     });
 
     it('eth_call with all fields', async function () {
       sdkClientStub.submitContractCallQuery.returns({
             asBytes: function () {
-              return Uint8Array.of(0)
+              return Uint8Array.of(0);
             }
           }
       );
@@ -1472,10 +1472,31 @@ describe('Eth calls using MirrorNode', async function () {
         "to": contractAddress2,
         "data": contractCallData,
         "gas": maxGasLimitHex
-      }, 'latest')
+      }, 'latest');
 
       sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, contractAddress1, 'eth_call');
-      expect(result).to.equal("0x00")
+      expect(result).to.equal("0x00");
+    });
+
+    describe('with gas > 15_000_000', async function() {
+      it('caps gas at 15_000_000', async function () {
+        sdkClientStub.submitContractCallQuery.returns({
+              asBytes: function () {
+                return Uint8Array.of(0);
+              }
+            }
+        );
+
+        const result = await ethImpl.call({
+          "from": contractAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": 50_000_000
+        }, 'latest');
+
+        sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 15_000_000, contractAddress1, 'eth_call');
+        expect(result).to.equal("0x00");
+      });
     });
   });
 
@@ -1507,7 +1528,7 @@ describe('Eth calls using MirrorNode', async function () {
       const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       expect(result).to.exist;
       if (result == null) return;
-  
+
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
     });
@@ -1520,7 +1541,7 @@ describe('Eth calls using MirrorNode', async function () {
       const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, "latest");
       expect(result).to.exist;
       if (result == null) return;
-  
+
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
     });
@@ -1533,7 +1554,7 @@ describe('Eth calls using MirrorNode', async function () {
       const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot);
       expect(result).to.exist;
       if (result == null) return;
-  
+
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
     });
@@ -1543,7 +1564,7 @@ describe('Eth calls using MirrorNode', async function () {
       let hasError = false;
       try {
         mock.onGet(`blocks/${blockNumber}`).reply(200, null);
-        const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));  
+        const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       } catch (e: any) {
         hasError = true;
         expect(e.code).to.equal(-32001);
@@ -1565,7 +1586,7 @@ describe('Eth calls using MirrorNode', async function () {
         hasError = true;
         expect(e.statusCode).to.equal(404);
         expect(e.message).to.equal("Request failed with status code 404");
-      }  
+      }
       expect(hasError).to.be.true;
     });
   });

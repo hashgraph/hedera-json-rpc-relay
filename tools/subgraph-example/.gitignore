@@ -1,0 +1,10 @@
+# graph-cli
+build
+generated
+tests/.*
+
+# packages
+node_modules
+
+# local graph-node
+data
