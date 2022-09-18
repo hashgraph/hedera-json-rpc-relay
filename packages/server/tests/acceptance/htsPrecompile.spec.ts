@@ -54,8 +54,8 @@ describe('@htsprecompile Acceptance Tests', async function () {
   let HTSTokenWithCustomFeesContractAddress;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(250, relay.provider);
-    accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
+    accounts[0] = await servicesNode.createAliasAccount(270, relay.provider);
+    accounts[1] = await servicesNode.createAliasAccount(40, relay.provider);
     accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
 
     // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
