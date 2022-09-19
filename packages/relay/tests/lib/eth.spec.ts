@@ -1014,7 +1014,6 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_getLogs', async function () {
-
     const expectLogData = (res, log, tx, blockLogIndexOffset) => {
       expect(res.address).to.eq(log.address);
       expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
@@ -1158,21 +1157,90 @@ describe('Eth calls using MirrorNode', async function () {
       expectLogData2(result[1]);
     });
 
-    it('fromBlock && toBlock filter', async function () {
+    it('with valid fromBlock && toBlock filter', async function () {
       const filteredLogs = {
         logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
       };
+      const toBlock = {
+        ...defaultBlock,
+        number: '0x10',
+        'timestamp': {
+          'from': `1651560391.060890949`,
+          'to': '1651560393.060890949'
+        },
+      };
+
       mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
-      mock.onGet('blocks?block.number=lte:16&block.number=gte:5&order=asc').reply(200, {
-        blocks: [defaultBlock]
-      });
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${toBlock.timestamp.to}`).reply(200, filteredLogs);
+      mock.onGet('blocks/5').reply(200, defaultBlock);
+      mock.onGet('blocks/16').reply(200, toBlock);
       const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null);
 
       expect(result).to.exist;
       expectLogData1(result[0]);
       expectLogData2(result[1]);
     });
+
+    it('with non-existing fromBlock filter', async function () {
+      mock.onGet('blocks/5').reply(200, defaultBlock);
+      mock.onGet('blocks/16').reply(404, {"_status": { "messages": [{"message": "Not found"}]}});
+      const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null);
+
+      expect(result).to.exist;
+      expect(result).to.be.empty;
+    });
+
+    it('when fromBlock > toBlock', async function () {
+      const fromBlock = {
+        ...defaultBlock,
+        number: '0x10',
+        'timestamp': {
+          'from': `1651560391.060890949`,
+          'to': '1651560393.060890949'
+        },
+      };
+
+      mock.onGet('blocks/16').reply(200, fromBlock);
+      mock.onGet('blocks/5').reply(200, defaultBlock);
+      const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null);
+
+      expect(result).to.exist;
+      expect(result).to.be.empty;
+    });
+
+    it('with block tag', async function () {
+      const filteredLogs = {
+        logs: [defaultLogs.logs[0]]
+      };
+
+      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/results/logs?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
+      mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
+      const result = await ethImpl.getLogs(null, null, 'latest', null, null);
+
+      expect(result).to.exist;
+      expectLogData1(result[0]);
+    });
+
+    it('when block range is too large', async function () {
+      const fromBlock = {
+        ...defaultBlock,
+        number: '0x1'
+      };
+      const toBlock = {
+        ...defaultBlock,
+        number: '0x1f6'
+      };
+      mock.onGet('blocks/1').reply(200, fromBlock);
+      mock.onGet('blocks/502').reply(200, toBlock);
+
+      try {
+        await ethImpl.getLogs(null, '0x1', '0x1f6', null, null);
+      } catch (error: any) {
+        expect(error.message).to.equal('Exceeded maximum block range: 500');
+      }
+    });
+
 
     it('topics filter', async function () {
       const filteredLogs = {
@@ -1184,9 +1252,8 @@ describe('Eth calls using MirrorNode', async function () {
         `?topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
         `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}`
       ).reply(200, filteredLogs);
-      mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
-        blocks: [defaultBlock]
-      });
+      mock.onGet('blocks/5').reply(200, defaultBlock);
+      mock.onGet('blocks/16').reply(200, defaultBlock);
 
       const result = await ethImpl.getLogs(null, null, null, null, defaultLogTopics);
 
