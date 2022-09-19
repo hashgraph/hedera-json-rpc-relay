@@ -829,13 +829,10 @@ describe('@api RPC Server Acceptance Tests', function () {
 
             it('@release should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {
                 const account = await servicesNode.createAliasAccount(10);
-                // Wait for account creation to propagate
-                await mirrorNode.get(`/accounts/${account.accountId}`);
+                const mirrorAccount = await mirrorNode.get(`/accounts/${account.accountId}`);
 
                 const res = await relay.call('eth_getBalance', [account.address, 'latest']);
-                const balance = await servicesNode.executeQuery(new AccountBalanceQuery()
-                    .setAccountId(account.accountId));
-                const balanceInWeiBars = BigNumber.from(balance.hbars.toTinybars().toString()).mul(10 ** 10);
+                const balanceInWeiBars = BigNumber.from(mirrorAccount.balance.balance.toString()).mul(10 ** 10);
                 expect(res).to.eq(ethers.utils.hexValue(balanceInWeiBars));
             });
 

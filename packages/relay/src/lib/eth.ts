@@ -485,16 +485,13 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Gets the balance of an account as of the given block.
+   * Gets the balance of an account as of the given block from the mirror node.
+   * Current implementation does not yet utilize blockNumber
    *
    * @param account
    * @param blockNumberOrTag
    */
   async getBalance(account: string, blockNumberOrTag: string | null, requestId?: string) {
-    // FIXME: This implementation should be replaced so that instead of going to the
-    //        consensus nodes we go to the mirror nodes instead. The problem is that
-    //        the mirror nodes need to have the ability to give me the **CURRENT**
-    //        account balance *and* the account balance for any given block.
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
     const blockNumber = await this.translateBlockTag(blockNumberOrTag, requestId);
