@@ -33,8 +33,6 @@ contract BaseHTS is FeeHelper {
     event TokenKey(IHederaTokenService.KeyValue key);
     event KycGranted(bool kycGranted);
     event TokenExpiryInfo(IHederaTokenService.Expiry expiryInfo);
-    event IsToken(bool isToken);
-    event TokenType(int32 tokenType);
 
     function createFungibleTokenPublic(
         address treasury
@@ -215,25 +213,6 @@ contract BaseHTS is FeeHelper {
         }
 
         emit Approved(approved);
-    }
-
-    function wipeTokenAccountPublic(address token, address account, uint32 amount) public returns (int responseCode)
-    {
-        responseCode = HederaTokenService.wipeTokenAccount(token, account, amount);
-        emit ResponseCode(responseCode);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ();
-        }
-    }
-
-    function wipeTokenAccountNFTPublic(address token, address account, int64[] memory serialNumbers) public
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.wipeTokenAccountNFT(token, account, serialNumbers);
-        emit ResponseCode(responseCode);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ();
-        }
     }
 
     function transferNFTPublic(address token, address sender, address receiver, int64 serialNumber) public
@@ -443,28 +422,6 @@ contract BaseHTS is FeeHelper {
         }
     }
 
-    function isTokenPublic(address token) public returns (int64 responseCode, bool isTokenFlag) {
-        (responseCode, isTokenFlag) = HederaTokenService.isToken(token);
-        emit ResponseCode(responseCode);
-
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-
-        emit IsToken(isTokenFlag);
-    }
-
-    function getTokenTypePublic(address token) public returns (int64 responseCode, int32 tokenType) {
-        (responseCode, tokenType) = HederaTokenService.getTokenType(token);
-        emit ResponseCode(responseCode);
-
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-
-        emit TokenType(tokenType);
-    }
-
     function getTokenExpiryInfoPublic(address token)external returns (int responseCode, IHederaTokenService.Expiry memory expiryInfo){
         (responseCode, expiryInfo) = this.getTokenExpiryInfo(token);
 
@@ -487,38 +444,4 @@ contract BaseHTS is FeeHelper {
         }
     }
 
-    function updateTokenInfoPublic(address token, IHederaTokenService.HederaToken memory tokenInfo)external returns (int responseCode){
-        (responseCode) = this.updateTokenInfo(token, tokenInfo);
-
-        emit ResponseCode(responseCode);
-
-        if(responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-    }
-
-    function updateTokenKeysPublic(address token, IHederaTokenService.TokenKey[] memory keys)
-    public returns (int64 responseCode){
-
-        (responseCode) = HederaTokenService.updateTokenKeys(token, keys);
-
-        emit ResponseCode(responseCode);
-
-        if(responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-    }
-
-    function getTokenKeyPublic(address token, uint keyType)
-    public returns (int64 responseCode, IHederaTokenService.KeyValue memory key){
-        (responseCode, key) = HederaTokenService.getTokenKey(token, keyType);
-
-        emit ResponseCode(responseCode);
-
-        if(responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-
-        emit TokenKey(key);
-    }
 }

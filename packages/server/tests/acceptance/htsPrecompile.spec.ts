@@ -25,13 +25,39 @@ import chai, { expect } from 'chai';
 chai.use(solidity);
 
 import { AliasAccount } from '../clients/servicesClient';
-import Assertions from '../helpers/assertions';
 import { ethers } from 'ethers';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import ERC721MockJson from '../contracts/ERC721Mock.json';
 import BaseHTSJson from '../contracts/BaseHTS.json';
 
-
+/**
+ * Tests for:
+ * allowance
+ * approve
+ * approveNFT
+ * associateToken
+ * createFungibleToken
+ * createFungibleTokenWithCustomFees
+ * createNonFungibleToken
+ * cryptoTransfer
+ * cryptoTransferToken
+ * deleteToken
+ * freezeToken
+ * getFungibleTokenInfo
+ * getNonFungibleTokenInfo
+ * getTokenCustomFees
+ * getTokenExpiryInfo
+ * getTokenInfo
+ * grantTokenKyc
+ * isApprovedForAll
+ * mintToken
+ * pauseToken
+ * revokeTokenKyc
+ * setApprovalForAll
+ * unfreezeToken
+ * unpauseToken
+ * updateTokenExpiryInfo
+ */
 describe('@htsprecompile Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, mirrorNode, relay } = global;
@@ -525,109 +551,6 @@ describe('@htsprecompile Acceptance Tests', async function () {
     });
   });
 
-  describe('HTS Precompile Wipe Tests', async function() {
-    let tokenAddress, tokenContract, nftAddress;
-
-    before(async function() {
-      // Create token and nft contracts
-      tokenAddress = await createHTSToken();
-      nftAddress = await createNftHTSToken();
-      tokenContract = new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[0].wallet);
-
-      // Associate token and nft to accounts
-      const tx1 = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, tokenAddress, {gasLimit: 10000000});
-      expect((await tx1.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-      const tx2 = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, tokenAddress, {gasLimit: 10000000});
-      expect((await tx2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-      const tx3 = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, nftAddress, {gasLimit: 10000000});
-      expect((await tx3.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-      const tx4 = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, nftAddress, {gasLimit: 10000000});
-      expect((await tx4.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-      // Grant Kyc to receiver account for token
-      const grantKycTx = await baseHTSContract.grantTokenKycPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
-      const responseCodeGrantKyc = (await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-      expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
-
-      // Grant Kyc to receiver account for nft
-      const grantKycNftTx = await baseHTSContract.grantTokenKycPublic(nftAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
-      const responseCodeGrantKycNft = (await grantKycNftTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-      expect(responseCodeGrantKycNft).to.equal(TX_SUCCESS_CODE);
-
-      // Transfer initial token balance to receiver
-      const amount = 5;
-      const tx = await baseHTSContract.cryptoTransferTokenPublic(accounts[1].wallet.address, tokenAddress, amount);
-      await tx.wait();
-    });
-
-    it('should revert if attempting to wipe more tokens than the owned amount', async function() {
-      const wipeAmount = 100;
-      const balanceBefore = await tokenContract.balanceOf(accounts[1].wallet.address);
-
-      const tx = await baseHTSContract.wipeTokenAccountPublic(tokenAddress, accounts[1].wallet.address, wipeAmount, { gasLimit: 1_000_000 });
-
-      await Assertions.expectRevert(tx, 'CALL_EXCEPTION');
-      const balanceAfter = await tokenContract.balanceOf(accounts[1].wallet.address);
-      expect(balanceBefore.toString()).to.eq(balanceAfter.toString());
-    });
-
-    it('should be able to execute wipeTokenAccount', async function() {
-      const wipeAmount = 3;
-      const balanceBefore = await tokenContract.balanceOf(accounts[1].wallet.address);
-
-      const tx = await baseHTSContract.wipeTokenAccountPublic(tokenAddress, accounts[1].wallet.address, wipeAmount, { gasLimit: 1_000_000 });
-      const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
-      expect(responseCode).to.equal(TX_SUCCESS_CODE);
-
-      const balanceAfter = await tokenContract.balanceOf(accounts[1].wallet.address);
-      expect(Number(balanceAfter.toString()) + wipeAmount).to.equal(Number(balanceBefore.toString()));
-    });
-
-    it('should be able to execute wipeTokenAccountNFT', async function() {
-      let NftSerialNumber, serials;
-
-      // Mint an NFT
-      {
-        const tx = await baseHTSContract.mintTokenPublic(nftAddress, 0, ['0x02'], { gasLimit: 1_000_000 });
-        const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
-        expect(responseCode).to.equal(TX_SUCCESS_CODE);
-        const { serialNumbers } = (await tx.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
-        expect(serialNumbers[0].toNumber()).to.be.greaterThan(0);
-        NftSerialNumber = serialNumbers[0];
-        serials = serialNumbers;
-      }
-
-      // Transfer the NFT to the receiver wallet
-      {
-        const tx = await baseHTSContract.transferNFTPublic(nftAddress, accounts[0].wallet.address, accounts[1].wallet.address, NftSerialNumber);
-        const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
-        expect(responseCode).to.equal(TX_SUCCESS_CODE);
-      }
-
-      // Get token info before
-      {
-        const tx = await baseHTSContract.getNonFungibleTokenInfoPublic(nftAddress, NftSerialNumber, { gasLimit: 1_000_000 });
-        const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
-        const { tokenInfo } = (await tx.wait()).events.filter(e => e.event === 'NonFungibleTokenInfo')[0].args;
-        expect(responseCode).to.equal(TX_SUCCESS_CODE);
-        expect(tokenInfo).to.exist;
-      }
-
-      // Wipe the NFT
-      {
-        const tx = await baseHTSContract.wipeTokenAccountNFTPublic(nftAddress, accounts[1].wallet.address, serials, { gasLimit: 1_000_000 });
-        const { responseCode } = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
-        console.log(`Wipe response: ${responseCode}`);
-      }
-
-      // Get token info after
-      {
-        const tx = await baseHTSContract.getNonFungibleTokenInfoPublic(nftAddress, NftSerialNumber, { gasLimit: 1_000_000 });
-        await Assertions.expectRevert(tx, 'CALL_EXCEPTION');
-      }
-    });
-  });
-
   describe('HTS Precompile KYC Tests', async function() {
     async function checkKyc(contractOwner, tokenAddress, accountAddress, expectedValue: boolean) {
       const tx = await contractOwner.isKycPublic(tokenAddress, accountAddress, { gasLimit: 1_000_000 });
@@ -1023,166 +946,6 @@ describe('@htsprecompile Acceptance Tests', async function () {
         expect(error.code).to.equal("CALL_EXCEPTION");
         expect(error.reason).to.equal("transaction failed");
       }
-    });
-  });
-
-  describe('HTS Precompile for token check methods', async function() {
-    it('should return false for isToken with passed contract address', async function() {
-      const tx = await baseHTSContract.isTokenPublic(BaseHTSContractAddress, { gasLimit: 1000000 });
-      const txReceipt = await tx.wait();
-
-      const responseCode = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-      expect(responseCode).to.equal(TX_SUCCESS_CODE);
-
-      const isTokenFlag = txReceipt.events.filter(e => e.event === 'IsToken')[0].args.isToken;
-      expect(isTokenFlag).to.equal(false);
-    });
-    it('should return true for isToken with passed token address', async function() {
-      const tx = await baseHTSContract.isTokenPublic(HTSTokenContractAddress, { gasLimit: 1000000 });
-      const txReceipt = await tx.wait();
-
-      const responseCode = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-      expect(responseCode).to.equal(TX_SUCCESS_CODE);
-
-      const isTokenFlag = txReceipt.events.filter(e => e.event === 'IsToken')[0].args.isToken;
-      expect(isTokenFlag).to.equal(true);
-    });
-    it('should return 0 for getTokenType with passed FUNGIBLE_COMMON token', async function() {
-      const tx = await baseHTSContract.getTokenTypePublic(HTSTokenContractAddress, { gasLimit: 1000000 });
-      const txReceipt = await tx.wait();
-
-      const responseCode = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-      expect(responseCode).to.equal(TX_SUCCESS_CODE);
-
-      const tokenType = txReceipt.events.filter(e => e.event === 'TokenType')[0].args.tokenType;
-      expect(tokenType).to.equal(0);
-    });
-    it('should return 1 for getTokenType with passed HTS NON_FUNGIBLE_UNIQUE token', async function() {
-      const tx = await baseHTSContract.getTokenTypePublic(NftHTSTokenContractAddress, { gasLimit: 1000000 });
-      const txReceipt = await tx.wait();
-
-      const responseCode = txReceipt.events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-      expect(responseCode).to.equal(TX_SUCCESS_CODE);
-
-      const tokenType = txReceipt.events.filter(e => e.event === 'TokenType')[0].args.tokenType;
-      expect(tokenType).to.equal(1);
-    });
-    it('should throw an exception for getTokenType with passed contract address', async function() {
-      let hasError = false;
-      try {
-        const tx = await baseHTSContract.getTokenTypePublic(BaseHTSContractAddress, { gasLimit: 1000000 });
-        await tx.wait();
-      } catch (e) {
-        hasError = true;
-      }
-      expect(hasError).to.equal(true);
-    });
-  });
-
-  describe('HTS update token info test', async function() {
-    const TOKEN_UPDATE_NAME = 'tokenUpdateName';
-    const TOKEN_UPDATE_SYMBOL = 'tokenUpdateSymbol';
-    const TOKEN_UPDATE_MEMO = 'tokenUpdateMemo';
-
-    function setUpdatedValues(token) {
-      token.name = TOKEN_UPDATE_NAME;
-      token.symbol = TOKEN_UPDATE_SYMBOL;
-      token.memo = TOKEN_UPDATE_MEMO;
-      token.treasury = BaseHTSContractAddress;
-    }
-
-    function checkUpdatedTokenInfo(tokenInfo) {
-      expect(tokenInfo.name).to.equal(TOKEN_UPDATE_NAME);
-      expect(tokenInfo.symbol).to.equal(TOKEN_UPDATE_SYMBOL);
-      expect(tokenInfo.treasury).to.equal(BaseHTSContractAddress);
-      expect(tokenInfo.memo).to.equal(TOKEN_UPDATE_MEMO);
-    }
-
-    it('should update fungible token properties', async function() {
-      const txBeforeInfo = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress, { gasLimit: 1_000_000 });
-      const tokenInfoBefore = ((await txBeforeInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
-
-      const token = {
-        ...tokenInfoBefore, tokenKeys: [{...tokenInfoBefore.tokenKeys[0]}]
-      };
-
-      setUpdatedValues(token);
-
-      // update contract properties
-      const txUpdate = await baseHTSContractOwner.updateTokenInfoPublic(HTSTokenContractAddress, token, { gasLimit: 1_000_000 });
-      expect((await txUpdate.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
-
-      const txAfterInfo = await baseHTSContract.getTokenInfoPublic(HTSTokenContractAddress, { gasLimit: 1_000_000 });
-      const tokenInfoAfter = ((await txAfterInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
-      checkUpdatedTokenInfo(tokenInfoAfter);
-    });
-
-    it('should update non-fungible token properties', async function() {
-      const txBeforeInfo = await baseHTSContract.getTokenInfoPublic(NftHTSTokenContractAddress, { gasLimit: 1_000_000 });
-      const tokenInfoBefore = ((await txBeforeInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
-
-      const token = {
-        ...tokenInfoBefore, tokenKeys: [{...tokenInfoBefore.tokenKeys[0]}]
-      };
-
-      setUpdatedValues(token);
-
-      const txUpdate = await baseHTSContractOwner.updateTokenInfoPublic(NftHTSTokenContractAddress, token, { gasLimit: 1_000_000 });
-      expect((await txUpdate.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
-
-      const txAfterInfo = await baseHTSContract.getTokenInfoPublic(NftHTSTokenContractAddress, { gasLimit: 1_000_000 });
-      const tokenInfoAfter = ((await txAfterInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
-      checkUpdatedTokenInfo(tokenInfoAfter);
-    });
-  });
-
-  describe('HTS Precompile Key management Tests', async function() {
-    it('should be able to execute getTokenKey', async function() {
-      const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
-      const result = await tx.wait();
-      const { responseCode } = result.events.filter(e => e.event === 'ResponseCode')[0].args;
-      expect(responseCode).to.equal(TX_SUCCESS_CODE);
-      const { key } = result.events.filter(e => e.event === 'TokenKey')[0].args;
-
-      expect(key).to.exist;
-      expect(key.inheritAccountKey).to.eq(false);
-      expect(key.contractId).to.eq('0x0000000000000000000000000000000000000000');
-      expect(key.ed25519).to.eq('0x');
-      expect(key.ECDSA_secp256k1).to.exist;
-      expect(key.delegatableContractId).to.eq('0x0000000000000000000000000000000000000000');
-    });
-
-    it('should be able to execute updateTokenKeys', async function() {
-      // Get key value before update
-      const getKeyTx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
-      const originalKey = (await getKeyTx.wait()).events.filter(e => e.event === 'TokenKey')[0].args.key;
-      const updateKey = [
-        false,
-        '0x0000000000000000000000000000000000000000',
-        '0x',
-        '0x03dfcc94dfd843649cc594ada5ac6627031454602aa190223f996de25a05828f36',
-        '0x0000000000000000000000000000000000000000',
-      ];
-
-      // Update keys. After updating there should be only one key with keyValue = 6. Other keys are removed
-      const updateTx = await baseHTSContract.updateTokenKeysPublic(HTSTokenContractAddress, [[ 2, updateKey]]);
-      const updateResponseCode = (await updateTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-      expect(Number(updateResponseCode.toString())).to.equal(TX_SUCCESS_CODE);
-
-      // Assert updated key
-      const tx = await baseHTSContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
-      const result = await tx.wait();
-      const {responseCode} = result.events.filter(e => e.event === 'ResponseCode')[0].args;
-      expect(Number(responseCode.toString())).to.equal(TX_SUCCESS_CODE);
-      const updatedKey = result.events.filter(e => e.event === 'TokenKey')[0].args.key;
-
-      expect(updatedKey).to.exist;
-      expect(updatedKey.inheritAccountKey).to.eq(updateKey[0]);
-      expect(updatedKey.contractId).to.eq(updateKey[1]);
-      expect(updatedKey.ed25519).to.eq(updateKey[2]);
-      expect(updatedKey.ECDSA_secp256k1).to.eq(updateKey[3]);
-      expect(updatedKey.delegatableContractId).to.eq(updateKey[4]);
-      expect(updatedKey.ECDSA_secp256k1).to.not.eq(originalKey.ECDSA_secp256k1);
     });
   });
 });
