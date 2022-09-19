@@ -24,7 +24,7 @@ import { BigNumber, ethers } from 'ethers';
 import { AliasAccount } from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
-import { AccountBalanceQuery, ContractFunctionParameters } from '@hashgraph/sdk';
+import { ContractFunctionParameters } from '@hashgraph/sdk';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
@@ -32,6 +32,7 @@ import basicContractJson from '../contracts/Basic.json';
 import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
+import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
 
 describe('@api RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -832,7 +833,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 const mirrorAccount = await mirrorNode.get(`/accounts/${account.accountId}`);
 
                 const res = await relay.call('eth_getBalance', [account.address, 'latest']);
-                const balanceInWeiBars = BigNumber.from(mirrorAccount.balance.balance.toString()).mul(10 ** 10);
+                const balanceInWeiBars = BigNumber.from(mirrorAccount.balance.balance.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF);
                 expect(res).to.eq(ethers.utils.hexValue(balanceInWeiBars));
             });
 
