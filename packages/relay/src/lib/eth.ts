@@ -1043,7 +1043,7 @@ export class EthImpl implements Eth {
    * @param blockNumberOrTag
    * @param returnLatest
    */
-  private async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean): Promise<any | null> {
+  private async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestId?: string | undefined): Promise<any | null> {
     let blockResponse: any;
     // Determine if the latest block should be returned and if not then just return null
     if (!returnLatest &&
@@ -1052,16 +1052,16 @@ export class EthImpl implements Eth {
     }
 
     if (blockNumberOrTag == null || blockNumberOrTag === EthImpl.blockLatest || blockNumberOrTag === EthImpl.blockPending) {
-      const blockPromise = this.mirrorNodeClient.getLatestBlock();
+      const blockPromise = this.mirrorNodeClient.getLatestBlock(requestId);
       const blockAnswer = await blockPromise;
       blockResponse = blockAnswer.blocks[0];
     } else if (blockNumberOrTag == EthImpl.blockEarliest) {
-      blockResponse = await this.mirrorNodeClient.getBlock(0);
+      blockResponse = await this.mirrorNodeClient.getBlock(0, requestId);
     } else if (blockNumberOrTag.length < 32) {
       // anything less than 32 characters is treated as a number
-      blockResponse = await this.mirrorNodeClient.getBlock(Number(blockNumberOrTag));
+      blockResponse = await this.mirrorNodeClient.getBlock(Number(blockNumberOrTag), requestId);
     } else {
-      blockResponse = await this.mirrorNodeClient.getBlock(blockNumberOrTag);
+      blockResponse = await this.mirrorNodeClient.getBlock(blockNumberOrTag, requestId);
     }
     if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
       // block not found.
@@ -1153,28 +1153,61 @@ export class EthImpl implements Eth {
         throw e;
       }
     } else if (fromBlock || toBlock) {
-      const filters = [];
-      let order;
+      let fromBlockTimestamp;
+      let toBlockTimestamp;
+      let fromBlockNum = 0;
+      let toBlockNum;
+
       if (toBlock) {
-        // @ts-ignore
-        filters.push(`lte:${parseInt(toBlock)}`);
-        order = constants.ORDER.DESC;
+        try {
+          const blockResponse = await this.getHistoricalBlockResponse(toBlock, true, requestId);
+          toBlockTimestamp = blockResponse.timestamp.to;
+          toBlockNum = parseInt(blockResponse.number);
+        } catch (e) {
+          // Check if block error is RESOURCE_NOT_FOUND, the most likely scenario this will happen if a block number > height is passed
+          // In this case eth_getLogs() returns logs up to the latest block.
+          // @ts-ignore
+          if (e.statusCode != 404) {
+            throw e;
+          }
+        }
       }
       if (fromBlock) {
-        // @ts-ignore
-        filters.push(`gte:${parseInt(fromBlock)}`);
-        order = constants.ORDER.ASC;
-      }
-      const blocksResult = await this.mirrorNodeClient.getBlocks(filters, undefined, {order}, requestId);
+        try {
+          const blockResponse = await this.getHistoricalBlockResponse(fromBlock, undefined, requestId);
+          fromBlockTimestamp = blockResponse.timestamp.from;
+          fromBlockNum = parseInt(blockResponse.number);
+        } catch (e) {
+          // Check if block error is RESOURCE_NOT_FOUND, the most likely scenario this will happen if a block number > height is passed
+          // In this case eth_getLogs() returns an empty array.
+          // @ts-ignore
+          if (e.statusCode != 404) {
+            throw e;
+          }
 
-      const blocks = blocksResult?.blocks;
-      if (blocks?.length) {
-        const firstBlock = (order == constants.ORDER.DESC) ? blocks[blocks.length - 1] : blocks[0];
-        const lastBlock = (order == constants.ORDER.DESC) ? blocks[0] : blocks[blocks.length - 1];
-        params.timestamp = [
-          `gte:${firstBlock.timestamp.from}`,
-          `lte:${lastBlock.timestamp.to}`
-        ];
+          return [];
+        }
+      }
+
+      if (fromBlockTimestamp) {
+        params.timestamp = [`gte:${fromBlockTimestamp}`];
+      }
+
+      if (toBlockTimestamp){
+        if (params.timestamp) {
+          params.timestamp.push(`lte:${toBlockTimestamp}`)
+        } else {
+          params.timestamp = [`lte:${toBlockTimestamp}`];
+        }
+      } else {
+        const blockResponse = await this.getHistoricalBlockResponse('latest', true, requestId);
+        toBlockNum = parseInt(blockResponse.number);
+      }
+
+      if (fromBlockNum > toBlockNum) {
+        return [];
+      } else if((toBlockNum - fromBlockNum) > constants.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) {
+        throw predefined.RANGE_TOO_LARGE;
       }
     }
 
