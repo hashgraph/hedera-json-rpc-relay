@@ -1189,20 +1189,22 @@ export class EthImpl implements Eth {
         }
       }
 
-      if(fromBlockTimestamp) {
+      if (fromBlockTimestamp) {
         params.timestamp = [`gte:${fromBlockTimestamp}`];
       }
 
-      if(toBlockTimestamp){
-        params.timestamp
-        ? params.timestamp.push(`lte:${toBlockTimestamp}`)
-        : params.timestamp = [`lte:${toBlockTimestamp}`];
+      if (toBlockTimestamp){
+        if (params.timestamp) {
+          params.timestamp.push(`lte:${toBlockTimestamp}`)
+        } else {
+          params.timestamp = [`lte:${toBlockTimestamp}`];
+        }
       } else {
         const blockResponse = await this.getHistoricalBlockResponse('latest', true, requestId);
         toBlockNum = parseInt(blockResponse.number);
       }
 
-      if(fromBlockNum > toBlockNum) {
+      if (fromBlockNum > toBlockNum) {
         return [];
       } else if((toBlockNum - fromBlockNum) > constants.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) {
         throw predefined.RANGE_TOO_LARGE;
