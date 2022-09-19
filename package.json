@@ -25,6 +25,7 @@
         "acceptancetest:erc20": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@erc20' --exit",
         "acceptancetest:htsprecompile": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompile' --exit",
         "acceptancetest:htsprecompilev1": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompilev1' --exit",
+        "acceptancetest:htsprecompilev2": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompilev2' --exit",
         "acceptancetest:release": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit",
         "build": "npx lerna run build",
         "build-and-test": "npx lerna run build && npx lerna run test",
