@@ -52,7 +52,7 @@ import TokenCreateJson from '../../contracts/TokenCreateContract.json';
  * revokeTokenKyc
  * setApprovalForAll
  */
-describe('@tokencreate', async function () {
+describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, mirrorNode, relay } = global;
 

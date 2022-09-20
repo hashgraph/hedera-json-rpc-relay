@@ -47,7 +47,7 @@ import TokenManagementJson from '../../contracts/TokenManagementContract.json';
  * unpauseToken
  * updateTokenExpiryInfo
  */
-describe('@tokenmanagement', async function () {
+describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, mirrorNode, relay } = global;
 
