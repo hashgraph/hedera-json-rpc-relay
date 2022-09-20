@@ -365,7 +365,7 @@ export class SDKClient {
         .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
     }
 
-    createFile = async (callData: Uint8Array, client: Client, requestId?: string) => {
+    private createFile = async (callData: Uint8Array, client: Client, requestId?: string) => {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         const hexedCallData = Buffer.from(callData).toString("hex");
 
