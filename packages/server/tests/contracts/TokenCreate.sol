@@ -17,6 +17,8 @@ abstract contract TokenCreate is FeeHelper {
     event CreatedToken(address tokenAddress);
     event ResponseCode(int responseCode);
     event MintedToken(uint64 newTotalSupply, int64[] serialNumbers);
+    event NonFungibleTokenInfo(IHederaTokenService.NonFungibleTokenInfo tokenInfo);
+    event TokenInfo(IHederaTokenService.TokenInfo tokenInfo);
 
     function createFungibleTokenPublic(
         address treasury
@@ -123,5 +125,39 @@ abstract contract TokenCreate is FeeHelper {
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert ();
         }
+    }
+
+    function grantTokenKycPublic(address token, address account) external returns (int64 responseCode){
+        (responseCode) = this.grantTokenKyc(token, account);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function getNonFungibleTokenInfoPublic(address token, int64 serialNumber) public returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getNonFungibleTokenInfo(token, serialNumber);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit NonFungibleTokenInfo(tokenInfo);
+    }
+
+    function getTokenInfoPublic(address token) public returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo) {
+        (responseCode, tokenInfo) = HederaTokenService.getTokenInfo(token);
+
+        emit ResponseCode(responseCode);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        emit TokenInfo(tokenInfo);
     }
 }

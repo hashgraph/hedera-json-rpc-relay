@@ -11,8 +11,6 @@ contract TokenContractContract is TokenCreate {
     event ApprovedAddress(address approved);
     event Approved(bool approved);
     event FungibleTokenInfo(IHederaTokenService.FungibleTokenInfo tokenInfo);
-    event TokenInfo(IHederaTokenService.TokenInfo tokenInfo);
-    event NonFungibleTokenInfo(IHederaTokenService.NonFungibleTokenInfo tokenInfo);
     event TokenCustomFees(IHederaTokenService.FixedFee[] fixedFees, IHederaTokenService.FractionalFee[] fractionalFees, IHederaTokenService.RoyaltyFee[] royaltyFees);
     event TokenDefaultKycStatus(bool defaultKycStatus);
     event KycGranted(bool kycGranted);
@@ -109,29 +107,6 @@ contract TokenContractContract is TokenCreate {
         emit FungibleTokenInfo(tokenInfo);
     }
 
-    function getTokenInfoPublic(address token) public returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo) {
-        (responseCode, tokenInfo) = HederaTokenService.getTokenInfo(token);
-
-        emit ResponseCode(responseCode);
-
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-
-        emit TokenInfo(tokenInfo);
-    }
-
-    function getNonFungibleTokenInfoPublic(address token, int64 serialNumber) public returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
-        (responseCode, tokenInfo) = HederaTokenService.getNonFungibleTokenInfo(token, serialNumber);
-
-        emit ResponseCode(responseCode);
-
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-
-        emit NonFungibleTokenInfo(tokenInfo);
-    }
 
     function createFungibleTokenWithCustomFeesPublic(
         address treasury,
@@ -211,16 +186,6 @@ contract TokenContractContract is TokenCreate {
         }
 
         emit KycGranted(kycGranted);
-    }
-
-    function grantTokenKycPublic(address token, address account) external returns (int64 responseCode){
-        (responseCode) = this.grantTokenKyc(token, account);
-
-        emit ResponseCode(responseCode);
-
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
     }
 
     function revokeTokenKycPublic(address token, address account) external returns (int64 responseCode){

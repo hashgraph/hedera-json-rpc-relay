@@ -8,9 +8,6 @@ contract TokenManagementContract is TokenCreate {
 
     event TokenType(int32 tokenType);
     event IsToken(bool isToken);
-    event NonFungibleTokenInfo(IHederaTokenService.NonFungibleTokenInfo tokenInfo);
-    event TokenInfo(IHederaTokenService.TokenInfo tokenInfo);
-    event FungibleTokenInfo(IHederaTokenService.FungibleTokenInfo tokenInfo);
     event TokenKey(IHederaTokenService.KeyValue key);
     event Frozen(bool frozen);
     event PausedToken(bool paused);
@@ -50,18 +47,6 @@ contract TokenManagementContract is TokenCreate {
         }
     }
 
-    function getTokenInfoPublic(address token) public returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo) {
-        (responseCode, tokenInfo) = HederaTokenService.getTokenInfo(token);
-
-        emit ResponseCode(responseCode);
-
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-
-        emit TokenInfo(tokenInfo);
-    }
-
     function updateTokenInfoPublic(address token, IHederaTokenService.HederaToken memory tokenInfo)external returns (int responseCode){
         (responseCode) = this.updateTokenInfo(token, tokenInfo);
 
@@ -92,28 +77,6 @@ contract TokenManagementContract is TokenCreate {
         }
 
         emit TokenType(tokenType);
-    }
-
-    function grantTokenKycPublic(address token, address account) external returns (int64 responseCode){
-        (responseCode) = this.grantTokenKyc(token, account);
-
-        emit ResponseCode(responseCode);
-
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-    }
-
-    function getNonFungibleTokenInfoPublic(address token, int64 serialNumber) public returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
-        (responseCode, tokenInfo) = HederaTokenService.getNonFungibleTokenInfo(token, serialNumber);
-
-        emit ResponseCode(responseCode);
-
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-
-        emit NonFungibleTokenInfo(tokenInfo);
     }
 
     function getTokenKeyPublic(address token, uint keyType)
