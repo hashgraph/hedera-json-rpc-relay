@@ -39,7 +39,11 @@ import {
     Transaction,
     TransactionRecord,
     Status,
-    EthereumFlow
+    FileCreateTransaction,
+    FileAppendTransaction,
+    FileInfoQuery,
+    EthereumTransaction,
+    EthereumTransactionData,
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
@@ -192,8 +196,17 @@ export class SDKClient {
     }
 
     async submitEthereumTransaction(transactionBuffer: Uint8Array, callerName: string, requestId?: string): Promise<TransactionResponse> {
-        return this.executeTransaction(new EthereumFlow()
-          .setEthereumData(transactionBuffer), callerName, requestId);
+        const fileId = await this.createFile(transactionBuffer, this.clientMain, requestId);
+    
+        if(!fileId) {
+            const requestIdPrefix = formatRequestIdMessage(requestId);
+            throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
+        }
+
+        return this.executeTransaction(new EthereumTransaction()
+                                        .setEthereumData(EthereumTransactionData.fromBytes(transactionBuffer).toBytes())
+                                        .setCallDataFileId(fileId), 
+                                        callerName, requestId);  
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number, from: string, callerName: string, requestId?: string): Promise<ContractFunctionResult> {
@@ -268,7 +281,7 @@ export class SDKClient {
         }
     };
 
-    private executeTransaction = async (transaction: Transaction | EthereumFlow, callerName: string, requestId?: string): Promise<TransactionResponse> => {
+    private executeTransaction = async (transaction: Transaction, callerName: string, requestId?: string): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
         const requestIdPrefix = formatRequestIdMessage(requestId);
         try {
@@ -350,5 +363,53 @@ export class SDKClient {
         return balance.hbars
         .to(HbarUnit.Tinybar)
         .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
+    }
+
+    createFile = async (callData: Uint8Array, client: Client, requestId?: string) => {
+        const requestIdPrefix = formatRequestIdMessage(requestId);
+        const hexedCallData = Buffer.from(callData).toString("hex");
+
+        const fileId = (
+            (
+                await (
+                    await new FileCreateTransaction()
+                        .setContents(hexedCallData.substring(0, 4096))
+                        .setKeys(
+                            client.operatorPublicKey
+                                ? [client.operatorPublicKey]
+                                : []
+                        )
+                        .execute(client)
+                ).getReceipt(client)
+            ).fileId
+        );
+
+        if (fileId && callData.length > 4096) {
+            await (
+                await new FileAppendTransaction()
+                    .setFileId(fileId)
+                    .setContents(
+                        hexedCallData.substring(4096, hexedCallData.length)
+                    )
+                    .setChunkSize(4096)
+                    .execute(client)
+            ).getReceipt(client);
+        }
+
+        // Ensure that the calldata file is not empty
+        if(fileId) {
+            const fileSize = await (
+                await new FileInfoQuery()
+                .setFileId(fileId)
+                .execute(client)
+            ).size;    
+
+            if(fileSize.isZero()) {
+                throw new SDKClientError({}, `${requestIdPrefix} Created file is empty. `);
+            }    
+            this.logger.trace(`${requestIdPrefix} Created file with fileId: ${fileId} and file size ${fileSize}`);
+        }
+
+        return fileId;
     }
 }
