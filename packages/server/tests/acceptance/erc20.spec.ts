@@ -157,14 +157,11 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 });
 
-                                // FIXME
-                                if (testTitles[i].testName !== HTS) {
-                                    it('emits a transfer event', async function () {
-                                        await expect(tx)
-                                            .to.emit(contract, 'Transfer')
-                                            .withArgs(tokenOwnerWallet.address, toWallet.address, amount);
-                                    });
-                                }
+                                it('emits a transfer event', async function () {
+                                    await expect(tx)
+                                        .to.emit(contract, 'Transfer')
+                                        .withArgs(tokenOwnerWallet.address, toWallet.address, amount);
+                                });
 
                                 it ('other account transfers tokens back to owner', async function () {
                                     tx = await contract.connect(toWallet).transfer(tokenOwner, amount);
@@ -175,129 +172,142 @@ describe('@erc20 Acceptance Tests', async function () {
                                 });
                             });
 
-                            // FIXME
-                            if (testTitles[i].testName !== HTS) {
-                                describe('when the spender has enough allowance', function () {
+                            describe('when the spender has enough allowance', function () {
+                                let tx, receipt;
+                                before(async function () {
+                                    tx = await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, {gasLimit: 1_000_000});
+                                    receipt = await tx.wait();
+                                });
+
+                                // FIXME there is an issue with the Approval event for HTS tokens in Services.
+                                // Re-enable this test when it is resolved
+                                // Last tested with services image: 0.30.0-alpha.2
+                                if (testTitles[i].testName !== HTS) {
+                                    it('emits an approval event', async function () {
+                                        const allowance = await contract.allowance(tokenOwner, spender);
+                                        await expect(tx)
+                                            .to.emit(contract, 'Approval')
+                                            .withArgs(tokenOwnerWallet.address, spenderWallet.address, allowance);
+                                    });
+                                }
+
+                                describe('when the token owner has enough balance', function () {
+                                    let amount, tx;
                                     before(async function () {
-                                        const tx = await contract.connect(tokenOwnerWallet).approve(spender, initialSupply);
-                                        await tx.wait();
+                                        amount = initialSupply;
+                                        const ownerBalance = await contract.balanceOf(tokenOwner);
+                                        const toBalance = await contract.balanceOf(to);
+                                        expect(ownerBalance.toString()).to.be.equal(amount.toString());
+                                        expect(toBalance.toString()).to.be.equal('0');
                                     });
 
-                                    describe('when the token owner has enough balance', function () {
-                                        let amount, tx;
-                                        before(async function () {
-                                            amount = initialSupply;
-                                            const ownerBalance = await contract.balanceOf(tokenOwner);
-                                            const toBalance = await contract.balanceOf(to);
-                                            expect(ownerBalance.toString()).to.be.equal(amount.toString());
-                                            expect(toBalance.toString()).to.be.equal('0');
-                                        });
-
-                                        it('transfers the requested amount', async function () {
-                                            tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply);
-                                            await tx.wait();
-                                            const ownerBalance = await contract.balanceOf(tokenOwner);
-                                            const toBalance = await contract.balanceOf(to);
-                                            expect(ownerBalance.toString()).to.be.equal('0');
-                                            expect(toBalance.toString()).to.be.equal(amount.toString());
-                                        });
-
-                                        it('decreases the spender allowance', async function () {
-                                            const allowance = await contract.allowance(tokenOwner, spender);
-                                            expect(allowance.toString()).to.be.equal('0');
-                                        });
-
-                                        it('emits a transfer event', async function () {
-                                            await expect(tx)
-                                                .to.emit(contract, 'Transfer')
-                                                .withArgs(tokenOwnerWallet.address, toWallet.address, amount);
-                                        });
-
-                                        it('emits an approval event', async function () {
-                                            await expect(tx)
-                                                .to.emit(contract, 'Approval')
-                                                .withArgs(tokenOwnerWallet.address, spenderWallet.address, await contract.allowance(tokenOwner, spender));
-                                        });
+                                    it('transfers the requested amount', async function () {
+                                        tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply, {gasLimit: 1_000_000});
+                                        const receipt = await tx.wait();
+                                        const ownerBalance = await contract.balanceOf(tokenOwner);
+                                        const toBalance = await contract.balanceOf(to);
+                                        expect(ownerBalance.toString()).to.be.equal('0');
+                                        expect(toBalance.toString()).to.be.equal(amount.toString());
                                     });
 
-                                    describe('when the token owner does not have enough balance', function () {
-                                        let amount;
+                                    it('decreases the spender allowance', async function () {
+                                        const allowance = await contract.allowance(tokenOwner, spender);
+                                        expect(allowance.toString()).to.be.equal('0');
+                                    });
 
-                                        beforeEach('reducing balance', async function () {
-                                            amount = initialSupply;
-                                            await contract.transfer(to, 1);
-                                        });
-
-                                        it('reverts', async function () {
-                                            await Assertions.expectRevert(
-                                                contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                                'CALL_EXCEPTION'
-                                            );
-                                        });
+                                    it('emits a transfer event', async function () {
+                                        await expect(tx)
+                                            .to.emit(contract, 'Transfer')
+                                            .withArgs(tokenOwnerWallet.address, toWallet.address, amount);
                                     });
                                 });
 
-                                describe('when the spender does not have enough allowance', function () {
-                                    let allowance;
+                                describe('when the token owner does not have enough balance', function () {
+                                    let amount;
 
+                                    beforeEach('reducing balance', async function () {
+                                        amount = initialSupply;
+                                        await contract.transfer(to, 1);
+                                    });
+
+                                    it('reverts', async function () {
+                                        await Assertions.expectRevert(
+                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                            'CALL_EXCEPTION'
+                                        );
+                                    });
+                                });
+                            });
+
+                            describe('when the spender does not have enough allowance', function () {
+                                let allowance;
+
+                                before(async function () {
+                                    allowance = initialSupply.sub(1);
+                                });
+
+                                beforeEach(async function () {
+                                    await contract.approve(spender, allowance, {gasLimit: 1_000_000});
+                                });
+
+                                describe('when the token owner has enough balance', function () {
+                                    let amount;
                                     before(async function () {
-                                        allowance = initialSupply.sub(1);
+                                        amount = initialSupply;
                                     });
 
-                                    beforeEach(async function () {
-                                        await contract.approve(spender, allowance);
-                                    });
-
-                                    describe('when the token owner has enough balance', function () {
-                                        let amount;
-                                        before(async function () {
-                                            amount = initialSupply;
-                                        });
-
-                                        it('reverts', async function () {
-                                            await Assertions.expectRevert(
-                                                contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                                `CALL_EXCEPTION`,
-                                            );
-                                        });
-                                    });
-
-                                    describe('when the token owner does not have enough balance', function () {
-                                        let amount;
-                                        before(async function () {
-                                            amount = allowance;
-                                        });
-
-                                        beforeEach('reducing balance', async function () {
-                                            await contract.transfer(to, 2);
-                                        });
-
-                                        it('reverts', async function () {
-                                            await Assertions.expectRevert(
-                                                contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                                `CALL_EXCEPTION`,
-                                            );
-                                        });
+                                    it('reverts', async function () {
+                                        await Assertions.expectRevert(
+                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                            `CALL_EXCEPTION`,
+                                        );
                                     });
                                 });
 
-                                describe('@release when the spender has unlimited allowance', function () {
-                                    beforeEach(async function () {
-                                        await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256);
+                                describe('when the token owner does not have enough balance', function () {
+                                    let amount;
+                                    before(async function () {
+                                        amount = allowance;
                                     });
 
+                                    beforeEach('reducing balance', async function () {
+                                        await contract.transfer(to, 2);
+                                    });
+
+                                    it('reverts', async function () {
+                                        await Assertions.expectRevert(
+                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                            `CALL_EXCEPTION`,
+                                        );
+                                    });
+                                });
+                            });
+
+                            describe('@release when the spender has unlimited allowance', function () {
+                                beforeEach(async function () {
+                                    await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256, {gasLimit: 1_000_000});
+                                });
+
+                                if (testTitles[i].testName !== HTS) {
                                     it('does not decrease the spender allowance', async function () {
                                         await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
                                         const allowance = await contract.allowance(tokenOwner, spender);
                                         expect(allowance.toString()).to.be.equal(ethers.constants.MaxUint256.toString());
                                     });
-
-                                    it('does not emit an approval event', async function () {
-                                        await expect(await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1))
-                                            .to.not.emit(contract, 'Approval');
+                                }
+                                else {
+                                    it('decreases the spender allowance', async function () {
+                                        await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
+                                        const allowance = await contract.allowance(tokenOwner, spender);
+                                        expect(allowance.toString()).to.be.equal((initialSupply.toNumber() - 1).toString());
                                     });
+                                }
+
+                                it('does not emit an approval event', async function () {
+                                    await expect(await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1))
+                                        .to.not.emit(contract, 'Approval');
                                 });
-                            }
+                            });
                         });
 
                         describe('when the recipient is the zero address', function () {
@@ -307,7 +317,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                 amount = initialSupply;
                                 to = ethers.constants.AddressZero;
                                 tokenOwnerWallet = accounts[0].wallet;
-                                await contract.connect(tokenOwnerWallet).approve(spender, amount);
+                                await contract.connect(tokenOwnerWallet).approve(spender, amount, {gasLimit: 1_000_000});
                             });
 
                             it('reverts', async function () {
