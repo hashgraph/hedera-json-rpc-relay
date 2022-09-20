@@ -38,6 +38,10 @@ import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 
+import { PrivateKey } from '@hashgraph/sdk';
+import { ethers } from 'ethers';
+import { signTransaction } from "../helpers";
+
 const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
@@ -134,6 +138,8 @@ describe('Eth calls using MirrorNode', async function () {
   const gasUsedRatio = 0.5;
   const deployedBytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
   const mirrorNodeDeployedBytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100321234';
+  const defaultGasPrice = 720_000_000_000;
+  const defaultChainId = Number('0x12a');
 
   const defaultBlock = {
     'count': blockTransactionCount,
@@ -1582,6 +1588,48 @@ describe('Eth calls using MirrorNode', async function () {
         expect(e.name).to.equal('Internal error');
       }
       expect(hasError).to.be.true;
+    });
+
+    it('should return a predefined NONCE_TOO_HIGH exception', async function() {
+      const defaultLondonTransactionData = {
+        value: ethers.utils.parseUnits('1', 10),
+        chainId: defaultChainId,
+        maxPriorityFeePerGas: defaultGasPrice,
+        maxFeePerGas: defaultGasPrice,
+        gasLimit: 4_000_000,
+        type: 2,
+        nonce: 5
+      };
+      const signedTx = await signTransaction(defaultLondonTransactionData);
+      const parsedTx = ethers.utils.parseTransaction(signedTx);
+      const rsTx = await ethers.utils.resolveProperties({
+        gasPrice: parsedTx.gasPrice,
+        gasLimit: parsedTx.gasLimit,
+        value: parsedTx.value,
+        nonce: parsedTx.nonce,
+        data: parsedTx.data,
+        chainId: parsedTx.chainId,
+        to: parsedTx.to
+      });
+      const raw = ethers.utils.serializeTransaction(rsTx);
+      const recoveredAddress = ethers.utils.recoverAddress(
+        ethers.utils.arrayify(ethers.utils.keccak256(raw)),
+        // @ts-ignore
+        ethers.utils.joinSignature({ 'r': parsedTx.r, 's': parsedTx.s, 'v': parsedTx.v })
+      );
+
+      mock.onGet('network/fees').reply(200, defaultNetworkFees);
+      const mirrorAccount = {
+        account: contractAddress1,
+        ethereum_nonce: 2
+      };
+      
+      mock.onGet(`accounts/${recoveredAddress}`).reply(200, mirrorAccount);
+
+      const transactionResponse = await ethImpl.sendRawTransaction(signedTx);
+
+      expect(transactionResponse).to.eql(predefined.NONCE_TOO_HIGH);
+      sinon.assert.notCalled(sdkClientStub.submitEthereumTransaction);
     });
   });
 

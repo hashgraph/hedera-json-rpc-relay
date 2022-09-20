@@ -69,6 +69,11 @@ export const predefined = {
     code: 32001,
     message: 'Nonce too low'
   }),
+  'NONCE_TOO_HIGH': new JsonRpcError({
+    name: 'Nonce too high',
+    code: 32002,
+    message: 'Nonce too high'
+  }),
   'INCORRECT_NONCE': new JsonRpcError({
     name: 'Incorrect nonce',
     code: -32006,
