@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        filter: [ api, erc20, htsprecompile, htsprecompilev1, htsprecompilev2 ]
+        filter: [ api, erc20, acceptancetest:tokencreate, acceptancetest:tokenmanagement, htsprecompilev1 ]
     permissions:
       contents: write
     steps:
