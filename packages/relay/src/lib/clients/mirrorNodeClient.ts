@@ -50,10 +50,12 @@ export interface IContractLogsResultsParams {
 
 export class MirrorNodeClient {
     private static GET_ACCOUNTS_ENDPOINT = 'accounts/';
+    private static GET_BALANCE_ENDPOINT = 'balances';
     private static GET_BLOCK_ENDPOINT = 'blocks/';
     private static GET_BLOCKS_ENDPOINT = 'blocks';
     private static GET_CONTRACT_ENDPOINT = 'contracts/';
     private static ADDRESS_PLACEHOLDER = '{address}';
+    private static ACCOUNT_ID_PLACEHOLDER = '{account.id}';
     private static TIMESTAMP_PLACEHOLDER = '{timestamp}';
     private static CONTRACT_ID_PLACEHOLDER = '{contractId}';
     private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
@@ -183,6 +185,17 @@ export class MirrorNodeClient {
     public async getAccount(idOrAliasOrEvmAddress: string, requestId?: string): Promise<object> {
         return this.request(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
+            [400, 404],
+            requestId);
+    }
+
+    public async getBalanceAtTimestamp(accountId: string, timestamp: string, requestId?: string) {
+        const queryParamObject = {};
+        this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_ID_PLACEHOLDER, accountId);
+        this.setQueryParam(queryParamObject, MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);
+        const queryParams = this.getQueryParams(queryParamObject);
+        return this.request(`${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
+            MirrorNodeClient.GET_BALANCE_ENDPOINT,
             [400, 404],
             requestId);
     }
