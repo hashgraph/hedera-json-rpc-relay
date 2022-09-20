@@ -33,6 +33,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { ethers } from "ethers";
 import constants from '../../src/lib/constants';
+import { predefined } from '../../src';
 const logger = pino();
 
 describe('Precheck', async function() {
@@ -343,6 +344,117 @@ describe('Precheck', async function() {
             sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(50_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar));
             const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
             expect(result).to.not.exist;
+        });
+    });
+
+    describe('nonce', async function() {
+        const defaultNonce = 3;
+        const defaultTx = {
+            value: oneTinyBar,
+            gasPrice: defaultGasPrice,
+            chainId: defaultChainId,
+            nonce: defaultNonce
+        };
+
+        const mirrorAccount = {
+            ethereum_nonce: defaultNonce
+        };
+
+        it(`should fail for low nonce`, async function () {
+            const tx = {
+                ...defaultTx,
+                nonce: 1
+            };
+            const signed = await signTransaction(tx);
+            const parsedTx = ethers.utils.parseTransaction(signed);
+
+            const rsTx = await ethers.utils.resolveProperties({
+              gasPrice: parsedTx.gasPrice,
+              gasLimit: parsedTx.gasLimit,
+              value: parsedTx.value,
+              nonce: parsedTx.nonce,
+              data: parsedTx.data,
+              chainId: parsedTx.chainId,
+              to: parsedTx.to
+            });
+            const raw = ethers.utils.serializeTransaction(rsTx);
+            const recoveredAddress = ethers.utils.recoverAddress(
+              ethers.utils.arrayify(ethers.utils.keccak256(raw)),
+              // @ts-ignore
+              ethers.utils.joinSignature({ 'r': parsedTx.r, 's': parsedTx.s, 'v': parsedTx.v })
+            );
+            mock.onGet(`accounts/${recoveredAddress}`).reply(200, mirrorAccount);
+
+
+            try {
+                await precheck.nonce(parsedTx);
+                expectedError();
+            } catch (e: any) {
+                expect(e).to.eql(predefined.NONCE_TOO_LOW);
+            }
+        });
+
+
+        it(`should fail for high nonce`, async function () {
+            const tx = {
+                ...defaultTx,
+                nonce: 5
+            };
+            const signed = await signTransaction(tx);
+            const parsedTx = ethers.utils.parseTransaction(signed);
+
+            const rsTx = await ethers.utils.resolveProperties({
+              gasPrice: parsedTx.gasPrice,
+              gasLimit: parsedTx.gasLimit,
+              value: parsedTx.value,
+              nonce: parsedTx.nonce,
+              data: parsedTx.data,
+              chainId: parsedTx.chainId,
+              to: parsedTx.to
+            });
+            const raw = ethers.utils.serializeTransaction(rsTx);
+            const recoveredAddress = ethers.utils.recoverAddress(
+              ethers.utils.arrayify(ethers.utils.keccak256(raw)),
+              // @ts-ignore
+              ethers.utils.joinSignature({ 'r': parsedTx.r, 's': parsedTx.s, 'v': parsedTx.v })
+            );
+            mock.onGet(`accounts/${recoveredAddress}`).reply(200, mirrorAccount);
+
+
+            try {
+                await precheck.nonce(parsedTx);
+                expectedError();
+            } catch (e: any) {
+                expect(e).to.eql(predefined.NONCE_TOO_HIGH);
+            }
+        });
+
+        it(`should not fail for next nonce`, async function () {
+            const tx = {
+                ...defaultTx,
+                nonce: 4
+            };
+            const signed = await signTransaction(tx);
+            const parsedTx = ethers.utils.parseTransaction(signed);
+
+            const rsTx = await ethers.utils.resolveProperties({
+              gasPrice: parsedTx.gasPrice,
+              gasLimit: parsedTx.gasLimit,
+              value: parsedTx.value,
+              nonce: parsedTx.nonce,
+              data: parsedTx.data,
+              chainId: parsedTx.chainId,
+              to: parsedTx.to
+            });
+            const raw = ethers.utils.serializeTransaction(rsTx);
+            const recoveredAddress = ethers.utils.recoverAddress(
+              ethers.utils.arrayify(ethers.utils.keccak256(raw)),
+              // @ts-ignore
+              ethers.utils.joinSignature({ 'r': parsedTx.r, 's': parsedTx.s, 'v': parsedTx.v })
+            );
+            mock.onGet(`accounts/${recoveredAddress}`).reply(200, mirrorAccount);
+
+            await precheck.nonce(parsedTx);
         });
     });
 });
