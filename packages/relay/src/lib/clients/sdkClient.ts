@@ -196,7 +196,9 @@ export class SDKClient {
     }
 
     async submitEthereumTransaction(transactionBuffer: Uint8Array, callerName: string, requestId?: string): Promise<TransactionResponse> {
-        const fileId = await this.createFile(transactionBuffer, this.clientMain, requestId);
+        const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
+
+        const fileId = await this.createFile(ethereumTransactionData.callData, this.clientMain, requestId);
     
         if(!fileId) {
             const requestIdPrefix = formatRequestIdMessage(requestId);
@@ -204,7 +206,7 @@ export class SDKClient {
         }
 
         return this.executeTransaction(new EthereumTransaction()
-                                        .setEthereumData(EthereumTransactionData.fromBytes(transactionBuffer).toBytes())
+                                        .setEthereumData(ethereumTransactionData.toBytes())
                                         .setCallDataFileId(fileId), 
                                         callerName, requestId);  
     }
