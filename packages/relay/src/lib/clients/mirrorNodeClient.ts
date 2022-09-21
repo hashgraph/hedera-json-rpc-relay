@@ -55,7 +55,6 @@ export class MirrorNodeClient {
     private static GET_BLOCKS_ENDPOINT = 'blocks';
     private static GET_CONTRACT_ENDPOINT = 'contracts/';
     private static ADDRESS_PLACEHOLDER = '{address}';
-    private static ACCOUNT_ID_PLACEHOLDER = '{account.id}';
     private static TIMESTAMP_PLACEHOLDER = '{timestamp}';
     private static CONTRACT_ID_PLACEHOLDER = '{contractId}';
     private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
@@ -191,8 +190,8 @@ export class MirrorNodeClient {
 
     public async getBalanceAtTimestamp(accountId: string, timestamp: string, requestId?: string) {
         const queryParamObject = {};
-        this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_ID_PLACEHOLDER, accountId);
-        this.setQueryParam(queryParamObject, MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);
+        this.setQueryParam(queryParamObject, 'account.id', accountId);
+        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_BALANCE_ENDPOINT,

@@ -151,6 +151,21 @@ describe('Eth calls using MirrorNode', async function () {
     'logs_bloom': '0x'
   };
 
+  const blockZero = {
+    "count": 5,
+    "hapi_version": "0.28.1",
+    "hash": "0x4a7eed88145253eca01a6b5995865b68b041923772d0e504d2ae5fbbf559b68b397adfce5c52f4fa8acec860e6fbc395",
+    "name": "2020-08-27T23_40_52.347251002Z.rcd",
+    "number": 0,
+    "previous_hash": "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "size": null,
+    "timestamp": {
+      "from": "1598571652.347251002",
+      "to": "1598571654.548395000"
+    },
+    "gas_used": 0,
+    "logs_bloom": "0x"
+  };
 
   const defaultContractResults = {
     'results': [
@@ -980,6 +995,137 @@ describe('Eth calls using MirrorNode', async function () {
       const resCached = await ethImpl.getBalance(contractAddress1, null);
       expect(resNoCache).to.equal(defHexBalance);
       expect(resCached).to.equal(EthImpl.zeroHex);
+    });
+
+    describe('with blockNumberOrTag filter', async function() {
+      const balance1 = 99960581131;
+      const balance2 = 99960581132;
+      const balance3 = 99960581133;
+      const timestamp1 = 1651550386;
+      const timestamp2 = 1651560086;
+      const timestamp3 = 1651560386;
+
+      const hexBalance1 = EthImpl.numberTo0x(balance1 * constants.TINYBAR_TO_WEIBAR_COEF);
+      const hexBalance2 = EthImpl.numberTo0x(balance2 * constants.TINYBAR_TO_WEIBAR_COEF);
+
+      const latestBlock = Object.assign({}, defaultBlock, {
+        number: 2,
+        'timestamp': {
+          'from': `${timestamp3}.060890949`,
+          'to': `${timestamp3 + 1000}.060890949`
+        },
+      });
+      const recentBlock = Object.assign({}, defaultBlock, {
+        number: 2,
+        'timestamp': {
+          'from': `${timestamp2}.060890949`,
+          'to': `${timestamp3}.060890949`
+        },
+      });
+      const earlierBlock = Object.assign({}, defaultBlock, {
+        number: 1,
+        'timestamp': {
+          'from': `${timestamp1}.060890949`,
+          'to': `${timestamp2}.060890949`
+        },
+      });
+
+      beforeEach(async () => {
+        mock.onGet(`blocks?limit=1&order=desc`).reply(200, { blocks: [defaultBlock] });
+        mock.onGet(`blocks/3`).reply(200, defaultBlock);
+        mock.onGet(`blocks/0`).reply(200, blockZero);
+        mock.onGet(`blocks/2`).reply(200, recentBlock);
+        mock.onGet(`blocks/1`).reply(200, earlierBlock);
+
+        mock.onGet(`accounts/${contractId1}`).reply(200, {
+          account: contractId1,
+          balance: {
+            balance: defBalance
+          }
+        });
+
+        mock.onGet(`balances?account.id=${contractId1}&timestamp=${earlierBlock.timestamp.from}`).reply(200, {
+          "timestamp": `${timestamp1}.060890949`,
+          "balances": [
+            {
+              "account": contractId1,
+              "balance": balance1,
+              "tokens": []
+            }
+          ],
+          "links": {
+            "next": null
+          }
+        });
+
+        mock.onGet(`balances?account.id=${contractId1}&timestamp=${recentBlock.timestamp.from}`).reply(200, {
+          "timestamp": `${timestamp2}.060890949`,
+          "balances": [
+            {
+              "account": contractId1,
+              "balance": balance2,
+              "tokens": []
+            }
+          ],
+          "links": {
+            "next": null
+          }
+        });
+
+        mock.onGet(`balances?account.id=${contractId1}&timestamp=${latestBlock.timestamp.from}`).reply(200, {
+          "timestamp": `${timestamp3}.060890949`,
+          "balances": [
+            {
+              "account": contractId1,
+              "balance": balance3,
+              "tokens": []
+            }
+          ],
+          "links": {
+            "next": null
+          }
+        });
+
+        mock.onGet(`balances?account.id=${contractId1}&timestamp=${blockZero.timestamp.from}`).reply(200, {
+          "timestamp": null,
+          "balances": [],
+          "links": {
+            "next": null
+          }
+        });
+      });
+
+      it('latest', async () => {
+        const resBalance = await ethImpl.getBalance(contractId1, 'latest');
+        expect(resBalance).to.equal(defHexBalance);
+      });
+
+      it('earliest', async () => {
+        const resBalance = await ethImpl.getBalance(contractId1, 'earliest');
+        expect(resBalance).to.equal('0x0');
+      });
+
+      it('pending', async () => {
+        const resBalance = await ethImpl.getBalance(contractId1, 'pending');
+        expect(resBalance).to.equal(defHexBalance);
+      });
+
+      it('blockNumber is in the latest 15 minutes', async () => {
+        mock.onGet(`contracts/${contractId1}`).reply(200, defaultContract);
+        sdkClientStub.getContractBalanceInWeiBar.returns(balance2 * constants.TINYBAR_TO_WEIBAR_COEF);
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        expect(resBalance).to.equal(hexBalance2);
+      });
+
+      it('blockNumber is not in the latest 15 minutes', async () => {
+        const resBalance = await ethImpl.getBalance(contractId1, '1');
+        expect(resBalance).to.equal(hexBalance1);
+      });
+
+      it('blockNumber is the same as the latest block', async () => {
+        const resBalance = await ethImpl.getBalance(contractId1, '3');
+        expect(resBalance).to.equal(defHexBalance);
+      });
     });
   });
 
