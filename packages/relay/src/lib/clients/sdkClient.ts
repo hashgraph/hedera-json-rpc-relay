@@ -197,19 +197,22 @@ export class SDKClient {
 
     async submitEthereumTransaction(transactionBuffer: Uint8Array, callerName: string, requestId?: string): Promise<TransactionResponse> {
         const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
+        const ethereumTransaction = new EthereumTransaction();
 
-        const fileId = await this.createFile(ethereumTransactionData.callData, this.clientMain, requestId);
-    
-        if(!fileId) {
-            const requestIdPrefix = formatRequestIdMessage(requestId);
-            throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
+        if (ethereumTransactionData.toBytes().length <= 5120) {
+            ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
+        } else {
+            const fileId = await this.createFile(ethereumTransactionData.callData, this.clientMain, requestId);
+        
+            if(!fileId) {
+                const requestIdPrefix = formatRequestIdMessage(requestId);
+                throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
+            }
+            ethereumTransactionData.callData = new Uint8Array();
+            ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId)
         }
 
-        ethereumTransactionData.callData = new Uint8Array();
-        return this.executeTransaction(new EthereumTransaction()
-                                        .setEthereumData(ethereumTransactionData.toBytes())
-                                        .setCallDataFileId(fileId), 
-                                        callerName, requestId);  
+        return this.executeTransaction(ethereumTransaction, callerName, requestId);  
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number, from: string, callerName: string, requestId?: string): Promise<ContractFunctionResult> {
@@ -407,7 +410,7 @@ export class SDKClient {
                 .execute(client)
             ).size;    
 
-            if(fileSize.isZero()) {
+            if(callData.length > 0 && fileSize.isZero()) {
                 throw new SDKClientError({}, `${requestIdPrefix} Created file is empty. `);
             }    
             this.logger.trace(`${requestIdPrefix} Created file with fileId: ${fileId} and file size ${fileSize}`);
