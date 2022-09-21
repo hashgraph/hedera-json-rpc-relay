@@ -89,14 +89,8 @@ export class Precheck {
     const accountInfo = await this.mirrorNodeClient.getAccount(recoveredAddress, requestId);
 
     // @ts-ignore
-    if (accountInfo && accountInfo.ethereum_nonce) {
-      if (accountInfo.ethereum_nonce > tx.nonce) {
-        this.logger.trace(`${requestId} Failed nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfo.ethereum_nonce=${accountInfo.ethereum_nonce})`);
-        throw predefined.NONCE_TOO_LOW;
-      } else if (accountInfo.ethereum_nonce + 1 < tx.nonce) {
-        this.logger.trace(`${requestId} Failed nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfo.ethereum_nonce=${accountInfo.ethereum_nonce})`);
-        throw predefined.NONCE_TOO_HIGH;
-      }
+    if (accountInfo && accountInfo.ethereum_nonce > tx.nonce) {
+      throw predefined.NONCE_TOO_LOW;
     }
   }
 

@@ -20,7 +20,6 @@
 
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import { BigNumber } from 'ethers';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 const registry = new Registry();
 
@@ -392,69 +391,6 @@ describe('Precheck', async function() {
             } catch (e: any) {
                 expect(e).to.eql(predefined.NONCE_TOO_LOW);
             }
-        });
-
-
-        it(`should fail for high nonce`, async function () {
-            const tx = {
-                ...defaultTx,
-                nonce: 5
-            };
-            const signed = await signTransaction(tx);
-            const parsedTx = ethers.utils.parseTransaction(signed);
-
-            const rsTx = await ethers.utils.resolveProperties({
-              gasPrice: parsedTx.gasPrice,
-              gasLimit: parsedTx.gasLimit,
-              value: parsedTx.value,
-              nonce: parsedTx.nonce,
-              data: parsedTx.data,
-              chainId: parsedTx.chainId,
-              to: parsedTx.to
-            });
-            const raw = ethers.utils.serializeTransaction(rsTx);
-            const recoveredAddress = ethers.utils.recoverAddress(
-              ethers.utils.arrayify(ethers.utils.keccak256(raw)),
-              // @ts-ignore
-              ethers.utils.joinSignature({ 'r': parsedTx.r, 's': parsedTx.s, 'v': parsedTx.v })
-            );
-            mock.onGet(`accounts/${recoveredAddress}`).reply(200, mirrorAccount);
-
-
-            try {
-                await precheck.nonce(parsedTx);
-                expectedError();
-            } catch (e: any) {
-                expect(e).to.eql(predefined.NONCE_TOO_HIGH);
-            }
-        });
-
-        it(`should not fail for next nonce`, async function () {
-            const tx = {
-                ...defaultTx,
-                nonce: 4
-            };
-            const signed = await signTransaction(tx);
-            const parsedTx = ethers.utils.parseTransaction(signed);
-
-            const rsTx = await ethers.utils.resolveProperties({
-              gasPrice: parsedTx.gasPrice,
-              gasLimit: parsedTx.gasLimit,
-              value: parsedTx.value,
-              nonce: parsedTx.nonce,
-              data: parsedTx.data,
-              chainId: parsedTx.chainId,
-              to: parsedTx.to
-            });
-            const raw = ethers.utils.serializeTransaction(rsTx);
-            const recoveredAddress = ethers.utils.recoverAddress(
-              ethers.utils.arrayify(ethers.utils.keccak256(raw)),
-              // @ts-ignore
-              ethers.utils.joinSignature({ 'r': parsedTx.r, 's': parsedTx.s, 'v': parsedTx.v })
-            );
-            mock.onGet(`accounts/${recoveredAddress}`).reply(200, mirrorAccount);
-
-            await precheck.nonce(parsedTx);
         });
     });
 });
