@@ -1678,6 +1678,8 @@ describe('Eth', async function () {
     ethImpl = new EthImpl(null, mirrorNodeInstance, logger);
   });
 
+  const defaultFromLongZeroAddress = '0x0000000000000000000000000000000000001f41';
+  const defaultEvmAddress = '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69';
   const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
   const defaultTransaction = {
     "accessList": undefined,
@@ -1939,6 +1941,10 @@ describe('Eth', async function () {
     it('returns correct transaction for existing hash', async function () {
       // mirror node request mocks
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+      mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        from: `${defaultEvmAddress}`
+      });
+
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
 
       expect(result).to.exist;
@@ -1974,6 +1980,9 @@ describe('Eth', async function () {
       };
 
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        from: `${defaultEvmAddress}`
+      });
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
       if (result == null) return;
 
