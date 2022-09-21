@@ -1151,14 +1151,21 @@ describe('@api RPC Server Acceptance Tests', function () {
 
         describe('RPC rate limit test', () => {
             it('should throw rate limit exceeded error', async function() {
+                let rateLimited = false;
                 try{
                     //Currently chaindId is TIER 2 request per minute from env. We are trying to get an error for rate limit exceed by exceeding those req by 1
                     for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!) + 1; index++) {
                         await relay.call('eth_chainId', [null]);
                     }
                 }catch(error) {
+                    rateLimited = true;
                     Assertions.jsonRpcError(error, predefined.RATE_LIMIT_EXCEEDED);
                 }
+
+                expect(rateLimited).to.be.true;
+
+                // wait until rate limit is reset
+                await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION!)));
             });
 
             it('should not throw rate limit exceeded error', async function () {
@@ -1166,7 +1173,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     await relay.call('eth_chainId', [null]);
                 }
 
-                //wait until rate limit is reset
+                // wait until rate limit is reset
                 await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION!)));
 
                 for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
