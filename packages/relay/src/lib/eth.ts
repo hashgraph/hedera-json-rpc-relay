@@ -815,6 +815,15 @@ export class EthImpl implements Eth {
       return null;
     }
 
+    let fromAddress;
+    if(contractResult.from) {
+      fromAddress = contractResult.from.substring(0, 42);
+      const accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
+      if(accountResult && accountResult.evm_address && accountResult.evm_address.length > 0) {
+        fromAddress = accountResult.evm_address.substring(0,42);
+      }
+    }
+
     const maxPriorityFee = contractResult.max_priority_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_priority_fee_per_gas;
     const maxFee = contractResult.max_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_fee_per_gas;
     const rSig = contractResult.r === null ? null : contractResult.r.substring(0, 66);
@@ -825,7 +834,7 @@ export class EthImpl implements Eth {
       blockHash: contractResult.block_hash.substring(0, 66),
       blockNumber: EthImpl.numberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
-      from: contractResult.from.substring(0, 42),
+      from: fromAddress,
       gas: EthImpl.numberTo0x(contractResult.gas_used),
       gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),
