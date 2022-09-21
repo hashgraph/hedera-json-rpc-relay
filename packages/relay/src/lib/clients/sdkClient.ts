@@ -205,6 +205,7 @@ export class SDKClient {
             throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
         }
 
+        ethereumTransactionData.callData = new Uint8Array();
         return this.executeTransaction(new EthereumTransaction()
                                         .setEthereumData(ethereumTransactionData.toBytes())
                                         .setCallDataFileId(fileId), 
