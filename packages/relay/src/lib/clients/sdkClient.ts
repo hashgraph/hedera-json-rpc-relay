@@ -261,9 +261,9 @@ export class SDKClient {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         try {
             const resp = await query.execute(client);
-            this.logger.info(`${requestIdPrefix} Consensus Node ${query.constructor.name} response: ${query.paymentTransactionId} ${Status.Success._code}`);
+            this.logger.info(`${requestIdPrefix} Consensus Node query response: ${query.constructor.name} ${Status.Success._code}`);
             // local free queries will have a '0.0.0' accountId on transactionId
-            this.logger.trace(`${requestIdPrefix} ${callerName} query cost: ${query._queryPayment}`);
+            this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} query cost: ${query._queryPayment}`);
 
             this.captureMetrics(
                 SDKClient.queryMode,
@@ -310,7 +310,7 @@ export class SDKClient {
         }
     };
 
-    async executeGetTransactionRecord(resp: TransactionResponse, transactionName: string, callerName: string, requestId?: string): Promise<TransactionRecord> {
+    executeGetTransactionRecord = async (resp: TransactionResponse, transactionName: string, callerName: string, requestId?: string): Promise<TransactionRecord> => {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         try {
             if (!resp.getRecord) {
@@ -318,7 +318,6 @@ export class SDKClient {
             }
 
             const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
-            this.logger.info(`${requestIdPrefix} Consensus Node ${transactionName} record response: ${resp.transactionId.toString()} ${Status.Success._code}`);
             this.logger.trace(`${requestIdPrefix} ${resp.transactionId.toString()} ${callerName} transaction cost: ${transactionRecord.transactionFee}`);
             this.captureMetrics(
                 SDKClient.transactionMode,
@@ -331,14 +330,14 @@ export class SDKClient {
         catch (e: any) {
             // capture sdk record retrieval errors and shorten familiar stack trace
             const sdkClientError = new SDKClientError(e);
-            this.captureMetrics(
-                SDKClient.transactionMode,
-                transactionName,
-                sdkClientError.status,
-                0,
-                callerName);
-
-            this.logger.debug(`${requestIdPrefix} Consensus Node ${transactionName} record response: ${resp.transactionId.toString()} ${sdkClientError.status}`);
+            if(sdkClientError.isValidNetworkError()) {
+                this.captureMetrics(
+                    SDKClient.transactionMode,
+                    transactionName,
+                    sdkClientError.status,
+                    0,
+                    callerName);
+            }
 
             throw sdkClientError;
         }
