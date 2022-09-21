@@ -485,16 +485,13 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Gets the balance of an account as of the given block.
+   * Gets the balance of an account as of the given block from the mirror node.
+   * Current implementation does not yet utilize blockNumber
    *
    * @param account
    * @param blockNumberOrTag
    */
   async getBalance(account: string, blockNumberOrTag: string | null, requestId?: string) {
-    // FIXME: This implementation should be replaced so that instead of going to the
-    //        consensus nodes we go to the mirror nodes instead. The problem is that
-    //        the mirror nodes need to have the ability to give me the **CURRENT**
-    //        account balance *and* the account balance for any given block.
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
     const blockNumber = await this.translateBlockTag(blockNumberOrTag, requestId);
@@ -507,25 +504,18 @@ export class EthImpl implements Eth {
 
     try {
       let weibars: BigNumber | number = 0;
-      const result = await this.mirrorNodeClient.resolveEntityType(account, requestId);
-      if (result?.type === constants.TYPE_ACCOUNT) {
-        weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account, EthImpl.ethGetBalance, requestId);
-      }
-      else if (result?.type === constants.TYPE_CONTRACT) {
-        weibars = await this.sdkClient.getContractBalanceInWeiBar(result.entity.contract_id, EthImpl.ethGetBalance, requestId);
+
+      const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
+      if (mirrorAccount && mirrorAccount.balance) {
+        weibars = mirrorAccount.balance.balance * constants.TINYBAR_TO_WEIBAR_COEF
+      } else {
+        this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
+        cache.set(cachedLabel, EthImpl.zeroHex, constants.CACHE_TTL.ONE_HOUR);
+        return EthImpl.zeroHex;
       }
 
       return EthImpl.numberTo0x(weibars);
     } catch (e: any) {
-      if(e instanceof SDKClientError) {
-        // handle INVALID_ACCOUNT_ID
-        if (e.isInvalidAccountId()) {
-          this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
-          cache.set(cachedLabel, EthImpl.zeroHex, constants.CACHE_TTL.ONE_HOUR);
-          return EthImpl.zeroHex;
-        }
-      }
-
       this.logger.error(e, `${requestIdPrefix} Error raised during getBalance for account ${account}`);
       throw e;
     }

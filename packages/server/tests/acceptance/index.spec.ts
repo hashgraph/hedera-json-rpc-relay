@@ -106,12 +106,22 @@ describe('RPC Server Acceptance Tests', function () {
 
     describe("Acceptance tests", async () => {
         fs.readdirSync(path.resolve(__dirname, './'))
-            .forEach(test => {
-                if (test !== 'index.spec.ts' && test.endsWith('.spec.ts')) {
-                    require(`./${test}`);
+            .forEach(file => {
+                if (fs.statSync(path.resolve(__dirname, file)).isDirectory()) {
+                    fs.readdirSync(path.resolve(__dirname, file)).forEach(subFile => {
+                        loadTest(`${file}/${subFile}`);
+                    });
+                } else {
+                    loadTest(file);
                 }
             });
     });
+
+    function loadTest(testFile) {
+        if (testFile !== 'index.spec.ts' && testFile.endsWith('.spec.ts')) {
+            require(`./${testFile}`);
+        }
+    }
 
     function runLocalHederaNetwork() {
         // set env variables for docker images until local-node is updated

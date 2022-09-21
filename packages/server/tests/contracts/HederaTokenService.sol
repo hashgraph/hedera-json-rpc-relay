@@ -556,6 +556,31 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
+    /// Operation to update token expiry info
+    /// @param token The token address
+    /// @param keys The token keys
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function updateTokenKeys(address token, IHederaTokenService.TokenKey[] memory keys)
+    internal returns (int64 responseCode){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.updateTokenKeys.selector, token, keys));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Query token KeyValue
+    /// @param token The token address to check
+    /// @param keyType The keyType of the desired KeyValue
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return key KeyValue info for key of type `keyType`
+    function getTokenKey(address token, uint keyType)
+    internal returns (int64 responseCode, IHederaTokenService.KeyValue memory key){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenKey.selector, token, keyType));
+        IHederaTokenService.KeyValue memory defaultKeyValueInfo;
+        (responseCode, key) = success ? abi.decode(result, (int32,IHederaTokenService.KeyValue) ) : (HederaResponseCodes.UNKNOWN, defaultKeyValueInfo);
+    }
+
+
     /// Query if valid token found for the given address
     /// @param token The token address
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.

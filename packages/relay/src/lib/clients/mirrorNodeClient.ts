@@ -182,7 +182,7 @@ export class MirrorNodeClient {
             requestId);
     }
 
-    public async getAccount(idOrAliasOrEvmAddress: string, requestId?: string): Promise<object> {
+    public async getAccount(idOrAliasOrEvmAddress: string, requestId?: string) {
         return this.request(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
             [400, 404],

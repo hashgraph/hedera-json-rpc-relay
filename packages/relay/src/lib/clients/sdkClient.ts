@@ -39,7 +39,11 @@ import {
     Transaction,
     TransactionRecord,
     Status,
-    EthereumFlow
+    FileCreateTransaction,
+    FileAppendTransaction,
+    FileInfoQuery,
+    EthereumTransaction,
+    EthereumTransactionData,
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
@@ -192,8 +196,23 @@ export class SDKClient {
     }
 
     async submitEthereumTransaction(transactionBuffer: Uint8Array, callerName: string, requestId?: string): Promise<TransactionResponse> {
-        return this.executeTransaction(new EthereumFlow()
-          .setEthereumData(transactionBuffer), callerName, requestId);
+        const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
+        const ethereumTransaction = new EthereumTransaction();
+
+        if (ethereumTransactionData.toBytes().length <= 5120) {
+            ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
+        } else {
+            const fileId = await this.createFile(ethereumTransactionData.callData, this.clientMain, requestId);
+        
+            if(!fileId) {
+                const requestIdPrefix = formatRequestIdMessage(requestId);
+                throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
+            }
+            ethereumTransactionData.callData = new Uint8Array();
+            ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId)
+        }
+
+        return this.executeTransaction(ethereumTransaction, callerName, requestId);  
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number, from: string, callerName: string, requestId?: string): Promise<ContractFunctionResult> {
@@ -256,21 +275,19 @@ export class SDKClient {
         }
         catch (e: any) {
             const sdkClientError = new SDKClientError(e);
-            if(sdkClientError.isValidNetworkError()) {
-                this.logger.debug(`${requestIdPrefix} Consensus Node query response: ${query.constructor.name} ${sdkClientError.statusCode}`);
-                this.captureMetrics(
-                    SDKClient.queryMode,
-                    query.constructor.name,
-                    sdkClientError.status,
-                    query._queryPayment?.toTinybars().toNumber(),
-                    callerName);    
-            }
-
+            this.logger.debug(`${requestIdPrefix} Consensus Node query response: ${query.constructor.name} ${sdkClientError.status}`);
+            this.captureMetrics(
+                SDKClient.queryMode,
+                query.constructor.name,
+                sdkClientError.status,
+                query._queryPayment?.toTinybars().toNumber(),
+                callerName);
+            this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} query cost: ${query._queryPayment}`);
             throw sdkClientError;
         }
     };
 
-    private executeTransaction = async (transaction: Transaction | EthereumFlow, callerName: string, requestId?: string): Promise<TransactionResponse> => {
+    private executeTransaction = async (transaction: Transaction, callerName: string, requestId?: string): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
         const requestIdPrefix = formatRequestIdMessage(requestId);
         try {
@@ -281,15 +298,13 @@ export class SDKClient {
         }
         catch (e: any) {
             const sdkClientError = new SDKClientError(e);
-            if(sdkClientError.isValidNetworkError()) {
-                this.logger.info(`${requestIdPrefix} Consensus Node ${transactionType} transaction response: ${sdkClientError.statusCode}`);
-                this.captureMetrics(
-                    SDKClient.transactionMode,
-                    transactionType,
-                    sdkClientError.statusCode,
-                    0,
-                    callerName);
-            }
+            this.logger.info(`${requestIdPrefix} Consensus Node ${transactionType} transaction response: ${sdkClientError.status}`);
+            this.captureMetrics(
+                SDKClient.transactionMode,
+                transactionType,
+                sdkClientError.status,
+                0,
+                callerName);
 
             throw sdkClientError;
         }
@@ -336,7 +351,7 @@ export class SDKClient {
             status,
             caller)
             .observe(resolvedCost);
-        this.operatorAccountGauge.labels(mode, type, this.operatorAccountId).dec(cost);
+        this.operatorAccountGauge.labels(mode, type, this.operatorAccountId).dec(resolvedCost);
     };
 
     /**
@@ -354,5 +369,53 @@ export class SDKClient {
         return balance.hbars
         .to(HbarUnit.Tinybar)
         .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
+    }
+
+    private createFile = async (callData: Uint8Array, client: Client, requestId?: string) => {
+        const requestIdPrefix = formatRequestIdMessage(requestId);
+        const hexedCallData = Buffer.from(callData).toString("hex");
+
+        const fileId = (
+            (
+                await (
+                    await new FileCreateTransaction()
+                        .setContents(hexedCallData.substring(0, 4096))
+                        .setKeys(
+                            client.operatorPublicKey
+                                ? [client.operatorPublicKey]
+                                : []
+                        )
+                        .execute(client)
+                ).getReceipt(client)
+            ).fileId
+        );
+
+        if (fileId && callData.length > 4096) {
+            await (
+                await new FileAppendTransaction()
+                    .setFileId(fileId)
+                    .setContents(
+                        hexedCallData.substring(4096, hexedCallData.length)
+                    )
+                    .setChunkSize(4096)
+                    .execute(client)
+            ).getReceipt(client);
+        }
+
+        // Ensure that the calldata file is not empty
+        if(fileId) {
+            const fileSize = await (
+                await new FileInfoQuery()
+                .setFileId(fileId)
+                .execute(client)
+            ).size;    
+
+            if(callData.length > 0 && fileSize.isZero()) {
+                throw new SDKClientError({}, `${requestIdPrefix} Created file is empty. `);
+            }    
+            this.logger.trace(`${requestIdPrefix} Created file with fileId: ${fileId} and file size ${fileSize}`);
+        }
+
+        return fileId;
     }
 }
