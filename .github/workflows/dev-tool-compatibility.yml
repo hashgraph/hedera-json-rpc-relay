@@ -10,14 +10,14 @@ on:
 jobs:
   hardhat:
     name: Hardhat Compatibility
-    uses: hashgraph/hedera-json-rpc-relay/.github/workflows/dev-tool-comptatibility.yml@main
+    uses: .github/workflows/dev-tool-compatibility-workflow.yml
     with:
       command: cd ./tools/hardhat-example/ && npx hardhat test
       directory: ./tools/hardhat-example
 
   truffle:
     name: Truffle Compatibility
-    uses: hashgraph/hedera-json-rpc-relay/.github/workflows/dev-tool-comptatibility.yml@main
+    uses: .github/workflows/dev-tool-compatibility-workflow.yml
     needs: hardhat
     with:
       command: cd ./tools/truffle-example/ && npx truffle test
@@ -25,7 +25,7 @@ jobs:
 
   web3js:
     name: Web3js Compatibility
-    uses: hashgraph/hedera-json-rpc-relay/.github/workflows/dev-tool-comptatibility.yml@main
+    uses: .github/workflows/dev-tool-compatibility-workflow.yml
     needs: [ hardhat, truffle]
     with:
       command: cd ./tools/web3js-example/ && npm run test
