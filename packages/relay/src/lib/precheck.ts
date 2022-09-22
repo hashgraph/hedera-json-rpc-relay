@@ -60,42 +60,33 @@ export class Precheck {
     const parsedTx = Precheck.parseTxIfNeeded(transaction);
 
     this.gasLimit(parsedTx, requestId);
-    await this.nonce(parsedTx, requestId);
+    const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
+    await this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
     this.chainId(parsedTx, requestId);
     this.value(parsedTx);
     this.gasPrice(parsedTx, gasPrice, requestId);
     await this.balance(parsedTx, EthImpl.ethSendRawTransaction, requestId);
   }
 
+  async verifyAccount(tx: Transaction, requestId?: string) {
+    // verify account
+    const accountInfo = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
+    if (accountInfo == null) {
+      this.logger.trace(`${requestId} Failed to retrieve address '${tx.from}' account details from mirror node on verify account precheck for sendRawTransaction(transaction=${JSON.stringify(tx)})`);
+      throw predefined.RESOURCE_NOT_FOUND(`address '${tx.from}'.`);
+    }
+
+    return accountInfo;
+  }
+
   /**
    * @param tx
    */
-  async nonce(tx: Transaction, requestId?: string) {
-    const rsTx = await ethers.utils.resolveProperties({
-      gasPrice: tx.gasPrice,
-      gasLimit: tx.gasLimit,
-      value: tx.value,
-      nonce: tx.nonce,
-      data: tx.data,
-      chainId: tx.chainId,
-      to: tx.to
-    });
-    const raw = ethers.utils.serializeTransaction(rsTx);
-    const recoveredAddress = ethers.utils.recoverAddress(
-      ethers.utils.arrayify(ethers.utils.keccak256(raw)),
-      // @ts-ignore
-      ethers.utils.joinSignature({ 'r': tx.r, 's': tx.s, 'v': tx.v })
-    );
-    const accountInfo = await this.mirrorNodeClient.getAccount(recoveredAddress, requestId);
-    if (accountInfo == null) {
-      this.logger.trace(`${requestId} Failed to retrieve recoveredAddress '${recoveredAddress}' account details from mirror node on nonce precheck for sendRawTransaction(transaction=${JSON.stringify(tx)})`);
-      throw predefined.RESOURCE_NOT_FOUND(`recoveredAddress '${recoveredAddress}'.`);
-    }
-
-    this.logger.trace(`${requestId} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfo.ethereum_nonce=${accountInfo.ethereum_nonce})`);
+  async nonce(tx: Transaction, accountInfoNonce: number, requestId?: string) {
+    this.logger.trace(`${requestId} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`);
 
     // @ts-ignore
-    if (accountInfo && accountInfo.ethereum_nonce > tx.nonce) {
+    if (accountInfoNonce > tx.nonce) {
       throw predefined.NONCE_TOO_LOW;
     }
   }

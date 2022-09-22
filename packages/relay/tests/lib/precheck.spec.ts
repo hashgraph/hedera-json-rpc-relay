@@ -387,7 +387,7 @@ describe('Precheck', async function() {
 
 
             try {
-                await precheck.nonce(parsedTx);
+                await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
                 expectedError();
             } catch (e: any) {
                 expect(e).to.exist;
@@ -424,7 +424,7 @@ describe('Precheck', async function() {
 
 
             try {
-                await precheck.nonce(parsedTx);
+                await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
                 expectedError();
             } catch (e: any) {
                 expect(e).to.eql(predefined.NONCE_TOO_LOW);
@@ -456,7 +456,7 @@ describe('Precheck', async function() {
             );
             mock.onGet(`accounts/${recoveredAddress}`).reply(200, mirrorAccount);
 
-            await precheck.nonce(parsedTx);
+            await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
         });
     });
 });
