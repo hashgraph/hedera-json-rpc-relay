@@ -37,7 +37,12 @@ jobs:
         run: npx lerna run build
 
       - name: Run acceptance tests
-        run: npm run acceptancetest:api
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 10
+          retry_wait_seconds: 45
+          command: npm run acceptancetest:api
   
   erc:
     runs-on: ubuntu-latest
@@ -69,7 +74,12 @@ jobs:
         run: npx lerna run build
 
       - name: Run acceptance tests
-        run: npm run acceptancetest:erc20
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 10
+          retry_wait_seconds: 45
+          command: npm run acceptancetest:erc20
   
   precompile:
     runs-on: ubuntu-latest
@@ -104,4 +114,9 @@ jobs:
         run: npx lerna run build
 
       - name: Run acceptance tests
-        run: npm run acceptancetest:${{ matrix.filter }}
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 10
+          retry_wait_seconds: 45
+          command: npm run acceptancetest:${{ matrix.filter }}
