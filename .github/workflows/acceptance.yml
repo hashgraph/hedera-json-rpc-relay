@@ -8,7 +8,7 @@ on:
     tags: [ v* ]
 
 jobs:
-  rpctest:
+  api:
     runs-on: ubuntu-latest
     permissions:
       contents: write
