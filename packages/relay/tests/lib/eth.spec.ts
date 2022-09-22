@@ -27,7 +27,7 @@ import { Registry } from 'prom-client';
 import sinon from 'sinon';
 import cache from 'js-cache';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-import {RelayImpl, predefined, MirrorNodeClientError} from '@hashgraph/json-rpc-relay';
+import {RelayImpl, MirrorNodeClientError} from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import { expectUnsupportedMethod } from '../helpers';
@@ -37,10 +37,6 @@ import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
-
-import { PrivateKey } from '@hashgraph/sdk';
-import { ethers } from 'ethers';
-import { signTransaction } from "../helpers";
 
 const logger = pino();
 const registry = new Registry();
@@ -124,7 +120,6 @@ describe('Eth calls using MirrorNode', async function () {
   const blockTimestamp = '1651560386';
   const blockTimestampHex = EthImpl.numberTo0x(Number(blockTimestamp));
   const firstTransactionTimestampSeconds = '1653077547';
-  const firstTransactionTimestampSecondsHex = EthImpl.numberTo0x(Number(firstTransactionTimestampSeconds));
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
   const contractTimestamp1 = `${firstTransactionTimestampSeconds}.983983199`;
   const contractHash1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
@@ -138,8 +133,6 @@ describe('Eth calls using MirrorNode', async function () {
   const gasUsedRatio = 0.5;
   const deployedBytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
   const mirrorNodeDeployedBytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100321234';
-  const defaultGasPrice = 720_000_000_000;
-  const defaultChainId = Number('0x12a');
 
   const defaultBlock = {
     'count': blockTransactionCount,
