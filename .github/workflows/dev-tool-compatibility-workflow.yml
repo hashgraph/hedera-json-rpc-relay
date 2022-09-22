@@ -1,0 +1,56 @@
+name: Reusable dev tool workflow
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        required: true
+        type: string
+      directory:
+        required: true
+        type: string
+
+jobs:
+  reusable-dev-tool-workflow:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Create .env file
+        run: |
+          cp ${{ inputs.directory }}/.env.example ${{ inputs.directory }}/.env
+          cp ./packages/server/tests/localAcceptance.env .env
+
+      - name: Lerna Bootstrap
+        run: npm run setup
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Build Typescript
+        run: npx lerna run build
+
+      - name: Run RPC Server
+        run: npm run integration:prerequisite &
+
+      - name: Install dependencies
+        run: cd ${{ inputs.directory }}/ && npm ci
+
+      - name: Run the tests
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 10
+          timeout_minutes: 10
+          retry_wait_seconds: 45
+          command: ${{ inputs.command }}
