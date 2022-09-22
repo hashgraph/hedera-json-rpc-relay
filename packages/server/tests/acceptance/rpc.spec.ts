@@ -30,6 +30,7 @@ import { ContractFunctionParameters } from '@hashgraph/sdk';
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
 import logsContractJson from '../contracts/Logs.json';
+import storageContractJson from '../contracts/Storage.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
@@ -1073,6 +1074,30 @@ describe('@api RPC Server Acceptance Tests', function () {
 
                     const res = await relay.call('eth_call', [callData]);
                     expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+                });
+            });
+
+            describe('@release eth_getStorageAt', () => {
+                let storageContract, evmAddress;
+                const storedUint = '8';
+                before(async () => {
+                    storageContract = await servicesNode.deployContract(storageContractJson);
+                    
+                    await accounts[1].client.executeContractCall(storageContract.contractId, 'updateStoredUInt', new ContractFunctionParameters());
+                    // Wait for creation to propagate
+                    await mirrorNode.get(`/contracts/${storageContract.contractId}`);
+
+                    evmAddress = `0x${storageContract.contractId.toSolidityAddress()}`;
+                });
+
+                it('@release should execute "eth_getStorageAt', async function () {
+                    const callData = {
+                        address: evmAddress,
+                        slot: "0x0",
+                        blockNumberOrTag: "latest",
+                    };
+                    const res = await relay.call('eth_getStorageAt', callData);
+                    // expect(res).to.eq(storedUint);
                 });
             });
         });
