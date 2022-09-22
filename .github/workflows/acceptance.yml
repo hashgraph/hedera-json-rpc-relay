@@ -43,6 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    needs: api
     steps:
       - name: Setup node
         uses: actions/setup-node@v2
@@ -77,6 +78,7 @@ jobs:
         filter: [ tokencreate, tokenmanagement, htsprecompilev1 ]
     permissions:
       contents: write
+    needs: [ api, erc ]
     steps:
       - name: Setup node
         uses: actions/setup-node@v2
