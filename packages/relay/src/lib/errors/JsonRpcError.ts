@@ -119,10 +119,10 @@ export const predefined = {
     code: -32010,
     message: 'Request timeout. Please try again.'
   }),
-  'RESOURCE_NOT_FOUND': new JsonRpcError({
+  'RESOURCE_NOT_FOUND': (message: string = '') => new JsonRpcError({
     name: 'Resource not found',
     code: -32001,
-    message: 'Requested resource not found'
+    message: `Requested resource not found. ${message}`
   }),
   'RANGE_TOO_LARGE': new JsonRpcError({
     name: 'Block range too large',

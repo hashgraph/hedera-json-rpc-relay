@@ -87,16 +87,16 @@ export class Precheck {
       ethers.utils.joinSignature({ 'r': tx.r, 's': tx.s, 'v': tx.v })
     );
     const accountInfo = await this.mirrorNodeClient.getAccount(recoveredAddress, requestId);
+    if (accountInfo == null) {
+      this.logger.trace(`${requestId} Failed to retrieve recoveredAddress '${recoveredAddress}' account details from mirror node on nonce precheck for sendRawTransaction(transaction=${JSON.stringify(tx)})`);
+      throw predefined.RESOURCE_NOT_FOUND(`recoveredAddress '${recoveredAddress}'.`);
+    }
+
+    this.logger.trace(`${requestId} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfo.ethereum_nonce=${accountInfo.ethereum_nonce})`);
 
     // @ts-ignore
-    if (accountInfo && accountInfo.ethereum_nonce) {
-      if (accountInfo.ethereum_nonce > tx.nonce) {
-        this.logger.trace(`${requestId} Failed nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfo.ethereum_nonce=${accountInfo.ethereum_nonce})`);
-        throw predefined.NONCE_TOO_LOW;
-      } else if (accountInfo.ethereum_nonce + 1 < tx.nonce) {
-        this.logger.trace(`${requestId} Failed nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfo.ethereum_nonce=${accountInfo.ethereum_nonce})`);
-        throw predefined.NONCE_TOO_HIGH;
-      }
+    if (accountInfo && accountInfo.ethereum_nonce > tx.nonce) {
+      throw predefined.NONCE_TOO_LOW;
     }
   }
 
@@ -146,7 +146,7 @@ export class Precheck {
     const accountResponse: any = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
     if (accountResponse == null) {
       this.logger.trace(`${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(tx)}, totalValue=${txTotalValue})`);
-      throw predefined.RESOURCE_NOT_FOUND;
+      throw predefined.RESOURCE_NOT_FOUND(`tx.from '${tx.from}'.`);
     }
 
     try {

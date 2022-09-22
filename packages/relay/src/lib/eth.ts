@@ -1055,7 +1055,7 @@ export class EthImpl implements Eth {
     }
     if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
       // block not found.
-      throw predefined.RESOURCE_NOT_FOUND;
+      throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
     }
 
     return blockResponse;

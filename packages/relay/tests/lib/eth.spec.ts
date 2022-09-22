@@ -1599,48 +1599,6 @@ describe('Eth calls using MirrorNode', async function () {
       }
       expect(hasError).to.be.true;
     });
-
-    it('should return a predefined NONCE_TOO_HIGH exception', async function() {
-      const defaultLondonTransactionData = {
-        value: ethers.utils.parseUnits('1', 10),
-        chainId: defaultChainId,
-        maxPriorityFeePerGas: defaultGasPrice,
-        maxFeePerGas: defaultGasPrice,
-        gasLimit: 4_000_000,
-        type: 2,
-        nonce: 5
-      };
-      const signedTx = await signTransaction(defaultLondonTransactionData);
-      const parsedTx = ethers.utils.parseTransaction(signedTx);
-      const rsTx = await ethers.utils.resolveProperties({
-        gasPrice: parsedTx.gasPrice,
-        gasLimit: parsedTx.gasLimit,
-        value: parsedTx.value,
-        nonce: parsedTx.nonce,
-        data: parsedTx.data,
-        chainId: parsedTx.chainId,
-        to: parsedTx.to
-      });
-      const raw = ethers.utils.serializeTransaction(rsTx);
-      const recoveredAddress = ethers.utils.recoverAddress(
-        ethers.utils.arrayify(ethers.utils.keccak256(raw)),
-        // @ts-ignore
-        ethers.utils.joinSignature({ 'r': parsedTx.r, 's': parsedTx.s, 'v': parsedTx.v })
-      );
-
-      mock.onGet('network/fees').reply(200, defaultNetworkFees);
-      const mirrorAccount = {
-        account: contractAddress1,
-        ethereum_nonce: 2
-      };
-      
-      mock.onGet(`accounts/${recoveredAddress}`).reply(200, mirrorAccount);
-
-      const transactionResponse = await ethImpl.sendRawTransaction(signedTx);
-
-      expect(transactionResponse).to.eql(predefined.NONCE_TOO_HIGH);
-      sinon.assert.notCalled(sdkClientStub.submitEthereumTransaction);
-    });
   });
 
   describe('eth_getStorageAt', async function() {
