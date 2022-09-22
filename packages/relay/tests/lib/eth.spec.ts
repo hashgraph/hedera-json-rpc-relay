@@ -30,7 +30,11 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import {RelayImpl, predefined, MirrorNodeClientError} from '@hashgraph/json-rpc-relay';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-import { expectUnsupportedMethod } from '../helpers';
+import { 
+  defaultEvmAddress,
+  defaultFromLongZeroAddress,
+  expectUnsupportedMethod,
+ } from '../helpers';
 
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
@@ -1684,7 +1688,7 @@ describe('Eth', async function () {
     "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "blockNumber": "0x11",
     "chainId": "0x12a",
-    "from": "0x0000000000000000000000000000000000001f41",
+    "from": `${defaultEvmAddress}`,
     "gas": "0x7b",
     "gasPrice": "0x4a817c80",
     "hash": defaultTxHash,
@@ -1939,6 +1943,10 @@ describe('Eth', async function () {
     it('returns correct transaction for existing hash', async function () {
       // mirror node request mocks
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+      mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
+
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
 
       expect(result).to.exist;
@@ -1974,6 +1982,9 @@ describe('Eth', async function () {
       };
 
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
       if (result == null) return;
 

@@ -801,6 +801,9 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const mirrorTransaction = await mirrorNode.get(`/contracts/results/${transactionHash}`);
 
                     const res = await relay.call('eth_getTransactionByHash', [transactionHash]);
+                    const addressResult = await mirrorNode.get(`/accounts/${res.from}`);
+                    mirrorTransaction.from = addressResult.evm_address;
+
                     Assertions.transaction(res, mirrorTransaction);
                 });
 
