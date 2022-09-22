@@ -360,43 +360,6 @@ describe('Precheck', async function() {
             ethereum_nonce: defaultNonce
         };
 
-        it(`should fail for missing account`, async function () {
-            const tx = {
-                ...defaultTx,
-                nonce: 1
-            };
-            const signed = await signTransaction(tx);
-            const parsedTx = ethers.utils.parseTransaction(signed);
-
-            const rsTx = await ethers.utils.resolveProperties({
-              gasPrice: parsedTx.gasPrice,
-              gasLimit: parsedTx.gasLimit,
-              value: parsedTx.value,
-              nonce: parsedTx.nonce,
-              data: parsedTx.data,
-              chainId: parsedTx.chainId,
-              to: parsedTx.to
-            });
-            const raw = ethers.utils.serializeTransaction(rsTx);
-            const recoveredAddress = ethers.utils.recoverAddress(
-              ethers.utils.arrayify(ethers.utils.keccak256(raw)),
-              // @ts-ignore
-              ethers.utils.joinSignature({ 'r': parsedTx.r, 's': parsedTx.s, 'v': parsedTx.v })
-            );
-            mock.onGet(`accounts/${recoveredAddress}`).reply(404, mockData.notFound);
-
-
-            try {
-                await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
-                expectedError();
-            } catch (e: any) {
-                expect(e).to.exist;
-                expect(e.code).to.eq(-32001);
-                expect(e.name).to.eq('Resource not found');
-                expect(e.message).to.contain(recoveredAddress);
-            }
-        });
-
         it(`should fail for low nonce`, async function () {
             const tx = {
                 ...defaultTx,
@@ -405,22 +368,7 @@ describe('Precheck', async function() {
             const signed = await signTransaction(tx);
             const parsedTx = ethers.utils.parseTransaction(signed);
 
-            const rsTx = await ethers.utils.resolveProperties({
-              gasPrice: parsedTx.gasPrice,
-              gasLimit: parsedTx.gasLimit,
-              value: parsedTx.value,
-              nonce: parsedTx.nonce,
-              data: parsedTx.data,
-              chainId: parsedTx.chainId,
-              to: parsedTx.to
-            });
-            const raw = ethers.utils.serializeTransaction(rsTx);
-            const recoveredAddress = ethers.utils.recoverAddress(
-              ethers.utils.arrayify(ethers.utils.keccak256(raw)),
-              // @ts-ignore
-              ethers.utils.joinSignature({ 'r': parsedTx.r, 's': parsedTx.s, 'v': parsedTx.v })
-            );
-            mock.onGet(`accounts/${recoveredAddress}`).reply(200, mirrorAccount);
+            mock.onGet(`accounts/${parsedTx.from}`).reply(200, mirrorAccount);
 
 
             try {
@@ -439,24 +387,51 @@ describe('Precheck', async function() {
             const signed = await signTransaction(tx);
             const parsedTx = ethers.utils.parseTransaction(signed);
 
-            const rsTx = await ethers.utils.resolveProperties({
-              gasPrice: parsedTx.gasPrice,
-              gasLimit: parsedTx.gasLimit,
-              value: parsedTx.value,
-              nonce: parsedTx.nonce,
-              data: parsedTx.data,
-              chainId: parsedTx.chainId,
-              to: parsedTx.to
-            });
-            const raw = ethers.utils.serializeTransaction(rsTx);
-            const recoveredAddress = ethers.utils.recoverAddress(
-              ethers.utils.arrayify(ethers.utils.keccak256(raw)),
-              // @ts-ignore
-              ethers.utils.joinSignature({ 'r': parsedTx.r, 's': parsedTx.s, 'v': parsedTx.v })
-            );
-            mock.onGet(`accounts/${recoveredAddress}`).reply(200, mirrorAccount);
+            mock.onGet(`accounts/${parsedTx.from}`).reply(200, mirrorAccount);
 
             await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
+        });
+    });
+
+    describe('account', async function() {
+        const defaultNonce = 3;
+        const defaultTx = {
+            value: oneTinyBar,
+            gasPrice: defaultGasPrice,
+            chainId: defaultChainId,
+            nonce: defaultNonce,
+            from: mockData.accountEvmAddress
+        };
+
+        const signed = await signTransaction(defaultTx);
+        const parsedTx = ethers.utils.parseTransaction(signed);
+
+        const mirrorAccount = {
+            evm_address: mockData.accountEvmAddress,
+            ethereum_nonce: defaultNonce
+        };
+
+        it(`should fail for missing account`, async function () {
+            mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(404, mockData.notFound);
+
+
+            try {
+                await precheck.verifyAccount(parsedTx);
+                expectedError();
+            } catch (e: any) {
+                expect(e).to.exist;
+                expect(e.code).to.eq(-32001);
+                expect(e.name).to.eq('Resource not found');
+                expect(e.message).to.contain(mockData.accountEvmAddress);
+            }
+        });
+
+        it(`should not fail for matched account`, async function () {
+            mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(200, mirrorAccount);
+            const account = await precheck.verifyAccount(parsedTx);
+
+
+            expect(account.ethereum_nonce).to.eq(defaultNonce);
         });
     });
 });
