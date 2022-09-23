@@ -1112,9 +1112,12 @@ describe('Eth calls using MirrorNode', async function () {
 
       it('blockNumber is in the latest 15 minutes', async () => {
         mock.onGet(`contracts/${contractId1}`).reply(200, defaultContract);
-        sdkClientStub.getContractBalanceInWeiBar.returns(balance2 * constants.TINYBAR_TO_WEIBAR_COEF);
-        const resBalance = await ethImpl.getBalance(contractId1, '2');
-        expect(resBalance).to.equal(hexBalance2);
+        try {
+          await ethImpl.getBalance(contractId1, '2');
+        }
+        catch(error) {
+          expect(error).to.deep.equal(predefined.UNKNOWN_HISTORICAL_BALANCE);
+        }
       });
 
       it('blockNumber is not in the latest 15 minutes', async () => {
