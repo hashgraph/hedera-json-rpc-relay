@@ -20,7 +20,6 @@
 
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import { BigNumber } from 'ethers';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 const registry = new Registry();
 
@@ -33,6 +32,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { ethers } from "ethers";
 import constants from '../../src/lib/constants';
+import { predefined } from '../../src';
 const logger = pino();
 
 describe('Precheck', async function() {

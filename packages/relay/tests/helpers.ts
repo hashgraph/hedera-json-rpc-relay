@@ -175,6 +175,9 @@ export const defaultContractResults = {
     }
 };
 
+export const defaultEvmAddress = '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69';
+export const defaultFromLongZeroAddress = '0x0000000000000000000000000000000000001f41';
+
 export const defaultLogTopics = [
     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
     "0x0000000000000000000000000000000000000000000000000000000000000000",

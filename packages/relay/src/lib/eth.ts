@@ -320,7 +320,7 @@ export class EthImpl implements Eth {
 
       return EthImpl.numberTo0x(gasPrice);
     } catch (error) {
-      this.logger.trace(error);
+      this.logger.error(error, `${requestIdPrefix} Failed to retrieve gasPrice`);
       throw error;
     }
   }
@@ -727,24 +727,31 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getTransactionCount(address=${address}, blockNumOrTag=${blockNumOrTag})`);
     const blockNumber = await this.translateBlockTag(blockNumOrTag, requestId);
     if (blockNumber === 0) {
-      return '0x0';
-    } else {
-      try {
-        const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
-        if (result?.type === constants.TYPE_ACCOUNT) {
-            const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
-            return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
-        }
-        else if (result?.type === constants.TYPE_CONTRACT) {
-          return EthImpl.numberTo0x(1);
-        }
-      } catch (e: any) {
-        this.logger.error(e, `${requestIdPrefix} Error raised during getTransactionCount for address ${address}, block number or tag ${blockNumOrTag}`);
-        return predefined.INTERNAL_ERROR;
+      return EthImpl.zeroHex;
+    } else if (address && !blockNumOrTag) {
+      // get latest ethereumNonce
+      const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
+      if (mirrorAccount && mirrorAccount.ethereum_nonce) {
+        return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
+      }
+    }
+
+    // check consensus node as back up
+    try {
+      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
+      if (result?.type === constants.TYPE_ACCOUNT) {
+          const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
+          return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+      }
+      else if (result?.type === constants.TYPE_CONTRACT) {
+        return EthImpl.numberTo0x(1)
       }
 
-      return EthImpl.numberTo0x(0);
-    }
+      return EthImpl.zeroHex;
+    } catch (e: any) {
+      this.logger.error(e, `${requestIdPrefix} Error raised during getTransactionCount for address ${address}, block number or tag ${blockNumOrTag}`);
+      return predefined.INTERNAL_ERROR;
+    } 
   }
 
   /**
@@ -774,9 +781,16 @@ export class EthImpl implements Eth {
       try {
         // Wait for the record from the execution.
         const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, requestId);
-        if (record.ethereumHash == null) {
-          throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
+        if (!record) {
+          this.logger.warn(`${requestIdPrefix} No record retrieved`);
+          throw predefined.INTERNAL_ERROR;
         }
+
+        if (record.ethereumHash == null) {
+          this.logger.error(`${requestIdPrefix} The ethereumHash can never be null for an ethereum transaction, and yet it was!!`);
+          throw predefined.INTERNAL_ERROR;
+        }
+
         return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
       } catch (e) {
         this.logger.error(e,
@@ -854,6 +868,15 @@ export class EthImpl implements Eth {
       return null;
     }
 
+    let fromAddress;
+    if(contractResult.from) {
+      fromAddress = contractResult.from.substring(0, 42);
+      const accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
+      if(accountResult && accountResult.evm_address && accountResult.evm_address.length > 0) {
+        fromAddress = accountResult.evm_address.substring(0,42);
+      }
+    }
+
     const maxPriorityFee = contractResult.max_priority_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_priority_fee_per_gas;
     const maxFee = contractResult.max_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_fee_per_gas;
     const rSig = contractResult.r === null ? null : contractResult.r.substring(0, 66);
@@ -864,7 +887,7 @@ export class EthImpl implements Eth {
       blockHash: contractResult.block_hash.substring(0, 66),
       blockNumber: EthImpl.numberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
-      from: contractResult.from.substring(0, 42),
+      from: fromAddress,
       gas: EthImpl.numberTo0x(contractResult.gas_used),
       gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),

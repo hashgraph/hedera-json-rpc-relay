@@ -31,7 +31,11 @@ import {RelayImpl, MirrorNodeClientError} from '@hashgraph/json-rpc-relay';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-import { expectUnsupportedMethod } from '../helpers';
+import {
+  defaultEvmAddress,
+  defaultFromLongZeroAddress,
+  expectUnsupportedMethod,
+ } from '../helpers';
 
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
@@ -121,7 +125,6 @@ describe('Eth calls using MirrorNode', async function () {
   const blockTimestamp = '1651560386';
   const blockTimestampHex = EthImpl.numberTo0x(Number(blockTimestamp));
   const firstTransactionTimestampSeconds = '1653077547';
-  const firstTransactionTimestampSecondsHex = EthImpl.numberTo0x(Number(firstTransactionTimestampSeconds));
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
   const contractTimestamp1 = `${firstTransactionTimestampSeconds}.983983199`;
   const contractHash1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
@@ -1834,7 +1837,7 @@ describe('Eth', async function () {
     "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "blockNumber": "0x11",
     "chainId": "0x12a",
-    "from": "0x0000000000000000000000000000000000001f41",
+    "from": `${defaultEvmAddress}`,
     "gas": "0x7b",
     "gasPrice": "0x4a817c80",
     "hash": defaultTxHash,
@@ -2089,6 +2092,10 @@ describe('Eth', async function () {
     it('returns correct transaction for existing hash', async function () {
       // mirror node request mocks
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+      mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
+
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
 
       expect(result).to.exist;
@@ -2124,6 +2131,9 @@ describe('Eth', async function () {
       };
 
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
       if (result == null) return;
 

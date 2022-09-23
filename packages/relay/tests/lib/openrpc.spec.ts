@@ -55,6 +55,8 @@ import {
     defaultDetailedContractResults,
     defaultDetailedContractResults2,
     defaultDetailedContractResults3,
+    defaultEvmAddress,
+    defaultFromLongZeroAddress,
     defaultLogs,
     defaultLogTopics,
     defaultNetworkFees,
@@ -127,7 +129,10 @@ describe("Open RPC Specification", function () {
         mock.onGet(`accounts/${contractAddress1}`).reply(200, { account: contractAddress1 });
         mock.onGet(`accounts/${contractAddress3}`).reply(200, { account: contractAddress3 });
         mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
-
+        mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+            from: `${defaultEvmAddress}`
+          });
+    
         sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
         sdkClientStub.getAccountBalanceInTinyBar.returns(100000000000)
         sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));
