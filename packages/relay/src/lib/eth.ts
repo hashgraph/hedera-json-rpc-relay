@@ -505,50 +505,46 @@ export class EthImpl implements Eth {
     try {
       let weibars: BigNumber | number = 0;
       const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
-
       let balanceFound = false;
 
-      if (mirrorAccount) {
+      // A blockNumberOrTag has been provided. If it is `latest` or `pending` retrieve the balance from /accounts/{account.id}
+      if (mirrorAccount && blockNumberOrTag !== null && blockNumberOrTag !== EthImpl.blockLatest && blockNumberOrTag !== EthImpl.blockPending) {
+        const blockNumberHex = EthImpl.numberTo0x(blockNumber);
+        const latestBlockNumber = await this.blockNumber(requestId);
 
-        // A blockNumberOrTag has been provided. If it is `latest` or `pending` retrieve the balance from /accounts/{account.id}
-        if (blockNumberOrTag !== null && blockNumberOrTag !== EthImpl.blockLatest && blockNumberOrTag !== EthImpl.blockPending) {
-          const blockNumberHex = EthImpl.numberTo0x(blockNumber);
-          const latestBlockNumber = await this.blockNumber(requestId);
+        // If the parsed blockNumber is the same as the one from the latest block retrieve the balance from /accounts/{account.id}
+        if (blockNumberHex !== latestBlockNumber) {
+          const blockPromises = [
+            this.getHistoricalBlockResponse(blockNumber.toString(), true, requestId),
+            this.getHistoricalBlockResponse(latestBlockNumber, true, requestId)
+          ];
 
-          // If the parsed blockNumber is the same as the one from the latest block retrieve the balance from /accounts/{account.id}
-          if (blockNumberHex !== latestBlockNumber) {
-            const blockPromises = [
-              this.getHistoricalBlockResponse(blockNumber.toString(), true, requestId),
-              this.getHistoricalBlockResponse(latestBlockNumber, true, requestId)
-            ];
+          const [block, latestBlock] = await Promise.all(blockPromises);
+          if (block?.timestamp && latestBlock?.timestamp) {
+            const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
+            const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
+            const timeDiff = latestTimestamp - blockTimestamp;
 
-            const [block, latestBlock] = await Promise.all(blockPromises);
-            if (block?.timestamp && latestBlock?.timestamp) {
-              const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
-              const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
-              const timeDiff = latestTimestamp - blockTimestamp;
+            // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
+            if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
+              throw predefined.UNKNOWN_HISTORICAL_BALANCE;
+            }
 
-              // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
-              if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
-                throw predefined.UNKNOWN_HISTORICAL_BALANCE;
-              }
-
-              // The block is NOT from the last 15 minutes, use /balances rest API
-              else {
-                const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(mirrorAccount.account, block.timestamp.from, requestId);
-                balanceFound = true;
-                if (balance.balances?.length) {
-                  weibars = balance.balances[0].balance * constants.TINYBAR_TO_WEIBAR_COEF;
-                }
+            // The block is NOT from the last 15 minutes, use /balances rest API
+            else {
+              const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(mirrorAccount.account, block.timestamp.from, requestId);
+              balanceFound = true;
+              if (balance.balances?.length) {
+                weibars = balance.balances[0].balance * constants.TINYBAR_TO_WEIBAR_COEF;
               }
             }
           }
         }
+      }
 
-        if (!balanceFound && mirrorAccount.balance) {
-          balanceFound = true;
-          weibars = mirrorAccount.balance.balance * constants.TINYBAR_TO_WEIBAR_COEF;
-        }
+      if (!balanceFound && mirrorAccount?.balance) {
+        balanceFound = true;
+        weibars = mirrorAccount.balance.balance * constants.TINYBAR_TO_WEIBAR_COEF;
       }
 
       if (!balanceFound) {
