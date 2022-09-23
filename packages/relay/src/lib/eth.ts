@@ -528,17 +528,9 @@ export class EthImpl implements Eth {
               const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
               const timeDiff = latestTimestamp - blockTimestamp;
 
-              // The block is from the last 15 minutes use the SDK to retrieve the balance
+              // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
               if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
-                const result = await this.mirrorNodeClient.resolveEntityType(account, requestId);
-                if (result?.type === constants.TYPE_ACCOUNT) {
-                  balanceFound = true;
-                  weibars = await this.sdkClient.getAccountBalanceInWeiBar(result.entity.account, EthImpl.ethGetBalance, requestId);
-                }
-                else if (result?.type === constants.TYPE_CONTRACT) {
-                  balanceFound = true;
-                  weibars = await this.sdkClient.getContractBalanceInWeiBar(result.entity.contract_id, EthImpl.ethGetBalance, requestId);
-                }
+                throw predefined.UNKNOWN_HISTORICAL_BALANCE;
               }
 
               // The block is NOT from the last 15 minutes, use /balances rest API
