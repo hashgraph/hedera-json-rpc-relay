@@ -44,6 +44,7 @@ import {
     FileInfoQuery,
     EthereumTransaction,
     EthereumTransactionData,
+    Hbar,
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
@@ -241,8 +242,10 @@ export class SDKClient {
 
         const cost = await contractCallQuery
             .getCost(this.clientMain);
+        const updatedCost = cost._valueInTinybar.multipliedBy(1.001).integerValue();
+        this.logger.trace(`${requestId} ${callerName} cost estimate: ${cost}, will use updatedCost: ${updatedCost}`);
         return this.executeQuery(contractCallQuery
-            .setQueryPayment(cost), this.clientMain, callerName, requestId);
+            .setQueryPayment(Hbar.from(updatedCost, HbarUnit.Tinybar)), this.clientMain, callerName, requestId);
     }
 
     private convertGasPriceToTinyBars = (feeComponents: FeeComponents | undefined, exchangeRates: ExchangeRates) => {
