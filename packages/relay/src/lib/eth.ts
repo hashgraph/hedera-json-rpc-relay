@@ -508,7 +508,7 @@ export class EthImpl implements Eth {
       let balanceFound = false;
 
       // A blockNumberOrTag has been provided. If it is `latest` or `pending` retrieve the balance from /accounts/{account.id}
-      if (mirrorAccount && blockNumberOrTag !== null && blockNumberOrTag !== EthImpl.blockLatest && blockNumberOrTag !== EthImpl.blockPending) {
+      if (mirrorAccount && !EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
         const blockNumberHex = EthImpl.numberTo0x(blockNumber);
         const latestBlockNumber = await this.blockNumber(requestId);
 
@@ -1001,6 +1001,10 @@ export class EthImpl implements Eth {
     return input.startsWith(EthImpl.emptyHex) ? input.substring(2) : input;
   }
 
+  private static blockTagIsLatestOrPending = (tag) => {
+    return tag == null || tag === EthImpl.blockLatest || tag === EthImpl.blockPending;
+  }
+
   /**
    * Translates a block tag into a number. 'latest', 'pending', and null are the
    * most recent block, 'earliest' is 0, numbers become numbers.
@@ -1009,7 +1013,7 @@ export class EthImpl implements Eth {
    * @private
    */
   private async translateBlockTag(tag: string | null, requestId?: string): Promise<number> {
-    if (tag === null || tag === EthImpl.blockLatest || tag === EthImpl.blockPending) {
+    if (EthImpl.blockTagIsLatestOrPending(tag)) {
       return Number(await this.blockNumber(requestId));
     } else if (tag === EthImpl.blockEarliest) {
       return 0;
@@ -1098,12 +1102,11 @@ export class EthImpl implements Eth {
   private async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestId?: string | undefined): Promise<any | null> {
     let blockResponse: any;
     // Determine if the latest block should be returned and if not then just return null
-    if (!returnLatest &&
-      (blockNumberOrTag == null || blockNumberOrTag === EthImpl.blockLatest || blockNumberOrTag === EthImpl.blockPending)) {
+    if (!returnLatest && EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
       return null;
     }
 
-    if (blockNumberOrTag == null || blockNumberOrTag === EthImpl.blockLatest || blockNumberOrTag === EthImpl.blockPending) {
+    if (blockNumberOrTag == null || EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
       const blockPromise = this.mirrorNodeClient.getLatestBlock(requestId);
       const blockAnswer = await blockPromise;
       blockResponse = blockAnswer.blocks[0];
