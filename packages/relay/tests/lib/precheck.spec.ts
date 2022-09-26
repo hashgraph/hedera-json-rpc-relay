@@ -26,7 +26,7 @@ const registry = new Registry();
 import sinon from 'sinon';
 import pino from 'pino';
 import { Precheck } from "../../src/lib/precheck";
-import { expectedError, signTransaction } from "../helpers";
+import { expectedError, mockData, signTransaction } from "../helpers";
 import { MirrorNodeClient, SDKClient } from "../../src/lib/clients";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -343,6 +343,94 @@ describe('Precheck', async function() {
             sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(50_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar));
             const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
             expect(result).to.not.exist;
+        });
+    });
+
+    describe('nonce', async function() {
+        const defaultNonce = 3;
+        const defaultTx = {
+            value: oneTinyBar,
+            gasPrice: defaultGasPrice,
+            chainId: defaultChainId,
+            nonce: defaultNonce
+        };
+
+        const mirrorAccount = {
+            ethereum_nonce: defaultNonce
+        };
+
+        it(`should fail for low nonce`, async function () {
+            const tx = {
+                ...defaultTx,
+                nonce: 1
+            };
+            const signed = await signTransaction(tx);
+            const parsedTx = ethers.utils.parseTransaction(signed);
+
+            mock.onGet(`accounts/${parsedTx.from}`).reply(200, mirrorAccount);
+
+
+            try {
+                await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
+                expectedError();
+            } catch (e: any) {
+                expect(e).to.eql(predefined.NONCE_TOO_LOW);
+            }
+        });
+
+        it(`should not fail for next nonce`, async function () {
+            const tx = {
+                ...defaultTx,
+                nonce: 4
+            };
+            const signed = await signTransaction(tx);
+            const parsedTx = ethers.utils.parseTransaction(signed);
+
+            mock.onGet(`accounts/${parsedTx.from}`).reply(200, mirrorAccount);
+
+            await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
+        });
+    });
+
+    describe('account', async function() {
+        const defaultNonce = 3;
+        const defaultTx = {
+            value: oneTinyBar,
+            gasPrice: defaultGasPrice,
+            chainId: defaultChainId,
+            nonce: defaultNonce,
+            from: mockData.accountEvmAddress
+        };
+
+        const signed = await signTransaction(defaultTx);
+        const parsedTx = ethers.utils.parseTransaction(signed);
+
+        const mirrorAccount = {
+            evm_address: mockData.accountEvmAddress,
+            ethereum_nonce: defaultNonce
+        };
+
+        it(`should fail for missing account`, async function () {
+            mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(404, mockData.notFound);
+
+
+            try {
+                await precheck.verifyAccount(parsedTx);
+                expectedError();
+            } catch (e: any) {
+                expect(e).to.exist;
+                expect(e.code).to.eq(-32001);
+                expect(e.name).to.eq('Resource not found');
+                expect(e.message).to.contain(mockData.accountEvmAddress);
+            }
+        });
+
+        it(`should not fail for matched account`, async function () {
+            mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(200, mirrorAccount);
+            const account = await precheck.verifyAccount(parsedTx);
+
+
+            expect(account.ethereum_nonce).to.eq(defaultNonce);
         });
     });
 });
