@@ -12,9 +12,9 @@ const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 (function () {
   if (USE_LOCAL_NODE) {
     // set env variables for docker images until local-node is updated
-    process.env['NETWORK_NODE_IMAGE_TAG'] = '0.30.0-alpha.2';
-    process.env['HAVEGED_IMAGE_TAG'] = '0.30.0-alpha.2';
-    process.env['MIRROR_IMAGE_TAG'] = '0.64.0';
+    process.env['NETWORK_NODE_IMAGE_TAG'] = '0.30.0';
+    process.env['HAVEGED_IMAGE_TAG'] = '0.30.0';
+    process.env['MIRROR_IMAGE_TAG'] = '0.65.0-beta1';
   
     console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
   
