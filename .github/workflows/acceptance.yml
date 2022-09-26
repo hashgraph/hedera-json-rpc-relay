@@ -85,7 +85,7 @@ jobs:
   
   precompile:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 50
     strategy:
       matrix:
         filter: [ tokencreate, tokenmanagement, htsprecompilev1 ]
@@ -120,6 +120,6 @@ jobs:
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
-          timeout_minutes: 10
+          timeout_minutes: 15
           retry_wait_seconds: 45
           command: npm run acceptancetest:${{ matrix.filter }}
