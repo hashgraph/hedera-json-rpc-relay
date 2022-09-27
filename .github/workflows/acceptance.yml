@@ -9,35 +9,35 @@ on:
 
 jobs:
   api:
-    name: API Tests
-    uses: ./.github/workflows/acceptance-test-workflow.yml
+    name: API
+    uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api
 
   erc20:
-    name: ERC20 Tests
-    uses: ./.github/workflows/acceptance-test-workflow.yml
+    name: ERC20
+    uses: ./.github/workflows/acceptance-workflow.yml
     needs: api
     with:
       testfilter: erc20
 
   tokencreate:
-    name: Token Create Tests 
-    uses: ./.github/workflows/acceptance-test-workflow.yml
+    name: Token Create 
+    uses: ./.github/workflows/acceptance-workflow.yml
     needs: [ api, erc20 ]
     with: 
       testfilter: tokencreate
 
   tokenmanagement:
-    name: Token Management Tests 
-    uses: ./.github/workflows/acceptance-test-workflow.yml
+    name: Token Management 
+    uses: ./.github/workflows/acceptance-workflow.yml
     needs: [ api, erc20 ]
     with: 
       testfilter: tokenmanagement
 
   htsprecompilev1:
-    name: Precompile Tests 
-    uses: ./.github/workflows/acceptance-test-workflow.yml
+    name: Precompile 
+    uses: ./.github/workflows/acceptance-workflow.yml
     needs: [ api, erc20 ]
     with: 
       testfilter: htsprecompilev1

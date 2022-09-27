@@ -1,18 +1,16 @@
-name: Reusable dev tool workflow
+name: Reusable acceptance tests workflow
 
 on:
   workflow_call:
     inputs:
-      command:
-        required: true
-        type: string
-      directory:
+      testfilter:
         required: true
         type: string
 
 jobs:
-  reusable-dev-tool-workflow:
+  acceptance-workflow:
     runs-on: ubuntu-latest
+    timeout-minutes: 95
     permissions:
       contents: write
     steps:
@@ -28,9 +26,7 @@ jobs:
         run: npm ci
 
       - name: Create .env file
-        run: |
-          cp ${{ inputs.directory }}/.env.example ${{ inputs.directory }}/.env
-          cp ./packages/server/tests/localAcceptance.env .env
+        run: cp ./packages/server/tests/localAcceptance.env .env
 
       - name: Lerna Bootstrap
         run: npm run setup
@@ -41,16 +37,10 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
-      - name: Run RPC Server
-        run: npm run integration:prerequisite &
-
-      - name: Install dependencies
-        run: cd ${{ inputs.directory }}/ && npm ci
-
-      - name: Run the tests
+      - name: Run acceptance tests
         uses: nick-fields/retry@v2
         with:
-          max_attempts: 10
-          timeout_minutes: 10
+          max_attempts: 3
+          timeout_minutes: 30
           retry_wait_seconds: 45
-          command: ${{ inputs.command }}
+          command: npm run acceptancetest:${{ inputs.testfilter }}

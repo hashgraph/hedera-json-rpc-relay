@@ -1,4 +1,4 @@
-name: Dev Tool Compatibility
+name: Dev Tool Tests
 
 on:
   pull_request:
@@ -9,23 +9,23 @@ on:
 
 jobs:
   hardhat:
-    name: Hardhat Compatibility
-    uses: ./.github/workflows/dev-tool-compatibility-workflow.yml
+    name: Hardhat
+    uses: ./.github/workflows/dev-tool-workflow.yml
     with:
       command: cd ./tools/hardhat-example/ && npx hardhat test
       directory: ./tools/hardhat-example
 
   truffle:
-    name: Truffle Compatibility
-    uses: ./.github/workflows/dev-tool-compatibility-workflow.yml
+    name: Truffle
+    uses: ./.github/workflows/dev-tool-workflow.yml
     needs: hardhat
     with:
       command: cd ./tools/truffle-example/ && npx truffle test
       directory: ./tools/truffle-example
 
   web3js:
-    name: Web3js Compatibility
-    uses: ./.github/workflows/dev-tool-compatibility-workflow.yml
+    name: Web3js
+    uses: ./.github/workflows/dev-tool-workflow.yml
     needs: [ hardhat, truffle]
     with:
       command: cd ./tools/web3js-example/ && npm run test
