@@ -3,7 +3,7 @@ name: Reusable acceptance tests workflow
 on:
   workflow_call:
     inputs:
-      testfilters:
+      testfilter:
         required: true
         type: string
 
@@ -11,9 +11,6 @@ jobs:
   reusable-acceptance-tests-workflow:
     runs-on: ubuntu-latest
     timeout-minutes: 95
-    strategy:
-      matrix:
-        filter: [ ${{ inputs.testfilters }} ]
     permissions:
       contents: write
     steps:
@@ -46,4 +43,4 @@ jobs:
           max_attempts: 3
           timeout_minutes: 30
           retry_wait_seconds: 45
-          command: npm run acceptancetest:${{ matrix.filter }}
+          command: npm run acceptancetest:${{ inputs.testfilter }}

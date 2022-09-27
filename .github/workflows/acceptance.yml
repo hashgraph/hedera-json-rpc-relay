@@ -12,18 +12,33 @@ jobs:
     name: API Tests
     uses: ./.github/workflows/acceptance-test-workflow.yml
     with:
-      testfilters: ${{ 'api' }}
+      testfilter: api
 
-  erc:
-    name: ERC Tests
+  erc20:
+    name: ERC20 Tests
     uses: ./.github/workflows/acceptance-test-workflow.yml
     needs: api
     with:
-      testfilters: ${{ 'erc' }}
+      testfilter: erc20
 
-  precompile:
+  tokencreate:
+    name: Token Create Tests 
+    uses: ./.github/workflows/acceptance-test-workflow.yml
+    needs: [ api, erc ]
+    with: 
+      testfilter: tokencreate
+
+  tokenmanagement:
+    name: Token Management Tests 
+    uses: ./.github/workflows/acceptance-test-workflow.yml
+    needs: [ api, erc ]
+    with: 
+      testfilter: tokenmanagement
+
+  htsprecompilev1:
     name: Precompile Tests 
     uses: ./.github/workflows/acceptance-test-workflow.yml
     needs: [ api, erc ]
     with: 
-      testfilters: ${{ 'tokencreate, tokenmanagement, htsprecompilev1' }}
+      testfilter: htsprecompilev1
+
