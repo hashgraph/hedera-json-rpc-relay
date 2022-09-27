@@ -855,7 +855,7 @@ export class EthImpl implements Eth {
       input: contractResult.function_parameters,
       maxPriorityFeePerGas: maxPriorityFee,
       maxFeePerGas: maxFee,
-      nonce: EthImpl.nullableNonceNumberTo0x(contractResult.nonce),
+      nonce: EthImpl.nonceNumberTo0x(contractResult.nonce),
       r: rSig,
       s: sSig,
       to: contractResult.to?.substring(0, 42),
@@ -945,7 +945,7 @@ export class EthImpl implements Eth {
     return input === null ? null : EthImpl.numberTo0x(input);
   }
 
-  static nullableNonceNumberTo0x(input: number | BigNumber): string | null {
+  static nonceNumberTo0x(input: number | BigNumber): string {
     return input === null ? EthImpl.numberTo0x(0) : EthImpl.numberTo0x(input);
   }
 
@@ -1131,7 +1131,7 @@ export class EthImpl implements Eth {
           input: contractResultDetails.function_parameters,
           maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
           maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
-          nonce: EthImpl.nullableNonceNumberTo0x(contractResultDetails.nonce),
+          nonce: EthImpl.nonceNumberTo0x(contractResultDetails.nonce),
           r: rSig,
           s: sSig,
           to: contractResultDetails.to.substring(0, 42),
