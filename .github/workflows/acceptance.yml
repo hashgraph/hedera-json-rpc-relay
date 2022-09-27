@@ -31,14 +31,14 @@ jobs:
   tokenmanagement:
     name: Token Management Tests 
     uses: ./.github/workflows/acceptance-test-workflow.yml
-    needs: [ api, erc ]
+    needs: [ api, erc20 ]
     with: 
       testfilter: tokenmanagement
 
   htsprecompilev1:
     name: Precompile Tests 
     uses: ./.github/workflows/acceptance-test-workflow.yml
-    needs: [ api, erc ]
+    needs: [ api, erc20 ]
     with: 
       testfilter: htsprecompilev1
 
