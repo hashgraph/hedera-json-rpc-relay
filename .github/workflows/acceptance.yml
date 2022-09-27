@@ -9,117 +9,22 @@ on:
 
 jobs:
   api:
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    permissions:
-      contents: write
-    steps:
-      - name: Setup node
-        uses: actions/setup-node@v2
-        with:
-          node-version: 16
+    name: API Tests
+    uses: ./.github/workflows/acceptance-test-workflow.yml
+    with:
+      dependencies: ''
+      testfilters: [ api ]
 
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
-      - name: Install packages
-        run: npm ci
-
-      - name: Create .env file
-        run: cp ./packages/server/tests/localAcceptance.env .env
-
-      - name: Lerna Bootstrap
-        run: npm run setup
-
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Build Typescript
-        run: npx lerna run build
-
-      - name: Run acceptance tests
-        uses: nick-fields/retry@v2
-        with:
-          max_attempts: 3
-          timeout_minutes: 10
-          retry_wait_seconds: 45
-          command: npm run acceptancetest:api
-  
   erc:
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    permissions:
-      contents: write
-    needs: api
-    steps:
-      - name: Setup node
-        uses: actions/setup-node@v2
-        with:
-          node-version: 16
+    name: ERC Tests
+    uses: ./.github/workflows/acceptance-test-workflow.yml
+    with:
+      dependencies: [ api ]
+      testfilters: [ erc ]
 
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
-      - name: Install packages
-        run: npm ci
-
-      - name: Create .env file
-        run: cp ./packages/server/tests/localAcceptance.env .env
-
-      - name: Lerna Bootstrap
-        run: npm run setup
-
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Build Typescript
-        run: npx lerna run build
-
-      - name: Run acceptance tests
-        uses: nick-fields/retry@v2
-        with:
-          max_attempts: 3
-          timeout_minutes: 10
-          retry_wait_seconds: 45
-          command: npm run acceptancetest:erc20
-  
   precompile:
-    runs-on: ubuntu-latest
-    timeout-minutes: 95
-    strategy:
-      matrix:
-        filter: [ tokencreate, tokenmanagement, htsprecompilev1 ]
-    permissions:
-      contents: write
-    needs: [ api, erc ]
-    steps:
-      - name: Setup node
-        uses: actions/setup-node@v2
-        with:
-          node-version: 16
-
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
-      - name: Install packages
-        run: npm ci
-
-      - name: Create .env file
-        run: cp ./packages/server/tests/localAcceptance.env .env
-
-      - name: Lerna Bootstrap
-        run: npm run setup
-
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Build Typescript
-        run: npx lerna run build
-
-      - name: Run acceptance tests
-        uses: nick-fields/retry@v2
-        with:
-          max_attempts: 3
-          timeout_minutes: 30
-          retry_wait_seconds: 45
-          command: npm run acceptancetest:${{ matrix.filter }}
+    name: Precompile Tests 
+    uses: ./.github/workflows/acceptance-test-workflow.yml
+    with:
+      dependencies: [ api, erc ]
+      testfilters: [ tokencreate, tokenmanagement, htsprecompilev1 ]
