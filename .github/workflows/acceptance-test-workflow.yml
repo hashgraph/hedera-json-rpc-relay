@@ -3,9 +3,6 @@ name: Reusable acceptance tests workflow
 on:
   workflow_call:
     inputs:
-      dependencies:
-        required: true
-        type: string
       testfilters:
         required: true
         type: string
@@ -16,10 +13,9 @@ jobs:
     timeout-minutes: 95
     strategy:
       matrix:
-        filter: ${{ inputs.testfilters }}
+        filter: [ ${{ inputs.testfilters }} ]
     permissions:
       contents: write
-    needs: ${{ inputs.dependencies }}
     steps:
       - name: Setup node
         uses: actions/setup-node@v2

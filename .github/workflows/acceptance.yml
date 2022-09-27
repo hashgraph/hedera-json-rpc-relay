@@ -12,19 +12,18 @@ jobs:
     name: API Tests
     uses: ./.github/workflows/acceptance-test-workflow.yml
     with:
-      dependencies: ''
-      testfilters: [ api ]
+      testfilters: api
 
   erc:
     name: ERC Tests
     uses: ./.github/workflows/acceptance-test-workflow.yml
+    needs: api
     with:
-      dependencies: [ api ]
-      testfilters: [ erc ]
+      testfilters: erc
 
   precompile:
     name: Precompile Tests 
     uses: ./.github/workflows/acceptance-test-workflow.yml
-    with:
-      dependencies: [ api, erc ]
-      testfilters: [ tokencreate, tokenmanagement, htsprecompilev1 ]
+    needs: [ api, erc ]
+    with: 
+      testfilters: tokencreate, tokenmanagement, htsprecompilev1
