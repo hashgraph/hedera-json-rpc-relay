@@ -91,7 +91,7 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
             <Typography variant="h6"> {deployContractMsg} </Typography>
             <br />
             <br />
-            <Button id="btnReadGreeting" onClick={contractCallViewHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
+            <Button id="btnReadGreeting" onClick={contractCallViewHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
                 Read greeting
             </Button>
             <br />
@@ -107,7 +107,7 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
                 onChange={(e) => setContractCallUpdateMsgInput(e.target.value)}
             />
             <br />
-            <Button id="btnUpdateGreeting" onClick={contractCallUpdateHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
+            <Button id="btnUpdateGreeting" onClick={contractCallUpdateHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
                 Update greeting
             </Button>
             <br />
