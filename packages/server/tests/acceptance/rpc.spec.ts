@@ -148,9 +148,11 @@ describe('@api RPC Server Acceptance Tests', function () {
 
                 log0Block = await relay.call('eth_getTransactionByHash', [log0.contractExecutedTransactionId]);
                 expect(log0Block).to.have.property('blockNumber');
+                expect(log0Block.nonce).to.equal('0x0');
 
                 log4Block = await relay.call('eth_getTransactionByHash', [log4.contractExecutedTransactionId]);
                 expect(log4Block).to.have.property('blockNumber');
+                expect(log4Block.nonce).to.equal('0x0');
             });
 
             it('should be able to use `fromBlock` param', async () => {
