@@ -946,7 +946,7 @@ export class EthImpl implements Eth {
   }
 
   static nonceNumberTo0x(input: number | BigNumber): string {
-    return input === null ? EthImpl.numberTo0x(0) : EthImpl.numberTo0x(input)
+    return input === null ? EthImpl.numberTo0x(0) : EthImpl.numberTo0x(input);
   }
 
   static toHash32(value: string): string {
