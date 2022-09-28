@@ -24,10 +24,10 @@ abstract contract TokenCreate is FeeHelper {
         address treasury
     ) public payable {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](4);
-        keys[0] = getSingleKey(0, 6, 1, bytes(""));
-        keys[1] = getSingleKey(1, 1, bytes(""));
-        keys[2] = getSingleKey(2, 1, bytes(""));
-        keys[3] = getSingleKey(3, 1, bytes(""));
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.PAUSE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[1] = getSingleKey(KeyType.KYC, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[2] = getSingleKey(KeyType.FREEZE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[3] = getSingleKey(KeyType.WIPE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000
@@ -51,11 +51,11 @@ abstract contract TokenCreate is FeeHelper {
         address treasury
     ) public payable {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
-        keys[0] = getSingleKey(0, 6, 1, bytes(""));
-        keys[1] = getSingleKey(1, 1, bytes(""));
-        keys[2] = getSingleKey(2, 1, bytes(""));
-        keys[3] = getSingleKey(4, 1, bytes(""));
-        keys[4] = getSingleKey(3, 1, bytes(""));
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.PAUSE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[1] = getSingleKey(KeyType.KYC, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[2] = getSingleKey(KeyType.FREEZE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[3] = getSingleKey(KeyType.SUPPLY, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[4] = getSingleKey(KeyType.WIPE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000

@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "./TokenCreate.sol";
 
-contract TokenContractContract is TokenCreate {
+contract TokenCreateContract is TokenCreate {
 
 
     event AllowanceValue(uint256 amount);
@@ -113,7 +113,7 @@ contract TokenContractContract is TokenCreate {
         address fixedFeeTokenAddress
     ) public payable {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
-        keys[0] = getSingleKey(0, 0, 1, bytes(""));
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.ADMIN, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 8000000

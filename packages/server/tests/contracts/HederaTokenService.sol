@@ -6,18 +6,9 @@ import "./HederaResponseCodes.sol";
 import "./IHederaTokenService.sol";
 
 abstract contract HederaTokenService is HederaResponseCodes {
-
     address constant precompileAddress = address(0x167);
     // 90 days in seconds
     uint32 constant defaultAutoRenewPeriod = 7776000;
-
-    uint constant ADMIN_KEY_TYPE = 1;
-    uint constant KYC_KEY_TYPE = 2;
-    uint constant FREEZE_KEY_TYPE = 4;
-    uint constant WIPE_KEY_TYPE = 8;
-    uint constant SUPPLY_KEY_TYPE = 16;
-    uint constant FEE_SCHEDULE_KEY_TYPE = 32;
-    uint constant PAUSE_KEY_TYPE = 64;
 
     modifier nonEmptyExpiry(IHederaTokenService.HederaToken memory token)
     {
