@@ -140,6 +140,7 @@ describe('RPC Server Acceptance Tests', function () {
         console.log('Turning on compression...');
         shell.exec(`echo 'hedera.recordStream.compressFilesOnCreation=true' >> node_modules/@hashgraph/hedera-local/compose-network/network-node/data/config/bootstrap.properties`);
         //on ubuntu
+        shell.exec(`sed -i 's/contracts.chainId=296/contracts.chainId=298/' node_modules/@hashgraph/hedera-local/compose-network/network-node/data/config/bootstrap.properties`);
         shell.exec(`sed -i 's/      STREAM_EXTENSION: "rcd"/      STREAM_EXTENSION: "rcd.gz"/' node_modules/@hashgraph/hedera-local/docker-compose.yml`);
         //on mac
         // shell.exec(`sed -i '' 's/      STREAM_EXTENSION: "rcd"/      STREAM_EXTENSION: "rcd.gz"/' node_modules/@hashgraph/hedera-local/docker-compose.yml`);
