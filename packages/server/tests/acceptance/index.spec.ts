@@ -72,7 +72,7 @@ describe('RPC Server Acceptance Tests', function () {
         logger.info(`OPERATOR_ID_MAIN: ${process.env.OPERATOR_ID_MAIN}`);
         logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
         logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
-        
+
         if (USE_LOCAL_NODE === 'true') {
             runLocalHederaNetwork();
         }
@@ -127,23 +127,23 @@ describe('RPC Server Acceptance Tests', function () {
         // set env variables for docker images until local-node is updated
         process.env['NETWORK_NODE_IMAGE_TAG'] = '0.30.0';
         process.env['HAVEGED_IMAGE_TAG'] = '0.30.0';
-        process.env['MIRROR_IMAGE_TAG'] = '0.65.0-beta1';
-      
+        process.env['MIRROR_IMAGE_TAG'] = '0.65.0-rc1';
+
         console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
-      
+
         // start local-node
-        
+
         //This is temporary solution
         console.log('Installing local node...');
         shell.exec(`npm install @hashgraph/hedera-local && hedera stop`);
-      
+
         console.log('Turning on compression...');
         shell.exec(`echo 'hedera.recordStream.compressFilesOnCreation=true' >> node_modules/@hashgraph/hedera-local/compose-network/network-node/data/config/bootstrap.properties`);
         //on ubuntu
         shell.exec(`sed -i 's/      STREAM_EXTENSION: "rcd"/      STREAM_EXTENSION: "rcd.gz"/' node_modules/@hashgraph/hedera-local/docker-compose.yml`);
         //on mac
         // shell.exec(`sed -i '' 's/      STREAM_EXTENSION: "rcd"/      STREAM_EXTENSION: "rcd.gz"/' node_modules/@hashgraph/hedera-local/docker-compose.yml`);
-        
+
         console.log('Start local node');
         shell.exec(`hedera start -d`);
         console.log('Hedera Hashgraph local node env started');
