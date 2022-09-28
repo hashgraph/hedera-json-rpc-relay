@@ -84,7 +84,7 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
             <br />
             <Typography variant="h6"> Source: <Link href="https://github.com/NomicFoundation/hardhat/blob/master/packages/hardhat-core/sample-projects/basic/contracts/Greeter.sol" rel="noreferrer" target="_blank">Greeter.sol</Link> </Typography>
 
-            <Button id="btnDeployContract" onClick={deployContractHandler} disabled={!isConnected || isLoading} size="medium" variant="contained" color="primary">
+            <Button id="btnDeployContract" onClick={deployContractHandler} disabled={!isConnected} size="medium" variant="contained" color="primary">
                 Deploy contract
             </Button>
             <br />
