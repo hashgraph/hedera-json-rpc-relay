@@ -42,7 +42,7 @@ function App() {
   }, []);
 
   const isConnected = useMemo(() => {
-    return !!signer && !!address;
+    return signer;
   }, [signer, address]);
 
   const isAccountActivated = useMemo(() => {
