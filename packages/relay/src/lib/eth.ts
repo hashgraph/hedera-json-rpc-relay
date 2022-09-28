@@ -710,6 +710,9 @@ export class EthImpl implements Eth {
 
       return EthImpl.zeroHex;
     } catch (e: any) {
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
       this.logger.error(e, `${requestIdPrefix} Error raised during getTransactionCount for address ${address}, block number or tag ${blockNumOrTag}`);
       return predefined.INTERNAL_ERROR;
     } 
@@ -760,6 +763,9 @@ export class EthImpl implements Eth {
         return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
       }
     } catch (e: any) {
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
       this.logger.error(e,
         `${requestIdPrefix} Failed to successfully submit sendRawTransaction for transaction ${transaction}`);
       return predefined.INTERNAL_ERROR;
@@ -811,6 +817,9 @@ export class EthImpl implements Eth {
       // FIXME Is this right? Maybe so?
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
     } catch (e: any) {
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
       return predefined.INTERNAL_ERROR;
     }

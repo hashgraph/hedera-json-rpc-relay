@@ -1166,7 +1166,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     }
                 }catch(error) {
                     rateLimited = true;
-                    Assertions.jsonRpcError(error, predefined.RATE_LIMIT_EXCEEDED);
+                    Assertions.jsonRpcError(error, predefined.IP_RATE_LIMIT_EXCEEDED);
                 }
 
                 expect(rateLimited).to.be.true;

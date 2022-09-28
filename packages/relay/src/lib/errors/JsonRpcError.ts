@@ -124,9 +124,14 @@ export const predefined = {
     code: -32000,
     message: `Exceeded maximum block range: ${constants.ETH_GET_LOGS_BLOCK_RANGE_LIMIT}`
   }),
-  'RATE_LIMIT_EXCEEDED': new JsonRpcError({
-    name: 'Rate limit exceeded',
+  'IP_RATE_LIMIT_EXCEEDED': new JsonRpcError({
+    name: 'IP Rate limit exceeded',
     code: -32605,
-    message: 'Rate limit exceeded'
+    message: 'IP Rate limit exceeded'
+  }),
+  'HBAR_RATE_LIMIT_EXCEEDED': new JsonRpcError({
+    name: 'HBAR Rate limit exceeded',
+    code: -32606,
+    message: 'HBAR Rate limit exceeded'
   }),
 };
