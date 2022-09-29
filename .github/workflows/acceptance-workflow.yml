@@ -49,5 +49,5 @@ jobs:
       
       - name: Run acceptance tests (without nick-fields/retry@v2)
         if: ${{ failure() }}
-        run: npm run acceptancetest:${{ matrix.filter }}
+        run: npm run acceptancetest:${{ inputs.testfilter }}
 
