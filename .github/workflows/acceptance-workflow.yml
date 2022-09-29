@@ -39,11 +39,11 @@ jobs:
 
       - name: Run acceptance tests
         continue-on-error: true
-        timeout_minutes: 15
+        timeout-minutes: 15
         run: npm run acceptancetest:${{ inputs.testfilter }}
         
       - name: Re-run acceptance tests (without nick-fields/retry@v2)
         if: ${{ failure() }}
-        timeout_minutes: 15
+        timeout-minutes: 15
         run: npm run acceptancetest:${{ inputs.testfilter }}
 
