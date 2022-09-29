@@ -10,7 +10,7 @@ on:
 jobs:
   acceptance-workflow:
     runs-on: ubuntu-latest
-    timeout-minutes: 95
+    timeout-minutes: 35
     permissions:
       contents: write
     steps:
@@ -38,17 +38,12 @@ jobs:
         run: npx lerna run build
 
       - name: Run acceptance tests
-        uses: nick-fields/retry@v2
-        id: initTry
-        with:
-          max_attempts: 3
-          timeout_minutes: 30
-          retry_wait_seconds: 45
-          continue-on-error: true
-          polling_interval_seconds: 5
-          command: npm run acceptancetest:${{ inputs.testfilter }}
-      
+        continue-on-error: true
+        timeout_minutes: 15
+        run: npm run acceptancetest:${{ inputs.testfilter }}
+        
       - name: Re-run acceptance tests (without nick-fields/retry@v2)
         if: ${{ failure() }}
+        timeout_minutes: 15
         run: npm run acceptancetest:${{ inputs.testfilter }}
 
