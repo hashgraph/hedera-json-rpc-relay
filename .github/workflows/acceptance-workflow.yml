@@ -45,9 +45,10 @@ jobs:
           timeout_minutes: 30
           retry_wait_seconds: 45
           continue-on-error: true
+          polling_interval_seconds: 5
           command: npm run acceptancetest:${{ inputs.testfilter }}
       
-      - name: Run acceptance tests (without nick-fields/retry@v2)
+      - name: Re-run acceptance tests (without nick-fields/retry@v2)
         if: ${{ failure() }}
         run: npm run acceptancetest:${{ inputs.testfilter }}
 
