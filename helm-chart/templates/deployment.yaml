@@ -92,34 +92,34 @@ spec:
                 optional: false
           - name: DEFAULT_RATE_LIMIT
             valueFrom:
-              secretKeyRef:
+              configMapKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: DEFAULT_RATE_LIMIT
-                optional: false  
+                optional: true  
           - name: TIER_1_RATE_LIMIT
             valueFrom:
-              secretKeyRef:
+              configMapKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: TIER_1_RATE_LIMIT
-                optional: false 
+                optional: true 
           - name: TIER_2_RATE_LIMIT
             valueFrom:
-              secretKeyRef:
+              configMapKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: TIER_2_RATE_LIMIT
-                optional: false 
+                optional: true 
           - name: TIER_3_RATE_LIMIT
             valueFrom:
-              secretKeyRef:
+              configMapKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: TIER_3_RATE_LIMIT
-                optional: false 
+                optional: true 
           - name: LIMIT_DURATION
             valueFrom:
-              secretKeyRef:
+              configMapKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: LIMIT_DURATION
-                optional: false 
+                optional: true 
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
