@@ -8,36 +8,37 @@ on:
     tags: [ v* ]
 
 jobs:
-  suite:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        filter: [ api, erc20, tokencreate, tokenmanagement, htsprecompilev1 ]
-    permissions:
-      contents: write
-    steps:
-      - name: Setup node
-        uses: actions/setup-node@v2
-        with:
-          node-version: 16
+  api:
+    name: API
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api
 
-      - name: Checkout repo
-        uses: actions/checkout@v2
+  erc20:
+    name: ERC20
+    uses: ./.github/workflows/acceptance-workflow.yml
+    needs: api
+    with:
+      testfilter: erc20
 
-      - name: Install packages
-        run: npm ci
+  tokencreate:
+    name: Token Create 
+    uses: ./.github/workflows/acceptance-workflow.yml
+    needs: [ api, erc20 ]
+    with: 
+      testfilter: tokencreate
 
-      - name: Create .env file
-        run: cp ./packages/server/tests/localAcceptance.env .env
+  tokenmanagement:
+    name: Token Management 
+    uses: ./.github/workflows/acceptance-workflow.yml
+    needs: [ api, erc20 ]
+    with: 
+      testfilter: tokenmanagement
 
-      - name: Lerna Bootstrap
-        run: npm run setup
+  htsprecompilev1:
+    name: Precompile 
+    uses: ./.github/workflows/acceptance-workflow.yml
+    needs: [ api, erc20 ]
+    with: 
+      testfilter: htsprecompilev1
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Build Typescript
-        run: npx lerna run build
-
-      - name: Run acceptance tests
-        run: npm run acceptancetest:${{ matrix.filter }}

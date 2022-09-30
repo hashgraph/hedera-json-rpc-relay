@@ -1,0 +1,32 @@
+name: Dev Tool Tests
+
+on:
+  pull_request:
+    branches: [ main, release/** ]
+  push:
+    branches: [ main, release/** ]
+    tags: [ v* ]
+
+jobs:
+  hardhat:
+    name: Hardhat
+    uses: ./.github/workflows/dev-tool-workflow.yml
+    with:
+      command: cd ./tools/hardhat-example/ && npx hardhat test
+      directory: ./tools/hardhat-example
+
+  truffle:
+    name: Truffle
+    uses: ./.github/workflows/dev-tool-workflow.yml
+    needs: hardhat
+    with:
+      command: cd ./tools/truffle-example/ && npx truffle test
+      directory: ./tools/truffle-example
+
+  web3js:
+    name: Web3js
+    uses: ./.github/workflows/dev-tool-workflow.yml
+    needs: [ hardhat, truffle]
+    with:
+      command: cd ./tools/web3js-example/ && npm run test
+      directory: ./tools/web3js-example

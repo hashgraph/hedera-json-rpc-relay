@@ -1,15 +1,17 @@
-name: Hardhat Compatibility
+name: Reusable dev tool workflow
 
 on:
-  pull_request:
-    branches: [ main, release/** ]
-  push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+  workflow_call:
+    inputs:
+      command:
+        required: true
+        type: string
+      directory:
+        required: true
+        type: string
 
 jobs:
-  setup-local-hedera:
-    name: Hardhat Compatibility
+  dev-tool-workflow:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -27,7 +29,7 @@ jobs:
 
       - name: Create .env file
         run: |
-          cp ./tools/hardhat-example/.env.example ./tools/hardhat-example/.env
+          cp ${{ inputs.directory }}/.env.example ${{ inputs.directory }}/.env
           cp ./packages/server/tests/localAcceptance.env .env
 
       - name: Lerna Bootstrap
@@ -42,13 +44,13 @@ jobs:
       - name: Run RPC Server
         run: npm run integration:prerequisite &
 
-      - name: Install hardhat dependencies
-        run: cd ./tools/hardhat-example/ && npm ci
+      - name: Install dependencies
+        run: cd ${{ inputs.directory }}/ && npm ci
 
-      - name: Run the hardhat tests
+      - name: Run the tests
         uses: nick-fields/retry@v2
         with:
           max_attempts: 10
           timeout_minutes: 10
           retry_wait_seconds: 45
-          command: cd ./tools/hardhat-example/ && npx hardhat test
+          command: ${{ inputs.command }}
