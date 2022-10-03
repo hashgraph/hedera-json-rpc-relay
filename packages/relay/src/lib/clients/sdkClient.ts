@@ -49,8 +49,10 @@ import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
 import { Gauge, Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
+import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
+import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 
 const _ = require('lodash');
 
@@ -76,6 +78,12 @@ export class SDKClient {
      * @private
      */
     private readonly register: Registry;
+
+    /**
+     * This limiter tracks hbar expenses and limits.
+     * @private
+     */
+    private readonly hbarLimiter: HbarLimit;
 
     private consensusNodeClientHistorgram;
     private operatorAccountGauge;
@@ -119,6 +127,8 @@ export class SDKClient {
                 }
             },
         });
+
+        this.hbarLimiter = new HbarLimit(Date.now());
     }
 
     async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
@@ -259,30 +269,48 @@ export class SDKClient {
 
     private executeQuery = async (query: Query<any>, client: Client, callerName: string, requestId?: string) => {
         const requestIdPrefix = formatRequestIdMessage(requestId);
+        const currentDateNow = Date.now();
         try {
+            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow);
+            if (shouldLimit) {
+                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+            }
+
             const resp = await query.execute(client);
+            const cost = query._queryPayment?.toTinybars().toNumber();
+            if (cost) {
+                this.hbarLimiter.addExpense(cost, currentDateNow);
+            }
+
             this.logger.info(`${requestIdPrefix} Consensus Node ${query.constructor.name} response: ${query.paymentTransactionId} ${Status.Success._code}`);
             // local free queries will have a '0.0.0' accountId on transactionId
             this.logger.trace(`${requestIdPrefix} ${callerName} query cost: ${query._queryPayment}`);
-
             this.captureMetrics(
                 SDKClient.queryMode,
                 query.constructor.name,
                 Status.Success,
-                query._queryPayment?.toTinybars().toNumber(),
+                cost,
                 callerName);
             return resp;
         }
         catch (e: any) {
+            const cost = query._queryPayment?.toTinybars().toNumber();
             const sdkClientError = new SDKClientError(e);
             this.logger.debug(`${requestIdPrefix} Consensus Node query response: ${query.constructor.name} ${sdkClientError.status}`);
             this.captureMetrics(
                 SDKClient.queryMode,
                 query.constructor.name,
                 sdkClientError.status,
-                query._queryPayment?.toTinybars().toNumber(),
+                cost,
                 callerName);
             this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} query cost: ${query._queryPayment}`);
+            if (cost) {
+                this.hbarLimiter.addExpense(cost, currentDateNow);
+            }
+
+            if (e instanceof JsonRpcError){
+                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+            }
             throw sdkClientError;
         }
     };
@@ -290,7 +318,13 @@ export class SDKClient {
     private executeTransaction = async (transaction: Transaction, callerName: string, requestId?: string): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
         const requestIdPrefix = formatRequestIdMessage(requestId);
+        const currentDateNow = Date.now();
         try {
+            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow);
+            if (shouldLimit) {
+                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+            }
+
             this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
             const resp = await transaction.execute(this.clientMain);
             this.logger.info(`${requestIdPrefix} Consensus Node ${transactionType} transaction response: ${resp.transactionId.toString()} ${Status.Success._code}`);
@@ -306,25 +340,35 @@ export class SDKClient {
                 0,
                 callerName);
 
+            if (e instanceof JsonRpcError){
+                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+            }
             throw sdkClientError;
         }
     };
 
     async executeGetTransactionRecord(resp: TransactionResponse, transactionName: string, callerName: string, requestId?: string): Promise<TransactionRecord> {
         const requestIdPrefix = formatRequestIdMessage(requestId);
+        const currentDateNow = Date.now();
         try {
             if (!resp.getRecord) {
                 throw new SDKClientError({}, `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
             }
+            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow);
+            if (shouldLimit) {
+                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+            }
 
             const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
+            const cost = transactionRecord.transactionFee.toTinybars().toNumber();
+            this.hbarLimiter.addExpense(cost, currentDateNow);
             this.logger.info(`${requestIdPrefix} Consensus Node ${transactionName} record response: ${resp.transactionId.toString()} ${Status.Success._code}`);
             this.logger.trace(`${requestIdPrefix} ${resp.transactionId.toString()} ${callerName} transaction cost: ${transactionRecord.transactionFee}`);
             this.captureMetrics(
                 SDKClient.transactionMode,
                 transactionName,
                 transactionRecord.receipt.status,
-                transactionRecord.transactionFee.toTinybars().toNumber(),
+                cost,
                 callerName);
             return transactionRecord;
         }
@@ -339,7 +383,10 @@ export class SDKClient {
                 callerName);
 
             this.logger.debug(`${requestIdPrefix} Consensus Node ${transactionName} record response: ${resp.transactionId.toString()} ${sdkClientError.status}`);
-
+            
+            if (e instanceof JsonRpcError){
+                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+            }
             throw sdkClientError;
         }
     };

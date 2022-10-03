@@ -84,8 +84,14 @@ export class ServerError extends JsonRpcError {
   }
 }
 
-export class RateLimitExceeded extends JsonRpcError {
+export class IPRateLimitExceeded extends JsonRpcError {
   constructor() {
-    super('Rate limit exceeded', -32605, undefined);
+    super('IP Rate limit exceeded', -32605, undefined);
+  }
+}
+
+export class HBARRateLimitExceeded extends JsonRpcError {
+  constructor() {
+    super('HBAR Rate limit exceeded', -32606, undefined);
   }
 }

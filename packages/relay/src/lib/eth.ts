@@ -711,6 +711,9 @@ export class EthImpl implements Eth {
       return EthImpl.zeroHex;
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Error raised during getTransactionCount for address ${address}, block number or tag ${blockNumOrTag}`);
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
       return predefined.INTERNAL_ERROR;
     } 
   }
@@ -762,6 +765,9 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       this.logger.error(e,
         `${requestIdPrefix} Failed to successfully submit sendRawTransaction for transaction ${transaction}`);
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
       return predefined.INTERNAL_ERROR;
     }
   }
@@ -812,6 +818,9 @@ export class EthImpl implements Eth {
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
       return predefined.INTERNAL_ERROR;
     }
   }

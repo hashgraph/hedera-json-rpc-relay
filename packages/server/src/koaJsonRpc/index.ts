@@ -23,7 +23,7 @@ import {
   ParseError,
   InvalidRequest,
   InternalError,
-  RateLimitExceeded,
+  IPRateLimitExceeded,
   MethodNotFound,
   Unauthorized
 } from './lib/RpcError';
@@ -105,7 +105,7 @@ export default class KoaJsonRpc {
       const methodName = body.method;
       const methodTotalLimit = this.registryTotal[methodName];
       if (this.ratelimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit)) {
-        ctx.body = jsonResp(body.id, new RateLimitExceeded(), undefined);
+        ctx.body = jsonResp(body.id, new IPRateLimitExceeded(), undefined);
         return;
       }
 
