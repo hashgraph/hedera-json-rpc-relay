@@ -120,6 +120,18 @@ spec:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: LIMIT_DURATION
                 optional: true 
+          - name: HBAR_RATE_LIMIT_TINYBAR
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: HBAR_RATE_LIMIT_TINYBAR
+                optional: true 
+          - name: HBAR_RATE_LIMIT_DURATION
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: HBAR_RATE_LIMIT_DURATION
+                optional: true 
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
