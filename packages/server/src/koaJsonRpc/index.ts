@@ -18,7 +18,13 @@
  *
  */
 
+import { methodConfiguration } from './lib/methodConfiguration';
+import InvalidParamsError from './lib/RpcInvalidError';
 import jsonResp from './lib/RpcResponse';
+import RateLimit from '../ratelimit';
+import parse from 'co-body';
+import dotenv from 'dotenv';
+import path from 'path';
 import {
   ParseError,
   InvalidRequest,
@@ -27,26 +33,23 @@ import {
   MethodNotFound,
   Unauthorized
 } from './lib/RpcError';
-import parse from 'co-body';
-import InvalidParamsError from './lib/RpcInvalidError';
-import { methodConfiguration } from './lib/methodConfiguration';
-import RateLimit from '../ratelimit';
-import dotenv from 'dotenv';
-import path from 'path';
+import Koa from 'koa';
 
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
 export default class KoaJsonRpc {
-  registry: any;
-  registryTotal: any;
-  token: any;
-  methodConfig: any;
-  duration: number;
-  limit: string;
-  ratelimit: RateLimit;
+  private registry: any;
+  private registryTotal: any;
+  private token: any;
+  private methodConfig: any;
+  private duration: number;
+  private limit: string;
+  private ratelimit: RateLimit;
+  private koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
 
   constructor(opts?) {
+    this.koaApp = new Koa();
     this.limit = '1mb';
     this.duration = parseInt(process.env.LIMIT_DURATION!);
     this.registry = Object.create(null);
@@ -58,7 +61,8 @@ export default class KoaJsonRpc {
     }
     this.ratelimit = new RateLimit(this.duration);
   }
-  use(name, func) {
+
+  useRpc(name, func) {
     this.registry[name] = func;
     this.registryTotal[name] = this.methodConfig[name].total;
 
@@ -67,7 +71,7 @@ export default class KoaJsonRpc {
     }
   }
 
-  app() {
+  rpcApp() {
     return async (ctx, next) => {
       let body, result;
 
@@ -122,5 +126,9 @@ export default class KoaJsonRpc {
 
       ctx.body = jsonResp(body.id, null, result);
     };
+  }
+
+  getKoaApp(): Koa<Koa.DefaultState, Koa.DefaultContext> {
+    return this.koaApp;
   }
 }
