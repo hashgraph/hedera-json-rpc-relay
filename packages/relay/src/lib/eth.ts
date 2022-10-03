@@ -513,30 +513,26 @@ export class EthImpl implements Eth {
           blockNumber = block.number;
 
           // A blockNumberOrTag has been provided. If it is `latest` or `pending` retrieve the balance from /accounts/{account.id}
-          if (mirrorAccount && !EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
-
+          if (mirrorAccount) {
             const latestBlock = await this.getHistoricalBlockResponse(EthImpl.blockLatest, true, requestId);
 
             // If the parsed blockNumber is the same as the one from the latest block retrieve the balance from /accounts/{account.id}
             if (latestBlock && block.number !== latestBlock.number) {
+              const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
+              const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
+              const timeDiff = latestTimestamp - blockTimestamp;
 
-              if (block.timestamp && latestBlock.timestamp) {
-                const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
-                const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
-                const timeDiff = latestTimestamp - blockTimestamp;
+              // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
+              if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
+                throw predefined.UNKNOWN_HISTORICAL_BALANCE;
+              }
 
-                // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
-                if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
-                  throw predefined.UNKNOWN_HISTORICAL_BALANCE;
-                }
-
-                // The block is NOT from the last 15 minutes, use /balances rest API
-                else {
-                  const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(mirrorAccount.account, block.timestamp.from, requestId);
-                  balanceFound = true;
-                  if (balance.balances?.length) {
-                    weibars = balance.balances[0].balance * constants.TINYBAR_TO_WEIBAR_COEF;
-                  }
+              // The block is NOT from the last 15 minutes, use /balances rest API
+              else {
+                const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(mirrorAccount.account, block.timestamp.from, requestId);
+                balanceFound = true;
+                if (balance.balances?.length) {
+                  weibars = balance.balances[0].balance * constants.TINYBAR_TO_WEIBAR_COEF;
                 }
               }
             }
