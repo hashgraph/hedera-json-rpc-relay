@@ -29,9 +29,9 @@ import { ContractFunctionParameters } from '@hashgraph/sdk';
 import parentContractJson from '../contracts/Parent.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 
-describe('@hbarLimiter HBAR Limiter Acceptance Tests', function () {
+describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
-
+    
     const accounts: AliasAccount[] = [];
 
     // @ts-ignore
@@ -49,6 +49,7 @@ describe('@hbarLimiter HBAR Limiter Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
 
         this.beforeAll(async () => {
+            logger.info('Creating accounts');
             accounts[0] = await servicesNode.createAliasAccount(15);
             accounts[1] = await servicesNode.createAliasAccount(100);
             contractId = await accounts[0].client.createParentContract(parentContractJson);
