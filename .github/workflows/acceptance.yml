@@ -21,6 +21,13 @@ jobs:
     with:
       testfilter: erc20
 
+  hbarlimiter:
+    name: HBAR LIMITER
+    uses: ./.github/workflows/acceptance-workflow.yml
+    needs: [ api, erc20 ]
+    with:
+      testfilter: hbarlimiter
+
   tokencreate:
     name: Token Create 
     uses: ./.github/workflows/acceptance-workflow.yml
