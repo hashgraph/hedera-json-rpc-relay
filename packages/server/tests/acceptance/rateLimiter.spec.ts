@@ -27,9 +27,9 @@ import { ContractFunctionParameters } from '@hashgraph/sdk';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
-import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { predefined } from '@hashgraph/json-rpc-relay/src/lib/errors/JsonRpcError';
 
-describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
+describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
     
     const accounts: AliasAccount[] = [];
@@ -44,6 +44,45 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
+
+    describe('RPC Rate Limiter Acceptance Tests', () => {
+        it('should throw rate limit exceeded error', async function() {
+            let rateLimited = false;
+            try{
+                //Currently chaindId is TIER 2 request per LIMIT_DURATION from env. We are trying to get an error for rate limit by exceeding this threshold
+                for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!) * 2; index++) {
+                    await relay.call('eth_chainId', [null]);
+                    // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
+                    await new Promise(r => setTimeout(r, 1));
+                }
+            }catch(error) {
+                rateLimited = true;
+                Assertions.jsonRpcError(error, predefined.IP_RATE_LIMIT_EXCEEDED);
+            }
+
+            expect(rateLimited).to.be.true;
+
+            // wait until rate limit is reset
+            await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION!)));
+        });
+
+        it('should not throw rate limit exceeded error', async function () {
+            for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
+                await relay.call('eth_chainId', [null]);
+                // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
+                await new Promise(r => setTimeout(r, 1));
+            }
+
+            // wait until rate limit is reset
+            await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION!)));
+
+            for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
+                await relay.call('eth_chainId', [null]);
+                // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
+                await new Promise(r => setTimeout(r, 1));
+            }
+        });
+    });
 
     describe('HBAR Limiter Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
@@ -79,6 +118,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             };
 
             it('should fail to execute "eth_sendRawTransaction" due to HBAR rate limit exceeded ', async function () {
+                await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
                 let rateLimit = false;
                 try {
                     for (let index = 0; index < parseInt(process.env.TIER_1_RATE_LIMIT!); index++) {

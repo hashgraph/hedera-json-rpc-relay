@@ -21,31 +21,31 @@ jobs:
     with:
       testfilter: erc20
 
-  hbarlimiter:
+  ratelimiter:
     name: HBAR Limiter
     uses: ./.github/workflows/acceptance-workflow.yml
     needs: [ api, erc20 ]
     with:
-      testfilter: hbarlimiter
+      testfilter: ratelimiter
 
   tokencreate:
     name: Token Create 
     uses: ./.github/workflows/acceptance-workflow.yml
-    needs: [ api, erc20, hbarlimiter ]
+    needs: [ api, erc20, ratelimiter ]
     with: 
       testfilter: tokencreate
 
   tokenmanagement:
     name: Token Management 
     uses: ./.github/workflows/acceptance-workflow.yml
-    needs: [ api, erc20, hbarlimiter ]
+    needs: [ api, erc20, ratelimiter ]
     with: 
       testfilter: tokenmanagement
 
   htsprecompilev1:
     name: Precompile 
     uses: ./.github/workflows/acceptance-workflow.yml
-    needs: [ api, erc20, hbarlimiter ]
+    needs: [ api, erc20, ratelimiter ]
     with: 
       testfilter: htsprecompilev1
 
