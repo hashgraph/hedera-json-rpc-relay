@@ -17,8 +17,6 @@
  * limitations under the License.
  *
  */
-import dotenv from 'dotenv';
-import findConfig from 'find-config';
 
 export default class HbarLimit {
     private enabled: boolean = false;
@@ -27,11 +25,8 @@ export default class HbarLimit {
     private total: number = 0;
     private reset: number;
 
-    constructor(currentDateNow: number) {
-        dotenv.config({ path: findConfig('.env') || '' });
+    constructor(currentDateNow: number, total: number, duration: number) {
         this.enabled = false;
-        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
-        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
 
         if (total && duration) {
             this.enabled = true;
@@ -61,13 +56,34 @@ export default class HbarLimit {
      */
     addExpense(cost: number, currentDateNow: number) {
         if (!this.enabled) {
-            return false;
+            return;
         }
 
         if (this.shouldResetLimiter(currentDateNow)){
             this.resetLimiter(currentDateNow);
         }
         this.remainingBudget -= cost;
+    }
+
+    /**
+     * Returns whether rate limiter is enabled or not.
+     */
+    isEnabled(){
+        return this.enabled;
+    }
+
+    /**
+     * Returns remaining budget.
+     */
+    getRemainingBudget(){
+        return this.remainingBudget;
+    }
+
+    /**
+     * Returns timestamp for the next rate limit reset.
+     */
+    getResetTime(){
+        return this.reset;
     }
 
     /**
