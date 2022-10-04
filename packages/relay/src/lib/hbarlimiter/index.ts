@@ -21,17 +21,24 @@ import dotenv from 'dotenv';
 import findConfig from 'find-config';
 
 export default class HbarLimit {
+    private enabled: boolean = false;
     private remainingBudget: number;
-    private total: number;
-    private duration: number;
+    private duration: number = 0;
+    private total: number = 0;
     private reset: number;
 
     constructor(currentDateNow: number) {
         dotenv.config({ path: findConfig('.env') || '' });
-        
-        this.total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        this.enabled = false;
+        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+
+        if (total && duration) {
+            this.enabled = true;
+            this.total = total;
+            this.duration = duration;
+        }
         this.remainingBudget = this.total;
-        this.duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
         this.reset = currentDateNow + this.duration;
     }
     
@@ -39,6 +46,10 @@ export default class HbarLimit {
      * Decides whether we should limit expenses, based on remaining budget.
      */
     shouldLimit(currentDateNow: number): boolean {
+        if (!this.enabled) {
+            return false;
+        }
+
         if (this.shouldResetLimiter(currentDateNow)){
             this.resetLimiter(currentDateNow);
         }
@@ -49,6 +60,10 @@ export default class HbarLimit {
      * Add expense to the remaining budget.
      */
     addExpense(cost: number, currentDateNow: number) {
+        if (!this.enabled) {
+            return false;
+        }
+
         if (this.shouldResetLimiter(currentDateNow)){
             this.resetLimiter(currentDateNow);
         }
