@@ -18,8 +18,6 @@
  *
  */
 
-import constants from "../constants";
-
 const REQUEST_ID_STRING = `Request ID: `;
 export class JsonRpcError {
   public code: number;
