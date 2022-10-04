@@ -32,6 +32,7 @@ import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import {
+  defaultContractResults,
   defaultEvmAddress,
   defaultFromLongZeroAddress,
   expectUnsupportedMethod,
@@ -42,6 +43,7 @@ import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+import { isTypedArray } from 'util/types';
 
 const logger = pino();
 const registry = new Registry();
@@ -995,7 +997,7 @@ describe('Eth calls using MirrorNode', async function () {
           messages: [{ message: 'Not found' }]
         }
       });
-      
+
       const resCached = await ethImpl.getBalance(contractAddress1, null);
       expect(resNoCache).to.equal(defHexBalance);
       expect(resCached).to.equal(EthImpl.zeroHex);
@@ -1459,7 +1461,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_feeHistory with max results', async function () {
-    const maxResultsCap = Number(constants.FEE_HISTORY_MAX_RESULTS);
+    const maxResultsCap = Number(constants.DEFAULT_FEE_HISTORY_MAX_RESULTS);
 
     mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [{...defaultBlock, number: 10}]});
     mock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultNetworkFees);
@@ -2069,6 +2071,22 @@ describe('Eth', async function () {
       expect(receipt.root).to.eq(defaultReceipt.root);
       expect(receipt.status).to.eq(defaultReceipt.status);
       expect(receipt.effectiveGasPrice).to.eq(defaultReceipt.effectiveGasPrice);
+    });
+
+    it("Handles null effectiveGasPrice", async function() {
+      const contractResult = {
+        ...defaultDetailedContractResultByHash,
+        gas_price: null,
+        max_fee_per_gas: null
+      };
+
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, contractResult);
+      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+
+      expect(receipt).to.exist;
+      if (receipt == null) return;
+
+      expect(receipt.effectiveGasPrice).to.eq('0x0');
     });
   });
 

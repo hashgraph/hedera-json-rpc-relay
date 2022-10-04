@@ -140,8 +140,12 @@ export class EthImpl implements Eth {
    * Gets the fee history.
    */
   async feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number> | null, requestId?: string) {
+    const maxResults = Number(process.env.FEE_HISTORY_MAX_RESULTS) || constants.DEFAULT_FEE_HISTORY_MAX_RESULTS;
+
     const requestIdPrefix = formatRequestIdMessage(requestId);
+
     this.logger.trace(`${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
+
     try {
       const latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestId);
       const newestBlockNumber = await this.translateBlockTag(newestBlock, requestId);
@@ -150,7 +154,7 @@ export class EthImpl implements Eth {
         return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
       }
 
-      blockCount = blockCount > constants.FEE_HISTORY_MAX_RESULTS ? constants.FEE_HISTORY_MAX_RESULTS : blockCount;
+      blockCount = blockCount > maxResults ? maxResults : blockCount;
 
       if (blockCount <= 0) {
         return EthImpl.feeHistoryZeroBlockCountResponse;
@@ -752,7 +756,7 @@ export class EthImpl implements Eth {
         return e;
       }
       return predefined.INTERNAL_ERROR;
-    } 
+    }
   }
 
   /**
@@ -901,7 +905,7 @@ export class EthImpl implements Eth {
       input: contractResult.function_parameters,
       maxPriorityFeePerGas: maxPriorityFee,
       maxFeePerGas: maxFee,
-      nonce: EthImpl.nonceNumberTo0x(contractResult.nonce),
+      nonce: EthImpl.nanOrNumberTo0x(contractResult.nonce),
       r: rSig,
       s: sSig,
       to: contractResult.to?.substring(0, 42),
@@ -963,7 +967,7 @@ export class EthImpl implements Eth {
         logsBloom: receiptResponse.bloom,
         transactionHash: EthImpl.toHash32(receiptResponse.hash),
         transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
-        effectiveGasPrice: EthImpl.numberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
+        effectiveGasPrice: EthImpl.nanOrNumberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
         root: receiptResponse.root,
         status: receiptResponse.status,
       };
@@ -991,8 +995,11 @@ export class EthImpl implements Eth {
     return input === null ? null : EthImpl.numberTo0x(input);
   }
 
-  static nonceNumberTo0x(input: number | BigNumber): string {
-    return input === null ? EthImpl.numberTo0x(0) : EthImpl.numberTo0x(input);
+  static nanOrNumberTo0x(input: number | BigNumber): string {
+    // input == null assures to check against both null and undefined.
+    // A reliable way for ECMAScript code to test if a value X is a NaN is an expression of the form X !== X.
+    // The result will be true if and only if X is a NaN.
+    return input == null || input !== input ? EthImpl.numberTo0x(0) : EthImpl.numberTo0x(input);
   }
 
   static toHash32(value: string): string {
@@ -1180,7 +1187,7 @@ export class EthImpl implements Eth {
           input: contractResultDetails.function_parameters,
           maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
           maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
-          nonce: EthImpl.nonceNumberTo0x(contractResultDetails.nonce),
+          nonce: EthImpl.nanOrNumberTo0x(contractResultDetails.nonce),
           r: rSig,
           s: sSig,
           to: contractResultDetails.to.substring(0, 42),
@@ -1219,6 +1226,7 @@ export class EthImpl implements Eth {
         throw e;
       }
     } else if (fromBlock || toBlock) {
+      const blockRangeLimit = Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
       let fromBlockTimestamp;
       let toBlockTimestamp;
       let fromBlockNum = 0;
@@ -1272,8 +1280,8 @@ export class EthImpl implements Eth {
 
       if (fromBlockNum > toBlockNum) {
         return [];
-      } else if((toBlockNum - fromBlockNum) > constants.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) {
-        throw predefined.RANGE_TOO_LARGE;
+      } else if((toBlockNum - fromBlockNum) > blockRangeLimit) {
+        throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
       }
     }
 

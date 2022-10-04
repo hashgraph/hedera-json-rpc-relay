@@ -18,8 +18,6 @@
  *
  */
 
-import constants from "../constants";
-
 const REQUEST_ID_STRING = `Request ID: `;
 export class JsonRpcError {
   public code: number;
@@ -119,10 +117,10 @@ export const predefined = {
     code: -32001,
     message: `Requested resource not found. ${message}`
   }),
-  'RANGE_TOO_LARGE': new JsonRpcError({
+  'RANGE_TOO_LARGE': (blockRange: number) => new JsonRpcError({
     name: 'Block range too large',
     code: -32000,
-    message: `Exceeded maximum block range: ${constants.ETH_GET_LOGS_BLOCK_RANGE_LIMIT}`
+    message: `Exceeded maximum block range: ${blockRange}`
   }),
   'IP_RATE_LIMIT_EXCEEDED': new JsonRpcError({
     name: 'IP Rate limit exceeded',
