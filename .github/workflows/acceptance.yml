@@ -22,7 +22,7 @@ jobs:
       testfilter: erc20
 
   ratelimiter:
-    name: HBAR Limiter
+    name: Rate Limiter
     uses: ./.github/workflows/acceptance-workflow.yml
     needs: [ api, erc20 ]
     with:
