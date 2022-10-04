@@ -858,6 +858,29 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
             });
 
+            it('@release should execute "eth_getBalance" with latest block number', async function () {
+                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), latestBlock.number]);
+                expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
+            });
+
+            it('@release should execute "eth_getBalance" with pending', async function () {
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'pending']);
+                expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
+            });
+
+            it('@release should fail "eth_getBalance" with block number in the last 15 minutes', async function () {
+                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                const earlierBlockNumber = latestBlock.number - 1;
+
+                try {
+                    await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), earlierBlockNumber]);
+                }
+                catch(error) {
+                    Assertions.jsonRpcError(error, predefined.UNKNOWN_HISTORICAL_BALANCE);
+                }
+            });
+
             describe('@release Hardcoded RPC Endpoints', () => {
                 let mirrorBlock;
 

@@ -134,4 +134,9 @@ export const predefined = {
     code: -32606,
     message: 'HBAR Rate limit exceeded'
   }),
+  'UNKNOWN_HISTORICAL_BALANCE': new JsonRpcError({
+    name: 'Unavailable balance',
+    code: -32007,
+    message: 'Historical balance data is available only after 15 minutes.'
+  }),
 };
