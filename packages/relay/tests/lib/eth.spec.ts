@@ -32,6 +32,7 @@ import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import {
+  defaultContractResults,
   defaultEvmAddress,
   defaultFromLongZeroAddress,
   expectUnsupportedMethod,
@@ -42,6 +43,7 @@ import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+import { isTypedArray } from 'util/types';
 
 const logger = pino();
 const registry = new Registry();
@@ -2069,6 +2071,22 @@ describe('Eth', async function () {
       expect(receipt.root).to.eq(defaultReceipt.root);
       expect(receipt.status).to.eq(defaultReceipt.status);
       expect(receipt.effectiveGasPrice).to.eq(defaultReceipt.effectiveGasPrice);
+    });
+
+    it("Handles null effectiveGasPrice", async function() {
+      const contractResult = {
+        ...defaultDetailedContractResultByHash,
+        gas_price: null,
+        max_fee_per_gas: null
+      };
+
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, contractResult);
+      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+
+      expect(receipt).to.exist;
+      if (receipt == null) return;
+
+      expect(receipt.effectiveGasPrice).to.eq('0x0');
     });
   });
 
