@@ -715,7 +715,7 @@ export class EthImpl implements Eth {
         return e;
       }
       return predefined.INTERNAL_ERROR;
-    } 
+    }
   }
 
   /**
@@ -1178,15 +1178,21 @@ export class EthImpl implements Eth {
 
         throw e;
       }
-    } else if (fromBlock || toBlock) {
+    } else {
       let fromBlockTimestamp;
       let toBlockTimestamp;
       let fromBlockNum = 0;
       let toBlockNum;
 
-      if (toBlock) {
+      if(!fromBlock && !toBlock) {
+        const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
+        fromBlockTimestamp = blockResponse.timestamp.from;
+        fromBlockNum = parseInt(blockResponse.number);
+        toBlockTimestamp = blockResponse.timestamp.to;
+        toBlockNum = parseInt(blockResponse.number);
+      } else {
         try {
-          const blockResponse = await this.getHistoricalBlockResponse(toBlock, true, requestId);
+          const blockResponse = await this.getHistoricalBlockResponse(toBlock || "latest", true, requestId);
           toBlockTimestamp = blockResponse.timestamp.to;
           toBlockNum = parseInt(blockResponse.number);
         } catch (e) {
@@ -1197,10 +1203,9 @@ export class EthImpl implements Eth {
             throw e;
           }
         }
-      }
-      if (fromBlock) {
+
         try {
-          const blockResponse = await this.getHistoricalBlockResponse(fromBlock, undefined, requestId);
+          const blockResponse = await this.getHistoricalBlockResponse(fromBlock || "latest", true, requestId);
           fromBlockTimestamp = blockResponse.timestamp.from;
           fromBlockNum = parseInt(blockResponse.number);
         } catch (e) {
@@ -1215,26 +1220,14 @@ export class EthImpl implements Eth {
         }
       }
 
-      if (fromBlockTimestamp) {
-        params.timestamp = [`gte:${fromBlockTimestamp}`];
-      }
-
-      if (toBlockTimestamp){
-        if (params.timestamp) {
-          params.timestamp.push(`lte:${toBlockTimestamp}`)
-        } else {
-          params.timestamp = [`lte:${toBlockTimestamp}`];
-        }
-      } else {
-        const blockResponse = await this.getHistoricalBlockResponse('latest', true, requestId);
-        toBlockNum = parseInt(blockResponse.number);
-      }
 
       if (fromBlockNum > toBlockNum) {
         return [];
       } else if((toBlockNum - fromBlockNum) > constants.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) {
         throw predefined.RANGE_TOO_LARGE;
       }
+
+      params.timestamp = [`gte:${fromBlockTimestamp}`, `lte:${toBlockTimestamp}`];
     }
 
     if (topics) {
