@@ -1332,7 +1332,7 @@ describe('Eth calls using MirrorNode', async function () {
       };
       const toBlock = {
         ...defaultBlock,
-        number: '0x10',
+        number: 16,
         'timestamp': {
           'from': `1651560391.060890949`,
           'to': '1651560393.060890949'
@@ -1362,7 +1362,7 @@ describe('Eth calls using MirrorNode', async function () {
     it('when fromBlock > toBlock', async function () {
       const fromBlock = {
         ...defaultBlock,
-        number: '0x10',
+        number: 16,
         'timestamp': {
           'from': `1651560391.060890949`,
           'to': '1651560393.060890949'
@@ -1394,19 +1394,19 @@ describe('Eth calls using MirrorNode', async function () {
     it('when block range is too large', async function () {
       const fromBlock = {
         ...defaultBlock,
-        number: '0x1'
+        number: 1
       };
       const toBlock = {
         ...defaultBlock,
-        number: '0x1f6'
+        number: 1003
       };
       mock.onGet('blocks/1').reply(200, fromBlock);
-      mock.onGet('blocks/502').reply(200, toBlock);
+      mock.onGet('blocks/1003').reply(200, toBlock);
 
       try {
-        await ethImpl.getLogs(null, '0x1', '0x1f6', null, null);
+        await ethImpl.getLogs(null, '0x1', '0x3eb', null, null);
       } catch (error: any) {
-        expect(error.message).to.equal('Exceeded maximum block range: 500');
+        expect(error.message).to.equal('Exceeded maximum block range: 1000');
       }
     });
 

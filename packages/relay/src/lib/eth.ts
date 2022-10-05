@@ -1268,7 +1268,6 @@ export class EthImpl implements Eth {
         }
       }
 
-
       if (fromBlockNum > toBlockNum) {
         return [];
       } else if((toBlockNum - fromBlockNum) > blockRangeLimit) {
