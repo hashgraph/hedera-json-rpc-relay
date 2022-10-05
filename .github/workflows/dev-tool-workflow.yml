@@ -42,7 +42,7 @@ jobs:
         run: npx lerna run build
 
       - name: Run RPC Server
-        run: npm run integration:prerequisite
+        run: npm run integration:prerequisite &
 
       - name: Install dependencies
         run: cd ${{ inputs.directory }}/ && npm ci
