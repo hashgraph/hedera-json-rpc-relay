@@ -128,7 +128,9 @@ export class SDKClient {
             },
         });
 
-        this.hbarLimiter = new HbarLimit(Date.now());
+        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        this.hbarLimiter = new HbarLimit(Date.now(), total, duration);
     }
 
     async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {

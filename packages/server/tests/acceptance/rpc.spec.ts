@@ -858,6 +858,29 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
             });
 
+            it('@release should execute "eth_getBalance" with latest block number', async function () {
+                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), latestBlock.number]);
+                expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
+            });
+
+            it('@release should execute "eth_getBalance" with pending', async function () {
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'pending']);
+                expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
+            });
+
+            it('@release should fail "eth_getBalance" with block number in the last 15 minutes', async function () {
+                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                const earlierBlockNumber = latestBlock.number - 1;
+
+                try {
+                    await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), earlierBlockNumber]);
+                }
+                catch(error) {
+                    Assertions.jsonRpcError(error, predefined.UNKNOWN_HISTORICAL_BALANCE);
+                }
+            });
+
             describe('@release Hardcoded RPC Endpoints', () => {
                 let mirrorBlock;
 
@@ -1151,45 +1174,6 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(res.gasUsedRatio.length).to.be.gt(0);
                 expect(res.oldestBlock).to.exist;
                 expect(Number(res.oldestBlock)).to.be.gt(0);
-            });
-        });
-
-        describe('RPC rate limit test', () => {
-            it('should throw rate limit exceeded error', async function() {
-                let rateLimited = false;
-                try{
-                    //Currently chaindId is TIER 2 request per LIMIT_DURATION from env. We are trying to get an error for rate limit by exceeding this threshold
-                    for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!) * 2; index++) {
-                        await relay.call('eth_chainId', [null]);
-                        // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
-                        await new Promise(r => setTimeout(r, 1));
-                    }
-                }catch(error) {
-                    rateLimited = true;
-                    Assertions.jsonRpcError(error, predefined.IP_RATE_LIMIT_EXCEEDED);
-                }
-
-                expect(rateLimited).to.be.true;
-
-                // wait until rate limit is reset
-                await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION!)));
-            });
-
-            it('should not throw rate limit exceeded error', async function () {
-                for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
-                    await relay.call('eth_chainId', [null]);
-                    // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
-                    await new Promise(r => setTimeout(r, 1));
-                }
-
-                // wait until rate limit is reset
-                await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION!)));
-
-                for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
-                    await relay.call('eth_chainId', [null]);
-                    // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
-                    await new Promise(r => setTimeout(r, 1));
-                }
             });
         });
     });
