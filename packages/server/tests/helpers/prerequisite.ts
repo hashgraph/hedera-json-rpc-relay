@@ -20,7 +20,7 @@ const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
   
     // start local-node
     console.log('Starting local node...');
-    shell.exec(`npx @hashgraph/hedera-local start -d -n local`);
+    shell.exec(`npx @hashgraph/hedera-local start -d`);
     console.log('Hedera Hashgraph local node env started');
   }
 
