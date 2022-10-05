@@ -21,6 +21,11 @@
 require('dotenv').config();
 require('@nomicfoundation/hardhat-toolbox');
 
+task('get-current-block', async () => {
+  const getCurrentBlock = require('./scripts/getCurrentBlock');
+  return getCurrentBlock();
+});
+
 task('show-balance', async () => {
   const showBalance = require('./scripts/showBalance');
   return showBalance();
