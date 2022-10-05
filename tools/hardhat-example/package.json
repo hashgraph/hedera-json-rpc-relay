@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "npx hardhat compile",
+    "set-greeting": "npx hardhat contract-call address msg",
     "get-current-block": "npx hardhat get-current-block",
     "test:hr": "npx hardhat test test/rpc.js",
     "hedera-start": "npx @hashgraph/hedera-local start",

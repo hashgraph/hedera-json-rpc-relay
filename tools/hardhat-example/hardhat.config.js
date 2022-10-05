@@ -49,7 +49,9 @@ task('contract-view-call', async (taskArgs) => {
 task('contract-call', async (taskArgs) => {
   const contractCall = require('./scripts/contractCall');
   return contractCall(taskArgs.contractAddress, taskArgs.msg);
-});
+})
+.addPositionalParam("contractAddress")
+.addPositionalParam("msg");
 
 module.exports = {
   solidity: '0.8.4',
