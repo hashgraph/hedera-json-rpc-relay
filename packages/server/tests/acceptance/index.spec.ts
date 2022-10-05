@@ -125,10 +125,10 @@ describe('RPC Server Acceptance Tests', function () {
 
     function runLocalHederaNetwork() {
         console.log('Installing local node...');
-        shell.exec(`npm install @hashgraph/hedera-local && cd node_modules/@hashgraph/hedera-local/`);
+        shell.exec(`npm install @hashgraph/hedera-local -g`);
       
         console.log('Start local node');
-        shell.exec(`node cli.js start -d`);
+        shell.exec(`hedera start -d`);
         console.log('Hedera Hashgraph local node env started');
         // // set env variables for docker images until local-node is updated
         // process.env['NETWORK_NODE_IMAGE_TAG'] = '0.30.0';
