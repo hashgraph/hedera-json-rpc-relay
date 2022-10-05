@@ -112,9 +112,29 @@ export const predefined = {
     code: -32010,
     message: 'Request timeout. Please try again.'
   }),
-  'RESOURCE_NOT_FOUND': new JsonRpcError({
+  'RESOURCE_NOT_FOUND': (message: string = '') => new JsonRpcError({
     name: 'Resource not found',
     code: -32001,
-    message: 'Requested resource not found'
+    message: `Requested resource not found. ${message}`
+  }),
+  'RANGE_TOO_LARGE': (blockRange: number) => new JsonRpcError({
+    name: 'Block range too large',
+    code: -32000,
+    message: `Exceeded maximum block range: ${blockRange}`
+  }),
+  'IP_RATE_LIMIT_EXCEEDED': new JsonRpcError({
+    name: 'IP Rate limit exceeded',
+    code: -32605,
+    message: 'IP Rate limit exceeded'
+  }),
+  'HBAR_RATE_LIMIT_EXCEEDED': new JsonRpcError({
+    name: 'HBAR Rate limit exceeded',
+    code: -32606,
+    message: 'HBAR Rate limit exceeded'
+  }),
+  'UNKNOWN_HISTORICAL_BALANCE': new JsonRpcError({
+    name: 'Unavailable balance',
+    code: -32007,
+    message: 'Historical balance data is available only after 15 minutes.'
   }),
 };

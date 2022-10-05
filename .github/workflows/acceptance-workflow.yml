@@ -1,0 +1,49 @@
+name: Reusable acceptance tests workflow
+
+on:
+  workflow_call:
+    inputs:
+      testfilter:
+        required: true
+        type: string
+
+jobs:
+  acceptance-workflow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: write
+    steps:
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Create .env file
+        run: cp ./packages/server/tests/localAcceptance.env .env
+
+      - name: Lerna Bootstrap
+        run: npm run setup
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Build Typescript
+        run: npx lerna run build
+
+      - name: Run acceptance tests
+        continue-on-error: true
+        timeout-minutes: 15
+        run: npm run acceptancetest:${{ inputs.testfilter }}
+        
+      - name: Re-run acceptance tests (without nick-fields/retry@v2)
+        if: ${{ failure() }}
+        timeout-minutes: 15
+        run: npm run acceptancetest:${{ inputs.testfilter }}
+

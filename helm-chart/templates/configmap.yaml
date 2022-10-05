@@ -18,4 +18,10 @@ data:
   LOCAL_NODE: {{ .Values.config.LOCAL_NODE }}
   SERVER_PORT: {{ .Values.config.SERVER_PORT }}
   CHAIN_ID: {{ .Values.config.CHAIN_ID }}
-  
+  DEFAULT_RATE_LIMIT: {{ .Values.config.DEFAULT_RATE_LIMIT }}
+  TIER_1_RATE_LIMIT: {{ .Values.config.TIER_1_RATE_LIMIT }}
+  TIER_2_RATE_LIMIT: {{ .Values.config.TIER_2_RATE_LIMIT }}
+  TIER_3_RATE_LIMIT: {{ .Values.config.TIER_3_RATE_LIMIT }}
+  LIMIT_DURATION: {{ .Values.config.LIMIT_DURATION }}
+  HBAR_RATE_LIMIT_TINYBAR: {{ .Values.config.HBAR_RATE_LIMIT_TINYBAR }}
+  HBAR_RATE_LIMIT_DURATION: {{ .Values.config.HBAR_RATE_LIMIT_DURATION }}

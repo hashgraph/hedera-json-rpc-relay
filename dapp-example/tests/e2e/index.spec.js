@@ -29,7 +29,6 @@ describe('Test Core Hedera User Scenarios', function() {
     // deploy the contract
     cy.get('#btnDeployContract').should('not.be.disabled').click();
     cy.confirmMetamaskTransaction();
-    cy.waitUntil(() => cy.get('#btnDeployContract').should('not.be.disabled'));
 
     // test a view call
     cy.get('#btnReadGreeting').should('not.be.disabled').click();

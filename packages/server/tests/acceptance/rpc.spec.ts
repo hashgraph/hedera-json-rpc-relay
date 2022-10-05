@@ -24,7 +24,7 @@ import { BigNumber, ethers } from 'ethers';
 import { AliasAccount } from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
-import { AccountBalanceQuery, ContractFunctionParameters } from '@hashgraph/sdk';
+import { ContractFunctionParameters } from '@hashgraph/sdk';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
@@ -32,8 +32,9 @@ import basicContractJson from '../contracts/Basic.json';
 import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
+import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
 
-describe('RPC Server Acceptance Tests', function () {
+describe('@api RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
     const accounts: AliasAccount[] = [];
@@ -147,9 +148,11 @@ describe('RPC Server Acceptance Tests', function () {
 
                 log0Block = await relay.call('eth_getTransactionByHash', [log0.contractExecutedTransactionId]);
                 expect(log0Block).to.have.property('blockNumber');
+                expect(log0Block.nonce).to.equal('0x0');
 
                 log4Block = await relay.call('eth_getTransactionByHash', [log4.contractExecutedTransactionId]);
                 expect(log4Block).to.have.property('blockNumber');
+                expect(log4Block.nonce).to.equal('0x0');
             });
 
             it('should be able to use `fromBlock` param', async () => {
@@ -800,6 +803,9 @@ describe('RPC Server Acceptance Tests', function () {
                     const mirrorTransaction = await mirrorNode.get(`/contracts/results/${transactionHash}`);
 
                     const res = await relay.call('eth_getTransactionByHash', [transactionHash]);
+                    const addressResult = await mirrorNode.get(`/accounts/${res.from}`);
+                    mirrorTransaction.from = addressResult.evm_address;
+
                     Assertions.transaction(res, mirrorTransaction);
                 });
 
@@ -829,14 +835,12 @@ describe('RPC Server Acceptance Tests', function () {
 
             it('@release should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {
                 const account = await servicesNode.createAliasAccount(10);
-                // Wait for account creation to propagate
-                await mirrorNode.get(`/accounts/${account.accountId}`);
+                const mirrorAccount = await mirrorNode.get(`/accounts/${account.accountId}`);
 
                 const res = await relay.call('eth_getBalance', [account.address, 'latest']);
-                const balance = await servicesNode.executeQuery(new AccountBalanceQuery()
-                    .setAccountId(account.accountId));
-                const balanceInWeiBars = BigNumber.from(balance.hbars.toTinybars().toString()).mul(10 ** 10);
-                expect(res).to.eq(ethers.utils.hexValue(balanceInWeiBars));
+                const balanceInWeiBars = BigNumber.from(mirrorAccount.balance.balance.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF);
+                // balance for tests changes as accounts are in use. Ensure non zero value
+                expect(res).to.not.be.eq(EthImpl.zeroHex);
             });
 
             it('should execute "eth_getBalance" for non-existing address', async function () {
@@ -852,6 +856,29 @@ describe('RPC Server Acceptance Tests', function () {
             it('@release should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
                 const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'latest']);
                 expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
+            });
+
+            it('@release should execute "eth_getBalance" with latest block number', async function () {
+                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), latestBlock.number]);
+                expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
+            });
+
+            it('@release should execute "eth_getBalance" with pending', async function () {
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'pending']);
+                expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
+            });
+
+            it('@release should fail "eth_getBalance" with block number in the last 15 minutes', async function () {
+                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                const earlierBlockNumber = latestBlock.number - 1;
+
+                try {
+                    await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), earlierBlockNumber]);
+                }
+                catch(error) {
+                    Assertions.jsonRpcError(error, predefined.UNKNOWN_HISTORICAL_BALANCE);
+                }
             });
 
             describe('@release Hardcoded RPC Endpoints', () => {

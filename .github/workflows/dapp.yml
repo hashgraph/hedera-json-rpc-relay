@@ -11,6 +11,7 @@ jobs:
   setup-local-hedera:
     name: Dapp Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     permissions:
       contents: write
     env:
@@ -51,7 +52,7 @@ jobs:
         run: npx lerna run build
 
       - name: Run RPC Server
-        run: npm run integration:prerequisite &
+        run: npm run integration:prerequisiteDappTests &
 
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
