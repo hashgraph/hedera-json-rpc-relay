@@ -563,7 +563,7 @@ app.useRpc('web3_client_version', async () => {
  *
  * returns: 0x0
  */
-app.useRpc('eth_maxPriorityFeePerGas', async (_params: any) => {
+app.useRpc('eth_maxPriorityFeePerGas', async () => {
   return logAndHandleResponse("eth_maxPriorityFeePerGas", (requestId) => relay.eth().maxPriorityFeePerGas(requestId));
 });
 
