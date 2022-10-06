@@ -115,19 +115,21 @@ const transferHTSToken = async function(accountId, tokenId) {
 };
 
 (async () => {
-  let nodeStarted = false;
-  while (!nodeStarted && isLocalNode) {
-    net
-      .createConnection('50221', '127.0.0.1')
-      .on("data", function () {
-        nodeStarted = true;
-      })
-      .on("error", (err) => {
-        console.log(
-          `Waiting for local node at ${host}:${port}, retrying in 10 seconds...`
-        );
-    });
-    await new Promise(r => setTimeout(r, 10000));
+  if (isLocalNode) {
+    let nodeStarted = false;
+    while (!nodeStarted) {
+      net
+        .createConnection('50221', '127.0.0.1')
+        .on("data", function () {
+          nodeStarted = true;
+        })
+        .on("error", (err) => {
+          console.log(
+            `Waiting for local node at ${host}:${port}, retrying in 10 seconds...`
+          );
+      });
+      await new Promise(r => setTimeout(r, 10000));
+    }
   }
 
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
