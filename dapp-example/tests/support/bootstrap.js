@@ -119,7 +119,7 @@ const transferHTSToken = async function(accountId, tokenId) {
     let nodeStarted = false;
     while (!nodeStarted) {
       net
-        .createConnection('50221', '127.0.0.1')
+        .createConnection('5600', '127.0.0.1')
         .on("data", function () {
           nodeStarted = true;
         })
