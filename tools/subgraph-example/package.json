@@ -8,6 +8,9 @@
     "create-local": "graph create --node http://localhost:8020/ greeter",
     "remove-local": "graph remove --node http://localhost:8020/ greeter",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 greeter",
+    "create-local:i": "graph create --node http://DESKTOP-CBKBFTR:8020/ greeter",
+    "remove-local:i": "graph remove --node http://DESKTOP-CBKBFTR:8020/ greeter",
+    "deploy-local:i": "graph deploy --node http://DESKTOP-CBKBFTR:8020/ --ipfs http://DESKTOP-CBKBFTR:5001 greeter",
     "test": "graph test",
     "graph-local": "docker-compose up",
     "graph-local-clean": "docker-compose down -v && docker-compose rm -v && rm -rf data/ipfs data/postgres"

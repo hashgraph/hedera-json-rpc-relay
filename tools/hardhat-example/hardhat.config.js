@@ -59,6 +59,9 @@ module.exports = {
   networks: {
     relay: {
       url: process.env.RELAY_ENDPOINT
+    },
+    internal_relay: {
+      url: "http://DESKTOP-CBKBFTR:7546/"
     }
   }
 };

@@ -21,7 +21,7 @@
 const hre = require('hardhat');
 
 module.exports = async (amount = 100_000_000_000) => {
-  const provider = new hre.ethers.providers.JsonRpcProvider(process.env.RELAY_ENDPOINT);
+  const provider = new hre.ethers.providers.JsonRpcProvider(hre.network.config.url);
   const wallet = new hre.ethers.Wallet(process.env.OPERATOR_PRIVATE_KEY, provider);
   const walletReceiver = new hre.ethers.Wallet(process.env.RECEIVER_PRIVATE_KEY, provider);
 

@@ -21,7 +21,7 @@
 const hre = require('hardhat');
 
 module.exports = async () => {
-  const provider = new hre.ethers.providers.JsonRpcProvider(process.env.RELAY_ENDPOINT);
+  const provider = new hre.ethers.providers.JsonRpcProvider(hre.network.config.url);
   const latestBlock = await provider.getBlock("latest");
 
   const latestBlockNumber = latestBlock.number;
