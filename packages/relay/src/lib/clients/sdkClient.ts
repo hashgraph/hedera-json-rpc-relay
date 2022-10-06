@@ -338,20 +338,26 @@ export class SDKClient {
             // if valid network error utilize transaction id
             if (sdkClientError.isValidNetworkError()) {
 
-                const transctionRecord = await new TransactionRecordQuery()
-                    .setTransactionId(transaction.transactionId!)
-                    .setNodeAccountIds(transaction.nodeAccountIds!)
-                    .execute(this.clientMain);
-                transactionFee = transctionRecord.transactionFee;
-
-                this.captureMetrics(
-                    SDKClient.transactionMode,
-                    transactionType,
-                    sdkClientError.status,
-                    transactionFee.toTinybars().toNumber(),
-                    callerName);
-                
-                this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+                try {
+                    const transctionRecord = await new TransactionRecordQuery()
+                        .setTransactionId(transaction.transactionId!)
+                        .setNodeAccountIds(transaction.nodeAccountIds!)
+                        .setValidateReceiptStatus(false)
+                        .execute(this.clientMain);
+                    transactionFee = transctionRecord.transactionFee;
+    
+                    this.captureMetrics(
+                        SDKClient.transactionMode,
+                        transactionType,
+                        sdkClientError.status,
+                        transactionFee.toTinybars().toNumber(),
+                        callerName);
+                    
+                    this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+                } catch (err: any) {
+                    const recordQueryError = new SDKClientError(e);
+                    this.logger.error(recordQueryError, `${requestIdPrefix} Error raised during TransactionRecordQuery for ${transaction.transactionId}`);
+                }
             }
 
             this.logger.trace(`${requestIdPrefix} ${transaction.transactionId} ${callerName} ${transactionType} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`);
@@ -394,22 +400,27 @@ export class SDKClient {
             const sdkClientError = new SDKClientError(e);
             let transactionFee: number | Hbar = 0;
             if (sdkClientError.isValidNetworkError()) {
-                // pull transaction record for fee
-                const transctionRecord = await new TransactionRecordQuery()
-                    .setTransactionId(resp.transactionId!)
-                    .setNodeAccountIds([resp.nodeId])
-                    .setValidateReceiptStatus(false)
-                    .execute(this.clientMain);
-                transactionFee = transctionRecord.transactionFee;
-
-                this.captureMetrics(
-                    SDKClient.transactionMode,
-                    transactionName,
-                    sdkClientError.status,
-                    transactionFee.toTinybars().toNumber(),
-                    callerName);
-
-                this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+                try {
+                    // pull transaction record for fee
+                    const transctionRecord = await new TransactionRecordQuery()
+                        .setTransactionId(resp.transactionId!)
+                        .setNodeAccountIds([resp.nodeId])
+                        .setValidateReceiptStatus(false)
+                        .execute(this.clientMain);
+                    transactionFee = transctionRecord.transactionFee;
+    
+                    this.captureMetrics(
+                        SDKClient.transactionMode,
+                        transactionName,
+                        sdkClientError.status,
+                        transactionFee.toTinybars().toNumber(),
+                        callerName);
+    
+                    this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+                } catch (err: any) {
+                    const recordQueryError = new SDKClientError(e);
+                    this.logger.error(recordQueryError, `${requestIdPrefix} Error raised during TransactionRecordQuery for ${resp.transactionId}`);
+                }
             }
 
             this.logger.debug(`${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionName} record status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`);
