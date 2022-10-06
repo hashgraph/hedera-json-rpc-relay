@@ -15,7 +15,7 @@
     "hedera-stop": "npx @hashgraph/hedera-local stop"
   },
   "dependencies": {
-    "@hashgraph/hedera-local": "^1.2.0",
+    "@hashgraph/hedera-local": "^2.0.1",
     "@hashgraph/hethers": "^1.1.2",
     "dotenv": "^16.0.1"
   }
