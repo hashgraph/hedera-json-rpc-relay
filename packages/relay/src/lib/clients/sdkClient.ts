@@ -44,6 +44,7 @@ import {
     FileInfoQuery,
     EthereumTransaction,
     EthereumTransactionData,
+    PrecheckStatusError
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
@@ -308,6 +309,10 @@ export class SDKClient {
             this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} query cost: ${query._queryPayment}`);
             if (cost) {
                 this.hbarLimiter.addExpense(cost, currentDateNow);
+            }
+
+            if (e instanceof PrecheckStatusError && e.contractFunctionResult?.errorMessage) {
+                throw predefined.CONTRACT_REVERT(e.contractFunctionResult.errorMessage);
             }
 
             if (e instanceof JsonRpcError){

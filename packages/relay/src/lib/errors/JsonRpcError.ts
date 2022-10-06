@@ -17,17 +17,20 @@
  * limitations under the License.
  *
  */
+import {extractReadableMessage} from '../../formatters';
 
 const REQUEST_ID_STRING = `Request ID: `;
 export class JsonRpcError {
   public code: number;
   public message: string;
   public name: string;
+  public data?: string;
 
-  constructor(args: { name: string, code: number, message: string }, requestId?: string) {
+  constructor(args: { name: string, code: number, message: string, data?: string }, requestId?: string) {
     this.code = args.code;
     this.name = args.name;
     this.message = requestId ? `[${REQUEST_ID_STRING}${requestId}] ` + args.message : args.message;
+    this.data = args.data;
   }
 }
 
@@ -137,4 +140,10 @@ export const predefined = {
     code: -32007,
     message: 'Historical balance data is available only after 15 minutes.'
   }),
+  'CONTRACT_REVERT': (errorMessage?: string) => new JsonRpcError({
+    name: 'Contract revert executed',
+    code: 3,
+    message: `execution reverted: ${extractReadableMessage(errorMessage)}`,
+    data: errorMessage
+  })
 };

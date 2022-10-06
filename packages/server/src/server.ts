@@ -145,7 +145,12 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
     logger.info(`${messagePrefix} ${status} ${ms} ms `);
     if (response instanceof JsonRpcError) {
       logger.error(`returning error to sender: ${requestIdPrefix} ${response.message}`)
-      return new JsonRpcError({name: response.name, code: response.code, message: response.message}, requestId);
+      return new JsonRpcError({
+        name: response.name,
+        code: response.code,
+        message: response.message,
+        data: response.data
+      }, requestId);
     } 
     return response;
   } catch (e: any) {
@@ -164,7 +169,12 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
     }
 
     logger.error(`returning error to sender: ${requestIdPrefix} ${error.message}`)
-    return new JsonRpcError({name: error.name, code: error.code, message:error.message}, requestId);
+    return new JsonRpcError({
+      name: error.name,
+      code: error.code,
+      message: error.message,
+      data: error.data,
+    }, requestId);
   }
 };
 

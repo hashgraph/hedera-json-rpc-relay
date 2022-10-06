@@ -24,11 +24,34 @@ const hashNumber = (num) => {
   return '0x' + num.toString(16);
 };
 
-  /**
-   * Format message prefix for logger.
-   */
+/**
+* Format message prefix for logger.
+*/
 const formatRequestIdMessage = (requestId?: string): string => {
     return requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+};
+
+function hexToASCII(str: string): string {
+    const hex  = str.toString();
+    let ascii = '';
+    for (let n = 0; n < hex.length; n += 2) {
+        ascii += String.fromCharCode(parseInt(hex.substring(n, n + 2), 16));
+    }
+    return ascii;
 }
 
-export { hashNumber, formatRequestIdMessage };
+/**
+ * Converts an EVM ErrorMessage to a readable form. For example this :
+ * 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000
+ * will be converted to "Set to revert"
+ * @param message
+ */
+const extractReadableMessage = (message?: string): string => {
+    if (!message) return '';
+    message = message.replace(/^0x/, "");   // Remove the starting 0x
+    const strLen = parseInt(message.slice(8 + 64, 8 + 128), 16);  // Get the length of the readable text
+    const resultCodeHex = message.slice(8 + 128, 8 + 128 + strLen * 2); // Extract the hex of the text
+    return hexToASCII(resultCodeHex);
+};
+
+export { hashNumber, formatRequestIdMessage, extractReadableMessage };
