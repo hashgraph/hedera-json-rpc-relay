@@ -125,7 +125,7 @@ const transferHTSToken = async function(accountId, tokenId) {
         })
         .on("error", (err) => {
           console.log(
-            `Waiting for local node at ${host}:${port}, retrying in 10 seconds...`
+            `Waiting for local node, retrying in 10 seconds...`
           );
       });
       await new Promise(r => setTimeout(r, 10000));
