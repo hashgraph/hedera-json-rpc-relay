@@ -963,6 +963,10 @@ describe('@api RPC Server Acceptance Tests', function () {
                     expect(res).to.contain('relay/');
                 });
 
+                it('should execute "eth_maxPriorityFeePerGas"', async function () {
+                    const res = await relay.call('eth_maxPriorityFeePerGas', []);
+                    expect(res).to.be.equal('0x0');
+                });
             });
 
             describe('@release Unsupported RPC Endpoints', () => {
@@ -1069,7 +1073,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const res = await relay.call('eth_call', [callData]);
                     expect(res).to.eq('0x'); // confirm no error
                 });
-                
+
                 it('should fail "eth_call" for non-existing contract address', async function () {
                     const callData = {
                         from: accounts[2].address,

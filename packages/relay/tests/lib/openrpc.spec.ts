@@ -21,7 +21,7 @@
 import { expect } from 'chai';
 import { validateOpenRPCDocument, parseOpenRPCDocument } from "@open-rpc/schema-utils-js";
 
-import Ajv from 'ajv'
+import Ajv from 'ajv';
 
 import path from 'path';
 import pino from 'pino';
@@ -132,7 +132,7 @@ describe("Open RPC Specification", function () {
         mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
             from: `${defaultEvmAddress}`
           });
-    
+
         sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
         sdkClientStub.getAccountBalanceInTinyBar.returns(100000000000)
         sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));

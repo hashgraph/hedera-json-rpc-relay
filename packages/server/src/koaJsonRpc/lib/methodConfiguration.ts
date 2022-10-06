@@ -111,6 +111,9 @@ export const methodConfiguration = {
   eth_hashrate: {
     total: process.env.TIER_1_RATE_LIMIT,
   },
+  eth_maxPriorityFeePerGas: {
+    total: process.env.TIER_1_RATE_LIMIT,
+  },
   eth_mining: {
     total: process.env.TIER_1_RATE_LIMIT,
   },
