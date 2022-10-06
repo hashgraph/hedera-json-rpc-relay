@@ -36,6 +36,7 @@ describe('RPC', function() {
     await hre.run('transfer-hbars');
     // add additional transfer to ensure file close on local node
     await hre.run('transfer-hbars');
+    await new Promise(r => setTimeout(r, 2000));
     const hbarsAfter = (await walletReceiver.getBalance()).toString();
     expect(hbarsBefore).to.not.be.equal(hbarsAfter);
   });
