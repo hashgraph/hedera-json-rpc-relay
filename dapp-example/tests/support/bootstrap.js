@@ -4,6 +4,7 @@ const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const net = require("net");
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
@@ -20,10 +21,12 @@ const randomUppercaseString = (length = 5) => {
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
 let client;
+let isLocalNode = false;
 const network = process.env.HEDERA_NETWORK || '{}';
 if (supportedEnvs.includes(network.toLowerCase())) {
   client = HederaSDK.Client.forName(network);
 } else {
+  isLocalNode = true;
   client = HederaSDK.Client.forNetwork(JSON.parse(network));
 }
 
@@ -112,8 +115,21 @@ const transferHTSToken = async function(accountId, tokenId) {
 };
 
 (async () => {
-  //wait for 20 sec, to be sure that local node is loaded, before trying to create accounts
-  await new Promise(r => setTimeout(r, 40000));
+  let nodeStarted = false;
+  while (!nodeStarted && isLocalNode) {
+    net
+      .createConnection('50221', '127.0.0.1')
+      .on("data", function () {
+        nodeStarted = true;
+      })
+      .on("error", (err) => {
+        console.log(
+          `Waiting for local node at ${host}:${port}, retrying in 10 seconds...`
+        );
+    });
+    await new Promise(r => setTimeout(r, 10000));
+  }
+
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
   if (mainPrivateKeyString === '') {
     mainPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw()
