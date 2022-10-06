@@ -66,6 +66,7 @@ export class MirrorNodeClient {
     private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
     private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
     private static GET_NETWORK_FEES_ENDPOINT = 'network/fees';
+    private static GET_TOKENS_ENDPOINT = 'tokens';
 
     private static ORDER = {
         ASC: 'asc',
@@ -356,6 +357,13 @@ export class MirrorNodeClient {
             .replace(MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);
     }
 
+    public async getTokenById(tokenId: string, requestId?: string) {
+        return this.request(`${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}`,
+            MirrorNodeClient.GET_TOKENS_ENDPOINT,
+            [400, 404],
+            requestId);
+    }
+
     public async getLatestContractResultsByAddress(address: string, blockEndTimestamp: string | undefined, limit: number) {
         // retrieve the timestamp of the contract
         const contractResultsParams: IContractResultsParams = blockEndTimestamp
@@ -417,6 +425,13 @@ export class MirrorNodeClient {
                 type: constants.TYPE_ACCOUNT,
                 entity: accountResult
             };
+        }
+        const tokenResult = await this.getTokenById(`${parseInt(entityIdentifier, 16)}`, requestId);
+        if (tokenResult) {
+            return {
+                type: constants.TYPE_TOKEN,
+                entity: tokenResult
+            }
         }
 
         return null;

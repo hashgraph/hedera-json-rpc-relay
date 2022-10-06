@@ -44,6 +44,7 @@ export default {
 
     TYPE_CONTRACT: 'contract',
     TYPE_ACCOUNT: 'account',
+    TYPE_TOKEN: 'token',
 
     DEFAULT_FEE_HISTORY_MAX_RESULTS: 10,
     ORDER,
