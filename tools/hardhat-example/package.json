@@ -9,8 +9,11 @@
   "scripts": {
     "build": "npx hardhat compile",
     "set-greeting": "npx hardhat contract-call 0x0000000000000000000000000000000000000408 helloJASON",
+    "set-greeting:i": "npx hardhat --network internal_relay contract-call 0x0000000000000000000000000000000000000408 helloJASON",
     "get-current-block": "npx hardhat get-current-block",
+    "get-current-block:i": "npx hardhat --network internal_relay get-current-block",
     "test:hr": "npx hardhat test test/rpc.js",
+    "test:hr:i": "npx hardhat --network internal_relay test test/rpc.js",
     "hedera-start": "npx @hashgraph/hedera-local start",
     "hedera-stop": "npx @hashgraph/hedera-local stop"
   },
