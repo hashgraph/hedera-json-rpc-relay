@@ -131,6 +131,7 @@ const transferHTSToken = async function(accountId, tokenId) {
       });
       retries -= 1;
       await new Promise(r => setTimeout(r, 10000));
+      console.log(`Retry number ${retries}`)
     }
     if (!nodeStarted) {
       process.exit(0);
