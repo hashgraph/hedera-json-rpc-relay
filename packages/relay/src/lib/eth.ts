@@ -746,7 +746,7 @@ export class EthImpl implements Eth {
           return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
       }
       else if (result?.type === constants.TYPE_CONTRACT) {
-        return EthImpl.numberTo0x(1)
+        return EthImpl.numberTo0x(1);
       }
 
       return EthImpl.zeroHex;
@@ -964,14 +964,13 @@ export class EthImpl implements Eth {
         gasUsed: EthImpl.numberTo0x(receiptResponse.gas_used),
         contractAddress: createdContract,
         logs: logs,
-        logsBloom: receiptResponse.bloom,
+        logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
         transactionHash: EthImpl.toHash32(receiptResponse.hash),
         transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
         effectiveGasPrice: EthImpl.nanOrNumberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
         root: receiptResponse.root,
         status: receiptResponse.status,
       };
-
 
       this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
       return receipt;
