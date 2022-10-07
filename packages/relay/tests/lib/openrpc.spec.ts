@@ -117,7 +117,7 @@ describe("Open RPC Specification", function () {
         mock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultNetworkFees);
         mock.onGet(`contracts/${contractAddress1}`).reply(200, null);
         mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
-        mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);
+        mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultLogs);
         mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
         mock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
         mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
@@ -282,7 +282,9 @@ describe("Open RPC Specification", function () {
         };
         mock.onGet(
             `contracts/results/logs` +
-            `?topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
+            `?timestamp=gte:${defaultBlock.timestamp.from}` +
+            `&timestamp=lte:${defaultBlock.timestamp.to}` +
+            `&topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
             `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}`
         ).reply(200, filteredLogs);
         mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
