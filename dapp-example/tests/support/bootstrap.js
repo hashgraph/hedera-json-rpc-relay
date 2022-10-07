@@ -118,7 +118,7 @@ const transferHTSToken = async function(accountId, tokenId) {
   if (isLocalNode) {
     let nodeStarted = false;
     let retries = 10;
-    while (!nodeStarted || retries === 0) {
+    while (!nodeStarted && retries >= 0) {
       net
         .createConnection('5600', '127.0.0.1')
         .on("data", function () {
@@ -131,7 +131,6 @@ const transferHTSToken = async function(accountId, tokenId) {
       });
       retries -= 1;
       await new Promise(r => setTimeout(r, 10000));
-      console.log(`Retry number ${retries}`)
     }
     if (!nodeStarted) {
       process.exit(0);
