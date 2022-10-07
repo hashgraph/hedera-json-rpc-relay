@@ -117,9 +117,10 @@ const transferHTSToken = async function(accountId, tokenId) {
 (async () => {
   if (isLocalNode) {
     let nodeStarted = false;
-    while (!nodeStarted) {
+    let retries = 10;
+    while (!nodeStarted || retries === 0) {
       net
-        .createConnection('5600', '127.0.0.1')
+        .createConnection('560011', '127.0.0.1')
         .on("data", function () {
           nodeStarted = true;
         })
@@ -128,7 +129,11 @@ const transferHTSToken = async function(accountId, tokenId) {
             `Waiting for local node, retrying in 10 seconds...`
           );
       });
+      retries -= 1;
       await new Promise(r => setTimeout(r, 10000));
+    }
+    if (!nodeStarted) {
+      process.exit(0);
     }
   }
 
