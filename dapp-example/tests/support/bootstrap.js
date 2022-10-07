@@ -122,7 +122,7 @@ const transferHTSToken = async function(accountId, tokenId) {
       net
         .createConnection('5600', '127.0.0.1')
         .on("data", function () {
-          // nodeStarted = true;
+          nodeStarted = true;
         })
         .on("error", (err) => {
           console.log(
