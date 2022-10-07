@@ -2115,6 +2115,19 @@ describe('Eth', async function () {
 
       expect(receipt.effectiveGasPrice).to.eq('0x0');
     });
+
+    it('handles empty bloom', async function () {
+      const receiptWith0xBloom = {
+        ...defaultDetailedContractResultByHash,
+        bloom: '0x'
+      };
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWith0xBloom);
+      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+
+      expect(receipt).to.exist;
+      if (receipt == null) return;
+      expect(receipt.logsBloom).to.eq(EthImpl.emptyBloom);
+    });
   });
 
   describe('eth_getTransactionByHash', async function () {
