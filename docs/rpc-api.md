@@ -1,7 +1,7 @@
 As an implementation of [HIP 419](https://hips.hedera.com/hip/hip-482), the Hedera JSON RPC Relay provides some [Ethereum JSON-RPC APIs](https://ethereum.github.io/execution-apis/api-documentation/) which implement the [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification) to support Ethereum tools interacting with Hedera nodes e.g. wallets, developer tools.
 
 ## Requests
-Requests to the Relay will take the form of HTTP calls to an endpoints method. 
+Requests to the Relay will take the form of HTTP calls to an endpoints method.
 A curl example to the `eth_chainId` takes the form
   Request
   ```shell
@@ -11,7 +11,7 @@ A curl example to the `eth_chainId` takes the form
 Where
 - RELAY_ENDPOINT_URL - HTTP url endpoint, default `http://localhost:7546`
 
-  
+
 ## Result Schema
 
 Result responses can take the form of success or error.
@@ -24,7 +24,7 @@ Result responses can take the form of success or error.
     "result": "0x4b7"
   }
   ```
-    
+
 Error Response
   ```json
   {
@@ -52,7 +52,7 @@ The JSON RPC Relay methods implements a subset of the standard method:
 - [History Methods](https://ethereum.org/en/developers/docs/apis/json-rpc/#history_methods)
 
 ### Endpoint Table
-Below is a table of provided methods. 
+Below is a table of provided methods.
 
 | Method                                                                                                                                    | Static Response Value                     | Hedera Nodes (Relay Only, Mirror Node, Consensus Node, Both Nodes)    |
 | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------- |
@@ -74,13 +74,14 @@ Below is a table of provided methods.
 | [eth_getTransactionByBlockNumberAndIndex](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyblocknumberandindex) | N/A                                       | Mirror Node   |
 | [eth_getTransactionByHash](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyhash)                               | N/A                                       | Mirror Node   |
 | [eth_getTransactionCount](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount)                                 | N/A                                       | Mirror Node   |
-| [eth_getTransactionReceipt](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt)                             | N/A                                       | Mirror Node   
+| [eth_getTransactionReceipt](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt)                             | N/A                                       | Mirror Node
 | [eth_getUncleByBlockHashAndIndex](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getunclebyblockhashandindex)                 | `null`                                    | N/A   |
 | [eth_getUncleByBlockNumberAndIndex](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getunclebyblocknumberandindex)             | `null`                                    | N/A   |
 | [eth_getUncleCountByBlockHash](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getunclecountbyblockhash)                       | `null`                                    | N/A   |
 | [eth_getUncleCountByBlockNumber](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getunclecountbyblocknumber)                   | `0x0`                                     | N/A   |
 | [eth_getWork](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getwork)                                                         | `-32601`                                  | N/A   |
 | [eth_hashrate](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_hashrate)                                                       | `0x0`                                     | N/A   |
+| [eth_maxPriorityFeePerGas](https://docs.alchemy.com/reference/eth-maxpriorityfeepergas)                                                           | `0x0`                                   | N/A   |
 | [eth_mining](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_mining)                                                           | `false`                                   | N/A   |
 | [eth_protocolVersion](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_protocolversion)                                         | `-32601`                                  | N/A   |
 | [eth_sendRawTransaction](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction)                                   | N/A                                       | Consensus Node  |
