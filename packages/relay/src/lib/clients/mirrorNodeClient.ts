@@ -426,7 +426,7 @@ export class MirrorNodeClient {
                 entity: accountResult
             };
         }
-        const tokenResult = await this.getTokenById(`${parseInt(entityIdentifier, 16)}`, requestId);
+        const tokenResult = await this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId);
         if (tokenResult) {
             return {
                 type: constants.TYPE_TOKEN,

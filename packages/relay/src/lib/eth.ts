@@ -581,14 +581,14 @@ export class EthImpl implements Eth {
 
     try {
       const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
-      if (result?.type === constants.TYPE_TOKEN) {
-        return EthImpl.redirectBytecodeAddressReplace(address);
+
+      if (result && result?.type === constants.TYPE_TOKEN) {
+          return EthImpl.redirectBytecodeAddressReplace(address);
       }
-      const contract = await this.mirrorNodeClient.getContract(address, requestId);
-      if (contract && contract.runtime_bytecode && contract.runtime_bytecode !== EthImpl.emptyHex) {
-        return contract.runtime_bytecode;
+      else if (result && result?.type === constants.TYPE_CONTRACT && result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
+          return result?.entity.runtime_bytecode;
       }
-      else {
+      else{
         const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
         return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
       }

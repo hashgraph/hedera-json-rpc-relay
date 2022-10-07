@@ -1141,6 +1141,8 @@ describe('Eth calls using MirrorNode', async function () {
   describe('eth_getCode', async function() {
     it('should return cached value', async () => {
       mock.onGet(`contracts/${contractAddress1}`).reply(404, defaultContract);
+      mock.onGet(`accounts/${contractAddress1}`).reply(404, defaultContract);
+      mock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, defaultContract);
       sdkClientStub.getContractByteCode.throws(new SDKClientError({status: {
         _code: 16
       }}));
@@ -1154,6 +1156,8 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should return the runtime_bytecode from the mirror node', async () => {
       mock.onGet(`contracts/${contractAddress1}`).reply(200, defaultContract);
+      mock.onGet(`accounts/${contractAddress1}`).reply(404, defaultContract);
+      mock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, defaultContract);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
 
       const res = await ethImpl.getCode(contractAddress1, null);
@@ -1162,6 +1166,8 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should return the bytecode from SDK if Mirror Node returns 404', async () => {
       mock.onGet(`contracts/${contractAddress1}`).reply(404, defaultContract);
+      mock.onGet(`accounts/${contractAddress1}`).reply(404, defaultContract);
+      mock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, defaultContract);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
       const res = await ethImpl.getCode(contractAddress1, null);
       expect(res).to.equal(deployedBytecode);
@@ -1172,6 +1178,8 @@ describe('Eth calls using MirrorNode', async function () {
         ...defaultContract,
         runtime_bytecode: EthImpl.emptyHex
       });
+      mock.onGet(`accounts/${contractAddress1}`).reply(404, defaultContract);
+      mock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, defaultContract);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
       const res = await ethImpl.getCode(contractAddress1, null);
       expect(res).to.equal(deployedBytecode);
