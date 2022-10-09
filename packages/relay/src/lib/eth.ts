@@ -955,7 +955,7 @@ export class EthImpl implements Eth {
         });
       });
 
-      const receipt = {
+      const receipt: any = {
         blockHash: EthImpl.toHash32(receiptResponse.block_hash),
         blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
         from: receiptResponse.from,
@@ -972,6 +972,9 @@ export class EthImpl implements Eth {
         status: receiptResponse.status,
       };
 
+      if (receiptResponse.error_message) {
+        receipt.revertReason = receiptResponse.error_message;
+      }
 
       this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
       return receipt;
