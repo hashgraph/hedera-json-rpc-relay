@@ -52,7 +52,7 @@ jobs:
         run: npx lerna run build
 
       - name: Run RPC Server
-        run: npm run integration:prerequisiteDappTests &
+        run: npm run integration:prerequisite &
 
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
