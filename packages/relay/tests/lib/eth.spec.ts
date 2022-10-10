@@ -2028,6 +2028,11 @@ describe('Eth', async function () {
     expect(result.message).to.be.equal('Unsupported JSON-RPC method');
   });
 
+  it('should execute "eth_maxPriorityFeePerGas"', async function () {
+    const result = await Relay.eth().maxPriorityFeePerGas();
+    expect(result).to.eq('0x0');
+  });
+
   const unsupportedMethods = [
     'submitHashrate',
     'signTransaction',

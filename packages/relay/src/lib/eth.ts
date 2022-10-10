@@ -1350,4 +1350,10 @@ export class EthImpl implements Eth {
 
     return logs;
   }
+
+  async maxPriorityFeePerGas(requestId?: string): Promise<string> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.trace(`${requestIdPrefix} maxPriorityFeePerGas()`);
+    return EthImpl.zeroHex;
+  }
 }

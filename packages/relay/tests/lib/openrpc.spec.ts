@@ -21,7 +21,7 @@
 import { expect } from 'chai';
 import { validateOpenRPCDocument, parseOpenRPCDocument } from "@open-rpc/schema-utils-js";
 
-import Ajv from 'ajv'
+import Ajv from 'ajv';
 
 import path from 'path';
 import pino from 'pino';

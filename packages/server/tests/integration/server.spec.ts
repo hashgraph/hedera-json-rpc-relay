@@ -316,6 +316,18 @@ describe('RPC Server', async function() {
 
     BaseTest.unsupportedJsonRpcMethodChecks(res);
   });
+
+  it('should execute "eth_maxPriorityFeePerGas"', async function() {
+    const res = await this.testClient.post('/', {
+      'id': '2',
+      'jsonrpc': '2.0',
+      'method': 'eth_maxPriorityFeePerGas',
+      'params': [null]
+    });
+
+    BaseTest.defaultResponseChecks(res);
+    expect(res.data.result).to.be.equal('0x0');
+  });
 });
 
 class BaseTest {
