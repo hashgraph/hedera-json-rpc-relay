@@ -2028,6 +2028,11 @@ describe('Eth', async function () {
     expect(result.message).to.be.equal('Unsupported JSON-RPC method');
   });
 
+  it('should execute "eth_maxPriorityFeePerGas"', async function () {
+    const result = await Relay.eth().maxPriorityFeePerGas();
+    expect(result).to.eq('0x0');
+  });
+
   const unsupportedMethods = [
     'submitHashrate',
     'signTransaction',
@@ -2114,6 +2119,19 @@ describe('Eth', async function () {
       if (receipt == null) return;
 
       expect(receipt.effectiveGasPrice).to.eq('0x0');
+    });
+
+    it('handles empty bloom', async function () {
+      const receiptWith0xBloom = {
+        ...defaultDetailedContractResultByHash,
+        bloom: '0x'
+      };
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWith0xBloom);
+      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+
+      expect(receipt).to.exist;
+      if (receipt == null) return;
+      expect(receipt.logsBloom).to.eq(EthImpl.emptyBloom);
     });
   });
 
