@@ -59,6 +59,9 @@ export class EthImpl implements Eth {
   static defaultGasUsedRatio = EthImpl.numberTo0x(0.5);
   static feeHistoryZeroBlockCountResponse = { gasUsedRatio: null, oldestBlock: EthImpl.zeroHex };
   static feeHistoryEmptyResponse = { baseFeePerGas: [], gasUsedRatio: [], reward: [], oldestBlock: EthImpl.zeroHex };
+  static redirectBytecodePrefix = '6080604052348015600f57600080fd5b506000610167905077618dc65e';
+  static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
+    
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -1015,9 +1018,7 @@ export class EthImpl implements Eth {
   }
 
   private static redirectBytecodeAddressReplace(address: string): string {
-    const redirectBytecodePrefix = '6080604052348015600f57600080fd5b506000610167905077618dc65e';
-    const redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
-    return `${redirectBytecodePrefix}${address.slice(2)}${redirectBytecodePostfix}`;
+    return `${this.redirectBytecodePrefix}${address.slice(2)}${this.redirectBytecodePostfix}`;
   }
 
   /**
