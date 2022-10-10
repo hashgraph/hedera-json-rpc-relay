@@ -279,6 +279,22 @@ describe('MirrorNodeClient', async function () {
     expect(result).to.be.null;
   });
 
+  it('`getTokenById`', async () => {
+    mock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+
+    const result = await mirrorNodeInstance.getTokenById(mockData.tokenId);
+    expect(result).to.exist;
+    expect(result.token_id).equal('0.0.13312');
+  });
+
+  it('`getTokenById` not found', async () => {
+    const tokenId = '0.0.132';
+    mock.onGet(`accounts/${tokenId}`).reply(404, mockData.notFound);
+
+    const result = await mirrorNodeInstance.getTokenById(tokenId);
+    expect(result).to.be.null;
+  });
+
   const detailedContractResult = {
     'access_list': '0x',
     'amount': 2000000000,
@@ -532,6 +548,7 @@ describe('MirrorNodeClient', async function () {
     it('returns `contract` when CONTRACTS endpoint returns a result', async() => {
       mock.onGet(`contracts/${mockData.contractEvmAddress}`).reply(200, mockData.contract);
       mock.onGet(`accounts/${mockData.contractEvmAddress}`).reply(200, mockData.account);
+      mock.onGet(`tokens/${mockData.tokenId}`).reply(404, mockData.notFound);
 
       const entityType = await mirrorNodeInstance.resolveEntityType(mockData.contractEvmAddress);
       expect(entityType).to.exist;
@@ -542,9 +559,10 @@ describe('MirrorNodeClient', async function () {
       expect(entityType.entity.contract_id).to.eq(mockData.contract.contract_id);
     });
 
-    it('returns `account` when CONTRACTS endpoint returns 404 and ACCOUNTS endpoint returns a result', async() => {
+    it('returns `account` when CONTRACTS and TOKENS endpoint returns 404 and ACCOUNTS endpoint returns a result', async() => {
       mock.onGet(`contracts/${mockData.contractEvmAddress}`).reply(404, mockData.notFound);
       mock.onGet(`accounts/${mockData.contractEvmAddress}`).reply(200, mockData.account);
+      mock.onGet(`tokens/${mockData.tokenId}`).reply(404, mockData.notFound);
 
       const entityType = await mirrorNodeInstance.resolveEntityType(mockData.contractEvmAddress);
       expect(entityType).to.exist;
@@ -555,9 +573,24 @@ describe('MirrorNodeClient', async function () {
       expect(entityType.entity.account).to.eq(mockData.account.account);
     });
 
+    it('returns `token` when CONTRACTS and ACCOUNTS endpoints returns 404 and TOKEN endpoint returns a result', async() => {
+      mock.onGet(`contracts/${mockData.contractEvmAddress}`).reply(404, mockData.notFound);
+      mock.onGet(`accounts/${mockData.contractEvmAddress}`).reply(404, mockData.notFound);
+      mock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+
+      const entityType = await mirrorNodeInstance.resolveEntityType(mockData.tokenId);
+      expect(entityType).to.exist;
+      expect(entityType).to.have.property('type');
+      expect(entityType).to.have.property('entity');
+      expect(entityType.type).to.eq('token');
+      expect(entityType.entity).to.have.property('token');
+      expect(entityType.entity.token_id).to.eq(mockData.tokenId);
+    });
+
     it('returns null when CONTRACTS and ACCOUNTS endpoints return 404', async() => {
       mock.onGet(`contracts/${mockData.contractEvmAddress}`).reply(404, mockData.notFound);
       mock.onGet(`accounts/${mockData.contractEvmAddress}`).reply(404, mockData.notFound);
+      mock.onGet(`tokens/${mockData.tokenId}`).reply(404, mockData.notFound);
 
       const entityType = await mirrorNodeInstance.resolveEntityType(mockData.contractEvmAddress);
       expect(entityType).to.be.null;
