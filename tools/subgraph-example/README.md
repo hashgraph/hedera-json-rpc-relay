@@ -6,7 +6,9 @@ For more information on subgraphs, check the official TheGraph documentation htt
 
 ## Prerequisites:
 
-### Relay configurations:
+### JSON-RPC Relay configurations:
+
+Note: Currently you'll have to start the relay from the main branch in this repo, because it contains important bugfixes. This doc will be updated when a new version containing all the fixes is released.
 
 The graph node is configured to run against a local instance of the json-rpc-relay. Be sure to set the following options in your .env file:
 ```
