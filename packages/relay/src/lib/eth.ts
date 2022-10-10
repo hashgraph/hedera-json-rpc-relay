@@ -59,6 +59,9 @@ export class EthImpl implements Eth {
   static defaultGasUsedRatio = EthImpl.numberTo0x(0.5);
   static feeHistoryZeroBlockCountResponse = { gasUsedRatio: null, oldestBlock: EthImpl.zeroHex };
   static feeHistoryEmptyResponse = { baseFeePerGas: [], gasUsedRatio: [], reward: [], oldestBlock: EthImpl.zeroHex };
+  static redirectBytecodePrefix = '6080604052348015600f57600080fd5b506000610167905077618dc65e';
+  static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
+    
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -580,11 +583,15 @@ export class EthImpl implements Eth {
     }
 
     try {
-      const contract = await this.mirrorNodeClient.getContract(address, requestId);
-      if (contract && contract.runtime_bytecode && contract.runtime_bytecode !== EthImpl.emptyHex) {
-        return contract.runtime_bytecode;
+      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
+
+      if (result && result?.type === constants.TYPE_TOKEN) {
+          return EthImpl.redirectBytecodeAddressReplace(address);
       }
-      else {
+      else if (result && result?.type === constants.TYPE_CONTRACT && result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
+          return result?.entity.runtime_bytecode;
+      }
+      else{
         const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
         return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
       }
@@ -1007,6 +1014,10 @@ export class EthImpl implements Eth {
 
   private static toNullIfEmptyHex(value: string): string | null {
     return value === EthImpl.emptyHex ? null : value;
+  }
+
+  private static redirectBytecodeAddressReplace(address: string): string {
+    return `${this.redirectBytecodePrefix}${address.slice(2)}${this.redirectBytecodePostfix}`;
   }
 
   /**
