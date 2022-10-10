@@ -21,6 +21,7 @@ services:
       ipfs: 'ipfs:5001'
       ethereum: 'local:http://host.docker.internal:7546'
       GRAPH_LOG: info
+      # GRAPH_ETHEREUM_GENESIS_BLOCK_NUMBER: 1
   ipfs:
     image: ipfs/go-ipfs:v0.10.0
     ports:
