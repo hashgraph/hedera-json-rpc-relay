@@ -17,7 +17,7 @@
  * limitations under the License.
  *
  */
-import {extractReadableMessage} from '../../formatters';
+import {decodeErrorMessage} from '../../formatters';
 
 const REQUEST_ID_STRING = `Request ID: `;
 export class JsonRpcError {
@@ -143,7 +143,7 @@ export const predefined = {
   'CONTRACT_REVERT': (errorMessage?: string) => new JsonRpcError({
     name: 'Contract revert executed',
     code: 3,
-    message: `execution reverted: ${extractReadableMessage(errorMessage)}`,
+    message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
     data: errorMessage
   })
 };

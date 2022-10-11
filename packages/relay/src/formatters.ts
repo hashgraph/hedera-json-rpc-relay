@@ -46,7 +46,7 @@ function hexToASCII(str: string): string {
  * will be converted to "Set to revert"
  * @param message
  */
-const extractReadableMessage = (message?: string): string => {
+const decodeErrorMessage = (message?: string): string => {
     if (!message) return '';
     message = message.replace(/^0x/, "");   // Remove the starting 0x
     const strLen = parseInt(message.slice(8 + 64, 8 + 128), 16);  // Get the length of the readable text
@@ -54,4 +54,4 @@ const extractReadableMessage = (message?: string): string => {
     return hexToASCII(resultCodeHex);
 };
 
-export { hashNumber, formatRequestIdMessage, extractReadableMessage };
+export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage };
