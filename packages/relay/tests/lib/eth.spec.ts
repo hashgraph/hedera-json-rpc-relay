@@ -35,6 +35,7 @@ import {
   defaultEvmAddress,
   defaultFromLongZeroAddress,
   expectUnsupportedMethod,
+  defaultErrorMessage
  } from '../helpers';
 
 import pino from 'pino';
@@ -1842,6 +1843,23 @@ describe('Eth calls using MirrorNode', async function () {
         expect(result).to.equal("0x00");
       });
     });
+
+    it('SDK returns a precheck error', async function () {
+      sdkClientStub.submitContractCallQuery.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
+
+      const result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest');
+
+      expect(result).to.exist;
+      expect(result.code).to.equal(-32008);
+      expect(result.name).to.equal('Contract revert executed');
+      expect(result.message).to.equal('execution reverted: Set to revert');
+      expect(result.data).to.equal(defaultErrorMessage);
+    });
   });
 
   describe('eth_sendRawTransaction', async function() {
@@ -2217,6 +2235,19 @@ describe('Eth', async function () {
       expect(receipt).to.exist;
       if (receipt == null) return;
       expect(receipt.logsBloom).to.eq(EthImpl.emptyBloom);
+    });
+
+    it('Adds a revertReason field for receipts with errorMessage', async function() {
+      const receiptWithErrorMessage = {
+        ...defaultDetailedContractResultByHash,
+        error_message: defaultErrorMessage
+      };
+
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWithErrorMessage);
+      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+
+      expect(receipt).to.exist;
+      expect(receipt.revertReason).to.eq(defaultErrorMessage);
     });
   });
 

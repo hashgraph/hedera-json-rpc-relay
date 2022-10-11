@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { hexToASCII, decodeErrorMessage } from '../../src/formatters';
 
-describe.only('Formatters', () => {
+describe('Formatters', () => {
     describe('hexToASCII', () => {
         const inputs = [
             '4C6F72656D20497073756D',

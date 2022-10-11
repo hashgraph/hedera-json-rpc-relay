@@ -1242,7 +1242,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 };
 
                 await relay.callFailing('eth_call', [callData], {
-                    code: 3,
+                    code: -32008,
                     message: PURE_METHOD_ERROR_MESSAGE,
                     data: PURE_METHOD_ERROR_DATA
                 });
@@ -1257,7 +1257,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 };
 
                 await relay.callFailing('eth_call', [callData], {
-                    code: 3,
+                    code: -32008,
                     message: VIEW_METHOD_ERROR_MESSAGE,
                     data: VIEW_METHOD_ERROR_DATA
                 });
