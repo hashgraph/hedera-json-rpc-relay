@@ -126,6 +126,7 @@ describe('Eth calls using MirrorNode', async function () {
   const blockTimestampHex = EthImpl.numberTo0x(Number(blockTimestamp));
   const firstTransactionTimestampSeconds = '1653077547';
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
+  const htsTokenAddress = '0x0000000000000000000000000000000002dca431';
   const contractTimestamp1 = `${firstTransactionTimestampSeconds}.983983199`;
   const contractHash1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
   const contractHash2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
@@ -415,6 +416,73 @@ describe('Eth calls using MirrorNode', async function () {
     "runtime_bytecode": mirrorNodeDeployedBytecode
   };
 
+  const defaultHTSToken = 
+    {
+      "admin_key": null,
+      "auto_renew_account": "0.1.2",
+      "auto_renew_period": null,
+      "created_timestamp": "1234567890.000000001",
+      "deleted": false,
+      "decimals": 0,
+      "expiry_timestamp": null,
+      "freeze_default": false,
+      "freeze_key": {
+        "_type": "ProtobufEncoded",
+        "key": 10101
+      },
+      "initial_supply": 0,
+      "kyc_key": {
+        "_type": "ProtobufEncoded",
+        "key": 10101
+      },
+      "max_supply": 9223372036854776000,
+      "memo": "token memo",
+      "modified_timestamp": "1234567890.000000001",
+      "name": "Token name",
+      "pause_key": {
+        "_type": "ProtobufEncoded",
+        "key": 10101
+      },
+      "pause_status": "UNPAUSED",
+      "supply_key": {
+        "_type": "ProtobufEncoded",
+        "key": 10101
+      },
+      "supply_type": "INFINITE",
+      "symbol": "ORIGINALRDKSE",
+      "token_id": "0.0.48014385",
+      "total_supply": 1000000,
+      "treasury_account_id": "0.1.2",
+      "type": "NON_FUNGIBLE_UNIQUE",
+      "wipe_key": {
+        "_type": "ProtobufEncoded",
+        "key": 10101
+      },
+      "custom_fees": {
+        "created_timestamp": "1234567890.000000001",
+        "fixed_fees": [
+          {
+            "amount": 100,
+            "collector_account_id": "0.1.5",
+            "denominating_token_id": "0.10.6"
+          }
+        ],
+        "royalty_fees": [
+          {
+            "amount": {
+              "numerator": 15,
+              "denominator": 37
+            },
+            "collector_account_id": "0.1.6",
+            "fallback_fee": {
+              "amount": 100,
+              "denominating_token_id": "0.10.7"
+            }
+          }
+        ]
+      }
+    }
+  
 
   this.afterEach(() => {
     mock.resetHandlers();
@@ -1139,6 +1207,8 @@ describe('Eth calls using MirrorNode', async function () {
   describe('eth_getCode', async function() {
     it('should return cached value', async () => {
       mock.onGet(`contracts/${contractAddress1}`).reply(404, defaultContract);
+      mock.onGet(`accounts/${contractAddress1}`).reply(404, null);
+      mock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.throws(new SDKClientError({status: {
         _code: 16
       }}));
@@ -1152,6 +1222,8 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should return the runtime_bytecode from the mirror node', async () => {
       mock.onGet(`contracts/${contractAddress1}`).reply(200, defaultContract);
+      mock.onGet(`accounts/${contractAddress1}`).reply(404, null);
+      mock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
 
       const res = await ethImpl.getCode(contractAddress1, null);
@@ -1160,6 +1232,8 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should return the bytecode from SDK if Mirror Node returns 404', async () => {
       mock.onGet(`contracts/${contractAddress1}`).reply(404, defaultContract);
+      mock.onGet(`accounts/${contractAddress1}`).reply(404, null);
+      mock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
       const res = await ethImpl.getCode(contractAddress1, null);
       expect(res).to.equal(deployedBytecode);
@@ -1170,9 +1244,20 @@ describe('Eth calls using MirrorNode', async function () {
         ...defaultContract,
         runtime_bytecode: EthImpl.emptyHex
       });
+      mock.onGet(`accounts/${contractAddress1}`).reply(404, null);
+      mock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
       const res = await ethImpl.getCode(contractAddress1, null);
       expect(res).to.equal(deployedBytecode);
+    });
+
+    it('should return redirect bytecode for HTS token', async () => {
+      mock.onGet(`contracts/${htsTokenAddress}`).reply(404, null);
+      mock.onGet(`accounts/${htsTokenAddress}`).reply(404, null);
+      mock.onGet(`tokens/0.0.${parseInt(htsTokenAddress, 16)}`).reply(200, defaultHTSToken);
+      const redirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${htsTokenAddress.slice(2)}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`;
+      const res = await ethImpl.getCode(htsTokenAddress, null);
+      expect(res).to.equal(redirectBytecode);
     });
   });
 

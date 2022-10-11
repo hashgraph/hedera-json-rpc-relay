@@ -25,6 +25,7 @@ import { AliasAccount } from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
 import { ContractFunctionParameters } from '@hashgraph/sdk';
+import TokenCreateJson from '../contracts/TokenCreateContract.json';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
@@ -78,6 +79,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             accounts[0] = await servicesNode.createAliasAccount(15);
             accounts[1] = await servicesNode.createAliasAccount(15);
             accounts[2] = await servicesNode.createAliasAccount(30);
+            accounts[3] = await servicesNode.createAliasAccount(60, relay.provider);
             contractId = await accounts[0].client.createParentContract(parentContractJson);
 
             const params = new ContractFunctionParameters().addUint256(1);
@@ -1004,11 +1006,42 @@ describe('@api RPC Server Acceptance Tests', function () {
             describe('eth_getCode', () => {
 
                 let basicContract;
+                let mainContractAddress: string;
+                let NftHTSTokenContractAddress: string;
+                let redirectBytecode: string;
+
+                async function deploymainContract() {
+                    const mainFactory = new ethers.ContractFactory(TokenCreateJson.abi, TokenCreateJson.bytecode, accounts[3].wallet);
+                    const mainContract = await mainFactory.deploy({gasLimit: 15000000});
+                    const { contractAddress } = await mainContract.deployTransaction.wait();
+                
+                    return contractAddress;
+                }
+
+                async function createNftHTSToken() {
+                    const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[3].wallet);
+                    const tx = await mainContract.createNonFungibleTokenPublic(accounts[3].wallet.address, {
+                        value: ethers.BigNumber.from('10000000000000000000'),
+                        gasLimit: 10000000
+                    });
+                    const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
+                    
+                    return tokenAddress;
+                }
 
                 before(async () => {
                     basicContract = await servicesNode.deployContract(basicContractJson);
+                    mainContractAddress = await deploymainContract();
+                    NftHTSTokenContractAddress = await createNftHTSToken();
                     // Wait for creation to propagate
                     await mirrorNode.get(`/contracts/${basicContract.contractId}`);
+                });
+
+                it('should execute "eth_getCode" for hts token', async function () {
+                    const tokenAddress = NftHTSTokenContractAddress.slice(2);
+                    redirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${tokenAddress}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`
+                    const res = await relay.call('eth_getCode', [NftHTSTokenContractAddress]);
+                    expect(res).to.equal(redirectBytecode);
                 });
 
                 it('@release should execute "eth_getCode" for contract evm_address', async function () {
