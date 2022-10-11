@@ -10,7 +10,9 @@
 | Execute contract calls during subgraph event processing | ✅ |
 | Being able to specify the startBlock from which the graph sync | ✅ |
 | Support for multiple dataSources | ✅ |
-| Call and Block Handlers | ❌ |
+| Block Handlers WITHOUT filters | ✅ |
+| Block Handlers WITH filters | ❌ |
+| Call Handlers | ❌ |
 | Capture HTS transfers through HTS precompile | ❌ |
 | Capture HTS token transfers through HAPI | ❌ |
 | Can use dynamic dataSource templates | ❔ |
