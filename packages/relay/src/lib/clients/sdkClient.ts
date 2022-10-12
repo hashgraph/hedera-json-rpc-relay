@@ -44,6 +44,7 @@ import {
     FileInfoQuery,
     EthereumTransaction,
     EthereumTransactionData,
+    PrecheckStatusError,
     TransactionRecordQuery,
     Hbar,
 } from '@hashgraph/sdk';
@@ -309,6 +310,10 @@ export class SDKClient {
                 this.hbarLimiter.addExpense(cost, currentDateNow);
             }
 
+            if (e instanceof PrecheckStatusError && e.contractFunctionResult?.errorMessage) {
+                throw predefined.CONTRACT_REVERT(e.contractFunctionResult.errorMessage);
+            }
+
             if (e instanceof JsonRpcError){
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
@@ -345,14 +350,14 @@ export class SDKClient {
                         .setValidateReceiptStatus(false)
                         .execute(this.clientMain);
                     transactionFee = transctionRecord.transactionFee;
-    
+
                     this.captureMetrics(
                         SDKClient.transactionMode,
                         transactionType,
                         sdkClientError.status,
                         transactionFee.toTinybars().toNumber(),
                         callerName);
-                    
+
                     this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
                 } catch (err: any) {
                     const recordQueryError = new SDKClientError(e);
@@ -408,14 +413,14 @@ export class SDKClient {
                         .setValidateReceiptStatus(false)
                         .execute(this.clientMain);
                     transactionFee = transctionRecord.transactionFee;
-    
+
                     this.captureMetrics(
                         SDKClient.transactionMode,
                         transactionName,
                         sdkClientError.status,
                         transactionFee.toTinybars().toNumber(),
                         callerName);
-    
+
                     this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
                 } catch (err: any) {
                     const recordQueryError = new SDKClientError(e);

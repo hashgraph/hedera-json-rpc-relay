@@ -30,6 +30,7 @@ import TokenCreateJson from '../contracts/TokenCreateContract.json';
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
+import reverterContractJson from '../contracts/Reverter.json';
 import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
@@ -1211,6 +1212,76 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(res.gasUsedRatio.length).to.be.gt(0);
                 expect(res.oldestBlock).to.exist;
                 expect(Number(res.oldestBlock)).to.be.gt(0);
+            });
+        });
+
+        describe('Contract call reverts', () => {
+            let reverterContract, reverterEvmAddress;
+            const PURE_METHOD_CALL_DATA = '0xb2e0100c';
+            const VIEW_METHOD_CALL_DATA = '0x90e9b875';
+            const PAYABLE_METHOD_CALL_DATA = '0xd0efd7ef';
+            const PURE_METHOD_ERROR_DATA = '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000010526576657274526561736f6e5075726500000000000000000000000000000000';
+            const VIEW_METHOD_ERROR_DATA = '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000010526576657274526561736f6e5669657700000000000000000000000000000000';
+            const PAYABLE_METHOD_ERROR_DATA = '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013526576657274526561736f6e50617961626c6500000000000000000000000000';
+            const PURE_METHOD_ERROR_MESSAGE = 'execution reverted: RevertReasonPure';
+            const VIEW_METHOD_ERROR_MESSAGE = 'execution reverted: RevertReasonView';
+
+            before(async () => {
+                reverterContract = await servicesNode.deployContract(reverterContractJson);
+                // Wait for creation to propagate
+                await mirrorNode.get(`/contracts/${reverterContract.contractId}`);
+                reverterEvmAddress = `0x${reverterContract.contractId.toSolidityAddress()}`;
+            });
+
+            it('Returns revert message for pure methods', async () => {
+                const callData = {
+                    from: accounts[0].address,
+                    to: reverterEvmAddress,
+                    gas: 30000,
+                    data: PURE_METHOD_CALL_DATA
+                };
+
+                await relay.callFailing('eth_call', [callData], {
+                    code: -32008,
+                    message: PURE_METHOD_ERROR_MESSAGE,
+                    data: PURE_METHOD_ERROR_DATA
+                });
+            });
+
+            it('Returns revert message for view methods', async () => {
+                const callData = {
+                    from: accounts[0].address,
+                    to: reverterEvmAddress,
+                    gas: 30000,
+                    data: VIEW_METHOD_CALL_DATA
+                };
+
+                await relay.callFailing('eth_call', [callData], {
+                    code: -32008,
+                    message: VIEW_METHOD_ERROR_MESSAGE,
+                    data: VIEW_METHOD_ERROR_DATA
+                });
+            });
+
+            it('Returns revert reason in receipt for payable methods', async () => {
+                const transaction = {
+                    value: ONE_TINYBAR,
+                    gasLimit: 30000,
+                    chainId: Number(CHAIN_ID),
+                    to: reverterEvmAddress,
+                    nonce: await relay.getAccountNonce(accounts[0].address),
+                    gasPrice: await relay.gasPrice(),
+                    data: PAYABLE_METHOD_CALL_DATA
+                };
+                const signedTx = await accounts[0].wallet.signTransaction(transaction);
+                const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
+
+                // Wait until receipt is available in mirror node
+                await mirrorNode.get(`/contracts/results/${transactionHash}`);
+
+                const receipt = await relay.call('eth_getTransactionReceipt', [transactionHash]);
+                expect(receipt?.revertReason).to.exist;
+                expect(receipt.revertReason).to.eq(PAYABLE_METHOD_ERROR_DATA);
             });
         });
     });
