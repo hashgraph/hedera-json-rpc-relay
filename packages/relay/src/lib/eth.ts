@@ -61,7 +61,7 @@ export class EthImpl implements Eth {
   static feeHistoryEmptyResponse = { baseFeePerGas: [], gasUsedRatio: [], reward: [], oldestBlock: EthImpl.zeroHex };
   static redirectBytecodePrefix = '6080604052348015600f57600080fd5b506000610167905077618dc65e';
   static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
-    
+
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -906,7 +906,7 @@ export class EthImpl implements Eth {
       blockNumber: EthImpl.numberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
       from: fromAddress,
-      gas: EthImpl.numberTo0x(contractResult.gas_used),
+      gas: EthImpl.nanOrNumberTo0x(contractResult.gas_used),
       gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
@@ -968,7 +968,7 @@ export class EthImpl implements Eth {
         from: receiptResponse.from,
         to: receiptResponse.to,
         cumulativeGasUsed: EthImpl.numberTo0x(receiptResponse.block_gas_used),
-        gasUsed: EthImpl.numberTo0x(receiptResponse.gas_used),
+        gasUsed: EthImpl.nanOrNumberTo0x(receiptResponse.gas_used),
         contractAddress: createdContract,
         logs: logs,
         logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
@@ -1195,7 +1195,7 @@ export class EthImpl implements Eth {
           blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
           chainId: contractResultDetails.chain_id,
           from: contractResultDetails.from.substring(0, 42),
-          gas: EthImpl.numberTo0x(contractResultDetails.gas_used),
+          gas: EthImpl.nanOrNumberTo0x(contractResultDetails.gas_used),
           gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
           hash: contractResultDetails.hash.substring(0, 66),
           input: contractResultDetails.function_parameters,
