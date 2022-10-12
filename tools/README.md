@@ -1,5 +1,23 @@
 ##### The JSON RPC relay serves as an interface to the Hedera network for ethereum developer tools that utilize the implemented JSON RPC APIs. The following development tools have been tested and the extent of their coverage is noted below.
 
+### TheGraph integration
+
+|             |   Status    |
+| ----------- | ----------- |
+| Catch & handle events emitted from EthereumTransactions | ✅ |
+| Catch & handle events emitted from ContractCall & ContractCreate | ✅ |
+| Capture ERC transfers through HTS precompile | ✅ |
+| Execute contract calls during subgraph event processing | ✅ |
+| Being able to specify the startBlock from which the graph sync | ✅ |
+| Support for multiple dataSources | ✅ |
+| Block Handlers WITHOUT filters | ✅ |
+| Block Handlers WITH filters | ❌ |
+| Call Handlers | ❌ |
+| Capture HTS transfers through HTS precompile | ❌ |
+| Capture HTS token transfers through HAPI | ❌ |
+| Can use dynamic dataSource templates | ❔ |
+| Can index anonymous events | ❔ |
+
 ### Supported tools
 |                                                                      | web3js | Truffle | ethers | Hardhat |
 |----------------------------------------------------------------------|--------|---------|--------|---------|
