@@ -33,6 +33,9 @@ on sender address and nonce. In the Hedera ecosystem, it's not like that, where 
 [ethersjs](https://docs.ethers.io/v5/) and therefore Hardhat usage are impacted by this address calculation difference with the details captured [here](https://github.com/ethers-io/ethers.js/discussions/3141).
 An extra step to retrieve the valid Hedera contract address is required to workaround this challenge, example workarounds are provided below.
 
+Note:
+Development tools are usually making a lot of requests to certain endpoints, especially during contract deployment. Be aware about rate limiting, when deploying multiple large contracts.
+
 #### Option 1
 ```typescript
 // init the contract factory
