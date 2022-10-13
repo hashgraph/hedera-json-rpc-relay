@@ -906,7 +906,7 @@ export class EthImpl implements Eth {
       blockNumber: EthImpl.numberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
       from: fromAddress,
-      gas: EthImpl.numberTo0x(contractResult.gas_used),
+      gas: EthImpl.nanOrNumberTo0x(contractResult.gas_used),
       gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
@@ -962,13 +962,13 @@ export class EthImpl implements Eth {
         });
       });
 
-      const receipt = {
+      const receipt: any = {
         blockHash: EthImpl.toHash32(receiptResponse.block_hash),
         blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
         from: receiptResponse.from,
         to: receiptResponse.to,
         cumulativeGasUsed: EthImpl.numberTo0x(receiptResponse.block_gas_used),
-        gasUsed: EthImpl.numberTo0x(receiptResponse.gas_used),
+        gasUsed: EthImpl.nanOrNumberTo0x(receiptResponse.gas_used),
         contractAddress: createdContract,
         logs: logs,
         logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
@@ -978,6 +978,10 @@ export class EthImpl implements Eth {
         root: receiptResponse.root,
         status: receiptResponse.status,
       };
+
+      if (receiptResponse.error_message) {
+        receipt.revertReason = receiptResponse.error_message;
+      }
 
       this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
       return receipt;
@@ -1191,7 +1195,7 @@ export class EthImpl implements Eth {
           blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
           chainId: contractResultDetails.chain_id,
           from: contractResultDetails.from.substring(0, 42),
-          gas: EthImpl.numberTo0x(contractResultDetails.gas_used),
+          gas: EthImpl.nanOrNumberTo0x(contractResultDetails.gas_used),
           gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
           hash: contractResultDetails.hash.substring(0, 66),
           input: contractResultDetails.function_parameters,
