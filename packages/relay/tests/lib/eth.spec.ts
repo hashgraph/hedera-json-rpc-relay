@@ -1320,13 +1320,11 @@ describe('Eth calls using MirrorNode', async function () {
         logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
       };
 
-      mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);
-      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
       mock.onGet(`blocks/${blockHash}`).reply(567, timeoutError);
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
 
       try {
-        const result = await ethImpl.getLogs(blockHash, null, null, null, null);
+        await ethImpl.getLogs(blockHash, null, null, null, null);
         expect(true).to.eq(false);
       } catch (error: any) {
         expect(error.statusCode).to.equal(MirrorNodeClientError.statusCodes.TIMEOUT);
@@ -1334,21 +1332,21 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('address filter timeouts and throws the expected error', async function () {
-      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
-      mock.onGet(`contracts/${contractAddress1}/results/logs`).reply(567, timeoutError);
+      mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
+      mock.onGet(`contracts/${contractAddress1}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(567, timeoutError);
 
       try {
-        const result = await ethImpl.getLogs(null, null, null, contractAddress1, null);
+        await ethImpl.getLogs(null, null, null, contractAddress1, null);
         expect(true).to.eq(false);
       } catch (error: any) {
+        console.log(error);
         expect(error.statusCode).to.equal(MirrorNodeClientError.statusCodes.TIMEOUT);
       }
     });
 
     it('error when retrieving logs', async function () {
-      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(400, { "_status": { "messages": [{ "message": "Mocked error" }] } });
       mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(400, { "_status": { "messages": [{ "message": "Mocked error" }] } });
 
       const result = await ethImpl.getLogs(null, null, null, null, null);
       expect(result).to.exist;
@@ -1375,8 +1373,6 @@ describe('Eth calls using MirrorNode', async function () {
       };
       mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
       mock.onGet(`contracts/${contractAddress1}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
-      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
 
       const result = await ethImpl.getLogs(null, null, null, contractAddress1, null);
 
@@ -1392,9 +1388,10 @@ describe('Eth calls using MirrorNode', async function () {
       const filteredLogs = {
         logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
       };
-      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
+
       mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
+
       const result = await ethImpl.getLogs(blockHash, null, null, null, null);
 
       expect(result).to.exist;
@@ -1415,10 +1412,10 @@ describe('Eth calls using MirrorNode', async function () {
         },
       };
 
-      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${toBlock.timestamp.to}`).reply(200, filteredLogs);
       mock.onGet('blocks/5').reply(200, defaultBlock);
       mock.onGet('blocks/16').reply(200, toBlock);
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${toBlock.timestamp.to}`).reply(200, filteredLogs);
+
       const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null);
 
       expect(result).to.exist;
@@ -1458,9 +1455,9 @@ describe('Eth calls using MirrorNode', async function () {
         logs: [defaultLogs.logs[0]]
       };
 
-      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
       mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
+
       const result = await ethImpl.getLogs(null, null, 'latest', null, null);
 
       expect(result).to.exist;
@@ -1499,7 +1496,6 @@ describe('Eth calls using MirrorNode', async function () {
         `&topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
         `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}`
       ).reply(200, filteredLogs);
-      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
 
       const result = await ethImpl.getLogs(null, null, null, null, defaultLogTopics);
 
@@ -1512,7 +1508,9 @@ describe('Eth calls using MirrorNode', async function () {
       const filteredLogs = {
         logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
       };
-      mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+
+      mock.onGet('blocks/5').reply(200, defaultBlock);
+      mock.onGet('blocks/16').reply(200, defaultBlock);
       mock.onGet(
         `contracts/results/logs` +
         `?timestamp=gte:${defaultBlock.timestamp.from}` +
@@ -1520,8 +1518,6 @@ describe('Eth calls using MirrorNode', async function () {
         `&topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
         `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}`
       ).reply(200, filteredLogs);
-      mock.onGet('blocks/5').reply(200, defaultBlock);
-      mock.onGet('blocks/16').reply(200, defaultBlock);
 
       const result = await ethImpl.getLogs(null, '0x5', '0x10', null, defaultLogTopics);
 
