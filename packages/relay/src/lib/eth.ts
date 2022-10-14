@@ -1308,62 +1308,20 @@ export class EthImpl implements Eth {
     if (!result || !result.logs) {
       return [];
     }
-    const logs = result.logs;
 
-    // Find unique contract execution timestamp and for each one make mirror node request
-    const promises: Promise<any>[] = [];
-    const uniquePairs = {};
-
-    for (let i = 0; i < logs.length; i++) {
-      const log = logs[i];
-      const timestamp = `${log.timestamp}`;
-      if (uniquePairs[timestamp] === undefined) {
-        uniquePairs[timestamp] = [i];
-        promises.push(this.mirrorNodeClient.getContractResultsDetails(
-          log.contract_id,
-          log.timestamp,
-          requestId
-        ));
-      }
-      else {
-        uniquePairs[timestamp].push(i);
-      }
-    }
-
-    try {
-      // Populate the Log objects with block and transaction data from ContractResultsDetails
-      const contractsResultsDetails = await Promise.all(promises);
-      for (let i = 0; i < contractsResultsDetails.length; i++) {
-        const detail = contractsResultsDetails[i];
-        // retrieve set of logs for each timestamp
-        const timestamp = `${detail.timestamp}`;
-        const uPair = uniquePairs[timestamp] || [];
-        for (let p = 0; p < uPair.length; p++) {
-          const logIndex = uPair[p];
-          const log = logs[logIndex];
-          logs[logIndex] = new Log({
-            address: log.address,
-            blockHash: EthImpl.toHash32(detail.block_hash),
-            blockNumber: EthImpl.numberTo0x(detail.block_number),
-            data: log.data,
-            logIndex: EthImpl.numberTo0x(logIndex),
-            removed: false,
-            topics: log.topics,
-            transactionHash: EthImpl.toHash32(detail.hash),
-            transactionIndex: EthImpl.numberTo0x(detail.transaction_index)
-          });
-        }
-      }
-    }
-    catch(e: any) {
-      if (e instanceof MirrorNodeClientError && e.isNotFound()) {
-        return [];
-      }
-
-      throw e;
-    }
-
-    return logs;
+    return result.logs.map(log => {
+      return new Log({
+        address: log.address,
+        blockHash: EthImpl.toHash32(log.block_hash),
+        blockNumber: EthImpl.numberTo0x(log.block_number),
+        data: log.data,
+        logIndex: EthImpl.numberTo0x(log.index),
+        removed: false,
+        topics: log.topics,
+        transactionHash: EthImpl.toHash32(log.transaction_hash),
+        transactionIndex: EthImpl.numberTo0x(log.transaction_index)
+      });
+    });
   }
 
   async maxPriorityFeePerGas(requestId?: string): Promise<string> {

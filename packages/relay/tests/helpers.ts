@@ -267,20 +267,28 @@ export const defaultLogs1 = [
         "bloom": logBloom1,
         "contract_id": contractId1,
         "data": "0x",
-        "index": "0x0",
+        "index": 0,
         "topics": defaultLogTopics,
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp1
+        "timestamp": contractTimestamp1,
+        "block_hash": blockHash,
+        "block_number": blockNumber,
+        "transaction_hash": contractHash1,
+        "transaction_index": 1
     },
     {
         "address": "0x0000000000000000000000000000000002131951",
         "bloom": logBloom2,
         "contract_id": contractId1,
         "data": "0x",
-        "index": "0x1",
+        "index": 1,
         "topics": defaultLogTopics,
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp1
+        "timestamp": contractTimestamp1,
+        "block_hash": blockHash,
+        "block_number": blockNumber,
+        "transaction_hash": contractHash1,
+        "transaction_index": 1
     }
 ];
 
@@ -290,10 +298,14 @@ export const defaultLogs2 = [
         "bloom": logBloom3,
         "contract_id": contractId1,
         "data": "0x",
-        "index": "0x0",
+        "index": 0,
         "topics": [],
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp2
+        "timestamp": contractTimestamp2,
+        "block_hash": blockHash2,
+        "block_number": blockNumber2,
+        "transaction_hash": contractHash2,
+        "transaction_index": 1
     }
 ];
 
@@ -303,10 +315,14 @@ export const defaultLogs3 = [
         "bloom": logBloom4,
         "contract_id": contractId2,
         "data": "0x",
-        "index": "0x0",
+        "index": 0,
         "topics": [],
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp3
+        "timestamp": contractTimestamp3,
+        "block_hash": blockHash3 ,
+        "block_number": blockNumber3,
+        "transaction_hash": contractHash3,
+        "transaction_index": 1
     }
 ];
 
