@@ -85,8 +85,8 @@ export class ServerError extends JsonRpcError {
 }
 
 export class IPRateLimitExceeded extends JsonRpcError {
-  constructor() {
-    super('IP Rate limit exceeded', -32605, undefined);
+  constructor(methodName) {
+    super(`IP Rate limit exceeded on ${methodName}`, -32605, undefined);
   }
 }
 

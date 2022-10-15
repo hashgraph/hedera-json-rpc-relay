@@ -111,7 +111,7 @@ export default class KoaJsonRpc {
       const methodName = body.method;
       const methodTotalLimit = this.registryTotal[methodName];
       if (this.ratelimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit)) {
-        ctx.body = jsonResp(body.id, new IPRateLimitExceeded(`${methodName}`), undefined);
+        ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
         return;
       }
 
