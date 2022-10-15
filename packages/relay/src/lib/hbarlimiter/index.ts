@@ -18,14 +18,18 @@
  *
  */
 
+import { Logger } from 'pino';
+
 export default class HbarLimit {
     private enabled: boolean = false;
     private remainingBudget: number;
     private duration: number = 0;
     private total: number = 0;
     private reset: number;
+    private logger: Logger;
 
-    constructor(currentDateNow: number, total: number, duration: number) {
+    constructor(logger: Logger, currentDateNow: number, total: number, duration: number) {
+        this.logger = logger;
         this.enabled = false;
 
         if (total && duration) {
@@ -48,7 +52,13 @@ export default class HbarLimit {
         if (this.shouldResetLimiter(currentDateNow)){
             this.resetLimiter(currentDateNow);
         }
-        return this.remainingBudget <= 0 ? true : false;
+
+        if (this.remainingBudget <= 0) {
+            this.logger.warn(`Rate limit incoming calls, ${this.remainingBudget} out of ${this.total} tℏ left in relay budget until ${this.reset}`);
+            return true;
+        }
+        
+        return false;
     }
 
     /**

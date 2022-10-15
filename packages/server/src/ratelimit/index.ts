@@ -18,13 +18,28 @@
  *
  */
 
-export default class RateLimit {
-  duration: number;
-  database: any;
+import { Logger } from 'pino';
+import { Gauge, Registry } from 'prom-client';
 
-  constructor(duration) {
+export default class RateLimit {
+  private duration: number;
+  private database: any;
+  private logger: Logger;
+  private ipRateLimitGauge: Gauge;
+
+  constructor(logger: Logger, register: Registry, duration) {
+    this.logger = logger;
     this.duration = duration;
     this.database = Object.create(null);
+
+    const metricGaugeName = 'rpc_relay_ip_rate_limit';
+    register.removeSingleMetric(metricGaugeName);
+    this.ipRateLimitGauge = new Gauge({
+        name: metricGaugeName,
+        help: 'Relay ip rate limit gauge',
+        labelNames: ['methodName'],
+        registers: [register],
+    });
   }
 
   shouldRateLimit(ip: string, methodName: string, total: number): boolean {
@@ -34,6 +49,9 @@ export default class RateLimit {
         this.decreaseRemaining(ip, methodName);
         return false;
       }
+
+      this.ipRateLimitGauge.labels(methodName).inc(1);
+      this.logger.warn(`Rate limit call to ${methodName}, ${this.database[ip].methodInfo[methodName].remaining} out of ${total} calls remaining`);
       return true;
     } else {
       this.reset(ip, methodName, total);

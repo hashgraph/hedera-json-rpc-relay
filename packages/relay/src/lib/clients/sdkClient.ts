@@ -133,7 +133,7 @@ export class SDKClient {
 
         const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
         const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
-        this.hbarLimiter = new HbarLimit(Date.now(), total, duration);
+        this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration);
     }
 
     async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
