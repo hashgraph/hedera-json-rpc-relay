@@ -585,21 +585,24 @@ export class EthImpl implements Eth {
 
     try {
       const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
-
-      if (result && result?.type === constants.TYPE_TOKEN) {
+      if (result) {
+        if (result?.type === constants.TYPE_TOKEN) {
+          this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
           return EthImpl.redirectBytecodeAddressReplace(address);
+        }
+        else if (result?.type === constants.TYPE_CONTRACT) {
+          if (address === EthImpl.iHTSAddress) {
+            this.logger.trace(`${requestIdPrefix} HTS precompile case, return ${EthImpl.invalidEVMInstruction} for byte code`);
+            return EthImpl.invalidEVMInstruction;
+          }
+          else if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
+              return result?.entity.runtime_bytecode;
+          }
+        }
       }
-      else if (result && result?.type === constants.TYPE_CONTRACT && address === EthImpl.iHTSAddress) {
-        this.logger.debug(`${requestIdPrefix} HTS precompile, return 0x for byte code`);
-        return EthImpl.invalidEVMInstruction;
-      }
-      else if (result && result?.type === constants.TYPE_CONTRACT && result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
-          return result?.entity.runtime_bytecode;
-      }
-      else{
-        const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
-        return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
-      }
+      
+      const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
+      return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       if(e instanceof SDKClientError) {
         // handle INVALID_CONTRACT_ID
