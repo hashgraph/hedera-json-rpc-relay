@@ -10,7 +10,7 @@ const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 
 (function () {
-  if (USE_LOCAL_NODE) {
+  if (USE_LOCAL_NODE) {    
     console.log('Installing local node...');
     shell.exec(`npm install @hashgraph/hedera-local -g`);
   
