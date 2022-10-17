@@ -1179,16 +1179,12 @@ export class EthImpl implements Eth {
   }
 
   private getTransactionFromContractResults(contractResults: any, requestId?: string) {
-    if (contractResults.results === undefined) {
+    if (!contractResults || !contractResults.results || contractResults.results.length == 0) {
       // contract result not found
       return null;
     }
 
     const contractResult = contractResults.results[0];
-    if (contractResult === undefined) {
-      // contract result not found
-      return null;
-    }
 
     return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp, requestId);
   }
@@ -1198,29 +1194,34 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp, requestId)
       .then(contractResultDetails => {
-        const rSig = contractResultDetails.r === null ? null : contractResultDetails.r.substring(0, 66);
-        const sSig = contractResultDetails.s === null ? null : contractResultDetails.s.substring(0, 66);
-        return new Transaction({
-          accessList: undefined, // we don't support access lists for now, so punt
-          blockHash: contractResultDetails.block_hash.substring(0, 66),
-          blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
-          chainId: contractResultDetails.chain_id,
-          from: contractResultDetails.from.substring(0, 42),
-          gas: EthImpl.nanOrNumberTo0x(contractResultDetails.gas_used),
-          gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
-          hash: contractResultDetails.hash.substring(0, 66),
-          input: contractResultDetails.function_parameters,
-          maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
-          maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
-          nonce: EthImpl.nanOrNumberTo0x(contractResultDetails.nonce),
-          r: rSig,
-          s: sSig,
-          to: contractResultDetails.to.substring(0, 42),
-          transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
-          type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
-          v: EthImpl.nullableNumberTo0x(contractResultDetails.v),
-          value: EthImpl.numberTo0x(contractResultDetails.amount),
-        });
+        // 404 is allowed return code so it's possible for contractResultDetails to be null
+        if(contractResultDetails == null) {
+          return null;
+        } else {
+          const rSig = contractResultDetails.r === null ? null : contractResultDetails.r.substring(0, 66);
+          const sSig = contractResultDetails.s === null ? null : contractResultDetails.s.substring(0, 66);
+          return new Transaction({
+            accessList: undefined, // we don't support access lists for now, so punt
+            blockHash: contractResultDetails.block_hash.substring(0, 66),
+            blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
+            chainId: contractResultDetails.chain_id,
+            from: contractResultDetails.from.substring(0, 42),
+            gas: EthImpl.nanOrNumberTo0x(contractResultDetails.gas_used),
+            gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
+            hash: contractResultDetails.hash.substring(0, 66),
+            input: contractResultDetails.function_parameters,
+            maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
+            maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
+            nonce: EthImpl.nanOrNumberTo0x(contractResultDetails.nonce),
+            r: rSig,
+            s: sSig,
+            to: contractResultDetails.to.substring(0, 42),
+            transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
+            type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
+            v: EthImpl.nullableNumberTo0x(contractResultDetails.v),
+            value: EthImpl.numberTo0x(contractResultDetails.amount),
+          });
+        }
       })
       .catch((e: any) => {
         this.logger.error(
