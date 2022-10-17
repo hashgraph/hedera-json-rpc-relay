@@ -42,7 +42,7 @@ const cors = require('koa-cors');
 const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
-const app = new KoaJsonRpc();
+const app = new KoaJsonRpc(logger, register);
 
 const REQUEST_ID_STRING = `Request ID: `;
 const responseSuccessStatusCode = '200';
@@ -144,7 +144,7 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
     methodResponseHistogram.labels(methodName, status).observe(ms);
     logger.info(`${messagePrefix} ${status} ${ms} ms `);
     if (response instanceof JsonRpcError) {
-      logger.error(`returning error to sender: ${requestIdPrefix} ${response.message}`)
+      logger.error(`returning error to sender: ${requestIdPrefix} ${response.message}`);
       return new JsonRpcError({
         name: response.name,
         code: response.code,
