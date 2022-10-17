@@ -589,12 +589,12 @@ export class EthImpl implements Eth {
       if (result && result?.type === constants.TYPE_TOKEN) {
           return EthImpl.redirectBytecodeAddressReplace(address);
       }
-      else if (result && result?.type === constants.TYPE_CONTRACT && result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
-          return result?.entity.runtime_bytecode;
-      }
       else if (result && result?.type === constants.TYPE_CONTRACT && address === EthImpl.iHTSAddress) {
         this.logger.debug(`${requestIdPrefix} HTS precompile, return 0x for byte code`);
         return EthImpl.invalidEVMInstruction;
+      }
+      else if (result && result?.type === constants.TYPE_CONTRACT && result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
+          return result?.entity.runtime_bytecode;
       }
       else{
         const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
