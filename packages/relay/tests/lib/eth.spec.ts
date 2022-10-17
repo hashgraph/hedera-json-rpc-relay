@@ -1281,6 +1281,14 @@ describe('Eth calls using MirrorNode', async function () {
       const res = await ethImpl.getCode(htsTokenAddress, null);
       expect(res).to.equal(redirectBytecode);
     });
+
+    it('should return the static bytecode for address(0x167) call', async () => {
+      mock.onGet(`contracts/${EthImpl.iHTSAddress}`).reply(200, defaultContract);
+      mock.onGet(`accounts/${EthImpl.iHTSAddress}`).reply(404, null);
+
+      const res = await ethImpl.getCode(EthImpl.iHTSAddress, null);
+      expect(res).to.equal(EthImpl.invalidEVMInstruction);
+    });
   });
 
   describe('eth_getLogs', async function () {

@@ -61,7 +61,8 @@ export class EthImpl implements Eth {
   static feeHistoryEmptyResponse = { baseFeePerGas: [], gasUsedRatio: [], reward: [], oldestBlock: EthImpl.zeroHex };
   static redirectBytecodePrefix = '6080604052348015600f57600080fd5b506000610167905077618dc65e';
   static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
-
+  static iHTSAddress = '0x0000000000000000000000000000000000000167';
+  static invalidEVMInstruction = '0xfe';
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -590,6 +591,10 @@ export class EthImpl implements Eth {
       }
       else if (result && result?.type === constants.TYPE_CONTRACT && result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
           return result?.entity.runtime_bytecode;
+      }
+      else if (result && result?.type === constants.TYPE_CONTRACT && address === EthImpl.iHTSAddress) {
+        this.logger.debug(`${requestIdPrefix} HTS precompile, return 0x for byte code`);
+        return EthImpl.invalidEVMInstruction;
       }
       else{
         const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
