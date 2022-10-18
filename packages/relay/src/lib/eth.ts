@@ -574,7 +574,14 @@ export class EthImpl implements Eth {
    */
   async getCode(address: string, blockNumber: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    // FIXME: This has to be reimplemented to get the data from the mirror node.
+    
+    // check for static precompile cases first before consulting nodes
+    // this also account for environments where system entitites were not yet exposed to the mirror node
+    if (address === EthImpl.iHTSAddress) {
+      this.logger.trace(`${requestIdPrefix} HTS precompile case, return ${EthImpl.invalidEVMInstruction} for byte code`);
+      return EthImpl.invalidEVMInstruction;
+    }
+
     this.logger.trace(`${requestIdPrefix} getCode(address=${address}, blockNumber=${blockNumber})`);
 
     const cachedLabel = `getCode.${address}.${blockNumber}`;
@@ -591,11 +598,7 @@ export class EthImpl implements Eth {
           return EthImpl.redirectBytecodeAddressReplace(address);
         }
         else if (result?.type === constants.TYPE_CONTRACT) {
-          if (address === EthImpl.iHTSAddress) {
-            this.logger.trace(`${requestIdPrefix} HTS precompile case, return ${EthImpl.invalidEVMInstruction} for byte code`);
-            return EthImpl.invalidEVMInstruction;
-          }
-          else if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
+          if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
               return result?.entity.runtime_bytecode;
           }
         }
