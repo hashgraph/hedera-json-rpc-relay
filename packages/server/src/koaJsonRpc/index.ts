@@ -25,6 +25,7 @@ import RateLimit from '../ratelimit';
 import parse from 'co-body';
 import dotenv from 'dotenv';
 import path from 'path';
+import { Logger } from 'pino';
 import {
   ParseError,
   InvalidRequest,
@@ -34,6 +35,7 @@ import {
   Unauthorized
 } from './lib/RpcError';
 import Koa from 'koa';
+import { Registry } from 'prom-client';
 
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
@@ -48,7 +50,7 @@ export default class KoaJsonRpc {
   private ratelimit: RateLimit;
   private koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
 
-  constructor(opts?) {
+  constructor(logger: Logger, register: Registry, opts?) {
     this.koaApp = new Koa();
     this.limit = '1mb';
     this.duration = parseInt(process.env.LIMIT_DURATION!);
@@ -59,7 +61,7 @@ export default class KoaJsonRpc {
       this.limit = opts.limit || this.limit;
       this.duration = opts.limit || this.limit;
     }
-    this.ratelimit = new RateLimit(this.duration);
+    this.ratelimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
   }
 
   useRpc(name, func) {
@@ -109,7 +111,7 @@ export default class KoaJsonRpc {
       const methodName = body.method;
       const methodTotalLimit = this.registryTotal[methodName];
       if (this.ratelimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit)) {
-        ctx.body = jsonResp(body.id, new IPRateLimitExceeded(), undefined);
+        ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
         return;
       }
 

@@ -82,6 +82,76 @@ const mockData = {
         }
     },
 
+    tokenId: '0.0.13312',
+    token: {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "auto_renew_account": "0.1.2",
+        "auto_renew_period": null,
+        "created_timestamp": "1234567890.000000001",
+        "deleted": false,
+        "decimals": 1000,
+        "expiry_timestamp": null,
+        "freeze_default": false,
+        "freeze_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "initial_supply": 1000000,
+        "kyc_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "max_supply": 9223372036854776000,
+        "memo": "token memo",
+        "modified_timestamp": "1234567890.000000001",
+        "name": "Token name",
+        "pause_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "pause_status": "UNPAUSED",
+        "supply_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "supply_type": "INFINITE",
+        "symbol": "ORIGINALRDKSE",
+        "token_id": "0.0.13312",
+        "total_supply": 1000000,
+        "treasury_account_id": "0.1.2",
+        "type": "FUNGIBLE_COMMON",
+        "wipe_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "custom_fees": {
+          "created_timestamp": "1234567890.000000001",
+          "fixed_fees": [
+            {
+              "amount": 100,
+              "collector_account_id": "0.1.5",
+              "denominating_token_id": "0.10.8"
+            }
+          ],
+          "fractional_fees": [
+            {
+              "amount": {
+                "numerator": 12,
+                "denominator": 29
+              },
+              "collector_account_id": "0.1.6",
+              "denominating_token_id": "0.10.9",
+              "maximum": 120,
+              "minimum": 30,
+              "net_of_transfers": true
+            }
+          ]
+        }
+      },
+
     notFound: {
         "_status": {
             "messages": [
@@ -197,20 +267,28 @@ export const defaultLogs1 = [
         "bloom": logBloom1,
         "contract_id": contractId1,
         "data": "0x",
-        "index": "0x0",
+        "index": 0,
         "topics": defaultLogTopics,
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp1
+        "timestamp": contractTimestamp1,
+        "block_hash": blockHash,
+        "block_number": blockNumber,
+        "transaction_hash": contractHash1,
+        "transaction_index": 1
     },
     {
         "address": "0x0000000000000000000000000000000002131951",
         "bloom": logBloom2,
         "contract_id": contractId1,
         "data": "0x",
-        "index": "0x1",
+        "index": 1,
         "topics": defaultLogTopics,
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp1
+        "timestamp": contractTimestamp1,
+        "block_hash": blockHash,
+        "block_number": blockNumber,
+        "transaction_hash": contractHash1,
+        "transaction_index": 1
     }
 ];
 
@@ -220,10 +298,14 @@ export const defaultLogs2 = [
         "bloom": logBloom3,
         "contract_id": contractId1,
         "data": "0x",
-        "index": "0x0",
+        "index": 0,
         "topics": [],
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp2
+        "timestamp": contractTimestamp2,
+        "block_hash": blockHash2,
+        "block_number": blockNumber2,
+        "transaction_hash": contractHash2,
+        "transaction_index": 1
     }
 ];
 
@@ -233,10 +315,14 @@ export const defaultLogs3 = [
         "bloom": logBloom4,
         "contract_id": contractId2,
         "data": "0x",
-        "index": "0x0",
+        "index": 0,
         "topics": [],
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp3
+        "timestamp": contractTimestamp3,
+        "block_hash": blockHash3 ,
+        "block_number": blockNumber3,
+        "transaction_hash": contractHash3,
+        "transaction_index": 1
     }
 ];
 
@@ -395,3 +481,5 @@ export const defaultDetailedContractResultByHash = {
     "v": 1,
     "nonce": 1
 };
+
+export const defaultErrorMessage = '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';

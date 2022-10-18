@@ -9,7 +9,7 @@
         "eslint-config-airbnb-base": "^15.0.0",
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-import": "^2.25.4",
-        "ethereum-waffle": "^3.4.4",
+        "ethereum-waffle": "^4.0.7",
         "nodemon": "^2.0.15",
         "nyc": "^15.1.0",
         "prettier": "^2.5.1"
@@ -42,16 +42,15 @@
         "start:docker": "docker run --name hedera-relay -d -p 7546:7546 ${npm_package_name}:latest",
         "test": "npx lerna run test",
         "openrpctest": "ts-mocha packages/relay/tests/lib/openrpc.spec.ts --exit",
-        "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts",
-        "integration:prerequisiteDappTests": "ts-node packages/server/tests/helpers/prerequisiteDappTests.ts"
+        "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts"
     },
     "dependencies": {
-        "@hashgraph/hedera-local": "^1.2.0",
+        "@hashgraph/hedera-local": "^2.0.1",
         "@open-rpc/schema-utils-js": "^1.16.1",
         "@types/find-config": "^1.0.1",
         "keyv-file": "^0.2.0",
         "koa-cors": "^0.0.16",
-        "lerna": "^4.0.0",
+        "lerna": "^6.0.0",
         "pino": "^7.11.0",
         "pino-pretty": "^7.6.1",
         "prom-client": "^14.0.1",

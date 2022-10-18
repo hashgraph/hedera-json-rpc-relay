@@ -59,6 +59,9 @@ export class EthImpl implements Eth {
   static defaultGasUsedRatio = EthImpl.numberTo0x(0.5);
   static feeHistoryZeroBlockCountResponse = { gasUsedRatio: null, oldestBlock: EthImpl.zeroHex };
   static feeHistoryEmptyResponse = { baseFeePerGas: [], gasUsedRatio: [], reward: [], oldestBlock: EthImpl.zeroHex };
+  static redirectBytecodePrefix = '6080604052348015600f57600080fd5b506000610167905077618dc65e';
+  static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
+
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -580,11 +583,15 @@ export class EthImpl implements Eth {
     }
 
     try {
-      const contract = await this.mirrorNodeClient.getContract(address, requestId);
-      if (contract && contract.runtime_bytecode && contract.runtime_bytecode !== EthImpl.emptyHex) {
-        return contract.runtime_bytecode;
+      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
+
+      if (result && result?.type === constants.TYPE_TOKEN) {
+          return EthImpl.redirectBytecodeAddressReplace(address);
       }
-      else {
+      else if (result && result?.type === constants.TYPE_CONTRACT && result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
+          return result?.entity.runtime_bytecode;
+      }
+      else{
         const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
         return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
       }
@@ -746,7 +753,7 @@ export class EthImpl implements Eth {
           return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
       }
       else if (result?.type === constants.TYPE_CONTRACT) {
-        return EthImpl.numberTo0x(1)
+        return EthImpl.numberTo0x(1);
       }
 
       return EthImpl.zeroHex;
@@ -899,7 +906,7 @@ export class EthImpl implements Eth {
       blockNumber: EthImpl.numberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
       from: fromAddress,
-      gas: EthImpl.numberTo0x(contractResult.gas_used),
+      gas: EthImpl.nanOrNumberTo0x(contractResult.gas_used),
       gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
@@ -955,16 +962,16 @@ export class EthImpl implements Eth {
         });
       });
 
-      const receipt = {
+      const receipt: any = {
         blockHash: EthImpl.toHash32(receiptResponse.block_hash),
         blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
         from: receiptResponse.from,
         to: receiptResponse.to,
         cumulativeGasUsed: EthImpl.numberTo0x(receiptResponse.block_gas_used),
-        gasUsed: EthImpl.numberTo0x(receiptResponse.gas_used),
+        gasUsed: EthImpl.nanOrNumberTo0x(receiptResponse.gas_used),
         contractAddress: createdContract,
         logs: logs,
-        logsBloom: receiptResponse.bloom,
+        logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
         transactionHash: EthImpl.toHash32(receiptResponse.hash),
         transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
         effectiveGasPrice: EthImpl.nanOrNumberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
@@ -972,6 +979,9 @@ export class EthImpl implements Eth {
         status: receiptResponse.status,
       };
 
+      if (receiptResponse.error_message) {
+        receipt.revertReason = receiptResponse.error_message;
+      }
 
       this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
       return receipt;
@@ -1008,6 +1018,10 @@ export class EthImpl implements Eth {
 
   private static toNullIfEmptyHex(value: string): string | null {
     return value === EthImpl.emptyHex ? null : value;
+  }
+
+  private static redirectBytecodeAddressReplace(address: string): string {
+    return `${this.redirectBytecodePrefix}${address.slice(2)}${this.redirectBytecodePostfix}`;
   }
 
   /**
@@ -1181,7 +1195,7 @@ export class EthImpl implements Eth {
           blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
           chainId: contractResultDetails.chain_id,
           from: contractResultDetails.from.substring(0, 42),
-          gas: EthImpl.numberTo0x(contractResultDetails.gas_used),
+          gas: EthImpl.nanOrNumberTo0x(contractResultDetails.gas_used),
           gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
           hash: contractResultDetails.hash.substring(0, 66),
           input: contractResultDetails.function_parameters,
@@ -1225,16 +1239,22 @@ export class EthImpl implements Eth {
 
         throw e;
       }
-    } else if (fromBlock || toBlock) {
+    } else {
       const blockRangeLimit = Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
       let fromBlockTimestamp;
       let toBlockTimestamp;
       let fromBlockNum = 0;
       let toBlockNum;
 
-      if (toBlock) {
+      if(!fromBlock && !toBlock) {
+        const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
+        fromBlockTimestamp = blockResponse.timestamp.from;
+        fromBlockNum = parseInt(blockResponse.number);
+        toBlockTimestamp = blockResponse.timestamp.to;
+        toBlockNum = parseInt(blockResponse.number);
+      } else {
         try {
-          const blockResponse = await this.getHistoricalBlockResponse(toBlock, true, requestId);
+          const blockResponse = await this.getHistoricalBlockResponse(toBlock || "latest", true, requestId);
           toBlockTimestamp = blockResponse.timestamp.to;
           toBlockNum = parseInt(blockResponse.number);
         } catch (e) {
@@ -1245,10 +1265,9 @@ export class EthImpl implements Eth {
             throw e;
           }
         }
-      }
-      if (fromBlock) {
+
         try {
-          const blockResponse = await this.getHistoricalBlockResponse(fromBlock, undefined, requestId);
+          const blockResponse = await this.getHistoricalBlockResponse(fromBlock || "latest", true, requestId);
           fromBlockTimestamp = blockResponse.timestamp.from;
           fromBlockNum = parseInt(blockResponse.number);
         } catch (e) {
@@ -1263,26 +1282,13 @@ export class EthImpl implements Eth {
         }
       }
 
-      if (fromBlockTimestamp) {
-        params.timestamp = [`gte:${fromBlockTimestamp}`];
-      }
-
-      if (toBlockTimestamp){
-        if (params.timestamp) {
-          params.timestamp.push(`lte:${toBlockTimestamp}`)
-        } else {
-          params.timestamp = [`lte:${toBlockTimestamp}`];
-        }
-      } else {
-        const blockResponse = await this.getHistoricalBlockResponse('latest', true, requestId);
-        toBlockNum = parseInt(blockResponse.number);
-      }
-
       if (fromBlockNum > toBlockNum) {
         return [];
       } else if((toBlockNum - fromBlockNum) > blockRangeLimit) {
         throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
       }
+
+      params.timestamp = [`gte:${fromBlockTimestamp}`, `lte:${toBlockTimestamp}`];
     }
 
     if (topics) {
@@ -1302,61 +1308,25 @@ export class EthImpl implements Eth {
     if (!result || !result.logs) {
       return [];
     }
-    const logs = result.logs;
 
-    // Find unique contract execution timestamp and for each one make mirror node request
-    const promises: Promise<any>[] = [];
-    const uniquePairs = {};
+    return result.logs.map(log => {
+      return new Log({
+        address: log.address,
+        blockHash: EthImpl.toHash32(log.block_hash),
+        blockNumber: EthImpl.numberTo0x(log.block_number),
+        data: log.data,
+        logIndex: EthImpl.numberTo0x(log.index),
+        removed: false,
+        topics: log.topics,
+        transactionHash: EthImpl.toHash32(log.transaction_hash),
+        transactionIndex: EthImpl.numberTo0x(log.transaction_index)
+      });
+    });
+  }
 
-    for (let i = 0; i < logs.length; i++) {
-      const log = logs[i];
-      const timestamp = `${log.timestamp}`;
-      if (uniquePairs[timestamp] === undefined) {
-        uniquePairs[timestamp] = [i];
-        promises.push(this.mirrorNodeClient.getContractResultsDetails(
-          log.contract_id,
-          log.timestamp,
-          requestId
-        ));
-      }
-      else {
-        uniquePairs[timestamp].push(i);
-      }
-    }
-
-    try {
-      // Populate the Log objects with block and transaction data from ContractResultsDetails
-      const contractsResultsDetails = await Promise.all(promises);
-      for (let i = 0; i < contractsResultsDetails.length; i++) {
-        const detail = contractsResultsDetails[i];
-        // retrieve set of logs for each timestamp
-        const timestamp = `${detail.timestamp}`;
-        const uPair = uniquePairs[timestamp] || [];
-        for (let p = 0; p < uPair.length; p++) {
-          const logIndex = uPair[p];
-          const log = logs[logIndex];
-          logs[logIndex] = new Log({
-            address: log.address,
-            blockHash: EthImpl.toHash32(detail.block_hash),
-            blockNumber: EthImpl.numberTo0x(detail.block_number),
-            data: log.data,
-            logIndex: EthImpl.numberTo0x(logIndex),
-            removed: false,
-            topics: log.topics,
-            transactionHash: EthImpl.toHash32(detail.hash),
-            transactionIndex: EthImpl.numberTo0x(detail.transaction_index)
-          });
-        }
-      }
-    }
-    catch(e: any) {
-      if (e instanceof MirrorNodeClientError && e.isNotFound()) {
-        return [];
-      }
-
-      throw e;
-    }
-
-    return logs;
+  async maxPriorityFeePerGas(requestId?: string): Promise<string> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.trace(`${requestIdPrefix} maxPriorityFeePerGas()`);
+    return EthImpl.zeroHex;
   }
 }
