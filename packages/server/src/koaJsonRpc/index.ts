@@ -53,13 +53,12 @@ export default class KoaJsonRpc {
   constructor(logger: Logger, register: Registry, opts?) {
     this.koaApp = new Koa();
     this.limit = '1mb';
-    this.duration = parseInt(process.env.LIMIT_DURATION!);
+    this.duration = parseInt(process.env.LIMIT_DURATION!) || 60000;
     this.registry = Object.create(null);
     this.registryTotal = Object.create(null);
     this.methodConfig = methodConfiguration;
     if (opts) {
       this.limit = opts.limit || this.limit;
-      this.duration = opts.limit || this.limit;
     }
     this.ratelimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
   }
