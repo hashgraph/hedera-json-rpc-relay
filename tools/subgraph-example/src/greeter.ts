@@ -24,7 +24,8 @@ import { GreetingSet, Greeter } from "../generated/Greeter/Greeter";
 
 export function handleGreetingSet(event: GreetingSet): void {
 
-  log.error('--------- in handleGreetingSet', []); // does not reach this point
+  log.error('--------- in handleGreetingSet', []);
+
   const greeterContract = Greeter.bind(event.address);
   log.error('bound greeterContract', []); // does not reach this point
   const greetingValue = greeterContract.greet(); // fails to call greet()
