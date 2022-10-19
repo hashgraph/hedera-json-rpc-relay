@@ -57,7 +57,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                 }
             }catch(error) {
                 rateLimited = true;
-                Assertions.jsonRpcError(error, predefined.IP_RATE_LIMIT_EXCEEDED);
+                Assertions.jsonRpcError(error, predefined.IP_RATE_LIMIT_EXCEEDED('eth_chainId'));
             }
 
             expect(rateLimited).to.be.true;
