@@ -19,8 +19,7 @@
  */
 
 import {ethers} from 'hardhat';
-import { expect } from 'chai';
-import { GreeterFactory } from '../types';
+import { Greeter, GreeterFactory } from '../types';
 
 import {
   deployOverrides
@@ -30,6 +29,9 @@ describe('GreeterFactory', function() {
 
   let greeterFactory: GreeterFactory;
 
+  let greeter1: Greeter;
+  let greeter2: Greeter;
+
   before(async () => {
 
     const GreeterFactory = await ethers.getContractFactory('GreeterFactory');
@@ -38,6 +40,7 @@ describe('GreeterFactory', function() {
 
     const deployRc = await greeterFactory.deployTransaction.wait();
     const greeterFactoryAddress = deployRc.contractAddress;
+    // const greeterFactoryAddress = '0x0000000000000000000000000000000000000408';
 
     greeterFactory = GreeterFactory.attach(
       greeterFactoryAddress
@@ -47,11 +50,29 @@ describe('GreeterFactory', function() {
 
   });
 
+  // it('should be able to create1 Greeter', async function() {
+  //   console.log('dummy test');
+  // });
+
   it('should be able to create1 Greeter', async function() {
     const tx = await greeterFactory.create1Greeter('hello world', deployOverrides);
     const rc = await tx.wait();
 
     console.log('create1 events:', rc.events);
+
+    if (!rc.events || !rc.events[1]) {
+      throw new Error('No CreatedGreeter1 event');
+    }
+
+    const createdGreeterEvent = rc.events[1];
+
+    const greeterAddress = createdGreeterEvent?.args?.greeter;
+
+    if (!greeterAddress) {
+      throw new Error('No CreatedGreeter1.greeter');
+    }
+
+    greeter1 = await ethers.getContractAt('Greeter', greeterAddress);
   });
 
   it('should be able to transfer hbars between two accounts', async function() {
@@ -61,6 +82,34 @@ describe('GreeterFactory', function() {
 
     console.log('create2 events:', rc.events);
 
+    if (!rc.events || !rc.events[1]) {
+      throw new Error('No CreatedGreeter2 event');
+    }
+
+    const createdGreeterEvent = rc.events[1];
+
+    const greeterAddress = createdGreeterEvent?.args?.greeter;
+
+    if (!greeterAddress) {
+      throw new Error('No CreatedGreeter2.greeter');
+    }
+
+    greeter2 = await ethers.getContractAt('Greeter', greeterAddress);
+
+  });
+
+  it('should be able to setGreeting in greeter1', async function() {
+    const tx = await greeter1.setGreeting('hello from greeter1');
+    const rc = await tx.wait();
+
+    console.log("greeter1 events", rc.events);
+  });
+
+  it('should be able to setGreeting in greeter2', async function() {
+    const tx = await greeter2.setGreeting('hello from greeter2');
+    const rc = await tx.wait();
+
+    console.log("greeter2 events", rc.events);
   });
 
 });
