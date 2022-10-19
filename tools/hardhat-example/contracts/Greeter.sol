@@ -38,8 +38,7 @@ contract Greeter {
 
     constructor(string memory _greeting) {
         greeting = _greeting;
-
-        emit GreetingSet(address(this), _greeting);
+        // emit GreetingSet(address(this), _greeting);
     }
 
     function greet() public view returns (string memory) {

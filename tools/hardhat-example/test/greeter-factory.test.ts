@@ -60,11 +60,11 @@ describe('GreeterFactory', function() {
 
     console.log('create1 events:', rc.events);
 
-    if (!rc.events || !rc.events[1]) {
+    if (!rc.events || !rc.events[0]) {
       throw new Error('No CreatedGreeter1 event');
     }
 
-    const createdGreeterEvent = rc.events[1];
+    const createdGreeterEvent = rc.events[0];
 
     const greeterAddress = createdGreeterEvent?.args?.greeter;
 
@@ -82,11 +82,11 @@ describe('GreeterFactory', function() {
 
     console.log('create2 events:', rc.events);
 
-    if (!rc.events || !rc.events[1]) {
+    if (!rc.events || !rc.events[0]) {
       throw new Error('No CreatedGreeter2 event');
     }
 
-    const createdGreeterEvent = rc.events[1];
+    const createdGreeterEvent = rc.events[0];
 
     const greeterAddress = createdGreeterEvent?.args?.greeter;
 
@@ -99,6 +99,9 @@ describe('GreeterFactory', function() {
   });
 
   it('should be able to setGreeting in greeter1', async function() {
+
+    await new Promise(r => setTimeout(r, 4_000)); // wait 2 blocks
+
     const tx = await greeter1.setGreeting('hello from greeter1');
     const rc = await tx.wait();
 
