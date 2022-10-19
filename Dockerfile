@@ -1,4 +1,5 @@
-FROM node:16.15-alpine3.15
+FROM node:16-alpine
+RUN apk update && apk add g++ make py3-pip
 
 # Setup
 ENV NODE_ENV production
