@@ -1,25 +1,24 @@
 {
   "name": "hardhat-project",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^1.0.2",
+    "@hashgraph/hedera-local": "^2.0.1",
+    "@hashgraph/hethers": "^1.1.2",
     "@nomiclabs/hardhat-ethers": "^2.1.1",
+    "@typechain/hardhat": "^6.1.3",
+    "dotenv": "^16.0.1",
     "ethers": "^5.7.0",
-    "hardhat": "^2.10.0"
+    "hardhat": "^2.10.0",
+    "hardhat-network-metadata": "^0.0.2"
   },
   "scripts": {
-    "build": "npx hardhat compile",
+    "build": "TS_NODE_TRANSPILE_ONLY=1 hardhat compile",
     "set-greeting": "npx hardhat contract-call 0x0000000000000000000000000000000000000408 helloJASON",
     "set-greeting:i": "npx hardhat --network internal_relay contract-call 0x0000000000000000000000000000000000000408 helloJASON",
     "get-current-block": "npx hardhat get-current-block",
     "get-current-block:i": "npx hardhat --network internal_relay get-current-block",
-    "test:hr": "npx hardhat test test/rpc.js",
+    "test:hr": "npx hardhat test test/rpc.ts",
     "test:hr:i": "npx hardhat --network internal_relay test test/rpc.js",
     "hedera-start": "npx @hashgraph/hedera-local start",
     "hedera-stop": "npx @hashgraph/hedera-local stop"
-  },
-  "dependencies": {
-    "@hashgraph/hedera-local": "^2.0.1",
-    "@hashgraph/hethers": "^1.1.2",
-    "dotenv": "^16.0.1"
   }
 }

@@ -18,15 +18,24 @@
  *
  */
 
-const hre = require('hardhat');
+import hre from 'hardhat';
+import {utils} from '@hashgraph/hethers';
 
-module.exports = async (address, msg) => {
-  const provider = new hre.ethers.providers.JsonRpcProvider(hre.network.config.url);
+export async function deployContract () {
+  const provider = hre.ethers.provider;
+
+  if (!process.env.OPERATOR_PRIVATE_KEY) {
+    throw new Error("No OPERATOR_PRIVATE_KEY");
+  }
+
   const wallet = new hre.ethers.Wallet(process.env.OPERATOR_PRIVATE_KEY, provider);
-  const greeter = await hre.ethers.getContractAt('Greeter', address, wallet);
-  const updateTx = await greeter.setGreeting(msg);
+  const Greeter = await hre.ethers.getContractFactory('Greeter', wallet);
+  const greeter = await Greeter.deploy('initial_msg');
+  const contractAddress = (await greeter.deployTransaction.wait()).contractAddress;
+  const contractId = utils.getAccountFromAddress(contractAddress);
 
-  console.log(`Updated call result: ${msg}`);
+  console.log(`Greeter contract id: ${utils.asAccountString(contractId)}`);
+  console.log(`Greeter deployed to: ${contractAddress}`);
 
-  return updateTx;
+  return contractAddress;
 };

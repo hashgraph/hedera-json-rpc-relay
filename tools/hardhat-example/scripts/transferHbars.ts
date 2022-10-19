@@ -18,10 +18,19 @@
  *
  */
 
-const hre = require('hardhat');
+import hre from 'hardhat';
 
-module.exports = async (amount = 100_000_000_000) => {
-  const provider = new hre.ethers.providers.JsonRpcProvider(hre.network.config.url);
+export async function transferHbars (amount = 100_000_000_000) {
+  const provider = hre.ethers.provider;
+
+  if (!process.env.OPERATOR_PRIVATE_KEY) {
+    throw new Error('No OPERATOR_PRIVATE_KEY');
+  }
+
+  if (!process.env.RECEIVER_PRIVATE_KEY) {
+    throw new Error('No RECEIVER_PRIVATE_KEY');
+  }
+
   const wallet = new hre.ethers.Wallet(process.env.OPERATOR_PRIVATE_KEY, provider);
   const walletReceiver = new hre.ethers.Wallet(process.env.RECEIVER_PRIVATE_KEY, provider);
 

@@ -18,10 +18,10 @@
  *
  */
 
-const hre = require('hardhat');
+import hre from 'hardhat';
 
-module.exports = async () => {
-  const provider = new hre.ethers.providers.JsonRpcProvider(hre.network.config.url);
+export async function getCurrentBlock () {
+  const provider = hre.ethers.provider;
   const latestBlock = await provider.getBlock("latest");
 
   const latestBlockNumber = latestBlock.number;

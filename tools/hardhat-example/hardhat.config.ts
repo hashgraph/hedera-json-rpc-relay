@@ -18,42 +18,45 @@
  *
  */
 
-require('dotenv').config();
-require('@nomicfoundation/hardhat-toolbox');
+import "dotenv/config";
+import "@nomiclabs/hardhat-ethers";
+import "@typechain/hardhat";
+import "hardhat-network-metadata";
+import { task } from "hardhat/config";
 
 task('get-current-block', async () => {
-  const getCurrentBlock = require('./scripts/getCurrentBlock');
-  return getCurrentBlock();
+  const file = await import('./scripts/getCurrentBlock');
+  return file.getCurrentBlock();
 });
 
 task('show-balance', async () => {
-  const showBalance = require('./scripts/showBalance');
-  return showBalance();
+  const file = await import('./scripts/showBalance');
+  return file.showBalance();
 });
 
 task('transfer-hbars', async () => {
-  const transferHbars = require('./scripts/transferHbars');
-  return transferHbars();
+  const file = await import('./scripts/transferHbars');
+  return file.transferHbars();
 });
 
 task('deploy-contract', async () => {
-  const deployContract = require('./scripts/deployContract');
-  return deployContract();
+  const file = await import('./scripts/deployContract');
+  return file.deployContract();
 });
 
-task('contract-view-call', async (taskArgs) => {
-  const contractViewCall = require('./scripts/contractViewCall');
-  return contractViewCall(taskArgs.contractAddress);
+task('contract-view-call', async (taskArgs: any) => {
+  const file = await import('./scripts/contractViewCall');
+  return file.contractViewCall(taskArgs.contractAddress);
 });
 
-task('contract-call', async (taskArgs) => {
-  const contractCall = require('./scripts/contractCall');
-  return contractCall(taskArgs.contractAddress, taskArgs.msg);
+task('contract-call', async (taskArgs: any) => {
+  const file = await import('./scripts/contractCall');
+  return file.contractCall(taskArgs.contractAddress, taskArgs.msg);
 })
 .addPositionalParam("contractAddress")
 .addPositionalParam("msg");
 
-module.exports = {
+const config = {
   solidity: '0.8.4',
   defaultNetwork: 'relay',
   networks: {
@@ -63,5 +66,11 @@ module.exports = {
     internal_relay: {
       url: "http://DESKTOP-CBKBFTR:7546/"
     }
-  }
+  },
+  typechain: {
+    outDir: "types",
+    target: "ethers-v5",
+  },
 };
+
+export default config;

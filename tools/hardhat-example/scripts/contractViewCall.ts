@@ -18,10 +18,15 @@
  *
  */
 
-const hre = require('hardhat');
+import hre from 'hardhat';
 
-module.exports = async (address) => {
-  const provider = new hre.ethers.providers.JsonRpcProvider(hre.network.config.url);
+export async function contractViewCall (address: string) {
+  const provider = hre.ethers.provider;
+
+  if (!process.env.OPERATOR_PRIVATE_KEY) {
+    throw new Error('No OPERATOR_PRIVATE_KEY');
+  }
+
   const wallet = new hre.ethers.Wallet(process.env.OPERATOR_PRIVATE_KEY, provider);
   const greeter = await hre.ethers.getContractAt('Greeter', address, wallet);
   const callRes = await greeter.greet();
