@@ -2,3 +2,13 @@ type Greeting @entity {
   id: ID!
   greeting: String!
 }
+
+type Greeter1 @entity {
+  # Greeter address
+  id: ID!
+}
+
+type Greeter2 @entity {
+  # Greeter address
+  id: ID!
+}

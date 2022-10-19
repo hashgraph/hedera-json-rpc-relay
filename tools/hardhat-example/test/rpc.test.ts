@@ -18,11 +18,11 @@
  *
  */
 
-const hre = require('hardhat');
-const { expect } = require('chai');
+import hre from 'hardhat';
+import { expect } from 'chai';
 
 describe('RPC', function() {
-  let contractAddress;
+  let contractAddress: string;
 
   it('should be able to get the account balance', async function() {
     const balance = await hre.run('show-balance');
@@ -30,6 +30,11 @@ describe('RPC', function() {
   });
   it('should be able to transfer hbars between two accounts', async function() {
     const provider = new hre.ethers.providers.JsonRpcProvider(process.env.RELAY_ENDPOINT);
+
+    if (!process.env.RECEIVER_PRIVATE_KEY) {
+      throw new Error("No RECEIVER_PRIVATE_KEY");
+    }
+
     const walletReceiver = new hre.ethers.Wallet(process.env.RECEIVER_PRIVATE_KEY, provider);
 
     const hbarsBefore = (await walletReceiver.getBalance()).toString();
