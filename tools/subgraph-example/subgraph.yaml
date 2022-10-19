@@ -1,24 +1,49 @@
-specVersion: 0.0.4
+specVersion: 0.0.5
 schema:
   file: ./schema.graphql
 dataSources:
-  - kind: ethereum
-    name: Greeter
+  - kind: ethereum/contract
+    name: GreeterFactory
     network: local
     source:
-      address: "0x0000000000000000000000000000000000000408"
-      abi: Greeter
-      startBlock: 242
+      address: "0x0000000000000000000000000000000000000416"
+      abi: GreeterFactory
+      startBlock: 1151
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
+      file: ./src/factory.ts
       entities:
-        - Greeting
+        - Greeter1
+        - Greeter2
+      abis:
+        - name: GreeterFactory
+          file: ./abis/GreeterFactory.json
+      eventHandlers:
+        - event: CreatedGreeter1(address)
+          handler: handleGreeter1Created
+        - event: CreatedGreeter2(address)
+          handler: handleGreeter2Created
+templates:
+  - kind: ethereum/contract
+    name: Greeter
+    network: local
+    source:
+      abi: Greeter
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/greeter.ts
+      entities:
+        - Greeter1
+        - Greeter2
       abis:
         - name: Greeter
           file: ./abis/Greeter.json
+        - name: GreeterFactory
+          file: ./abis/GreeterFactory.json
       eventHandlers:
-        - event: GreetingSet(string)
+        - event: GreetingSet(address,string)
           handler: handleGreetingSet
-      file: ./src/greeter.ts

@@ -36,13 +36,14 @@ describe('GreeterFactory', function() {
 
     greeterFactory = await GreeterFactory.deploy(deployOverrides);
 
-    const greeterFactoryAddress = (await greeterFactory.deployTransaction.wait()).contractAddress;
+    const deployRc = await greeterFactory.deployTransaction.wait();
+    const greeterFactoryAddress = deployRc.contractAddress;
 
     greeterFactory = GreeterFactory.attach(
       greeterFactoryAddress
     ) as GreeterFactory;
 
-    console.log('GreeterFactory deployed to:', greeterFactoryAddress);
+    console.log('GreeterFactory deployed to:', greeterFactoryAddress, '@block:', deployRc.blockNumber);
 
   });
 

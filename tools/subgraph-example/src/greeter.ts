@@ -18,10 +18,18 @@
  *
  */
 
-import { GreetingSet } from "../generated/Greeter/Greeter";
+import { log } from "@graphprotocol/graph-ts";
 import { Greeting } from "../generated/schema";
+import { GreetingSet, Greeter } from "../generated/Greeter/Greeter";
 
 export function handleGreetingSet(event: GreetingSet): void {
+
+  log.error('--------- in handleGreetingSet', []); // does not reach this point
+  const greeterContract = Greeter.bind(event.address);
+  log.error('bound greeterContract', []); // does not reach this point
+  const greetingValue = greeterContract.greet(); // fails to call greet()
+  log.error('greetingValue ' + greetingValue, []); // does not reach this point
+
   // Entities can be loaded from the store using a string ID; this ID
   // needs to be unique across all entities of the same type
   let entity = Greeting.load(event.transaction.hash.toHexString());
