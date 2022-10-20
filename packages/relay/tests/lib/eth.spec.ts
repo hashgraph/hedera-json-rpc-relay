@@ -1452,6 +1452,20 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.be.empty;
     });
 
+    it('with non-existing toBlock filter', async function () {
+      const filteredLogs = {
+        logs: [defaultLogs.logs[0]]
+      };
+
+      mock.onGet('blocks/5').reply(200, defaultBlock);
+      mock.onGet('blocks/16').reply(404, {"_status": { "messages": [{"message": "Not found"}]}});
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}`).reply(200, filteredLogs);
+      const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null);
+
+      expect(result).to.exist;
+      expectLogData1(result[0]);
+    });
+
     it('when fromBlock > toBlock', async function () {
       const fromBlock = {
         ...defaultBlock,
@@ -1903,6 +1917,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('eth_getStorageAt with match with latest block', async function () {
       // mirror node request mocks
+      mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
       mock.onGet(`contracts/${contractAddress1}/results?limit=1&order=desc`).reply(200, defaultContractResults);
       mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
 
@@ -1932,7 +1947,7 @@ describe('Eth calls using MirrorNode', async function () {
       let hasError = false;
       try {
         mock.onGet(`blocks/${blockNumber}`).reply(200, null);
-        const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+        await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       } catch (e: any) {
         hasError = true;
         expect(e.code).to.equal(-32001);
@@ -1949,11 +1964,11 @@ describe('Eth calls using MirrorNode', async function () {
 
       let hasError = false;
       try {
-        const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+        await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       } catch (e: any) {
         hasError = true;
-        expect(e.statusCode).to.equal(404);
-        expect(e.message).to.equal("Request failed with status code 404");
+        expect(e.code).to.equal(-32001);
+        expect(e.name).to.equal('Resource not found');
       }
       expect(hasError).to.be.true;
     });

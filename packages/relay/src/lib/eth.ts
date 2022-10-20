@@ -464,13 +464,18 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
     const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false);
+
+    if(!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
+      throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
+    }
+
     const blockEndTimestamp = blockResponse?.timestamp?.to;
     const contractResult = await this.mirrorNodeClient.getLatestContractResultsByAddress(address, blockEndTimestamp, 1);
 
     if (contractResult?.results?.length > 0) {
       // retrieve the contract result details
       await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
-        .then( contractResultDetails => {
+        .then(contractResultDetails => {
           if(contractResultDetails && contractResultDetails.state_changes) {
             // loop through the state changes to match slot and return value
             for (const stateChange of contractResultDetails.state_changes) {
@@ -478,6 +483,8 @@ export class EthImpl implements Eth {
                 result = stateChange.value_written;
               }
             }
+          } else {
+            throw predefined.RESOURCE_NOT_FOUND(`Contract result details for contract address ${address} at timestamp=${contractResult.results[0].timestamp}`);
           }
         })
         .catch( (e: any) => {
@@ -485,6 +492,7 @@ export class EthImpl implements Eth {
             e,
             `${requestIdPrefix} Failed to retrieve contract result details for contract address ${address} at timestamp=${contractResult.results[0].timestamp}`,
           );
+
           throw e;
         });
     }
@@ -634,7 +642,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
     return this.getBlock(hash, showDetails, requestId).catch((e: any) => {
       this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-      return null;
+      throw e;
     });
   }
 
@@ -648,7 +656,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
     return this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
       this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
-      return null;
+      throw e;
     });
   }
 
@@ -665,7 +673,7 @@ export class EthImpl implements Eth {
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-        return null;
+        throw e;
       });
   }
 
@@ -682,7 +690,7 @@ export class EthImpl implements Eth {
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNum}`, blockNum);
-        return null;
+        throw e;
       });
   }
 
@@ -1078,6 +1086,8 @@ export class EthImpl implements Eth {
   private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: string ): Promise<Block | null> {
     const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true);
 
+    if(blockResponse == null) return blockResponse;
+
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
     const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams },undefined, requestId);
@@ -1161,10 +1171,6 @@ export class EthImpl implements Eth {
     } else {
       blockResponse = await this.mirrorNodeClient.getBlock(blockNumberOrTag, requestId);
     }
-    if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
-      // block not found.
-      throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
-    }
 
     return blockResponse;
   }
@@ -1228,7 +1234,9 @@ export class EthImpl implements Eth {
           e,
           `${requestIdPrefix} Failed to retrieve contract result details for contract address ${to} at timestamp=${timestamp}`
         );
-        return null;
+
+
+          throw e;
       });
   }
 
@@ -1253,45 +1261,30 @@ export class EthImpl implements Eth {
       }
     } else {
       const blockRangeLimit = Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
-      let fromBlockTimestamp;
-      let toBlockTimestamp;
       let fromBlockNum = 0;
       let toBlockNum;
 
       if(!fromBlock && !toBlock) {
         const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
-        fromBlockTimestamp = blockResponse.timestamp.from;
         fromBlockNum = parseInt(blockResponse.number);
-        toBlockTimestamp = blockResponse.timestamp.to;
         toBlockNum = parseInt(blockResponse.number);
+        params.timestamp = [`gte:${blockResponse.timestamp.from}`, `lte:${blockResponse.timestamp.to}`];
       } else {
-        try {
-          const blockResponse = await this.getHistoricalBlockResponse(toBlock || "latest", true, requestId);
-          toBlockTimestamp = blockResponse.timestamp.to;
-          toBlockNum = parseInt(blockResponse.number);
-        } catch (e) {
-          // Check if block error is RESOURCE_NOT_FOUND, the most likely scenario this will happen if a block number > height is passed
-          // In this case eth_getLogs() returns logs up to the latest block.
-          // @ts-ignore
-          if (e.statusCode != 404) {
-            throw e;
-          }
-        }
+          params.timestamp = [];
 
-        try {
-          const blockResponse = await this.getHistoricalBlockResponse(fromBlock || "latest", true, requestId);
-          fromBlockTimestamp = blockResponse.timestamp.from;
-          fromBlockNum = parseInt(blockResponse.number);
-        } catch (e) {
-          // Check if block error is RESOURCE_NOT_FOUND, the most likely scenario this will happen if a block number > height is passed
-          // In this case eth_getLogs() returns an empty array.
-          // @ts-ignore
-          if (e.statusCode != 404) {
-            throw e;
+          const fromBlockResponse = await this.getHistoricalBlockResponse(fromBlock || "latest", true, requestId);
+          if(fromBlockResponse != null) {
+            params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
+            fromBlockNum = parseInt(fromBlockResponse.number);
+          } else {
+            return [];
           }
 
-          return [];
-        }
+          const toBlockResponse = await this.getHistoricalBlockResponse(toBlock || "latest", true, requestId);
+          if(toBlockResponse != null) {
+            params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
+            toBlockNum = parseInt(toBlockResponse.number);
+          }
       }
 
       if (fromBlockNum > toBlockNum) {
@@ -1299,8 +1292,6 @@ export class EthImpl implements Eth {
       } else if((toBlockNum - fromBlockNum) > blockRangeLimit) {
         throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
       }
-
-      params.timestamp = [`gte:${fromBlockTimestamp}`, `lte:${toBlockTimestamp}`];
     }
 
     if (topics) {

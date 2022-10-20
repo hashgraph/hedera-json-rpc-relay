@@ -203,7 +203,7 @@ export class MirrorNodeClient {
     public async getBlock(hashOrBlockNumber: string | number, requestId?: string) {
         return this.request(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`,
             MirrorNodeClient.GET_BLOCK_ENDPOINT,
-            [400],
+            [400, 404],
             requestId);
     }
 
@@ -247,7 +247,7 @@ export class MirrorNodeClient {
     public async getContractResultsDetails(contractId: string, timestamp: string, requestId?: string) {
         return this.request(`${this.getContractResultsDetailsByContractIdAndTimestamp(contractId, timestamp)}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT,
-            [400],
+            [400, 404],
             requestId);
     }
 
