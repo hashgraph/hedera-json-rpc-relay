@@ -57,15 +57,15 @@ jobs:
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
 
+      - name: Run the dapp bootstrap script
+        run: npm run bootstrap --prefix ./dapp-example/
+
       - name: Build & Run the dapp
         run: |
           npm run build --prefix ./dapp-example/
           npm run start-prod --prefix ./dapp-example/ &
         env:
           CI: false
-
-      - name: Run the dapp bootstrap script
-        run: npm run bootstrap --prefix ./dapp-example/
 
       - name: Run the dapp tests
         uses: nick-fields/retry@v2
