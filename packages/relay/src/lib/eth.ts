@@ -574,7 +574,7 @@ export class EthImpl implements Eth {
    */
   async getCode(address: string, blockNumber: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    
+
     // check for static precompile cases first before consulting nodes
     // this also account for environments where system entitites were not yet exposed to the mirror node
     if (address === EthImpl.iHTSAddress) {
@@ -603,7 +603,7 @@ export class EthImpl implements Eth {
           }
         }
       }
-      
+
       const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
@@ -692,11 +692,11 @@ export class EthImpl implements Eth {
    * @param blockHash
    * @param transactionIndex
    */
-  async getTransactionByBlockHashAndIndex(blockHash: string, transactionIndex: number, requestId?: string): Promise<Transaction | null> {
+  async getTransactionByBlockHashAndIndex(blockHash: string, transactionIndex: string, requestId?: string): Promise<Transaction | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionByBlockHashAndIndex(hash=${blockHash}, index=${transactionIndex})`);
     return this.mirrorNodeClient
-      .getContractResults({ blockHash: blockHash, transactionIndex: transactionIndex },undefined, requestId)
+      .getContractResults({ blockHash: blockHash, transactionIndex: Number(transactionIndex) }, undefined, requestId)
       .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
         this.logger.error(
@@ -715,14 +715,14 @@ export class EthImpl implements Eth {
    */
   async getTransactionByBlockNumberAndIndex(
     blockNumOrTag: string,
-    transactionIndex: number,
+    transactionIndex: string,
     requestId?: string
   ): Promise<Transaction | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionByBlockNumberAndIndex(blockNum=${blockNumOrTag}, index=${transactionIndex})`);
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestId);
     return this.mirrorNodeClient
-      .getContractResults({ blockNumber: blockNum, transactionIndex: transactionIndex },undefined, requestId)
+      .getContractResults({ blockNumber: blockNum, transactionIndex: Number(transactionIndex) }, undefined, requestId)
       .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
         this.logger.error(

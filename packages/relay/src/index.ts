@@ -74,13 +74,13 @@ export interface Eth {
 
   getStorageAt(address: string, slot: string, blockNumber: string|null, requestId?: string): Promise<string>;
 
-  getTransactionByBlockHashAndIndex(hash: string, index: number, requestId?: string): Promise<Transaction | null>;
+  getTransactionByBlockHashAndIndex(hash: string, index: string, requestId?: string): Promise<Transaction | null>;
 
-  getTransactionByBlockNumberAndIndex(blockNum: string, index: number, requestId?: string): Promise<Transaction | null>;
+  getTransactionByBlockNumberAndIndex(blockNum: string, index: string, requestId?: string): Promise<Transaction | null>;
 
   getTransactionByHash(hash: string, requestId?: string): Promise<Transaction | null>;
 
-  getTransactionCount(address: string, blocknum: string, requestId?: string): Promise<string | JsonRpcError>;
+  getTransactionCount(address: string, blockNum: string, requestId?: string): Promise<string | JsonRpcError>;
 
   getTransactionReceipt(hash: string, requestId?: string): Promise<Receipt | null>;
 
