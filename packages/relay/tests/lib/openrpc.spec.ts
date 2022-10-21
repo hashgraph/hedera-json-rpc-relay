@@ -297,13 +297,13 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
-        const response = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, defaultBlock.count);
+        const response = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count));
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionByBlockHashAndIndex, response);
     });
 
     it('should execute "eth_getTransactionByBlockNumberAndIndex"', async function () {
-        const response = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number.toString(), defaultBlock.count);
+        const response = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionByBlockNumberAndIndex, response);
     });
