@@ -465,6 +465,8 @@ export class EthImpl implements Eth {
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
     const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false);
 
+    // To save a request to the mirror node for `latest` and `pending` blocks, we directly return null from `getHistoricalBlockResponse`
+    // But if a block number or `earliest` tag is passed and the mirror node returns `null`, we should throw an error.
     if(!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
       throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
     }
@@ -642,7 +644,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
     return this.getBlock(hash, showDetails, requestId).catch((e: any) => {
       this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-      throw e;
+      throw predefined.INTERNAL_ERROR(e.message);
     });
   }
 
@@ -656,7 +658,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
     return this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
       this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
-      throw e;
+      throw predefined.INTERNAL_ERROR(e.message);
     });
   }
 
@@ -673,7 +675,7 @@ export class EthImpl implements Eth {
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-        throw e;
+        throw predefined.INTERNAL_ERROR(e.message);
       });
   }
 
@@ -690,7 +692,7 @@ export class EthImpl implements Eth {
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNum}`, blockNum);
-        throw e;
+        throw predefined.INTERNAL_ERROR(e.message);
       });
   }
 
@@ -707,11 +709,16 @@ export class EthImpl implements Eth {
       .getContractResults({ blockHash: blockHash, transactionIndex: Number(transactionIndex) }, undefined, requestId)
       .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
+        if(e instanceof JsonRpcError) {
+          throw e;
+        }
+
         this.logger.error(
           e,
-          `${requestIdPrefix} Failed to retrieve contract result for hash ${blockHash} and index=${transactionIndex}`
+          `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`
         );
-        return null;
+
+        throw predefined.INTERNAL_ERROR(e.message);
       });
   }
 
@@ -733,11 +740,16 @@ export class EthImpl implements Eth {
       .getContractResults({ blockNumber: blockNum, transactionIndex: Number(transactionIndex) }, undefined, requestId)
       .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
+        if(e instanceof JsonRpcError) {
+          throw e;
+        }
+
         this.logger.error(
           e,
           `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`
         );
-        return null;
+
+        throw predefined.INTERNAL_ERROR(e.message);
       });
   }
 
@@ -781,7 +793,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return predefined.INTERNAL_ERROR;
+      return predefined.INTERNAL_ERROR();
     }
   }
 
@@ -802,7 +814,7 @@ export class EthImpl implements Eth {
         return e;
       }
 
-      throw predefined.INTERNAL_ERROR;
+      throw predefined.INTERNAL_ERROR();
     }
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
@@ -814,12 +826,12 @@ export class EthImpl implements Eth {
         const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, requestId);
         if (!record) {
           this.logger.warn(`${requestIdPrefix} No record retrieved`);
-          throw predefined.INTERNAL_ERROR;
+          throw predefined.INTERNAL_ERROR();
         }
 
         if (record.ethereumHash == null) {
           this.logger.error(`${requestIdPrefix} The ethereumHash can never be null for an ethereum transaction, and yet it was!!`);
-          throw predefined.INTERNAL_ERROR;
+          throw predefined.INTERNAL_ERROR();
         }
 
         return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
@@ -835,7 +847,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return predefined.INTERNAL_ERROR;
+      return predefined.INTERNAL_ERROR();
     }
   }
 
@@ -888,7 +900,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return predefined.INTERNAL_ERROR;
+      return predefined.INTERNAL_ERROR();
     }
   }
 
@@ -1235,8 +1247,7 @@ export class EthImpl implements Eth {
           `${requestIdPrefix} Failed to retrieve contract result details for contract address ${to} at timestamp=${timestamp}`
         );
 
-
-          throw e;
+        throw predefined.INTERNAL_ERROR(e.message);
       });
   }
 

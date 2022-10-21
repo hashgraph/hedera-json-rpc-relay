@@ -181,7 +181,7 @@ export default class Assertions {
         expect(res.oldestBlock).to.exist;
         expect(res.baseFeePerGas.length).to.equal(expected.resultCount + 1);
         expect(res.gasUsedRatio.length).to.equal(expected.resultCount);
-        
+
         expect(res.oldestBlock).to.equal(expected.oldestBlock);
 
         res.gasUsedRatio.map((gasRatio: string) => expect(gasRatio).to.equal(`0x${Assertions.defaultGasUsed.toString(16)}`))
@@ -193,7 +193,7 @@ export default class Assertions {
     }
 
     static unknownResponse(err) {
-        Assertions.jsonRpcError(err, predefined.INTERNAL_ERROR);
+        Assertions.jsonRpcError(err, predefined.INTERNAL_ERROR());
     }
 
     static jsonRpcError(err: any, expectedError: JsonRpcError) {

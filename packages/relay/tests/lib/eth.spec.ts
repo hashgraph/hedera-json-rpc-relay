@@ -794,6 +794,23 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.equal(null);
   });
 
+  it('eth_getBlockByHash should throw if unexpected error', async function () {
+    // mirror node request mocks
+    mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
+    mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
+    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+    mock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, {...defaultDetailedContractResults, block_hash: null});
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
+
+    try {
+      await ethImpl.getBlockByHash(blockHash, false);
+    } catch (e) {
+      console.log(e);
+      expect(e.code).to.equal(-32603);
+      expect(e.name).to.equal('Internal error');
+    }
+  });
+
   it('eth_getBlockTransactionCountByNumber with match', async function () {
     // mirror node request mocks
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
@@ -880,7 +897,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
 
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number.toString(), defaultBlock.count);
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
     if (result == null) return;
 
@@ -902,8 +919,22 @@ describe('Eth calls using MirrorNode', async function () {
       }
     });
 
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number.toString(), defaultBlock.count);
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.equal(null);
+  });
+
+  it('eth_getTransactionByBlockNumberAndIndex should throw for internal error', async function () {
+    // mirror node request mocks
+    mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
+    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, {...defaultDetailedContractResults, block_hash: null });
+
+    try {
+      await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
+    } catch (e) {
+      console.log(e);
+      expect(e.code).to.equal(-32603);
+      expect(e.name).to.equal('Internal error');
+    }
   });
 
   it('eth_getTransactionByBlockNumberAndIndex with no contract results', async function () {
@@ -911,7 +942,7 @@ describe('Eth calls using MirrorNode', async function () {
       'results': []
     });
 
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number.toString(), defaultBlock.count);
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.equal(null);
   });
 
@@ -921,7 +952,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
 
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex('latest', defaultBlock.count);
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex('latest', EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
     if (result == null) return;
 
@@ -938,7 +969,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
 
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex('pending', defaultBlock.count);
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex('pending', EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
     if (result == null) return;
 
@@ -954,7 +985,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/results?block.number=0&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
 
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex('earliest', defaultBlock.count);
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex('earliest', EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
     if (result == null) return;
 
@@ -971,7 +1002,7 @@ describe('Eth calls using MirrorNode', async function () {
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('0xdeadc0de' +
-      '', defaultBlock.count);
+      '', EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
     if (result == null) return;
 
@@ -986,7 +1017,7 @@ describe('Eth calls using MirrorNode', async function () {
     // mirror node request mocks
     mock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
     mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, defaultBlock.count);
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
     if (result == null) return;
 
@@ -995,6 +1026,20 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.blockNumber).equal(blockNumberHex);
     expect(result.hash).equal(contractHash1);
     expect(result.to).equal(contractAddress1);
+  });
+
+  it('eth_getTransactionByBlockHashAndIndex should throw for internal error', async function () {
+    // mirror node request mocks
+    mock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
+    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, {...defaultDetailedContractResults, block_hash: null });
+
+    try {
+      await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count));
+    } catch (e) {
+      console.log(e);
+      expect(e.code).to.equal(-32603);
+      expect(e.name).to.equal('Internal error');
+    }
   });
 
   it('eth_getTransactionByBlockHashAndIndex with no contract result match', async function () {
@@ -1009,7 +1054,7 @@ describe('Eth calls using MirrorNode', async function () {
       }
     });
 
-    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), defaultBlock.count);
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.equal(null);
   });
 
@@ -1018,7 +1063,7 @@ describe('Eth calls using MirrorNode', async function () {
       'results': []
     });
 
-    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), defaultBlock.count);
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.equal(null);
   });
 
@@ -1034,14 +1079,13 @@ describe('Eth calls using MirrorNode', async function () {
       }
     });
 
-    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), defaultBlock.count);
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.equal(null);
   });
 
   describe('eth_getBalance', async function() {
-
     const defBalance = 99960581137;
-    const defHexBalance = EthImpl.numberTo0x(defBalance * constants.TINYBAR_TO_WEIBAR_COEF)
+    const defHexBalance = EthImpl.numberTo0x(defBalance * constants.TINYBAR_TO_WEIBAR_COEF);
     it('should return balance from mirror node', async () => {
       mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
         blocks: [{
@@ -1929,6 +1973,8 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
     });
 
+    // Block number is a required param, this should not work and should be removed when/if validations are added.
+    // Instead the relay should return `missing value for required argument <argumentIndex> error`.
     it('eth_getStorageAt with match null block', async function () {
       // mirror node request mocks
       mock.onGet(`contracts/${contractAddress1}/results?limit=1&order=desc`).reply(200, defaultContractResults);
@@ -1942,7 +1988,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
     });
 
-    it('eth_getStorageAt should throw a predefined NO_SUITABLE_PEERS when block not found', async function () {
+    it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when block not found', async function () {
 
       let hasError = false;
       try {
