@@ -47,6 +47,9 @@ jobs:
       - name: Install dependencies
         run: cd ${{ inputs.directory }}/ && npm ci
 
+      - name: Check local node
+        run: npm run check:node
+
       - name: Run the tests
         uses: nick-fields/retry@v2
         with:
