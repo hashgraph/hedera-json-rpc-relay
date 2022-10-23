@@ -1320,9 +1320,9 @@ export class EthImpl implements Eth {
       return [];
     }
 
-    return result.logs.map(log => {
+    return result.logs.map(async log => {
       return new Log({
-        address: log.address,
+        address: await this.getContractEvmAddress(log.address, requestId),
         blockHash: EthImpl.toHash32(log.block_hash),
         blockNumber: EthImpl.numberTo0x(log.block_number),
         data: log.data,
@@ -1339,5 +1339,10 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} maxPriorityFeePerGas()`);
     return EthImpl.zeroHex;
+  }
+
+  private async getContractEvmAddress(address: string, requestId: string | undefined) {
+    const result = await this.mirrorNodeClient.getContract(address, requestId);
+    return result.evm_address || address; 
   }
 }
