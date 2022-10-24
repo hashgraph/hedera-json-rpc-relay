@@ -1,5 +1,5 @@
 import 'cypress-wait-until';
-import * as htsData from '../../.htsTokenAddress.json';
+import * as htsData from '../../src/contracts/.htsTokenInfo.json';
 
 describe('Test Core Hedera User Scenarios', function() {
   this.timeout(180000);
@@ -66,5 +66,13 @@ describe('Test Core Hedera User Scenarios', function() {
     cy.confirmMetamaskTransaction();
 
     cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
+  }).timeout(180000);
+
+  it('Associate HTS', function() {
+    cy.resetMetamaskAccount();
+    cy.get('#htsTokenAssociateBtn').should('not.be.disabled').click();
+    cy.confirmMetamaskTransaction();
+
+    cy.waitUntil(() => cy.get('#htsTokenAssociateMsg').should('have.text', ' Done '));
   }).timeout(180000);
 });
