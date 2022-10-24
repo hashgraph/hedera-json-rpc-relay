@@ -6,12 +6,8 @@ metadata:
     {{- include "json-rpc-relay.labels" . | nindent 4 }}
 {{- if .Values.service.annotations }}
   annotations:
-{{ toYaml .Values.service.annotations | nindent 4 }}
+{{ toYaml .Values.service.annotations | indent 4 }}  
 {{- end }}
-{{- if .Values.service.annontations_JSON }}
-  annotations:
-{{ .Values.service.annontations_JSON | toJson | nindent 4 }}
-{{- end }}  
 spec:
   type: {{ .Values.service.type }}
   ports:
