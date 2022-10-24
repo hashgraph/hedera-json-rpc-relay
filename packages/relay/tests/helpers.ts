@@ -165,7 +165,6 @@ const mockData = {
 
 export { expectUnsupportedMethod, expectedError, signTransaction, mockData };
 
-
 export const bytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
 export const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
 export const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;
@@ -206,6 +205,28 @@ export const defaultBlock = {
     },
     'gas_used': gasUsed1 + gasUsed2,
     'logs_bloom': '0x'
+};
+export const defaultContract = {
+    "admin_key": null,
+    "auto_renew_account": null,
+    "auto_renew_period": 7776000,
+    "contract_id": "0.0.1052",
+    "created_timestamp": "1659622477.294172233",
+    "deleted": false,
+    "evm_address": null,
+    "expiration_timestamp": null,
+    "file_id": "0.0.1051",
+    "max_automatic_token_associations": 0,
+    "memo": "",
+    "obtainer_id": null,
+    "permanent_removal": null,
+    "proxy_account_id": null,
+    "timestamp": {
+      "from": "1659622477.294172233",
+      "to": null
+    },
+    "bytecode": "0x123456",
+    "runtime_bytecode": "0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100321234"
 };
 export const defaultContractResults = {
     'results': [

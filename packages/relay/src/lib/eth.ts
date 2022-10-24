@@ -1320,19 +1320,21 @@ export class EthImpl implements Eth {
       return [];
     }
 
-    return result.logs.map(async log => {
-      return new Log({
-        address: await this.getContractEvmAddress(log.address, requestId),
-        blockHash: EthImpl.toHash32(log.block_hash),
-        blockNumber: EthImpl.numberTo0x(log.block_number),
-        data: log.data,
-        logIndex: EthImpl.numberTo0x(log.index),
-        removed: false,
-        topics: log.topics,
-        transactionHash: EthImpl.toHash32(log.transaction_hash),
-        transactionIndex: EthImpl.numberTo0x(log.transaction_index)
-      });
-    });
+    return Promise.all(
+      result.logs.map(async log => {
+        return new Log({
+          address: await this.getContractEvmAddress(log.address, requestId),
+          blockHash: EthImpl.toHash32(log.block_hash),
+          blockNumber: EthImpl.numberTo0x(log.block_number),
+          data: log.data,
+          logIndex: EthImpl.numberTo0x(log.index),
+          removed: false,
+          topics: log.topics,
+          transactionHash: EthImpl.toHash32(log.transaction_hash),
+          transactionIndex: EthImpl.numberTo0x(log.transaction_index)
+        });
+      })
+    );
   }
 
   async maxPriorityFeePerGas(requestId?: string): Promise<string> {
@@ -1343,6 +1345,8 @@ export class EthImpl implements Eth {
 
   private async getContractEvmAddress(address: string, requestId: string | undefined) {
     const result = await this.mirrorNodeClient.getContract(address, requestId);
-    return result.evm_address || address; 
+    console.log("HERE");
+    console.log(result.evm_address);
+    return result.evm_address || address;
   }
 }
