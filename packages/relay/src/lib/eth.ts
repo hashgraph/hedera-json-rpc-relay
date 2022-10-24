@@ -478,7 +478,7 @@ export class EthImpl implements Eth {
       // retrieve the contract result details
       await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
         .then(contractResultDetails => {
-          if(contractResultDetails && contractResultDetails.state_changes) {
+          if(contractResultDetails?.state_changes != null) {
             // loop through the state changes to match slot and return value
             for (const stateChange of contractResultDetails.state_changes) {
               if(stateChange.slot === slot) {
@@ -1098,7 +1098,7 @@ export class EthImpl implements Eth {
   private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: string ): Promise<Block | null> {
     const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true);
 
-    if(blockResponse == null) return blockResponse;
+    if(blockResponse == null) return null;
 
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
@@ -1106,7 +1106,7 @@ export class EthImpl implements Eth {
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
 
-    if (contractResults === null || contractResults.results === undefined) {
+    if (contractResults?.results == null) {
       // contract result not found
       return null;
     }
@@ -1121,11 +1121,7 @@ export class EthImpl implements Eth {
       if (!_.isNil(result.to)) {
         const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
         if (transaction !== null) {
-          if (showDetails) {
-            transactionObjects.push(transaction);
-          } else {
-            transactionHashes.push(transaction.hash);
-          }
+          showDetails ? transactionObjects.push(transaction) : transactionHashes.push(transaction.hash);
         }
       }
     }
