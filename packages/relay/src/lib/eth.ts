@@ -1345,8 +1345,6 @@ export class EthImpl implements Eth {
 
   private async getContractEvmAddress(address: string, requestId: string | undefined) {
     const result = await this.mirrorNodeClient.getContract(address, requestId);
-    console.log("HERE");
-    console.log(result.evm_address);
     return result.evm_address || address;
   }
 }

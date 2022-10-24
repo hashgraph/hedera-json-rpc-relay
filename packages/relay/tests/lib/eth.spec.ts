@@ -1347,7 +1347,6 @@ describe('Eth calls using MirrorNode', async function () {
         await ethImpl.getLogs(null, null, null, contractAddress1, null);
         expect(true).to.eq(false);
       } catch (error: any) {
-        console.log(error);
         expect(error.statusCode).to.equal(MirrorNodeClientError.statusCodes.TIMEOUT);
       }
     });
