@@ -48,13 +48,7 @@ const createAccountFromCompressedPublicKey = async function(compressedPublicKey)
   const accountId = transfer.accountId.toString();
 
   console.log(`Account has been successfully created: ${accountId}`);
-  const accountBalance = await new AccountBalanceQuery()
-        .setAccountId(accountId)
-        .execute(client);
 
-    console.log(
-        `- account ${accountId} balance is ${accountBalance.hbars.toTinybars()} tinybar.`
-        );
   return { accountId };
 };
 
@@ -162,6 +156,9 @@ const deployHederaTokenService = async function(wallet) {
 
   await transferHTSToken(mainAccountId, tokenId);
   await transferHTSToken(receiverAccountId, tokenId);
+
+  await createAccountFromCompressedPublicKey(mainCompressedKey);
+  await createAccountFromCompressedPublicKey(receiverCompressedKey);
 
   process.exit(0);
 })();
