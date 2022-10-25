@@ -75,4 +75,4 @@ jobs:
         with:
           max_attempts: 10
           timeout_minutes: 10
-          command: npm run test --prefix ./dapp-example/
+          command: npm run bootstrap --prefix ./dapp-example/ && npm run test --prefix ./dapp-example/
