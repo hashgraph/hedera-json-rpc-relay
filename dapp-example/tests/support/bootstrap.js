@@ -4,6 +4,7 @@ const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { AccountBalanceQuery } = require('@hashgraph/sdk');
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
@@ -47,7 +48,13 @@ const createAccountFromCompressedPublicKey = async function(compressedPublicKey)
   const accountId = transfer.accountId.toString();
 
   console.log(`Account has been successfully created: ${accountId}`);
+  const accountBalance = await new AccountBalanceQuery()
+        .setAccountId(accountId)
+        .execute(client);
 
+    console.log(
+        `- account ${accountId} balance is ${accountBalance.hbars.toTinybars()} tinybar.`
+        );
   return { accountId };
 };
 
