@@ -641,7 +641,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
     return this.getBlock(hash, showDetails, requestId).catch((e: any) => {
       this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-      throw predefined.INTERNAL_ERROR(e.message);
+      throw predefined.INTERNAL_ERROR();
     });
   }
 
@@ -655,7 +655,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
     return this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
       this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
-      throw predefined.INTERNAL_ERROR(e.message);
+      throw predefined.INTERNAL_ERROR();
     });
   }
 
@@ -672,7 +672,7 @@ export class EthImpl implements Eth {
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-        throw predefined.INTERNAL_ERROR(e.message);
+        throw predefined.INTERNAL_ERROR();
       });
   }
 
@@ -689,7 +689,7 @@ export class EthImpl implements Eth {
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNum}`, blockNum);
-        throw predefined.INTERNAL_ERROR(e.message);
+        throw predefined.INTERNAL_ERROR();
       });
   }
 
@@ -715,7 +715,7 @@ export class EthImpl implements Eth {
           `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`
         );
 
-        throw predefined.INTERNAL_ERROR(e.message);
+        throw predefined.INTERNAL_ERROR();
       });
   }
 
@@ -746,7 +746,7 @@ export class EthImpl implements Eth {
           `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`
         );
 
-        throw predefined.INTERNAL_ERROR(e.message);
+        throw predefined.INTERNAL_ERROR();
       });
   }
 
@@ -1240,7 +1240,7 @@ export class EthImpl implements Eth {
           `${requestIdPrefix} Failed to retrieve contract result details for contract address ${to} at timestamp=${timestamp}`
         );
 
-        throw predefined.INTERNAL_ERROR(e.message);
+        throw predefined.INTERNAL_ERROR();
       });
   }
 
