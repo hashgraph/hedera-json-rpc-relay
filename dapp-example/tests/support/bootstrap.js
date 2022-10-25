@@ -4,7 +4,6 @@ const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const net = require("net");
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
