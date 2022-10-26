@@ -145,7 +145,7 @@ export class Precheck {
       result.passes = ethers.ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
     } catch (error: any) {
       this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);
-      throw predefined.INTERNAL_ERROR;
+      throw predefined.INTERNAL_ERROR();
     }
 
     if (!result.passes) {

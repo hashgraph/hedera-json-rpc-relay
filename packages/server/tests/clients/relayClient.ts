@@ -49,7 +49,7 @@ export default class RelayClient {
      * @param methodName
      * @param params
      */
-    async callFailing(methodName: string, params: any[], expectedRpcError = predefined.INTERNAL_ERROR) {
+    async callFailing(methodName: string, params: any[], expectedRpcError = predefined.INTERNAL_ERROR()) {
         try {
             const res = await this.call(methodName, params);
             this.logger.trace(`[POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
