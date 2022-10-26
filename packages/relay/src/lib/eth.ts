@@ -503,6 +503,13 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
 
+    if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
+      const latestBlock = await this.blockNumber(requestId);
+      if (latestBlock === blockNumberOrTag) {
+        blockNumberOrTag = latestBlock
+      }
+    }
+
     // Cache is only set for `not found` balances
     const cachedLabel = `getBalance.${account}.${blockNumberOrTag}`;
     const cachedResponse: string | undefined = cache.get(cachedLabel);
