@@ -1557,6 +1557,8 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet('blocks/5').reply(200, defaultBlock);
       mock.onGet('blocks/16').reply(404, {"_status": { "messages": [{"message": "Not found"}]}});
       mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}`).reply(200, filteredLogs);
+      mock.onGet(`contracts/${filteredLogs.logs[0].address}`).reply(200, defaultContract);
+
       const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null);
 
       expect(result).to.exist;
