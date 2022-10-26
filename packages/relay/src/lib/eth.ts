@@ -1320,10 +1320,11 @@ export class EthImpl implements Eth {
       return [];
     }
 
-    return Promise.all(
-      result.logs.map(async log => {
-        return new Log({
-          address: await this.getContractEvmAddress(log.address, requestId),
+    const logs: Log[] = [];
+    for(const log of result.logs) {
+      logs.push(
+        new Log({
+          address: await this.getLogEvmAddress(log.address, requestId) || log.address,
           blockHash: EthImpl.toHash32(log.block_hash),
           blockNumber: EthImpl.numberTo0x(log.block_number),
           data: log.data,
@@ -1332,9 +1333,11 @@ export class EthImpl implements Eth {
           topics: log.topics,
           transactionHash: EthImpl.toHash32(log.transaction_hash),
           transactionIndex: EthImpl.numberTo0x(log.transaction_index)
-        });
-      })
-    );
+        })
+      );
+    }
+
+    return logs;
   }
 
   async maxPriorityFeePerGas(requestId?: string): Promise<string> {
@@ -1343,8 +1346,18 @@ export class EthImpl implements Eth {
     return EthImpl.zeroHex;
   }
 
-  private async getContractEvmAddress(address: string, requestId: string | undefined) {
-    const result = await this.mirrorNodeClient.getContract(address, requestId);
-    return result.evm_address || address;
+  private async getLogEvmAddress(address: string, requestId: string | undefined) {
+    const cachedLabel = `getLogEvmAddress.${address}`;
+    let contractAddress = cache.get(cachedLabel);
+
+    // If contractAddress === undefined it means there's no cache record
+    // and a mirror node request should be executed.
+    if(contractAddress === undefined) {
+      const contract = await this.mirrorNodeClient.getContract(address, requestId);
+      contractAddress = contract.evm_address;
+      cache.set(cachedLabel, contractAddress, constants.CACHE_TTL.ONE_HOUR);
+    }
+
+    return contractAddress;
   }
 }

@@ -1361,20 +1361,29 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('no filters', async function () {
+      const filteredLogs = {
+        logs: [
+          defaultLogs.logs[0],
+          {...defaultLogs.logs[1], address: "0x0000000000000000000000000000000002131952"},
+          {...defaultLogs.logs[2], address: "0x0000000000000000000000000000000002131953"},
+          {...defaultLogs.logs[3], address: "0x0000000000000000000000000000000002131954"}
+        ]
+      };
       mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
-      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultLogs);
-      for (const log of defaultLogs.logs) {
-        mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
-      }
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
+      filteredLogs.logs.forEach((log, index) => {
+        console.log(log);
+        mock.onGet(`contracts/${log.address}`).reply(200, {...defaultContract, contract_id: `0.0.105${index}`});
+      });
 
       const result = await ethImpl.getLogs(null, null, null, null, null);
       expect(result).to.exist;
 
       expect(result.length).to.eq(4);
-      expectLogData1(result[0]);
-      expectLogData2(result[1]);
-      expectLogData3(result[2]);
-      expectLogData4(result[3]);
+      expectLogData(result[0], filteredLogs.logs[0], defaultDetailedContractResults);
+      expectLogData(result[1], filteredLogs.logs[1], defaultDetailedContractResults);
+      expectLogData(result[2], filteredLogs.logs[2], defaultDetailedContractResults2);
+      expectLogData(result[3], filteredLogs.logs[3], defaultDetailedContractResults3);
     });
 
     it('Should return evm address if contract has one', async function () {
@@ -1391,6 +1400,21 @@ describe('Eth calls using MirrorNode', async function () {
 
       expect(result.length).to.eq(1);
       expect(result[0].address).to.eq(defaultEvmAddress);
+    });
+
+    it('Should cache contracts/contractIdOrAddress request', async function () {
+      mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultLogs);
+      mock.onGet(`contracts/${defaultLogs.logs[0].address}`).replyOnce(200, defaultContract); // This mock will fire only once, if the request is not cached, the test will fail with no mock error
+
+      const result = await ethImpl.getLogs(null, null, null, null, null);
+      expect(result).to.exist;
+
+      expect(result.length).to.eq(4);
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+      expectLogData3(result[2]);
+      expectLogData4(result[3]);
     });
 
     it('address filter', async function () {
