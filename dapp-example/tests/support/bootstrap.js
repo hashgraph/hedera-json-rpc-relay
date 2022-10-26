@@ -4,7 +4,6 @@ const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { AccountBalanceQuery } = require('@hashgraph/sdk');
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
@@ -33,8 +32,8 @@ console.log(`SDK setup for ${JSON.stringify(network)} for account: ${process.env
 
 const createAccountFromCompressedPublicKey = async function(compressedPublicKey) {
   const transferTransaction = await (new HederaSDK.TransferTransaction()
-    .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(10000))
-    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-10000)))
+    .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(100))
+    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-100)))
     .setTransactionMemo('relay dapp test crypto transfer')
     .execute(client);
 
