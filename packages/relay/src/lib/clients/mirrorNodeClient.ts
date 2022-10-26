@@ -155,7 +155,7 @@ export class MirrorNodeClient {
             return response.data;
         } catch (error: any) {
             ms = Date.now() - start;
-            const effectiveStatusCode = error.response !== undefined ? error.response.status : MirrorNodeClient.unknownServerErrorHttpStatusCode;
+            const effectiveStatusCode = error.response?.status || MirrorNodeClientError.ErrorCodes[error.code] || MirrorNodeClient.unknownServerErrorHttpStatusCode;
             this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
             this.handleError(error, path, effectiveStatusCode, allowedErrorStatuses, requestId);
         }
@@ -203,7 +203,7 @@ export class MirrorNodeClient {
     public async getBlock(hashOrBlockNumber: string | number, requestId?: string) {
         return this.request(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`,
             MirrorNodeClient.GET_BLOCK_ENDPOINT,
-            [400],
+            [400, 404],
             requestId);
     }
 
@@ -240,14 +240,14 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT,
-            [400],
+            [400, 404],
             requestId);
     }
 
     public async getContractResultsDetails(contractId: string, timestamp: string, requestId?: string) {
         return this.request(`${this.getContractResultsDetailsByContractIdAndTimestamp(contractId, timestamp)}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT,
-            [400],
+            [400, 404],
             requestId);
     }
 

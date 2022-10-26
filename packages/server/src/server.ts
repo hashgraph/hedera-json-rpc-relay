@@ -151,14 +151,14 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
         message: response.message,
         data: response.data
       }, requestId);
-    } 
+    }
     return response;
   } catch (e: any) {
     ms = Date.now() - start;
     methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
     logger.error(e, `${messagePrefix} ${responseInternalErrorCode} ${ms} ms`);
 
-    let error = predefined.INTERNAL_ERROR;
+    let error = predefined.INTERNAL_ERROR();
     if (e instanceof MirrorNodeClientError) {
       if (e.isTimeout()) {
         error = predefined.REQUEST_TIMEOUT;
