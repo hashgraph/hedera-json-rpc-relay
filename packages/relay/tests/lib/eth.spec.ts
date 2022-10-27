@@ -27,7 +27,7 @@ import { Registry } from 'prom-client';
 import sinon from 'sinon';
 import cache from 'js-cache';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-import {RelayImpl, MirrorNodeClientError} from '@hashgraph/json-rpc-relay';
+import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
@@ -805,7 +805,7 @@ describe('Eth calls using MirrorNode', async function () {
     try {
       await ethImpl.getBlockByHash(blockHash, false);
     } catch (e) {
-      console.log(e);
+
       expect(e.code).to.equal(-32603);
       expect(e.name).to.equal('Internal error');
     }
@@ -931,7 +931,6 @@ describe('Eth calls using MirrorNode', async function () {
     try {
       await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
     } catch (e) {
-      console.log(e);
       expect(e.code).to.equal(-32603);
       expect(e.name).to.equal('Internal error');
     }
@@ -1036,7 +1035,6 @@ describe('Eth calls using MirrorNode', async function () {
     try {
       await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count));
     } catch (e) {
-      console.log(e);
       expect(e.code).to.equal(-32603);
       expect(e.name).to.equal('Internal error');
     }
@@ -1429,7 +1427,6 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
       mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, filteredLogs);
       filteredLogs.logs.forEach((log, index) => {
-        console.log(log);
         mock.onGet(`contracts/${log.address}`).reply(200, {...defaultContract, contract_id: `0.0.105${index}`});
       });
 
@@ -1465,9 +1462,12 @@ describe('Eth calls using MirrorNode', async function () {
       mock.onGet(`contracts/${defaultLogs.logs[0].address}`).replyOnce(200, defaultContract); // This mock will fire only once, if the request is not cached, the test will fail with no mock error
 
       const result = await ethImpl.getLogs(null, null, null, null, null);
-      expect(result).to.exist;
 
+      expect(cache.keys().includes('getLogEvmAddress.0x0000000000000000000000000000000002131951')).to.be.true;
+
+      expect(result).to.exist;
       expect(result.length).to.eq(4);
+
       expectLogData1(result[0]);
       expectLogData2(result[1]);
       expectLogData3(result[2]);
