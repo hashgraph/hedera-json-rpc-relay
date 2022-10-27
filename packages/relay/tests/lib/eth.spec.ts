@@ -1048,6 +1048,42 @@ describe('Eth calls using MirrorNode', async function () {
       expect(resBalance).to.equal(defHexBalance);
     });
 
+    it('should return balance from mirror node with block number passed as param the same as latest', async () => {
+      const blockNumber = "0x2710"
+      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000
+        }]
+      });
+      mock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
+        }
+      });
+      
+      const resBalance = await ethImpl.getBalance(contractAddress1, blockNumber);
+      expect(resBalance).to.equal(defHexBalance);
+    });
+
+    it('should return balance from mirror node with block number passed as param, one behind latest', async () => {
+      const blockNumber = "0x270F"
+      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000
+        }]
+      });
+      mock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
+        }
+      });
+
+      const resBalance = await ethImpl.getBalance(contractAddress1, blockNumber);
+      expect(resBalance).to.equal(defHexBalance);
+    });
+
     it('should return balance from consensus node', async () => {
       mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
         blocks: [{
@@ -2065,7 +2101,7 @@ describe('Eth', async function () {
   it('should execute "eth_chainId"', async function () {
     const chainId = await Relay.eth().chainId();
 
-    expect(chainId).to.be.equal(`0x${process.env.CHAIN_ID}`);
+    expect(chainId).to.be.equal(`${process.env.CHAIN_ID}`);
   });
 
   it('should execute "eth_accounts"', async function () {
