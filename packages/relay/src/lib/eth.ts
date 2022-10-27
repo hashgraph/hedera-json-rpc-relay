@@ -467,7 +467,7 @@ export class EthImpl implements Eth {
 
     // To save a request to the mirror node for `latest` and `pending` blocks, we directly return null from `getHistoricalBlockResponse`
     // But if a block number or `earliest` tag is passed and the mirror node returns `null`, we should throw an error.
-    if(!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
+    if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
       throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
     }
 
@@ -478,7 +478,7 @@ export class EthImpl implements Eth {
       // retrieve the contract result details
       await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
         .then(contractResultDetails => {
-          if(contractResultDetails?.state_changes != null) {
+          if (contractResultDetails?.state_changes != null) {
             // filter the state changes to match slot and return value
             const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === slot);
             result = stateChange.value_written;
@@ -626,7 +626,7 @@ export class EthImpl implements Eth {
       const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
-      if(e instanceof SDKClientError) {
+      if (e instanceof SDKClientError) {
         // handle INVALID_CONTRACT_ID
         if (e.isInvalidContractId()) {
           this.logger.debug(`${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.statusCode}`);
@@ -718,7 +718,7 @@ export class EthImpl implements Eth {
       .getContractResults({ blockHash: blockHash, transactionIndex: Number(transactionIndex) }, undefined, requestId)
       .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
-        if(e instanceof JsonRpcError) {
+        if (e instanceof JsonRpcError) {
           throw e;
         }
 
@@ -749,7 +749,7 @@ export class EthImpl implements Eth {
       .getContractResults({ blockNumber: blockNum, transactionIndex: Number(transactionIndex) }, undefined, requestId)
       .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
-        if(e instanceof JsonRpcError) {
+        if (e instanceof JsonRpcError) {
           throw e;
         }
 
@@ -927,10 +927,10 @@ export class EthImpl implements Eth {
     }
 
     let fromAddress;
-    if(contractResult.from) {
+    if (contractResult.from) {
       fromAddress = contractResult.from.substring(0, 42);
       const accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
-      if(accountResult && accountResult.evm_address && accountResult.evm_address.length > 0) {
+      if (accountResult && accountResult.evm_address && accountResult.evm_address.length > 0) {
         fromAddress = accountResult.evm_address.substring(0,42);
       }
     }
@@ -1107,7 +1107,7 @@ export class EthImpl implements Eth {
   private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: string ): Promise<Block | null> {
     const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true);
 
-    if(blockResponse == null) return null;
+    if (blockResponse == null) return null;
 
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
@@ -1218,7 +1218,7 @@ export class EthImpl implements Eth {
     return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp, requestId)
       .then(contractResultDetails => {
         // 404 is allowed return code so it's possible for contractResultDetails to be null
-        if(contractResultDetails == null) {
+        if (contractResultDetails == null) {
           return null;
         } else {
           const rSig = contractResultDetails.r === null ? null : contractResultDetails.r.substring(0, 66);
@@ -1280,7 +1280,7 @@ export class EthImpl implements Eth {
       let fromBlockNum = 0;
       let toBlockNum;
 
-      if(!fromBlock && !toBlock) {
+      if (!fromBlock && !toBlock) {
         const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
         fromBlockNum = parseInt(blockResponse.number);
         toBlockNum = parseInt(blockResponse.number);
@@ -1289,7 +1289,7 @@ export class EthImpl implements Eth {
           params.timestamp = [];
 
           const fromBlockResponse = await this.getHistoricalBlockResponse(fromBlock || "latest", true, requestId);
-          if(fromBlockResponse != null) {
+          if (fromBlockResponse != null) {
             params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
             fromBlockNum = parseInt(fromBlockResponse.number);
           } else {
@@ -1297,7 +1297,7 @@ export class EthImpl implements Eth {
           }
 
           const toBlockResponse = await this.getHistoricalBlockResponse(toBlock || "latest", true, requestId);
-          if(toBlockResponse != null) {
+          if (toBlockResponse != null) {
             params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
             toBlockNum = parseInt(toBlockResponse.number);
           }
@@ -1305,7 +1305,7 @@ export class EthImpl implements Eth {
 
       if (fromBlockNum > toBlockNum) {
         return [];
-      } else if((toBlockNum - fromBlockNum) > blockRangeLimit) {
+      } else if ((toBlockNum - fromBlockNum) > blockRangeLimit) {
         throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
       }
     }
@@ -1328,24 +1328,44 @@ export class EthImpl implements Eth {
       return [];
     }
 
-    return result.logs.map(log => {
-      return new Log({
-        address: log.address,
-        blockHash: EthImpl.toHash32(log.block_hash),
-        blockNumber: EthImpl.numberTo0x(log.block_number),
-        data: log.data,
-        logIndex: EthImpl.numberTo0x(log.index),
-        removed: false,
-        topics: log.topics,
-        transactionHash: EthImpl.toHash32(log.transaction_hash),
-        transactionIndex: EthImpl.numberTo0x(log.transaction_index)
-      });
-    });
+    const logs: Log[] = [];
+    for(const log of result.logs) {
+      logs.push(
+        new Log({
+          address: await this.getLogEvmAddress(log.address, requestId) || log.address,
+          blockHash: EthImpl.toHash32(log.block_hash),
+          blockNumber: EthImpl.numberTo0x(log.block_number),
+          data: log.data,
+          logIndex: EthImpl.numberTo0x(log.index),
+          removed: false,
+          topics: log.topics,
+          transactionHash: EthImpl.toHash32(log.transaction_hash),
+          transactionIndex: EthImpl.numberTo0x(log.transaction_index)
+        })
+      );
+    }
+
+    return logs;
   }
 
   async maxPriorityFeePerGas(requestId?: string): Promise<string> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} maxPriorityFeePerGas()`);
     return EthImpl.zeroHex;
+  }
+
+  private async getLogEvmAddress(address: string, requestId: string | undefined) {
+    const cachedLabel = `getLogEvmAddress.${address}`;
+    let contractAddress = cache.get(cachedLabel);
+
+    // If contractAddress === undefined it means there's no cache record
+    // and a mirror node request should be executed.
+    if (contractAddress === undefined) {
+      const contract = await this.mirrorNodeClient.getContract(address, requestId);
+      contractAddress = contract.evm_address;
+      cache.set(cachedLabel, contractAddress, constants.CACHE_TTL.ONE_HOUR);
+    }
+
+    return contractAddress;
   }
 }

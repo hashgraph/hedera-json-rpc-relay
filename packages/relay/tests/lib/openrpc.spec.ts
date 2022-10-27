@@ -50,6 +50,7 @@ import {
     contractTimestamp2,
     contractTimestamp3,
     defaultBlock,
+    defaultContract,
     defaultContractResults,
     defaultDetailedContractResultByHash,
     defaultDetailedContractResults,
@@ -132,7 +133,9 @@ describe("Open RPC Specification", function () {
         mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
             from: `${defaultEvmAddress}`
           });
-
+        for (const log of defaultLogs.logs) {
+        mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
+        }
         sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
         sdkClientStub.getAccountBalanceInTinyBar.returns(100000000000)
         sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));
@@ -290,6 +293,9 @@ describe("Open RPC Specification", function () {
         mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
             blocks: [defaultBlock]
         });
+        for (const log of filteredLogs.logs) {
+            mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
+        }
 
         const response = await ethImpl.getLogs(null, null, null, null, defaultLogTopics);
 
