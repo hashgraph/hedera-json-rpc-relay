@@ -4,7 +4,6 @@ const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const net = require("net");
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
@@ -21,12 +20,10 @@ const randomUppercaseString = (length = 5) => {
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
 let client;
-let isLocalNode = false;
 const network = process.env.HEDERA_NETWORK || '{}';
 if (supportedEnvs.includes(network.toLowerCase())) {
   client = HederaSDK.Client.forName(network);
 } else {
-  isLocalNode = true;
   client = HederaSDK.Client.forNetwork(JSON.parse(network));
 }
 
@@ -125,28 +122,6 @@ const deployHederaTokenService = async function(wallet) {
 };
 
 (async () => {
-  if (isLocalNode) {
-    let nodeStarted = false;
-    let retries = 10;
-    while (!nodeStarted && retries >= 0) {
-      net
-        .createConnection('5600', '127.0.0.1')
-        .on("data", function () {
-          nodeStarted = true;
-        })
-        .on("error", (err) => {
-          console.log(
-            `Waiting for local node, retrying in 10 seconds...`
-          );
-      });
-      retries -= 1;
-      await new Promise(r => setTimeout(r, 10000));
-    }
-    if (!nodeStarted) {
-      process.exit(0);
-    }
-  }
-
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
   if (mainPrivateKeyString === '') {
     mainPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw()

@@ -508,8 +508,20 @@ export class EthImpl implements Eth {
    */
   async getBalance(account: string, blockNumberOrTag: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
+    const latestBlockTolerance = 1;
     this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
 
+    // this check is required, because some tools like Metamask pass for parameter latest block, with a number (ex 0x30ea)
+    // tolerance is needed, because there is a small delay between requesting latest block from blockNumber and passing it here
+    if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
+      const latestBlock = await this.blockNumber(requestId);
+      const blockDiff = Number(latestBlock) - Number(blockNumberOrTag);
+
+      if (blockDiff <= latestBlockTolerance) {
+        blockNumberOrTag = EthImpl.blockLatest;
+      }
+    }
+    
     // Cache is only set for `not found` balances
     const cachedLabel = `getBalance.${account}.${blockNumberOrTag}`;
     const cachedResponse: string | undefined = cache.get(cachedLabel);

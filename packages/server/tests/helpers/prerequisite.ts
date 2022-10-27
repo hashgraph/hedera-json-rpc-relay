@@ -10,7 +10,13 @@ const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 
 (function () {
-  if (USE_LOCAL_NODE) {    
+  if (USE_LOCAL_NODE) {
+    process.env['NETWORK_NODE_IMAGE_TAG'] = '0.32.0-alpha.1';
+    process.env['HAVEGED_IMAGE_TAG'] = '0.32.0-alpha.1';
+    process.env['MIRROR_IMAGE_TAG'] = '0.67.0';
+    
+    console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
+    
     console.log('Installing local node...');
     shell.exec(`npm install @hashgraph/hedera-local -g`);
   

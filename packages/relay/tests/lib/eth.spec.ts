@@ -1103,6 +1103,42 @@ describe('Eth calls using MirrorNode', async function () {
       expect(resBalance).to.equal(defHexBalance);
     });
 
+    it('should return balance from mirror node with block number passed as param the same as latest', async () => {
+      const blockNumber = "0x2710"
+      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000
+        }]
+      });
+      mock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
+        }
+      });
+      
+      const resBalance = await ethImpl.getBalance(contractAddress1, blockNumber);
+      expect(resBalance).to.equal(defHexBalance);
+    });
+
+    it('should return balance from mirror node with block number passed as param, one behind latest', async () => {
+      const blockNumber = "0x270F"
+      mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000
+        }]
+      });
+      mock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
+        }
+      });
+
+      const resBalance = await ethImpl.getBalance(contractAddress1, blockNumber);
+      expect(resBalance).to.equal(defHexBalance);
+    });
+
     it('should return balance from consensus node', async () => {
       mock.onGet(`blocks?limit=1&order=desc`).reply(200, {
         blocks: [{

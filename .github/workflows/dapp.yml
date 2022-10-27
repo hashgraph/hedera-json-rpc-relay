@@ -57,6 +57,9 @@ jobs:
       - name: Install dapp dependencies
         run: cd ./dapp-example/ && npm ci
 
+      - name: Check local node
+        run: npm run check:node
+
       - name: Run the dapp bootstrap script
         run: npm run bootstrap --prefix ./dapp-example/
 
