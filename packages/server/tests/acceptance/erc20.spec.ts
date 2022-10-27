@@ -40,6 +40,8 @@ describe('@erc20 Acceptance Tests', async function () {
     let initialHolder;
     let recipient;
     let anotherAccount;
+    let requestId;
+
     const contracts:[any] = [];
 
     const name = Utils.randomString(10);
@@ -55,9 +57,11 @@ describe('@erc20 Acceptance Tests', async function () {
     ];
 
     this.beforeAll(async () => {
-        accounts[0] = await servicesNode.createAliasAccount(30, relay.provider);
-        accounts[1] = await servicesNode.createAliasAccount(15, relay.provider);
-        accounts[2] = await servicesNode.createAliasAccount(15, relay.provider);
+        requestId = Utils.generateRequestId();
+
+        accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
+        accounts[2] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
 
         initialHolder = accounts[0].address;
         recipient = accounts[1].address;
@@ -68,6 +72,10 @@ describe('@erc20 Acceptance Tests', async function () {
 
         contracts.push(await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson));
         contracts.push(await createHTS(name, symbol, accounts[0], 10000, ERC20MockJson.abi, [accounts[1], accounts[2]]));
+    });
+
+    this.beforeEach(async () => {
+        requestId = Utils.generateRequestId();
     });
 
     for (const i in testTitles) {
@@ -91,7 +99,7 @@ describe('@erc20 Acceptance Tests', async function () {
             });
 
             it('Relay can execute "eth_getCode" for ERC20 contract with evmAddress', async function () {
-                const res = await relay.call('eth_getCode', [contract.address]);
+                const res = await relay.call('eth_getCode', [contract.address], requestId);
                 expect(res).to.eq(testTitles[i].expectedBytecode);
             });
 
@@ -354,12 +362,12 @@ describe('@erc20 Acceptance Tests', async function () {
 
         // Associate and approve token for all accounts
         for (const account of associatedAccounts) {
-            await servicesNode.associateHTSToken(account.accountId, htsResult.receipt.tokenId, account.privateKey, htsResult.client);
-            await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId, htsResult.client);
+            await servicesNode.associateHTSToken(account.accountId, htsResult.receipt.tokenId, account.privateKey, htsResult.client, requestId);
+            await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId, htsResult.client, requestId);
         }
 
         // Setup initial balance of token owner account
-        await servicesNode.transferHTSToken(accounts[0].accountId, htsResult.receipt.tokenId, initialSupply, htsResult.client);
+        await servicesNode.transferHTSToken(accounts[0].accountId, htsResult.receipt.tokenId, initialSupply, htsResult.client, requestId);
         const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
         return new ethers.Contract(evmAddress, abi, accounts[0].wallet);
     };

@@ -27,6 +27,7 @@ chai.use(solidity);
 import { AliasAccount } from '../clients/servicesClient';
 import { ethers } from 'ethers';
 import BaseHTSJson from '../contracts/contracts_v1/BaseHTS.json';
+import { Utils } from '../helpers/utils';
 
 
 describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function () {
@@ -44,11 +45,14 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
   let baseHTSContractReceiverWalletFirst;
   let baseHTSContractReceiverWalletSecond;
   let HTSTokenWithCustomFeesContractAddress;
+  let requestId;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(60, relay.provider);
-    accounts[1] = await servicesNode.createAliasAccount(15, relay.provider);
-    accounts[2] = await servicesNode.createAliasAccount(15, relay.provider);
+    requestId = Utils.generateRequestId();
+
+    accounts[0] = await servicesNode.createAliasAccount(60, relay.provider, requestId);
+    accounts[1] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
+    accounts[2] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
 
     // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise(r => setTimeout(r, 5000));
@@ -59,6 +63,10 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
     baseHTSContractOwner = baseHTSContract;
     baseHTSContractReceiverWalletFirst = baseHTSContract.connect(accounts[1].wallet);
     baseHTSContractReceiverWalletSecond = baseHTSContract.connect(accounts[2].wallet);
+  });
+
+  this.beforeEach(async () => {
+    requestId = Utils.generateRequestId();
   });
 
   async function deployBaseHTSContract() {
