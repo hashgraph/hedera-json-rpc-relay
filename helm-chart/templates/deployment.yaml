@@ -138,6 +138,12 @@ spec:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: ETH_GET_LOGS_BLOCK_RANGE_LIMIT
                 optional: true
+          - name: RATE_LIMIT_DISABLED
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: RATE_LIMIT_DISABLED
+                optional: true
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
