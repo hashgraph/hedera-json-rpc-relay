@@ -110,6 +110,7 @@ config:
   HBAR_RATE_LIMIT_TINYBAR: 5000000000
   HBAR_RATE_LIMIT_DURATION: 60000
   ETH_GET_LOGS_BLOCK_RANGE_LIMIT: 1000
+  RATE_LIMIT_DISABLED: false
 
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:
