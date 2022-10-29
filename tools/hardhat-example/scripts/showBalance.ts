@@ -18,15 +18,20 @@
  *
  */
 
-const hre = require('hardhat');
+import hre from 'hardhat';
 
-module.exports = async (address, msg) => {
-  const provider = new hre.ethers.providers.JsonRpcProvider(process.env.RELAY_ENDPOINT);
+export async function showBalance () {
+
+  const provider = hre.ethers.provider;
+
+  if (!process.env.OPERATOR_PRIVATE_KEY) {
+    throw new Error("No OPERATOR_PRIVATE_KEY");
+  }
+
   const wallet = new hre.ethers.Wallet(process.env.OPERATOR_PRIVATE_KEY, provider);
-  const greeter = await hre.ethers.getContractAt('Greeter', address, wallet);
-  const updateTx = await greeter.setGreeting(msg);
 
-  console.log(`Updated call result: ${msg}`);
+  const balance = (await wallet.getBalance()).toString();
+  console.log(`The address ${wallet.address} has ${balance} tinybars`);
 
-  return updateTx;
+  return balance;
 };
