@@ -18,14 +18,13 @@
  *
  */
 
-const hre = require('hardhat');
+import hre from 'hardhat';
 
-module.exports = async () => {
-  const provider = new hre.ethers.providers.JsonRpcProvider(process.env.RELAY_ENDPOINT);
-  const wallet = new hre.ethers.Wallet(process.env.OPERATOR_PRIVATE_KEY, provider);
+export async function getCurrentBlock () {
+  const provider = hre.ethers.provider;
+  const latestBlock = await provider.getBlock("latest");
 
-  const balance = (await wallet.getBalance()).toString();
-  console.log(`The address ${wallet.address} has ${balance} tinybars`);
-
-  return balance;
+  const latestBlockNumber = latestBlock.number;
+  console.log(`latestBlock: ${latestBlockNumber}`);
+  return latestBlockNumber;
 };
