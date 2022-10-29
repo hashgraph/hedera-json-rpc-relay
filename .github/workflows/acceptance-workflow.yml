@@ -38,12 +38,11 @@ jobs:
         run: npx lerna run build
 
       - name: Run acceptance tests
-        continue-on-error: true
+        continue-on-error: false
         timeout-minutes: 15
         run: npm run acceptancetest:${{ inputs.testfilter }}
-        
+
       - name: Re-run acceptance tests (without nick-fields/retry@v2)
         if: ${{ failure() }}
         timeout-minutes: 15
         run: npm run acceptancetest:${{ inputs.testfilter }}
-

@@ -71,7 +71,7 @@ export default class ServicesClient {
         this.client.setOperator(AccountId.fromString(accountId), opPrivateKey);
     }
 
-    async executeQuery(query: Query<any>, requestId: string) {
+    async executeQuery(query: Query<any>, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
             this.logger.info(`${requestIdPrefix} Execute ${query.constructor.name} query`);
@@ -81,7 +81,7 @@ export default class ServicesClient {
         }
     };
 
-    async executeTransaction(transaction: Transaction, requestId: string) {
+    async executeTransaction(transaction: Transaction, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
             const resp = await transaction.execute(this.client);
@@ -92,12 +92,12 @@ export default class ServicesClient {
         }
     };
 
-    async executeAndGetTransactionReceipt(transaction: Transaction, requestId: string) {
+    async executeAndGetTransactionReceipt(transaction: Transaction, requestId?: string) {
         const resp = await this.executeTransaction(transaction, requestId);
         return resp?.getReceipt(this.client);
     };
 
-    async getRecordResponseDetails(resp: TransactionResponse, requestId: string) {
+    async getRecordResponseDetails(resp: TransactionResponse, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         this.logger.info(`${requestIdPrefix} Retrieve record for ${resp.transactionId.toString()}`);
         const record = await resp.getRecord(this.client);
@@ -110,7 +110,7 @@ export default class ServicesClient {
         return { executedTimestamp, executedTransactionId };
     };
 
-    async createToken(initialSupply = 1000, requestId: string) {
+    async createToken(initialSupply = 1000, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const symbol = Math.random().toString(36).slice(2, 6).toUpperCase();
         this.logger.trace(`${requestIdPrefix} symbol = ${symbol}`);
@@ -128,7 +128,7 @@ export default class ServicesClient {
         return tokenId;
     };
 
-    async associateToken(tokenId, requestId: string) {
+    async associateToken(tokenId, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         await this.executeAndGetTransactionReceipt(
             await new TokenAssociateTransaction()
@@ -141,7 +141,7 @@ export default class ServicesClient {
         );
     }
 
-    async transferToken(tokenId, recipient: AccountId, amount = 10, requestId: string) {
+    async transferToken(tokenId, recipient: AccountId, amount = 10, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         await this.executeAndGetTransactionReceipt(new TransferTransaction()
             .addTokenTransfer(tokenId, this._thisAccountId(), -amount)
@@ -162,7 +162,7 @@ export default class ServicesClient {
         );
     }
 
-    async createParentContract(contractJson, requestId: string) {
+    async createParentContract(contractJson, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const contractByteCode = (contractJson.deployedBytecode.replace('0x', ''));
 
@@ -195,7 +195,7 @@ export default class ServicesClient {
         return contractId;
     };
 
-    async executeContractCall(contractId, functionName: string, params: ContractFunctionParameters, gasLimit = 75000, requestId: string) {
+    async executeContractCall(contractId, functionName: string, params: ContractFunctionParameters, gasLimit = 75000, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
         this.logger.info(`${requestIdPrefix} Execute contracts ${contractId}'s createChild method`);
@@ -217,7 +217,7 @@ export default class ServicesClient {
         return { contractExecuteTimestamp, contractExecutedTransactionId };
     };
 
-    async createAliasAccount(initialBalance = 10, provider = null, requestId: string): Promise<AliasAccount> {
+    async createAliasAccount(initialBalance = 10, provider = null, requestId?: string): Promise<AliasAccount> {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const privateKey = PrivateKey.generateECDSA();
         const publicKey = privateKey.publicKey;
@@ -286,7 +286,7 @@ export default class ServicesClient {
         return accountBalance.hbars;
     }
 
-    async updateFileContent(fileId: string, content: string, requestId: string): Promise<void> {
+    async updateFileContent(fileId: string, content: string, requestId?: string): Promise<void> {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const response = await new FileUpdateTransaction()
             .setFileId(fileId)
@@ -298,13 +298,13 @@ export default class ServicesClient {
         this.logger.info(`${requestIdPrefix} File ${fileId} updated with status: ${receipt.status.toString()}`);
     }
 
-    async getAccountBalance(account: string | AccountId, requestId: string): Promise<AccountBalance> {
+    async getAccountBalance(account: string | AccountId, requestId?: string): Promise<AccountBalance> {
         const accountId = typeof account === "string" ? AccountId.fromString(account) : account;
         return this.executeQuery(new AccountBalanceQuery()
             .setAccountId(accountId), requestId);
     }
 
-    async getAccountBalanceInWeiBars(account: string | AccountId, requestId: string) {
+    async getAccountBalanceInWeiBars(account: string | AccountId, requestId?: string) {
         const balance = await this.getAccountBalance(account, requestId);
 
         return ethers.BigNumber.from(balance.hbars.toTinybars().toString()).mul(ServicesClient.TINYBAR_TO_WEIBAR_COEF);
@@ -351,7 +351,7 @@ export default class ServicesClient {
         };
     }
 
-    async associateHTSToken(accountId, tokenId, privateKey, htsClient, requestId: string) {
+    async associateHTSToken(accountId, tokenId, privateKey, htsClient, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const tokenAssociate = await (await new TokenAssociateTransaction()
             .setAccountId(accountId)
@@ -364,7 +364,7 @@ export default class ServicesClient {
         this.logger.info(`${requestIdPrefix} HTS Token ${tokenId} associated to : ${accountId}`);
     };
 
-    async approveHTSToken(spenderId, tokenId, htsClient, requestId: string) {
+    async approveHTSToken(spenderId, tokenId, htsClient, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const amount = 10000;
         const tokenApprove = await (new AccountAllowanceApproveTransaction()
@@ -375,7 +375,7 @@ export default class ServicesClient {
         this.logger.info(`${requestIdPrefix} ${amount} of HTS Token ${tokenId} can be spent by ${spenderId}`);
     };
 
-    async transferHTSToken(accountId, tokenId, amount, fromId = this.client.operatorAccountId, requestId: string) {
+    async transferHTSToken(accountId, tokenId, amount, fromId = this.client.operatorAccountId, requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
             const tokenTransfer = await (await new TransferTransaction()

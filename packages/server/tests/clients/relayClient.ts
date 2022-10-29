@@ -40,7 +40,7 @@ export default class RelayClient {
      * @param params
      * @param requestId
      */
-    async call(methodName: string, params: any[], requestId: string) {
+    async call(methodName: string, params: any[], requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
         const result = await this.provider.send(methodName, params);
@@ -54,7 +54,7 @@ export default class RelayClient {
      * @param params
      * @param requestId
      */
-    async callFailing(methodName: string, params: any[], expectedRpcError = predefined.INTERNAL_ERROR(), requestId: string) {
+    async callFailing(methodName: string, params: any[], expectedRpcError = predefined.INTERNAL_ERROR(), requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
             const res = await this.call(methodName, params, requestId);
@@ -71,7 +71,7 @@ export default class RelayClient {
      * @param params
      * @param requestId
      */
-    async callUnsupported(methodName: string, params: any[], requestId: string) {
+    async callUnsupported(methodName: string, params: any[], requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
             const res = await this.call(methodName, params, requestId);
@@ -89,7 +89,7 @@ export default class RelayClient {
      * @param block
      * @param requestId
      */
-    async getBalance(address, block = 'latest', requestId: string) {
+    async getBalance(address, block = 'latest', requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         this.logger.debug(`${requestIdPrefix} [POST] to relay eth_getBalance for address ${address}]`);
         return this.provider.getBalance(address, block);
@@ -100,7 +100,7 @@ export default class RelayClient {
      * @param requestId
      * Returns: The nonce of the account with the provided `evmAddress`
      */
-    async getAccountNonce(evmAddress, requestId: string): Promise<number> {
+    async getAccountNonce(evmAddress, requestId?: string): Promise<number> {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_getTransactionCount for address ${evmAddress}`);
         const nonce = await this.provider.send('eth_getTransactionCount', [evmAddress, 'latest']);
@@ -114,7 +114,7 @@ export default class RelayClient {
      * @param signedTx
      * @param requestId
      */
-    async sendRawTransaction(signedTx, requestId: string): Promise<string> {
+    async sendRawTransaction(signedTx, requestId?: string): Promise<string> {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_sendRawTransaction`);
         return this.provider.send('eth_sendRawTransaction', [signedTx]);
@@ -125,7 +125,7 @@ export default class RelayClient {
      * 
      * Returns the result of eth_gasPrice as a Number.
      */
-    async gasPrice(requestId: string): Promise<number> {
+    async gasPrice(requestId?: string): Promise<number> {
         return Number(await this.call('eth_gasPrice', [], requestId));
     }
 }
