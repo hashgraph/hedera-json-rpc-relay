@@ -35,45 +35,11 @@ export class JsonRpcError {
 }
 
 export const predefined = {
-  'NO_MINING_WORK': new JsonRpcError({
-    name: 'No mining work',
-    code: -32000,
-    message: 'No mining work available yet'
-  }),
-  'INVALID_REQUEST': new JsonRpcError({
-    name: 'Invalid request',
-    code: -32600,
-    message: 'Invalid request'
-  }),
-  'UNSUPPORTED_METHOD': new JsonRpcError({
-    name: 'Method not found',
-    code: -32601,
-    message: 'Unsupported JSON-RPC method'
-  }),
-  'INVALID_PARAMETERS': new JsonRpcError({
-    name: 'Invalid parameters',
-    code: -32602,
-    message: 'Invalid params'
-  }),
-  'INTERNAL_ERROR': (message: string = '') => new JsonRpcError({
-    name: 'Internal error',
-    code: -32603,
-    message: message === '' ? `Error invoking RPC: ${message}` : 'Unknown error invoking RPC'
-  }),
-  'PARSE_ERROR': new JsonRpcError({
-    name: 'Parse error',
-    code: -32700,
-    message: 'Unable to parse JSON'
-  }),
-  'NONCE_TOO_LOW': new JsonRpcError({
-    name: 'Nonce too low',
-    code: 32001,
-    message: 'Nonce too low'
-  }),
-  'INCORRECT_NONCE': new JsonRpcError({
-    name: 'Incorrect nonce',
-    code: -32006,
-    message: 'Incorrect nonce'
+  'CONTRACT_REVERT': (errorMessage?: string) => new JsonRpcError({
+    name: 'Contract revert executed',
+    code: -32008,
+    message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
+    data: errorMessage
   }),
   'GAS_LIMIT_TOO_HIGH': new JsonRpcError({
     name: 'gasLimit too high',
@@ -85,65 +51,104 @@ export const predefined = {
     code: -32003,
     message: 'Intrinsic gas exceeds gas limit'
   }),
-  'REQUEST_BEYOND_HEAD_BLOCK': (requested: number, latest: number) => new JsonRpcError({
-    name: 'Incorrect block',
-    code: -32000,
-    message: `Request beyond head block: requested ${requested}, head ${latest}`
-  }),
-  'UNSUPPORTED_CHAIN_ID': (requested: string | number, current: string | number) => new JsonRpcError({
-    name: 'ChainId not supported',
-    code: -32000,
-    message: `ChainId (${requested}) not supported. The correct chainId is ${current}`
-  }),
   'GAS_PRICE_TOO_LOW': new JsonRpcError({
     name: 'Gas price too low',
     code: -32009,
     message: 'Gas price below configured minimum gas price'
-  }),
-  'INSUFFICIENT_ACCOUNT_BALANCE': new JsonRpcError({
-    name: 'Insufficient account balance',
-    code: -32000,
-    message: 'Insufficient funds for transfer'
-  }),
-  'VALUE_TOO_LOW': new JsonRpcError({
-    name: 'Value too low',
-    code: -32602,
-    message: 'Value below 10_000_000_000 wei which is 1 tinybar'
-  }),
-  'REQUEST_TIMEOUT': new JsonRpcError({
-    name: 'Request timeout',
-    code: -32010,
-    message: 'Request timeout. Please try again.'
-  }),
-  'RESOURCE_NOT_FOUND': (message: string = '') => new JsonRpcError({
-    name: 'Resource not found',
-    code: -32001,
-    message: `Requested resource not found. ${message}`
-  }),
-  'RANGE_TOO_LARGE': (blockRange: number) => new JsonRpcError({
-    name: 'Block range too large',
-    code: -32000,
-    message: `Exceeded maximum block range: ${blockRange}`
-  }),
-  'IP_RATE_LIMIT_EXCEEDED': (methodName: string) => new JsonRpcError({
-    name: 'IP Rate limit exceeded',
-    code: -32605,
-    message: `IP Rate limit exceeded on ${methodName}`
   }),
   'HBAR_RATE_LIMIT_EXCEEDED': new JsonRpcError({
     name: 'HBAR Rate limit exceeded',
     code: -32606,
     message: 'HBAR Rate limit exceeded'
   }),
+  'INCORRECT_NONCE': new JsonRpcError({
+    name: 'Incorrect nonce',
+    code: -32006,
+    message: 'Incorrect nonce'
+  }),
+  'INSUFFICIENT_ACCOUNT_BALANCE': new JsonRpcError({
+    name: 'Insufficient account balance',
+    code: -32000,
+    message: 'Insufficient funds for transfer'
+  }),
+  'INTERNAL_ERROR': (message = '') => new JsonRpcError({
+    name: 'Internal error',
+    code: -32603,
+    message: message === '' ? 'Unknown error invoking RPC' : `Error invoking RPC: ${message}`
+  }),
+  'INVALID_PARAMETERS': new JsonRpcError({
+    name: 'Invalid parameters',
+    code: -32602,
+    message: 'Invalid params'
+  }),
+  'INVALID_REQUEST': new JsonRpcError({
+    name: 'Invalid request',
+    code: -32600,
+    message: 'Invalid request'
+  }),
+  'IP_RATE_LIMIT_EXCEEDED': (methodName: string) => new JsonRpcError({
+    name: 'IP Rate limit exceeded',
+    code: -32605,
+    message: `IP Rate limit exceeded on ${methodName}`
+  }),
+  'MISSING_REQUIRED_PARAMETER': (index: number) => new JsonRpcError({
+    name: 'Missing required parameters',
+    code: -32602,
+    message: `Missing value for required parameter ${index}`
+  }),
+  'NONCE_TOO_LOW': new JsonRpcError({
+    name: 'Nonce too low',
+    code: 32001,
+    message: 'Nonce too low'
+  }),
+  'NO_MINING_WORK': new JsonRpcError({
+    name: 'No mining work',
+    code: -32000,
+    message: 'No mining work available yet'
+  }),
+  'PARSE_ERROR': new JsonRpcError({
+    name: 'Parse error',
+    code: -32700,
+    message: 'Unable to parse JSON'
+  }),
+  'RANGE_TOO_LARGE': (blockRange: number) => new JsonRpcError({
+    name: 'Block range too large',
+    code: -32000,
+    message: `Exceeded maximum block range: ${blockRange}`
+  }),
+  'REQUEST_BEYOND_HEAD_BLOCK': (requested: number, latest: number) => new JsonRpcError({
+    name: 'Incorrect block',
+    code: -32000,
+    message: `Request beyond head block: requested ${requested}, head ${latest}`
+  }),
+  'REQUEST_TIMEOUT': new JsonRpcError({
+    name: 'Request timeout',
+    code: -32010,
+    message: 'Request timeout. Please try again.'
+  }),
+  'RESOURCE_NOT_FOUND': (message = '') => new JsonRpcError({
+    name: 'Resource not found',
+    code: -32001,
+    message: `Requested resource not found. ${message}`
+  }),
   'UNKNOWN_HISTORICAL_BALANCE': new JsonRpcError({
     name: 'Unavailable balance',
     code: -32007,
     message: 'Historical balance data is available only after 15 minutes.'
   }),
-  'CONTRACT_REVERT': (errorMessage?: string) => new JsonRpcError({
-    name: 'Contract revert executed',
-    code: -32008,
-    message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
-    data: errorMessage
-  })
+  'UNSUPPORTED_CHAIN_ID': (requested: string | number, current: string | number) => new JsonRpcError({
+    name: 'ChainId not supported',
+    code: -32000,
+    message: `ChainId (${requested}) not supported. The correct chainId is ${current}`
+  }),
+  'UNSUPPORTED_METHOD': new JsonRpcError({
+    name: 'Method not found',
+    code: -32601,
+    message: 'Unsupported JSON-RPC method'
+  }),
+  'VALUE_TOO_LOW': new JsonRpcError({
+    name: 'Value too low',
+    code: -32602,
+    message: 'Value below 10_000_000_000 wei which is 1 tinybar'
+  }),
 };
