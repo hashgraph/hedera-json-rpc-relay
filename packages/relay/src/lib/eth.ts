@@ -521,7 +521,7 @@ export class EthImpl implements Eth {
         blockNumberOrTag = EthImpl.blockLatest;
       }
     }
-    
+
     // Cache is only set for `not found` balances
     const cachedLabel = `getBalance.${account}.${blockNumberOrTag}`;
     const cachedResponse: string | undefined = cache.get(cachedLabel);

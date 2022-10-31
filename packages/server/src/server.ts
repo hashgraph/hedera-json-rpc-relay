@@ -217,6 +217,9 @@ app.useRpc('eth_blockNumber', async () => {
  * returns: Gas used - hex encoded integer
  */
 app.useRpc('eth_estimateGas', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse('eth_estimateGas', (requestId) =>
     relay.eth().estimateGas(params?.[0], params?.[1], requestId));
 });
@@ -229,6 +232,9 @@ app.useRpc('eth_estimateGas', async (params: any) => {
  * returns: Balance - hex encoded integer
  */
 app.useRpc('eth_getBalance', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0, 1]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_getBalance", (requestId) =>
     relay.eth().getBalance(params?.[0], params?.[1], requestId));
 });
@@ -241,6 +247,9 @@ app.useRpc('eth_getBalance', async (params: any) => {
  * returns: Bytecode - hex encoded bytes
  */
 app.useRpc('eth_getCode', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0, 1]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_getCode", (requestId) =>
     relay.eth().getCode(params?.[0], params?.[1], requestId));
 });
@@ -263,6 +272,9 @@ app.useRpc('eth_chainId', async () => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByNumber', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0, 1]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse('eth_getBlockByNumber', (requestId) =>
     relay.eth().getBlockByNumber(params?.[0], Boolean(params?.[1]), requestId));
 });
@@ -275,6 +287,9 @@ app.useRpc('eth_getBlockByNumber', async (params: any) => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByHash', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0, 1]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_getBlockByHash", (requestId) =>
     relay.eth().getBlockByHash(params?.[0], Boolean(params?.[1]), requestId));
 });
@@ -296,6 +311,9 @@ app.useRpc('eth_gasPrice', async () => {
  * returns: Transaction count - hex encoded integer
  */
 app.useRpc('eth_getTransactionCount', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0, 1]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse('eth_getTransactionCount', (requestId) =>
     relay.eth().getTransactionCount(params?.[0], params?.[1], requestId));
 });
@@ -307,6 +325,9 @@ app.useRpc('eth_getTransactionCount', async (params: any) => {
  * returns: Value - hex encoded bytes
  */
 app.useRpc('eth_call', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0, 1]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_call", (requestId) =>
     relay.eth().call(params?.[0], params?.[1], requestId));
 });
@@ -318,6 +339,9 @@ app.useRpc('eth_call', async (params: any) => {
  * returns: Transaction hash - 32 byte hex value
  */
 app.useRpc('eth_sendRawTransaction', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_sendRawTransaction", (requestId) =>
   relay.eth().sendRawTransaction(params?.[0], requestId));
 });
@@ -329,6 +353,9 @@ app.useRpc('eth_sendRawTransaction', async (params: any) => {
  * returns: Transaction Receipt - object
  */
 app.useRpc('eth_getTransactionReceipt', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse('eth_getTransactionReceipt', (requestId) =>
     relay.eth().getTransactionReceipt(params?.[0], requestId));
 });
@@ -353,6 +380,9 @@ app.useRpc('eth_accounts', async () => {
  * returns: Transaction Object
  */
 app.useRpc('eth_getTransactionByHash', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_getTransactionByHash", (requestId) =>
     relay.eth().getTransactionByHash(params[0], requestId));
 });
@@ -370,6 +400,9 @@ app.useRpc('eth_getTransactionByHash', async (params: any) => {
  *      - reward - Array of effective priority fee per gas data.
  */
 app.useRpc('eth_feeHistory', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0, 1]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_feeHistory", (requestId) =>
     relay.eth().feeHistory(Number(params?.[0]), params?.[1], params?.[2], requestId));
 });
@@ -381,6 +414,9 @@ app.useRpc('eth_feeHistory', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_getBlockTransactionCountByHash", (requestId) =>
     relay.eth().getBlockTransactionCountByHash(params?.[0], requestId));
 });
@@ -392,6 +428,9 @@ app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_getBlockTransactionCountByNumber", (requestId) =>
     relay.eth().getBlockTransactionCountByNumber(params?.[0], requestId));
 });
@@ -403,13 +442,14 @@ app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
  * returns: Logs - Array of log objects
  */
 app.useRpc('eth_getLogs', async (params: any) => {
-  params = params[0] ?? [];
+  params = params[0] ?? {};
+
   return logAndHandleResponse('eth_getLogs', (requestId) => relay.eth().getLogs(
-    params?.blockHash || null,
-    params?.fromBlock || null,
-    params?.toBlock || null,
-    params?.address || null,
-    params?.topics || null,
+    params.blockHash,
+    params.fromBlock,
+    params.toBlock,
+    params.address,
+    params.topics,
     requestId
   ));
 });
@@ -424,6 +464,9 @@ app.useRpc('eth_getLogs', async (params: any) => {
  * returns: Value - The storage value
  */
 app.useRpc('eth_getStorageAt', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0, 1, 2]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_getStorageAt", (requestId) =>
     relay.eth().getStorageAt(params?.[0], params?.[1], params?.[2], requestId));
 });
@@ -436,6 +479,9 @@ app.useRpc('eth_getStorageAt', async (params: any) => {
  * returns: Transaction
  */
 app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0, 1]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_getTransactionByBlockHashAndIndex", (requestId) =>
     relay.eth().getTransactionByBlockHashAndIndex(params?.[0], params?.[1], requestId));
 });
@@ -448,6 +494,9 @@ app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
  * returns: Transaction
  */
 app.useRpc('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
+  const validationError = validateRequiredParams(params, [0, 1]);
+  if (validationError) return validationError;
+
   return logAndHandleResponse("eth_getTransactionByBlockNumberAndIndex", (requestId) =>
     relay.eth().getTransactionByBlockNumberAndIndex(params?.[0], params?.[1], requestId));
 });
@@ -617,5 +666,13 @@ app.getKoaApp().use(async (ctx, next) => {
     delete ctx.body.result;
   }
 });
+
+function validateRequiredParams(params: any, indexes: number[]) {
+  for (const index of indexes) {
+    if (!params[index]) {
+      return predefined.MISSING_REQUIRED_PARAMETER(index);
+    }
+  }
+}
 
 export default app.getKoaApp();
