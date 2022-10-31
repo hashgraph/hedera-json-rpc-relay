@@ -669,7 +669,7 @@ app.getKoaApp().use(async (ctx, next) => {
 
 function validateRequiredParams(params: any, indexes: number[]) {
   for (const index of indexes) {
-    if (!params[index]) {
+    if (params[index] == null) {
       return predefined.MISSING_REQUIRED_PARAMETER(index);
     }
   }
