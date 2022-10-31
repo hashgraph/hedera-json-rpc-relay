@@ -43,6 +43,7 @@ export default class RateLimit {
   }
 
   shouldRateLimit(ip: string, methodName: string, total: number): boolean {
+    if (process.env.RATE_LIMIT_DISABLED && process.env.RATE_LIMIT_DISABLED === 'true') return false;
     this.precheck(ip, methodName, total);
     if (!this.shouldReset(ip)) {
       if (this.checkRemaining(ip, methodName)) {

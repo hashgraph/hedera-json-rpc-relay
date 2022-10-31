@@ -79,6 +79,7 @@ TIER_3_RATE_LIMIT = 400
 LIMIT_DURATION = 60000
 HBAR_RATE_LIMIT_TINYBAR = 6000000000
 HBAR_RATE_LIMIT_DURATION = 60000
+RATE_LIMIT_DISABLED = false
 ```
 
 The following table highlights some initial configuration values to consider
