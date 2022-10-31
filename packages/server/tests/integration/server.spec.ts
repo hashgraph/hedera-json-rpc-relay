@@ -25,18 +25,17 @@ import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
 import app from '../../dist/server.js';
 
-describe('RPC Server', async function() {
+before(function() {
   this.timeout(60 * 1000);
+  this.testServer = app.listen(process.env.E2E_SERVER_PORT);
+  this.testClient = BaseTest.createTestClient();
+});
 
-  before(function() {
-    this.testServer = app.listen(process.env.E2E_SERVER_PORT);
-    this.testClient = BaseTest.createTestClient();
-  });
+after(function() {
+  this.testServer.close();
+});
 
-  after(function() {
-    this.testServer.close();
-  });
-
+describe('RPC Server', async function() {
   it('should execute "eth_chainId"', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
@@ -327,6 +326,326 @@ describe('RPC Server', async function() {
 
     BaseTest.defaultResponseChecks(res);
     expect(res.data.result).to.be.equal('0x0');
+  });
+});
+
+describe('RPC Server Validation', async function() {
+  describe('Required params', async function() {
+    describe('eth_estimateGas', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_estimateGas',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+    });
+
+    describe('eth_getBalance', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getBalance',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 1 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getBalance',
+          'params': ["0x0000000000000000000000000000000000000001"]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+      });
+    });
+
+    describe('eth_getCode', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getCode',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 1 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getCode',
+          'params': ["0x0000000000000000000000000000000000000001"]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+      });
+    });
+
+    describe('eth_getBlockByNumber', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getBlockByNumber',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 1 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getBlockByNumber',
+          'params': ["0x1"]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+      });
+    });
+
+    describe('eth_getBlockByHash', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getBlockByHash',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 1 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getBlockByHash',
+          'params': ["0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6"]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+      });
+    });
+
+    describe('eth_getTransactionCount', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getTransactionCount',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 1 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getTransactionCount',
+          'params': ["0x0000000000000000000000000000000000000001"]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+      });
+    });
+
+    describe('eth_call', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_call',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 1 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_call',
+          'params': [{}]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+      });
+    });
+
+    describe('eth_sendRawTransaction', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_sendRawTransaction',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+    });
+
+    describe('eth_getTransactionByHash', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getTransactionByHash',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+    });
+
+    describe('eth_feeHistory', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_feeHistory',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 1 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_feeHistory',
+          'params': ["0x5"]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+      });
+    });
+
+    describe('eth_getBlockTransactionCountByHash', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getBlockTransactionCountByHash',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+    });
+
+    describe('eth_getBlockTransactionCountByNumber', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getBlockTransactionCountByNumber',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+    });
+
+    describe('eth_getStorageAt', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getStorageAt',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 1 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getStorageAt',
+          'params': ["0x0000000000000000000000000000000000000001"]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+      });
+
+      it('validates parameter 2 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getStorageAt',
+          'params': ["0x0000000000000000000000000000000000000001", "0x1"]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 2');
+      });
+    });
+
+    describe('eth_getTransactionByBlockHashAndIndex', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getTransactionByBlockHashAndIndex',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 1 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getTransactionByBlockHashAndIndex',
+          'params': ["0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35"]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+      });
+    });
+
+    describe('eth_getTransactionByBlockNumberAndIndex', async function() {
+      it('validates parameter 0 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getTransactionByBlockNumberAndIndex',
+          'params': []
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 1 exists', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getTransactionByBlockNumberAndIndex',
+          'params': ["0x5BAD55"]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+      });
+    });
   });
 });
 

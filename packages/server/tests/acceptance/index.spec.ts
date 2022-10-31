@@ -72,7 +72,7 @@ describe('RPC Server Acceptance Tests', function () {
         logger.info(`OPERATOR_ID_MAIN: ${process.env.OPERATOR_ID_MAIN}`);
         logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
         logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
-        
+
         if (USE_LOCAL_NODE === 'true') {
             runLocalHederaNetwork();
         }
@@ -128,12 +128,12 @@ describe('RPC Server Acceptance Tests', function () {
         process.env['NETWORK_NODE_IMAGE_TAG'] = '0.32.0-alpha.1';
         process.env['HAVEGED_IMAGE_TAG'] = '0.32.0-alpha.1';
         process.env['MIRROR_IMAGE_TAG'] = '0.67.0';
-    
+
         console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
-        
+
         console.log('Installing local node...');
         shell.exec(`npm install @hashgraph/hedera-local -g`);
-      
+
         console.log('Starting local node...');
         shell.exec(`hedera start -d`);
         console.log('Hedera Hashgraph local node env started');
