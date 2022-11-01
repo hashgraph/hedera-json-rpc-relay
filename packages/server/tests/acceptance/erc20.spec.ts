@@ -31,7 +31,7 @@ import {Utils} from '../helpers/utils';
 import { EthImpl } from "@hashgraph/json-rpc-relay/src/lib/eth";
 
 
-describe('@erc20 Acceptance Tests', async function () {
+describe.only('@erc20 Acceptance Tests', async function () {
     this.timeout(240 * 1000); // 240 seconds
     const {servicesNode, relay} = global;
 
@@ -53,7 +53,7 @@ describe('@erc20 Acceptance Tests', async function () {
 
     const testTitles = [
         {testName: ERC20, expectedBytecode: ERC20MockJson.deployedBytecode},
-        {testName: HTS, expectedBytecode: EthImpl.emptyHex}
+        {testName: HTS}
     ];
 
     this.beforeAll(async () => {
@@ -100,7 +100,12 @@ describe('@erc20 Acceptance Tests', async function () {
 
             it('Relay can execute "eth_getCode" for ERC20 contract with evmAddress', async function () {
                 const res = await relay.call('eth_getCode', [contract.address], requestId);
-                expect(res).to.eq(testTitles[i].expectedBytecode);
+                const expectedBytecode = `${EthImpl.redirectBytecodePrefix}${contract.address.slice(2)}${EthImpl.redirectBytecodePostfix}`
+                if (testTitles[i].testName !== HTS) {
+                    expect(res).to.eq(testTitles[i].expectedBytecode);
+                } else {
+                    expect(res).to.eq(expectedBytecode);
+                }
             });
 
             describe('should behave like erc20', function() {
@@ -187,17 +192,12 @@ describe('@erc20 Acceptance Tests', async function () {
                                     receipt = await tx.wait();
                                 });
 
-                                // FIXME there is an issue with the Approval event for HTS tokens in Services.
-                                // Re-enable this test when it is resolved
-                                // Last tested with services image: 0.30.0-alpha.2
-                                if (testTitles[i].testName !== HTS) {
-                                    it('emits an approval event', async function () {
-                                        const allowance = await contract.allowance(tokenOwner, spender);
-                                        await expect(tx)
-                                            .to.emit(contract, 'Approval')
-                                            .withArgs(tokenOwnerWallet.address, spenderWallet.address, allowance);
-                                    });
-                                }
+                                it('emits an approval event', async function () {
+                                    const allowance = await contract.allowance(tokenOwner, spender);
+                                    await expect(tx)
+                                        .to.emit(contract, 'Approval')
+                                        .withArgs(tokenOwnerWallet.address, spenderWallet.address, allowance);
+                                });
 
                                 describe('when the token owner has enough balance', function () {
                                     let amount, tx;
@@ -310,11 +310,6 @@ describe('@erc20 Acceptance Tests', async function () {
                                         expect(allowance.toString()).to.be.equal((initialSupply.toNumber() - 1).toString());
                                     });
                                 }
-
-                                it('does not emit an approval event', async function () {
-                                    await expect(await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1))
-                                        .to.not.emit(contract, 'Approval');
-                                });
                             });
                         });
 
