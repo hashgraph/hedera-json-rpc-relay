@@ -131,7 +131,6 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                 let rateLimit = false;
                 try {
                     for (let index = 0; index < parseInt(process.env.TIER_1_RATE_LIMIT!); index++) {
-                        const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, requestId);
                         const gasPrice = await relay.gasPrice(requestId);
 
                         const transaction = {
@@ -157,7 +156,6 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded ', async function () {
                 let rateLimit = false;
                 try {
-                    const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, requestId);
                     const gasPrice = await relay.gasPrice(requestId);
 
                     const transaction = {
