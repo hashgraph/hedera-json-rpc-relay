@@ -38,7 +38,8 @@ jobs:
         run: npx lerna run build
 
       - name: Run acceptance tests
+        uses: nick-fields/retry@v2
         with:
           max_attempts: 3
           timeout_minutes: 15
-        run: npm run acceptancetest:${{ inputs.testfilter }}
+          command: npm run acceptancetest:${{ inputs.testfilter }}
