@@ -73,7 +73,7 @@ describe('@api RPC Server Acceptance Tests', function () {
     const FEE_SCHEDULE_FILE_CONTENT_DEFAULT = "0a280a0a08541a061a04408888340a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 853000
     const FEE_SCHEDULE_FILE_CONTENT_UPDATED = "0a280a0a08541a061a0440a8953a0a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 953000
 
-    describe.only('RPC Server Acceptance Tests', function () {
+    describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
 
         this.beforeAll(async () => {
@@ -137,16 +137,17 @@ describe('@api RPC Server Acceptance Tests', function () {
                 const log4 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params, 75000, requestId);
 
                 await new Promise(r => setTimeout(r, 5000));
+                const tenBlocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 10;
+                //empty params for get logs defaults to latest block, which doesn't have required logs, that's why we fetch the last 10
+                const logs = await relay.call('eth_getLogs', [{
+                    fromBlock: tenBlocksBehindLatest
+                }], requestId);
 
-                const logs = await relay.call('eth_getLogs', [{}], requestId);
                 expect(logs.length).to.be.greaterThan(0);
                 const txIndexLogIndexMapping: any[] = [];
                 for (const i in logs) {
                     expect(logs[i]).to.have.property('address');
                     expect(logs[i]).to.have.property('logIndex');
-
-                    // verify logIndex represents index in block across transactions
-                    expect(logs[i].logIndex).to.equal(ethers.utils.hexValue(Number(i)));
 
                     const key = `${logs[i].transactionHash}---${logs[i].logIndex}`;
                     txIndexLogIndexMapping.push(key);
@@ -205,7 +206,12 @@ describe('@api RPC Server Acceptance Tests', function () {
             });
 
             it('should be able to use `address` param', async () => {
+                //when we pass only address, it defaults to the latest block
+                //we fetch last 10 blocks
+                const tenBlocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 10;
+
                 const logs = await relay.call('eth_getLogs', [{
+                    'fromBlock': tenBlocksBehindLatest,
                     'address': contractAddress
                 }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
@@ -490,7 +496,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 });
 
                 it('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
-                    const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, requestId);
+                    const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
                     const transaction = {
                         ...default155TransactionData,
                         to: mirrorContract.evm_address,
@@ -503,7 +509,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     // Wait for the transaction to be processed and imported in the mirror node with axios-retry
                     await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-                    const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, requestId);
+                    const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
                     const balanceChange = receiverEndBalance.sub(receiverInitialBalance);
                     expect(balanceChange.toString()).to.eq(ONE_TINYBAR.toString());
                 });
@@ -553,7 +559,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                         gasPrice: await relay.gasPrice(requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], requestId);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INTERNAL_ERROR(), requestId);
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with gas price too low)', async function () {
@@ -609,7 +615,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 });
 
                 it('should execute "eth_sendRawTransaction" for London transactions', async function () {
-                    const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, requestId);
+                    const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
                     const gasPrice = await relay.gasPrice(requestId);
 
                     const transaction = {
@@ -625,7 +631,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     // Since the transactionId is not available in this context
                     // Wait for the transaction to be processed and imported in the mirror node with axios-retry
                     await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
-                    const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, requestId);
+                    const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
                     const balanceChange = receiverEndBalance.sub(receiverInitialBalance);
                     expect(balanceChange.toString()).to.eq(ONE_TINYBAR.toString());
                 });
@@ -1129,7 +1135,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: BASIC_CONTRACT_PING_CALL_DATA
                     };
 
-                    await relay.callFailing('eth_call', [callData], requestId);
+                    await relay.callFailing('eth_call', [callData], predefined.INTERNAL_ERROR(), requestId);
                 });
 
                 it('should execute "eth_call" without from field', async function () {

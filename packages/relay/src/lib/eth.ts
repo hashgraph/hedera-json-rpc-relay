@@ -1266,6 +1266,8 @@ export class EthImpl implements Eth {
             `gte:${block.timestamp.from}`,
             `lte:${block.timestamp.to}`
           ];
+        }else {
+          return [];
         }
       }
       catch(e: any) {
@@ -1288,7 +1290,7 @@ export class EthImpl implements Eth {
       } else {
           params.timestamp = [];
 
-          const fromBlockResponse = await this.getHistoricalBlockResponse(fromBlock || "latest", true, requestId);
+          const fromBlockResponse = await this.getHistoricalBlockResponse(toBlock && !fromBlock ? toBlock : fromBlock || "latest", true, requestId);
           if (fromBlockResponse != null) {
             params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
             fromBlockNum = parseInt(fromBlockResponse.number);
