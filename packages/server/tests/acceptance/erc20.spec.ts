@@ -31,7 +31,7 @@ import {Utils} from '../helpers/utils';
 import { EthImpl } from "@hashgraph/json-rpc-relay/src/lib/eth";
 
 
-describe.only('@erc20 Acceptance Tests', async function () {
+describe('@erc20 Acceptance Tests', async function () {
     this.timeout(240 * 1000); // 240 seconds
     const {servicesNode, relay} = global;
 
