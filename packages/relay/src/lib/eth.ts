@@ -1038,7 +1038,7 @@ export class EthImpl implements Eth {
   }
 
   static numberTo0x(input: number | BigNumber): string {
-    return input ? EthImpl.emptyHex + input.toString(16) : EthImpl.emptyHex + '0';
+    return EthImpl.emptyHex + input.toString(16);
   }
 
   static nullableNumberTo0x(input: number | BigNumber): string | null {

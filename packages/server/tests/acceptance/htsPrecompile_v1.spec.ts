@@ -50,9 +50,9 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
 
-    accounts[0] = await servicesNode.createAliasAccount(60, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
-    accounts[2] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
+    accounts[0] = await servicesNode.createAliasAccount(70, relay.provider, requestId);
+    accounts[1] = await servicesNode.createAliasAccount(25, relay.provider, requestId);
+    accounts[2] = await servicesNode.createAliasAccount(25, relay.provider, requestId);
 
     // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise(r => setTimeout(r, 5000));
