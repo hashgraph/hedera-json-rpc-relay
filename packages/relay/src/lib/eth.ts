@@ -1290,7 +1290,8 @@ export class EthImpl implements Eth {
       } else {
           params.timestamp = [];
 
-          const fromBlockResponse = await this.getHistoricalBlockResponse(toBlock && !fromBlock ? toBlock : fromBlock || "latest", true, requestId);
+          const onlyToBlockPassed = toBlock && !fromBlock;
+          const fromBlockResponse = await this.getHistoricalBlockResponse(onlyToBlockPassed ? toBlock : fromBlock || "latest", true, requestId);
           if (fromBlockResponse != null) {
             params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
             fromBlockNum = parseInt(fromBlockResponse.number);

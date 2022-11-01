@@ -388,7 +388,7 @@ export default class ServicesClient {
             this.logger.debug(`${requestIdPrefix} ${rec}`);
         }
         catch(e) {
-            this.logger.debug(`${requestIdPrefix} ${e}`);
+            this.logger.error(e, `${requestIdPrefix} TransferTransaction failed`);
         }
     };
 
