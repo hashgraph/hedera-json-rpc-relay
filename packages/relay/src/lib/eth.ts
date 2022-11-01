@@ -1290,8 +1290,10 @@ export class EthImpl implements Eth {
       } else {
           params.timestamp = [];
 
-          const onlyToBlockPassed = toBlock && !fromBlock;
-          const fromBlockResponse = await this.getHistoricalBlockResponse(onlyToBlockPassed ? toBlock : fromBlock || "latest", true, requestId);
+          // Use the `toBlock` if it is the only passed tag, if not utilize the `fromBlock` or default to "latest"
+          const blockTag = toBlock && !fromBlock ? toBlock : fromBlock || "latest";
+          
+          const fromBlockResponse = await this.getHistoricalBlockResponse(blockTag, true, requestId);
           if (fromBlockResponse != null) {
             params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
             fromBlockNum = parseInt(fromBlockResponse.number);
