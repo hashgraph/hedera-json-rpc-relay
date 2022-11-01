@@ -30,6 +30,7 @@ import TokenCreateJson from '../contracts/TokenCreateContract.json';
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
+import storageContractJson from '../contracts/Storage.json';
 import reverterContractJson from '../contracts/Reverter.json';
 import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
@@ -1146,6 +1147,47 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const res = await relay.call('eth_call', [callData]);
                     expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
                 });
+            });
+        });
+
+        // Test state changes with getStorageAt
+        describe('eth_getStorageAt', () => {
+            let storageContract, evmAddress;
+            const STORAGE_CONTRACT_UPDATE = "0x2de4e884";
+
+            before(async () => {
+                storageContract = await servicesNode.deployContract(storageContractJson);
+                // Wait for creation to propagate
+                await mirrorNode.get(`/contracts/${storageContract.contractId}`);
+
+                evmAddress = `0x${storageContract.contractId.toSolidityAddress()}`;
+            });
+
+            it('@release should execute "eth_call" request to Basic contract', async function () {
+                const transaction = {
+                    value: ONE_TINYBAR,
+                    gasLimit: 30000,
+                    chainId: Number(CHAIN_ID),
+                    to: evmAddress,
+                    nonce: await relay.getAccountNonce(accounts[2].address),
+                    gasPrice: await relay.gasPrice(),
+                    data: STORAGE_CONTRACT_UPDATE,
+                };
+
+                const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
+
+                // Wait until receipt is available in mirror node
+                await mirrorNode.get(`/contracts/results/${transactionHash}`);
+
+                const getStoragAtParams = {
+                    address: evmAddress,
+                    slot: 0,
+                    blockNumber: "latest",
+                }
+
+                const storageVal = await relay.call('eth_getStorageAt', getStoragAtParams );
+                expect(storageVal).to.eq(8)
             });
         });
 
