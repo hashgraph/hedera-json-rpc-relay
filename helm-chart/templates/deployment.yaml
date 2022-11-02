@@ -144,6 +144,12 @@ spec:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: RATE_LIMIT_DISABLED
                 optional: true
+          - name: DEV_MODE
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: DEV_MODE
+                optional: true
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
