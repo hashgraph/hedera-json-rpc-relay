@@ -76,6 +76,11 @@ export const predefined = {
     code: -32603,
     message: message === '' ? 'Unknown error invoking RPC' : `Error invoking RPC: ${message}`
   }),
+  'INVALID_PARAMETER': (index: number | string, message: string) =>  new JsonRpcError({
+    name: 'Invalid parameter',
+    code: -32602,
+    message: `Invalid parameter ${index}: ${message}`
+  }),
   'INVALID_PARAMETERS': new JsonRpcError({
     name: 'Invalid parameters',
     code: -32602,
@@ -91,7 +96,7 @@ export const predefined = {
     code: -32605,
     message: `IP Rate limit exceeded on ${methodName}`
   }),
-  'MISSING_REQUIRED_PARAMETER': (index: number) => new JsonRpcError({
+  'MISSING_REQUIRED_PARAMETER': (index: number | string) => new JsonRpcError({
     name: 'Missing required parameters',
     code: -32602,
     message: `Missing value for required parameter ${index}`

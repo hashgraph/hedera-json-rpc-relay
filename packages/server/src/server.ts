@@ -124,7 +124,7 @@ app.getKoaApp().use(async (ctx, next) => {
 app.getKoaApp().use(async (ctx, next) => {
   if (ctx.url === '/openrpc') {
     ctx.status = 200;
-    ctx.body = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../docs/openrpc.json')).toString());
+    ctx.body = JSON.stringify(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../docs/openrpc.json')).toString()), null, 2);
   } else {
     return next();
   }
@@ -217,7 +217,16 @@ app.useRpc('eth_blockNumber', async () => {
  * returns: Gas used - hex encoded integer
  */
 app.useRpc('eth_estimateGas', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0]);
+  const validationError = validateRequiredParams(params, {
+    0: {
+      type: "object",
+      required: true
+    },
+    1: {
+      type: "blockNumber"
+    }
+  });
+
   if (validationError) return validationError;
 
   return logAndHandleResponse('eth_estimateGas', (requestId) =>
@@ -232,7 +241,17 @@ app.useRpc('eth_estimateGas', async (params: any) => {
  * returns: Balance - hex encoded integer
  */
 app.useRpc('eth_getBalance', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0, 1]);
+  const validationError = validateRequiredParams(params, {
+    0: {
+      type: 'address',
+      required: true
+    },
+    1: {
+      type: 'blockNumber',
+      required: true
+    }
+  });
+
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_getBalance", (requestId) =>
@@ -247,7 +266,16 @@ app.useRpc('eth_getBalance', async (params: any) => {
  * returns: Bytecode - hex encoded bytes
  */
 app.useRpc('eth_getCode', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0, 1]);
+  const validationError = validateRequiredParams(params, {
+    0: {
+      type: 'address',
+      required: true
+    },
+    1: {
+      type: 'blockNumber',
+      required: true
+    }
+  });
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_getCode", (requestId) =>
@@ -272,7 +300,18 @@ app.useRpc('eth_chainId', async () => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByNumber', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0, 1]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: "blockNumber"
+      },
+      1: {
+        required: true,
+        type: "bool"
+      }
+    }
+  );
   if (validationError) return validationError;
 
   return logAndHandleResponse('eth_getBlockByNumber', (requestId) =>
@@ -287,7 +326,18 @@ app.useRpc('eth_getBlockByNumber', async (params: any) => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByHash', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0, 1]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: "blockHash"
+      },
+      1: {
+        required: true,
+        type: "bool"
+      }
+    }
+  );
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_getBlockByHash", (requestId) =>
@@ -311,7 +361,18 @@ app.useRpc('eth_gasPrice', async () => {
  * returns: Transaction count - hex encoded integer
  */
 app.useRpc('eth_getTransactionCount', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0, 1]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: "address"
+      },
+      1: {
+        required: true,
+        type: "blockNumber"
+      }
+    }
+  );
   if (validationError) return validationError;
 
   return logAndHandleResponse('eth_getTransactionCount', (requestId) =>
@@ -325,7 +386,18 @@ app.useRpc('eth_getTransactionCount', async (params: any) => {
  * returns: Value - hex encoded bytes
  */
 app.useRpc('eth_call', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0, 1]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: "object"
+      },
+      1: {
+        required: true,
+        type: "blockNumber"
+      }
+    }
+  );
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_call", (requestId) =>
@@ -339,7 +411,14 @@ app.useRpc('eth_call', async (params: any) => {
  * returns: Transaction hash - 32 byte hex value
  */
 app.useRpc('eth_sendRawTransaction', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true
+      }
+    }
+  );
+
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_sendRawTransaction", (requestId) =>
@@ -353,7 +432,15 @@ app.useRpc('eth_sendRawTransaction', async (params: any) => {
  * returns: Transaction Receipt - object
  */
 app.useRpc('eth_getTransactionReceipt', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: 'transactionHash'
+      }
+    }
+  );
+
   if (validationError) return validationError;
 
   return logAndHandleResponse('eth_getTransactionReceipt', (requestId) =>
@@ -380,7 +467,15 @@ app.useRpc('eth_accounts', async () => {
  * returns: Transaction Object
  */
 app.useRpc('eth_getTransactionByHash', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: "transactionHash"
+      }
+    }
+  );
+
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_getTransactionByHash", (requestId) =>
@@ -400,7 +495,22 @@ app.useRpc('eth_getTransactionByHash', async (params: any) => {
  *      - reward - Array of effective priority fee per gas data.
  */
 app.useRpc('eth_feeHistory', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0, 1]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: 'hex'
+      },
+      1: {
+        required: true,
+        type: 'blockNumber'
+      },
+      2: {
+        type: 'array'
+      }
+    }
+  );
+
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_feeHistory", (requestId) =>
@@ -414,7 +524,14 @@ app.useRpc('eth_feeHistory', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: 'blockNumber'
+      }
+    }
+  );
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_getBlockTransactionCountByHash", (requestId) =>
@@ -428,7 +545,14 @@ app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: 'blockHash'
+      }
+    }
+  );
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_getBlockTransactionCountByNumber", (requestId) =>
@@ -442,7 +566,14 @@ app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
  * returns: Logs - Array of log objects
  */
 app.useRpc('eth_getLogs', async (params: any) => {
-  params = params[0] ?? {};
+  const validationError = validateRequiredParams(params, {
+    0: {
+      type: 'object',
+      required: true
+    }
+  });
+
+  if (validationError) return validationError;
 
   return logAndHandleResponse('eth_getLogs', (requestId) => relay.eth().getLogs(
     params.blockHash,
@@ -464,7 +595,22 @@ app.useRpc('eth_getLogs', async (params: any) => {
  * returns: Value - The storage value
  */
 app.useRpc('eth_getStorageAt', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0, 1, 2]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: 'address'
+      },
+      1: {
+        required: true,
+        type: 'hex'
+      },
+      2: {
+        required: true,
+        type: 'blockNumber'
+      },
+    }
+  );
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_getStorageAt", (requestId) =>
@@ -479,7 +625,18 @@ app.useRpc('eth_getStorageAt', async (params: any) => {
  * returns: Transaction
  */
 app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0, 1]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: "blockHash"
+      },
+      1: {
+        required: true,
+        type: "hex"
+      }
+    }
+  );
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_getTransactionByBlockHashAndIndex", (requestId) =>
@@ -494,7 +651,18 @@ app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
  * returns: Transaction
  */
 app.useRpc('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
-  const validationError = validateRequiredParams(params, [0, 1]);
+  const validationError = validateRequiredParams(params,
+    {
+      0: {
+        required: true,
+        type: "blockNumber"
+      },
+      1: {
+        required: true,
+        type: "hex"
+      }
+    }
+  );
   if (validationError) return validationError;
 
   return logAndHandleResponse("eth_getTransactionByBlockNumberAndIndex", (requestId) =>
@@ -659,7 +827,6 @@ const rpcApp = app.rpcApp();
 
 app.getKoaApp().use(async (ctx, next) => {
   await rpcApp(ctx, next);
-
   // Handle custom errors
   if (ctx.body && ctx.body.result instanceof JsonRpcError) {
     ctx.body.error = { ...ctx.body.result };
@@ -667,10 +834,53 @@ app.getKoaApp().use(async (ctx, next) => {
   }
 });
 
-function validateRequiredParams(params: any, indexes: number[]) {
-  for (const index of indexes) {
-    if (params[index] == null) {
+const TYPES  = {
+  "address": {
+    test: (trigger: string) => new RegExp('^0x[a-fA-F0-9]{40}$').test(trigger),
+    error: 'Expected 0x prefixed string representing the address (20 bytes) '
+  },
+  'blockNumber': {
+    test: (trigger: string) => new RegExp('^0x[a-fA-F0-9]').test(trigger) || [ "earliest", "latests", "pending"].includes(trigger),
+    error: 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"'
+  },
+  'blockHash': {
+    test: (trigger: string) =>  new RegExp('^0x[0-9A-Fa-f]{64}$').test(trigger),
+    error: 'Expected 0x prefixed string representing the hash (32 bytes) of a block'
+  },
+  'transactionHash': {
+    test: (trigger: string) =>  new RegExp('^0x[A-Fa-f0-9]{64}$').test(trigger),
+    error: 'Expected 0x prefixed string representing the hash (32 bytes) of a transaction'
+  },
+  'hex': {
+    test: (trigger: string) => new RegExp('^0x[a-fA-F0-9]').test(trigger),
+    error: 'Expected 0x prefixed hexadecimal value'
+  },
+  'bool': {
+    test: (trigger: string) => trigger === 'true' || trigger === 'false',
+    error: 'Expected boolean'
+  },
+  "object": {
+    test: (trigger: any) => typeof trigger === 'object' && trigger !== null,
+    error: 'Expected Object'
+  },
+  "array": {
+    test: (trigger: any) => Array.isArray(trigger),
+    error: 'Expected Array'
+  }
+};
+
+function validateRequiredParams(params: any, indexes: any) {
+  for (const index of Object.keys(indexes)) {
+    const validation = indexes[Number(index)];
+    const param = params[Number(index)];
+    if (validation.required && param === undefined) {
       return predefined.MISSING_REQUIRED_PARAMETER(index);
+    }
+
+    if (validation.type && typeof validation.type === 'string') {
+      if (param !== undefined && !TYPES[validation.type].test(param)) {
+        return predefined.INVALID_PARAMETER(index, TYPES[validation.type].error);
+      }
     }
   }
 }
