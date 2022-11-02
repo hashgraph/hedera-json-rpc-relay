@@ -1152,7 +1152,7 @@ describe('@api RPC Server Acceptance Tests', function () {
 
         // Test state changes with getStorageAt
         describe('eth_getStorageAt', () => {
-            let storageContract, evmAddress;
+            let storageContract, contractId, evmAddress;
             const STORAGE_CONTRACT_UPDATE = "0x2de4e884";
 
             before(async () => {
@@ -1160,28 +1160,30 @@ describe('@api RPC Server Acceptance Tests', function () {
                 // Wait for creation to propagate
                 await mirrorNode.get(`/contracts/${storageContract.contractId}`);
 
+                contractId = storageContract.contractId;
                 evmAddress = `0x${storageContract.contractId.toSolidityAddress()}`;
             });
 
             it('@release should execute "eth_call" request to Basic contract', async function () {
+                const gasPrice = await relay.gasPrice();
                 const transaction = {
-                    value: ONE_TINYBAR,
-                    gasLimit: 30000,
+                    value: 0,
+                    gasLimit: 50000,
                     chainId: Number(CHAIN_ID),
                     to: evmAddress,
-                    nonce: await relay.getAccountNonce(accounts[2].address),
-                    gasPrice: await relay.gasPrice(),
+                    nonce: await relay.getAccountNonce(accounts[1].address),
+                    gasPrice: gasPrice,
                     data: STORAGE_CONTRACT_UPDATE,
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
+                    type: 2
                 };
 
-                const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                const signedTx = await accounts[1].wallet.signTransaction(transaction);
                 const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
 
-                // Wait until receipt is available in mirror node
-                await mirrorNode.get(`/contracts/results/${transactionHash}`);
-
                 const getStoragAtParams = {
-                    address: evmAddress,
+                    address: contractId,
                     slot: 0,
                     blockNumber: "latest",
                 }
