@@ -29,6 +29,7 @@ import Assertions from '../../helpers/assertions';
 import { ethers } from 'ethers';
 import ERC20MockJson from '../../contracts/ERC20Mock.json';
 import TokenManagementJson from '../../contracts/TokenManagementContract.json';
+import { Utils } from '../../helpers/utils';
 
 /**
  * Tests for:
@@ -61,15 +62,18 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
   let mainContract;
   let mainContractOwner;
   let mainContractReceiverWalletFirst;
+  let requestId;
 
   this.beforeAll(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(200, relay.provider);
-    accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
+    requestId = Utils.generateRequestId();
+
+    accounts[0] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
+    accounts[1] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
 
     // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise(r => setTimeout(r, 5000));
-    await mirrorNode.get(`/accounts/${accounts[0].accountId}`);
-    await mirrorNode.get(`/accounts/${accounts[1].accountId}`);
+    await mirrorNode.get(`/accounts/${accounts[0].accountId}`, requestId);
+    await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);
 
     mainContractAddress = await deploymainContract();
     HTSTokenContractAddress = await createHTSToken();
@@ -92,6 +96,10 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
 
     const tx4 = await mainContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, NftHTSTokenContractAddress, { gasLimit: 10000000 });
     expect((await tx4.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+  });
+
+  this.beforeEach(async () => {
+    requestId = Utils.generateRequestId();
   });
 
   async function deploymainContract() {
@@ -513,7 +521,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
     //Expiry Info auto renew account returns account id from type - 0x000000000000000000000000000000000000048C
     //We expect account to be evm address, but because we can't compute one address for the other, we have to make a mirror node query to get expiry info auto renew evm address
     async function mirrorNodeAddressReq(address){
-      const accountEvmAddress = await mirrorNode.get(`/accounts/${address}?transactiontype=cryptotransfer`);
+      const accountEvmAddress = await mirrorNode.get(`/accounts/${address}?transactiontype=cryptotransfer`, requestId);
       return accountEvmAddress.evm_address;
     }
 

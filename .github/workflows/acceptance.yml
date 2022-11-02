@@ -2,10 +2,10 @@ name: Acceptance Tests
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [main, release/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+    branches: [main, release/**]
+    tags: [v*]
 
 jobs:
   api:
@@ -17,35 +17,29 @@ jobs:
   erc20:
     name: ERC20
     uses: ./.github/workflows/acceptance-workflow.yml
-    needs: api
     with:
       testfilter: erc20
 
   ratelimiter:
     name: Rate Limiter
     uses: ./.github/workflows/acceptance-workflow.yml
-    needs: [ api, erc20 ]
     with:
       testfilter: ratelimiter
 
   tokencreate:
-    name: Token Create 
+    name: Token Create
     uses: ./.github/workflows/acceptance-workflow.yml
-    needs: [ api, erc20, ratelimiter ]
-    with: 
+    with:
       testfilter: tokencreate
 
   tokenmanagement:
-    name: Token Management 
+    name: Token Management
     uses: ./.github/workflows/acceptance-workflow.yml
-    needs: [ api, erc20, ratelimiter ]
-    with: 
+    with:
       testfilter: tokenmanagement
 
   htsprecompilev1:
-    name: Precompile 
+    name: Precompile
     uses: ./.github/workflows/acceptance-workflow.yml
-    needs: [ api, erc20, ratelimiter ]
-    with: 
+    with:
       testfilter: htsprecompilev1
-

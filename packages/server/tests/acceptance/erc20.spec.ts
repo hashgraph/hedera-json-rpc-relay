@@ -40,6 +40,8 @@ describe('@erc20 Acceptance Tests', async function () {
     let initialHolder;
     let recipient;
     let anotherAccount;
+    let requestId;
+
     const contracts:[any] = [];
 
     const name = Utils.randomString(10);
@@ -51,13 +53,15 @@ describe('@erc20 Acceptance Tests', async function () {
 
     const testTitles = [
         {testName: ERC20, expectedBytecode: ERC20MockJson.deployedBytecode},
-        {testName: HTS, expectedBytecode: EthImpl.emptyHex}
+        {testName: HTS}
     ];
 
     this.beforeAll(async () => {
-        accounts[0] = await servicesNode.createAliasAccount(30, relay.provider);
-        accounts[1] = await servicesNode.createAliasAccount(15, relay.provider);
-        accounts[2] = await servicesNode.createAliasAccount(15, relay.provider);
+        requestId = Utils.generateRequestId();
+
+        accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
+        accounts[2] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
 
         initialHolder = accounts[0].address;
         recipient = accounts[1].address;
@@ -68,6 +72,10 @@ describe('@erc20 Acceptance Tests', async function () {
 
         contracts.push(await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson));
         contracts.push(await createHTS(name, symbol, accounts[0], 10000, ERC20MockJson.abi, [accounts[1], accounts[2]]));
+    });
+
+    this.beforeEach(async () => {
+        requestId = Utils.generateRequestId();
     });
 
     for (const i in testTitles) {
@@ -91,8 +99,13 @@ describe('@erc20 Acceptance Tests', async function () {
             });
 
             it('Relay can execute "eth_getCode" for ERC20 contract with evmAddress', async function () {
-                const res = await relay.call('eth_getCode', [contract.address]);
-                expect(res).to.eq(testTitles[i].expectedBytecode);
+                const res = await relay.call('eth_getCode', [contract.address], requestId);
+                const expectedBytecode = `${EthImpl.redirectBytecodePrefix}${contract.address.slice(2)}${EthImpl.redirectBytecodePostfix}`
+                if (testTitles[i].testName !== HTS) {
+                    expect(res).to.eq(testTitles[i].expectedBytecode);
+                } else {
+                    expect(res).to.eq(expectedBytecode);
+                }
             });
 
             describe('should behave like erc20', function() {
@@ -179,17 +192,12 @@ describe('@erc20 Acceptance Tests', async function () {
                                     receipt = await tx.wait();
                                 });
 
-                                // FIXME there is an issue with the Approval event for HTS tokens in Services.
-                                // Re-enable this test when it is resolved
-                                // Last tested with services image: 0.30.0-alpha.2
-                                if (testTitles[i].testName !== HTS) {
-                                    it('emits an approval event', async function () {
-                                        const allowance = await contract.allowance(tokenOwner, spender);
-                                        await expect(tx)
-                                            .to.emit(contract, 'Approval')
-                                            .withArgs(tokenOwnerWallet.address, spenderWallet.address, allowance);
-                                    });
-                                }
+                                it('emits an approval event', async function () {
+                                    const allowance = await contract.allowance(tokenOwner, spender);
+                                    await expect(tx)
+                                        .to.emit(contract, 'Approval')
+                                        .withArgs(tokenOwnerWallet.address, spenderWallet.address, allowance);
+                                });
 
                                 describe('when the token owner has enough balance', function () {
                                     let amount, tx;
@@ -302,11 +310,6 @@ describe('@erc20 Acceptance Tests', async function () {
                                         expect(allowance.toString()).to.be.equal((initialSupply.toNumber() - 1).toString());
                                     });
                                 }
-
-                                it('does not emit an approval event', async function () {
-                                    await expect(await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1))
-                                        .to.not.emit(contract, 'Approval');
-                                });
                             });
                         });
 
@@ -354,12 +357,12 @@ describe('@erc20 Acceptance Tests', async function () {
 
         // Associate and approve token for all accounts
         for (const account of associatedAccounts) {
-            await servicesNode.associateHTSToken(account.accountId, htsResult.receipt.tokenId, account.privateKey, htsResult.client);
-            await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId, htsResult.client);
+            await servicesNode.associateHTSToken(account.accountId, htsResult.receipt.tokenId, account.privateKey, htsResult.client, requestId);
+            await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId, htsResult.client, requestId);
         }
 
         // Setup initial balance of token owner account
-        await servicesNode.transferHTSToken(accounts[0].accountId, htsResult.receipt.tokenId, initialSupply, htsResult.client);
+        await servicesNode.transferHTSToken(accounts[0].accountId, htsResult.receipt.tokenId, initialSupply, htsResult.client, requestId);
         const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
         return new ethers.Contract(evmAddress, abi, accounts[0].wallet);
     };
