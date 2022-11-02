@@ -22,6 +22,7 @@ enum CACHE_KEY {
     GAS_PRICE = 'gas_price',
     FEE_HISTORY = 'fee_history'
 }
+
 enum CACHE_TTL {
     ONE_HOUR = 3_600_000
 }
@@ -33,8 +34,10 @@ enum ORDER {
 
 export default {
     TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
+
     CACHE_KEY,
     CACHE_TTL,
+    CACHE_MAX: 1000,
 
     DEFAULT_TINY_BAR_GAS: 72, // (853454 / 1000) * (1 / 12)
     ETH_FUNCTIONALITY_CODE: 84,
