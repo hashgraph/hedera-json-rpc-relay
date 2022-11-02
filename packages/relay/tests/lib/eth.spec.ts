@@ -1505,7 +1505,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const result = await ethImpl.getLogs(null, null, null, null, null);
 
-      // expect(cache.keys().includes('getLogEvmAddress.0x0000000000000000000000000000000002131951')).to.be.true;
+      expect(cache.keyList.includes('getLogEvmAddress.0x0000000000000000000000000000000002131951')).to.be.true;
 
       expect(result).to.exist;
       expect(result.length).to.eq(4);
