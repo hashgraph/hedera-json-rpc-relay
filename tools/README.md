@@ -16,7 +16,7 @@
 | Call Handlers | ❌ | Requires Parity's [trace_filter](https://openethereum.github.io/JSONRPC-trace-module#trace_filter)
 | Capture HTS transfers through HTS precompile | ❌ | Depends on [4127](https://github.com/hashgraph/hedera-services/issues/4127)
 | Capture HTS token transfers through HAPI | ❌ | Depends on [4337](https://github.com/hashgraph/hedera-mirror-node/issues/4337), [4738](https://github.com/hashgraph/hedera-mirror-node/issues/4738)
-| Can index anonymous events | ❔ | Has not been tested
+| Can index anonymous events | ❔ | Depends on [667](https://github.com/hashgraph/hedera-json-rpc-relay/issues/667)
 
 ### Supported tools
 |                                                                      | web3js | Truffle | ethers | Hardhat |
