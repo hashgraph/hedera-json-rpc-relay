@@ -2201,6 +2201,15 @@ describe('Eth', async function () {
     "nonce": 1
   };
 
+
+  const defaultDetailedContractResultByHashReverted = {
+    ...defaultDetailedContractResultByHash, ...{
+      "result": "CONTRACT_REVERT_EXECUTED",
+      "status": "0x0",
+      "error_message": "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000"
+    }
+  };
+
   const defaultReceipt = {
     "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "blockNumber": "0x11",
@@ -2535,5 +2544,57 @@ describe('Eth', async function () {
       expect(result).to.exist;
       expect(result.gas).to.eq('0x0');
     });
+
+    it('returns reverted transactions', async function () {
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHashReverted);
+      mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
+
+      const result = await ethImpl.getTransactionByHash(defaultTxHash);
+
+      expect(result).to.exist;
+      if (result == null) return;
+
+      expect(result.accessList).to.eq(defaultTransaction.accessList);
+      expect(result.blockHash).to.eq(defaultTransaction.blockHash);
+      expect(result.blockNumber).to.eq(defaultTransaction.blockNumber);
+      expect(result.chainId).to.eq(defaultTransaction.chainId);
+      expect(result.from).to.eq(defaultTransaction.from);
+      expect(result.gas).to.eq(defaultTransaction.gas);
+      expect(result.gasPrice).to.eq(defaultTransaction.gasPrice);
+      expect(result.hash).to.eq(defaultTransaction.hash);
+      expect(result.input).to.eq(defaultTransaction.input);
+      expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
+      expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
+      expect(result.nonce).to.eq(EthImpl.numberTo0x(defaultTransaction.nonce));
+      expect(result.r).to.eq(defaultTransaction.r);
+      expect(result.s).to.eq(defaultTransaction.s);
+      expect(result.to).to.eq(defaultTransaction.to);
+      expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
+      expect(result.type).to.eq(EthImpl.numberTo0x(defaultTransaction.type));
+      expect(result.v).to.eq(EthImpl.numberTo0x(defaultTransaction.v));
+      expect(result.value).to.eq(defaultTransaction.value);
+    })
+
+    it('throws error for reverted transactions when DEV_MODE=true', async function () {
+      const initialDevModeValue = process.env.DEV_MODE;
+      process.env.DEV_MODE = 'true';
+
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHashReverted);
+      mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
+
+      try {
+        const result = await ethImpl.getTransactionByHash(defaultTxHash);
+        expect(true).to.eq(false);
+      }
+      catch(error) {
+        expect(error).to.deep.equal(predefined.CONTRACT_REVERT(defaultDetailedContractResultByHashReverted.error_message));
+      }
+
+      process.env.DEV_MODE = initialDevModeValue;
+    })
   });
 });
