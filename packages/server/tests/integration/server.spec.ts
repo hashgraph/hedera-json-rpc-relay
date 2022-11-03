@@ -23,7 +23,7 @@ import Axios from 'axios';
 import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
-import app from '../../dist/server.js';
+import app from '../../src/server';
 
 before(function() {
   this.timeout(60 * 1000);
@@ -342,6 +342,28 @@ describe('RPC Server Validation', async function() {
 
         BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
       });
+
+      it('validates parameter 0 is type Object', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_estimateGas',
+          'params': [123]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Expected Object');
+      });
+
+      it('validates parameter 1 is hex Block number or tag', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_estimateGas',
+          'params': [{}, 123]
+        });
+
+        BaseTest.errorResponseChecks(res, -32602, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"');
+      });
     });
 
     describe('eth_getBalance', async function() {
@@ -354,6 +376,17 @@ describe('RPC Server Validation', async function() {
         });
 
         BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+      });
+
+      it('validates parameter 0 is of type Address', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getBalance',
+          'params': ["0x0"]
+        });
+        console.log(res.data.error.message);
+        BaseTest.errorResponseChecks(res, -32602, 'Expected 0x prefixed string representing the address (20 bytes)');
       });
 
       it('validates parameter 1 exists', async function() {

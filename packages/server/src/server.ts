@@ -21,6 +21,7 @@
 import { Relay, RelayImpl, JsonRpcError, predefined, MirrorNodeClientError } from '@hashgraph/json-rpc-relay';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
+import Validator from './validator';
 import crypto from 'crypto';
 import pino from 'pino';
 import path from 'path';
@@ -43,6 +44,7 @@ const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 const app = new KoaJsonRpc(logger, register);
+const validator = new Validator();
 
 const REQUEST_ID_STRING = `Request ID: `;
 const responseSuccessStatusCode = '200';
@@ -217,7 +219,7 @@ app.useRpc('eth_blockNumber', async () => {
  * returns: Gas used - hex encoded integer
  */
 app.useRpc('eth_estimateGas', async (params: any) => {
-  const validationError = validateRequiredParams(params, {
+  const validationError = validator.validateParams(params, {
     0: {
       type: "object",
       required: true
@@ -241,7 +243,7 @@ app.useRpc('eth_estimateGas', async (params: any) => {
  * returns: Balance - hex encoded integer
  */
 app.useRpc('eth_getBalance', async (params: any) => {
-  const validationError = validateRequiredParams(params, {
+  const validationError = validator.validateParams(params, {
     0: {
       type: 'address',
       required: true
@@ -266,7 +268,7 @@ app.useRpc('eth_getBalance', async (params: any) => {
  * returns: Bytecode - hex encoded bytes
  */
 app.useRpc('eth_getCode', async (params: any) => {
-  const validationError = validateRequiredParams(params, {
+  const validationError = validator.validateParams(params, {
     0: {
       type: 'address',
       required: true
@@ -300,7 +302,7 @@ app.useRpc('eth_chainId', async () => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByNumber', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -326,7 +328,7 @@ app.useRpc('eth_getBlockByNumber', async (params: any) => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByHash', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -361,7 +363,7 @@ app.useRpc('eth_gasPrice', async () => {
  * returns: Transaction count - hex encoded integer
  */
 app.useRpc('eth_getTransactionCount', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -386,7 +388,7 @@ app.useRpc('eth_getTransactionCount', async (params: any) => {
  * returns: Value - hex encoded bytes
  */
 app.useRpc('eth_call', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -411,7 +413,7 @@ app.useRpc('eth_call', async (params: any) => {
  * returns: Transaction hash - 32 byte hex value
  */
 app.useRpc('eth_sendRawTransaction', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true
@@ -432,7 +434,7 @@ app.useRpc('eth_sendRawTransaction', async (params: any) => {
  * returns: Transaction Receipt - object
  */
 app.useRpc('eth_getTransactionReceipt', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -467,7 +469,7 @@ app.useRpc('eth_accounts', async () => {
  * returns: Transaction Object
  */
 app.useRpc('eth_getTransactionByHash', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -495,7 +497,7 @@ app.useRpc('eth_getTransactionByHash', async (params: any) => {
  *      - reward - Array of effective priority fee per gas data.
  */
 app.useRpc('eth_feeHistory', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -524,7 +526,7 @@ app.useRpc('eth_feeHistory', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -545,7 +547,7 @@ app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -566,7 +568,7 @@ app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
  * returns: Logs - Array of log objects
  */
 app.useRpc('eth_getLogs', async (params: any) => {
-  const validationError = validateRequiredParams(params, {
+  const validationError = validator.validateParams(params, {
     0: {
       type: 'object',
       required: true
@@ -595,7 +597,7 @@ app.useRpc('eth_getLogs', async (params: any) => {
  * returns: Value - The storage value
  */
 app.useRpc('eth_getStorageAt', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -625,7 +627,7 @@ app.useRpc('eth_getStorageAt', async (params: any) => {
  * returns: Transaction
  */
 app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -651,7 +653,7 @@ app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
  * returns: Transaction
  */
 app.useRpc('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
-  const validationError = validateRequiredParams(params,
+  const validationError = validator.validateParams(params,
     {
       0: {
         required: true,
@@ -833,56 +835,5 @@ app.getKoaApp().use(async (ctx, next) => {
     delete ctx.body.result;
   }
 });
-
-const TYPES  = {
-  "address": {
-    test: (trigger: string) => new RegExp('^0x[a-fA-F0-9]{40}$').test(trigger),
-    error: 'Expected 0x prefixed string representing the address (20 bytes) '
-  },
-  'blockNumber': {
-    test: (trigger: string) => new RegExp('^0x[a-fA-F0-9]').test(trigger) || [ "earliest", "latests", "pending"].includes(trigger),
-    error: 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"'
-  },
-  'blockHash': {
-    test: (trigger: string) =>  new RegExp('^0x[0-9A-Fa-f]{64}$').test(trigger),
-    error: 'Expected 0x prefixed string representing the hash (32 bytes) of a block'
-  },
-  'transactionHash': {
-    test: (trigger: string) =>  new RegExp('^0x[A-Fa-f0-9]{64}$').test(trigger),
-    error: 'Expected 0x prefixed string representing the hash (32 bytes) of a transaction'
-  },
-  'hex': {
-    test: (trigger: string) => new RegExp('^0x[a-fA-F0-9]').test(trigger),
-    error: 'Expected 0x prefixed hexadecimal value'
-  },
-  'bool': {
-    test: (trigger: string) => trigger === 'true' || trigger === 'false',
-    error: 'Expected boolean'
-  },
-  "object": {
-    test: (trigger: any) => typeof trigger === 'object' && trigger !== null,
-    error: 'Expected Object'
-  },
-  "array": {
-    test: (trigger: any) => Array.isArray(trigger),
-    error: 'Expected Array'
-  }
-};
-
-function validateRequiredParams(params: any, indexes: any) {
-  for (const index of Object.keys(indexes)) {
-    const validation = indexes[Number(index)];
-    const param = params[Number(index)];
-    if (validation.required && param === undefined) {
-      return predefined.MISSING_REQUIRED_PARAMETER(index);
-    }
-
-    if (validation.type && typeof validation.type === 'string') {
-      if (param !== undefined && !TYPES[validation.type].test(param)) {
-        return predefined.INVALID_PARAMETER(index, TYPES[validation.type].error);
-      }
-    }
-  }
-}
 
 export default app.getKoaApp();
