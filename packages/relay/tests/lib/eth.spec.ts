@@ -25,7 +25,6 @@ import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';
-import cache from 'js-cache';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
@@ -43,6 +42,7 @@ import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+const LRU = require('lru-cache');
 
 const logger = pino();
 const registry = new Registry();
@@ -77,11 +77,13 @@ const verifyBlockConstants = (block: Block) => {
 let mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let sdkClientStub;
+let cache;
 
 describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
 
   let ethImpl: EthImpl;
+
   this.beforeAll(() => {
     // mock axios
     const instance = axios.create({
@@ -98,8 +100,12 @@ describe('Eth calls using MirrorNode', async function () {
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
     sdkClientStub = sinon.createStubInstance(SDKClient);
+    cache = new LRU({
+      max: constants.CACHE_MAX,
+      ttl: constants.CACHE_TTL.ONE_HOUR
+    });
     // @ts-ignore
-    ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a');
+    ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
   });
 
   this.beforeEach(() => {
@@ -1499,7 +1505,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const result = await ethImpl.getLogs(null, null, null, null, null);
 
-      expect(cache.keys().includes('getLogEvmAddress.0x0000000000000000000000000000000002131951')).to.be.true;
+      expect(cache.keyList.includes('getLogEvmAddress.0x0000000000000000000000000000000002131951')).to.be.true;
 
       expect(result).to.exist;
       expect(result.length).to.eq(4);

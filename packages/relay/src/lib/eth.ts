@@ -30,9 +30,8 @@ import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
-
+const LRU = require('lru-cache');
 const _ = require('lodash');
-const cache = require('js-cache');
 const createHash = require('keccak');
 
 /**
@@ -77,6 +76,24 @@ export class EthImpl implements Eth {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
+  
+  /**
+   * Configurable options used when initializing the cache.
+   *
+   * @private
+   */
+  private readonly options = {
+    //The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
+    max: constants.CACHE_MAX,
+    // Max time to live in ms, for items before they are considered stale.
+    ttl: constants.CACHE_TTL.ONE_HOUR,
+  }
+  /**
+   * The LRU cache used for caching items from requests.
+   *
+   * @private
+   */
+   private readonly cache;
 
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
@@ -121,13 +138,16 @@ export class EthImpl implements Eth {
     nodeClient: SDKClient,
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
-    chain: string
+    chain: string,
+    cache?
   ) {
     this.sdkClient = nodeClient;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
     this.precheck = new Precheck(mirrorNodeClient, nodeClient, logger, chain);
+    this.cache = cache;
+    if (!cache) this.cache = new LRU(this.options);
   }
 
   /**
@@ -164,13 +184,13 @@ export class EthImpl implements Eth {
         return EthImpl.feeHistoryZeroBlockCountResponse;
       }
 
-      let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
+      let feeHistory: object | undefined = this.cache.get(constants.CACHE_KEY.FEE_HISTORY);
       if (!feeHistory) {
 
         feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
 
         this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.FEE_HISTORY} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-        cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory, constants.CACHE_TTL.ONE_HOUR);
+        this.cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory);
       }
 
       return feeHistory;
@@ -317,13 +337,13 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} gasPrice()`);
     try {
-      let gasPrice: number | undefined = cache.get(constants.CACHE_KEY.GAS_PRICE);
+      let gasPrice: number | undefined = this.cache.get(constants.CACHE_KEY.GAS_PRICE);
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestId);
 
         this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-        cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
+        this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice);
       }
 
       return EthImpl.numberTo0x(gasPrice);
@@ -524,7 +544,7 @@ export class EthImpl implements Eth {
     
     // Cache is only set for `not found` balances
     const cachedLabel = `getBalance.${account}.${blockNumberOrTag}`;
-    const cachedResponse: string | undefined = cache.get(cachedLabel);
+    const cachedResponse: string | undefined = this.cache.get(cachedLabel);
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
@@ -574,7 +594,7 @@ export class EthImpl implements Eth {
 
       if (!balanceFound) {
         this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
-        cache.set(cachedLabel, EthImpl.zeroHex, constants.CACHE_TTL.ONE_HOUR);
+        this.cache.set(cachedLabel, EthImpl.zeroHex);
         return EthImpl.zeroHex;
       }
 
@@ -604,7 +624,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getCode(address=${address}, blockNumber=${blockNumber})`);
 
     const cachedLabel = `getCode.${address}.${blockNumber}`;
-    const cachedResponse: string | undefined = cache.get(cachedLabel);
+    const cachedResponse: string | undefined = this.cache.get(cachedLabel);
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
@@ -630,7 +650,7 @@ export class EthImpl implements Eth {
         // handle INVALID_CONTRACT_ID
         if (e.isInvalidContractId()) {
           this.logger.debug(`${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.statusCode}`);
-          cache.set(cachedLabel, EthImpl.emptyHex, constants.CACHE_TTL.ONE_HOUR);
+          this.cache.set(cachedLabel, EthImpl.emptyHex);
           return EthImpl.emptyHex;
         }
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}, err code: ${e.statusCode}`);
@@ -1292,7 +1312,7 @@ export class EthImpl implements Eth {
 
           // Use the `toBlock` if it is the only passed tag, if not utilize the `fromBlock` or default to "latest"
           const blockTag = toBlock && !fromBlock ? toBlock : fromBlock || "latest";
-          
+
           const fromBlockResponse = await this.getHistoricalBlockResponse(blockTag, true, requestId);
           if (fromBlockResponse != null) {
             params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
@@ -1361,14 +1381,14 @@ export class EthImpl implements Eth {
 
   private async getLogEvmAddress(address: string, requestId: string | undefined) {
     const cachedLabel = `getLogEvmAddress.${address}`;
-    let contractAddress = cache.get(cachedLabel);
+    let contractAddress = this.cache.get(cachedLabel);
 
     // If contractAddress === undefined it means there's no cache record
     // and a mirror node request should be executed.
     if (contractAddress === undefined) {
       const contract = await this.mirrorNodeClient.getContract(address, requestId);
       contractAddress = contract.evm_address;
-      cache.set(cachedLabel, contractAddress, constants.CACHE_TTL.ONE_HOUR);
+      this.cache.set(cachedLabel, contractAddress);
     }
 
     return contractAddress;
