@@ -203,6 +203,9 @@ export default class Assertions {
         const parsedError = JSON.parse(err.body);
         expect(parsedError.error.message.endsWith(expectedError.message)).to.be.true;
         expect(parsedError.error.code).to.be.equal(expectedError.code);
+        if (expectedError.data) {
+            expect(parsedError.error.data).to.be.equal(expectedError.data);
+        }
     }
 
     static expectRevert = async (promise, code) => {
