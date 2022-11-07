@@ -83,6 +83,8 @@ RATE_LIMIT_DISABLED = false
 DEV_MODE = false
 ```
 
+Note: Read more about `DEV_MODE` [here](docs/dev-mode.md)
+
 The following table highlights some initial configuration values to consider
 
 | Config     | Default | Description                                                                                                                                                                      |
