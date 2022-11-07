@@ -24,6 +24,7 @@ import '@nomiclabs/hardhat-waffle';
 import "@typechain/hardhat";
 import "hardhat-network-metadata";
 import "@nomicfoundation/hardhat-chai-matchers";
+import "hardhat-deploy";
 import { task } from "hardhat/config";
 
 task('get-current-block', async () => {
@@ -61,6 +62,14 @@ task('contract-call', async (taskArgs: any) => {
 const config = {
   solidity: '0.8.4',
   defaultNetwork: 'h_local',
+  namedAccounts: {
+    deployer: {
+      default: 0,
+    },
+    dev: {
+      default: 1,
+    },
+  },
   networks: {
     h_local: {
       url: process.env.RELAY_ENDPOINT,
