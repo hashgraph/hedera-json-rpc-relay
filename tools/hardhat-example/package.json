@@ -32,6 +32,7 @@
     "set-greeting": "npx hardhat contract-call 0x0000000000000000000000000000000000000408 helloJASON",
     "get-current-block": "npx hardhat get-current-block",
     "local:deploy": "hardhat --network h_local deploy",
+    "testnet:deploy": "hardhat --network h_testnet deploy",
     "test:hr": "npx hardhat test test/rpc.test.ts",
     "test:hgf": "npx hardhat test test/greeter-factory.test.ts",
     "test:hec": "npx hardhat test test/error-contract.test.ts",
