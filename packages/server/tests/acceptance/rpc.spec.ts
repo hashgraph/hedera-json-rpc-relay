@@ -1164,7 +1164,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 evmAddress = `0x${storageContract.contractId.toSolidityAddress()}`;
             });
 
-            it('@release should execute "eth_call" request to Basic contract', async function () {
+            it('@release should execute "eth_getStorageAt" request to get state changes', async function () {
                 const gasPrice = await relay.gasPrice();
                 const transaction = {
                     value: 0,
