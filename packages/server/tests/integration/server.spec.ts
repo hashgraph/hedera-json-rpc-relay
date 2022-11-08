@@ -24,6 +24,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
 import app from '../../src/server';
+import { Validator } from '../../src/validator';
 
 before(function() {
   this.timeout(60 * 1000);
@@ -327,10 +328,8 @@ describe('RPC Server', async function() {
     BaseTest.defaultResponseChecks(res);
     expect(res.data.result).to.be.equal('0x0');
   });
-});
 
-describe('RPC Server Validation', async function() {
-  describe('Required params', async function() {
+  describe('Validator', async function() {
     describe('eth_estimateGas', async function() {
       it('validates parameter 0 exists', async function() {
         const res = await this.testClient.post('/', {
@@ -340,7 +339,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 0 is type Object', async function() {
@@ -351,7 +350,7 @@ describe('RPC Server Validation', async function() {
           'params': [123]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Expected Object');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Expected Object');
       });
 
       it('validates parameter 1 is hex Block number or tag', async function() {
@@ -362,7 +361,7 @@ describe('RPC Server Validation', async function() {
           'params': [{}, 123]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, Validator.BLOCK_NUMBER_ERROR);
       });
     });
 
@@ -375,7 +374,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 0 is of type Address', async function() {
@@ -386,7 +385,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0x0"]
         });
         console.log(res.data.error.message);
-        BaseTest.errorResponseChecks(res, -32602, 'Expected 0x prefixed string representing the address (20 bytes)');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, Validator.ADDRESS_ERROR);
       });
 
       it('validates parameter 1 exists', async function() {
@@ -397,7 +396,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0x0000000000000000000000000000000000000001"]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 1');
       });
     });
 
@@ -410,7 +409,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 1 exists', async function() {
@@ -421,7 +420,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0x0000000000000000000000000000000000000001"]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 1');
       });
     });
 
@@ -434,7 +433,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 1 exists', async function() {
@@ -445,7 +444,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0x1"]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 1');
       });
     });
 
@@ -458,7 +457,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 1 exists', async function() {
@@ -469,7 +468,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6"]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 1');
       });
     });
 
@@ -482,7 +481,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 1 exists', async function() {
@@ -493,7 +492,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0x0000000000000000000000000000000000000001"]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 1');
       });
     });
 
@@ -506,7 +505,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 1 exists', async function() {
@@ -517,7 +516,7 @@ describe('RPC Server Validation', async function() {
           'params': [{}]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 1');
       });
     });
 
@@ -530,7 +529,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
     });
 
@@ -543,7 +542,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
     });
 
@@ -556,7 +555,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 1 exists', async function() {
@@ -567,7 +566,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0x5"]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 1');
       });
     });
 
@@ -580,7 +579,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
     });
 
@@ -593,7 +592,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
     });
 
@@ -606,7 +605,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 1 exists', async function() {
@@ -617,7 +616,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0x0000000000000000000000000000000000000001"]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 1');
       });
 
       it('validates parameter 2 exists', async function() {
@@ -628,7 +627,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0x0000000000000000000000000000000000000001", "0x1"]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 2');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 2');
       });
     });
 
@@ -641,7 +640,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 1 exists', async function() {
@@ -652,7 +651,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35"]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 1');
       });
     });
 
@@ -665,7 +664,7 @@ describe('RPC Server Validation', async function() {
           'params': []
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 0');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 0');
       });
 
       it('validates parameter 1 exists', async function() {
@@ -676,7 +675,7 @@ describe('RPC Server Validation', async function() {
           'params': ["0x5BAD55"]
         });
 
-        BaseTest.errorResponseChecks(res, -32602, 'Missing value for required parameter 1');
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, 'Missing value for required parameter 1');
       });
     });
   });

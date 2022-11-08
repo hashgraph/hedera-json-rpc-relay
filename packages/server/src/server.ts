@@ -21,7 +21,7 @@
 import { Relay, RelayImpl, JsonRpcError, predefined, MirrorNodeClientError } from '@hashgraph/json-rpc-relay';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
-import Validator from './validator';
+import { Validator } from './validator';
 import crypto from 'crypto';
 import pino from 'pino';
 import path from 'path';
@@ -44,7 +44,6 @@ const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 const app = new KoaJsonRpc(logger, register);
-const validator = new Validator();
 
 const REQUEST_ID_STRING = `Request ID: `;
 const responseSuccessStatusCode = '200';
@@ -219,7 +218,7 @@ app.useRpc('eth_blockNumber', async () => {
  * returns: Gas used - hex encoded integer
  */
 app.useRpc('eth_estimateGas', async (params: any) => {
-  const validationError = validator.validateParams(params, {
+  const validationError = Validator.validateParams(params, {
     0: {
       type: "object",
       required: true
@@ -243,7 +242,7 @@ app.useRpc('eth_estimateGas', async (params: any) => {
  * returns: Balance - hex encoded integer
  */
 app.useRpc('eth_getBalance', async (params: any) => {
-  const validationError = validator.validateParams(params, {
+  const validationError = Validator.validateParams(params, {
     0: {
       type: 'address',
       required: true
@@ -268,7 +267,7 @@ app.useRpc('eth_getBalance', async (params: any) => {
  * returns: Bytecode - hex encoded bytes
  */
 app.useRpc('eth_getCode', async (params: any) => {
-  const validationError = validator.validateParams(params, {
+  const validationError = Validator.validateParams(params, {
     0: {
       type: 'address',
       required: true
@@ -302,7 +301,7 @@ app.useRpc('eth_chainId', async () => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByNumber', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
@@ -328,7 +327,7 @@ app.useRpc('eth_getBlockByNumber', async (params: any) => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByHash', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
@@ -363,7 +362,7 @@ app.useRpc('eth_gasPrice', async () => {
  * returns: Transaction count - hex encoded integer
  */
 app.useRpc('eth_getTransactionCount', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
@@ -388,11 +387,11 @@ app.useRpc('eth_getTransactionCount', async (params: any) => {
  * returns: Value - hex encoded bytes
  */
 app.useRpc('eth_call', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
-        type: "object"
+        type: "transaction"
       },
       1: {
         required: true,
@@ -413,7 +412,7 @@ app.useRpc('eth_call', async (params: any) => {
  * returns: Transaction hash - 32 byte hex value
  */
 app.useRpc('eth_sendRawTransaction', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true
@@ -434,7 +433,7 @@ app.useRpc('eth_sendRawTransaction', async (params: any) => {
  * returns: Transaction Receipt - object
  */
 app.useRpc('eth_getTransactionReceipt', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
@@ -469,7 +468,7 @@ app.useRpc('eth_accounts', async () => {
  * returns: Transaction Object
  */
 app.useRpc('eth_getTransactionByHash', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
@@ -497,7 +496,7 @@ app.useRpc('eth_getTransactionByHash', async (params: any) => {
  *      - reward - Array of effective priority fee per gas data.
  */
 app.useRpc('eth_feeHistory', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
@@ -526,7 +525,7 @@ app.useRpc('eth_feeHistory', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
@@ -547,7 +546,7 @@ app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
@@ -568,7 +567,7 @@ app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
  * returns: Logs - Array of log objects
  */
 app.useRpc('eth_getLogs', async (params: any) => {
-  const validationError = validator.validateParams(params, {
+  const validationError = Validator.validateParams(params, {
     0: {
       type: 'object',
       required: true
@@ -576,7 +575,7 @@ app.useRpc('eth_getLogs', async (params: any) => {
   });
 
   if (validationError) return validationError;
-
+  params = params[0];
   return logAndHandleResponse('eth_getLogs', (requestId) => relay.eth().getLogs(
     params.blockHash,
     params.fromBlock,
@@ -597,7 +596,7 @@ app.useRpc('eth_getLogs', async (params: any) => {
  * returns: Value - The storage value
  */
 app.useRpc('eth_getStorageAt', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
@@ -627,7 +626,7 @@ app.useRpc('eth_getStorageAt', async (params: any) => {
  * returns: Transaction
  */
 app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
@@ -653,7 +652,7 @@ app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
  * returns: Transaction
  */
 app.useRpc('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
-  const validationError = validator.validateParams(params,
+  const validationError = Validator.validateParams(params,
     {
       0: {
         required: true,
