@@ -80,10 +80,9 @@ LIMIT_DURATION = 60000
 HBAR_RATE_LIMIT_TINYBAR = 6000000000
 HBAR_RATE_LIMIT_DURATION = 60000
 RATE_LIMIT_DISABLED = false
-DEV_MODE = false
+MIRROR_NODE_RETRIES = 3
+MIRROR_NODE_RETRY_DELAY = 500
 ```
-
-Note: Read more about `DEV_MODE` [here](docs/dev-mode.md)
 
 The following table highlights some initial configuration values to consider
 

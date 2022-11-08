@@ -24,6 +24,7 @@ import { Logger } from "pino";
 import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
+import axiosRetry from 'axios-retry';
 
 export interface ILimitOrderParams {
     limit?: number;
@@ -105,6 +106,19 @@ export class MirrorNodeClient {
             timeout: 10 * 1000
         });
 
+        //@ts-ignore
+        axiosRetry(axiosClient, {
+            retries: parseInt(process.env.MIRROR_NODE_RETRIES!) || 3,
+            retryDelay: () => {
+                const delay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 500;
+                return delay;
+            },
+            retryCondition: (error) => {
+                return !error?.response?.status || error?.response?.status === 404 || error?.response?.status === 504;
+            },
+            shouldResetTimeout: true
+        });
+        
         return axiosClient;
     }
 

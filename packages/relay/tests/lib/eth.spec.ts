@@ -536,6 +536,25 @@ describe('Eth calls using MirrorNode', async function () {
     }
   });
 
+  it('"eth_blockNumber" return the latest block number on second try', async function () {
+    mock.onGet('blocks?limit=1&order=desc').reply(404, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'Block not found'
+          }
+        ]
+      }
+    });
+
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {
+      blocks: [defaultBlock]
+    });
+
+    const blockNumber = await ethImpl.blockNumber();
+    expect(blockNumber).to.be.eq(blockNumber);
+  });
+
   it('eth_getBlockByNumber with match', async function () {
     // mirror node request mocks
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
