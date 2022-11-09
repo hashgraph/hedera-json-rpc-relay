@@ -87,7 +87,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
     });
 
     describe('HBAR Limiter Acceptance Tests', function () {
-        this.timeout(240 * 1000); // 240 seconds
+        this.timeout(480 * 1000); // 480 seconds
 
         this.beforeAll(async () => {
             requestId = Utils.generateRequestId();
