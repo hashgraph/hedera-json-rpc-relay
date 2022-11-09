@@ -8,13 +8,59 @@ export const BLOCK_NUMBER_ERROR = 'Expected 0x prefixed hexadecimal block number
 export const BLOCK_HASH_ERROR = `${HASH_ERROR} of a block`;
 export const TRANSACTION_HASH_ERROR = `${HASH_ERROR} of a transaction`;
 export const TOPIC_HASH_ERROR = `${HASH_ERROR} of a topic`;
+export const objects = {
+  "transaction": {
+    "from": {
+      type: "address"
+    },
+    "to": {
+      required: true,
+      type: "address"
+    },
+    "gas": {
+      type: "hex"
+    },
+    "gasPrice": {
+      type: "hex"
+    },
+    "maxPriorityFeePerGas": {
+      type: "hex"
+    },
+    "maxFeePerGas": {
+      type: "hex"
+    },
+    "value": {
+      type: "hex"
+    },
+    "data": {
+      type: "hex"
+    }
+  },
+  "filter": {
+    "blockHash": {
+      type: "blockHash"
+    },
+    "fromBlock": {
+      type: "blockNumber"
+    },
+    "toBlock": {
+      type: "blockNumber"
+    },
+    "address": {
+      type: "address"
+    },
+    "topics": {
+      type: ["array", 'topicHash']
+    }
+  }
+};
 export const TYPES = {
   "address": {
     test: (param: string) => new RegExp('^0[xX][a-fA-F0-9]{40}$').test(param),
     error: ADDRESS_ERROR
   },
   'blockNumber': {
-    test: (param: string) => new RegExp('^0[xX][a-fA-F0-9]').test(param) || [ "earliest", "latests", "pending"].includes(param),
+    test: (param: string) => new RegExp('^0[xX][a-fA-F0-9]').test(param) || ["earliest", "latest", "pending"].includes(param),
     error: BLOCK_NUMBER_ERROR
   },
   'blockHash': {
@@ -34,27 +80,28 @@ export const TYPES = {
     error: DEFAULT_HEX_ERROR
   },
   'bool': {
-    test: (param: string) => param === 'true' || param === 'false',
+    test: (param: boolean) => param === true || param === false,
     error: 'Expected boolean'
   },
   "transaction": {
     test: (param: any) => {
-      return Object.prototype.toString.call(param) === "[object Object]" ? new TransactionObject(param).validate(param) : false;
+      return Object.prototype.toString.call(param) === "[object Object]" ? new TransactionObject(param).validate() : false;
     },
-    error: 'Expected Object'
+    error: 'Expected Transaction object'
   },
   "filter": {
     test: (param: any) => {
-      return Object.prototype.toString.call(param) === "[object Object]" ? new FilterObject(param).validate(param) : false;
+      return Object.prototype.toString.call(param) === "[object Object]" ? new FilterObject(param).validate() : false;
     },
-    error: 'Expected Object'
+    error: 'Expected Filter object'
   },
   "array": {
-    test: (param: any) => {
-      return Array.isArray(param) ? validateArray(param) : false;
+    test: (param: any, innerType: any) => {
+      return Array.isArray(param) ? validateArray(param, innerType) : false;
     },
     error: 'Expected Array'
-  }
+  },
+  "number": (param: number) => new RegExp("^[0-9][0-9]?$|^100$").test(`${param}`)
 };
 
 export class TransactionObject {
@@ -78,32 +125,40 @@ export class TransactionObject {
     this.data = transaction.data;
   }
 
-  validate(props: any) {
-    return validateObject(this, props);
+  validate() {
+    return validateObject(this, objects.transaction);
+  }
+
+  name() {
+    return "Transaction Object";
   }
 };
 
 export class FilterObject {
   blockHash: string;
-  address?: string;
-  toBlock?: string;
   fromBlock?: string;
+  toBlock?: string;
+  address?: string;
   topics?: string[];
 
   constructor (filter: any) {
-    this.toBlock = filter.toBlock;
     this.blockHash = filter.blockHash;
     this.fromBlock = filter.fromBlock;
-    this.topics = filter.topics;
+    this.toBlock = filter.toBlock;
     this.address = filter.address;
+    this.topics = filter.topics;
   }
 
-  validate(props: any) {
+  validate() {
     if (this.blockHash && (this.toBlock || this.fromBlock)) {
       return predefined.INVALID_PARAMETER(0, "Can't use both blockHash and toBlock/fromBlock");
     }
 
-    return validateObject(this, props);
+    return validateObject(this, objects.filter);
+  }
+
+  name() {
+    return "Filter Object";
   }
 };
 
@@ -116,11 +171,23 @@ export function validateParams(params: any, indexes: any)  {
       return predefined.MISSING_REQUIRED_PARAMETER(index);
     }
 
-    const result: any = !TYPES[validation.type].test(param);
-    if (result instanceof JsonRpcError) {
-      return result;
-    } else if(result === false) {
-      return predefined.INVALID_PARAMETER(index, TYPES[validation.type].error);
+    const paramType =
+      Array.isArray(validation.type)
+      ? TYPES[validation.type[0]]
+      : TYPES[validation.type];
+
+    if (paramType === undefined) {
+      return predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
+    }
+
+    if (param !== undefined) {
+      const result: any = paramType.test(param);
+
+      if (result instanceof JsonRpcError) {
+        return result;
+      } else if(result === false) {
+        return predefined.INVALID_PARAMETER(index, paramType.error);
+      }
     }
   }
 }
@@ -131,23 +198,29 @@ function validateObject(obj: any, props: any) {
     const param = obj[prop];
 
     if (validation.required && param === undefined) {
-      return predefined.MISSING_REQUIRED_PARAMETER(prop);
+      return predefined.MISSING_REQUIRED_PARAMETER(`'${prop}' for ${obj.name()}`);
     }
 
-    if (validation.type && typeof validation.type === "string") {
+    if (typeof validation.type === "string") {
       if (param !== undefined && !TYPES[validation.type].test(param)) {
-        return predefined.INVALID_PARAMETER(prop, TYPES[validation.type].error);
+        return predefined.INVALID_PARAMETER(`'${prop}' for ${obj.name()}`, TYPES[validation.type].error);
       }
+    } else if(Array.isArray(validation.type)) {
+      if (param !== undefined && !TYPES[validation.type[0]].test(param, validation.type[1])) {
+        return predefined.INVALID_PARAMETER(`'${prop}' for ${obj.name()}`, TYPES[validation.type[1]].error);
+      }
+    } else {
+      return predefined.INTERNAL_ERROR(`Unsupported param type ${validation.type} for ${obj.name()}`);
     }
   }
 
   return true;
 }
 
-function validateArray(array: string[]) {
-  const isAddress = (element) => TYPES["address"].test(element);
-  return !array.every(isAddress)
-  ? predefined.INVALID_PARAMETER('addresses', TYPES["address"].error)
+function validateArray(array: any[], innerType: string) {
+  const isInnerType = (element: any) => TYPES[innerType].test(element);
+  return !array.every(isInnerType)
+  ? predefined.INVALID_PARAMETER('addresses', TYPES[innerType].error)
   : true;
 }
 
