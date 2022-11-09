@@ -95,7 +95,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
             logger.info(`${requestIdPrefix} Creating accounts`);
-            logger.info(`HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
+            logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
             accounts[0] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
             accounts[1] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
             contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
@@ -137,12 +137,14 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
               }
 
             it('should fail to execute "eth_sendRawTransaction" due to HBAR rate limit exceeded ', async function () {
+                const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+
                 let rateLimit = false;
                 try {
                     for (let index = 0; index < parseInt(process.env.TIER_1_RATE_LIMIT!) * 2; index++) {
                         const BaseHTSContractAddress = await deployBaseHTSContract();
                         const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
-                        logger.info(`Contract deployed to ${baseHTSContract.address}`);
+                        logger.info(`${requestIdPrefix} Contract deployed to ${baseHTSContract.address}`);
                         await new Promise(r => setTimeout(r, 1));
                     }
                 } catch (error) {
