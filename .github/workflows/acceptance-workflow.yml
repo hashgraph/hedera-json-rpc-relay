@@ -28,12 +28,6 @@ jobs:
       - name: Create .env file
         run: cp ./packages/server/tests/localAcceptance.env .env
 
-      - name: Set custom variables for Rate Limiter
-        run: cp ./packages/server/tests/localAcceptance.env .env
-        if: ${{ inputs.testfilter == 'ratelimiter' }}
-        env:
-          HBAR_RATE_LIMIT_TINYBAR: 3000000000
-
       - name: Lerna Bootstrap
         run: npm run setup
 

@@ -29,6 +29,7 @@ import { ContractFunctionParameters } from '@hashgraph/sdk';
 import parentContractJson from '../contracts/Parent.json';
 import { predefined } from '@hashgraph/json-rpc-relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
+import BaseHTSJson from '../contracts/contracts_v1/BaseHTS.json';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
     this.timeout(480 * 1000); // 480 seconds
@@ -94,8 +95,9 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
             logger.info(`${requestIdPrefix} Creating accounts`);
-            accounts[0] = await servicesNode.createAliasAccount(15, null, requestId);
-            accounts[1] = await servicesNode.createAliasAccount(100, null, requestId);
+            logger.info(`HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
+            accounts[0] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
+            accounts[1] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
             contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
@@ -126,22 +128,21 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                 type: 2
             };
 
+            async function deployBaseHTSContract() {
+                const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, accounts[1].wallet);
+                const baseHTS = await baseHTSFactory.deploy({gasLimit: 10_000_000});
+                const { contractAddress } = await baseHTS.deployTransaction.wait();
+            
+                return contractAddress;
+              }
+
             it('should fail to execute "eth_sendRawTransaction" due to HBAR rate limit exceeded ', async function () {
-                await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
                 let rateLimit = false;
                 try {
                     for (let index = 0; index < parseInt(process.env.TIER_1_RATE_LIMIT!) * 2; index++) {
-                        const gasPrice = await relay.gasPrice(requestId);
-
-                        const transaction = {
-                            ...defaultLondonTransactionData,
-                            to: mirrorContract.evm_address,
-                            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
-                            maxPriorityFeePerGas: gasPrice,
-                            maxFeePerGas: gasPrice,
-                        };
-                        const signedTx = await accounts[1].wallet.signTransaction(transaction);
-                        await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+                        const BaseHTSContractAddress = await deployBaseHTSContract();
+                        const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
+                        logger.info(`Contract deployed to ${baseHTSContract.address}`);
                         await new Promise(r => setTimeout(r, 1));
                     }
                 } catch (error) {
