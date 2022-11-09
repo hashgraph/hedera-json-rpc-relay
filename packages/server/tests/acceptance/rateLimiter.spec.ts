@@ -127,7 +127,6 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             };
 
             it('should fail to execute "eth_sendRawTransaction" due to HBAR rate limit exceeded ', async function () {
-                await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
                 let rateLimit = false;
                 try {
                     for (let index = 0; index < parseInt(process.env.TIER_1_RATE_LIMIT!) * 2; index++) {

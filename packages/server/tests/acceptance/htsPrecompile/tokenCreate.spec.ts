@@ -159,6 +159,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
     const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
     expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+
+    //wait for hbar limiter to reset
+    await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
   });
 
   it('should associate to a nft', async function() {

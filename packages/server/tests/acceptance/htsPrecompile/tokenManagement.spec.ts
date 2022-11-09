@@ -167,6 +167,9 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       const amount = 5;
       const tx = await mainContract.cryptoTransferTokenPublic(accounts[1].wallet.address, tokenAddress, amount);
       await tx.wait();
+      
+      //wait for hbar limiter to reset
+      await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
     });
 
     it('should revert if attempting to wipe more tokens than the owned amount', async function() {
