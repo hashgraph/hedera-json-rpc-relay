@@ -28,6 +28,7 @@ import { ContractFunctionParameters } from '@hashgraph/sdk';
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import { predefined } from '@hashgraph/json-rpc-relay/src/lib/errors/JsonRpcError';
+import { Utils } from '../helpers/utils';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -41,6 +42,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
     let contractId;
     let contractExecuteTimestamp;
     let mirrorContract;
+    let requestId;
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
@@ -51,7 +53,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             try{
                 //Currently chaindId is TIER 2 request per LIMIT_DURATION from env. We are trying to get an error for rate limit by exceeding this threshold
                 for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!) * 2; index++) {
-                    await relay.call('eth_chainId', [null]);
+                    await relay.call('eth_chainId', [null], requestId);
                     // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
                     await new Promise(r => setTimeout(r, 1));
                 }
@@ -68,7 +70,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
         it('should not throw rate limit exceeded error', async function () {
             for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
-                await relay.call('eth_chainId', [null]);
+                await relay.call('eth_chainId', [null], requestId);
                 // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
                 await new Promise(r => setTimeout(r, 1));
             }
@@ -77,7 +79,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION!)));
 
             for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
-                await relay.call('eth_chainId', [null]);
+                await relay.call('eth_chainId', [null], requestId);
                 // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
                 await new Promise(r => setTimeout(r, 1));
             }
@@ -88,20 +90,27 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
 
         this.beforeAll(async () => {
-            logger.info('Creating accounts');
-            accounts[0] = await servicesNode.createAliasAccount(15);
-            accounts[1] = await servicesNode.createAliasAccount(100);
-            contractId = await accounts[0].client.createParentContract(parentContractJson);
+            requestId = Utils.generateRequestId();
+            const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+
+            logger.info(`${requestIdPrefix} Creating accounts`);
+            accounts[0] = await servicesNode.createAliasAccount(15, null, requestId);
+            accounts[1] = await servicesNode.createAliasAccount(100, null, requestId);
+            contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
             contractExecuteTimestamp = (await accounts[0].client
-                .executeContractCall(contractId, 'createChild', params)).contractExecuteTimestamp;
+                .executeContractCall(contractId, 'createChild', params, 75000, requestId)).contractExecuteTimestamp;
 
             // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
             await new Promise(r => setTimeout(r, 5000));
 
             // get contract details
-            mirrorContract = await mirrorNode.get(`/contracts/${contractId}`);
+            mirrorContract = await mirrorNode.get(`/contracts/${contractId}`, requestId);
+        });
+
+        this.beforeEach(async () => {
+            requestId = Utils.generateRequestId();
         });
 
         describe('HBAR Rate Limit Tests', () => {
@@ -121,19 +130,18 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                 await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
                 let rateLimit = false;
                 try {
-                    for (let index = 0; index < parseInt(process.env.TIER_1_RATE_LIMIT!); index++) {
-                        const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address);
-                        const gasPrice = await relay.gasPrice();
+                    for (let index = 0; index < parseInt(process.env.TIER_1_RATE_LIMIT!) * 2; index++) {
+                        const gasPrice = await relay.gasPrice(requestId);
 
                         const transaction = {
                             ...defaultLondonTransactionData,
                             to: mirrorContract.evm_address,
-                            nonce: await relay.getAccountNonce(accounts[1].address),
+                            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
                             maxPriorityFeePerGas: gasPrice,
                             maxFeePerGas: gasPrice,
                         };
                         const signedTx = await accounts[1].wallet.signTransaction(transaction);
-                        await relay.call('eth_sendRawTransaction', [signedTx]);
+                        await relay.call('eth_sendRawTransaction', [signedTx], requestId);
                         await new Promise(r => setTimeout(r, 1));
                     }
                 } catch (error) {
@@ -148,18 +156,17 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded ', async function () {
                 let rateLimit = false;
                 try {
-                    const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address);
-                    const gasPrice = await relay.gasPrice();
+                    const gasPrice = await relay.gasPrice(requestId);
 
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[1].address),
+                        nonce: await relay.getAccountNonce(accounts[1].address, requestId),
                         maxPriorityFeePerGas: gasPrice,
                         maxFeePerGas: gasPrice,
                     };
                     const signedTx = await accounts[1].wallet.signTransaction(transaction);
-                    await relay.call('eth_sendRawTransaction', [signedTx]);
+                    await relay.call('eth_sendRawTransaction', [signedTx], requestId);
                 } catch (error) {
                     rateLimit = true;
                 }

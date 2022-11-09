@@ -20,6 +20,7 @@
 
 import { ethers, BigNumber } from 'ethers';
 import Assertions from './assertions';
+import crypto from 'crypto';
 
 export class Utils {
 
@@ -56,4 +57,19 @@ export class Utils {
         return result;
     }
 
+    /**
+     * Generates random trace id for requests.
+     *
+     * returns: string
+     */
+    static generateRequestId = () : string => {
+        return crypto.randomUUID();
+    };
+    
+    /**
+    * Format message prefix for logger.
+    */
+    static formatRequestIdMessage = (requestId?: string): string => {
+        return requestId ? `[Request ID: ${requestId}]` : '';
+    };
 }

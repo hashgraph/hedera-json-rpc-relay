@@ -52,6 +52,7 @@ describe('@api RPC Server Acceptance Tests', function () {
     let mirrorContractDetails;
     let mirrorPrimaryAccount;
     let mirrorSecondaryAccount;
+    let requestId;
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     const INCORRECT_CHAIN_ID = 999;
@@ -76,33 +77,39 @@ describe('@api RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
 
         this.beforeAll(async () => {
-            accounts[0] = await servicesNode.createAliasAccount(15);
-            accounts[1] = await servicesNode.createAliasAccount(15);
-            accounts[2] = await servicesNode.createAliasAccount(30);
-            accounts[3] = await servicesNode.createAliasAccount(60, relay.provider);
-            contractId = await accounts[0].client.createParentContract(parentContractJson);
+            requestId = Utils.generateRequestId();
+
+            accounts[0] = await servicesNode.createAliasAccount(15, null, requestId);
+            accounts[1] = await servicesNode.createAliasAccount(15, null, requestId);
+            accounts[2] = await servicesNode.createAliasAccount(30, null, requestId);
+            accounts[3] = await servicesNode.createAliasAccount(60, relay.provider, requestId);
+            contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
             contractExecuteTimestamp = (await accounts[0].client
-                .executeContractCall(contractId, 'createChild', params)).contractExecuteTimestamp;
-            tokenId = await servicesNode.createToken();
+                .executeContractCall(contractId, 'createChild', params, 75000, requestId)).contractExecuteTimestamp;
+            tokenId = await servicesNode.createToken(1000, requestId);
             logger.info('Associate and transfer tokens');
-            await accounts[0].client.associateToken(tokenId);
-            await accounts[1].client.associateToken(tokenId);
-            await servicesNode.transferToken(tokenId, accounts[0].accountId);
-            await servicesNode.transferToken(tokenId, accounts[1].accountId);
+            await accounts[0].client.associateToken(tokenId, requestId);
+            await accounts[1].client.associateToken(tokenId, requestId);
+            await servicesNode.transferToken(tokenId, accounts[0].accountId, 10,  requestId);
+            await servicesNode.transferToken(tokenId, accounts[1].accountId, 10, requestId);
 
             // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
             await new Promise(r => setTimeout(r, 5000));
 
             // get contract details
-            mirrorContract = await mirrorNode.get(`/contracts/${contractId}`);
+            mirrorContract = await mirrorNode.get(`/contracts/${contractId}`, requestId);
 
             // get contract result details
-            mirrorContractDetails = await mirrorNode.get(`/contracts/${contractId}/results/${contractExecuteTimestamp}`);
+            mirrorContractDetails = await mirrorNode.get(`/contracts/${contractId}/results/${contractExecuteTimestamp}`, requestId);
 
-            mirrorPrimaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`)).accounts[0];
-            mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`)).accounts[0];
+            mirrorPrimaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`, requestId)).accounts[0];
+            mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`, requestId)).accounts[0];
+        });
+
+        this.beforeEach(async () => {
+            requestId = Utils.generateRequestId();
         });
 
         describe('eth_getLogs', () => {
@@ -111,35 +118,36 @@ describe('@api RPC Server Acceptance Tests', function () {
 
             it('@release should deploy a contract', async () => {
                 const logsContract = await servicesNode.deployContract(logsContractJson);
-                const mirrorNodeResp = await mirrorNode.get(`/contracts/${logsContract.contractId}`);
+                const mirrorNodeResp = await mirrorNode.get(`/contracts/${logsContract.contractId}`, requestId);
                 expect(mirrorNodeResp).to.have.property('evm_address');
                 expect(mirrorNodeResp.env_address).to.not.be.null;
                 contractAddress = mirrorNodeResp.evm_address;
 
                 const params = new ContractFunctionParameters().addUint256(1);
-                const log0 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params);
-                await accounts[1].client.executeContractCall(logsContract.contractId, 'log1', params);
+                const log0 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params, 75000, requestId);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log1', params, 75000, requestId);
 
                 params.addUint256(1);
-                await accounts[1].client.executeContractCall(logsContract.contractId, 'log2', params);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log2', params, 75000, requestId);
 
                 params.addUint256(1);
-                await accounts[1].client.executeContractCall(logsContract.contractId, 'log3', params);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log3', params, 75000, requestId);
 
                 params.addUint256(1);
-                const log4 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params);
+                const log4 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params, 75000, requestId);
 
                 await new Promise(r => setTimeout(r, 5000));
+                const tenBlocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 10;
+                //empty params for get logs defaults to latest block, which doesn't have required logs, that's why we fetch the last 10
+                const logs = await relay.call('eth_getLogs', [{
+                    fromBlock: tenBlocksBehindLatest
+                }], requestId);
 
-                const logs = await relay.call('eth_getLogs', [{}]);
                 expect(logs.length).to.be.greaterThan(0);
                 const txIndexLogIndexMapping: any[] = [];
                 for (const i in logs) {
                     expect(logs[i]).to.have.property('address');
                     expect(logs[i]).to.have.property('logIndex');
-
-                    // verify logIndex represents index in block across transactions
-                    expect(logs[i].logIndex).to.equal(ethers.utils.hexValue(Number(i)));
 
                     const key = `${logs[i].transactionHash}---${logs[i].logIndex}`;
                     txIndexLogIndexMapping.push(key);
@@ -149,11 +157,11 @@ describe('@api RPC Server Acceptance Tests', function () {
                 );
                 expect(txIndexLogIndexMapping.length).to.equal(uniqueTxIndexLogIndexMapping.length);
 
-                log0Block = await relay.call('eth_getTransactionByHash', [log0.contractExecutedTransactionId]);
+                log0Block = await relay.call('eth_getTransactionByHash', [log0.contractExecutedTransactionId], requestId);
                 expect(log0Block).to.have.property('blockNumber');
                 expect(log0Block.nonce).to.equal('0x0');
 
-                log4Block = await relay.call('eth_getTransactionByHash', [log4.contractExecutedTransactionId]);
+                log4Block = await relay.call('eth_getTransactionByHash', [log4.contractExecutedTransactionId], requestId);
                 expect(log4Block).to.have.property('blockNumber');
                 expect(log4Block.nonce).to.equal('0x0');
             });
@@ -161,7 +169,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             it('should be able to use `fromBlock` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': log4Block.blockNumber
-                }]);
+                }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
 
                 const log4BlockInt = parseInt(log4Block.blockNumber);
@@ -173,7 +181,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             it('should be able to use `toBlock` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'toBlock': log0Block.blockNumber
-                }]);
+                }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
 
                 const log0BlockInt = parseInt(log0Block.blockNumber);
@@ -186,7 +194,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': log0Block.blockNumber,
                     'toBlock': log4Block.blockNumber
-                }]);
+                }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
 
                 const log0BlockInt = parseInt(log0Block.blockNumber);
@@ -198,9 +206,14 @@ describe('@api RPC Server Acceptance Tests', function () {
             });
 
             it('should be able to use `address` param', async () => {
+                //when we pass only address, it defaults to the latest block
+                //we fetch last 10 blocks
+                const tenBlocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 10;
+
                 const logs = await relay.call('eth_getLogs', [{
+                    'fromBlock': tenBlocksBehindLatest,
                     'address': contractAddress
-                }]);
+                }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
 
                 for (let i in logs) {
@@ -211,7 +224,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             it('should be able to use `blockHash` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'blockHash': log0Block.blockHash
-                }]);
+                }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
 
                 for (let i in logs) {
@@ -222,7 +235,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             it('should return empty result for  non-existing `blockHash`', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'blockHash': NON_EXISTING_BLOCK_HASH
-                }]);
+                }], requestId);
                 expect(logs).to.exist;
                 expect(logs.length).to.be.eq(0);
             });
@@ -239,7 +252,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     'fromBlock': log0Block.blockNumber,
                     'toBlock': log4Block.blockNumber,
                     'topics': [logs[0].topics[0]]
-                }]);
+                }], requestId);
                 expect(logsWithTopic.length).to.be.greaterThan(0);
 
                 for (let i in logsWithTopic) {
@@ -256,84 +269,84 @@ describe('@api RPC Server Acceptance Tests', function () {
             const mirrorTransactions: any[] = [];
 
             before(async () => {
-                mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`)).blocks[0];
+                mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`, requestId)).blocks[0];
                 const timestampQuery = `timestamp=gte:${mirrorBlock.timestamp.from}&timestamp=lte:${mirrorBlock.timestamp.to}`;
-                mirrorContractResults = (await mirrorNode.get(`/contracts/results?${timestampQuery}`)).results;
+                mirrorContractResults = (await mirrorNode.get(`/contracts/results?${timestampQuery}`, requestId)).results;
 
                 for (let i = 0; i < mirrorContractResults.length; i++) {
                     const res = mirrorContractResults[i];
-                    mirrorTransactions.push((await mirrorNode.get(`/contracts/${res.contract_id}/results/${res.timestamp}`)));
+                    mirrorTransactions.push((await mirrorNode.get(`/contracts/${res.contract_id}/results/${res.timestamp}`, requestId)));
                 }
 
             });
 
             it('should execute "eth_getBlockByHash", hydrated transactions not specified', async function () {
-                const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash]);
+                const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash], requestId);
                 Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
             });
 
             it('should execute "eth_getBlockByHash", hydrated transactions = false', async function () {
-                const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, false]);
+                const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, false], requestId);
                 Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
             });
 
             it('@release should execute "eth_getBlockByHash", hydrated transactions = true', async function () {
-                const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, true]);
+                const blockResult = await relay.call('eth_getBlockByHash', [mirrorBlock.hash, true], requestId);
                 Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
             });
 
             it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = false', async function () {
-                const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, false]);
+                const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, false], requestId);
                 expect(blockResult).to.be.null;
             });
 
             it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = true', async function () {
-                const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, true]);
+                const blockResult = await relay.call('eth_getBlockByHash', [NON_EXISTING_BLOCK_HASH, true], requestId);
                 expect(blockResult).to.be.null;
             });
 
             it('should execute "eth_getBlockByNumber", hydrated transactions not specified', async function () {
-                const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number]);
+                const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number], requestId);
                 Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
             });
 
             it('should execute "eth_getBlockByNumber", hydrated transactions = false', async function () {
-                const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, false]);
+                const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, false], requestId);
                 Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
             });
 
             it('@release should execute "eth_getBlockByNumber", hydrated transactions = true', async function () {
-                const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, true]);
+                const blockResult = await relay.call('eth_getBlockByNumber', [mirrorBlock.number, true], requestId);
                 Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
             });
 
             it('should execute "eth_getBlockByNumber" for non existing block number and hydrated transactions = true', async function () {
-                const blockResult = await relay.call('eth_getBlockByNumber', [NON_EXISTING_BLOCK_NUMBER, true]);
+                const blockResult = await relay.call('eth_getBlockByNumber', [NON_EXISTING_BLOCK_NUMBER, true], requestId);
                 expect(blockResult).to.be.null;
             });
 
             it('should execute "eth_getBlockByNumber" for non existing block number and hydrated transactions = false', async function () {
-                const blockResult = await relay.call('eth_getBlockByNumber', [NON_EXISTING_BLOCK_NUMBER, false]);
+                const blockResult = await relay.call('eth_getBlockByNumber', [NON_EXISTING_BLOCK_NUMBER, false], requestId);
                 expect(blockResult).to.be.null;
             });
 
             it('@release should execute "eth_getBlockTransactionCountByNumber"', async function () {
-                const res = await relay.call('eth_getBlockTransactionCountByNumber', [mirrorBlock.number]);
+                const res = await relay.call('eth_getBlockTransactionCountByNumber', [mirrorBlock.number], requestId);
                 expect(res).to.be.equal(ethers.utils.hexValue(mirrorBlock.count));
             });
 
             it('should execute "eth_getBlockTransactionCountByNumber" for non-existing block number', async function () {
-                const res = await relay.call('eth_getBlockTransactionCountByNumber', [NON_EXISTING_BLOCK_NUMBER]);
+                const res = await relay.call('eth_getBlockTransactionCountByNumber', [NON_EXISTING_BLOCK_NUMBER], requestId);
                 expect(res).to.be.null;
             });
 
             it('@release should execute "eth_getBlockTransactionCountByHash"', async function () {
-                const res = await relay.call('eth_getBlockTransactionCountByHash', [mirrorBlock.hash]);
+                const res = await relay.call('eth_getBlockTransactionCountByHash', [mirrorBlock.hash], requestId);
                 expect(res).to.be.equal(ethers.utils.hexValue(mirrorBlock.count));
             });
 
             it('should execute "eth_getBlockTransactionCountByHash" for non-existing block hash', async function () {
-                const res = await relay.call('eth_getBlockTransactionCountByHash', [NON_EXISTING_BLOCK_HASH]);
+                const res = await relay.call('eth_getBlockTransactionCountByHash', [NON_EXISTING_BLOCK_HASH], requestId);
                 expect(res).to.be.null;
             });
 
@@ -341,12 +354,12 @@ describe('@api RPC Server Acceptance Tests', function () {
 
                 it('@release should execute "eth_blockNumber"', async function () {
 
-                    const mirrorBlocks = await mirrorNode.get(`blocks`);
+                    const mirrorBlocks = await mirrorNode.get(`blocks`, requestId);
                     expect(mirrorBlocks).to.have.property('blocks');
                     expect(mirrorBlocks.blocks.length).to.gt(0);
                     const mirrorBlockNumber = mirrorBlocks.blocks[0].number;
 
-                    const res = await relay.call('eth_blockNumber', []);
+                    const res = await relay.call('eth_blockNumber', [], requestId);
                     const blockNumber = Number(res);
                     expect(blockNumber).to.exist;
 
@@ -389,34 +402,34 @@ describe('@api RPC Server Acceptance Tests', function () {
 
                 it('@release should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
                     const response = await relay.call('eth_getTransactionByBlockHashAndIndex',
-                        [mirrorContractDetails.block_hash, mirrorContractDetails.transaction_index]);
+                        [mirrorContractDetails.block_hash, mirrorContractDetails.transaction_index], requestId);
                     Assertions.transaction(response, mirrorContractDetails);
                 });
 
                 it('should execute "eth_getTransactionByBlockHashAndIndex" for invalid block hash', async function () {
                     const response = await relay.call('eth_getTransactionByBlockHashAndIndex',
-                        [NON_EXISTING_BLOCK_HASH, mirrorContractDetails.transaction_index]);
+                        [NON_EXISTING_BLOCK_HASH, mirrorContractDetails.transaction_index], requestId);
                     expect(response).to.be.null;
                 });
 
                 it('should execute "eth_getTransactionByBlockHashAndIndex" for invalid index', async function () {
                     const response = await relay.call('eth_getTransactionByBlockHashAndIndex',
-                        [mirrorContractDetails.block_hash, NON_EXISTING_INDEX]);
+                        [mirrorContractDetails.block_hash, NON_EXISTING_INDEX], requestId);
                     expect(response).to.be.null;
                 });
 
                 it('@release should execute "eth_getTransactionByBlockNumberAndIndex"', async function () {
-                    const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, mirrorContractDetails.transaction_index]);
+                    const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, mirrorContractDetails.transaction_index], requestId);
                     Assertions.transaction(response, mirrorContractDetails);
                 });
 
                 it('should execute "eth_getTransactionByBlockNumberAndIndex" for invalid index', async function () {
-                    const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, NON_EXISTING_INDEX]);
+                    const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [mirrorContractDetails.block_number, NON_EXISTING_INDEX], requestId);
                     expect(response).to.be.null;
                 });
 
                 it('should execute "eth_getTransactionByBlockNumberAndIndex" for non-exising block number', async function () {
-                    const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [NON_EXISTING_BLOCK_NUMBER, mirrorContractDetails.transaction_index]);
+                    const response = await relay.call('eth_getTransactionByBlockNumberAndIndex', [NON_EXISTING_BLOCK_NUMBER, mirrorContractDetails.transaction_index], requestId);
                     expect(response).to.be.null;
                 });
 
@@ -424,44 +437,44 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const transaction = {
                         ...default155TransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
-                        gasPrice: await relay.gasPrice()
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+                        gasPrice: await relay.gasPrice(requestId)
                     };
 
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    const legacyTxHash = await relay.sendRawTransaction(signedTx);
+                    const legacyTxHash = await relay.sendRawTransaction(signedTx, requestId);
                     // Since the transactionId is not available in this context
                     // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-                    const mirrorResult = await mirrorNode.get(`/contracts/results/${legacyTxHash}`);
+                    const mirrorResult = await mirrorNode.get(`/contracts/results/${legacyTxHash}`, requestId);
 
-                    const res = await relay.call('eth_getTransactionReceipt', [legacyTxHash]);
+                    const res = await relay.call('eth_getTransactionReceipt', [legacyTxHash], requestId);
                     // FIXME here we must assert that the alias address is the `from` / `to` and not the `0x` prefixed one
                     Assertions.transactionReceipt(res, mirrorResult);
                 });
 
                 it('@release should execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
-                    const gasPrice = await relay.gasPrice();
+                    const gasPrice = await relay.gasPrice(requestId);
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                         maxFeePerGas: gasPrice,
                         maxPriorityFeePerGas: gasPrice
                     };
 
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    const transactionHash = await relay.sendRawTransaction(signedTx);
+                    const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
                     // Since the transactionId is not available in this context
                     // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-                    const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`);
+                    const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-                    const res = await relay.call('eth_getTransactionReceipt', [transactionHash]);
+                    const res = await relay.call('eth_getTransactionReceipt', [transactionHash], requestId);
                     // FIXME here we must assert that the alias address is the `from` / `to` and not the `0x` prefixed one
                     Assertions.transactionReceipt(res, mirrorResult);
                 });
 
                 it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {
-                    const res = await relay.call('eth_getTransactionReceipt', [NON_EXISTING_TX_HASH]);
+                    const res = await relay.call('eth_getTransactionReceipt', [NON_EXISTING_TX_HASH], requestId);
                     expect(res).to.be.null;
                 });
 
@@ -469,12 +482,12 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const transaction = {
                         ...default155TransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                         chainId: INCORRECT_CHAIN_ID
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     try {
-                        await relay.sendRawTransaction(signedTx);
+                        await relay.sendRawTransaction(signedTx, requestId);
                         Assertions.expectedError();
                     }
                     catch (e) {
@@ -483,47 +496,47 @@ describe('@api RPC Server Acceptance Tests', function () {
                 });
 
                 it('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
-                    const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address);
+                    const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
                     const transaction = {
                         ...default155TransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
-                        gasPrice: await relay.gasPrice()
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+                        gasPrice: await relay.gasPrice(requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    const transactionHash = await relay.sendRawTransaction(signedTx);
+                    const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
                     // Since the transactionId is not available in this context
                     // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-                    await mirrorNode.get(`/contracts/results/${transactionHash}`);
+                    await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-                    const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address);
+                    const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
                     const balanceChange = receiverEndBalance.sub(receiverInitialBalance);
                     expect(balanceChange.toString()).to.eq(ONE_TINYBAR.toString());
                 });
 
                 it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with insufficient balance)', async function () {
-                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId);
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId, requestId);
 
                     const transaction = {
                         ...default155TransactionData,
                         to: mirrorContract.evm_address,
                         value: balanceInWeiBars,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
-                        gasPrice: await relay.gasPrice()
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+                        gasPrice: await relay.gasPrice(requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE, requestId);
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy transactions (with no chainId)', async function () {
                     const transaction = {
                         ...defaultLegacyTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
-                        gasPrice: await relay.gasPrice()
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+                        gasPrice: await relay.gasPrice(requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.UNSUPPORTED_CHAIN_ID('0x0', CHAIN_ID));
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.UNSUPPORTED_CHAIN_ID('0x0', CHAIN_ID), requestId);
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy transactions (with gas price too low)', async function () {
@@ -532,21 +545,21 @@ describe('@api RPC Server Acceptance Tests', function () {
                         chainId: Number(CHAIN_ID),
                         gasPrice: GAS_PRICE_TOO_LOW,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW, requestId);
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
                     const transaction = {
                         ...defaultLegacy2930TransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
-                        gasPrice: await relay.gasPrice()
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+                        gasPrice: await relay.gasPrice(requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx]);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INTERNAL_ERROR(), requestId);
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with gas price too low)', async function () {
@@ -554,23 +567,23 @@ describe('@api RPC Server Acceptance Tests', function () {
                         ...defaultLegacy2930TransactionData,
                         gasPrice: GAS_PRICE_TOO_LOW,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW, requestId);
                 });
 
                 it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with insufficient balance)', async function () {
-                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId);
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId, requestId);
                     const transaction = {
                         ...defaultLegacy2930TransactionData,
                         value: balanceInWeiBars,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
-                        gasPrice: await relay.gasPrice()
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+                        gasPrice: await relay.gasPrice(requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE, requestId);
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transactions (with gas price too low)', async function () {
@@ -579,56 +592,56 @@ describe('@api RPC Server Acceptance Tests', function () {
                         maxPriorityFeePerGas: GAS_PRICE_TOO_LOW,
                         maxFeePerGas: GAS_PRICE_TOO_LOW,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW, requestId);
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transactions (with insufficient balance)', async function () {
-                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId);
-                    const gasPrice = await relay.gasPrice();
+                    const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId, requestId);
+                    const gasPrice = await relay.gasPrice(requestId);
 
                     const transaction = {
                         ...defaultLondonTransactionData,
                         value: balanceInWeiBars,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                         maxPriorityFeePerGas: gasPrice,
                         maxFeePerGas: gasPrice,
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE);
+                    await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INSUFFICIENT_ACCOUNT_BALANCE, requestId);
                 });
 
                 it('should execute "eth_sendRawTransaction" for London transactions', async function () {
-                    const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address);
-                    const gasPrice = await relay.gasPrice();
+                    const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
+                    const gasPrice = await relay.gasPrice(requestId);
 
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                         maxPriorityFeePerGas: gasPrice,
                         maxFeePerGas: gasPrice,
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
+                    const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
 
                     // Since the transactionId is not available in this context
                     // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-                    await mirrorNode.get(`/contracts/results/${transactionHash}`);
-                    const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address);
+                    await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+                    const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
                     const balanceChange = receiverEndBalance.sub(receiverInitialBalance);
                     expect(balanceChange.toString()).to.eq(ONE_TINYBAR.toString());
                 });
 
                 it('should execute "eth_sendRawTransaction" and deploy a large contract', async function () {
-                    const gasPrice = await relay.gasPrice();
+                    const gasPrice = await relay.gasPrice(requestId);
                     const transaction = {
                         type: 2,
                         chainId: Number(CHAIN_ID),
-                        nonce: await relay.getAccountNonce(accounts[2].address),
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                         maxPriorityFeePerGas: gasPrice,
                         maxFeePerGas: gasPrice,
                         gasLimit: defaultGasLimit,
@@ -636,8 +649,8 @@ describe('@api RPC Server Acceptance Tests', function () {
                     };
 
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
-                    const info = await mirrorNode.get(`/contracts/results/${transactionHash}`);
+                    const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+                    const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
                     expect(info).to.have.property('contract_id');
                     expect(info.contract_id).to.not.be.null;
                     expect(info).to.have.property('created_contract_ids');
@@ -649,12 +662,12 @@ describe('@api RPC Server Acceptance Tests', function () {
                         const transaction = {
                             ...default155TransactionData,
                             to: mirrorContract.evm_address,
-                            nonce: await relay.getAccountNonce(accounts[2].address),
+                            nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                             chainId: INCORRECT_CHAIN_ID
                         };
                         const signedTx = await accounts[2].wallet.signTransaction(transaction);
                         try {
-                            await relay.sendRawTransaction(signedTx);
+                            await relay.sendRawTransaction(signedTx, requestId);
                             Assertions.expectedError();
                         }
                         catch(e) {
@@ -666,14 +679,14 @@ describe('@api RPC Server Acceptance Tests', function () {
                         const transaction = {
                             ...default155TransactionData,
                             to: mirrorContract.evm_address,
-                            nonce: await relay.getAccountNonce(accounts[2].address),
+                            nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                             gasLimit: 100,
-                            gasPrice: await relay.gasPrice()
+                            gasPrice: await relay.gasPrice(requestId)
                         };
 
                         const signedTx = await accounts[2].wallet.signTransaction(transaction);
                         try {
-                            await relay.sendRawTransaction(signedTx);
+                            await relay.sendRawTransaction(signedTx, requestId);
                             Assertions.expectedError();
                         }
                         catch (e) {
@@ -685,14 +698,14 @@ describe('@api RPC Server Acceptance Tests', function () {
                         const transaction = {
                             ...default155TransactionData,
                             to: mirrorContract.evm_address,
-                            nonce: await relay.getAccountNonce(accounts[2].address),
+                            nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                             gasLimit: 999999999,
-                            gasPrice: await relay.gasPrice()
+                            gasPrice: await relay.gasPrice(requestId)
                         };
 
                         const signedTx = await accounts[2].wallet.signTransaction(transaction);
                         try {
-                            await relay.sendRawTransaction(signedTx);
+                            await relay.sendRawTransaction(signedTx, requestId);
                             Assertions.expectedError();
                         } catch (e) {
                             Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH);
@@ -704,12 +717,12 @@ describe('@api RPC Server Acceptance Tests', function () {
                         const transaction = {
                             ...defaultLondonTransactionData,
                             to: mirrorContract.evm_address,
-                            nonce: await relay.getAccountNonce(accounts[2].address),
+                            nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                             gasLimit: 100
                         };
                         const signedTx = await accounts[2].wallet.signTransaction(transaction);
                         try {
-                            await relay.sendRawTransaction(signedTx);
+                            await relay.sendRawTransaction(signedTx, requestId);
                             Assertions.expectedError();
                         }
                         catch (e) {
@@ -721,12 +734,12 @@ describe('@api RPC Server Acceptance Tests', function () {
                         const transaction = {
                             ...defaultLondonTransactionData,
                             to: mirrorContract.evm_address,
-                            nonce: await relay.getAccountNonce(accounts[2].address),
+                            nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                             gasLimit: 999999999
                         };
                         const signedTx = await accounts[2].wallet.signTransaction(transaction);
                         try {
-                            await relay.sendRawTransaction(signedTx);
+                            await relay.sendRawTransaction(signedTx, requestId);
                             Assertions.expectedError();
                         } catch (e) {
                             Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH);
@@ -738,60 +751,60 @@ describe('@api RPC Server Acceptance Tests', function () {
                             ...default155TransactionData,
                             gasPrice: GAS_PRICE_TOO_LOW,
                             to: mirrorContract.evm_address,
-                            nonce: await relay.getAccountNonce(accounts[2].address)
+                            nonce: await relay.getAccountNonce(accounts[2].address, requestId)
                         };
                         const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                        await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW);
+                        await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.GAS_PRICE_TOO_LOW, requestId);
                     });
                 });
 
                 it('@release should execute "eth_getTransactionCount" primary', async function () {
-                    const res = await relay.call('eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, mirrorContractDetails.block_number]);
+                    const res = await relay.call('eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, mirrorContractDetails.block_number], requestId);
                     expect(res).to.be.equal('0x0');
                 });
 
                 it('should execute "eth_getTransactionCount" secondary', async function () {
-                    const res = await relay.call('eth_getTransactionCount', [mirrorSecondaryAccount.evm_address, mirrorContractDetails.block_number]);
+                    const res = await relay.call('eth_getTransactionCount', [mirrorSecondaryAccount.evm_address, mirrorContractDetails.block_number], requestId);
                     expect(res).to.be.equal('0x0');
                 });
 
                 it('@release should execute "eth_getTransactionCount" contract', async function () {
-                    const res = await relay.call('eth_getTransactionCount', [mirrorContract.evm_address, mirrorContractDetails.block_number]);
+                    const res = await relay.call('eth_getTransactionCount', [mirrorContract.evm_address, mirrorContractDetails.block_number], requestId);
                     expect(res).to.be.equal('0x1');
                 });
 
                 it('@release should execute "eth_getTransactionCount" for account with id converted to evm_address', async function () {
-                    const res = await relay.call('eth_getTransactionCount', [Utils.idToEvmAddress(mirrorPrimaryAccount.account), mirrorContractDetails.block_number]);
+                    const res = await relay.call('eth_getTransactionCount', [Utils.idToEvmAddress(mirrorPrimaryAccount.account), mirrorContractDetails.block_number], requestId);
                     expect(res).to.be.equal('0x0');
                 });
 
                 it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address', async function () {
-                    const res = await relay.call('eth_getTransactionCount', [Utils.idToEvmAddress(contractId.toString()), mirrorContractDetails.block_number]);
+                    const res = await relay.call('eth_getTransactionCount', [Utils.idToEvmAddress(contractId.toString()), mirrorContractDetails.block_number], requestId);
                     expect(res).to.be.equal('0x1');
                 });
 
                 it('should execute "eth_getTransactionCount" for non-existing address', async function () {
-                    const res = await relay.call('eth_getTransactionCount', [NON_EXISTING_ADDRESS, mirrorContractDetails.block_number]);
+                    const res = await relay.call('eth_getTransactionCount', [NON_EXISTING_ADDRESS, mirrorContractDetails.block_number], requestId);
                     expect(res).to.be.equal('0x0');
                 });
 
                 it('should execute "eth_getTransactionCount" for account with non-zero nonce', async function () {
-                    const account = await servicesNode.createAliasAccount();
+                    const account = await servicesNode.createAliasAccount(10, null, requestId);
                     // Wait for account creation to propagate
-                    await mirrorNode.get(`/accounts/${account.accountId}`);
+                    await mirrorNode.get(`/accounts/${account.accountId}`, requestId);
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(account.address)
+                        nonce: await relay.getAccountNonce(account.address, requestId)
                     };
 
                     const signedTx = await account.wallet.signTransaction(transaction);
-                    const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
+                    const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
                     // Since the transactionId is not available in this context
                     // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-                    await mirrorNode.get(`/contracts/results/${transactionHash}`);
+                    await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-                    const res = await relay.call('eth_getTransactionCount', [account.address, 'latest']);
+                    const res = await relay.call('eth_getTransactionCount', [account.address, 'latest'], requestId);
                     expect(res).to.be.equal('0x1');
                 });
 
@@ -799,34 +812,34 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[2].address)
+                        nonce: await relay.getAccountNonce(accounts[2].address, requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    const transactionHash = await relay.sendRawTransaction(signedTx);
-                    const mirrorTransaction = await mirrorNode.get(`/contracts/results/${transactionHash}`);
+                    const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+                    const mirrorTransaction = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-                    const res = await relay.call('eth_getTransactionByHash', [transactionHash]);
-                    const addressResult = await mirrorNode.get(`/accounts/${res.from}`);
+                    const res = await relay.call('eth_getTransactionByHash', [transactionHash], requestId);
+                    const addressResult = await mirrorNode.get(`/accounts/${res.from}`, requestId);
                     mirrorTransaction.from = addressResult.evm_address;
 
                     Assertions.transaction(res, mirrorTransaction);
                 });
 
                 it('should execute "eth_getTransactionByHash" for non-existing transaction and return null', async function () {
-                    const res = await relay.call('eth_getTransactionByHash', [NON_EXISTING_TX_HASH]);
+                    const res = await relay.call('eth_getTransactionByHash', [NON_EXISTING_TX_HASH], requestId);
                     expect(res).to.be.null;
                 });
             });
 
             it('@release should execute "eth_estimateGas"', async function () {
-                const res = await relay.call('eth_estimateGas', []);
+                const res = await relay.call('eth_estimateGas', [], requestId);
                 expect(res).to.contain('0x');
                 expect(res).to.not.be.equal('0x');
                 expect(res).to.not.be.equal('0x0');
             });
 
             it('@release should call eth_gasPrice', async function () {
-                const res = await relay.call('eth_gasPrice', []);
+                const res = await relay.call('eth_gasPrice', [], requestId);
                 expect(res).to.exist;
                 if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
                     expect(res).be.equal(ethers.utils.hexValue(Assertions.defaultGasPrice));
@@ -837,53 +850,53 @@ describe('@api RPC Server Acceptance Tests', function () {
             });
 
             it('@release should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {
-                const account = await servicesNode.createAliasAccount(10);
-                const mirrorAccount = await mirrorNode.get(`/accounts/${account.accountId}`);
+                const account = await servicesNode.createAliasAccount(10, null, requestId);
+                const mirrorAccount = await mirrorNode.get(`/accounts/${account.accountId}`, requestId);
 
-                const res = await relay.call('eth_getBalance', [account.address, 'latest']);
+                const res = await relay.call('eth_getBalance', [account.address, 'latest'], requestId);
                 const balanceInWeiBars = BigNumber.from(mirrorAccount.balance.balance.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF);
                 // balance for tests changes as accounts are in use. Ensure non zero value
                 expect(res).to.not.be.eq(EthImpl.zeroHex);
             });
 
             it('should execute "eth_getBalance" for non-existing address', async function () {
-                const res = await relay.call('eth_getBalance', [NON_EXISTING_ADDRESS, 'latest']);
+                const res = await relay.call('eth_getBalance', [NON_EXISTING_ADDRESS, 'latest'], requestId);
                 expect(res).to.eq('0x0');
             });
 
             it('@release should execute "eth_getBalance" for contract', async function () {
-                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'latest']);
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'latest'], requestId);
                 expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
             });
 
             it('@release should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
-                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'latest']);
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'latest'], requestId);
                 expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
             });
 
             it('@release should execute "eth_getBalance" with latest block number', async function () {
-                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
-                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), latestBlock.number]);
+                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), latestBlock.number], requestId);
                 expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
             });
 
             it('@release should execute "eth_getBalance" with one block behind latest block number', async function () {
-                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
-                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), latestBlock.number - 1]);
+                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), latestBlock.number - 1], requestId);
                 expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
             });
 
             it('@release should execute "eth_getBalance" with pending', async function () {
-                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'pending']);
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), 'pending'], requestId);
                 expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
             });
 
             it('@release should fail "eth_getBalance" with block number in the last 15 minutes', async function () {
-                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
                 const earlierBlockNumber = latestBlock.number - 2;
 
                 try {
-                    await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), earlierBlockNumber]);
+                    await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), earlierBlockNumber], requestId);
                 }
                 catch(error) {
                     Assertions.jsonRpcError(error, predefined.UNKNOWN_HISTORICAL_BALANCE);
@@ -894,86 +907,86 @@ describe('@api RPC Server Acceptance Tests', function () {
                 let mirrorBlock;
 
                 before(async () => {
-                    mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`)).blocks[0];
+                    mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`, requestId)).blocks[0];
                 });
 
                 it('should execute "eth_chainId"', async function () {
-                    const res = await relay.call('eth_chainId', [null]);
+                    const res = await relay.call('eth_chainId', [null], requestId);
                     expect(res).to.be.equal(CHAIN_ID);
                 });
 
                 it('should execute "net_listening"', async function () {
-                    const res = await relay.call('net_listening', []);
+                    const res = await relay.call('net_listening', [], requestId);
                     expect(res).to.be.equal('false');
                 });
 
                 it('should execute "net_version"', async function () {
-                    const res = await relay.call('net_version', []);
+                    const res = await relay.call('net_version', [], requestId);
                     expect(res).to.be.equal(CHAIN_ID);
                 });
 
                 it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
-                    const res = await relay.call('eth_getUncleByBlockHashAndIndex', [mirrorBlock.hash, 0]);
+                    const res = await relay.call('eth_getUncleByBlockHashAndIndex', [mirrorBlock.hash, 0], requestId);
                     expect(res).to.be.null;
                 });
 
                 it('should execute "eth_getUncleByBlockHashAndIndex" for non-existing block hash and index=0', async function () {
-                    const res = await relay.call('eth_getUncleByBlockHashAndIndex', [NON_EXISTING_BLOCK_HASH, 0]);
+                    const res = await relay.call('eth_getUncleByBlockHashAndIndex', [NON_EXISTING_BLOCK_HASH, 0], requestId);
                     expect(res).to.be.null;
                 });
 
                 it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
-                    const res = await relay.call('eth_getUncleByBlockNumberAndIndex', [mirrorBlock.number, 0]);
+                    const res = await relay.call('eth_getUncleByBlockNumberAndIndex', [mirrorBlock.number, 0], requestId);
                     expect(res).to.be.null;
                 });
 
                 it('should execute "eth_getUncleByBlockNumberAndIndex" for non-existing block number and index=0', async function () {
-                    const res = await relay.call('eth_getUncleByBlockNumberAndIndex', [NON_EXISTING_BLOCK_NUMBER, 0]);
+                    const res = await relay.call('eth_getUncleByBlockNumberAndIndex', [NON_EXISTING_BLOCK_NUMBER, 0], requestId);
                     expect(res).to.be.null;
                 });
 
                 it('should execute "eth_getUncleCountByBlockHash"', async function () {
-                    const res = await relay.call('eth_getUncleCountByBlockHash', []);
+                    const res = await relay.call('eth_getUncleCountByBlockHash', [], requestId);
                     expect(res).to.be.equal('0x0');
                 });
 
                 it('should execute "eth_getUncleCountByBlockNumber"', async function () {
-                    const res = await relay.call('eth_getUncleCountByBlockNumber', []);
+                    const res = await relay.call('eth_getUncleCountByBlockNumber', [], requestId);
                     expect(res).to.be.equal('0x0');
                 });
 
                 it('should return empty on "eth_accounts"', async function () {
-                    const res = await relay.call('eth_accounts', []);
+                    const res = await relay.call('eth_accounts', [], requestId);
                     expect(res).to.deep.equal([]);
                 });
 
                 it('should execute "eth_hashrate"', async function () {
-                    const res = await relay.call('eth_hashrate', []);
+                    const res = await relay.call('eth_hashrate', [], requestId);
                     expect(res).to.be.equal('0x0');
                 });
 
                 it('should execute "eth_mining"', async function () {
-                    const res = await relay.call('eth_mining', []);
+                    const res = await relay.call('eth_mining', [], requestId);
                     expect(res).to.be.equal(false);
                 });
 
                 it('should execute "eth_submitWork"', async function () {
-                    const res = await relay.call('eth_submitWork', []);
+                    const res = await relay.call('eth_submitWork', [], requestId);
                     expect(res).to.be.equal(false);
                 });
 
                 it('should execute "eth_syncing"', async function () {
-                    const res = await relay.call('eth_syncing', []);
+                    const res = await relay.call('eth_syncing', [], requestId);
                     expect(res).to.be.equal(false);
                 });
 
                 it('should execute "web3_client_version"', async function () {
-                    const res = await relay.call('web3_client_version', []);
+                    const res = await relay.call('web3_client_version', [], requestId);
                     expect(res).to.contain('relay/');
                 });
 
                 it('should execute "eth_maxPriorityFeePerGas"', async function () {
-                    const res = await relay.call('eth_maxPriorityFeePerGas', []);
+                    const res = await relay.call('eth_maxPriorityFeePerGas', [], requestId);
                     expect(res).to.be.equal('0x0');
                 });
             });
@@ -981,31 +994,31 @@ describe('@api RPC Server Acceptance Tests', function () {
             describe('@release Unsupported RPC Endpoints', () => {
 
                 it('should not support "eth_submitHashrate"', async function () {
-                    await relay.callUnsupported('eth_submitHashrate', []);
+                    await relay.callUnsupported('eth_submitHashrate', [], requestId);
                 });
 
                 it('should not support "eth_getWork"', async function () {
-                    await relay.callUnsupported('eth_getWork', []);
+                    await relay.callUnsupported('eth_getWork', [], requestId);
                 });
 
                 it('should not support "eth_coinbase"', async function () {
-                    await relay.callUnsupported('eth_coinbase', []);
+                    await relay.callUnsupported('eth_coinbase', [], requestId);
                 });
 
                 it('should not support "eth_sendTransaction"', async function () {
-                    await relay.callUnsupported('eth_sendTransaction', []);
+                    await relay.callUnsupported('eth_sendTransaction', [], requestId);
                 });
 
                 it('should not support "eth_protocolVersion"', async function () {
-                    await relay.callUnsupported('eth_protocolVersion', []);
+                    await relay.callUnsupported('eth_protocolVersion', [], requestId);
                 });
 
                 it('should not support "eth_sign"', async function () {
-                    await relay.callUnsupported('eth_sign', []);
+                    await relay.callUnsupported('eth_sign', [], requestId);
                 });
 
                 it('should not support "eth_signTransaction"', async function () {
-                    await relay.callUnsupported('eth_signTransaction', []);
+                    await relay.callUnsupported('eth_signTransaction', [], requestId);
                 });
             });
 
@@ -1040,42 +1053,42 @@ describe('@api RPC Server Acceptance Tests', function () {
                     mainContractAddress = await deploymainContract();
                     NftHTSTokenContractAddress = await createNftHTSToken();
                     // Wait for creation to propagate
-                    await mirrorNode.get(`/contracts/${basicContract.contractId}`);
+                    await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
                 });
 
                 it('should execute "eth_getCode" for hts token', async function () {
                     const tokenAddress = NftHTSTokenContractAddress.slice(2);
                     redirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${tokenAddress}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`
-                    const res = await relay.call('eth_getCode', [NftHTSTokenContractAddress]);
+                    const res = await relay.call('eth_getCode', [NftHTSTokenContractAddress], requestId);
                     expect(res).to.equal(redirectBytecode);
                 });
 
                 it('@release should execute "eth_getCode" for contract evm_address', async function () {
                     const evmAddress = basicContract.contractId.toSolidityAddress();
-                    const res = await relay.call('eth_getCode', [evmAddress]);
+                    const res = await relay.call('eth_getCode', [evmAddress], requestId);
                     expect(res).to.eq(basicContractJson.deployedBytecode);
                 });
 
                 it('@release should execute "eth_getCode" for contract with id converted to evm_address', async function () {
                     const evmAddress = Utils.idToEvmAddress(basicContract.contractId.toString());
-                    const res = await relay.call('eth_getCode', [evmAddress]);
+                    const res = await relay.call('eth_getCode', [evmAddress], requestId);
                     expect(res).to.eq(basicContractJson.deployedBytecode);
                 });
 
                 it('should return 0x0 for non-existing contract on eth_getCode', async function () {
-                    const res = await relay.call('eth_getCode', [NON_EXISTING_ADDRESS]);
+                    const res = await relay.call('eth_getCode', [NON_EXISTING_ADDRESS], requestId);
                     expect(res).to.eq(EthImpl.emptyHex);
                 });
 
                 it('should return 0x0 for account evm_address on eth_getCode', async function () {
                     const evmAddress = Utils.idToEvmAddress(accounts[2].accountId.toString());
-                    const res = await relay.call('eth_getCode', [evmAddress]);
+                    const res = await relay.call('eth_getCode', [evmAddress], requestId);
                     expect(res).to.eq(EthImpl.emptyHex);
                 });
 
                 it('should return 0x0 for account alias on eth_getCode', async function () {
                     const alias = Utils.idToEvmAddress(accounts[2].accountId.toString());
-                    const res = await relay.call('eth_getCode', [alias]);
+                    const res = await relay.call('eth_getCode', [alias], requestId);
                     expect(res).to.eq(EthImpl.emptyHex);
                 });
             });
@@ -1086,7 +1099,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 before(async () => {
                     basicContract = await servicesNode.deployContract(basicContractJson);
                     // Wait for creation to propagate
-                    await mirrorNode.get(`/contracts/${basicContract.contractId}`);
+                    await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
 
                     evmAddress = `0x${basicContract.contractId.toSolidityAddress()}`;
                 });
@@ -1099,7 +1112,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: BASIC_CONTRACT_PING_CALL_DATA
                     };
 
-                    const res = await relay.call('eth_call', [callData]);
+                    const res = await relay.call('eth_call', [callData], requestId);
                     expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
                 });
 
@@ -1110,7 +1123,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                         gas: 30000
                     };
 
-                    const res = await relay.call('eth_call', [callData]);
+                    const res = await relay.call('eth_call', [callData], requestId);
                     expect(res).to.eq('0x'); // confirm no error
                 });
 
@@ -1122,7 +1135,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: BASIC_CONTRACT_PING_CALL_DATA
                     };
 
-                    await relay.callFailing('eth_call', [callData]);
+                    await relay.callFailing('eth_call', [callData], predefined.INTERNAL_ERROR(), requestId);
                 });
 
                 it('should execute "eth_call" without from field', async function () {
@@ -1132,7 +1145,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: BASIC_CONTRACT_PING_CALL_DATA
                     };
 
-                    const res = await relay.call('eth_call', [callData]);
+                    const res = await relay.call('eth_call', [callData], requestId);
                     expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
                 });
 
@@ -1143,7 +1156,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: BASIC_CONTRACT_PING_CALL_DATA
                     };
 
-                    const res = await relay.call('eth_call', [callData]);
+                    const res = await relay.call('eth_call', [callData], requestId);
                     expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
                 });
             });
@@ -1156,13 +1169,13 @@ describe('@api RPC Server Acceptance Tests', function () {
                 let lastBlockAfterUpdate;
 
                 before(async () => {
-                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT);
-                    await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT);
-                    lastBlockBeforeUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT, requestId);
+                    await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT, requestId);
+                    lastBlockBeforeUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
                     await new Promise(resolve => setTimeout(resolve, 4000));
-                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED);
+                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED, requestId);
                     await new Promise(resolve => setTimeout(resolve, 4000));
-                    lastBlockAfterUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                    lastBlockAfterUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
                 });
 
                 it('should call eth_feeHistory with updated fees', async function () {
@@ -1173,7 +1186,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
                     const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
 
-                    const res = await relay.call('eth_feeHistory', [blockCountHex, newestBlockNumberHex, [0]]);
+                    const res = await relay.call('eth_feeHistory', [blockCountHex, newestBlockNumberHex, [0]], requestId);
 
                     Assertions.feeHistory(res, {
                         resultCount: blockCountNumber,
@@ -1190,16 +1203,16 @@ describe('@api RPC Server Acceptance Tests', function () {
                     let latestBlock;
                     const blocksAhead = 10;
                     try {
-                        latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`)).blocks[0];
+                        latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
                         const newestBlockNumberHex = ethers.utils.hexValue(latestBlock.number + blocksAhead);
-                        await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null]);
+                        await relay.call('eth_feeHistory', ['0x1', newestBlockNumberHex, null], requestId);
                     } catch (error) {
                         Assertions.jsonRpcError(error, predefined.REQUEST_BEYOND_HEAD_BLOCK(latestBlock.number + blocksAhead, latestBlock.number));
                     }
                 });
 
                 it('should call eth_feeHistory with zero block count', async function () {
-                    const res = await relay.call('eth_feeHistory', ['0x0', 'latest', null]);
+                    const res = await relay.call('eth_feeHistory', ['0x0', 'latest', null], requestId);
 
                     expect(res.reward).to.not.exist;
                     expect(res.baseFeePerGas).to.not.exist;
@@ -1211,7 +1224,7 @@ describe('@api RPC Server Acceptance Tests', function () {
 
         describe('eth_feeHistory', () => {
             it('should call eth_feeHistory', async function () {
-                const res = await relay.call('eth_feeHistory', ['0x1', 'latest', null]);
+                const res = await relay.call('eth_feeHistory', ['0x1', 'latest', null], requestId);
                 expect(res.baseFeePerGas).to.exist.to.be.an('Array');
                 expect(res.baseFeePerGas.length).to.be.gt(0);
                 expect(res.gasUsedRatio).to.exist.to.be.an('Array');
@@ -1235,7 +1248,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             before(async () => {
                 reverterContract = await servicesNode.deployContract(reverterContractJson);
                 // Wait for creation to propagate
-                await mirrorNode.get(`/contracts/${reverterContract.contractId}`);
+                await mirrorNode.get(`/contracts/${reverterContract.contractId}`, requestId);
                 reverterEvmAddress = `0x${reverterContract.contractId.toSolidityAddress()}`;
             });
 
@@ -1251,7 +1264,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     code: -32008,
                     message: PURE_METHOD_ERROR_MESSAGE,
                     data: PURE_METHOD_ERROR_DATA
-                });
+                }, requestId);
             });
 
             it('Returns revert message for view methods', async () => {
@@ -1266,7 +1279,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     code: -32008,
                     message: VIEW_METHOD_ERROR_MESSAGE,
                     data: VIEW_METHOD_ERROR_DATA
-                });
+                }, requestId);
             });
 
             it('Returns revert reason in receipt for payable methods', async () => {
@@ -1275,19 +1288,152 @@ describe('@api RPC Server Acceptance Tests', function () {
                     gasLimit: 30000,
                     chainId: Number(CHAIN_ID),
                     to: reverterEvmAddress,
-                    nonce: await relay.getAccountNonce(accounts[0].address),
-                    gasPrice: await relay.gasPrice(),
+                    nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+                    gasPrice: await relay.gasPrice(requestId),
                     data: PAYABLE_METHOD_CALL_DATA
                 };
                 const signedTx = await accounts[0].wallet.signTransaction(transaction);
-                const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
+                const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
 
                 // Wait until receipt is available in mirror node
-                await mirrorNode.get(`/contracts/results/${transactionHash}`);
+                await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-                const receipt = await relay.call('eth_getTransactionReceipt', [transactionHash]);
+                const receipt = await relay.call('eth_getTransactionReceipt', [transactionHash], requestId);
                 expect(receipt?.revertReason).to.exist;
                 expect(receipt.revertReason).to.eq(PAYABLE_METHOD_ERROR_DATA);
+            });
+
+            describe('eth_getTransactionByHash for reverted payable contract calls', async function() {
+                const payableMethodsData = [
+                    {
+                        data: '0xfe0a3dd7',
+                        method: 'revertWithNothing',
+                        message: '',
+                        errorData: '0x'
+                    },
+                    {
+                        data: '0x0323d234',
+                        method: 'revertWithString',
+                        message: 'Some revert message',
+                        errorData: '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000'
+                    },
+                    {
+                        data: '0x46fc4bb1',
+                        method: 'revertWithCustomError',
+                        message: '',
+                        errorData: '0x0bd3d39c'
+                    },
+                    {
+                        data: '0x33fe3fbd',
+                        method: 'revertWithPanic',
+                        message: '',
+                        errorData: '0x4e487b710000000000000000000000000000000000000000000000000000000000000012'
+                    }
+                ];
+                const hashes: any = [];
+
+                beforeEach(async () => {
+                    requestId = Utils.generateRequestId();
+                });
+
+                before(async function() {
+                    for (let i = 0; i < payableMethodsData.length; i++) {
+                        const transaction = {
+                            // value: ONE_TINYBAR,
+                            gasLimit: 30000,
+                            chainId: Number(CHAIN_ID),
+                            to: reverterEvmAddress,
+                            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+                            gasPrice: await relay.gasPrice(requestId),
+                            data: payableMethodsData[i].data
+                        };
+                        const signedTx = await accounts[0].wallet.signTransaction(transaction);
+                        const hash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+                        hashes.push(hash);
+
+                        // Wait until receipt is available in mirror node
+                        await mirrorNode.get(`/contracts/results/${hash}`, requestId);
+                    }
+                });
+
+                for(let i = 0; i < payableMethodsData.length; i++) {
+                    it(`Payable method ${payableMethodsData[i].method} returns tx object`, async function () {
+                        const tx = await relay.call('eth_getTransactionByHash', [hashes[i]], requestId);
+                        expect(tx).to.exist;
+                        expect(tx.hash).to.exist;
+                        expect(tx.hash).to.eq(hashes[i]);
+                    });
+                }
+
+                describe('DEV_MODE = true', async function () {
+                    before(async () =>{
+                        process.env.DEV_MODE = 'true';
+                    })
+
+                    after(async () =>{
+                        process.env.DEV_MODE = 'false';
+                    })
+
+                    for(let i = 0; i < payableMethodsData.length; i++) {
+                        it(`Payable method ${payableMethodsData[i].method} throws an error`, async function () {
+                            await relay.callFailing('eth_getTransactionByHash', [hashes[i]], {
+                                code: -32008,
+                                message: payableMethodsData[i].message,
+                                data: payableMethodsData[i].errorData
+                            }, requestId);
+                        });
+                    }
+                });
+            });
+
+            describe('eth_call for reverted pure contract calls', async function() {
+                beforeEach(async () => {
+                    requestId = Utils.generateRequestId();
+                });
+
+                const pureMethodsData = [
+                    {
+                        data: '0x2dac842f',
+                        method: 'revertWithNothingPure',
+                        message: '',
+                        errorData: '0x'
+                    },
+                    {
+                        data: '0x8b153371',
+                        method: 'revertWithStringPure',
+                        message: 'Some revert message',
+                        errorData: '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000'
+                    },
+                    {
+                        data: '0x35314694',
+                        method: 'revertWithCustomErrorPure',
+                        message: '',
+                        errorData: '0x0bd3d39c'
+                    },
+                    {
+                        data: '0x83889056',
+                        method: 'revertWithPanicPure',
+                        message: '',
+                        errorData: '0x4e487b710000000000000000000000000000000000000000000000000000000000000012'
+                    }
+                ];
+
+                for (let i = 0; i < pureMethodsData.length; i++) {
+                    it(`Pure method ${pureMethodsData[i].method} returns tx receipt`, async function () {
+                        const callData = {
+                            from: accounts[0].address,
+                            to: reverterEvmAddress,
+                            gas: 30000,
+                            data: pureMethodsData[i].data
+                        };
+
+                        await relay.callFailing('eth_call', [callData], {
+                            code: -32008,
+                            message: pureMethodsData[i].message,
+                            data: pureMethodsData[i].errorData
+                        }, requestId);
+                    });
+                }
             });
         });
     });
