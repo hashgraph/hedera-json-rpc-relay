@@ -217,6 +217,8 @@ function validateObject(obj: any, props: any) {
 }
 
 function validateArray(array: any[], innerType: string) {
+  if (!innerType) return true;
+
   const isInnerType = (element: any) => TYPES[innerType].test(element);
   return !array.every(isInnerType)
   ? predefined.INVALID_PARAMETER('addresses', TYPES[innerType].error)
