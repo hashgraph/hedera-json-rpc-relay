@@ -56,27 +56,27 @@ export const objects = {
 };
 export const TYPES = {
   "address": {
-    test: (param: string) => new RegExp('^0[xX][a-fA-F0-9]{40}$').test(param),
+    test: (param: string) => /^0[xX][a-fA-F0-9]{40}$/.test(param),
     error: ADDRESS_ERROR
   },
   'blockNumber': {
-    test: (param: string) => new RegExp('^0[xX][a-fA-F0-9]').test(param) || ["earliest", "latest", "pending"].includes(param),
+    test: (param: string) => /^0[xX][a-fA-F0-9]/.test(param) || ["earliest", "latest", "pending"].includes(param),
     error: BLOCK_NUMBER_ERROR
   },
   'blockHash': {
-    test: (param: string) =>  new RegExp('^0[xX][0-9A-Fa-f]{64}$').test(param),
+    test: (param: string) =>  /^0[xX][0-9A-Fa-f]{64}$/.test(param),
     error: BLOCK_HASH_ERROR
   },
   'transactionHash': {
-    test: (param: string) =>  new RegExp('^0[xX][A-Fa-f0-9]{64}$').test(param),
+    test: (param: string) =>  /^0[xX][A-Fa-f0-9]{64}$/.test(param),
     error: TRANSACTION_HASH_ERROR
   },
   'topicHash': {
-    test: (param: string) =>  new RegExp('^0[xX][A-Fa-f0-9]{64}$').test(param),
+    test: (param: string) =>  /^0[xX][A-Fa-f0-9]{64}$/.test(param),
     error: TOPIC_HASH_ERROR
   },
   'hex': {
-    test: (param: string) => new RegExp('^0[xX][a-fA-F0-9]').test(param),
+    test: (param: string) => /^0[xX][a-fA-F0-9]/.test(param),
     error: DEFAULT_HEX_ERROR
   },
   'bool': {
@@ -100,8 +100,7 @@ export const TYPES = {
       return Array.isArray(param) ? validateArray(param, innerType) : false;
     },
     error: 'Expected Array'
-  },
-  "number": (param: number) => new RegExp("^[0-9][0-9]?$|^100$").test(`${param}`)
+  }
 };
 
 export class TransactionObject {
