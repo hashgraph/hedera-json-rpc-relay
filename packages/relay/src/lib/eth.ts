@@ -960,6 +960,11 @@ export class EthImpl implements Eth {
     const rSig = contractResult.r === null ? null : contractResult.r.substring(0, 66);
     const sSig = contractResult.s === null ? null : contractResult.s.substring(0, 66);
 
+    if (process.env.DEV_MODE && process.env.DEV_MODE === 'true' && contractResult.result === 'CONTRACT_REVERT_EXECUTED') {
+      let err = predefined.CONTRACT_REVERT(contractResult.error_message);
+      throw err;
+    }
+
     return new Transaction({
       accessList: undefined, // we don't support access lists, so punt for now
       blockHash: contractResult.block_hash.substring(0, 66),

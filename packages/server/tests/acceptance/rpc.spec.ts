@@ -1302,6 +1302,139 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(receipt?.revertReason).to.exist;
                 expect(receipt.revertReason).to.eq(PAYABLE_METHOD_ERROR_DATA);
             });
+
+            describe('eth_getTransactionByHash for reverted payable contract calls', async function() {
+                const payableMethodsData = [
+                    {
+                        data: '0xfe0a3dd7',
+                        method: 'revertWithNothing',
+                        message: '',
+                        errorData: '0x'
+                    },
+                    {
+                        data: '0x0323d234',
+                        method: 'revertWithString',
+                        message: 'Some revert message',
+                        errorData: '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000'
+                    },
+                    {
+                        data: '0x46fc4bb1',
+                        method: 'revertWithCustomError',
+                        message: '',
+                        errorData: '0x0bd3d39c'
+                    },
+                    {
+                        data: '0x33fe3fbd',
+                        method: 'revertWithPanic',
+                        message: '',
+                        errorData: '0x4e487b710000000000000000000000000000000000000000000000000000000000000012'
+                    }
+                ];
+                const hashes: any = [];
+
+                beforeEach(async () => {
+                    requestId = Utils.generateRequestId();
+                });
+
+                before(async function() {
+                    for (let i = 0; i < payableMethodsData.length; i++) {
+                        const transaction = {
+                            // value: ONE_TINYBAR,
+                            gasLimit: 30000,
+                            chainId: Number(CHAIN_ID),
+                            to: reverterEvmAddress,
+                            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+                            gasPrice: await relay.gasPrice(requestId),
+                            data: payableMethodsData[i].data
+                        };
+                        const signedTx = await accounts[0].wallet.signTransaction(transaction);
+                        const hash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+                        hashes.push(hash);
+
+                        // Wait until receipt is available in mirror node
+                        await mirrorNode.get(`/contracts/results/${hash}`, requestId);
+                    }
+                });
+
+                for(let i = 0; i < payableMethodsData.length; i++) {
+                    it(`Payable method ${payableMethodsData[i].method} returns tx object`, async function () {
+                        const tx = await relay.call('eth_getTransactionByHash', [hashes[i]], requestId);
+                        expect(tx).to.exist;
+                        expect(tx.hash).to.exist;
+                        expect(tx.hash).to.eq(hashes[i]);
+                    });
+                }
+
+                describe('DEV_MODE = true', async function () {
+                    before(async () =>{
+                        process.env.DEV_MODE = 'true';
+                    })
+
+                    after(async () =>{
+                        process.env.DEV_MODE = 'false';
+                    })
+
+                    for(let i = 0; i < payableMethodsData.length; i++) {
+                        it(`Payable method ${payableMethodsData[i].method} throws an error`, async function () {
+                            await relay.callFailing('eth_getTransactionByHash', [hashes[i]], {
+                                code: -32008,
+                                message: payableMethodsData[i].message,
+                                data: payableMethodsData[i].errorData
+                            }, requestId);
+                        });
+                    }
+                });
+            });
+
+            describe('eth_call for reverted pure contract calls', async function() {
+                beforeEach(async () => {
+                    requestId = Utils.generateRequestId();
+                });
+
+                const pureMethodsData = [
+                    {
+                        data: '0x2dac842f',
+                        method: 'revertWithNothingPure',
+                        message: '',
+                        errorData: '0x'
+                    },
+                    {
+                        data: '0x8b153371',
+                        method: 'revertWithStringPure',
+                        message: 'Some revert message',
+                        errorData: '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000'
+                    },
+                    {
+                        data: '0x35314694',
+                        method: 'revertWithCustomErrorPure',
+                        message: '',
+                        errorData: '0x0bd3d39c'
+                    },
+                    {
+                        data: '0x83889056',
+                        method: 'revertWithPanicPure',
+                        message: '',
+                        errorData: '0x4e487b710000000000000000000000000000000000000000000000000000000000000012'
+                    }
+                ];
+
+                for (let i = 0; i < pureMethodsData.length; i++) {
+                    it(`Pure method ${pureMethodsData[i].method} returns tx receipt`, async function () {
+                        const callData = {
+                            from: accounts[0].address,
+                            to: reverterEvmAddress,
+                            gas: 30000,
+                            data: pureMethodsData[i].data
+                        };
+
+                        await relay.callFailing('eth_call', [callData], {
+                            code: -32008,
+                            message: pureMethodsData[i].message,
+                            data: pureMethodsData[i].errorData
+                        }, requestId);
+                    });
+                }
+            });
         });
     });
 });
