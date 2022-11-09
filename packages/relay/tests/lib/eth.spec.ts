@@ -2344,6 +2344,7 @@ describe('Eth', async function () {
     it('valid receipt on match', async function () {
       // mirror node request mocks
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+      mock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
       // Assert the data format
@@ -2389,6 +2390,7 @@ describe('Eth', async function () {
       };
 
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, contractResult);
+      mock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
       expect(receipt).to.exist;
@@ -2403,6 +2405,7 @@ describe('Eth', async function () {
         bloom: '0x'
       };
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWith0xBloom);
+      mock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
       expect(receipt).to.exist;
@@ -2417,6 +2420,7 @@ describe('Eth', async function () {
       };
 
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWithErrorMessage);
+      mock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
       expect(receipt).to.exist;
@@ -2429,6 +2433,7 @@ describe('Eth', async function () {
         gas_used: null
       };
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWithNullGasUsed);
+      mock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
       expect(receipt).to.exist;
