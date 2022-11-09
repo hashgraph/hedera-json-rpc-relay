@@ -22,8 +22,6 @@ jobs:
 
   ratelimiter:
     name: Rate Limiter
-    env:
-      HBAR_RATE_LIMIT_TINYBAR: 500000000
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: ratelimiter
