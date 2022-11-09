@@ -97,7 +97,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             logger.info(`${requestIdPrefix} Creating accounts`);
             logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
             accounts[0] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
-            accounts[1] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
+            accounts[1] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
             contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
@@ -137,6 +137,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
               }
 
             it('should fail to execute "eth_sendRawTransaction" due to HBAR rate limit exceeded ', async function () {
+                await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
                 const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
                 let rateLimit = false;
