@@ -136,6 +136,8 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
     let tokenAddress, tokenContract, nftAddress;
 
     before(async function() {
+      //delay for hbar rate limiter to reset
+      await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
       // Create token and nft contracts
       tokenAddress = await createHTSToken();
       nftAddress = await createNftHTSToken();
