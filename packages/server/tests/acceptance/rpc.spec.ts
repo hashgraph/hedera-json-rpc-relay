@@ -36,6 +36,7 @@ import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
+import { resourceLimits } from 'worker_threads';
 
 describe('@api RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -1164,7 +1165,13 @@ describe('@api RPC Server Acceptance Tests', function () {
                 evmAddress = `0x${storageContract.contractId.toSolidityAddress()}`;
             });
 
-            it('@release should execute "eth_getStorageAt" request to get state changes', async function () {
+            it('should execute "eth_getStorageAt" request to get state changes', async function () {
+                const BEGIN_EXPECTED_STORAGE_VAL = "0x000000000000000000000000000000000000000000000000000000000000000f";
+                const END_EXPECTED_STORAGE_VAL = "0x0000000000000000000000000000000000000000000000000000000000000008";
+
+                const beginStorageVal = await relay.call('eth_getStorageAt', [`${contractId}`, '0x', 'latest'] );
+                expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL)
+
                 const gasPrice = await relay.gasPrice();
                 const transaction = {
                     value: 0,
@@ -1180,16 +1187,13 @@ describe('@api RPC Server Acceptance Tests', function () {
                 };
 
                 const signedTx = await accounts[1].wallet.signTransaction(transaction);
-                const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx]);
+                await relay.call('eth_sendRawTransaction', [signedTx]);
 
-                const getStoragAtParams = {
-                    address: contractId,
-                    slot: 0,
-                    blockNumber: "latest",
-                }
+                // wait for the transaction to propogate to mirror node
+                await new Promise(r => setTimeout(r, 2000));
 
-                const storageVal = await relay.call('eth_getStorageAt', getStoragAtParams );
-                expect(storageVal).to.eq(8)
+                const storageVal = await relay.call('eth_getStorageAt', [`${contractId}`, '0x', 'latest'] );
+                expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL)
             });
         });
 
