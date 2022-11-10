@@ -85,20 +85,12 @@ describe('Eth calls using MirrorNode', async function () {
   let ethImpl: EthImpl;
 
   this.beforeAll(() => {
-    // mock axios
-    const instance = axios.create({
-      baseURL: 'https://localhost:5551/api/v1',
-      responseType: 'json' as const,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      timeout: 10 * 1000
-    });
+    // @ts-ignore
+    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry);
 
     // @ts-ignore
-    mock = new MockAdapter(instance, { onNoMatch: "throwException" });
-    // @ts-ignore
-    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
+    mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeInstance(), { onNoMatch: "throwException" });
+
     sdkClientStub = sinon.createStubInstance(SDKClient);
     cache = new LRU({
       max: constants.CACHE_MAX,
@@ -537,7 +529,48 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('"eth_blockNumber" return the latest block number on second try', async function () {
-    mock.onGet('blocks?limit=1&order=desc').reply(404, {
+    mock.onGet('blocks?limit=1&order=desc').replyOnce(404, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'Block not found'
+          }
+        ]
+      }
+    }).onGet('blocks?limit=1&order=desc').replyOnce(200, {
+      blocks: [defaultBlock]
+    });
+
+    const blockNumber = await ethImpl.blockNumber();
+    expect(blockNumber).to.be.eq(blockNumber);
+  });
+
+  it('"eth_blockNumber" should throw an error if no blocks are found after third try', async function () {
+    mock.onGet('blocks?limit=1&order=desc').replyOnce(404, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'Block not found'
+          }
+        ]
+      }
+    }).onGet('blocks?limit=1&order=desc').replyOnce(404, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'Block not found'
+          }
+        ]
+      }
+    }).onGet('blocks?limit=1&order=desc').replyOnce(404, {
+      '_status': {
+        'messages': [
+          {
+            'message': 'Block not found'
+          }
+        ]
+      }
+    }).onGet('blocks?limit=1&order=desc').replyOnce(404, {
       '_status': {
         'messages': [
           {
@@ -547,12 +580,11 @@ describe('Eth calls using MirrorNode', async function () {
       }
     });
 
-    mock.onGet('blocks?limit=1&order=desc').reply(200, {
-      blocks: [defaultBlock]
-    });
-
-    const blockNumber = await ethImpl.blockNumber();
-    expect(blockNumber).to.be.eq(blockNumber);
+    try {
+      await ethImpl.blockNumber();
+    } catch (error: any) {
+      expect(error.message).to.equal('Error encountered retrieving latest block');
+    }
   });
 
   it('eth_getBlockByNumber with match', async function () {

@@ -105,16 +105,19 @@ export class MirrorNodeClient {
             },
             timeout: 10 * 1000
         });
-
         //@ts-ignore
         axiosRetry(axiosClient, {
             retries: parseInt(process.env.MIRROR_NODE_RETRIES!) || 3,
-            retryDelay: () => {
-                const delay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 500;
+            retryDelay: (retryCount, error) => {
+                const request = error?.request?._header;
+                const requestId = request ? request.split('\n')[3].substring(11,47) : '';
+                const requestIdPrefix = formatRequestIdMessage(requestId);
+                const delay = retryCount * (parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 500);
+                this.logger.info(`${requestIdPrefix} Retry delay ${delay} ms`);
                 return delay;
             },
             retryCondition: (error) => {
-                return !error?.response?.status || error?.response?.status === 404 || error?.response?.status === 504;
+                return !error?.response?.status || MirrorNodeClientError.retryErrorCodes.includes(error?.response?.status);
             },
             shouldResetTimeout: true
         });
@@ -162,7 +165,11 @@ export class MirrorNodeClient {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         let ms;
         try {
-            const response = await this.client.get(path);
+            const response = await this.client.get(path, {
+                headers:{
+                    'requestId': requestId || ''
+                }
+            });
             ms = Date.now() - start;
             this.logger.debug(`${requestIdPrefix} [GET] ${path} ${response.status} ${ms} ms`);
             this.mirrorResponseHistogram.labels(pathLabel, response.status).observe(ms);
@@ -449,5 +456,10 @@ export class MirrorNodeClient {
         }
 
         return null;
+    }
+
+    //exposing mirror node instance for tests
+    public getMirrorNodeInstance(){
+        return this.client;
     }
 }
