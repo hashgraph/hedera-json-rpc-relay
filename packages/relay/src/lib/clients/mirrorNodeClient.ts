@@ -112,7 +112,7 @@ export class MirrorNodeClient {
                 const request = error?.request?._header;
                 const requestId = request ? request.split('\n')[3].substring(11,47) : '';
                 const requestIdPrefix = formatRequestIdMessage(requestId);
-                const delay = retryCount * (parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 500);
+                const delay = (parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 500);
                 this.logger.info(`${requestIdPrefix} Retry delay ${delay} ms`);
                 return delay;
             },
