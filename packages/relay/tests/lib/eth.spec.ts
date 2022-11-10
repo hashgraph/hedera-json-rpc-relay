@@ -2136,6 +2136,7 @@ describe('Eth', async function () {
     ethImpl = new EthImpl(null, mirrorNodeInstance, logger);
   });
 
+  const contractEvmAddress = '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9';
   const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
   const defaultTransaction = {
     "accessList": undefined,
@@ -2380,6 +2381,24 @@ describe('Eth', async function () {
       expect(receipt.root).to.eq(defaultReceipt.root);
       expect(receipt.status).to.eq(defaultReceipt.status);
       expect(receipt.effectiveGasPrice).to.eq(defaultReceipt.effectiveGasPrice);
+    });
+
+    it('valid receipt with evm address on match', async function() {
+      // mirror node request mocks
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+      mock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(200, {
+        evm_address: contractEvmAddress
+      });
+      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+
+      expect(receipt).to.exist;
+      if (receipt == null) return;
+
+      expect(validateHash(receipt.from, 40)).to.eq(true);
+      if (receipt.contractAddress) {
+        expect(validateHash(receipt.contractAddress, 40)).to.eq(true);
+      }
+      expect(receipt.contractAddress).to.eq(contractEvmAddress);
     });
 
     it("Handles null effectiveGasPrice", async function() {
