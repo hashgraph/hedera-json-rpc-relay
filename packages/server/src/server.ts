@@ -570,7 +570,7 @@ app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
 app.useRpc('eth_getLogs', async (params: any) => {
   const validationError = Validator.validateParams(params, {
     0: {
-      type: 'object',
+      type: 'filter',
       required: true
     }
   });

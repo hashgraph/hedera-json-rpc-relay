@@ -1,13 +1,14 @@
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 
+const BASE_HEX_REGEX = '^0[xX][a-fA-F0-9]';
 export const ERROR_CODE = -32602;
 export const DEFAULT_HEX_ERROR = 'Expected 0x prefixed hexadecimal value';
-export const HASH_ERROR = 'Expected 0x prefixed string representing the hash (32 bytes)';
+export const HASH_ERROR = '0x prefixed string representing the hash (32 bytes)';
 export const ADDRESS_ERROR = 'Expected 0x prefixed string representing the address (20 bytes)';
 export const BLOCK_NUMBER_ERROR = 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"';
-export const BLOCK_HASH_ERROR = `${HASH_ERROR} of a block`;
-export const TRANSACTION_HASH_ERROR = `${HASH_ERROR} of a transaction`;
-export const TOPIC_HASH_ERROR = `${HASH_ERROR} of a topic`;
+export const BLOCK_HASH_ERROR = `Expected ${HASH_ERROR} of a block`;
+export const TRANSACTION_HASH_ERROR = `Expected ${HASH_ERROR} of a transaction`;
+export const TOPIC_HASH_ERROR = `Expected ${HASH_ERROR} of a topic`;
 export const objects = {
   "transaction": {
     "from": {
@@ -50,33 +51,40 @@ export const objects = {
       type: "address"
     },
     "topics": {
-      type: ["array", 'topicHash']
+      type: "topics"
     }
   }
 };
+
 export const TYPES = {
   "address": {
-    test: (param: string) => /^0[xX][a-fA-F0-9]{40}$/.test(param),
+    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{40}$').test(param),
     error: ADDRESS_ERROR
   },
   'blockNumber': {
-    test: (param: string) => /^0[xX][a-fA-F0-9]/.test(param) || ["earliest", "latest", "pending"].includes(param),
+    test: (param: string) => /^0[xX]([1-9A-Fa-f]+[0-9A-Fa-f]*|0)$/.test(param) && Number.MAX_SAFE_INTEGER >= Number(param) || ["earliest", "latest", "pending"].includes(param),
     error: BLOCK_NUMBER_ERROR
   },
   'blockHash': {
-    test: (param: string) =>  /^0[xX][0-9A-Fa-f]{64}$/.test(param),
+    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
     error: BLOCK_HASH_ERROR
   },
   'transactionHash': {
-    test: (param: string) =>  /^0[xX][A-Fa-f0-9]{64}$/.test(param),
+    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
     error: TRANSACTION_HASH_ERROR
   },
   'topicHash': {
-    test: (param: string) =>  /^0[xX][A-Fa-f0-9]{64}$/.test(param),
+    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
     error: TOPIC_HASH_ERROR
   },
+  'topics': {
+    test: (param: string[] | string[][]) => {
+      return Array.isArray(param) ? validateArray("topics", param.flat(), "topicHash") : false;
+    },
+    error: `Expected an array or array of arrays containing topic hashes`,
+  },
   'hex': {
-    test: (param: string) => /^0[xX][a-fA-F0-9]/.test(param),
+    test: (param: string) => new RegExp(BASE_HEX_REGEX).test(param),
     error: DEFAULT_HEX_ERROR
   },
   'bool': {
@@ -96,8 +104,8 @@ export const TYPES = {
     error: 'Expected Filter object'
   },
   "array": {
-    test: (param: any, innerType: any) => {
-      return Array.isArray(param) ? validateArray(param, innerType) : false;
+    test: (name: string, param: any, innerType: any) => {
+      return Array.isArray(param) ? validateArray(name, param, innerType) : false;
     },
     error: 'Expected Array'
   }
@@ -113,7 +121,7 @@ export class TransactionObject {
   value?: string;
   data?: string;
 
-  constructor (transaction: any) {
+  constructor(transaction: any) {
     this.from = transaction.from;
     this.to = transaction.to;
     this.gas = transaction.gas;
@@ -137,8 +145,8 @@ export class FilterObject {
   blockHash: string;
   fromBlock?: string;
   toBlock?: string;
-  address?: string;
-  topics?: string[];
+  address?: string | string[];
+  topics?: string[] | string[][];
 
   constructor (filter: any) {
     this.blockHash = filter.blockHash;
@@ -170,8 +178,8 @@ export function validateParams(params: any, indexes: any)  {
       return predefined.MISSING_REQUIRED_PARAMETER(index);
     }
 
-    const paramType =
-      Array.isArray(validation.type)
+    const isArray = Array.isArray(validation.type)
+    const paramType = isArray
       ? TYPES[validation.type[0]]
       : TYPES[validation.type];
 
@@ -180,7 +188,7 @@ export function validateParams(params: any, indexes: any)  {
     }
 
     if (param !== undefined) {
-      const result: any = paramType.test(param);
+      const result: any = isArray? paramType.test(index, param, validation.type[1]) : paramType.test(param);
 
       if (result instanceof JsonRpcError) {
         return result;
@@ -216,12 +224,12 @@ function validateObject(obj: any, props: any) {
   return true;
 }
 
-function validateArray(array: any[], innerType: string) {
+function validateArray(name: string, array: any[], innerType: string) {
   if (!innerType) return true;
 
   const isInnerType = (element: any) => TYPES[innerType].test(element);
   return !array.every(isInnerType)
-  ? predefined.INVALID_PARAMETER('addresses', TYPES[innerType].error)
+  ? predefined.INVALID_PARAMETER(name, TYPES[innerType].error)
   : true;
 }
 

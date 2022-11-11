@@ -44,7 +44,7 @@
         "compile": "tsc -b tsconfig.json",
         "acceptancetest": "ts-mocha tests/acceptance/index.spec.ts",
         "start": "node dist/index.js",
-        "test": "nyc ts-mocha --recursive ./tests/integration/server.spec.ts",
+        "test": "nyc ts-mocha --recursive ./tests/integration/*.spec.ts",
         "integration:prerequisite": "ts-node ./tests/helpers/prerequisite.ts"
     },
     "nyc": {
