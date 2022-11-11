@@ -218,6 +218,7 @@ app.useRpc('eth_blockNumber', async () => {
  * returns: Gas used - hex encoded integer
  */
 app.useRpc('eth_estimateGas', async (params: any) => {
+  console.log("test");
   const validationError = Validator.validateParams(params, {
     0: {
       type: 'transaction',

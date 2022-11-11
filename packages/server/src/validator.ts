@@ -93,6 +93,7 @@ export const TYPES = {
   },
   "transaction": {
     test: (param: any) => {
+      console.log("test");
       return Object.prototype.toString.call(param) === "[object Object]" ? new TransactionObject(param).validate() : false;
     },
     error: 'Expected Transaction object'
