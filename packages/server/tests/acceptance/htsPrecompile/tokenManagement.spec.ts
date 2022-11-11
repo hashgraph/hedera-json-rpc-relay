@@ -136,6 +136,9 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
     let tokenAddress, tokenContract, nftAddress;
 
     before(async function() {
+      //delay for hbar rate limiter to reset
+      await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
+
       // Create token and nft contracts
       tokenAddress = await createHTSToken();
       nftAddress = await createNftHTSToken();
@@ -562,8 +565,8 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
       expect(newRenewAccountEvmAddress.toLowerCase()).to.equal(expectedRenewAddress.toLowerCase());
 
-      //use close to with delta 300 seconds, because we don't know the exact second it was set to expiry
-      expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 300);
+      //use close to with delta 400 seconds, because we don't know the exact second it was set to expiry
+      expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 400);
     });
 
     it('should be able to get and update non fungible token expiry info', async function() {
@@ -605,8 +608,8 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       expect(tokenExpiryInfoAfter.autoRenewPeriod).to.equal(expiryInfo.autoRenewPeriod);
       expect(newRenewAccountEvmAddress.toLowerCase()).to.equal(expectedRenewAddress.toLowerCase());
 
-      //use close to with delta 300 seconds, because we don't know the exact second it was set to expiry
-      expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 300);
+      //use close to with delta 400 seconds, because we don't know the exact second it was set to expiry
+      expect(tokenExpiryInfoAfter.second).to.be.closeTo(epoch, 400);
     });
   });
 

@@ -173,6 +173,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   });
 
   it('should associate to a token with custom fees', async function() {
+    //delay for hbar rate limiter to reset
+    await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
+
     const mainContractOwner = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
     const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, HTSTokenWithCustomFeesContractAddress, { gasLimit: 10000000 });
     expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);

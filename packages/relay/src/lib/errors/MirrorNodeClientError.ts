@@ -22,6 +22,8 @@
 export class MirrorNodeClientError extends Error {
     public statusCode: number;
 
+    static retryErrorCodes: Array<number> = [400, 404, 408, 425, 500]
+
     static ErrorCodes = {
       ECONNABORTED: 504
     };
