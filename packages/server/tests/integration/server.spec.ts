@@ -643,7 +643,7 @@ describe('RPC Server', async function() {
           'params': ["0x1", "true"]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: Expected boolean`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: Expected boolean type`);
       });
     });
 
@@ -689,7 +689,7 @@ describe('RPC Server', async function() {
           'params': ["0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6", "true"]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: Expected boolean`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: Expected boolean type`);
       });
     });
 

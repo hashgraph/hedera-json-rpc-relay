@@ -1,13 +1,106 @@
 import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 import { expect } from 'chai';
+import { describe, it } from 'mocha';
 import { Validator } from '../../src/validator';
 
 describe('Validator', async () => {
-  function expectInvalidParam(result: any, index: number | string, message: string) {
+  function expectInvalidParam(result: any, index: number | string, message: string, object?: string) {
     expect(result instanceof JsonRpcError).to.eq(true);
     expect(result.name).to.eq("Invalid parameter");
-    expect(result.message).to.eq(`Invalid parameter ${index}: ${message}`);
+    if (object) {
+      expect(result.message).to.eq(`Invalid parameter '${index}' for ${object}: ${message}`);
+    } else {
+      expect(result.message).to.eq(`Invalid parameter ${index}: ${message}`);
+    }
   }
+
+  describe('validates Address type correctly', async () => {
+    const validation = { 0: { type: 'address' } };
+
+    it('returns an error if address hash is smaller than 20bytes', async () => {
+      const result = Validator.validateParams(["0x4422E9088662"], validation);
+
+      expectInvalidParam(result, 0, Validator.ADDRESS_ERROR);
+    });
+
+    it('returns an error if address is larger than 20bytes', async () => {
+      const result = Validator.validateParams(["0x4422E9088662c44604189B2aA3ae8eE282fceBB7b7b7"], validation);
+
+      expectInvalidParam(result, 0, Validator.ADDRESS_ERROR);
+    });
+
+    it('returns an error if address is NOT 0x prefixed', async () => {
+      const result = Validator.validateParams(["4422E9088662c44604189B2aA3ae8eE282fceBB7"], validation);
+
+      expectInvalidParam(result, 0, Validator.ADDRESS_ERROR);
+    });
+
+    it('returns an error if address is other type', async () => {
+      expectInvalidParam(Validator.validateParams(["random string"], validation), 0, Validator.ADDRESS_ERROR);
+      expectInvalidParam(Validator.validateParams([123], validation), 0, Validator.ADDRESS_ERROR);
+      expectInvalidParam(Validator.validateParams([[]], validation), 0, Validator.ADDRESS_ERROR);
+      expectInvalidParam(Validator.validateParams([{}], validation), 0, Validator.ADDRESS_ERROR);
+    });
+
+    it('does not return an error if address is valid', async () => {
+      const result = Validator.validateParams(["0x4422E9088662c44604189B2aA3ae8eE282fceBB7"], validation);
+
+      expect(result).to.eq(undefined);
+    });
+
+    it('does not return an error if address is long-zero address', async () => {
+      const result = Validator.validateParams(["0x0000000000000000000000000000000000000408"], validation);
+
+      expect(result).to.eq(undefined);
+    });
+  });
+
+  describe('validates Array type correctly', async () => {
+    const validation = { 0: { type: 'array' } };
+    const error = Validator.TYPES['array'].error;
+
+    it('returns an error if the param is not an array', async () => {
+      expectInvalidParam(Validator.validateParams(["random string"], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([123], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([true], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([{}], validation), 0, error);
+    });
+  });
+
+  describe('validates blockHash type correctly', async () => {
+    const validation = { 0: { type: 'blockHash' } };
+
+    it('returns an error if block hash is smaller than 32bytes', async () => {
+      const result = Validator.validateParams(["0xdec54931fcfe"], validation);
+
+      expectInvalidParam(result, 0, Validator.BLOCK_HASH_ERROR);
+    });
+
+    it('returns an error if block hash is larger than 32bytes', async () => {
+      const result = Validator.validateParams(["0xdec54931fcfe053f3ffec90c1f7fd20158420b415054f15a4d16b63c528f70a8a8a8"], validation);
+
+      expectInvalidParam(result, 0, Validator.BLOCK_HASH_ERROR);
+    });
+
+    it('returns an error if block hash is NOT 0x prefixed', async () => {
+      const result = Validator.validateParams(["dec54931fcfe053f3ffec90c1f7fd20158420b415054f15a4d16b63c528f70a8a8a8"], validation);
+
+      expectInvalidParam(result, 0, Validator.BLOCK_HASH_ERROR);
+    });
+
+    it('returns an error if block hash is other type', async () => {
+      expectInvalidParam(Validator.validateParams(["random string"], validation), 0, Validator.BLOCK_HASH_ERROR);
+      expectInvalidParam(Validator.validateParams([123], validation), 0, Validator.BLOCK_HASH_ERROR);
+      expectInvalidParam(Validator.validateParams([[]], validation), 0, Validator.BLOCK_HASH_ERROR);
+      expectInvalidParam(Validator.validateParams([{}], validation), 0, Validator.BLOCK_HASH_ERROR);
+    });
+
+    it('does not return an error if block hash is valid', async () => {
+      const result = Validator.validateParams(["0xdec54931fcfe053f3ffec90c1f7fd20158420b415054f15a4d16b63c528f70a8"], validation);
+
+      expect(result).to.eq(undefined);
+    });
+  });
 
   describe('validates blockNumber type correctly', async () => {
     const validation = { 0: { type: 'blockNumber' } };
@@ -70,114 +163,98 @@ describe('Validator', async () => {
     });
   });
 
-  describe('validates blockHash type correctly', async () => {
-    const validation = { 0: { type: 'blockHash' } };
+  describe('validates boolean type correctly', async () => {
+    const validation = { 0: { type: 'boolean' } };
+    const error = Validator.TYPES["boolean"].error;
 
-    it('returns an error if block hash is smaller than 32bytes', async () => {
-      const result = Validator.validateParams(["0xdec54931fcfe"], validation);
-
-      expectInvalidParam(result, 0, Validator.BLOCK_HASH_ERROR);
+    it('returns an error if param is string', async () => {
+      expectInvalidParam(Validator.validateParams(["true"], validation), 0, error);
+      expectInvalidParam(Validator.validateParams(["false"], validation), 0, error);
     });
 
-    it('returns an error if block hash is larger than 32bytes', async () => {
-      const result = Validator.validateParams(["0xdec54931fcfe053f3ffec90c1f7fd20158420b415054f15a4d16b63c528f70a8a8a8"], validation);
-
-      expectInvalidParam(result, 0, Validator.BLOCK_HASH_ERROR);
+    it('returns an error if param is other type of truthy or falsy value', async () => {
+      expectInvalidParam(Validator.validateParams([1], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([0], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([null], validation), 0, error);
     });
 
-    it('returns an error if block hash is NOT 0x prefixed', async () => {
-      const result = Validator.validateParams(["dec54931fcfe053f3ffec90c1f7fd20158420b415054f15a4d16b63c528f70a8a8a8"], validation);
-
-      expectInvalidParam(result, 0, Validator.BLOCK_HASH_ERROR);
-    });
-
-    it('returns an error if block hash is other type', async () => {
-      expectInvalidParam(Validator.validateParams(["random string"], validation), 0, Validator.BLOCK_HASH_ERROR);
-      expectInvalidParam(Validator.validateParams([123], validation), 0, Validator.BLOCK_HASH_ERROR);
-      expectInvalidParam(Validator.validateParams([[]], validation), 0, Validator.BLOCK_HASH_ERROR);
-      expectInvalidParam(Validator.validateParams([{}], validation), 0, Validator.BLOCK_HASH_ERROR);
-    });
-
-    it('does not return an error if block hash is valid', async () => {
-      const result = Validator.validateParams(["0xdec54931fcfe053f3ffec90c1f7fd20158420b415054f15a4d16b63c528f70a8"], validation);
-
-      expect(result).to.eq(undefined);
+    it('returns an error if param is another type', async () => {
+      expectInvalidParam(Validator.validateParams([123], validation), 0, error);
+      expectInvalidParam(Validator.validateParams(["0x1"], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([{}], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([[]], validation), 0, error);
     });
   });
 
-  describe('validates Address type correctly', async () => {
-    const validation = { 0: { type: 'address' } };
-
-    it('returns an error if address hash is smaller than 20bytes', async () => {
-      const result = Validator.validateParams(["0x4422E9088662"], validation);
-
-      expectInvalidParam(result, 0, Validator.ADDRESS_ERROR);
+  describe('validates Filter Object type correctly', async () => {
+    const validation = { 0: { type: 'filter' } };
+    const error = Validator.TYPES['filter'].error;
+    const object = 'Filter Object';
+    it('returns an error if the param is not an object literal', async () => {
+      expectInvalidParam(Validator.validateParams(["0x1"], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([123], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([[]], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([true], validation), 0, error);
     });
 
-    it('returns an error if address is larger than 20bytes', async () => {
-      const result = Validator.validateParams(["0x4422E9088662c44604189B2aA3ae8eE282fceBB7b7b7"], validation);
-
-      expectInvalidParam(result, 0, Validator.ADDRESS_ERROR);
+    it('returns an error if both blockHash and fromBlock/toBlock are used', async () => {
+      const result = Validator.validateParams([{"blockHash": "0xdec54931fcfe053f3ffec90c1f7fd20158420b415054f15a4d16b63c528f70a8a8a8" , "fromBlock": "latest"}], validation);
+      expectInvalidParam(result, 0, "Can't use both blockHash and toBlock/fromBlock");
     });
 
-    it('returns an error if address is NOT 0x prefixed', async () => {
-      const result = Validator.validateParams(["4422E9088662c44604189B2aA3ae8eE282fceBB7"], validation);
-
-      expectInvalidParam(result, 0, Validator.ADDRESS_ERROR);
-    });
-
-    it('returns an error if address is other type', async () => {
-      expectInvalidParam(Validator.validateParams(["random string"], validation), 0, Validator.ADDRESS_ERROR);
-      expectInvalidParam(Validator.validateParams([123], validation), 0, Validator.ADDRESS_ERROR);
-      expectInvalidParam(Validator.validateParams([[]], validation), 0, Validator.ADDRESS_ERROR);
-      expectInvalidParam(Validator.validateParams([{}], validation), 0, Validator.ADDRESS_ERROR);
-    });
-
-    it('does not return an error if address is valid', async () => {
-      const result = Validator.validateParams(["0x4422E9088662c44604189B2aA3ae8eE282fceBB7"], validation);
-
-      expect(result).to.eq(undefined);
-    });
-
-    it('does not return an error if address is long-zero address', async () => {
-      const result = Validator.validateParams(["0x0000000000000000000000000000000000000408"], validation);
-
-      expect(result).to.eq(undefined);
+    it('returns an error if the filter property is wrong type', async () => {
+      expectInvalidParam(Validator.validateParams([{"blockHash": 123}], validation), 'blockHash', Validator.BLOCK_HASH_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"toBlock:": 123}], validation), 'toBlock', Validator.BLOCK_NUMBER_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"address": "0x1"}], validation), 'address', Validator.ADDRESS_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"topics": {}}], validation), 'topics', Validator.TYPES["topic"].error, object);
+      expectInvalidParam(Validator.validateParams([{"topics": [123]}], validation), 'topics', Validator.TOPIC_HASH_ERROR, object);
     });
   });
 
-  describe('validates transactionHash type correctly', async () => {
-    const validation = { 0: { type: 'transactionHash' } };
+  describe('validates topics type correctly', async () => {
+    const validation = { 0: { type: 'topics' } };
+    const topicsError = Validator.TYPES["topics"].error;
+    it('returns an error if topics contains hash smaller than 32bytes', async () => {
+      const result = Validator.validateParams([["0xddf252ad1be2c89", "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]], validation);
 
-    it('returns an error if transaction is smaller than 32bytes', async () => {
-      const result = Validator.validateParams(["0xdec54931fcfe"], validation);
-
-      expectInvalidParam(result, 0, Validator.TRANSACTION_HASH_ERROR);
+      expectInvalidParam(result, "topics", Validator.TOPIC_HASH_ERROR);
     });
 
-    it('returns an error if transaction is larger than 32bytes', async () => {
-      const result = Validator.validateParams(["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb555555"], validation);
+    it('returns an error if topics contains hash larger than 32bytes', async () => {
+      const result = Validator.validateParams([["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3effffffffffff"]], validation);
 
-      expectInvalidParam(result, 0, Validator.TRANSACTION_HASH_ERROR);
+      expectInvalidParam(result, "topics", Validator.TOPIC_HASH_ERROR);
     });
 
-    it('returns an error if transaction is NOT 0x prefixed', async () => {
-      const result = Validator.validateParams(["790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], validation);
+    it('returns an error if topics contains hashes NOT 0x prefixed', async () => {
+      const result = Validator.validateParams([["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" ,"ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]], validation);
 
-      expectInvalidParam(result, 0, Validator.TRANSACTION_HASH_ERROR);
+      expectInvalidParam(result, "topics", Validator.TOPIC_HASH_ERROR);
     });
 
-    it('returns an error if transaction is other type', async () => {
-      expectInvalidParam(Validator.validateParams(["random string"], validation), 0, Validator.TRANSACTION_HASH_ERROR);
-      expectInvalidParam(Validator.validateParams([123], validation), 0, Validator.TRANSACTION_HASH_ERROR);
-      expectInvalidParam(Validator.validateParams([[]], validation), 0, Validator.TRANSACTION_HASH_ERROR);
-      expectInvalidParam(Validator.validateParams([{}], validation), 0, Validator.TRANSACTION_HASH_ERROR);
+    it('returns an error if topics is not array', async () => {
+      expectInvalidParam(Validator.validateParams(["random string"], validation), 0, topicsError);
+      expectInvalidParam(Validator.validateParams([123], validation), 0, topicsError);
+      expectInvalidParam(Validator.validateParams(["0x1"], validation), 0, topicsError);
+      expectInvalidParam(Validator.validateParams([{}], validation), 0, topicsError);
     });
 
-    it('does not return an error if transaction is valid', async () => {
-      const result = Validator.validateParams(["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], validation);
+    it('does not return an error if topics param is valid', async () => {
+      const result = Validator.validateParams([["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"]], validation);
 
       expect(result).to.eq(undefined);
+    });
+
+    it('should handle nested topic arrays', async () => {
+      const result = Validator.validateParams([[["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], ["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb56"]]], validation);
+
+      expect(result).to.eq(undefined);
+    });
+
+    it('should correctly validate nested topic arrays', async () => {
+      const result = Validator.validateParams([[["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], ["0x790673a87ac19773537b2553e1dc7"]]], validation);
+
+      expectInvalidParam(result, "topics", Validator.TOPIC_HASH_ERROR);
     });
   });
 
@@ -216,50 +293,38 @@ describe('Validator', async () => {
     });
   });
 
-  describe('validates topics type correctly', async () => {
-    const validation = { 0: { type: 'topics' } };
+  describe('validates transactionHash type correctly', async () => {
+    const validation = { 0: { type: 'transactionHash' } };
 
-    it('returns an error if topics contains hash smaller than 32bytes', async () => {
-      const result = Validator.validateParams([["0xddf252ad1be2c89", "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]], validation);
+    it('returns an error if transaction is smaller than 32bytes', async () => {
+      const result = Validator.validateParams(["0xdec54931fcfe"], validation);
 
-      expectInvalidParam(result, "topics", Validator.TOPIC_HASH_ERROR);
+      expectInvalidParam(result, 0, Validator.TRANSACTION_HASH_ERROR);
     });
 
-    it('returns an error if topics contains hash larger than 32bytes', async () => {
-      const result = Validator.validateParams([["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3effffffffffff"]], validation);
+    it('returns an error if transaction is larger than 32bytes', async () => {
+      const result = Validator.validateParams(["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb555555"], validation);
 
-      expectInvalidParam(result, "topics", Validator.TOPIC_HASH_ERROR);
+      expectInvalidParam(result, 0, Validator.TRANSACTION_HASH_ERROR);
     });
 
-    it('returns an error if topics contains hashes NOT 0x prefixed', async () => {
-      const result = Validator.validateParams([["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" ,"ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]], validation);
+    it('returns an error if transaction is NOT 0x prefixed', async () => {
+      const result = Validator.validateParams(["790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], validation);
 
-      expectInvalidParam(result, "topics", Validator.TOPIC_HASH_ERROR);
+      expectInvalidParam(result, 0, Validator.TRANSACTION_HASH_ERROR);
     });
 
-    it('returns an error if topics is not array', async () => {
-      expectInvalidParam(Validator.validateParams(["random string"], validation), 0, Validator.TYPES["topics"].error);
-      expectInvalidParam(Validator.validateParams([123], validation), 0, Validator.TYPES["topics"].error);
-      expectInvalidParam(Validator.validateParams(["0x1"], validation), 0, Validator.TYPES["topics"].error);
-      expectInvalidParam(Validator.validateParams([{}], validation), 0, Validator.TYPES["topics"].error);
+    it('returns an error if transaction is other type', async () => {
+      expectInvalidParam(Validator.validateParams(["random string"], validation), 0, Validator.TRANSACTION_HASH_ERROR);
+      expectInvalidParam(Validator.validateParams([123], validation), 0, Validator.TRANSACTION_HASH_ERROR);
+      expectInvalidParam(Validator.validateParams([[]], validation), 0, Validator.TRANSACTION_HASH_ERROR);
+      expectInvalidParam(Validator.validateParams([{}], validation), 0, Validator.TRANSACTION_HASH_ERROR);
     });
 
-    it('does not return an error if topics param is valid', async () => {
-      const result = Validator.validateParams([["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"]], validation);
+    it('does not return an error if transaction is valid', async () => {
+      const result = Validator.validateParams(["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], validation);
 
       expect(result).to.eq(undefined);
-    });
-
-    it('should handle nested topic arrays', async () => {
-      const result = Validator.validateParams([[["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], ["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb56"]]], validation);
-
-      expect(result).to.eq(undefined);
-    });
-
-    it('should correctly validate nested topic arrays', async () => {
-      const result = Validator.validateParams([[["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], ["0x790673a87ac19773537b2553e1dc7"]]], validation);
-
-      expectInvalidParam(result, "topics", Validator.TOPIC_HASH_ERROR);
     });
   });
 });

@@ -10,6 +10,23 @@ export const BLOCK_HASH_ERROR = `Expected ${HASH_ERROR} of a block`;
 export const TRANSACTION_HASH_ERROR = `Expected ${HASH_ERROR} of a transaction`;
 export const TOPIC_HASH_ERROR = `Expected ${HASH_ERROR} of a topic`;
 export const objects = {
+  "filter": {
+    "blockHash": {
+      type: "blockHash"
+    },
+    "fromBlock": {
+      type: "blockNumber"
+    },
+    "toBlock": {
+      type: "blockNumber"
+    },
+    "address": {
+      type: "address"
+    },
+    "topics": {
+      type: "topics"
+    }
+  },
   "transaction": {
     "from": {
       type: "address"
@@ -36,23 +53,6 @@ export const objects = {
     "data": {
       type: "hex"
     }
-  },
-  "filter": {
-    "blockHash": {
-      type: "blockHash"
-    },
-    "fromBlock": {
-      type: "blockNumber"
-    },
-    "toBlock": {
-      type: "blockNumber"
-    },
-    "address": {
-      type: "address"
-    },
-    "topics": {
-      type: "topics"
-    }
   }
 };
 
@@ -61,17 +61,33 @@ export const TYPES = {
     test: (param: string) => new RegExp(BASE_HEX_REGEX + '{40}$').test(param),
     error: ADDRESS_ERROR
   },
-  'blockNumber': {
-    test: (param: string) => /^0[xX]([1-9A-Fa-f]+[0-9A-Fa-f]{0,13}|0)$/.test(param) && Number.MAX_SAFE_INTEGER >= Number(param) || ["earliest", "latest", "pending"].includes(param),
-    error: BLOCK_NUMBER_ERROR
+  "array": {
+    test: (name: string, param: any, innerType: any) => {
+      return Array.isArray(param) ? validateArray(name, param, innerType) : false;
+    },
+    error: 'Expected Array'
   },
   'blockHash': {
     test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
     error: BLOCK_HASH_ERROR
   },
-  'transactionHash': {
-    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
-    error: TRANSACTION_HASH_ERROR
+  'blockNumber': {
+    test: (param: string) => /^0[xX]([1-9A-Fa-f]+[0-9A-Fa-f]{0,13}|0)$/.test(param) && Number.MAX_SAFE_INTEGER >= Number(param) || ["earliest", "latest", "pending"].includes(param),
+    error: BLOCK_NUMBER_ERROR
+  },
+  'boolean': {
+    test: (param: boolean) => param === true || param === false,
+    error: 'Expected boolean type'
+  },
+  "filter": {
+    test: (param: any) => {
+      return Object.prototype.toString.call(param) === "[object Object]" ? new FilterObject(param).validate() : false;
+    },
+    error: 'Expected Filter object'
+  },
+  'hex': {
+    test: (param: string) => new RegExp(BASE_HEX_REGEX).test(param),
+    error: DEFAULT_HEX_ERROR
   },
   'topicHash': {
     test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
@@ -83,32 +99,15 @@ export const TYPES = {
     },
     error: `Expected an array or array of arrays containing topic hashes`,
   },
-  'hex': {
-    test: (param: string) => new RegExp(BASE_HEX_REGEX).test(param),
-    error: DEFAULT_HEX_ERROR
-  },
-  'bool': {
-    test: (param: boolean) => param === true || param === false,
-    error: 'Expected boolean'
-  },
   "transaction": {
     test: (param: any) => {
-      console.log("test");
       return Object.prototype.toString.call(param) === "[object Object]" ? new TransactionObject(param).validate() : false;
     },
     error: 'Expected Transaction object'
   },
-  "filter": {
-    test: (param: any) => {
-      return Object.prototype.toString.call(param) === "[object Object]" ? new FilterObject(param).validate() : false;
-    },
-    error: 'Expected Filter object'
-  },
-  "array": {
-    test: (name: string, param: any, innerType: any) => {
-      return Array.isArray(param) ? validateArray(name, param, innerType) : false;
-    },
-    error: 'Expected Array'
+  'transactionHash': {
+    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
+    error: TRANSACTION_HASH_ERROR
   }
 };
 
