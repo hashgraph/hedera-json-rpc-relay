@@ -1006,11 +1006,12 @@ export class EthImpl implements Eth {
         receiptResponse.max_fee_per_gas === undefined || receiptResponse.max_fee_per_gas == '0x'
           ? receiptResponse.gas_price
           : receiptResponse.max_fee_per_gas;
-      const createdContract =
-        receiptResponse.created_contract_ids.length > 0
-          ? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress())
-          : undefined;
 
+      let createdContract;
+      if (receiptResponse.created_contract_ids.length) {
+        const contract = await this.mirrorNodeClient.getContract(receiptResponse.created_contract_ids[0]);
+        createdContract = contract?.evm_address ?? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress());
+      }
 
       // support stricter go-eth client which requires the transaction hash property on logs
       const logs = receiptResponse.logs.map(log => {
