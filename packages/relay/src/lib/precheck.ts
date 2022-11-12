@@ -18,13 +18,12 @@
  *
  */
 
-import * as ethers from 'ethers';
 import { predefined } from './errors/JsonRpcError';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { EthImpl } from './eth';
 import { Logger } from 'pino';
 import constants from './constants';
-import { Transaction } from 'ethers';
+import { ethers, Transaction } from 'ethers';
 import { formatRequestIdMessage } from '../formatters';
 
 export class Precheck {
@@ -110,11 +109,20 @@ export class Precheck {
    */
   gasPrice(tx: Transaction, gasPrice: number, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const minGasPrice = ethers.ethers.BigNumber.from(gasPrice);
+    const minGasPrice = ethers.BigNumber.from(gasPrice);
     const txGasPrice = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
     const passes = txGasPrice.gte(minGasPrice);
 
     if (!passes) {
+      if (process.env.GAS_PRICE_TINY_BAR_BUFFER) {
+        // Check if failure is within buffer range (Often it's by 1 tinybar) as network gasprice calculation can change slightly.
+        // e.g gasPrice=1450000000000, requiredGasPrice=1460000000000, in which case we should allow users to go through and let the network check
+        const txGasPriceWithBuffer = txGasPrice.add(ethers.BigNumber.from(process.env.GAS_PRICE_TINY_BAR_BUFFER));
+        if (txGasPriceWithBuffer.gte(minGasPrice)) {
+          return;
+        }
+      }
+
       this.logger.trace(`${requestIdPrefix} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`, JSON.stringify(tx), txGasPrice, minGasPrice);
       throw predefined.GAS_PRICE_TOO_LOW;
     }
@@ -142,10 +150,10 @@ export class Precheck {
 
     try {
       tinybars = await this.sdkClient.getAccountBalanceInTinyBar(accountResponse.account, callerName, requestId);
-      result.passes = ethers.ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
+      result.passes = ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
     } catch (error: any) {
       this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);
-      throw predefined.INTERNAL_ERROR();
+      throw predefined.INTERNAL_ERROR('balance precheck');
     }
 
     if (!result.passes) {
