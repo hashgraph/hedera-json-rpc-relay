@@ -1024,7 +1024,7 @@ export class EthImpl implements Eth {
           removed: false,
           topics: log.topics,
           transactionHash: EthImpl.toHash32(receiptResponse.hash),
-          transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index)
+          transactionIndex: EthImpl.nullableNumberTo0x(receiptResponse.transaction_index)
         });
       });
 
@@ -1039,7 +1039,7 @@ export class EthImpl implements Eth {
         logs: logs,
         logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
         transactionHash: EthImpl.toHash32(receiptResponse.hash),
-        transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
+        transactionIndex: EthImpl.nullableNumberTo0x(receiptResponse.transaction_index),
         effectiveGasPrice: EthImpl.nanOrNumberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
         root: receiptResponse.root,
         status: receiptResponse.status,
@@ -1068,7 +1068,7 @@ export class EthImpl implements Eth {
   }
 
   static nullableNumberTo0x(input: number | BigNumber): string | null {
-    return input === null ? null : EthImpl.numberTo0x(input);
+    return input === null || input === undefined ? null : EthImpl.numberTo0x(input);
   }
 
   static nanOrNumberTo0x(input: number | BigNumber): string {
