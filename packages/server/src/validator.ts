@@ -172,31 +172,37 @@ export class FilterObject {
 export function validateParams(params: any, indexes: any)  {
   for (const index of Object.keys(indexes)) {
     const validation = indexes[Number(index)];
-    const isArray = Array.isArray(validation.type);
     const param = params[Number(index)];
-    const paramType = isArray ? TYPES[validation.type[0]] : TYPES[validation.type];
-
-    if (paramType === undefined) {
-      return predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
+    const result = validateParam(index, param, validation);
+    if (result instanceof JsonRpcError) {
+      return result;
     }
-
-    if (paramIsMissing(param, validation.required)) {
-      return predefined.MISSING_REQUIRED_PARAMETER(index);
-    }
-
-    // if(param !== undefined) {
-      const result: any = isArray? paramType.test(index, param, validation.type[1]) : paramType.test(param);
-
-      if (result instanceof JsonRpcError) {
-        return result;
-      } else if(result === false) {
-        return predefined.INVALID_PARAMETER(index, paramType.error);
-      }
-    // }
   }
 }
 
-function paramIsMissing(param: any, required: boolean) {
+function validateParam(index: number | string, param: any, validation: any) {
+  const isArray = Array.isArray(validation.type);
+  const paramType = isArray ? TYPES[validation.type[0]] : TYPES[validation.type];
+
+  if (paramType === undefined) {
+    return predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
+  }
+
+  if (requiredIsMissing(param, validation.required)) {
+    return predefined.MISSING_REQUIRED_PARAMETER(index);
+  }
+
+  if (param !== undefined) {
+    const result = isArray? paramType.test(index, param, validation.type[1]) : paramType.test(param);
+    if (result instanceof JsonRpcError) {
+      return result;
+    } else if(result === false) {
+      return predefined.INVALID_PARAMETER(index, paramType.error);
+    }
+  }
+}
+
+function requiredIsMissing(param: any, required: boolean) {
   return required && param === undefined;
 }
 
