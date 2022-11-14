@@ -1,5 +1,4 @@
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
-import { setFlagsFromString } from 'v8';
 
 const BASE_HEX_REGEX = '^0[xX][a-fA-F0-9]';
 export const ERROR_CODE = -32602;
@@ -175,20 +174,15 @@ export function validateParams(params: any, indexes: any)  {
     const validation = indexes[Number(index)];
     const param = params[Number(index)];
 
-    if (validation.required && param === undefined) {
-      return predefined.MISSING_REQUIRED_PARAMETER(index);
-    }
+    if(param !== undefined) {
+      const isArray = Array.isArray(validation.type);
+      const paramType = isArray
+        ? TYPES[validation.type[0]]
+        : TYPES[validation.type];
 
-    const isArray = Array.isArray(validation.type);
-    const paramType = isArray
-      ? TYPES[validation.type[0]]
-      : TYPES[validation.type];
-
-    if (paramType === undefined) {
-      return predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
-    }
-
-    if (param !== undefined) {
+      if (paramType === undefined) {
+        return predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
+      }
       const result: any = isArray? paramType.test(index, param, validation.type[1]) : paramType.test(param);
 
       if (result instanceof JsonRpcError) {
@@ -196,7 +190,9 @@ export function validateParams(params: any, indexes: any)  {
       } else if(result === false) {
         return predefined.INVALID_PARAMETER(index, paramType.error);
       }
-    }
+    } else if (validation.required) {
+      return predefined.MISSING_REQUIRED_PARAMETER(index);
+    };
   }
 }
 
@@ -209,7 +205,6 @@ function validateObject(obj: any, props: any) {
       return predefined.MISSING_REQUIRED_PARAMETER(`'${prop}' for ${obj.name()}`);
     }
 
-    // console.log(TYPES[validation.type].test(param));
     if (typeof validation.type === "string") {
       if (param !== undefined) {
         const result = TYPES[validation.type].test(param);

@@ -506,7 +506,7 @@ describe('RPC Server', async function() {
           'method': 'eth_getBalance',
           'params': ["0x0000000000000000000000000000000000000001"]
         });
-
+        console.log(res);
         BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
       });
 
