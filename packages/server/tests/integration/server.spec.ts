@@ -506,7 +506,7 @@ describe('RPC Server', async function() {
           'method': 'eth_getBalance',
           'params': ["0x0000000000000000000000000000000000000001"]
         });
-        console.log(res);
+
         BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
       });
 
@@ -1172,7 +1172,7 @@ describe('RPC Server', async function() {
         BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
       });
 
-      it('validates parameter 1 is valid block number', async function() {
+      it('validates parameter 0 is valid block number', async function() {
         const res = await this.testClient.post('/', {
           'id': '2',
           'jsonrpc': '2.0',
@@ -1183,7 +1183,7 @@ describe('RPC Server', async function() {
         BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
       });
 
-      it('validates parameter 1 is valid block tag', async function() {
+      it('validates parameter 0 is valid block tag', async function() {
         const res = await this.testClient.post('/', {
           'id': '2',
           'jsonrpc': '2.0',

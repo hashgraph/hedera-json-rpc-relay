@@ -180,7 +180,7 @@ export function validateParams(params: any, indexes: any)  {
       return predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
     }
 
-    if (validation.required && param === undefined) {
+    if (paramIsMissing(param, validation.required)) {
       return predefined.MISSING_REQUIRED_PARAMETER(index);
     }
 
@@ -194,6 +194,10 @@ export function validateParams(params: any, indexes: any)  {
       }
     }
   }
+}
+
+function paramIsMissing(param: any, required: boolean) {
+  return required && param === undefined;
 }
 
 function validateObject(obj: any, props: any) {
