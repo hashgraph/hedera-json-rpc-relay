@@ -2519,6 +2519,24 @@ describe('Eth', async function () {
       if (receipt == null) return;
       expect(receipt.gasUsed).to.eq("0x0");
     });
+
+    it('handles missing transaction index', async function() {
+      // mirror node request mocks
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, {
+        ...defaultDetailedContractResultByHash, ...{
+          transaction_index: undefined
+        }
+      });
+      mock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(200, {
+        evm_address: contractEvmAddress
+      });
+      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+
+      expect(receipt).to.exist;
+
+      expect(receipt.logs[0].transactionIndex).to.eq(null);
+      expect(receipt.transactionIndex).to.eq(null);
+    });
   });
 
   describe('eth_getTransactionByHash', async function () {
