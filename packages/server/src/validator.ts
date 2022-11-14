@@ -1,4 +1,5 @@
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
+import { setFlagsFromString } from 'v8';
 
 const BASE_HEX_REGEX = '^0[xX][a-fA-F0-9]';
 export const ERROR_CODE = -32602;
@@ -83,7 +84,7 @@ export const TYPES = {
     test: (param: any) => {
       return Object.prototype.toString.call(param) === "[object Object]" ? new FilterObject(param).validate() : false;
     },
-    error: 'Expected Filter object'
+    error: `Expected FilterObject`
   },
   'hex': {
     test: (param: string) => new RegExp(BASE_HEX_REGEX).test(param),
@@ -97,13 +98,13 @@ export const TYPES = {
     test: (param: string[] | string[][]) => {
       return Array.isArray(param) ? validateArray("topics", param.flat(), "topicHash") : false;
     },
-    error: `Expected an array or array of arrays containing topic hashes`,
+    error: `Expected an array or array of arrays containing ${HASH_ERROR} of a topic`,
   },
   "transaction": {
     test: (param: any) => {
       return Object.prototype.toString.call(param) === "[object Object]" ? new TransactionObject(param).validate() : false;
     },
-    error: 'Expected Transaction object'
+    error: 'Expected TransactionObject'
   },
   'transactionHash': {
     test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
@@ -137,7 +138,7 @@ export class TransactionObject {
   }
 
   name() {
-    return "Transaction Object";
+    return this.constructor.name;
   }
 };
 
@@ -165,7 +166,7 @@ export class FilterObject {
   }
 
   name() {
-    return "Filter Object";
+    return this.constructor.name;
   }
 };
 
@@ -178,7 +179,7 @@ export function validateParams(params: any, indexes: any)  {
       return predefined.MISSING_REQUIRED_PARAMETER(index);
     }
 
-    const isArray = Array.isArray(validation.type)
+    const isArray = Array.isArray(validation.type);
     const paramType = isArray
       ? TYPES[validation.type[0]]
       : TYPES[validation.type];
@@ -208,13 +209,13 @@ function validateObject(obj: any, props: any) {
       return predefined.MISSING_REQUIRED_PARAMETER(`'${prop}' for ${obj.name()}`);
     }
 
+    // console.log(TYPES[validation.type].test(param));
     if (typeof validation.type === "string") {
-      if (param !== undefined && !TYPES[validation.type].test(param)) {
-        return predefined.INVALID_PARAMETER(`'${prop}' for ${obj.name()}`, TYPES[validation.type].error);
-      }
-    } else if(Array.isArray(validation.type)) {
-      if (param !== undefined && !TYPES[validation.type[0]].test(param, validation.type[1])) {
-        return predefined.INVALID_PARAMETER(`'${prop}' for ${obj.name()}`, TYPES[validation.type[1]].error);
+      if (param !== undefined) {
+        const result = TYPES[validation.type].test(param);
+        if(!result || result instanceof JsonRpcError) {
+          return predefined.INVALID_PARAMETER(`'${prop}' for ${obj.name()}`, TYPES[validation.type].error);
+        }
       }
     } else {
       return predefined.INTERNAL_ERROR(`Unsupported param type ${validation.type} for ${obj.name()}`);
@@ -228,6 +229,7 @@ function validateArray(name: string, array: any[], innerType: string) {
   if (!innerType) return true;
 
   const isInnerType = (element: any) => TYPES[innerType].test(element);
+
   return !array.every(isInnerType)
   ? predefined.INVALID_PARAMETER(name, TYPES[innerType].error)
   : true;

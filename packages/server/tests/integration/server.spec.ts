@@ -344,7 +344,7 @@ describe('RPC Server', async function() {
         BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + " 0");
       });
 
-      it('validates parameter 0 is Transaction object', async function() {
+      it('validates parameter 0 is TransactionObject', async function() {
         const res = await this.testClient.post('/', {
           'id': '2',
           'jsonrpc': '2.0',
@@ -352,7 +352,7 @@ describe('RPC Server', async function() {
           'params': ["0x0"]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, "Expected Transaction object");
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, "Expected TransactionObject");
       });
 
       it('validates Transaction `to` param is required', async function() {
@@ -363,7 +363,7 @@ describe('RPC Server', async function() {
           'params': [{}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + " 'to' for Transaction Object");
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + " 'to' for TransactionObject");
       });
 
       it('validates Transaction `to` param is address', async function() {
@@ -373,7 +373,7 @@ describe('RPC Server', async function() {
           'method': 'eth_estimateGas',
           'params': [{"to": "0x1"}]
         });
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'to' for Transaction Object: ${Validator.ADDRESS_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'to' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
       });
 
       it('validates Transaction `from` param is address', async function() {
@@ -384,7 +384,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "from": '0x1'}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'from' for Transaction Object: ${Validator.ADDRESS_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'from' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
       });
 
       it('validates Transaction `gas` param is hex', async function() {
@@ -395,7 +395,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "gas": 123}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gas' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Transaction `gasPrice` param is hex', async function() {
@@ -406,7 +406,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "gasPrice": 123}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gasPrice' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gasPrice' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Transaction `maxPriorityFeePerGas` param is hex', async function() {
@@ -417,7 +417,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "maxPriorityFeePerGas": 123}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxPriorityFeePerGas' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxPriorityFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Transaction `maxFeePerGas` param is hex', async function() {
@@ -428,7 +428,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "maxFeePerGas": "123"}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxFeePerGas' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Transaction `value` param is hex', async function() {
@@ -439,7 +439,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "value": "123"}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'value' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'value' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Transaction `data` param is hex', async function() {
@@ -450,7 +450,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "data": "123"}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'data' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'data' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Block param is valid block hex', async function() {
@@ -762,7 +762,7 @@ describe('RPC Server', async function() {
         BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
       });
 
-      it('validates parameter 0 is Transaction object', async function() {
+      it('validates parameter 0 is TransactionObject', async function() {
         const res = await this.testClient.post('/', {
           'id': '2',
           'jsonrpc': '2.0',
@@ -770,7 +770,7 @@ describe('RPC Server', async function() {
           'params': ["0x0"]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, "Expected Transaction object");
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, "Expected TransactionObject");
       });
 
       it('validates Transaction `to` param is required', async function() {
@@ -780,7 +780,7 @@ describe('RPC Server', async function() {
           'method': 'eth_call',
           'params': [{}]
         });;
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + " 'to' for Transaction Object");
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + " 'to' for TransactionObject");
       });
 
       it('validates Transaction `to` param is address', async function() {
@@ -790,7 +790,7 @@ describe('RPC Server', async function() {
           'method': 'eth_call',
           'params': [{"to": "0x1"}]
         });
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'to' for Transaction Object: ${Validator.ADDRESS_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'to' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
       });
 
       it('validates Transaction `from` param is address', async function() {
@@ -801,7 +801,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "from": '0x1'}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'from' for Transaction Object: ${Validator.ADDRESS_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'from' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
       });
 
       it('validates Transaction `gas` param is hex', async function() {
@@ -812,7 +812,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "gas": 123}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gas' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Transaction `gasPrice` param is hex', async function() {
@@ -823,7 +823,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "gasPrice": 123}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gasPrice' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gasPrice' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Transaction `maxPriorityFeePerGas` param is hex', async function() {
@@ -834,7 +834,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "maxPriorityFeePerGas": 123}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxPriorityFeePerGas' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxPriorityFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Transaction `maxFeePerGas` param is hex', async function() {
@@ -845,7 +845,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "maxFeePerGas": "123"}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxFeePerGas' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Transaction `value` param is hex', async function() {
@@ -856,7 +856,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "value": "123"}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'value' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'value' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Transaction `data` param is hex', async function() {
@@ -867,7 +867,7 @@ describe('RPC Server', async function() {
           'params': [{"to": "0x0000000000000000000000000000000000000001", "data": "123"}]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'data' for Transaction Object: ${Validator.DEFAULT_HEX_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'data' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
       it('validates Block param is valid block hex', async function() {

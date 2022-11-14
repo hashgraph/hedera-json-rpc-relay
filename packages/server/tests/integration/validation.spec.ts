@@ -189,7 +189,7 @@ describe('Validator', async () => {
   describe('validates Filter Object type correctly', async () => {
     const validation = { 0: { type: 'filter' } };
     const error = Validator.TYPES['filter'].error;
-    const object = 'Filter Object';
+    const object = Validator.FilterObject.name;
     it('returns an error if the param is not an object literal', async () => {
       expectInvalidParam(Validator.validateParams(["0x1"], validation), 0, error);
       expectInvalidParam(Validator.validateParams([123], validation), 0, error);
@@ -204,10 +204,11 @@ describe('Validator', async () => {
 
     it('returns an error if the filter property is wrong type', async () => {
       expectInvalidParam(Validator.validateParams([{"blockHash": 123}], validation), 'blockHash', Validator.BLOCK_HASH_ERROR, object);
-      expectInvalidParam(Validator.validateParams([{"toBlock:": 123}], validation), 'toBlock', Validator.BLOCK_NUMBER_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"toBlock": 123}], validation), 'toBlock', Validator.BLOCK_NUMBER_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"fromBlock": 123}], validation), 'fromBlock', Validator.BLOCK_NUMBER_ERROR, object);
       expectInvalidParam(Validator.validateParams([{"address": "0x1"}], validation), 'address', Validator.ADDRESS_ERROR, object);
-      expectInvalidParam(Validator.validateParams([{"topics": {}}], validation), 'topics', Validator.TYPES["topic"].error, object);
-      expectInvalidParam(Validator.validateParams([{"topics": [123]}], validation), 'topics', Validator.TOPIC_HASH_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"topics": {}}], validation), 'topics', Validator.TYPES.topics.error, object);
+      expectInvalidParam(Validator.validateParams([{"topics": [123]}], validation), 'topics', Validator.TYPES.topics.error, object);
     });
   });
 
