@@ -1068,7 +1068,7 @@ export class EthImpl implements Eth {
   }
 
   static nullableNumberTo0x(input: number | BigNumber): string | null {
-    return input === null || input === undefined ? null : EthImpl.numberTo0x(input);
+    return input == null ? null : EthImpl.numberTo0x(input);
   }
 
   static nanOrNumberTo0x(input: number | BigNumber): string {
