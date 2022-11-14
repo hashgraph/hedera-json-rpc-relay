@@ -21,7 +21,7 @@ export const objects = {
       type: "blockNumber"
     },
     "address": {
-      type: "address"
+      type: "address" // This should be either address or array of addresses, but the latter is not yet supported.
     },
     "topics": {
       type: "topics"
@@ -217,7 +217,7 @@ function validateObject(obj: any, props: any) {
         }
       }
     } else {
-      return predefined.INTERNAL_ERROR(`Unsupported param type ${validation.type} for ${obj.name()}`);
+      return predefined.INTERNAL_ERROR(`Unsupported param ${validation.type} for ${obj.name()}`);
     }
   }
 

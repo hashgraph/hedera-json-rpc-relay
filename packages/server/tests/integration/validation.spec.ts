@@ -1,6 +1,7 @@
 import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
+import { P } from 'pino';
 import { Validator } from '../../src/validator';
 
 describe('Validator', async () => {
@@ -11,6 +12,16 @@ describe('Validator', async () => {
       expect(result.message).to.eq(`Invalid parameter '${index}' for ${object}: ${message}`);
     } else {
       expect(result.message).to.eq(`Invalid parameter ${index}: ${message}`);
+    }
+  }
+
+  function expectMissingParam(result: any, index: number | string, object?: string) {
+    expect(result instanceof JsonRpcError).to.eq(true);
+    expect(result.name).to.eq("Missing required parameters");
+    if (object) {
+      expect(result.message).to.eq(`Missing value for required parameter '${index}' for ${object}`);
+    } else {
+      expect(result.message).to.eq(`Missing value for required parameter ${index}`);
     }
   }
 
@@ -190,7 +201,8 @@ describe('Validator', async () => {
     const validation = { 0: { type: 'filter' } };
     const error = Validator.TYPES['filter'].error;
     const object = Validator.FilterObject.name;
-    it('returns an error if the param is not an object literal', async () => {
+
+    it('returns an error if the param is not an Object', async () => {
       expectInvalidParam(Validator.validateParams(["0x1"], validation), 0, error);
       expectInvalidParam(Validator.validateParams([123], validation), 0, error);
       expectInvalidParam(Validator.validateParams([[]], validation), 0, error);
@@ -198,17 +210,29 @@ describe('Validator', async () => {
     });
 
     it('returns an error if both blockHash and fromBlock/toBlock are used', async () => {
-      const result = Validator.validateParams([{"blockHash": "0xdec54931fcfe053f3ffec90c1f7fd20158420b415054f15a4d16b63c528f70a8a8a8" , "fromBlock": "latest"}], validation);
+      const result = Validator.validateParams([{"blockHash": "0xdec54931fcfe053f3ffec90c1f7fd20158420b415054f15a4d16b63c528f70a8" , "fromBlock": "latest"}], validation);
       expectInvalidParam(result, 0, "Can't use both blockHash and toBlock/fromBlock");
     });
 
-    it('returns an error if the filter property is wrong type', async () => {
+    it('returns an error if the Filter Object properties are the wrong type', async () => {
       expectInvalidParam(Validator.validateParams([{"blockHash": 123}], validation), 'blockHash', Validator.BLOCK_HASH_ERROR, object);
       expectInvalidParam(Validator.validateParams([{"toBlock": 123}], validation), 'toBlock', Validator.BLOCK_NUMBER_ERROR, object);
       expectInvalidParam(Validator.validateParams([{"fromBlock": 123}], validation), 'fromBlock', Validator.BLOCK_NUMBER_ERROR, object);
       expectInvalidParam(Validator.validateParams([{"address": "0x1"}], validation), 'address', Validator.ADDRESS_ERROR, object);
       expectInvalidParam(Validator.validateParams([{"topics": {}}], validation), 'topics', Validator.TYPES.topics.error, object);
       expectInvalidParam(Validator.validateParams([{"topics": [123]}], validation), 'topics', Validator.TYPES.topics.error, object);
+    });
+
+    it('should not return error for correct values', async () => {
+      expect(Validator.validateParams([{"blockHash": "0xdec54931fcfe053f3ffec90c1f7fd20158420b415054f15a4d16b63c528f70a8"}], validation)).to.eq(undefined);
+      expect(Validator.validateParams([{"toBlock": "0x2"}], validation)).to.eq(undefined);
+      expect(Validator.validateParams([{"toBlock": "latest"}], validation)).to.eq(undefined);
+      expect(Validator.validateParams([{"fromBlock": "0x1"}], validation)).to.eq(undefined);
+      expect(Validator.validateParams([{"fromBlock": "earliest"}], validation)).to.eq(undefined);
+      expect(Validator.validateParams([{"address": "0x4422E9088662c44604189B2aA3ae8eE282fceBB7"}], validation)).to.eq(undefined);
+      // TODO: Add test case with array of addresses when support is added
+      expect(Validator.validateParams([{"topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}], validation)).to.eq(undefined);
+      expect(Validator.validateParams([{"topics": [["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "0xea443924a9fba8d643a00daf0a7956ebc37fa4e9da82f07f80c34f0f5217edf9"]]}], validation)).to.eq(undefined);
     });
   });
 
@@ -294,6 +318,34 @@ describe('Validator', async () => {
     });
   });
 
+  describe('validates Transaction Object type correctly', async () => {
+    const validation = { 0: { type: 'transaction' } };
+    const error = Validator.TYPES['transaction'].error;
+    const object = Validator.TransactionObject.name;
+
+    it('returns an error if the param is not an Object', async () => {
+      expectInvalidParam(Validator.validateParams(["0x1"], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([123], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([[]], validation), 0, error);
+      expectInvalidParam(Validator.validateParams([true], validation), 0, error);
+    });
+
+    it('returns an error when `to` fields is missing', async () => {
+      expectMissingParam(Validator.validateParams([{}], validation), 'to', object);
+    });
+
+    it('returns an error if the Transaction Object properties are the wrong type', async () => {
+      expectInvalidParam(Validator.validateParams([{"from": "0x1234", "to": "0x4422E9088662c44604189B2aA3ae8eE282fceBB7"}], validation), 'from', Validator.ADDRESS_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"to": "0x1234"}], validation), 'to', Validator.ADDRESS_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"gas": 123, "to": "0x4422E9088662c44604189B2aA3ae8eE282fceBB7"}], validation), 'gas', Validator.DEFAULT_HEX_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"gasPrice": 123, "to": "0x4422E9088662c44604189B2aA3ae8eE282fceBB7"}], validation), 'gasPrice', Validator.DEFAULT_HEX_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"maxPriorityFeePerGas": 123, "to": "0x4422E9088662c44604189B2aA3ae8eE282fceBB7"}], validation), 'maxPriorityFeePerGas', Validator.DEFAULT_HEX_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"maxFeePerGas": 123, "to": "0x4422E9088662c44604189B2aA3ae8eE282fceBB7"}], validation), 'maxFeePerGas', Validator.DEFAULT_HEX_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"value": "123456", "to": "0x4422E9088662c44604189B2aA3ae8eE282fceBB7"}], validation), 'value', Validator.DEFAULT_HEX_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"data": "123456", "to": "0x4422E9088662c44604189B2aA3ae8eE282fceBB7"}], validation), 'data', Validator.DEFAULT_HEX_ERROR, object);
+    });
+  });
+
   describe('validates transactionHash type correctly', async () => {
     const validation = { 0: { type: 'transactionHash' } };
 
@@ -326,6 +378,26 @@ describe('Validator', async () => {
       const result = Validator.validateParams(["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], validation);
 
       expect(result).to.eq(undefined);
+    });
+  });
+
+  describe('Other error cases', async () => {
+    it('returns an error if validation type is wrong', async () => {
+      const validation = { 0: { type: 'wrongType' } };
+      const result = Validator.validateParams(["0x4422E9088662"], validation);
+
+      expect(result instanceof JsonRpcError).to.eq(true);
+      expect(result!.name).to.eq("Internal error");
+      expect(result!.message).to.eq("Error invoking RPC: Missing or unsupported param type 'wrongType'");
+    });
+
+    it('returns an error if validation type is wrong', async () => {
+      const validation = { 0: { } };
+      const result = Validator.validateParams(["0x4422E9088662"], validation);
+
+      expect(result instanceof JsonRpcError).to.eq(true);
+      expect(result!.name).to.eq("Internal error");
+      expect(result!.message).to.eq("Error invoking RPC: Missing or unsupported param type 'undefined'");
     });
   });
 });

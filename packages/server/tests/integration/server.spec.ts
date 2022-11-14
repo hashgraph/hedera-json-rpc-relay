@@ -1216,6 +1216,107 @@ describe('RPC Server', async function() {
         BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.DEFAULT_HEX_ERROR}`);
       });
     });
+
+    describe('eth_getLogs', async () => {
+      it('validates parameter 0 is Filter Object', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getLogs',
+          'params': ["0x1"]
+        });
+
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.TYPES['filter'].error}`);
+      });
+
+      it('validates parameter Filter Object does not contain both block hash and fromBlock/toBlock', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getLogs',
+          'params': [{ "blockHash": "0x123", "toBlock": "latest" }]
+        });
+
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: Can't use both blockHash and toBlock/fromBlock`);
+      });
+
+      it('validates blockHash filter', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getLogs',
+          'params': [{ "blockHash": "0x123" }]
+        });
+
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'blockHash' for FilterObject: ${Validator.BLOCK_HASH_ERROR}`);
+      });
+
+      it('validates toBlock filter', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getLogs',
+          'params': [{ "toBlock": 123 }]
+        });
+
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'toBlock' for FilterObject: ${Validator.BLOCK_NUMBER_ERROR}`);
+      });
+
+      it('validates toBlock filter', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getLogs',
+          'params': [{ "fromBlock": 123 }]
+        });
+
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'fromBlock' for FilterObject: ${Validator.BLOCK_NUMBER_ERROR}`);
+      });
+
+      it('validates address filter', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getLogs',
+          'params': [{ "address": '0x012345' }]
+        });
+
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'address' for FilterObject: ${Validator.ADDRESS_ERROR}`);
+      });
+
+      it('validates topics filter is array', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getLogs',
+          'params': [{ "topics": {}}]
+        });
+
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}`);
+      });
+
+      it('validates topics filter is array of topic hashes', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getLogs',
+          'params': [{ "topics": [123]}]
+        });
+
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}`);
+      });
+
+      it('validates topics filter is array of array of topic hashes', async function() {
+        const res = await this.testClient.post('/', {
+          'id': '2',
+          'jsonrpc': '2.0',
+          'method': 'eth_getLogs',
+          'params': [{ "topics": [[123]]}]
+        });
+
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}`);
+      });
+    });
   });
 });
 
