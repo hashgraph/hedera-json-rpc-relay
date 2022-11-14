@@ -339,6 +339,35 @@ export class MirrorNodeClient {
             requestId);
     }
 
+    public async getContractResultsLogsByNextLink(
+        link: string,
+        requestId?: string
+    ) {
+        const nextLink = link.replace(constants.NEXT_LINK_PREFIX, '');
+        return this.request(`${nextLink}`,
+        MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
+        [400, 404],
+        requestId);
+    }
+
+    public async getResultsFromNextLinks(
+        result: any,
+        requestId?: string
+    ) {
+        if (result.links && result.links.next) {
+            let nextLink = result.links.next;
+            while (nextLink) {
+                let nextResult = await this.getContractResultsLogsByNextLink(nextLink, requestId);
+                if (!nextResult || !nextResult.logs) {
+                  break;
+                }
+                result = result.concat(nextResult.logs);
+                nextLink = nextResult.links.next;
+              }
+        }
+        return result;
+    }
+
     public async getLatestBlock(requestId?: string) {
         return this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.DESC), requestId);
     }
@@ -423,6 +452,9 @@ export class MirrorNodeClient {
         if (limitOrderParams) {
             this.setQueryParam(queryParamObject, 'limit', limitOrderParams.limit);
             this.setQueryParam(queryParamObject, 'order', limitOrderParams.order);
+        } else {
+            this.setQueryParam(queryParamObject, 'limit', parseInt(process.env.MIRROR_NODE_LIMIT_PARAM!) || 100);
+            this.setQueryParam(queryParamObject, 'order', constants.ORDER.ASC);
         }
     }
 

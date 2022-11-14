@@ -245,7 +245,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             it('should be able to use `topics` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': log0Block.blockNumber,
-                    'toBlock': log4Block.blockNumber,
+                    'toBlock': log4Block.blockNumber
                 }]);
                 expect(logs.length).to.be.greaterThan(0);
                 const topic = logs[0].topics[0];
@@ -253,7 +253,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 const logsWithTopic = await relay.call('eth_getLogs', [{
                     'fromBlock': log0Block.blockNumber,
                     'toBlock': log4Block.blockNumber,
-                    'topics': [logs[0].topics[0]]
+                    'topics': [topic]
                 }], requestId);
                 expect(logsWithTopic.length).to.be.greaterThan(0);
 
@@ -262,6 +262,16 @@ describe('@api RPC Server Acceptance Tests', function () {
                     expect(logsWithTopic[i].topics[0]).to.be.equal(topic);
                 }
             });
+
+            it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
+                //for the purpose of the test, we are settings limit to 2, and fetching all. 
+                const blocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 50;
+                const logs = await relay.call('eth_getLogs', [{
+                    'fromBlock': blocksBehindLatest,
+                    'toBlock': 'latest'
+                }], requestId); 
+                expect(logs.length).to.be.greaterThan(2);
+            })
         });
 
         describe('Block related RPC calls', () => {
