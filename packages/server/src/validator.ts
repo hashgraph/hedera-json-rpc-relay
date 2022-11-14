@@ -62,7 +62,7 @@ export const TYPES = {
     error: ADDRESS_ERROR
   },
   "array": {
-    test: (name: string, param: any, innerType: any) => {
+    test: (name: string, param: any, innerType?: any) => {
       return Array.isArray(param) ? validateArray(name, param, innerType) : false;
     },
     error: 'Expected Array'
@@ -184,7 +184,7 @@ export function validateParams(params: any, indexes: any)  {
       return predefined.MISSING_REQUIRED_PARAMETER(index);
     }
 
-    if(param !== undefined) {
+    // if(param !== undefined) {
       const result: any = isArray? paramType.test(index, param, validation.type[1]) : paramType.test(param);
 
       if (result instanceof JsonRpcError) {
@@ -192,7 +192,7 @@ export function validateParams(params: any, indexes: any)  {
       } else if(result === false) {
         return predefined.INVALID_PARAMETER(index, paramType.error);
       }
-    }
+    // }
   }
 }
 
@@ -200,31 +200,27 @@ function paramIsMissing(param: any, required: boolean) {
   return required && param === undefined;
 }
 
-function validateObject(obj: any, props: any) {
-  for (const prop of Object.keys(props)) {
-    const validation = props[prop];
-    const param = obj[prop];
+function validateObject(object: any, filters: any) {
+  for (const property of Object.keys(object)) {
+    const validation = filters[property];
+    const param = object[property];
 
     if (validation.required && param === undefined) {
-      return predefined.MISSING_REQUIRED_PARAMETER(`'${prop}' for ${obj.name()}`);
+      return predefined.MISSING_REQUIRED_PARAMETER(`'${property}' for ${object.name()}`);
     }
 
-    if (typeof validation.type === "string") {
-      if (param !== undefined) {
-        const result = TYPES[validation.type].test(param);
-        if(!result || result instanceof JsonRpcError) {
-          return predefined.INVALID_PARAMETER(`'${prop}' for ${obj.name()}`, TYPES[validation.type].error);
-        }
+    if (param !== undefined) {
+      const result = TYPES[validation.type].test(param);
+      if(!result || result instanceof JsonRpcError) {
+        return predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, TYPES[validation.type].error);
       }
-    } else {
-      return predefined.INTERNAL_ERROR(`Unsupported param ${validation.type} for ${obj.name()}`);
     }
   }
 
   return true;
 }
 
-function validateArray(name: string, array: any[], innerType: string) {
+function validateArray(name: string, array: any[], innerType?: string) {
   if (!innerType) return true;
 
   const isInnerType = (element: any) => TYPES[innerType].test(element);

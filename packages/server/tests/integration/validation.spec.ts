@@ -67,7 +67,7 @@ describe('Validator', async () => {
   });
 
   describe('validates Array type correctly', async () => {
-    const validation = { 0: { type: 'array' } };
+    const validation = { 0: { type: ['array'] } };
     const error = Validator.TYPES['array'].error;
 
     it('returns an error if the param is not an array', async () => {
@@ -75,6 +75,10 @@ describe('Validator', async () => {
       expectInvalidParam(Validator.validateParams([123], validation), 0, error);
       expectInvalidParam(Validator.validateParams([true], validation), 0, error);
       expectInvalidParam(Validator.validateParams([{}], validation), 0, error);
+    });
+
+    it('does not return an error if param is array', async () => {
+      expect(Validator.validateParams([['0x1']], validation)).to.eq(undefined);
     });
   });
 
