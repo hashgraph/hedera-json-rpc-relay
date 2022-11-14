@@ -83,6 +83,7 @@ RATE_LIMIT_DISABLED = false
 DEV_MODE = false
 MIRROR_NODE_RETRIES = 3
 MIRROR_NODE_RETRY_DELAY = 500
+GAS_PRICE_TINY_BAR_BUFFER = 10000000000
 ```
 
 Note: Read more about `DEV_MODE` [here](docs/dev-mode.md)
