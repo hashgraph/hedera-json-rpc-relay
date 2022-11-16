@@ -1006,11 +1006,12 @@ export class EthImpl implements Eth {
         receiptResponse.max_fee_per_gas === undefined || receiptResponse.max_fee_per_gas == '0x'
           ? receiptResponse.gas_price
           : receiptResponse.max_fee_per_gas;
-      const createdContract =
-        receiptResponse.created_contract_ids.length > 0
-          ? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress())
-          : undefined;
 
+      let createdContract;
+      if (receiptResponse.created_contract_ids.length) {
+        const contract = await this.mirrorNodeClient.getContract(receiptResponse.created_contract_ids[0]);
+        createdContract = contract?.evm_address ?? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress());
+      }
 
       // support stricter go-eth client which requires the transaction hash property on logs
       const logs = receiptResponse.logs.map(log => {
@@ -1023,7 +1024,7 @@ export class EthImpl implements Eth {
           removed: false,
           topics: log.topics,
           transactionHash: EthImpl.toHash32(receiptResponse.hash),
-          transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index)
+          transactionIndex: EthImpl.nullableNumberTo0x(receiptResponse.transaction_index)
         });
       });
 
@@ -1038,7 +1039,7 @@ export class EthImpl implements Eth {
         logs: logs,
         logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
         transactionHash: EthImpl.toHash32(receiptResponse.hash),
-        transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
+        transactionIndex: EthImpl.nullableNumberTo0x(receiptResponse.transaction_index),
         effectiveGasPrice: EthImpl.nanOrNumberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
         root: receiptResponse.root,
         status: receiptResponse.status,
@@ -1067,7 +1068,7 @@ export class EthImpl implements Eth {
   }
 
   static nullableNumberTo0x(input: number | BigNumber): string | null {
-    return input === null ? null : EthImpl.numberTo0x(input);
+    return input == null ? null : EthImpl.numberTo0x(input);
   }
 
   static nanOrNumberTo0x(input: number | BigNumber): string {

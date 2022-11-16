@@ -39,6 +39,7 @@ describe('Precheck', async function() {
 
     const txWithMatchingChainId = '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad';
     const parsedTxWithMatchingChainId = ethers.utils.parseTransaction(txWithMatchingChainId);
+    const parsedTxGasPrice = 1440000000000;
     const txWithNonMatchingChainId = '0xf86a0385a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be400801ca06750e92db52fa708e27f94f27e0cfb7f5800f9b657180bb2e94c1520cfb1fb6da01bec6045068b6db38b55017bb8b50166699384bc1791fd8331febab0cf629a2a';
     const parsedTxWithNonMatchingChainId = ethers.utils.parseTransaction(txWithNonMatchingChainId);
     const txWithValueMoreThanOneTinyBar = '0xf8628080809449858d4445908c12fcf70251d3f4682e8c9c381085174876e800801ba015ec73d3e329c7f5c0228be39bf30758f974d69468847dd507082c89ec453fe2a04124cc1dd6ac07417e7cdbe04cb99d698bddc6ce4d04054dd8978dec3493f3d2';
@@ -135,42 +136,6 @@ describe('Precheck', async function() {
         });
     });
 
-    describe('gas price', async function() {
-        it('should return true for gas price gt to required gas price', async function() {
-            const result = precheck.gasPrice(parsedTxWithMatchingChainId, 10);
-            expect(result).to.not.exist;
-        });
-
-        it('should return true for gas price equal to required gas price', async function() {
-            const result = precheck.gasPrice(parsedTxWithMatchingChainId, defaultGasPrice);
-            expect(result).to.not.exist;
-        });
-
-        it('should not pass for non-matching chainId', async function() {
-            try {
-                precheck.chainId(parsedTxWithNonMatchingChainId);
-                expectedError();
-            }
-            catch(e: any) {
-                expect(e).to.exist;
-                expect(e.code).to.eq(-32000);
-                expect(e.message).to.eq('ChainId (0x0) not supported. The correct chainId is 0x12a');
-            }
-        });
-
-        it('should not pass for gas price not enough', async function() {
-            const minGasPrice = 1000 * constants.TINYBAR_TO_WEIBAR_COEF;
-            try {
-                precheck.gasPrice(parsedTxWithMatchingChainId, minGasPrice);
-                expectedError();
-            } catch(e: any) {
-                expect(e).to.exist;
-                expect(e.code).to.eq(-32009);
-                expect(e.message).to.eq('Gas price below configured minimum gas price');
-            }
-        });
-    });
-
     describe('gasLimit', async function() {
         const defaultTx = {
             value: oneTinyBar,
@@ -228,6 +193,16 @@ describe('Precheck', async function() {
     });
 
     describe('gas price', async function() {
+        let initialMinGasPriceBuffer;
+        before(async () =>{
+            initialMinGasPriceBuffer = process.env.GAS_PRICE_TINY_BAR_BUFFER;
+            process.env.GAS_PRICE_TINY_BAR_BUFFER = '10000000000'; // 1 tinybar
+        })
+
+        after(async () =>{
+            process.env.GAS_PRICE_TINY_BAR_BUFFER = initialMinGasPriceBuffer;
+        })
+
         it('should pass for gas price gt to required gas price', async function() {
             const result = precheck.gasPrice(parsedTxWithMatchingChainId, 10);
             expect(result).to.not.exist;
@@ -248,6 +223,11 @@ describe('Precheck', async function() {
                 expect(e.code).to.eq(-32009);
                 expect(e.message).to.eq('Gas price below configured minimum gas price');
             }
+        });
+
+        it('should pass for gas price not enough but within buffer', async function() {
+            const adjustedGasPrice = parsedTxGasPrice + Number(process.env.GAS_PRICE_TINY_BAR_BUFFER);
+            precheck.gasPrice(parsedTxWithMatchingChainId, adjustedGasPrice);
         });
     });
 

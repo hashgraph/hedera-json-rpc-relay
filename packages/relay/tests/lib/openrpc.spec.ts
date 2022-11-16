@@ -328,6 +328,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionReceipt"', async function () {
+        mock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
         const response = await ethImpl.getTransactionReceipt(defaultTxHash);
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionReceipt, response);
