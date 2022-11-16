@@ -32,13 +32,8 @@ import { Utils } from '../helpers/utils';
 import BaseHTSJson from '../contracts/contracts_v1/BaseHTS.json';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
-<<<<<<< HEAD
-    this.timeout(240 * 1000); // 240 seconds
-
-=======
     this.timeout(480 * 1000); // 480 seconds
 
->>>>>>> main
     const accounts: AliasAccount[] = [];
 
     // @ts-ignore
