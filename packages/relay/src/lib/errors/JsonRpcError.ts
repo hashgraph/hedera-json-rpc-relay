@@ -17,19 +17,20 @@
  * limitations under the License.
  *
  */
-
-import constants from "../constants";
+import {decodeErrorMessage} from '../../formatters';
 
 const REQUEST_ID_STRING = `Request ID: `;
 export class JsonRpcError {
   public code: number;
   public message: string;
   public name: string;
+  public data?: string;
 
-  constructor(args: { name: string, code: number, message: string }, requestId?: string) {
+  constructor(args: { name: string, code: number, message: string, data?: string }, requestId?: string) {
     this.code = args.code;
     this.name = args.name;
     this.message = requestId ? `[${REQUEST_ID_STRING}${requestId}] ` + args.message : args.message;
+    this.data = args.data;
   }
 }
 
@@ -54,10 +55,10 @@ export const predefined = {
     code: -32602,
     message: 'Invalid params'
   }),
-  'INTERNAL_ERROR': new JsonRpcError({
+  'INTERNAL_ERROR': (message: string = '') => new JsonRpcError({
     name: 'Internal error',
     code: -32603,
-    message: 'Unknown error invoking RPC'
+    message: message === '' ? `Error invoking RPC: ${message}` : 'Unknown error invoking RPC'
   }),
   'PARSE_ERROR': new JsonRpcError({
     name: 'Parse error',
@@ -114,19 +115,35 @@ export const predefined = {
     code: -32010,
     message: 'Request timeout. Please try again.'
   }),
-  'RESOURCE_NOT_FOUND': new JsonRpcError({
+  'RESOURCE_NOT_FOUND': (message: string = '') => new JsonRpcError({
     name: 'Resource not found',
     code: -32001,
-    message: 'Requested resource not found'
+    message: `Requested resource not found. ${message}`
   }),
-  'RANGE_TOO_LARGE': new JsonRpcError({
+  'RANGE_TOO_LARGE': (blockRange: number) => new JsonRpcError({
     name: 'Block range too large',
     code: -32000,
-    message: `Exceeded maximum block range: ${constants.ETH_GET_LOGS_BLOCK_RANGE_LIMIT}`
+    message: `Exceeded maximum block range: ${blockRange}`
   }),
-  'RATE_LIMIT_EXCEEDED': new JsonRpcError({
-    name: 'Rate limit exceeded',
-    code: -32005,
-    message: 'Rate limit exceeded'
+  'IP_RATE_LIMIT_EXCEEDED': (methodName: string) => new JsonRpcError({
+    name: 'IP Rate limit exceeded',
+    code: -32605,
+    message: `IP Rate limit exceeded on ${methodName}`
   }),
+  'HBAR_RATE_LIMIT_EXCEEDED': new JsonRpcError({
+    name: 'HBAR Rate limit exceeded',
+    code: -32606,
+    message: 'HBAR Rate limit exceeded'
+  }),
+  'UNKNOWN_HISTORICAL_BALANCE': new JsonRpcError({
+    name: 'Unavailable balance',
+    code: -32007,
+    message: 'Historical balance data is available only after 15 minutes.'
+  }),
+  'CONTRACT_REVERT': (errorMessage?: string) => new JsonRpcError({
+    name: 'Contract revert executed',
+    code: -32008,
+    message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
+    data: errorMessage
+  })
 };

@@ -13,9 +13,18 @@ data:
 {{- else }}
   HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in either .Values.config.local.HEDERA_NETWORK or .Values.config.hosted.HEDERA_NETWORK " (or .Values.config.local.HEDERA_NETWORK .Values.config.hosted.HEDERA_NETWORK) }}
 {{- end }}
-  CHAIN_ID: {{ .valu}} 
+  CHAIN_ID: {{ .valu}}
   MIRROR_NODE_URL: {{ .Values.config.MIRROR_NODE_URL  }}
   LOCAL_NODE: {{ .Values.config.LOCAL_NODE }}
   SERVER_PORT: {{ .Values.config.SERVER_PORT }}
   CHAIN_ID: {{ .Values.config.CHAIN_ID }}
-  
+  DEFAULT_RATE_LIMIT: {{ .Values.config.DEFAULT_RATE_LIMIT }}
+  TIER_1_RATE_LIMIT: {{ .Values.config.TIER_1_RATE_LIMIT }}
+  TIER_2_RATE_LIMIT: {{ .Values.config.TIER_2_RATE_LIMIT }}
+  TIER_3_RATE_LIMIT: {{ .Values.config.TIER_3_RATE_LIMIT }}
+  LIMIT_DURATION: {{ .Values.config.LIMIT_DURATION }}
+  HBAR_RATE_LIMIT_TINYBAR: {{ .Values.config.HBAR_RATE_LIMIT_TINYBAR }}
+  HBAR_RATE_LIMIT_DURATION: {{ .Values.config.HBAR_RATE_LIMIT_DURATION }}
+  ETH_GET_LOGS_BLOCK_RANGE_LIMIT: {{ .Values.config.ETH_GET_LOGS_BLOCK_RANGE_LIMIT }}
+  RATE_LIMIT_DISABLED: {{ .Values.config.RATE_LIMIT_DISABLED }}
+  DEV_MODE: {{ .Values.config.DEV_MODE }}

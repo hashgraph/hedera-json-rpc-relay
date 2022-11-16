@@ -22,6 +22,7 @@ enum CACHE_KEY {
     GAS_PRICE = 'gas_price',
     FEE_HISTORY = 'fee_history'
 }
+
 enum CACHE_TTL {
     ONE_HOUR = 3_600_000
 }
@@ -33,19 +34,22 @@ enum ORDER {
 
 export default {
     TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
+
     CACHE_KEY,
     CACHE_TTL,
+    CACHE_MAX: 1000,
 
     DEFAULT_TINY_BAR_GAS: 72, // (853454 / 1000) * (1 / 12)
     ETH_FUNCTIONALITY_CODE: 84,
-    ETH_GET_LOGS_BLOCK_RANGE_LIMIT: Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT || 500),
+    DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT: 1000,
     EXCHANGE_RATE_FILE_ID: "0.0.112",
     FEE_SCHEDULE_FILE_ID: '0.0.111',
 
     TYPE_CONTRACT: 'contract',
     TYPE_ACCOUNT: 'account',
+    TYPE_TOKEN: 'token',
 
-    FEE_HISTORY_MAX_RESULTS: Number(process.env.FEE_HISTORY_MAX_RESULTS || 10),
+    DEFAULT_FEE_HISTORY_MAX_RESULTS: 10,
     ORDER,
 
     BLOCK_GAS_LIMIT: 15_000_000,
@@ -54,5 +58,6 @@ export default {
     TX_DEFAULT_GAS: 400_000,
     TX_CREATE_EXTRA: 32_000,
     TX_DATA_ZERO_COST: 4,
-    REQUEST_ID_STRING: `Request ID: `
+    REQUEST_ID_STRING: `Request ID: `,
+    BALANCES_UPDATE_INTERVAL: 900   // 15 minutes
 };

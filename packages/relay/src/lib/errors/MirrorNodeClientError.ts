@@ -22,24 +22,28 @@
 export class MirrorNodeClientError extends Error {
     public statusCode: number;
 
-    static statusCodes = {
-        TIMEOUT: 567,
-        NOT_FOUND: 404
+    static retryErrorCodes: Array<number> = [400, 404, 408, 425, 500]
+
+    static ErrorCodes = {
+      ECONNABORTED: 504
     };
-  
+
+    static statusCodes = {
+      NOT_FOUND: 404
+    };
+
     constructor(message: string, statusCode: number) {
       super(message);
       this.statusCode = statusCode;
-  
+
       Object.setPrototypeOf(this, MirrorNodeClientError.prototype);
     }
 
     public isTimeout(): boolean {
-        return this.statusCode === MirrorNodeClientError.statusCodes.TIMEOUT;
+      return this.statusCode === MirrorNodeClientError.ErrorCodes.ECONNABORTED;
     }
 
     public isNotFound(): boolean {
-        return this.statusCode === MirrorNodeClientError.statusCodes.NOT_FOUND;
+      return this.statusCode === MirrorNodeClientError.statusCodes.NOT_FOUND;
     }
   }
-  

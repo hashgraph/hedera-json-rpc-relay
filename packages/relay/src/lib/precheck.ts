@@ -18,13 +18,12 @@
  *
  */
 
-import * as ethers from 'ethers';
 import { predefined } from './errors/JsonRpcError';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { EthImpl } from './eth';
 import { Logger } from 'pino';
 import constants from './constants';
-import { Transaction } from 'ethers';
+import { ethers, Transaction } from 'ethers';
 import { formatRequestIdMessage } from '../formatters';
 
 export class Precheck {
@@ -60,36 +59,33 @@ export class Precheck {
     const parsedTx = Precheck.parseTxIfNeeded(transaction);
 
     this.gasLimit(parsedTx, requestId);
-    await this.nonce(parsedTx, requestId);
+    const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
+    await this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
     this.chainId(parsedTx, requestId);
     this.value(parsedTx);
     this.gasPrice(parsedTx, gasPrice, requestId);
     await this.balance(parsedTx, EthImpl.ethSendRawTransaction, requestId);
   }
 
+  async verifyAccount(tx: Transaction, requestId?: string) {
+    // verify account
+    const accountInfo = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
+    if (accountInfo == null) {
+      this.logger.trace(`${requestId} Failed to retrieve address '${tx.from}' account details from mirror node on verify account precheck for sendRawTransaction(transaction=${JSON.stringify(tx)})`);
+      throw predefined.RESOURCE_NOT_FOUND(`address '${tx.from}'.`);
+    }
+
+    return accountInfo;
+  }
+
   /**
    * @param tx
    */
-  async nonce(tx: Transaction, requestId?: string) {
-    const rsTx = await ethers.utils.resolveProperties({
-      gasPrice: tx.gasPrice,
-      gasLimit: tx.gasLimit,
-      value: tx.value,
-      nonce: tx.nonce,
-      data: tx.data,
-      chainId: tx.chainId,
-      to: tx.to
-    });
-    const raw = ethers.utils.serializeTransaction(rsTx);
-    const recoveredAddress = ethers.utils.recoverAddress(
-      ethers.utils.arrayify(ethers.utils.keccak256(raw)),
-      // @ts-ignore
-      ethers.utils.joinSignature({ 'r': tx.r, 's': tx.s, 'v': tx.v })
-    );
-    const accountInfo = await this.mirrorNodeClient.getAccount(recoveredAddress, requestId);
+  async nonce(tx: Transaction, accountInfoNonce: number, requestId?: string) {
+    this.logger.trace(`${requestId} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`);
 
     // @ts-ignore
-    if (accountInfo && accountInfo.ethereum_nonce > tx.nonce) {
+    if (accountInfoNonce > tx.nonce) {
       throw predefined.NONCE_TOO_LOW;
     }
   }
@@ -113,11 +109,20 @@ export class Precheck {
    */
   gasPrice(tx: Transaction, gasPrice: number, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const minGasPrice = ethers.ethers.BigNumber.from(gasPrice);
+    const minGasPrice = ethers.BigNumber.from(gasPrice);
     const txGasPrice = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
     const passes = txGasPrice.gte(minGasPrice);
 
     if (!passes) {
+      if (process.env.GAS_PRICE_TINY_BAR_BUFFER) {
+        // Check if failure is within buffer range (Often it's by 1 tinybar) as network gasprice calculation can change slightly.
+        // e.g gasPrice=1450000000000, requiredGasPrice=1460000000000, in which case we should allow users to go through and let the network check
+        const txGasPriceWithBuffer = txGasPrice.add(ethers.BigNumber.from(process.env.GAS_PRICE_TINY_BAR_BUFFER));
+        if (txGasPriceWithBuffer.gte(minGasPrice)) {
+          return;
+        }
+      }
+
       this.logger.trace(`${requestIdPrefix} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`, JSON.stringify(tx), txGasPrice, minGasPrice);
       throw predefined.GAS_PRICE_TOO_LOW;
     }
@@ -140,15 +145,15 @@ export class Precheck {
     const accountResponse: any = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
     if (accountResponse == null) {
       this.logger.trace(`${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(tx)}, totalValue=${txTotalValue})`);
-      throw predefined.RESOURCE_NOT_FOUND;
+      throw predefined.RESOURCE_NOT_FOUND(`tx.from '${tx.from}'.`);
     }
 
     try {
       tinybars = await this.sdkClient.getAccountBalanceInTinyBar(accountResponse.account, callerName, requestId);
-      result.passes = ethers.ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
+      result.passes = ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
     } catch (error: any) {
       this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);
-      throw predefined.INTERNAL_ERROR;
+      throw predefined.INTERNAL_ERROR('balance precheck');
     }
 
     if (!result.passes) {

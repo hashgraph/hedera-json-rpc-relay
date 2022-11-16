@@ -17,7 +17,7 @@ spec:
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
-      {{- end }}    
+      {{- end }}
       labels:
         app:  {{ template "json-rpc-relay.name" . }}
         {{- include "json-rpc-relay.selectorLabels" . | nindent 8 }}
@@ -28,7 +28,7 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "json-rpc-relay.serviceAccountName" . }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}                
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -89,7 +89,73 @@ spec:
               secretKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: OPERATOR_KEY_MAIN
-                optional: false                               
+                optional: false
+          - name: DEFAULT_RATE_LIMIT
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: DEFAULT_RATE_LIMIT
+                optional: true
+          - name: TIER_1_RATE_LIMIT
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: TIER_1_RATE_LIMIT
+                optional: true
+          - name: TIER_2_RATE_LIMIT
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: TIER_2_RATE_LIMIT
+                optional: true
+          - name: TIER_3_RATE_LIMIT
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: TIER_3_RATE_LIMIT
+                optional: true
+          - name: LIMIT_DURATION
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: LIMIT_DURATION
+                optional: true
+          - name: HBAR_RATE_LIMIT_TINYBAR
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: HBAR_RATE_LIMIT_TINYBAR
+                optional: true
+          - name: HBAR_RATE_LIMIT_DURATION
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: HBAR_RATE_LIMIT_DURATION
+                optional: true
+          - name: ETH_GET_LOGS_BLOCK_RANGE_LIMIT
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: ETH_GET_LOGS_BLOCK_RANGE_LIMIT
+                optional: true
+          - name: RATE_LIMIT_DISABLED
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: RATE_LIMIT_DISABLED
+                optional: true
+          - name: DEV_MODE
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: DEV_MODE
+                optional: true
+          - name: GAS_PRICE_TINY_BAR_BUFFER
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: GAS_PRICE_TINY_BAR_BUFFER
+                optional: true
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
@@ -100,8 +166,8 @@ spec:
         readinessProbe:
           httpGet:
             path: /health/readiness
-            port: jsonrpcrelay                      
-        resources: 
+            port: jsonrpcrelay
+        resources:
           {{- toYaml .Values.resources | indent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -115,4 +181,3 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      

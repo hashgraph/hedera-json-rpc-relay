@@ -95,17 +95,27 @@ config:
   #   config.local.HEDERA_NETWORK should configured as a json set - {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1","$IPv4_ADDR_2:$PORT_2":"$ACCOUNT_ID_2"}
   #   HEDERA_NETWORK: {"127.0.01:50211":"0.0.3"}
   #   HEDERA_NETWORK: ""
-  # Use config.hosted.HEDERA_NETWORK when running against a hosted Hedera network.  Valid options are `previewnet`, `testnet`, and `mainnet`  
+  # Use config.hosted.HEDERA_NETWORK when running against a hosted Hedera network.  Valid options are `previewnet`, `testnet`, and `mainnet`
   # hosted:
   #   HEDERA_NETWORK: ""
   OPERATOR_ID_MAIN: ""
   OPERATOR_KEY_MAIN: ""
   OPERATOR_ID_ETH_SENDRAWTRANSACTION: ""
   OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ""
+  DEFAULT_RATE_LIMIT: 200
+  TIER_1_RATE_LIMIT: 100
+  TIER_2_RATE_LIMIT: 200
+  TIER_3_RATE_LIMIT: 400
+  LIMIT_DURATION: 60000
+  HBAR_RATE_LIMIT_TINYBAR: 5000000000
+  HBAR_RATE_LIMIT_DURATION: 60000
+  ETH_GET_LOGS_BLOCK_RANGE_LIMIT: 1000
+  RATE_LIMIT_DISABLED: false
+  DEV_MODE: false
+  GAS_PRICE_TINY_BAR_BUFFER: 10000000000
 
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:
-  enabled: false  
+  enabled: false
   schedule: "@daily"
 
-  

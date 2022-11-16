@@ -7,6 +7,7 @@ import useHederaSdk from "./hooks/useHederaSdk";
 
 import ContractInteractions from "./components/ContractInteractions";
 import TransferHTSTokensForm from './components/TransferHTSTokensForm';
+import AssociateHTSTokensForm from './components/AssociateHTSTokensForm';
 
 function App() {
   const [errorMessage, setErrorMessage] = useState(null);
@@ -201,6 +202,9 @@ function App() {
           </Box>
           <Box sx={{ mt: '2em', mb: '2em' }}>
             <TransferHTSTokensForm isConnected={isConnected} signer={signer} chain={chain} address={address} />
+          </Box>
+          <Box sx={{ mt: '2em', mb: '2em' }}>
+            <AssociateHTSTokensForm isConnected={isConnected} signer={signer} chain={chain} address={address} />
           </Box>
         </Grid>
       </Grid>

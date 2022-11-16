@@ -3,7 +3,7 @@
     "info": {
         "title": "Hedera JSON-RPC Specification",
         "description": "A specification of the implemented Ethereum JSON RPC APIs interface for Hedera clients and adheres to the Ethereum execution APIs schema.",
-        "version": "0.9.0-SNAPSHOT"
+        "version": "0.13.0-SNAPSHOT"
     },
     "methods": [
         {
@@ -545,6 +545,19 @@
                 "name": "Mining status",
                 "schema": {
                     "title": "Hashrate",
+                    "type": "string",
+                    "pattern": "0x0"
+                }
+            }
+        },
+        {
+            "name": "eth_maxPriorityFeePerGas",
+            "summary": "Returns a fee per gas that is an estimate of how much you can pay as a priority fee, or 'tip', to get a transaction included in the current block.",
+            "params": [],
+            "result": {
+                "name": "Always returns '0x0'. Hedera doesn't have a concept of tipping nodes to promote any behavior",
+                "schema": {
+                    "title": "hex encoded unsigned integer",
                     "type": "string",
                     "pattern": "0x0"
                 }

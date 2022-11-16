@@ -24,6 +24,7 @@ import { Logger } from "pino";
 import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
+import axiosRetry from 'axios-retry';
 
 export interface ILimitOrderParams {
     limit?: number;
@@ -50,6 +51,7 @@ export interface IContractLogsResultsParams {
 
 export class MirrorNodeClient {
     private static GET_ACCOUNTS_ENDPOINT = 'accounts/';
+    private static GET_BALANCE_ENDPOINT = 'balances';
     private static GET_BLOCK_ENDPOINT = 'blocks/';
     private static GET_BLOCKS_ENDPOINT = 'blocks';
     private static GET_CONTRACT_ENDPOINT = 'contracts/';
@@ -65,6 +67,7 @@ export class MirrorNodeClient {
     private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
     private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
     private static GET_NETWORK_FEES_ENDPOINT = 'network/fees';
+    private static GET_TOKENS_ENDPOINT = 'tokens';
 
     private static ORDER = {
         ASC: 'asc',
@@ -102,7 +105,23 @@ export class MirrorNodeClient {
             },
             timeout: 10 * 1000
         });
-
+        //@ts-ignore
+        axiosRetry(axiosClient, {
+            retries: parseInt(process.env.MIRROR_NODE_RETRIES!) || 3,
+            retryDelay: (retryCount, error) => {
+                const request = error?.request?._header;
+                const requestId = request ? request.split('\n')[3].substring(11,47) : '';
+                const requestIdPrefix = formatRequestIdMessage(requestId);
+                const delay = (parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 500);
+                this.logger.trace(`${requestIdPrefix} Retry delay ${delay} ms`);
+                return delay;
+            },
+            retryCondition: (error) => {
+                return !error?.response?.status || MirrorNodeClientError.retryErrorCodes.includes(error?.response?.status);
+            },
+            shouldResetTimeout: true
+        });
+        
         return axiosClient;
     }
 
@@ -146,14 +165,18 @@ export class MirrorNodeClient {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         let ms;
         try {
-            const response = await this.client.get(path);
+            const response = await this.client.get(path, {
+                headers:{
+                    'requestId': requestId || ''
+                }
+            });
             ms = Date.now() - start;
             this.logger.debug(`${requestIdPrefix} [GET] ${path} ${response.status} ${ms} ms`);
             this.mirrorResponseHistogram.labels(pathLabel, response.status).observe(ms);
             return response.data;
         } catch (error: any) {
             ms = Date.now() - start;
-            const effectiveStatusCode = error.response !== undefined ? error.response.status : MirrorNodeClient.unknownServerErrorHttpStatusCode;
+            const effectiveStatusCode = error.response?.status || MirrorNodeClientError.ErrorCodes[error.code] || MirrorNodeClient.unknownServerErrorHttpStatusCode;
             this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
             this.handleError(error, path, effectiveStatusCode, allowedErrorStatuses, requestId);
         }
@@ -187,10 +210,21 @@ export class MirrorNodeClient {
             requestId);
     }
 
+    public async getBalanceAtTimestamp(accountId: string, timestamp: string, requestId?: string) {
+        const queryParamObject = {};
+        this.setQueryParam(queryParamObject, 'account.id', accountId);
+        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
+        const queryParams = this.getQueryParams(queryParamObject);
+        return this.request(`${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
+            MirrorNodeClient.GET_BALANCE_ENDPOINT,
+            [400, 404],
+            requestId);
+    }
+
     public async getBlock(hashOrBlockNumber: string | number, requestId?: string) {
         return this.request(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`,
             MirrorNodeClient.GET_BLOCK_ENDPOINT,
-            [400],
+            [400, 404],
             requestId);
     }
 
@@ -227,14 +261,14 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT,
-            [400],
+            [400, 404],
             requestId);
     }
 
     public async getContractResultsDetails(contractId: string, timestamp: string, requestId?: string) {
         return this.request(`${this.getContractResultsDetailsByContractIdAndTimestamp(contractId, timestamp)}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT,
-            [400],
+            [400, 404],
             requestId);
     }
 
@@ -344,6 +378,13 @@ export class MirrorNodeClient {
             .replace(MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);
     }
 
+    public async getTokenById(tokenId: string, requestId?: string) {
+        return this.request(`${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}`,
+            MirrorNodeClient.GET_TOKENS_ENDPOINT,
+            [400, 404],
+            requestId);
+    }
+
     public async getLatestContractResultsByAddress(address: string, blockEndTimestamp: string | undefined, limit: number) {
         // retrieve the timestamp of the contract
         const contractResultsParams: IContractResultsParams = blockEndTimestamp
@@ -406,7 +447,19 @@ export class MirrorNodeClient {
                 entity: accountResult
             };
         }
+        const tokenResult = await this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId);
+        if (tokenResult) {
+            return {
+                type: constants.TYPE_TOKEN,
+                entity: tokenResult
+            }
+        }
 
         return null;
+    }
+
+    //exposing mirror node instance for tests
+    public getMirrorNodeInstance(){
+        return this.client;
     }
 }

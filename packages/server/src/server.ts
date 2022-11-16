@@ -24,9 +24,8 @@ import KoaJsonRpc from './koaJsonRpc';
 import crypto from 'crypto';
 import pino from 'pino';
 import path from 'path';
-import Koa from 'koa';
 import fs from 'fs';
- 
+
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
   level: process.env.LOG_LEVEL || 'trace',
@@ -39,12 +38,11 @@ const mainLogger = pino({
   }
 });
 
+const cors = require('koa-cors');
 const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
-const cors = require('koa-cors');
-const app = new Koa();
-const rpc = new KoaJsonRpc();
+const app = new KoaJsonRpc(logger, register);
 
 const REQUEST_ID_STRING = `Request ID: `;
 const responseSuccessStatusCode = '200';
@@ -64,7 +62,7 @@ const methodResponseHistogram = new Histogram({
 /**
  * middleware for non POST request timing
  */
-app.use(async (ctx, next) => {
+app.getKoaApp().use(async (ctx, next) => {
   const start = Date.now();
   await next();
 
@@ -77,7 +75,7 @@ app.use(async (ctx, next) => {
 /**
  * prometheus metrics exposure
  */
-app.use(async (ctx, next) => {
+app.getKoaApp().use(async (ctx, next) => {
   if (ctx.url === '/metrics') {
     ctx.status = 200;
     ctx.body = await register.metrics();
@@ -89,7 +87,7 @@ app.use(async (ctx, next) => {
 /**
  * liveness endpoint
  */
-app.use(async (ctx, next) => {
+app.getKoaApp().use(async (ctx, next) => {
   if (ctx.url === '/health/liveness') {
     ctx.status = 200;
   } else {
@@ -100,7 +98,7 @@ app.use(async (ctx, next) => {
 /**
  * readiness endpoint
  */
-app.use(async (ctx, next) => {
+app.getKoaApp().use(async (ctx, next) => {
   if (ctx.url === '/health/readiness') {
     try {
       const result = relay.eth().chainId();
@@ -123,7 +121,7 @@ app.use(async (ctx, next) => {
 /**
  * openrpc endpoint
  */
-app.use(async (ctx, next) => {
+app.getKoaApp().use(async (ctx, next) => {
   if (ctx.url === '/openrpc') {
     ctx.status = 200;
     ctx.body = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../docs/openrpc.json')).toString());
@@ -146,16 +144,21 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
     methodResponseHistogram.labels(methodName, status).observe(ms);
     logger.info(`${messagePrefix} ${status} ${ms} ms `);
     if (response instanceof JsonRpcError) {
-      logger.error(`returning error to sender: ${requestIdPrefix} ${response.message}`)
-      return new JsonRpcError({name: response.name, code: response.code, message: response.message}, requestId);
-    } 
+      logger.error(`returning error to sender: ${requestIdPrefix} ${response.message}`);
+      return new JsonRpcError({
+        name: response.name,
+        code: response.code,
+        message: response.message,
+        data: response.data
+      }, requestId);
+    }
     return response;
   } catch (e: any) {
     ms = Date.now() - start;
     methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
     logger.error(e, `${messagePrefix} ${responseInternalErrorCode} ${ms} ms`);
 
-    let error = predefined.INTERNAL_ERROR;
+    let error = predefined.INTERNAL_ERROR();
     if (e instanceof MirrorNodeClientError) {
       if (e.isTimeout()) {
         error = predefined.REQUEST_TIMEOUT;
@@ -166,13 +169,18 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
     }
 
     logger.error(`returning error to sender: ${requestIdPrefix} ${error.message}`)
-    return new JsonRpcError({name: error.name, code: error.code, message:error.message}, requestId);
+    return new JsonRpcError({
+      name: error.name,
+      code: error.code,
+      message: error.message,
+      data: error.data,
+    }, requestId);
   }
 };
 
 /**
  * Generates random trace id for requests.
- * 
+ *
  * returns: string
  */
  const generateRequestId = () :string => {
@@ -182,14 +190,14 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
 /**
  * returns: false
  */
-rpc.use('net_listening', async () => {
+app.useRpc('net_listening', async () => {
   return logAndHandleResponse('net_listening', () => '' + relay.net().listening());
 });
 
 /**
  *  Returns the current network ID
  */
-rpc.use('net_version', async () => {
+app.useRpc('net_version', async () => {
   return logAndHandleResponse("net_version", () => relay.net().version());
 });
 
@@ -198,7 +206,7 @@ rpc.use('net_version', async () => {
  *
  * returns: Block number - hex encoded integer
  */
-rpc.use('eth_blockNumber', async () => {
+app.useRpc('eth_blockNumber', async () => {
   return logAndHandleResponse('eth_blockNumber', (requestId) => relay.eth().blockNumber(requestId));
 });
 
@@ -208,7 +216,7 @@ rpc.use('eth_blockNumber', async () => {
  *
  * returns: Gas used - hex encoded integer
  */
-rpc.use('eth_estimateGas', async (params: any) => {
+app.useRpc('eth_estimateGas', async (params: any) => {
   return logAndHandleResponse('eth_estimateGas', (requestId) =>
     relay.eth().estimateGas(params?.[0], params?.[1], requestId));
 });
@@ -220,8 +228,8 @@ rpc.use('eth_estimateGas', async (params: any) => {
  *
  * returns: Balance - hex encoded integer
  */
-rpc.use('eth_getBalance', async (params: any) => {
-  return logAndHandleResponse("eth_getBalance", (requestId) => 
+app.useRpc('eth_getBalance', async (params: any) => {
+  return logAndHandleResponse("eth_getBalance", (requestId) =>
     relay.eth().getBalance(params?.[0], params?.[1], requestId));
 });
 
@@ -232,8 +240,8 @@ rpc.use('eth_getBalance', async (params: any) => {
  *
  * returns: Bytecode - hex encoded bytes
  */
-rpc.use('eth_getCode', async (params: any) => {
-  return logAndHandleResponse("eth_getCode", (requestId) => 
+app.useRpc('eth_getCode', async (params: any) => {
+  return logAndHandleResponse("eth_getCode", (requestId) =>
     relay.eth().getCode(params?.[0], params?.[1], requestId));
 });
 
@@ -242,8 +250,8 @@ rpc.use('eth_getCode', async (params: any) => {
  *
  * returns: Chain ID - integer
  */
-rpc.use('eth_chainId', async () => {
-  return logAndHandleResponse('eth_chainId', (requestId) => 
+app.useRpc('eth_chainId', async () => {
+  return logAndHandleResponse('eth_chainId', (requestId) =>
     relay.eth().chainId(requestId));
 });
 
@@ -254,8 +262,8 @@ rpc.use('eth_chainId', async () => {
  *
  * returns: Block object
  */
-rpc.use('eth_getBlockByNumber', async (params: any) => {
-  return logAndHandleResponse('eth_getBlockByNumber', (requestId) => 
+app.useRpc('eth_getBlockByNumber', async (params: any) => {
+  return logAndHandleResponse('eth_getBlockByNumber', (requestId) =>
     relay.eth().getBlockByNumber(params?.[0], Boolean(params?.[1]), requestId));
 });
 
@@ -266,8 +274,8 @@ rpc.use('eth_getBlockByNumber', async (params: any) => {
  *
  * returns: Block object
  */
-rpc.use('eth_getBlockByHash', async (params: any) => {
-  return logAndHandleResponse("eth_getBlockByHash", (requestId) => 
+app.useRpc('eth_getBlockByHash', async (params: any) => {
+  return logAndHandleResponse("eth_getBlockByHash", (requestId) =>
     relay.eth().getBlockByHash(params?.[0], Boolean(params?.[1]), requestId));
 });
 
@@ -276,7 +284,7 @@ rpc.use('eth_getBlockByHash', async (params: any) => {
  *
  * returns: Gas price - hex encoded integer
  */
-rpc.use('eth_gasPrice', async () => {
+app.useRpc('eth_gasPrice', async () => {
   return logAndHandleResponse('eth_gasPrice', (requestId) => relay.eth().gasPrice(requestId));
 });
 
@@ -287,8 +295,8 @@ rpc.use('eth_gasPrice', async () => {
  *
  * returns: Transaction count - hex encoded integer
  */
-rpc.use('eth_getTransactionCount', async (params: any) => {
-  return logAndHandleResponse('eth_getTransactionCount', (requestId) => 
+app.useRpc('eth_getTransactionCount', async (params: any) => {
+  return logAndHandleResponse('eth_getTransactionCount', (requestId) =>
     relay.eth().getTransactionCount(params?.[0], params?.[1], requestId));
 });
 
@@ -298,8 +306,8 @@ rpc.use('eth_getTransactionCount', async (params: any) => {
  *
  * returns: Value - hex encoded bytes
  */
-rpc.use('eth_call', async (params: any) => {
-  return logAndHandleResponse("eth_call", (requestId) => 
+app.useRpc('eth_call', async (params: any) => {
+  return logAndHandleResponse("eth_call", (requestId) =>
     relay.eth().call(params?.[0], params?.[1], requestId));
 });
 
@@ -309,8 +317,8 @@ rpc.use('eth_call', async (params: any) => {
  *
  * returns: Transaction hash - 32 byte hex value
  */
-rpc.use('eth_sendRawTransaction', async (params: any) => {
-  return logAndHandleResponse("eth_sendRawTransaction", (requestId) =>  
+app.useRpc('eth_sendRawTransaction', async (params: any) => {
+  return logAndHandleResponse("eth_sendRawTransaction", (requestId) =>
   relay.eth().sendRawTransaction(params?.[0], requestId));
 });
 
@@ -320,12 +328,12 @@ rpc.use('eth_sendRawTransaction', async (params: any) => {
  *
  * returns: Transaction Receipt - object
  */
-rpc.use('eth_getTransactionReceipt', async (params: any) => {
-  return logAndHandleResponse('eth_getTransactionReceipt', (requestId) => 
+app.useRpc('eth_getTransactionReceipt', async (params: any) => {
+  return logAndHandleResponse('eth_getTransactionReceipt', (requestId) =>
     relay.eth().getTransactionReceipt(params?.[0], requestId));
 });
 
-rpc.use('web3_clientVersion', async () => {
+app.useRpc('web3_clientVersion', async () => {
   return logAndHandleResponse("web3_clientVersion", () => relay.web3().clientVersion());
 });
 
@@ -334,7 +342,7 @@ rpc.use('web3_clientVersion', async () => {
  *
  * returns: Accounts - hex encoded address
  */
-rpc.use('eth_accounts', async () => {
+app.useRpc('eth_accounts', async () => {
   return logAndHandleResponse("eth_accounts", (requestId) => relay.eth().accounts(requestId));
 });
 
@@ -344,8 +352,8 @@ rpc.use('eth_accounts', async () => {
  *
  * returns: Transaction Object
  */
-rpc.use('eth_getTransactionByHash', async (params: any) => {
-  return logAndHandleResponse("eth_getTransactionByHash", (requestId) => 
+app.useRpc('eth_getTransactionByHash', async (params: any) => {
+  return logAndHandleResponse("eth_getTransactionByHash", (requestId) =>
     relay.eth().getTransactionByHash(params[0], requestId));
 });
 
@@ -361,11 +369,10 @@ rpc.use('eth_getTransactionByHash', async (params: any) => {
  *      - oldestBlock - Lowest number block in the range.
  *      - reward - Array of effective priority fee per gas data.
  */
-rpc.use('eth_feeHistory', async (params: any) => {
-  return logAndHandleResponse("eth_feeHistory", (requestId) => 
+app.useRpc('eth_feeHistory', async (params: any) => {
+  return logAndHandleResponse("eth_feeHistory", (requestId) =>
     relay.eth().feeHistory(Number(params?.[0]), params?.[1], params?.[2], requestId));
 });
-
 
 /**
  * Returns the number of transactions in a block, queried by hash.
@@ -373,8 +380,8 @@ rpc.use('eth_feeHistory', async (params: any) => {
  *
  * returns: Block Transaction Count - Hex encoded integer
  */
-rpc.use('eth_getBlockTransactionCountByHash', async (params: any) => {
-  return logAndHandleResponse("eth_getBlockTransactionCountByHash", (requestId) => 
+app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
+  return logAndHandleResponse("eth_getBlockTransactionCountByHash", (requestId) =>
     relay.eth().getBlockTransactionCountByHash(params?.[0], requestId));
 });
 
@@ -384,8 +391,8 @@ rpc.use('eth_getBlockTransactionCountByHash', async (params: any) => {
  *
  * returns: Block Transaction Count - Hex encoded integer
  */
-rpc.use('eth_getBlockTransactionCountByNumber', async (params: any) => {
-  return logAndHandleResponse("eth_getBlockTransactionCountByNumber", (requestId) => 
+app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
+  return logAndHandleResponse("eth_getBlockTransactionCountByNumber", (requestId) =>
     relay.eth().getBlockTransactionCountByNumber(params?.[0], requestId));
 });
 
@@ -395,7 +402,7 @@ rpc.use('eth_getBlockTransactionCountByNumber', async (params: any) => {
  *
  * returns: Logs - Array of log objects
  */
-rpc.use('eth_getLogs', async (params: any) => {
+app.useRpc('eth_getLogs', async (params: any) => {
   params = params[0] ?? [];
   return logAndHandleResponse('eth_getLogs', (requestId) => relay.eth().getLogs(
     params?.blockHash || null,
@@ -416,7 +423,7 @@ rpc.use('eth_getLogs', async (params: any) => {
  *
  * returns: Value - The storage value
  */
-rpc.use('eth_getStorageAt', async (params: any) => {
+app.useRpc('eth_getStorageAt', async (params: any) => {
   return logAndHandleResponse("eth_getStorageAt", (requestId) =>
     relay.eth().getStorageAt(params?.[0], params?.[1], params?.[2], requestId));
 });
@@ -428,7 +435,7 @@ rpc.use('eth_getStorageAt', async (params: any) => {
  *
  * returns: Transaction
  */
-rpc.use('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
+app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
   return logAndHandleResponse("eth_getTransactionByBlockHashAndIndex", (requestId) =>
     relay.eth().getTransactionByBlockHashAndIndex(params?.[0], params?.[1], requestId));
 });
@@ -440,7 +447,7 @@ rpc.use('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
  *
  * returns: Transaction
  */
-rpc.use('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
+app.useRpc('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
   return logAndHandleResponse("eth_getTransactionByBlockNumberAndIndex", (requestId) =>
     relay.eth().getTransactionByBlockNumberAndIndex(params?.[0], params?.[1], requestId));
 });
@@ -454,8 +461,8 @@ rpc.use('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
  *
  * returns: null
  */
-rpc.use('eth_getUncleByBlockHashAndIndex', async () => {
-  return logAndHandleResponse("eth_getUncleByBlockHashAndIndex", (requestId) => 
+app.useRpc('eth_getUncleByBlockHashAndIndex', async () => {
+  return logAndHandleResponse("eth_getUncleByBlockHashAndIndex", (requestId) =>
     relay.eth().getUncleByBlockHashAndIndex(requestId));
 });
 
@@ -467,8 +474,8 @@ rpc.use('eth_getUncleByBlockHashAndIndex', async () => {
  *
  * returns: null
  */
-rpc.use('eth_getUncleByBlockNumberAndIndex', async () => {
-  return logAndHandleResponse("eth_getUncleByBlockNumberAndIndex", (requestId) => 
+app.useRpc('eth_getUncleByBlockNumberAndIndex', async () => {
+  return logAndHandleResponse("eth_getUncleByBlockNumberAndIndex", (requestId) =>
     relay.eth().getUncleByBlockNumberAndIndex(requestId));
 });
 
@@ -479,8 +486,8 @@ rpc.use('eth_getUncleByBlockNumberAndIndex', async () => {
  *
  * returns: 0x0
  */
-rpc.use('eth_getUncleCountByBlockHash', async () => {
-  return logAndHandleResponse("eth_getUncleCountByBlockHash", (requestId) => 
+app.useRpc('eth_getUncleCountByBlockHash', async () => {
+  return logAndHandleResponse("eth_getUncleCountByBlockHash", (requestId) =>
     relay.eth().getUncleCountByBlockHash(requestId));
 });
 
@@ -491,8 +498,8 @@ rpc.use('eth_getUncleCountByBlockHash', async () => {
  *
  * returns: 0x0
  */
-rpc.use('eth_getUncleCountByBlockNumber', async () => {
-  return logAndHandleResponse("eth_getUncleCountByBlockNumber", (requestId) => 
+app.useRpc('eth_getUncleCountByBlockNumber', async () => {
+  return logAndHandleResponse("eth_getUncleCountByBlockNumber", (requestId) =>
     relay.eth().getUncleCountByBlockNumber(requestId));
 });
 
@@ -502,7 +509,7 @@ rpc.use('eth_getUncleCountByBlockNumber', async () => {
  *
  * returns: code: -32000
  */
-rpc.use('eth_getWork', async () => {
+app.useRpc('eth_getWork', async () => {
   return logAndHandleResponse("eth_getWork", (requestId) => relay.eth().getWork(requestId));
 });
 
@@ -513,7 +520,7 @@ rpc.use('eth_getWork', async () => {
  *
  * returns: 0x0
  */
-rpc.use('eth_hashrate', async () => {
+app.useRpc('eth_hashrate', async () => {
   return logAndHandleResponse("eth_hashrate", (requestId) => relay.eth().hashrate(requestId));
 });
 
@@ -524,7 +531,7 @@ rpc.use('eth_hashrate', async () => {
  *
  * returns: false
  */
-rpc.use('eth_mining', async () => {
+app.useRpc('eth_mining', async () => {
   return logAndHandleResponse("eth_mining", (requestId) => relay.eth().mining(requestId));
 });
 
@@ -535,7 +542,7 @@ rpc.use('eth_mining', async () => {
  *
  * returns: false
  */
-rpc.use('eth_submitWork', async () => {
+app.useRpc('eth_submitWork', async () => {
   return logAndHandleResponse("eth_submitWork", (requestId) => relay.eth().submitWork(requestId));
 });
 
@@ -545,7 +552,7 @@ rpc.use('eth_submitWork', async () => {
  *
  * returns: false
  */
-rpc.use('eth_syncing', async () => {
+app.useRpc('eth_syncing', async () => {
   return logAndHandleResponse("eth_syncing", (requestId) => relay.eth().syncing(requestId));
 });
 
@@ -554,42 +561,54 @@ rpc.use('eth_syncing', async () => {
  *
  * returns: string
  */
-rpc.use('web3_client_version', async () => {
+app.useRpc('web3_client_version', async () => {
   return logAndHandleResponse("web3_client_version", () => relay.web3().clientVersion());
+});
+
+/**
+ * Returns a fee per gas that is an estimate of how much you can pay as a priority fee,
+ * or 'tip', to get a transaction included in the current block.
+ *
+ * Since Hedera doesn't have a concept of tipping nodes to promote any behavior, this method will return a static response.
+ *
+ * returns: 0x0
+ */
+app.useRpc('eth_maxPriorityFeePerGas', async () => {
+  return logAndHandleResponse("eth_maxPriorityFeePerGas", (requestId) => relay.eth().maxPriorityFeePerGas(requestId));
 });
 
 /**
  * Not supported
  */
-rpc.use('eth_submitHashrate', async () => {
+app.useRpc('eth_submitHashrate', async () => {
   return logAndHandleResponse("eth_submitHashrate", (requestId) => relay.eth().submitHashrate(requestId));
 });
 
-rpc.use('eth_signTransaction', async () => {
+app.useRpc('eth_signTransaction', async () => {
   return logAndHandleResponse("eth_signTransaction", (requestId) => relay.eth().signTransaction(requestId));
 });
 
-rpc.use('eth_sign', async () => {
+app.useRpc('eth_sign', async () => {
   return logAndHandleResponse("eth_sign", (requestId) => relay.eth().sign(requestId));
 });
 
-rpc.use('eth_sendTransaction', async () => {
+app.useRpc('eth_sendTransaction', async () => {
   return logAndHandleResponse("eth_sendTransaction", (requestId) => relay.eth().sendTransaction(requestId));
 });
 
-rpc.use('eth_protocolVersion', async () => {
+app.useRpc('eth_protocolVersion', async () => {
   return logAndHandleResponse("eth_protocolVersion", (requestId) => relay.eth().protocolVersion(requestId));
 });
 
-rpc.use('eth_coinbase', async () => {
+app.useRpc('eth_coinbase', async () => {
   return logAndHandleResponse("eth_coinbase", (requestId) => relay.eth().coinbase(requestId));
 });
 
-app.use(cors());
+app.getKoaApp().use(cors());
 
-const rpcApp = rpc.app();
+const rpcApp = app.rpcApp();
 
-app.use(async (ctx, next) => {
+app.getKoaApp().use(async (ctx, next) => {
   await rpcApp(ctx, next);
 
   // Handle custom errors
@@ -599,4 +618,4 @@ app.use(async (ctx, next) => {
   }
 });
 
-export default app;
+export default app.getKoaApp();

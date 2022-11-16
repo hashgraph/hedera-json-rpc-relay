@@ -30,9 +30,8 @@ import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
-
+const LRU = require('lru-cache');
 const _ = require('lodash');
-const cache = require('js-cache');
 const createHash = require('keccak');
 
 /**
@@ -59,6 +58,10 @@ export class EthImpl implements Eth {
   static defaultGasUsedRatio = EthImpl.numberTo0x(0.5);
   static feeHistoryZeroBlockCountResponse = { gasUsedRatio: null, oldestBlock: EthImpl.zeroHex };
   static feeHistoryEmptyResponse = { baseFeePerGas: [], gasUsedRatio: [], reward: [], oldestBlock: EthImpl.zeroHex };
+  static redirectBytecodePrefix = '6080604052348015600f57600080fd5b506000610167905077618dc65e';
+  static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
+  static iHTSAddress = '0x0000000000000000000000000000000000000167';
+  static invalidEVMInstruction = '0xfe';
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -73,6 +76,24 @@ export class EthImpl implements Eth {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
+  
+  /**
+   * Configurable options used when initializing the cache.
+   *
+   * @private
+   */
+  private readonly options = {
+    //The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
+    max: constants.CACHE_MAX,
+    // Max time to live in ms, for items before they are considered stale.
+    ttl: constants.CACHE_TTL.ONE_HOUR,
+  }
+  /**
+   * The LRU cache used for caching items from requests.
+   *
+   * @private
+   */
+   private readonly cache;
 
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
@@ -117,13 +138,16 @@ export class EthImpl implements Eth {
     nodeClient: SDKClient,
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
-    chain: string
+    chain: string,
+    cache?
   ) {
     this.sdkClient = nodeClient;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
     this.precheck = new Precheck(mirrorNodeClient, nodeClient, logger, chain);
+    this.cache = cache;
+    if (!cache) this.cache = new LRU(this.options);
   }
 
   /**
@@ -140,8 +164,12 @@ export class EthImpl implements Eth {
    * Gets the fee history.
    */
   async feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number> | null, requestId?: string) {
+    const maxResults = Number(process.env.FEE_HISTORY_MAX_RESULTS) || constants.DEFAULT_FEE_HISTORY_MAX_RESULTS;
+
     const requestIdPrefix = formatRequestIdMessage(requestId);
+
     this.logger.trace(`${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
+
     try {
       const latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestId);
       const newestBlockNumber = await this.translateBlockTag(newestBlock, requestId);
@@ -150,19 +178,19 @@ export class EthImpl implements Eth {
         return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
       }
 
-      blockCount = blockCount > constants.FEE_HISTORY_MAX_RESULTS ? constants.FEE_HISTORY_MAX_RESULTS : blockCount;
+      blockCount = blockCount > maxResults ? maxResults : blockCount;
 
       if (blockCount <= 0) {
         return EthImpl.feeHistoryZeroBlockCountResponse;
       }
 
-      let feeHistory: object | undefined = cache.get(constants.CACHE_KEY.FEE_HISTORY);
+      let feeHistory: object | undefined = this.cache.get(constants.CACHE_KEY.FEE_HISTORY);
       if (!feeHistory) {
 
         feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
 
         this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.FEE_HISTORY} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-        cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory, constants.CACHE_TTL.ONE_HOUR);
+        this.cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory);
       }
 
       return feeHistory;
@@ -309,18 +337,18 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} gasPrice()`);
     try {
-      let gasPrice: number | undefined = cache.get(constants.CACHE_KEY.GAS_PRICE);
+      let gasPrice: number | undefined = this.cache.get(constants.CACHE_KEY.GAS_PRICE);
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestId);
 
         this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-        cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_HOUR);
+        this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice);
       }
 
       return EthImpl.numberTo0x(gasPrice);
     } catch (error) {
-      this.logger.trace(error);
+      this.logger.error(error, `${requestIdPrefix} Failed to retrieve gasPrice`);
       throw error;
     }
   }
@@ -456,27 +484,34 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
     const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false);
+
+    // To save a request to the mirror node for `latest` and `pending` blocks, we directly return null from `getHistoricalBlockResponse`
+    // But if a block number or `earliest` tag is passed and the mirror node returns `null`, we should throw an error.
+    if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
+      throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
+    }
+
     const blockEndTimestamp = blockResponse?.timestamp?.to;
     const contractResult = await this.mirrorNodeClient.getLatestContractResultsByAddress(address, blockEndTimestamp, 1);
 
     if (contractResult?.results?.length > 0) {
       // retrieve the contract result details
       await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
-        .then( contractResultDetails => {
-          if(contractResultDetails && contractResultDetails.state_changes) {
-            // loop through the state changes to match slot and return value
-            for (const stateChange of contractResultDetails.state_changes) {
-              if(stateChange.slot === slot) {
-                result = stateChange.value_written;
-              }
-            }
+        .then(contractResultDetails => {
+          if (contractResultDetails?.state_changes != null) {
+            // filter the state changes to match slot and return value
+            const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === slot);
+            result = stateChange.value_written;
+          } else {
+            throw predefined.RESOURCE_NOT_FOUND(`Contract result details for contract address ${address} at timestamp=${contractResult.results[0].timestamp}`);
           }
         })
-        .catch( (e: any) => {
+        .catch((e: any) => {
           this.logger.error(
             e,
             `${requestIdPrefix} Failed to retrieve contract result details for contract address ${address} at timestamp=${contractResult.results[0].timestamp}`,
           );
+
           throw e;
         });
     }
@@ -493,24 +528,73 @@ export class EthImpl implements Eth {
    */
   async getBalance(account: string, blockNumberOrTag: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
+    const latestBlockTolerance = 1;
     this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
-    const blockNumber = await this.translateBlockTag(blockNumberOrTag, requestId);
 
+    // this check is required, because some tools like Metamask pass for parameter latest block, with a number (ex 0x30ea)
+    // tolerance is needed, because there is a small delay between requesting latest block from blockNumber and passing it here
+    if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
+      const latestBlock = await this.blockNumber(requestId);
+      const blockDiff = Number(latestBlock) - Number(blockNumberOrTag);
+
+      if (blockDiff <= latestBlockTolerance) {
+        blockNumberOrTag = EthImpl.blockLatest;
+      }
+    }
+    
+    // Cache is only set for `not found` balances
     const cachedLabel = `getBalance.${account}.${blockNumberOrTag}`;
-    const cachedResponse: string | undefined = cache.get(cachedLabel);
+    const cachedResponse: string | undefined = this.cache.get(cachedLabel);
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
+    let blockNumber = null;
+    let balanceFound = false;
+    let weibars: BigNumber | number = 0;
+    const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
 
     try {
-      let weibars: BigNumber | number = 0;
+      if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
+        const block = await this.getHistoricalBlockResponse(blockNumberOrTag, true, requestId);
+        if (block) {
+          blockNumber = block.number;
 
-      const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
-      if (mirrorAccount && mirrorAccount.balance) {
-        weibars = mirrorAccount.balance.balance * constants.TINYBAR_TO_WEIBAR_COEF
-      } else {
+          // A blockNumberOrTag has been provided. If it is `latest` or `pending` retrieve the balance from /accounts/{account.id}
+          if (mirrorAccount) {
+            const latestBlock = await this.getHistoricalBlockResponse(EthImpl.blockLatest, true, requestId);
+
+            // If the parsed blockNumber is the same as the one from the latest block retrieve the balance from /accounts/{account.id}
+            if (latestBlock && block.number !== latestBlock.number) {
+              const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
+              const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
+              const timeDiff = latestTimestamp - blockTimestamp;
+
+              // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
+              if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
+                throw predefined.UNKNOWN_HISTORICAL_BALANCE;
+              }
+
+              // The block is NOT from the last 15 minutes, use /balances rest API
+              else {
+                const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(mirrorAccount.account, block.timestamp.from, requestId);
+                balanceFound = true;
+                if (balance.balances?.length) {
+                  weibars = balance.balances[0].balance * constants.TINYBAR_TO_WEIBAR_COEF;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (!balanceFound && mirrorAccount?.balance) {
+        balanceFound = true;
+        weibars = mirrorAccount.balance.balance * constants.TINYBAR_TO_WEIBAR_COEF;
+      }
+
+      if (!balanceFound) {
         this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
-        cache.set(cachedLabel, EthImpl.zeroHex, constants.CACHE_TTL.ONE_HOUR);
+        this.cache.set(cachedLabel, EthImpl.zeroHex);
         return EthImpl.zeroHex;
       }
 
@@ -529,30 +613,44 @@ export class EthImpl implements Eth {
    */
   async getCode(address: string, blockNumber: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    // FIXME: This has to be reimplemented to get the data from the mirror node.
+
+    // check for static precompile cases first before consulting nodes
+    // this also account for environments where system entitites were not yet exposed to the mirror node
+    if (address === EthImpl.iHTSAddress) {
+      this.logger.trace(`${requestIdPrefix} HTS precompile case, return ${EthImpl.invalidEVMInstruction} for byte code`);
+      return EthImpl.invalidEVMInstruction;
+    }
+
     this.logger.trace(`${requestIdPrefix} getCode(address=${address}, blockNumber=${blockNumber})`);
 
     const cachedLabel = `getCode.${address}.${blockNumber}`;
-    const cachedResponse: string | undefined = cache.get(cachedLabel);
+    const cachedResponse: string | undefined = this.cache.get(cachedLabel);
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
 
     try {
-      const contract = await this.mirrorNodeClient.getContract(address, requestId);
-      if (contract && contract.runtime_bytecode && contract.runtime_bytecode !== EthImpl.emptyHex) {
-        return contract.runtime_bytecode;
+      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
+      if (result) {
+        if (result?.type === constants.TYPE_TOKEN) {
+          this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
+          return EthImpl.redirectBytecodeAddressReplace(address);
+        }
+        else if (result?.type === constants.TYPE_CONTRACT) {
+          if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
+              return result?.entity.runtime_bytecode;
+          }
+        }
       }
-      else {
-        const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
-        return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
-      }
+
+      const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
+      return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
-      if(e instanceof SDKClientError) {
+      if (e instanceof SDKClientError) {
         // handle INVALID_CONTRACT_ID
         if (e.isInvalidContractId()) {
           this.logger.debug(`${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.statusCode}`);
-          cache.set(cachedLabel, EthImpl.emptyHex, constants.CACHE_TTL.ONE_HOUR);
+          this.cache.set(cachedLabel, EthImpl.emptyHex);
           return EthImpl.emptyHex;
         }
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}, err code: ${e.statusCode}`);
@@ -575,7 +673,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
     return this.getBlock(hash, showDetails, requestId).catch((e: any) => {
       this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-      return null;
+      throw predefined.INTERNAL_ERROR();
     });
   }
 
@@ -589,7 +687,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
     return this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
       this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
-      return null;
+      throw predefined.INTERNAL_ERROR();
     });
   }
 
@@ -606,7 +704,7 @@ export class EthImpl implements Eth {
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-        return null;
+        throw predefined.INTERNAL_ERROR();
       });
   }
 
@@ -623,7 +721,7 @@ export class EthImpl implements Eth {
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNum}`, blockNum);
-        return null;
+        throw predefined.INTERNAL_ERROR();
       });
   }
 
@@ -633,18 +731,23 @@ export class EthImpl implements Eth {
    * @param blockHash
    * @param transactionIndex
    */
-  async getTransactionByBlockHashAndIndex(blockHash: string, transactionIndex: number, requestId?: string): Promise<Transaction | null> {
+  async getTransactionByBlockHashAndIndex(blockHash: string, transactionIndex: string, requestId?: string): Promise<Transaction | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionByBlockHashAndIndex(hash=${blockHash}, index=${transactionIndex})`);
     return this.mirrorNodeClient
-      .getContractResults({ blockHash: blockHash, transactionIndex: transactionIndex },undefined, requestId)
+      .getContractResults({ blockHash: blockHash, transactionIndex: Number(transactionIndex) }, undefined, requestId)
       .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
+        if (e instanceof JsonRpcError) {
+          throw e;
+        }
+
         this.logger.error(
           e,
-          `${requestIdPrefix} Failed to retrieve contract result for hash ${blockHash} and index=${transactionIndex}`
+          `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`
         );
-        return null;
+
+        throw predefined.INTERNAL_ERROR();
       });
   }
 
@@ -656,21 +759,26 @@ export class EthImpl implements Eth {
    */
   async getTransactionByBlockNumberAndIndex(
     blockNumOrTag: string,
-    transactionIndex: number,
+    transactionIndex: string,
     requestId?: string
   ): Promise<Transaction | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionByBlockNumberAndIndex(blockNum=${blockNumOrTag}, index=${transactionIndex})`);
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestId);
     return this.mirrorNodeClient
-      .getContractResults({ blockNumber: blockNum, transactionIndex: transactionIndex },undefined, requestId)
+      .getContractResults({ blockNumber: blockNum, transactionIndex: Number(transactionIndex) }, undefined, requestId)
       .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
+        if (e instanceof JsonRpcError) {
+          throw e;
+        }
+
         this.logger.error(
           e,
           `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`
         );
-        return null;
+
+        throw predefined.INTERNAL_ERROR();
       });
   }
 
@@ -688,23 +796,33 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getTransactionCount(address=${address}, blockNumOrTag=${blockNumOrTag})`);
     const blockNumber = await this.translateBlockTag(blockNumOrTag, requestId);
     if (blockNumber === 0) {
-      return '0x0';
-    } else {
-      try {
-        const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
-        if (result?.type === constants.TYPE_ACCOUNT) {
-            const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
-            return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
-        }
-        else if (result?.type === constants.TYPE_CONTRACT) {
-          return EthImpl.numberTo0x(1);
-        }
-      } catch (e: any) {
-        this.logger.error(e, `${requestIdPrefix} Error raised during getTransactionCount for address ${address}, block number or tag ${blockNumOrTag}`);
-        return predefined.INTERNAL_ERROR;
+      return EthImpl.zeroHex;
+    } else if (address && !blockNumOrTag) {
+      // get latest ethereumNonce
+      const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
+      if (mirrorAccount && mirrorAccount.ethereum_nonce) {
+        return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
+      }
+    }
+
+    // check consensus node as back up
+    try {
+      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
+      if (result?.type === constants.TYPE_ACCOUNT) {
+          const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
+          return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+      }
+      else if (result?.type === constants.TYPE_CONTRACT) {
+        return EthImpl.numberTo0x(1);
       }
 
-      return EthImpl.numberTo0x(0);
+      return EthImpl.zeroHex;
+    } catch (e: any) {
+      this.logger.error(e, `${requestIdPrefix} Error raised during getTransactionCount for address ${address}, block number or tag ${blockNumOrTag}`);
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return predefined.INTERNAL_ERROR();
     }
   }
 
@@ -725,7 +843,7 @@ export class EthImpl implements Eth {
         return e;
       }
 
-      throw predefined.INTERNAL_ERROR;
+      throw predefined.INTERNAL_ERROR();
     }
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
@@ -735,9 +853,16 @@ export class EthImpl implements Eth {
       try {
         // Wait for the record from the execution.
         const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, requestId);
-        if (record.ethereumHash == null) {
-          throw new Error('The ethereumHash can never be null for an ethereum transaction, and yet it was!!');
+        if (!record) {
+          this.logger.warn(`${requestIdPrefix} No record retrieved`);
+          throw predefined.INTERNAL_ERROR();
         }
+
+        if (record.ethereumHash == null) {
+          this.logger.error(`${requestIdPrefix} The ethereumHash can never be null for an ethereum transaction, and yet it was!!`);
+          throw predefined.INTERNAL_ERROR();
+        }
+
         return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
       } catch (e) {
         this.logger.error(e,
@@ -748,7 +873,10 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       this.logger.error(e,
         `${requestIdPrefix} Failed to successfully submit sendRawTransaction for transaction ${transaction}`);
-      return predefined.INTERNAL_ERROR;
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return predefined.INTERNAL_ERROR();
     }
   }
 
@@ -798,7 +926,10 @@ export class EthImpl implements Eth {
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
-      return predefined.INTERNAL_ERROR;
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return predefined.INTERNAL_ERROR();
     }
   }
 
@@ -815,24 +946,38 @@ export class EthImpl implements Eth {
       return null;
     }
 
+    let fromAddress;
+    if (contractResult.from) {
+      fromAddress = contractResult.from.substring(0, 42);
+      const accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
+      if (accountResult && accountResult.evm_address && accountResult.evm_address.length > 0) {
+        fromAddress = accountResult.evm_address.substring(0,42);
+      }
+    }
+
     const maxPriorityFee = contractResult.max_priority_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_priority_fee_per_gas;
     const maxFee = contractResult.max_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_fee_per_gas;
     const rSig = contractResult.r === null ? null : contractResult.r.substring(0, 66);
     const sSig = contractResult.s === null ? null : contractResult.s.substring(0, 66);
+
+    if (process.env.DEV_MODE && process.env.DEV_MODE === 'true' && contractResult.result === 'CONTRACT_REVERT_EXECUTED') {
+      let err = predefined.CONTRACT_REVERT(contractResult.error_message);
+      throw err;
+    }
 
     return new Transaction({
       accessList: undefined, // we don't support access lists, so punt for now
       blockHash: contractResult.block_hash.substring(0, 66),
       blockNumber: EthImpl.numberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
-      from: contractResult.from.substring(0, 42),
-      gas: EthImpl.numberTo0x(contractResult.gas_used),
+      from: fromAddress,
+      gas: EthImpl.nanOrNumberTo0x(contractResult.gas_used),
       gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
       hash: contractResult.hash.substring(0, 66),
       input: contractResult.function_parameters,
       maxPriorityFeePerGas: maxPriorityFee,
       maxFeePerGas: maxFee,
-      nonce: EthImpl.nullableNumberTo0x(contractResult.nonce),
+      nonce: EthImpl.nanOrNumberTo0x(contractResult.nonce),
       r: rSig,
       s: sSig,
       to: contractResult.to?.substring(0, 42),
@@ -861,11 +1006,12 @@ export class EthImpl implements Eth {
         receiptResponse.max_fee_per_gas === undefined || receiptResponse.max_fee_per_gas == '0x'
           ? receiptResponse.gas_price
           : receiptResponse.max_fee_per_gas;
-      const createdContract =
-        receiptResponse.created_contract_ids.length > 0
-          ? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress())
-          : undefined;
 
+      let createdContract;
+      if (receiptResponse.created_contract_ids.length) {
+        const contract = await this.mirrorNodeClient.getContract(receiptResponse.created_contract_ids[0]);
+        createdContract = contract?.evm_address ?? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress());
+      }
 
       // support stricter go-eth client which requires the transaction hash property on logs
       const logs = receiptResponse.logs.map(log => {
@@ -878,27 +1024,30 @@ export class EthImpl implements Eth {
           removed: false,
           topics: log.topics,
           transactionHash: EthImpl.toHash32(receiptResponse.hash),
-          transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index)
+          transactionIndex: EthImpl.nullableNumberTo0x(receiptResponse.transaction_index)
         });
       });
 
-      const receipt = {
+      const receipt: any = {
         blockHash: EthImpl.toHash32(receiptResponse.block_hash),
         blockNumber: EthImpl.numberTo0x(receiptResponse.block_number),
         from: receiptResponse.from,
         to: receiptResponse.to,
         cumulativeGasUsed: EthImpl.numberTo0x(receiptResponse.block_gas_used),
-        gasUsed: EthImpl.numberTo0x(receiptResponse.gas_used),
+        gasUsed: EthImpl.nanOrNumberTo0x(receiptResponse.gas_used),
         contractAddress: createdContract,
         logs: logs,
-        logsBloom: receiptResponse.bloom,
+        logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
         transactionHash: EthImpl.toHash32(receiptResponse.hash),
-        transactionIndex: EthImpl.numberTo0x(receiptResponse.transaction_index),
-        effectiveGasPrice: EthImpl.numberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
+        transactionIndex: EthImpl.nullableNumberTo0x(receiptResponse.transaction_index),
+        effectiveGasPrice: EthImpl.nanOrNumberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
         root: receiptResponse.root,
         status: receiptResponse.status,
       };
 
+      if (receiptResponse.error_message) {
+        receipt.revertReason = receiptResponse.error_message;
+      }
 
       this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
       return receipt;
@@ -919,7 +1068,14 @@ export class EthImpl implements Eth {
   }
 
   static nullableNumberTo0x(input: number | BigNumber): string | null {
-    return input === null ? null : EthImpl.numberTo0x(input);
+    return input == null ? null : EthImpl.numberTo0x(input);
+  }
+
+  static nanOrNumberTo0x(input: number | BigNumber): string {
+    // input == null assures to check against both null and undefined.
+    // A reliable way for ECMAScript code to test if a value X is a NaN is an expression of the form X !== X.
+    // The result will be true if and only if X is a NaN.
+    return input == null || input !== input ? EthImpl.numberTo0x(0) : EthImpl.numberTo0x(input);
   }
 
   static toHash32(value: string): string {
@@ -928,6 +1084,10 @@ export class EthImpl implements Eth {
 
   private static toNullIfEmptyHex(value: string): string | null {
     return value === EthImpl.emptyHex ? null : value;
+  }
+
+  private static redirectBytecodeAddressReplace(address: string): string {
+    return `${this.redirectBytecodePrefix}${address.slice(2)}${this.redirectBytecodePostfix}`;
   }
 
   /**
@@ -939,6 +1099,10 @@ export class EthImpl implements Eth {
     return input.startsWith(EthImpl.emptyHex) ? input.substring(2) : input;
   }
 
+  private static blockTagIsLatestOrPending = (tag) => {
+    return tag == null || tag === EthImpl.blockLatest || tag === EthImpl.blockPending;
+  }
+
   /**
    * Translates a block tag into a number. 'latest', 'pending', and null are the
    * most recent block, 'earliest' is 0, numbers become numbers.
@@ -947,7 +1111,7 @@ export class EthImpl implements Eth {
    * @private
    */
   private async translateBlockTag(tag: string | null, requestId?: string): Promise<number> {
-    if (tag === null || tag === EthImpl.blockLatest || tag === EthImpl.blockPending) {
+    if (EthImpl.blockTagIsLatestOrPending(tag)) {
       return Number(await this.blockNumber(requestId));
     } else if (tag === EthImpl.blockEarliest) {
       return 0;
@@ -969,13 +1133,15 @@ export class EthImpl implements Eth {
   private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: string ): Promise<Block | null> {
     const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true);
 
+    if (blockResponse == null) return null;
+
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
     const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams },undefined, requestId);
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
 
-    if (contractResults === null || contractResults.results === undefined) {
+    if (contractResults?.results == null) {
       // contract result not found
       return null;
     }
@@ -990,11 +1156,7 @@ export class EthImpl implements Eth {
       if (!_.isNil(result.to)) {
         const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
         if (transaction !== null) {
-          if (showDetails) {
-            transactionObjects.push(transaction);
-          } else {
-            transactionHashes.push(transaction.hash);
-          }
+          showDetails ? transactionObjects.push(transaction) : transactionHashes.push(transaction.hash);
         }
       }
     }
@@ -1036,12 +1198,11 @@ export class EthImpl implements Eth {
   private async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestId?: string | undefined): Promise<any | null> {
     let blockResponse: any;
     // Determine if the latest block should be returned and if not then just return null
-    if (!returnLatest &&
-      (blockNumberOrTag == null || blockNumberOrTag === EthImpl.blockLatest || blockNumberOrTag === EthImpl.blockPending)) {
+    if (!returnLatest && EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
       return null;
     }
 
-    if (blockNumberOrTag == null || blockNumberOrTag === EthImpl.blockLatest || blockNumberOrTag === EthImpl.blockPending) {
+    if (blockNumberOrTag == null || EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
       const blockPromise = this.mirrorNodeClient.getLatestBlock(requestId);
       const blockAnswer = await blockPromise;
       blockResponse = blockAnswer.blocks[0];
@@ -1052,10 +1213,6 @@ export class EthImpl implements Eth {
       blockResponse = await this.mirrorNodeClient.getBlock(Number(blockNumberOrTag), requestId);
     } else {
       blockResponse = await this.mirrorNodeClient.getBlock(blockNumberOrTag, requestId);
-    }
-    if (_.isNil(blockResponse) || blockResponse.hash === undefined) {
-      // block not found.
-      throw predefined.RESOURCE_NOT_FOUND;
     }
 
     return blockResponse;
@@ -1071,16 +1228,12 @@ export class EthImpl implements Eth {
   }
 
   private getTransactionFromContractResults(contractResults: any, requestId?: string) {
-    if (contractResults.results === undefined) {
+    if (!contractResults || !contractResults.results || contractResults.results.length == 0) {
       // contract result not found
       return null;
     }
 
     const contractResult = contractResults.results[0];
-    if (contractResult === undefined) {
-      // contract result not found
-      return null;
-    }
 
     return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp, requestId);
   }
@@ -1090,36 +1243,42 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp, requestId)
       .then(contractResultDetails => {
-        const rSig = contractResultDetails.r === null ? null : contractResultDetails.r.substring(0, 66);
-        const sSig = contractResultDetails.s === null ? null : contractResultDetails.s.substring(0, 66);
-        return new Transaction({
-          accessList: undefined, // we don't support access lists for now, so punt
-          blockHash: contractResultDetails.block_hash.substring(0, 66),
-          blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
-          chainId: contractResultDetails.chain_id,
-          from: contractResultDetails.from.substring(0, 42),
-          gas: EthImpl.numberTo0x(contractResultDetails.gas_used),
-          gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
-          hash: contractResultDetails.hash.substring(0, 66),
-          input: contractResultDetails.function_parameters,
-          maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
-          maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
-          nonce: EthImpl.nullableNumberTo0x(contractResultDetails.nonce),
-          r: rSig,
-          s: sSig,
-          to: contractResultDetails.to.substring(0, 42),
-          transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
-          type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
-          v: EthImpl.nullableNumberTo0x(contractResultDetails.v),
-          value: EthImpl.numberTo0x(contractResultDetails.amount),
-        });
+        // 404 is allowed return code so it's possible for contractResultDetails to be null
+        if (contractResultDetails == null) {
+          return null;
+        } else {
+          const rSig = contractResultDetails.r === null ? null : contractResultDetails.r.substring(0, 66);
+          const sSig = contractResultDetails.s === null ? null : contractResultDetails.s.substring(0, 66);
+          return new Transaction({
+            accessList: undefined, // we don't support access lists for now, so punt
+            blockHash: contractResultDetails.block_hash.substring(0, 66),
+            blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
+            chainId: contractResultDetails.chain_id,
+            from: contractResultDetails.from.substring(0, 42),
+            gas: EthImpl.nanOrNumberTo0x(contractResultDetails.gas_used),
+            gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
+            hash: contractResultDetails.hash.substring(0, 66),
+            input: contractResultDetails.function_parameters,
+            maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
+            maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
+            nonce: EthImpl.nanOrNumberTo0x(contractResultDetails.nonce),
+            r: rSig,
+            s: sSig,
+            to: contractResultDetails.to.substring(0, 42),
+            transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
+            type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
+            v: EthImpl.nullableNumberTo0x(contractResultDetails.v),
+            value: EthImpl.numberTo0x(contractResultDetails.amount),
+          });
+        }
       })
       .catch((e: any) => {
         this.logger.error(
           e,
           `${requestIdPrefix} Failed to retrieve contract result details for contract address ${to} at timestamp=${timestamp}`
         );
-        return null;
+
+        throw predefined.INTERNAL_ERROR();
       });
   }
 
@@ -1133,6 +1292,8 @@ export class EthImpl implements Eth {
             `gte:${block.timestamp.from}`,
             `lte:${block.timestamp.to}`
           ];
+        }else {
+          return [];
         }
       }
       catch(e: any) {
@@ -1142,62 +1303,41 @@ export class EthImpl implements Eth {
 
         throw e;
       }
-    } else if (fromBlock || toBlock) {
-      let fromBlockTimestamp;
-      let toBlockTimestamp;
+    } else {
+      const blockRangeLimit = Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
       let fromBlockNum = 0;
       let toBlockNum;
 
-      if (toBlock) {
-        try {
-          const blockResponse = await this.getHistoricalBlockResponse(toBlock, true, requestId);
-          toBlockTimestamp = blockResponse.timestamp.to;
-          toBlockNum = parseInt(blockResponse.number);
-        } catch (e) {
-          // Check if block error is RESOURCE_NOT_FOUND, the most likely scenario this will happen if a block number > height is passed
-          // In this case eth_getLogs() returns logs up to the latest block.
-          // @ts-ignore
-          if (e.statusCode != 404) {
-            throw e;
-          }
-        }
-      }
-      if (fromBlock) {
-        try {
-          const blockResponse = await this.getHistoricalBlockResponse(fromBlock, undefined, requestId);
-          fromBlockTimestamp = blockResponse.timestamp.from;
-          fromBlockNum = parseInt(blockResponse.number);
-        } catch (e) {
-          // Check if block error is RESOURCE_NOT_FOUND, the most likely scenario this will happen if a block number > height is passed
-          // In this case eth_getLogs() returns an empty array.
-          // @ts-ignore
-          if (e.statusCode != 404) {
-            throw e;
-          }
-
-          return [];
-        }
-      }
-
-      if (fromBlockTimestamp) {
-        params.timestamp = [`gte:${fromBlockTimestamp}`];
-      }
-
-      if (toBlockTimestamp){
-        if (params.timestamp) {
-          params.timestamp.push(`lte:${toBlockTimestamp}`)
-        } else {
-          params.timestamp = [`lte:${toBlockTimestamp}`];
-        }
-      } else {
-        const blockResponse = await this.getHistoricalBlockResponse('latest', true, requestId);
+      if (!fromBlock && !toBlock) {
+        const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
+        fromBlockNum = parseInt(blockResponse.number);
         toBlockNum = parseInt(blockResponse.number);
+        params.timestamp = [`gte:${blockResponse.timestamp.from}`, `lte:${blockResponse.timestamp.to}`];
+      } else {
+          params.timestamp = [];
+
+          // Use the `toBlock` if it is the only passed tag, if not utilize the `fromBlock` or default to "latest"
+          const blockTag = toBlock && !fromBlock ? toBlock : fromBlock || "latest";
+
+          const fromBlockResponse = await this.getHistoricalBlockResponse(blockTag, true, requestId);
+          if (fromBlockResponse != null) {
+            params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
+            fromBlockNum = parseInt(fromBlockResponse.number);
+          } else {
+            return [];
+          }
+
+          const toBlockResponse = await this.getHistoricalBlockResponse(toBlock || "latest", true, requestId);
+          if (toBlockResponse != null) {
+            params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
+            toBlockNum = parseInt(toBlockResponse.number);
+          }
       }
 
       if (fromBlockNum > toBlockNum) {
         return [];
-      } else if((toBlockNum - fromBlockNum) > constants.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) {
-        throw predefined.RANGE_TOO_LARGE;
+      } else if ((toBlockNum - fromBlockNum) > blockRangeLimit) {
+        throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
       }
     }
 
@@ -1218,61 +1358,45 @@ export class EthImpl implements Eth {
     if (!result || !result.logs) {
       return [];
     }
-    const logs = result.logs;
 
-    // Find unique contract execution timestamp and for each one make mirror node request
-    const promises: Promise<any>[] = [];
-    const uniquePairs = {};
-
-    for (let i = 0; i < logs.length; i++) {
-      const log = logs[i];
-      const timestamp = `${log.timestamp}`;
-      if (uniquePairs[timestamp] === undefined) {
-        uniquePairs[timestamp] = [i];
-        promises.push(this.mirrorNodeClient.getContractResultsDetails(
-          log.contract_id,
-          log.timestamp,
-          requestId
-        ));
-      }
-      else {
-        uniquePairs[timestamp].push(i);
-      }
-    }
-
-    try {
-      // Populate the Log objects with block and transaction data from ContractResultsDetails
-      const contractsResultsDetails = await Promise.all(promises);
-      for (let i = 0; i < contractsResultsDetails.length; i++) {
-        const detail = contractsResultsDetails[i];
-        // retrieve set of logs for each timestamp
-        const timestamp = `${detail.timestamp}`;
-        const uPair = uniquePairs[timestamp] || [];
-        for (let p = 0; p < uPair.length; p++) {
-          const logIndex = uPair[p];
-          const log = logs[logIndex];
-          logs[logIndex] = new Log({
-            address: log.address,
-            blockHash: EthImpl.toHash32(detail.block_hash),
-            blockNumber: EthImpl.numberTo0x(detail.block_number),
-            data: log.data,
-            logIndex: EthImpl.numberTo0x(logIndex),
-            removed: false,
-            topics: log.topics,
-            transactionHash: EthImpl.toHash32(detail.hash),
-            transactionIndex: EthImpl.numberTo0x(detail.transaction_index)
-          });
-        }
-      }
-    }
-    catch(e: any) {
-      if (e instanceof MirrorNodeClientError && e.isNotFound()) {
-        return [];
-      }
-
-      throw e;
+    const logs: Log[] = [];
+    for(const log of result.logs) {
+      logs.push(
+        new Log({
+          address: await this.getLogEvmAddress(log.address, requestId) || log.address,
+          blockHash: EthImpl.toHash32(log.block_hash),
+          blockNumber: EthImpl.numberTo0x(log.block_number),
+          data: log.data,
+          logIndex: EthImpl.numberTo0x(log.index),
+          removed: false,
+          topics: log.topics,
+          transactionHash: EthImpl.toHash32(log.transaction_hash),
+          transactionIndex: EthImpl.numberTo0x(log.transaction_index)
+        })
+      );
     }
 
     return logs;
+  }
+
+  async maxPriorityFeePerGas(requestId?: string): Promise<string> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.trace(`${requestIdPrefix} maxPriorityFeePerGas()`);
+    return EthImpl.zeroHex;
+  }
+
+  private async getLogEvmAddress(address: string, requestId: string | undefined) {
+    const cachedLabel = `getLogEvmAddress.${address}`;
+    let contractAddress = this.cache.get(cachedLabel);
+
+    // If contractAddress === undefined it means there's no cache record
+    // and a mirror node request should be executed.
+    if (contractAddress === undefined) {
+      const contract = await this.mirrorNodeClient.getContract(address, requestId);
+      contractAddress = contract.evm_address;
+      this.cache.set(cachedLabel, contractAddress);
+    }
+
+    return contractAddress;
   }
 }

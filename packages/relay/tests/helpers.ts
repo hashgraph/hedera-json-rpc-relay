@@ -82,6 +82,76 @@ const mockData = {
         }
     },
 
+    tokenId: '0.0.13312',
+    token: {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "auto_renew_account": "0.1.2",
+        "auto_renew_period": null,
+        "created_timestamp": "1234567890.000000001",
+        "deleted": false,
+        "decimals": 1000,
+        "expiry_timestamp": null,
+        "freeze_default": false,
+        "freeze_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "initial_supply": 1000000,
+        "kyc_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "max_supply": 9223372036854776000,
+        "memo": "token memo",
+        "modified_timestamp": "1234567890.000000001",
+        "name": "Token name",
+        "pause_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "pause_status": "UNPAUSED",
+        "supply_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "supply_type": "INFINITE",
+        "symbol": "ORIGINALRDKSE",
+        "token_id": "0.0.13312",
+        "total_supply": 1000000,
+        "treasury_account_id": "0.1.2",
+        "type": "FUNGIBLE_COMMON",
+        "wipe_key": {
+          "_type": "ProtobufEncoded",
+          "key": 10101
+        },
+        "custom_fees": {
+          "created_timestamp": "1234567890.000000001",
+          "fixed_fees": [
+            {
+              "amount": 100,
+              "collector_account_id": "0.1.5",
+              "denominating_token_id": "0.10.8"
+            }
+          ],
+          "fractional_fees": [
+            {
+              "amount": {
+                "numerator": 12,
+                "denominator": 29
+              },
+              "collector_account_id": "0.1.6",
+              "denominating_token_id": "0.10.9",
+              "maximum": 120,
+              "minimum": 30,
+              "net_of_transfers": true
+            }
+          ]
+        }
+      },
+
     notFound: {
         "_status": {
             "messages": [
@@ -94,7 +164,6 @@ const mockData = {
 };
 
 export { expectUnsupportedMethod, expectedError, signTransaction, mockData };
-
 
 export const bytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
 export const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
@@ -137,6 +206,28 @@ export const defaultBlock = {
     'gas_used': gasUsed1 + gasUsed2,
     'logs_bloom': '0x'
 };
+export const defaultContract = {
+    "admin_key": null,
+    "auto_renew_account": null,
+    "auto_renew_period": 7776000,
+    "contract_id": "0.0.1052",
+    "created_timestamp": "1659622477.294172233",
+    "deleted": false,
+    "evm_address": null,
+    "expiration_timestamp": null,
+    "file_id": "0.0.1051",
+    "max_automatic_token_associations": 0,
+    "memo": "",
+    "obtainer_id": null,
+    "permanent_removal": null,
+    "proxy_account_id": null,
+    "timestamp": {
+      "from": "1659622477.294172233",
+      "to": null
+    },
+    "bytecode": "0x123456",
+    "runtime_bytecode": "0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100321234"
+};
 export const defaultContractResults = {
     'results': [
         {
@@ -175,6 +266,9 @@ export const defaultContractResults = {
     }
 };
 
+export const defaultEvmAddress = '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69';
+export const defaultFromLongZeroAddress = '0x0000000000000000000000000000000000001f41';
+
 export const defaultLogTopics = [
     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
     "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -194,20 +288,28 @@ export const defaultLogs1 = [
         "bloom": logBloom1,
         "contract_id": contractId1,
         "data": "0x",
-        "index": "0x0",
+        "index": 0,
         "topics": defaultLogTopics,
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp1
+        "timestamp": contractTimestamp1,
+        "block_hash": blockHash,
+        "block_number": blockNumber,
+        "transaction_hash": contractHash1,
+        "transaction_index": 1
     },
     {
         "address": "0x0000000000000000000000000000000002131951",
         "bloom": logBloom2,
         "contract_id": contractId1,
         "data": "0x",
-        "index": "0x1",
+        "index": 1,
         "topics": defaultLogTopics,
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp1
+        "timestamp": contractTimestamp1,
+        "block_hash": blockHash,
+        "block_number": blockNumber,
+        "transaction_hash": contractHash1,
+        "transaction_index": 1
     }
 ];
 
@@ -217,10 +319,14 @@ export const defaultLogs2 = [
         "bloom": logBloom3,
         "contract_id": contractId1,
         "data": "0x",
-        "index": "0x0",
+        "index": 0,
         "topics": [],
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp2
+        "timestamp": contractTimestamp2,
+        "block_hash": blockHash2,
+        "block_number": blockNumber2,
+        "transaction_hash": contractHash2,
+        "transaction_index": 1
     }
 ];
 
@@ -230,10 +336,14 @@ export const defaultLogs3 = [
         "bloom": logBloom4,
         "contract_id": contractId2,
         "data": "0x",
-        "index": "0x0",
+        "index": 0,
         "topics": [],
         "root_contract_id": "0.0.34806097",
-        "timestamp": contractTimestamp3
+        "timestamp": contractTimestamp3,
+        "block_hash": blockHash3 ,
+        "block_number": blockNumber3,
+        "transaction_hash": contractHash3,
+        "transaction_index": 1
     }
 ];
 
@@ -392,3 +502,5 @@ export const defaultDetailedContractResultByHash = {
     "v": 1,
     "nonce": 1
 };
+
+export const defaultErrorMessage = '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';

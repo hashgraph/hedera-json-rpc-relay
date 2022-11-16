@@ -32,8 +32,8 @@ console.log(`SDK setup for ${JSON.stringify(network)} for account: ${process.env
 
 const createAccountFromCompressedPublicKey = async function(compressedPublicKey) {
   const transferTransaction = await (new HederaSDK.TransferTransaction()
-    .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(10))
-    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-10)))
+    .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(100))
+    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-100)))
     .setTransactionMemo('relay dapp test crypto transfer')
     .execute(client);
 
@@ -111,14 +111,22 @@ const transferHTSToken = async function(accountId, tokenId) {
   console.log(`${amount} of HTS Token ${tokenId} can be spent by ${accountId}`);
 };
 
+const deployHederaTokenService = async function(wallet) {
+  const contractArtifact = require('../../src/contracts/HederaTokenService.json');
+
+  const contractFactory = new ethers.ContractFactory(contractArtifact.abi, contractArtifact.bytecode, wallet);
+  const contract = await contractFactory.deploy({ gasLimit: 1_000_000 });
+  const { contractAddress } = await contract.deployTransaction.wait();
+
+  return contractAddress;
+};
+
 (async () => {
-  //wait for 20 sec, to be sure that local node is loaded, before trying to create accounts
-  await new Promise(r => setTimeout(r, 20000));
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
   if (mainPrivateKeyString === '') {
     mainPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw()
   }
-  const mainWallet = new ethers.Wallet(mainPrivateKeyString);
+  const mainWallet = new ethers.Wallet(mainPrivateKeyString, new ethers.providers.JsonRpcProvider(process.env.RPC_URL));
   const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
   const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
   console.log(`Primary wallet account private: ${mainPrivateKeyString}, public: ${mainCompressedKey}, id: ${mainAccountId}`);
@@ -132,8 +140,12 @@ const transferHTSToken = async function(accountId, tokenId) {
   const receiverAccountId = (await createAccountFromCompressedPublicKey(receiverCompressedKey)).accountId;
   console.log(`Receiver wallet account private: ${receiverPrivateKeyString}, public: ${receiverCompressedKey}, id: ${receiverAccountId}`);
 
+  const HTSContractAddress = await deployHederaTokenService(mainWallet);
+  console.log(`HTS Contract Address: ${HTSContractAddress}`);
   const { tokenId, tokenAddress } = await createHTSToken();
-  fs.writeFileSync(path.resolve(__dirname + '../../../') + '/.htsTokenAddress.json', '{"HTS_ADDRESS":"' + tokenAddress + '"}');
+  const token2 = await createHTSToken();
+  fs.writeFileSync(path.resolve(__dirname + '../../../src/contracts/') + '/.htsTokenInfo.json',
+    `{"HTS_ADDRESS":"${tokenAddress}", "HTS_SECOND_ADDRESS":"${token2.tokenAddress}", "HTS_CONTRACT_ADDRESS": "${HTSContractAddress}"}`);
 
   await associateHTSToken(mainAccountId, tokenId, mainPrivateKeyString);
   await approveHTSToken(mainAccountId, tokenId);

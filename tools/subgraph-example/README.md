@@ -6,6 +6,16 @@ For more information on subgraphs, check the official TheGraph documentation htt
 
 ## Prerequisites:
 
+### JSON-RPC Relay configurations:
+
+Note: Currently you'll have to start the relay from the main branch in this repo, because it contains important bugfixes. This doc will be updated when a new version containing all the fixes is released.
+
+The graph node is configured to run against a local instance of the json-rpc-relay. Be sure to set the following options in your .env file:
+```
+ETH_GET_LOGS_BLOCK_RANGE_LIMIT=2000
+DEFAULT_RATE_LIMIT=2000
+```
+
 ### Deploy and interact with the Greeter contract using one of the other examples:
 
 1. [hardhat-example](../hardhat-example)
@@ -25,7 +35,14 @@ Run `npm run codegen` or `yarn codegen`
 
 Run `npm run graph-local` or `yarn graph-local`
 
-Note: The graph node is configured to run against a local instance of the json-rpc-relay. If you run the graph-node against a local Hedera node, every time you restart the hedera-node it is recommended to do a clean-up of the graph-node. To do this run `npm run graph-local-clean` or `yarn graph-local-clean`
+Note: If you run the graph-node against a local Hedera node and see this error in the graph-node console:
+```
+Trying again after eth_getBlockByNumber(0, false) RPC call failed (attempt #10) with result Err(Ethereum node could not find genesis block), provider: local-rpc-0
+```
+
+Uncomment [this](./docker-compose.yml#L24) line and restart the node.
+
+Every time you restart the hedera-node it is recommended to do a clean-up of the graph-node. To do this run `npm run graph-local-clean` or `yarn graph-local-clean`
 
 ### Deploy the subgraph to the local graph-node:
 

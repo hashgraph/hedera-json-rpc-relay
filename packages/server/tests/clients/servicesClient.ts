@@ -44,6 +44,7 @@ import {
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
+import { Utils } from '../helpers/utils';
 
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
@@ -70,103 +71,110 @@ export default class ServicesClient {
         this.client.setOperator(AccountId.fromString(accountId), opPrivateKey);
     }
 
-    async executeQuery(query: Query<any>) {
+    async executeQuery(query: Query<any>, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
-            this.logger.info(`Execute ${query.constructor.name} query`);
+            this.logger.info(`${requestIdPrefix} Execute ${query.constructor.name} query`);
             return query.execute(this.client);
         } catch (e) {
-            this.logger.error(e, `Error executing ${query.constructor.name} query`);
+            this.logger.error(e, `${requestIdPrefix} Error executing ${query.constructor.name} query`);
         }
     };
 
-    async executeTransaction(transaction: Transaction) {
+    async executeTransaction(transaction: Transaction, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
             const resp = await transaction.execute(this.client);
-            this.logger.info(`Executed transaction of type ${transaction.constructor.name}. TX ID: ${resp.transactionId.toString()}`);
+            this.logger.info(`${requestIdPrefix} Executed transaction of type ${transaction.constructor.name}. TX ID: ${resp.transactionId.toString()}`);
             return resp;
         } catch (e) {
-            this.logger.error(e, `Error executing ${transaction.constructor.name} transaction`);
+            this.logger.error(e, `${requestIdPrefix} Error executing ${transaction.constructor.name} transaction`);
         }
     };
 
-    async executeAndGetTransactionReceipt(transaction: Transaction) {
-        const resp = await this.executeTransaction(transaction);
+    async executeAndGetTransactionReceipt(transaction: Transaction, requestId?: string) {
+        const resp = await this.executeTransaction(transaction, requestId);
         return resp?.getReceipt(this.client);
     };
 
-    async getRecordResponseDetails(resp: TransactionResponse) {
-        this.logger.info(`Retrieve record for ${resp.transactionId.toString()}`);
+    async getRecordResponseDetails(resp: TransactionResponse, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+        this.logger.info(`${requestIdPrefix} Retrieve record for ${resp.transactionId.toString()}`);
         const record = await resp.getRecord(this.client);
         const nanoString = record.consensusTimestamp.nanos.toString();
         const executedTimestamp = `${record.consensusTimestamp.seconds}.${nanoString.padStart(9, '0')}`;
         const transactionId = record.transactionId;
         const transactionIdNanoString = transactionId.validStart?.nanos.toString();
         const executedTransactionId = `${transactionId.accountId}-${transactionId.validStart?.seconds}-${transactionIdNanoString?.padStart(9, '0')}`;
-        this.logger.info(`executedTimestamp: ${executedTimestamp}, executedTransactionId: ${executedTransactionId}`);
+        this.logger.info(`${requestIdPrefix} executedTimestamp: ${executedTimestamp}, executedTransactionId: ${executedTransactionId}`);
         return { executedTimestamp, executedTransactionId };
     };
 
-    async createToken(initialSupply = 1000) {
+    async createToken(initialSupply = 1000, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const symbol = Math.random().toString(36).slice(2, 6).toUpperCase();
-        this.logger.trace(`symbol = ${symbol}`);
+        this.logger.trace(`${requestIdPrefix} symbol = ${symbol}`);
         const resp = await this.executeAndGetTransactionReceipt(new TokenCreateTransaction()
             .setTokenName(`relay-acceptance token ${symbol}`)
             .setTokenSymbol(symbol)
             .setDecimals(3)
             .setInitialSupply(new Hbar(initialSupply).toTinybars())
             .setTreasuryAccountId(this._thisAccountId())
-            .setTransactionMemo('Relay test token create'));
+            .setTransactionMemo('Relay test token create'), requestId);
 
-        this.logger.trace(`get token id from receipt`);
+        this.logger.trace(`${requestIdPrefix} get token id from receipt`);
         const tokenId = resp?.tokenId;
-        this.logger.info(`token id = ${tokenId?.toString()}`);
+        this.logger.info(`${requestIdPrefix} token id = ${tokenId?.toString()}`);
         return tokenId;
     };
 
-    async associateToken(tokenId) {
+    async associateToken(tokenId, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         await this.executeAndGetTransactionReceipt(
             await new TokenAssociateTransaction()
                 .setAccountId(this._thisAccountId())
                 .setTokenIds([tokenId])
-                .setTransactionMemo('Relay test token association'));
+                .setTransactionMemo('Relay test token association'), requestId);
 
         this.logger.debug(
-            `Associated account ${this._thisAccountId()} with token ${tokenId.toString()}`
+            `${requestIdPrefix} Associated account ${this._thisAccountId()} with token ${tokenId.toString()}`
         );
     }
 
-    async transferToken(tokenId, recipient: AccountId, amount = 10) {
+    async transferToken(tokenId, recipient: AccountId, amount = 10, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         await this.executeAndGetTransactionReceipt(new TransferTransaction()
             .addTokenTransfer(tokenId, this._thisAccountId(), -amount)
             .addTokenTransfer(tokenId, recipient, amount)
-            .setTransactionMemo('Relay test token transfer'));
+            .setTransactionMemo('Relay test token transfer'), requestId);
 
         this.logger.debug(
-            `Sent 10 tokens from account ${this._thisAccountId()} to account ${recipient.toString()} on token ${tokenId.toString()}`
+            `${requestIdPrefix} Sent 10 tokens from account ${this._thisAccountId()} to account ${recipient.toString()} on token ${tokenId.toString()}`
         );
 
         const balances = await this.executeQuery(new AccountBalanceQuery()
-            .setAccountId(recipient));
+            .setAccountId(recipient), requestId);
 
         this.logger.debug(
-            `Token balances for ${recipient.toString()} are ${balances.tokens
+            `${requestIdPrefix} Token balances for ${recipient.toString()} are ${balances.tokens
                 .toString()
                 .toString()}`
         );
     }
 
-    async createParentContract(contractJson) {
+    async createParentContract(contractJson, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const contractByteCode = (contractJson.deployedBytecode.replace('0x', ''));
 
         const fileReceipt = await this.executeAndGetTransactionReceipt(new FileCreateTransaction()
             .setKeys([this.client.operatorPublicKey || this.DEFAULT_KEY])
             .setContents(contractByteCode)
-            .setTransactionMemo('Relay test file create'));
+            .setTransactionMemo('Relay test file create'), requestId);
 
         // Fetch the receipt for transaction that created the file
         // The file ID is located on the transaction receipt
         const fileId = fileReceipt?.fileId;
-        this.logger.info(`contract bytecode file: ${fileId?.toString()}`);
+        this.logger.info(`${requestIdPrefix} contract bytecode file: ${fileId?.toString()}`);
 
         // Create the contract
         const contractReceipt = await this.executeAndGetTransactionReceipt(new ContractCreateTransaction()
@@ -177,19 +185,20 @@ export default class ServicesClient {
             .setInitialBalance(1)
             .setBytecodeFileId(fileId || '')
             .setAdminKey(this.client.operatorPublicKey || this.DEFAULT_KEY)
-            .setTransactionMemo('Relay test contract create'));
+            .setTransactionMemo('Relay test contract create'), requestId);
 
         // The contract ID is located on the transaction receipt
         const contractId = contractReceipt?.contractId;
 
-        this.logger.info(`new contract ID: ${contractId?.toString()}`);
+        this.logger.info(`${requestIdPrefix} new contract ID: ${contractId?.toString()}`);
 
         return contractId;
     };
 
-    async executeContractCall(contractId, functionName: string, params: ContractFunctionParameters, gasLimit = 75000) {
+    async executeContractCall(contractId, functionName: string, params: ContractFunctionParameters, gasLimit = 75000, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
-        this.logger.info(`Execute contracts ${contractId}'s createChild method`);
+        this.logger.info(`${requestIdPrefix} Execute contracts ${contractId}'s createChild method`);
         const contractExecTransactionResponse =
             await this.executeTransaction(new ContractExecuteTransaction()
                 .setContractId(contractId)
@@ -198,38 +207,39 @@ export default class ServicesClient {
                     functionName,
                     params
                 )
-                .setTransactionMemo('Relay test contract execution'));
+                .setTransactionMemo('Relay test contract execution'), requestId);
 
         // @ts-ignore
-        const resp = await this.getRecordResponseDetails(contractExecTransactionResponse);
+        const resp = await this.getRecordResponseDetails(contractExecTransactionResponse, requestId);
         const contractExecuteTimestamp = resp.executedTimestamp;
         const contractExecutedTransactionId = resp.executedTransactionId;
 
         return { contractExecuteTimestamp, contractExecutedTransactionId };
     };
 
-    async createAliasAccount(initialBalance = 10, provider = null): Promise<AliasAccount> {
+    async createAliasAccount(initialBalance = 10, provider = null, requestId?: string): Promise<AliasAccount> {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const privateKey = PrivateKey.generateECDSA();
         const publicKey = privateKey.publicKey;
         const aliasAccountId = publicKey.toAccountId(0, 0);
 
-        this.logger.trace(`Create new Eth compatible account w privateKey: ${privateKey}, alias: ${aliasAccountId.toString()} and balance ~${initialBalance} hb`);
+        this.logger.trace(`${requestIdPrefix} Create new Eth compatible account w privateKey: ${privateKey}, alias: ${aliasAccountId.toString()} and balance ~${initialBalance} hb`);
 
         const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
             .addHbarTransfer(this._thisAccountId(), new Hbar(initialBalance).negated())
             .addHbarTransfer(aliasAccountId, new Hbar(initialBalance))
-            .setTransactionMemo('Relay test crypto transfer'));
+            .setTransactionMemo('Relay test crypto transfer'), requestId);
 
-        this.logger.debug(`Get ${aliasAccountId.toString()} receipt`);
+        this.logger.debug(`${requestIdPrefix} Get ${aliasAccountId.toString()} receipt`);
         await aliasCreationResponse?.getReceipt(this.client);
 
         const balance = await this.executeQuery(new AccountBalanceQuery()
-            .setAccountId(aliasAccountId));
-        this.logger.info(`Balance of the new account: ${balance.toString()}`);
+            .setAccountId(aliasAccountId), requestId);
+        this.logger.info(`${requestIdPrefix} Balance of the new account: ${balance.toString()}`);
 
         const accountInfo = await this.executeQuery(new AccountInfoQuery()
-            .setAccountId(aliasAccountId));
-        this.logger.info(`New account Info - accountId: ${accountInfo.accountId.toString()}, evmAddress: ${accountInfo.contractAccountId}`);
+            .setAccountId(aliasAccountId), requestId);
+        this.logger.info(`${requestIdPrefix} New account Info - accountId: ${accountInfo.accountId.toString()}, evmAddress: ${accountInfo.contractAccountId}`);
         const servicesClient = new ServicesClient(
             this.network,
             accountInfo.accountId.toString(),
@@ -276,7 +286,8 @@ export default class ServicesClient {
         return accountBalance.hbars;
     }
 
-    async updateFileContent(fileId: string, content: string): Promise<void> {
+    async updateFileContent(fileId: string, content: string, requestId?: string): Promise<void> {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const response = await new FileUpdateTransaction()
             .setFileId(fileId)
             .setContents(Buffer.from(content, 'hex'))
@@ -284,17 +295,17 @@ export default class ServicesClient {
             .execute(this.client);
 
         const receipt = await response.getReceipt(this.client);
-        this.logger.info(`File ${fileId} updated with status: ${receipt.status.toString()}`);
+        this.logger.info(`${requestIdPrefix} File ${fileId} updated with status: ${receipt.status.toString()}`);
     }
 
-    async getAccountBalance(account: string | AccountId): Promise<AccountBalance> {
+    async getAccountBalance(account: string | AccountId, requestId?: string): Promise<AccountBalance> {
         const accountId = typeof account === "string" ? AccountId.fromString(account) : account;
         return this.executeQuery(new AccountBalanceQuery()
-            .setAccountId(accountId));
+            .setAccountId(accountId), requestId);
     }
 
-    async getAccountBalanceInWeiBars(account: string | AccountId) {
-        const balance = await this.getAccountBalance(account);
+    async getAccountBalanceInWeiBars(account: string | AccountId, requestId?: string) {
+        const balance = await this.getAccountBalance(account, requestId);
 
         return ethers.BigNumber.from(balance.hbars.toTinybars().toString()).mul(ServicesClient.TINYBAR_TO_WEIBAR_COEF);
     }
@@ -340,7 +351,8 @@ export default class ServicesClient {
         };
     }
 
-    async associateHTSToken(accountId, tokenId, privateKey, htsClient) {
+    async associateHTSToken(accountId, tokenId, privateKey, htsClient, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const tokenAssociate = await (await new TokenAssociateTransaction()
             .setAccountId(accountId)
             .setTokenIds([tokenId])
@@ -349,20 +361,22 @@ export default class ServicesClient {
             .execute(htsClient);
 
         await tokenAssociate.getReceipt(htsClient);
-        this.logger.info(`HTS Token ${tokenId} associated to : ${accountId}`);
+        this.logger.info(`${requestIdPrefix} HTS Token ${tokenId} associated to : ${accountId}`);
     };
 
-    async approveHTSToken(spenderId, tokenId, htsClient) {
+    async approveHTSToken(spenderId, tokenId, htsClient, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         const amount = 10000;
         const tokenApprove = await (new AccountAllowanceApproveTransaction()
             .addTokenAllowance(tokenId, spenderId, amount))
             .execute(htsClient);
 
         await tokenApprove.getReceipt(htsClient);
-        this.logger.info(`${amount} of HTS Token ${tokenId} can be spent by ${spenderId}`);
+        this.logger.info(`${requestIdPrefix} ${amount} of HTS Token ${tokenId} can be spent by ${spenderId}`);
     };
 
-    async transferHTSToken(accountId, tokenId, amount, fromId = this.client.operatorAccountId) {
+    async transferHTSToken(accountId, tokenId, amount, fromId = this.client.operatorAccountId, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
             const tokenTransfer = await (await new TransferTransaction()
                 .addTokenTransfer(tokenId, fromId, -amount)
@@ -370,11 +384,11 @@ export default class ServicesClient {
                 .execute(this.client);
 
             const rec = await tokenTransfer.getReceipt(this.client);
-            this.logger.info(`${amount} of HTS Token ${tokenId} can be spent by ${accountId}`);
-            this.logger.debug(rec);
+            this.logger.info(`${requestIdPrefix} ${amount} of HTS Token ${tokenId} can be spent by ${accountId}`);
+            this.logger.debug(`${requestIdPrefix} ${rec}`);
         }
         catch(e) {
-            this.logger.debug(e);
+            this.logger.error(e, `${requestIdPrefix} TransferTransaction failed`);
         }
     };
 

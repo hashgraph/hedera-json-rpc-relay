@@ -29,6 +29,7 @@ import { ethers } from 'ethers';
 import ERC20MockJson from '../../contracts/ERC20Mock.json';
 import ERC721MockJson from '../../contracts/ERC721Mock.json';
 import TokenCreateJson from '../../contracts/TokenCreateContract.json';
+import { Utils } from '../../helpers/utils';
 
 /**
  * Tests for:
@@ -74,17 +75,20 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   let mainContractReceiverWalletFirst;
   let mainContractReceiverWalletSecond;
   let HTSTokenWithCustomFeesContractAddress;
+  let requestId;
 
   before(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(200, relay.provider);
-    accounts[1] = await servicesNode.createAliasAccount(30, relay.provider);
-    accounts[2] = await servicesNode.createAliasAccount(30, relay.provider);
+    requestId = Utils.generateRequestId();
+
+    accounts[0] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
+    accounts[1] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
+    accounts[2] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
 
     // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise(r => setTimeout(r, 5000));
-    await mirrorNode.get(`/accounts/${accounts[0].accountId}`);
-    await mirrorNode.get(`/accounts/${accounts[1].accountId}`);
-    await mirrorNode.get(`/accounts/${accounts[2].accountId}`);
+    await mirrorNode.get(`/accounts/${accounts[0].accountId}`, requestId);
+    await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);
+    await mirrorNode.get(`/accounts/${accounts[2].accountId}`, requestId);
 
     mainContractAddress = await deploymainContract();
     HTSTokenContractAddress = await createHTSToken();
@@ -98,6 +102,10 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
     mainContractOwner = mainContract;
     mainContractReceiverWalletFirst = mainContract.connect(accounts[1].wallet);
     mainContractReceiverWalletSecond = mainContract.connect(accounts[2].wallet);
+  });
+
+  this.beforeEach(async () => {
+    requestId = Utils.generateRequestId();
   });
 
   async function deploymainContract() {
@@ -165,6 +173,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   });
 
   it('should associate to a token with custom fees', async function() {
+    //delay for hbar rate limiter to reset
+    await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
+
     const mainContractOwner = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
     const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, HTSTokenWithCustomFeesContractAddress, { gasLimit: 10000000 });
     expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);

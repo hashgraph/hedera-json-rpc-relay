@@ -77,8 +77,16 @@ TIER_1_RATE_LIMIT = 100
 TIER_2_RATE_LIMIT = 200
 TIER_3_RATE_LIMIT = 400
 LIMIT_DURATION = 60000
+HBAR_RATE_LIMIT_TINYBAR = 6000000000
+HBAR_RATE_LIMIT_DURATION = 60000
+RATE_LIMIT_DISABLED = false
+DEV_MODE = false
+MIRROR_NODE_RETRIES = 3
+MIRROR_NODE_RETRY_DELAY = 500
+GAS_PRICE_TINY_BAR_BUFFER = 10000000000
 ```
 
+Note: Read more about `DEV_MODE` [here](docs/dev-mode.md)
 The following table highlights some initial configuration values to consider
 
 | Config     | Default | Description                                                                                                                                                                      |

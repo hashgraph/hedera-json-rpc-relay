@@ -21,7 +21,7 @@
 import { expect } from 'chai';
 import { validateOpenRPCDocument, parseOpenRPCDocument } from "@open-rpc/schema-utils-js";
 
-import Ajv from 'ajv'
+import Ajv from 'ajv';
 
 import path from 'path';
 import pino from 'pino';
@@ -50,11 +50,14 @@ import {
     contractTimestamp2,
     contractTimestamp3,
     defaultBlock,
+    defaultContract,
     defaultContractResults,
     defaultDetailedContractResultByHash,
     defaultDetailedContractResults,
     defaultDetailedContractResults2,
     defaultDetailedContractResults3,
+    defaultEvmAddress,
+    defaultFromLongZeroAddress,
     defaultLogs,
     defaultLogTopics,
     defaultNetworkFees,
@@ -115,7 +118,7 @@ describe("Open RPC Specification", function () {
         mock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultNetworkFees);
         mock.onGet(`contracts/${contractAddress1}`).reply(200, null);
         mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultContractResults);
-        mock.onGet(`contracts/results/logs`).reply(200, defaultLogs);
+        mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultLogs);
         mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
         mock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
         mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}`).reply(200, defaultContractResults);
@@ -127,7 +130,12 @@ describe("Open RPC Specification", function () {
         mock.onGet(`accounts/${contractAddress1}`).reply(200, { account: contractAddress1 });
         mock.onGet(`accounts/${contractAddress3}`).reply(200, { account: contractAddress3 });
         mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
-
+        mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+            from: `${defaultEvmAddress}`
+          });
+        for (const log of defaultLogs.logs) {
+        mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
+        }
         sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
         sdkClientStub.getAccountBalanceInTinyBar.returns(100000000000)
         sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));
@@ -277,12 +285,17 @@ describe("Open RPC Specification", function () {
         };
         mock.onGet(
             `contracts/results/logs` +
-            `?topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
+            `?timestamp=gte:${defaultBlock.timestamp.from}` +
+            `&timestamp=lte:${defaultBlock.timestamp.to}` +
+            `&topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
             `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}`
         ).reply(200, filteredLogs);
         mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
             blocks: [defaultBlock]
         });
+        for (const log of filteredLogs.logs) {
+            mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
+        }
 
         const response = await ethImpl.getLogs(null, null, null, null, defaultLogTopics);
 
@@ -290,13 +303,13 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
-        const response = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, defaultBlock.count);
+        const response = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count));
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionByBlockHashAndIndex, response);
     });
 
     it('should execute "eth_getTransactionByBlockNumberAndIndex"', async function () {
-        const response = await ethImpl.getTransactionByBlockNumberAndIndex(defaultBlock.number.toString(), defaultBlock.count);
+        const response = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionByBlockNumberAndIndex, response);
     });
@@ -314,6 +327,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionReceipt"', async function () {
+        mock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
         const response = await ethImpl.getTransactionReceipt(defaultTxHash);
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionReceipt, response);

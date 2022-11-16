@@ -9,7 +9,7 @@
         "eslint-config-airbnb-base": "^15.0.0",
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-import": "^2.25.4",
-        "ethereum-waffle": "^3.4.4",
+        "ethereum-waffle": "^4.0.7",
         "nodemon": "^2.0.15",
         "nyc": "^15.1.0",
         "prettier": "^2.5.1"
@@ -23,6 +23,7 @@
         "acceptancetest": "ts-mocha packages/server/tests/acceptance/index.spec.ts --exit",
         "acceptancetest:api": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api' --exit",
         "acceptancetest:erc20": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@erc20' --exit",
+        "acceptancetest:ratelimiter": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@ratelimiter' --exit",
         "acceptancetest:tokencreate": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokencreate' --exit",
         "acceptancetest:tokenmanagement": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokenmanagement' --exit",
         "acceptancetest:htsprecompilev1": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompilev1' --exit",
@@ -41,15 +42,16 @@
         "start:docker": "docker run --name hedera-relay -d -p 7546:7546 ${npm_package_name}:latest",
         "test": "npx lerna run test",
         "openrpctest": "ts-mocha packages/relay/tests/lib/openrpc.spec.ts --exit",
-        "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts"
+        "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts",
+        "check:node": "ts-node packages/server/tests/helpers/nodeCheck.ts"
     },
     "dependencies": {
-        "@hashgraph/hedera-local": "^1.2.0",
+        "@hashgraph/hedera-local": "^2.1.3",
         "@open-rpc/schema-utils-js": "^1.16.1",
         "@types/find-config": "^1.0.1",
         "keyv-file": "^0.2.0",
         "koa-cors": "^0.0.16",
-        "lerna": "^4.0.0",
+        "lerna": "^6.0.3",
         "pino": "^7.11.0",
         "pino-pretty": "^7.6.1",
         "prom-client": "^14.0.1",
