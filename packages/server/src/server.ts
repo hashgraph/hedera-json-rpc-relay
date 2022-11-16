@@ -508,7 +508,7 @@ app.useRpc('eth_feeHistory', async (params: any) => {
         type: 'blockNumber'
       },
       2: {
-        type: 'array'
+        type: ['array']
       }
     }
   );

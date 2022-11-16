@@ -173,6 +173,7 @@ export function validateParams(params: any, indexes: any)  {
   for (const index of Object.keys(indexes)) {
     const validation = indexes[Number(index)];
     const param = params[Number(index)];
+
     const result = validateParam(index, param, validation);
     if (result instanceof JsonRpcError) {
       return result;
@@ -192,7 +193,7 @@ function validateParam(index: number | string, param: any, validation: any) {
     return predefined.MISSING_REQUIRED_PARAMETER(index);
   }
 
-  if (param !== undefined) {
+  if (param != null) {
     const result = isArray? paramType.test(index, param, validation.type[1]) : paramType.test(param);
     if (result instanceof JsonRpcError) {
       return result;

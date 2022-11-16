@@ -76,7 +76,7 @@ export class EthImpl implements Eth {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
-  
+
   /**
    * Configurable options used when initializing the cache.
    *
@@ -1283,6 +1283,8 @@ export class EthImpl implements Eth {
 
   async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
     const params: any = {};
+    const orderParam = { order: 'asc' };
+
     if (blockHash) {
       try {
         const block = await this.mirrorNodeClient.getBlock(blockHash, requestId);
@@ -1348,10 +1350,10 @@ export class EthImpl implements Eth {
 
     let result;
     if (address) {
-      result = await this.mirrorNodeClient.getContractResultsLogsByAddress(address, params, undefined, requestId);
+      result = await this.mirrorNodeClient.getContractResultsLogsByAddress(address, params, orderParam, requestId);
     }
     else {
-      result = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestId);
+      result = await this.mirrorNodeClient.getContractResultsLogs(params, orderParam, requestId);
     }
 
     if (!result || !result.logs) {

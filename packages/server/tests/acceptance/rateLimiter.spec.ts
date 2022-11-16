@@ -32,7 +32,7 @@ import { Utils } from '../helpers/utils';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
-    
+
     const accounts: AliasAccount[] = [];
 
     // @ts-ignore
@@ -136,7 +136,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                         const transaction = {
                             ...defaultLondonTransactionData,
                             to: mirrorContract.evm_address,
-                            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+                            nonce: await relay.getAccountNonce('0x' + accounts[1].address, requestId),
                             maxPriorityFeePerGas: gasPrice,
                             maxFeePerGas: gasPrice,
                         };
@@ -161,7 +161,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+                        nonce: await relay.getAccountNonce('0x' + accounts[1].address, requestId),
                         maxPriorityFeePerGas: gasPrice,
                         maxFeePerGas: gasPrice,
                     };

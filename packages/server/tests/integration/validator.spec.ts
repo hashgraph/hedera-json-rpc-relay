@@ -190,7 +190,6 @@ describe('Validator', async () => {
     it('returns an error if param is other type of truthy or falsy value', async () => {
       expectInvalidParam(Validator.validateParams([1], validation), 0, error);
       expectInvalidParam(Validator.validateParams([0], validation), 0, error);
-      expectInvalidParam(Validator.validateParams([null], validation), 0, error);
     });
 
     it('returns an error if param is another type', async () => {

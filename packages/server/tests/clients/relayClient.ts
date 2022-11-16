@@ -122,7 +122,7 @@ export default class RelayClient {
 
     /**
      * @param requestId
-     * 
+     *
      * Returns the result of eth_gasPrice as a Number.
      */
     async gasPrice(requestId?: string): Promise<number> {
