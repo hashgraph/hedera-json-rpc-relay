@@ -1,5 +1,4 @@
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
-import e from 'express';
 
 const BASE_HEX_REGEX = '^0[xX][a-fA-F0-9]';
 export const ERROR_CODE = -32602;
