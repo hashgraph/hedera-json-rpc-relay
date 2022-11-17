@@ -51,6 +51,18 @@ export const objects = {
     },
     "data": {
       type: "hex"
+    },
+    "type": {
+      type: "hex"
+    },
+    "chainId": {
+      type: "hex"
+    },
+    "nonce": {
+      type: "hex"
+    },
+    "input": {
+      type: "hex"
     }
   }
 };
