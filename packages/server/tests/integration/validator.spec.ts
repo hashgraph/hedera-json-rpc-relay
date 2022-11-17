@@ -398,5 +398,14 @@ describe('Validator', async () => {
       expect(result!.name).to.eq("Internal error");
       expect(result!.message).to.eq("Error invoking RPC: Missing or unsupported param type 'undefined'");
     });
+
+    it('returns an error if Object param contains unexpected param', async () => {
+      const validation = { 0: { type: 'filter' } };
+      const result = Validator.validateParams([{"formBlock": "0x1"}], validation);
+
+      expect(result instanceof JsonRpcError).to.eq(true);
+      expect(result!.name).to.eq("Internal error");
+      expect(result!.message).to.eq("Error invoking RPC: Unexpected parameter 'formBlock'");
+    });
   });
 });

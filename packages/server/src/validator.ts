@@ -1,4 +1,5 @@
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
+import e from 'express';
 
 const BASE_HEX_REGEX = '^0[xX][a-fA-F0-9]';
 export const ERROR_CODE = -32602;
@@ -80,7 +81,19 @@ export const TYPES = {
   },
   "filter": {
     test: (param: any) => {
-      return Object.prototype.toString.call(param) === "[object Object]" ? new FilterObject(param).validate() : false;
+      if(Object.prototype.toString.call(param) === "[object Object]") {
+        try {
+          return new FilterObject(param).validate();
+        } catch(error) {
+          if (error instanceof JsonRpcError) {
+            return error;
+          }
+
+          throw error;
+        }
+      }
+
+      return false;
     },
     error: `Expected FilterObject`
   },
@@ -100,7 +113,19 @@ export const TYPES = {
   },
   "transaction": {
     test: (param: any) => {
-      return Object.prototype.toString.call(param) === "[object Object]" ? new TransactionObject(param).validate() : false;
+      if(Object.prototype.toString.call(param) === "[object Object]") {
+        try {
+          return new TransactionObject(param).validate();
+        } catch(error) {
+          if (error instanceof JsonRpcError) {
+            return error;
+          }
+
+          throw error;
+        }
+      }
+
+      return false;
     },
     error: 'Expected TransactionObject'
   },
@@ -121,6 +146,7 @@ export class TransactionObject {
   data?: string;
 
   constructor(transaction: any) {
+    hasUnexpectedParams(transaction, objects.transaction);
     this.from = transaction.from;
     this.to = transaction.to;
     this.gas = transaction.gas;
@@ -148,6 +174,7 @@ export class FilterObject {
   topics?: string[] | string[][];
 
   constructor (filter: any) {
+    hasUnexpectedParams(filter, objects.filter);
     this.blockHash = filter.blockHash;
     this.fromBlock = filter.fromBlock;
     this.toBlock = filter.toBlock;
@@ -235,5 +262,14 @@ function validateArray(name: string, array: any[], innerType?: string) {
   ? predefined.INVALID_PARAMETER(name, TYPES[innerType].error)
   : true;
 }
+
+function hasUnexpectedParams(actual: any, expected: any) {
+  const expectedParams = Object.keys(expected);
+  const actualParams = Object.keys(actual);
+  const unknownParam = actualParams.find((param: any) => !expectedParams.includes(param));
+  if (unknownParam) {
+    throw predefined.INTERNAL_ERROR(`Unexpected parameter '${unknownParam}'`);
+  }
+};
 
 export * as Validator from "./validator";
