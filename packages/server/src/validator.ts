@@ -113,7 +113,7 @@ export const TYPES = {
     error: DEFAULT_HEX_ERROR
   },
   'topicHash': {
-    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
+    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param) || param === null,
     error: TOPIC_HASH_ERROR
   },
   'topics': {
