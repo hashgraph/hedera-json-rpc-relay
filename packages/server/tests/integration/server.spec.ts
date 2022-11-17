@@ -355,17 +355,6 @@ describe('RPC Server', async function() {
         BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, "Expected TransactionObject");
       });
 
-      it('validates Transaction `to` param is required', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{}]
-        });
-
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + " 'to' for TransactionObject");
-      });
-
       it('validates Transaction `to` param is address', async function() {
         const res = await this.testClient.post('/', {
           'id': '2',
@@ -783,16 +772,6 @@ describe('RPC Server', async function() {
         });
 
         BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, "Expected TransactionObject");
-      });
-
-      it('validates Transaction `to` param is required', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{}]
-        });;
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + " 'to' for TransactionObject");
       });
 
       it('validates Transaction `to` param is address', async function() {

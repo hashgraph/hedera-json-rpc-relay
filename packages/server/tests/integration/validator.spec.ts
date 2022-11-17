@@ -333,10 +333,6 @@ describe('Validator', async () => {
       expectInvalidParam(Validator.validateParams([true], validation), 0, error);
     });
 
-    it('returns an error when `to` fields is missing', async () => {
-      expectMissingParam(Validator.validateParams([{}], validation), 'to', object);
-    });
-
     it('returns an error if the Transaction Object properties are the wrong type', async () => {
       expectInvalidParam(Validator.validateParams([{"from": "0x1234", "to": "0x4422E9088662c44604189B2aA3ae8eE282fceBB7"}], validation), 'from', Validator.ADDRESS_ERROR, object);
       expectInvalidParam(Validator.validateParams([{"to": "0x1234"}], validation), 'to', Validator.ADDRESS_ERROR, object);

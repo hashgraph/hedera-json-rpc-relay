@@ -99,7 +99,7 @@ describe('@erc20 Acceptance Tests', async function () {
             });
 
             it('Relay can execute "eth_getCode" for ERC20 contract with evmAddress', async function () {
-                const res = await relay.call('eth_getCode', [contract.address], requestId);
+                const res = await relay.call('eth_getCode', [contract.address, "latest"], requestId);
                 const expectedBytecode = `${EthImpl.redirectBytecodePrefix}${contract.address.slice(2)}${EthImpl.redirectBytecodePostfix}`
                 if (testTitles[i].testName !== HTS) {
                     expect(res).to.eq(testTitles[i].expectedBytecode);

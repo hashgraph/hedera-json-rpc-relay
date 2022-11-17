@@ -32,7 +32,6 @@ export const objects = {
       type: "address"
     },
     "to": {
-      required: true,
       type: "address"
     },
     "gas": {
