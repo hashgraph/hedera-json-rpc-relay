@@ -96,11 +96,7 @@ export const TYPES = {
         try {
           return new FilterObject(param).validate();
         } catch(error) {
-          if (error instanceof JsonRpcError) {
-            return error;
-          }
-
-          throw error;
+          return error;
         }
       }
 
@@ -128,11 +124,7 @@ export const TYPES = {
         try {
           return new TransactionObject(param).validate();
         } catch(error) {
-          if (error instanceof JsonRpcError) {
-            return error;
-          }
-
-          throw error;
+          return error;
         }
       }
 

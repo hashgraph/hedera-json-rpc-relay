@@ -272,8 +272,20 @@ describe('Validator', async () => {
       expect(result).to.eq(undefined);
     });
 
+    it('does not return an error if topics param is null', async () => {
+      const result = Validator.validateParams([[null, "0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"]], validation);
+
+      expect(result).to.eq(undefined);
+    });
+
     it('should handle nested topic arrays', async () => {
       const result = Validator.validateParams([[["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], ["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb56"]]], validation);
+
+      expect(result).to.eq(undefined);
+    });
+
+    it('should allow topic to be null in nested topic arrays', async () => {
+      const result = Validator.validateParams([[[null, "0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], ["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb56"]]], validation);
 
       expect(result).to.eq(undefined);
     });
@@ -398,13 +410,22 @@ describe('Validator', async () => {
       expect(result!.message).to.eq("Error invoking RPC: Missing or unsupported param type 'undefined'");
     });
 
-    it('returns an error if Object param contains unexpected param', async () => {
+    it('returns an error if Filter Object param contains unexpected param', async () => {
       const validation = { 0: { type: 'filter' } };
       const result = Validator.validateParams([{"formBlock": "0x1"}], validation);
 
       expect(result instanceof JsonRpcError).to.eq(true);
       expect(result!.name).to.eq("Internal error");
       expect(result!.message).to.eq("Error invoking RPC: Unexpected parameter 'formBlock'");
+    });
+
+    it('returns an error if Transaction Object param contains unexpected param', async () => {
+      const validation = { 0: { type: 'transaction' } };
+      const result = Validator.validateParams([{"form": "0x1"}], validation);
+
+      expect(result instanceof JsonRpcError).to.eq(true);
+      expect(result!.name).to.eq("Internal error");
+      expect(result!.message).to.eq("Error invoking RPC: Unexpected parameter 'form'");
     });
   });
 });
