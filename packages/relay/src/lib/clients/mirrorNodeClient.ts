@@ -350,10 +350,11 @@ export class MirrorNodeClient {
         requestId);
     }
 
-    public async getResultsFromNextLinks(
+    public async pageAllResults(
         result: any,
         requestId?: string
     ) {
+        let unproccesedLogs = result.logs;
         if (result.links && result.links.next) {
             let nextLink = result.links.next;
             while (nextLink) {
@@ -361,11 +362,11 @@ export class MirrorNodeClient {
                 if (!nextResult || !nextResult.logs) {
                   break;
                 }
-                result = result.concat(nextResult.logs);
+                unproccesedLogs = unproccesedLogs.concat(nextResult.logs);
                 nextLink = nextResult.links.next;
               }
         }
-        return result;
+        return unproccesedLogs;
     }
 
     public async getLatestBlock(requestId?: string) {

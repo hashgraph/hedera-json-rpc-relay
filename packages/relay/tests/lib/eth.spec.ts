@@ -1559,15 +1559,17 @@ describe('Eth calls using MirrorNode', async function () {
 
       mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
       
-      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=2&order=desc`).replyOnce(200, filteredLogs)
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=2&order=asc`).replyOnce(200, filteredLogs)
       .onGet('contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0').replyOnce(200, filteredLogsNext);
 
       unfilteredLogs.logs.forEach((log , index) => {
         mock.onGet(`contracts/${log.address}`).reply(200, {...defaultContract, contract_id: `0.0.105${index}`});
       });
-
-      const limitParams = {limit: 2, order: 'desc'};
-      const result = await ethImpl.getLogs(null, null, null, null, null, undefined, limitParams);
+      //setting mirror node limit to 2 for this test only
+      process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
+      const result = await ethImpl.getLogs(null, null, null, null, null, undefined);
+      //resetting mirror node limit to 100
+      process.env['MIRROR_NODE_LIMIT_PARAM'] = '100';
       expect(result).to.exist;
 
       expect(result.length).to.eq(4);
@@ -1575,6 +1577,7 @@ describe('Eth calls using MirrorNode', async function () {
       expectLogData(result[1], filteredLogs.logs[1], defaultDetailedContractResults);
       expectLogData(result[2], filteredLogsNext.logs[0], defaultDetailedContractResults2);
       expectLogData(result[3], filteredLogsNext.logs[1], defaultDetailedContractResults3);
+
     });
 
     it('Should return evm address if contract has one', async function () {
