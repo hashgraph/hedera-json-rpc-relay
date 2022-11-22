@@ -1359,8 +1359,10 @@ export class EthImpl implements Eth {
       return [];
     }
 
+    let unproccesedLogs = await this.mirrorNodeClient.pageAllResults(result, requestId);
+
     const logs: Log[] = [];
-    for(const log of result.logs) {
+    for(const log of unproccesedLogs) {
       logs.push(
         new Log({
           address: await this.getLogEvmAddress(log.address, requestId) || log.address,
