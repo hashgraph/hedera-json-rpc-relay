@@ -68,6 +68,7 @@ export class MirrorNodeClient {
     private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
     private static GET_NETWORK_FEES_ENDPOINT = 'network/fees';
     private static GET_TOKENS_ENDPOINT = 'tokens';
+    private static GET_TRANSACTIONS_ENDPOINT = 'transactions';
 
     private static ORDER = {
         ASC: 'asc',
@@ -196,6 +197,22 @@ export class MirrorNodeClient {
         throw new MirrorNodeClientError(error.message, effectiveStatusCode);
     }
 
+    async getPaginatedResults(url: string, pathLabel: string, resultProperty: string, allowedErrorStatuses?: number[], requestId?: string, results = [], page = 1) {
+        const result = await this.request(url, pathLabel, allowedErrorStatuses, requestId);
+
+        if (result && result[resultProperty]) {
+            results = results.concat(result[resultProperty]);
+        }
+
+        if (result && result.links?.next && page <= constants.MAX_MIRROR_NODE_PAGINATION) {
+            page++;
+            return this.getPaginatedResults(result.links.next, pathLabel, resultProperty, allowedErrorStatuses, requestId, results, page);
+        }
+        else {
+            return results;
+        }
+    }
+
     public async getAccountLatestTransactionByAddress(idOrAliasOrEvmAddress: string, requestId?: string): Promise<object> {
         return this.request(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?order=desc&limit=1`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
@@ -210,10 +227,28 @@ export class MirrorNodeClient {
             requestId);
     }
 
-    public async getBalanceAtTimestamp(accountId: string, timestamp: string, requestId?: string) {
+    public async getTransactionsForAccount(accountId: string, timestampFrom: string, timestampTo: string, requestId?: string) {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'account.id', accountId);
-        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
+        this.setQueryParam(queryParamObject, 'timestamp', `gte:${timestampFrom}`);
+        this.setQueryParam(queryParamObject, 'timestamp', `lt:${timestampTo}`);
+        const queryParams = this.getQueryParams(queryParamObject);
+
+        return this.getPaginatedResults(
+            `${MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT}${queryParams}`,
+            MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT,
+            'transactions',
+            [400, 404],
+            requestId
+        );
+    }
+
+    public async getBalanceAtTimestamp(accountId: string, timestamp?: string, requestId?: string) {
+        const queryParamObject = {};
+        this.setQueryParam(queryParamObject, 'account.id', accountId);
+        if (timestamp && timestamp !== "") {
+            this.setQueryParam(queryParamObject, 'timestamp', timestamp);
+        }
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_BALANCE_ENDPOINT,
@@ -428,7 +463,14 @@ export class MirrorNodeClient {
 
     setQueryParam(queryParamObject, key, value) {
         if (key && value !== undefined) {
-            queryParamObject[key] = value;
+            if (!queryParamObject[key]) {
+                queryParamObject[key] = value;
+            }
+
+            // Allow for duplicating params
+            else {
+                queryParamObject[key] += `&${key}=${value}`;
+            }
         }
     }
 

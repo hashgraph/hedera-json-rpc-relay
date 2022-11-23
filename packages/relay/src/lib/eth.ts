@@ -571,7 +571,35 @@ export class EthImpl implements Eth {
 
               // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
               if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
-                throw predefined.UNKNOWN_HISTORICAL_BALANCE;
+
+                const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(mirrorAccount.account, undefined, requestId);
+                let currentBalance = 0;
+                let currentTimestamp;
+                let balanceFromTxs = 0;
+
+                if (balance.balances?.length) {
+                  currentBalance = balance.balances[0].balance;
+                  currentTimestamp = balance.timestamp;
+                }
+
+                let transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
+                    mirrorAccount.account,
+                    block.timestamp.from,
+                    currentTimestamp,
+                    requestId
+                );
+
+                for(const tx of transactionsInTimeWindow) {
+                  for (const transfer of tx.transfers) {
+                    if (transfer.account === mirrorAccount.account && !transfer.is_approval) {
+                      balanceFromTxs += transfer.amount;
+                    }
+                  }
+                }
+
+                balanceFound = true;
+                weibars = (currentBalance - balanceFromTxs) * constants.TINYBAR_TO_WEIBAR_COEF;
+                // throw predefined.UNKNOWN_HISTORICAL_BALANCE;
               }
 
               // The block is NOT from the last 15 minutes, use /balances rest API
