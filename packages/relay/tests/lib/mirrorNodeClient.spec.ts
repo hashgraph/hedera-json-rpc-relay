@@ -33,7 +33,7 @@ const registry = new Registry();
 import pino from 'pino';
 const logger = pino();
 
-describe.only('MirrorNodeClient', async function () {
+describe('MirrorNodeClient', async function () {
   this.timeout(20000);
 
   let instance, mock, mirrorNodeInstance;
