@@ -75,6 +75,9 @@ describe('@api RPC Server Acceptance Tests', function () {
     const FEE_SCHEDULE_FILE_CONTENT_DEFAULT = "0a280a0a08541a061a04408888340a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 853000
     const FEE_SCHEDULE_FILE_CONTENT_UPDATED = "0a280a0a08541a061a0440a8953a0a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200"; // Eth gas = 953000
 
+    let blockNumberAtStartOfTests = 0;
+    let mirrorAccount0AtStartOfTests;
+    
     describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
 
@@ -108,6 +111,10 @@ describe('@api RPC Server Acceptance Tests', function () {
 
             mirrorPrimaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`, requestId)).accounts[0];
             mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`, requestId)).accounts[0];
+
+            const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
+            blockNumberAtStartOfTests = latestBlock.number;
+            mirrorAccount0AtStartOfTests = await mirrorNode.get(`/accounts/${accounts[0].accountId}`, requestId);
         });
 
         this.beforeEach(async () => {
@@ -893,16 +900,17 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
             });
 
-            it('@release should fail "eth_getBalance" with block number in the last 15 minutes', async function () {
+            it('@release should execute "eth_getBalance" with block number in the last 15 minutes', async function () {
                 const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
                 const earlierBlockNumber = latestBlock.number - 2;
+                const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), earlierBlockNumber], requestId);
+                expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
+            });
 
-                try {
-                    await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), earlierBlockNumber], requestId);
-                }
-                catch(error) {
-                    Assertions.jsonRpcError(error, predefined.UNKNOWN_HISTORICAL_BALANCE);
-                }
+            it('@release should execute "eth_getBalance" with block number in the last 15 minutes for account that has performed contract deploys/calls"', async function () {
+                const res = await relay.call('eth_getBalance', [accounts[0].address, blockNumberAtStartOfTests], requestId);
+                const balanceAtBlock = mirrorAccount0AtStartOfTests.balance.balance * constants.TINYBAR_TO_WEIBAR_COEF;
+                expect(res).to.eq(`0x${balanceAtBlock.toString(16)}`);
             });
 
             describe('@release Hardcoded RPC Endpoints', () => {
