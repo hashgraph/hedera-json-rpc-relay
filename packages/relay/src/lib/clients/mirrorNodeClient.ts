@@ -204,7 +204,7 @@ export class MirrorNodeClient {
             results = results.concat(result[resultProperty]);
         }
 
-        if (result && result.links?.next && page <= constants.MAX_MIRROR_NODE_PAGINATION) {
+        if (result && result.links?.next && page < constants.MAX_MIRROR_NODE_PAGINATION) {
             page++;
             return this.getPaginatedResults(result.links.next, pathLabel, resultProperty, allowedErrorStatuses, requestId, results, page);
         }

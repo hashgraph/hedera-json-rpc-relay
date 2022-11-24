@@ -83,6 +83,7 @@ const mockData = {
     },
 
     tokenId: '0.0.13312',
+    tokenLongZero: '0x0000000000000000000000000000000000003400',
     token: {
         "admin_key": {
           "_type": "ProtobufEncoded",

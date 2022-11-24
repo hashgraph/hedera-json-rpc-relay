@@ -599,7 +599,6 @@ export class EthImpl implements Eth {
 
                 balanceFound = true;
                 weibars = (currentBalance - balanceFromTxs) * constants.TINYBAR_TO_WEIBAR_COEF;
-                // throw predefined.UNKNOWN_HISTORICAL_BALANCE;
               }
 
               // The block is NOT from the last 15 minutes, use /balances rest API

@@ -1352,12 +1352,8 @@ describe('Eth calls using MirrorNode', async function () {
 
       it('blockNumber is in the latest 15 minutes', async () => {
         mock.onGet(`contracts/${contractId1}`).reply(200, defaultContract);
-        try {
-          await ethImpl.getBalance(contractId1, '2');
-        }
-        catch(error) {
-          expect(error).to.deep.equal(predefined.UNKNOWN_HISTORICAL_BALANCE);
-        }
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        expect(resBalance).to.equal(defHexBalance);
       });
 
       it('blockNumber is not in the latest 15 minutes', async () => {
