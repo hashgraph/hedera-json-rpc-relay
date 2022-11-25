@@ -76,7 +76,7 @@ export class EthImpl implements Eth {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
-  
+
   /**
    * Configurable options used when initializing the cache.
    *
@@ -541,7 +541,7 @@ export class EthImpl implements Eth {
         blockNumberOrTag = EthImpl.blockLatest;
       }
     }
-    
+
     // Cache is only set for `not found` balances
     const cachedLabel = `getBalance.${account}.${blockNumberOrTag}`;
     const cachedResponse: string | undefined = this.cache.get(cachedLabel);
@@ -961,7 +961,7 @@ export class EthImpl implements Eth {
     const sSig = contractResult.s === null ? null : contractResult.s.substring(0, 66);
 
     if (process.env.DEV_MODE && process.env.DEV_MODE === 'true' && contractResult.result === 'CONTRACT_REVERT_EXECUTED') {
-      let err = predefined.CONTRACT_REVERT(contractResult.error_message);
+      const err = predefined.CONTRACT_REVERT(contractResult.error_message);
       throw err;
     }
 
@@ -984,7 +984,7 @@ export class EthImpl implements Eth {
       transactionIndex: EthImpl.numberTo0x(contractResult.transaction_index),
       type: EthImpl.nullableNumberTo0x(contractResult.type),
       v: EthImpl.nullableNumberTo0x(contractResult.v),
-      value: EthImpl.numberTo0x(contractResult.amount),
+      value: EthImpl.nanOrNumberTo0x(contractResult.amount),
     });
   }
 
@@ -1126,7 +1126,6 @@ export class EthImpl implements Eth {
    * Then using the block timerange get all contract results to get transaction details.
    * If showDetails is set to true subsequently call mirror node for additional transaction details
    *
-   * TODO What do we return if we cannot find the block with that hash?
    * @param blockHashOrNumber
    * @param showDetails
    */
@@ -1137,7 +1136,7 @@ export class EthImpl implements Eth {
 
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
-    const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams },undefined, requestId);
+    const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams }, undefined, requestId);
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
 
@@ -1268,7 +1267,7 @@ export class EthImpl implements Eth {
             transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
             type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
             v: EthImpl.nullableNumberTo0x(contractResultDetails.v),
-            value: EthImpl.numberTo0x(contractResultDetails.amount),
+            value: EthImpl.nanOrNumberTo0x(contractResultDetails.amount),
           });
         }
       })
@@ -1359,7 +1358,7 @@ export class EthImpl implements Eth {
       return [];
     }
 
-    let unproccesedLogs = await this.mirrorNodeClient.pageAllResults(result, requestId);
+    const unproccesedLogs = await this.mirrorNodeClient.pageAllResults(result, requestId);
 
     const logs: Log[] = [];
     for(const log of unproccesedLogs) {

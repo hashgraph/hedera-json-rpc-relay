@@ -965,6 +965,19 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.to).equal(contractAddress1);
   });
 
+  it('eth_getTransactionByBlockNumberAndIndex with null amount', async function () {
+    // mirror node request mocks
+    mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, defaultContractResults);
+    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, {...defaultDetailedContractResults, amount: null});
+
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
+    expect(result).to.exist;
+    if (result == null) return;
+
+    // verify aggregated info
+    expect(result.value).equal("0x0");
+  });
+
   it('eth_getTransactionByBlockNumberAndIndex with no contract result match', async function () {
     mock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(400, {
       '_status': {
@@ -1171,7 +1184,7 @@ describe('Eth calls using MirrorNode', async function () {
           balance: defBalance
         }
       });
-      
+
       const resBalance = await ethImpl.getBalance(contractAddress1, blockNumber);
       expect(resBalance).to.equal(defHexBalance);
     });
@@ -1558,7 +1571,7 @@ describe('Eth calls using MirrorNode', async function () {
       };
 
       mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
-      
+
       mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=2&order=asc`).replyOnce(200, filteredLogs)
       .onGet('contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0').replyOnce(200, filteredLogsNext);
 
@@ -2691,6 +2704,24 @@ describe('Eth', async function () {
       expect(result.gas).to.eq('0x0');
     });
 
+    it('handles transactions with null amount', async function () {
+      // mirror node request mocks
+      const detailedResultsWithNullNullableValues = {
+        ...defaultDetailedContractResultByHash,
+        amount: null
+      };
+
+      mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
+      const result = await ethImpl.getTransactionByHash(defaultTxHash);
+      if (result == null) return;
+
+      expect(result).to.exist;
+      expect(result.value).to.eq('0x0');
+    });
+
     it('returns reverted transactions', async function () {
       mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHashReverted);
       mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
@@ -2721,7 +2752,7 @@ describe('Eth', async function () {
       expect(result.type).to.eq(EthImpl.numberTo0x(defaultTransaction.type));
       expect(result.v).to.eq(EthImpl.numberTo0x(defaultTransaction.v));
       expect(result.value).to.eq(defaultTransaction.value);
-    })
+    });
 
     it('throws error for reverted transactions when DEV_MODE=true', async function () {
       const initialDevModeValue = process.env.DEV_MODE;
@@ -2741,6 +2772,6 @@ describe('Eth', async function () {
       }
 
       process.env.DEV_MODE = initialDevModeValue;
-    })
+    });
   });
 });
