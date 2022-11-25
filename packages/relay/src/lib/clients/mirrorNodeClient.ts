@@ -266,8 +266,12 @@ export class MirrorNodeClient {
     public async getBlocks(blockNumber?: number | string[], timestamp?: string, limitOrderParams?: ILimitOrderParams, requestId?: string) {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'block.number', blockNumber);
-        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-        this.setLimitOrderParams(queryParamObject, limitOrderParams);
+        if (timestamp) {
+            this.setQueryParam(queryParamObject, 'timestamp', timestamp);
+        }
+        if (limitOrderParams) {
+            this.setLimitOrderParams(queryParamObject, limitOrderParams);
+        }
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_BLOCKS_ENDPOINT,

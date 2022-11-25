@@ -378,7 +378,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getContractResults` detailed', async () => {
-    mock.onGet(`contracts/results`).reply(200, { results: [detailedContractResult], links: { next: null } });
+    mock.onGet(`contracts/results?limit=100&order=asc`).reply(200, { results: [detailedContractResult], links: { next: null } });
 
     const result = await mirrorNodeInstance.getContractResults();
     expect(result).to.exist;
@@ -407,7 +407,7 @@ describe('MirrorNodeClient', async function () {
   };
   it('`getContractResults` by id', async () => {
     const contractId = '0.0.5001';
-    mock.onGet(`contracts/${contractId}/results`).reply(200, { results: [contractResult], links: { next: null } });
+    mock.onGet(`contracts/${contractId}/results?limit=100&order=asc`).reply(200, { results: [contractResult], links: { next: null } });
 
     const result = await mirrorNodeInstance.getContractResultsByAddress(contractId);
     expect(result).to.exist;
@@ -422,7 +422,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`getContractResults` by address', async () => {
     const address = '0x0000000000000000000000000000000000001f41';
-    mock.onGet(`contracts/${address}/results`).reply(200, { results: [contractResult], links: { next: null } });
+    mock.onGet(`contracts/${address}/results?limit=100&order=asc`).reply(200, { results: [contractResult], links: { next: null } });
 
     const result = await mirrorNodeInstance.getContractResultsByAddress(address);
     expect(result).to.exist;
@@ -452,7 +452,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`getLatestContractResultsByAddress` by address with timestamp, limit 2', async () => {
     const address = '0x0000000000000000000000000000000000001f41';
-    mock.onGet(`contracts/${address}/results?timestamp=lte:987654.000123456&limit=2&order=asc`).reply(200, { results: [contractResult], links: { next: null } });
+    mock.onGet(`contracts/${address}/results?timestamp=lte:987654.000123456&limit=2&order=desc`).reply(200, { results: [contractResult], links: { next: null } });
 
     const result = await mirrorNodeInstance.getLatestContractResultsByAddress(address, "987654.000123456", 2);
     expect(result).to.exist;
@@ -478,7 +478,7 @@ describe('MirrorNodeClient', async function () {
     'timestamp': '1586567700.453054000'
   };
   it('`getContractResultsLogs` ', async () => {
-    mock.onGet(`contracts/results/logs`).reply(200, { logs: [log] });
+    mock.onGet(`contracts/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
 
     const result = await mirrorNodeInstance.getContractResultsLogs();
     expect(result).to.exist;
@@ -490,7 +490,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getContractResultsLogsByAddress` ', async () => {
-    mock.onGet(`contracts/${log.address}/results/logs`).reply(200, { logs: [log] });
+    mock.onGet(`contracts/${log.address}/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
 
     const result = await mirrorNodeInstance.getContractResultsLogsByAddress(log.address);
     expect(result).to.exist;
@@ -502,7 +502,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getContractResultsLogsByAddress` - incorrect address', async () => {
-    mock.onGet(`contracts/${log.address}/results/logs`).reply(200, { logs: [log] });
+    mock.onGet(`contracts/${log.address}/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
 
     const incorrectAddress = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed';
     try {
@@ -514,7 +514,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getContractResultsLogsByNextLink`', async () => {
-    const nextLink = `/api/v1/contracts/results/logs?limit=2&order=asc&timestamp=lte:1668432962.375200975&index=lt:0`
+    const nextLink = `contracts/results/logs?limit=2&order=asc&timestamp=lte:1668432962.375200975&index=lt:0`
     mock.onGet(`${nextLink}`).reply(200, { logs: [log] });
 
     const result = await mirrorNodeInstance.getContractResultsLogsByNextLink(nextLink);
