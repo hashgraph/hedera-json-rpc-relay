@@ -480,10 +480,10 @@ describe('MirrorNodeClient', async function () {
   it('`getContractResultsLogs` ', async () => {
     mock.onGet(`contracts/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
 
-    const result = await mirrorNodeInstance.getContractResultsLogs();
-    expect(result).to.exist;
-    expect(result.logs.length).to.gt(0);
-    const firstResult = result.logs[0];
+    const results = await mirrorNodeInstance.getContractResultsLogs();
+    expect(results).to.exist;
+    expect(results.length).to.gt(0);
+    const firstResult = results[0];
     expect(firstResult.address).equal(log.address);
     expect(firstResult.contract_id).equal(log.contract_id);
     expect(firstResult.index).equal(log.index);
@@ -492,10 +492,10 @@ describe('MirrorNodeClient', async function () {
   it('`getContractResultsLogsByAddress` ', async () => {
     mock.onGet(`contracts/${log.address}/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
 
-    const result = await mirrorNodeInstance.getContractResultsLogsByAddress(log.address);
-    expect(result).to.exist;
-    expect(result.logs.length).to.gt(0);
-    const firstResult = result.logs[0];
+    const results = await mirrorNodeInstance.getContractResultsLogsByAddress(log.address);
+    expect(results).to.exist;
+    expect(results.length).to.gt(0);
+    const firstResult = results[0];
     expect(firstResult.address).equal(log.address);
     expect(firstResult.contract_id).equal(log.contract_id);
     expect(firstResult.index).equal(log.index);
@@ -511,19 +511,6 @@ describe('MirrorNodeClient', async function () {
     catch(err: any) {
       expect(err).to.exist;
     }
-  });
-
-  it('`getContractResultsLogsByNextLink`', async () => {
-    const nextLink = `contracts/results/logs?limit=2&order=asc&timestamp=lte:1668432962.375200975&index=lt:0`
-    mock.onGet(`${nextLink}`).reply(200, { logs: [log] });
-
-    const result = await mirrorNodeInstance.getContractResultsLogsByNextLink(nextLink);
-    expect(result).to.exist;
-    expect(result.logs.length).to.gt(0);
-    const firstResult = result.logs[0];
-    expect(firstResult.address).equal(log.address);
-    expect(firstResult.contract_id).equal(log.contract_id);
-    expect(firstResult.index).equal(log.index);
   });
 
   it('`getBlocks` by number', async () => {

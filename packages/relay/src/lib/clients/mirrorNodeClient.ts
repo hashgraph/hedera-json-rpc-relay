@@ -355,10 +355,14 @@ export class MirrorNodeClient {
         limitOrderParams?: ILimitOrderParams,
         requestId?: string) {
         const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`,
+
+        return this.getPaginatedResults(
+            `${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
+            'logs',
             [400, 404],
-            requestId);
+            requestId
+        );
     }
 
     public async getContractResultsLogsByAddress(
@@ -372,41 +376,16 @@ export class MirrorNodeClient {
             MirrorNodeClient.ADDRESS_PLACEHOLDER,
             address
         );
-        return this.request(`${apiEndpoint}${queryParams}`,
+
+        return this.getPaginatedResults(
+            `${apiEndpoint}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT,
+            'logs',
             [400, 404],
-            requestId);
+            requestId
+        );
     }
 
-    public async getContractResultsLogsByNextLink(
-        link: string,
-        requestId?: string
-    ) {
-        const nextLink = link.replace(constants.NEXT_LINK_PREFIX, '');
-        return this.request(`${nextLink}`,
-        MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
-        [400, 404],
-        requestId);
-    }
-
-    public async pageAllResults(
-        result: any,
-        requestId?: string
-    ) {
-        let unproccesedLogs = result.logs;
-        if (result.links && result.links.next) {
-            let nextLink = result.links.next;
-            while (nextLink) {
-                let nextResult = await this.getContractResultsLogsByNextLink(nextLink, requestId);
-                if (!nextResult || !nextResult.logs) {
-                  break;
-                }
-                unproccesedLogs = unproccesedLogs.concat(nextResult.logs);
-                nextLink = nextResult.links.next;
-              }
-        }
-        return unproccesedLogs;
-    }
 
     public async getLatestBlock(requestId?: string) {
         return this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.DESC), requestId);

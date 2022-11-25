@@ -1543,7 +1543,7 @@ describe('Eth calls using MirrorNode', async function () {
           {...defaultLogs.logs[0], address: "0x0000000000000000000000000000000002131951"},
           {...defaultLogs.logs[1], address: "0x0000000000000000000000000000000002131952"}
         ],
-        links: {next: '/api/v1/contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0'}
+        links: {next: 'contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0'}
       };
       const filteredLogsNext = {
         logs: [
@@ -1555,8 +1555,8 @@ describe('Eth calls using MirrorNode', async function () {
 
       mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
       
-      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=2&order=asc`).replyOnce(200, filteredLogs)
-      .onGet('contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0').replyOnce(200, filteredLogsNext);
+      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=2&order=asc`).replyOnce(200, filteredLogs);
+      mock.onGet('contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0').replyOnce(200, filteredLogsNext);
 
       unfilteredLogs.logs.forEach((log , index) => {
         mock.onGet(`contracts/${log.address}`).reply(200, {...defaultContract, contract_id: `0.0.105${index}`});
