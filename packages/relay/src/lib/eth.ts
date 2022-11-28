@@ -1348,7 +1348,20 @@ export class EthImpl implements Eth {
 
     let result;
     if (address) {
-      result = await this.mirrorNodeClient.getContractResultsLogsByAddress(address, params, undefined, requestId);
+      const addresses = address.split(",");
+      result = {
+        logs: []
+      };
+      const logPromises = addresses.map(addr => this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestId));
+
+      const logResults = await Promise.all(logPromises);
+      logResults.forEach(res => {
+        result.logs = result.logs.concat(res.logs);
+      })
+
+      result.logs.sort((a, b) => {
+        return a.timestamp > b.timestamp ? 1 : -1;
+      })
     }
     else {
       result = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestId);
