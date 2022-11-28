@@ -1360,7 +1360,7 @@ export class EthImpl implements Eth {
       })
 
       result.logs.sort((a, b) => {
-        return a.timestamp > b.timestamp ? 1 : -1;
+        return a.timestamp >= b.timestamp ? 1 : -1;
       })
     }
     else {

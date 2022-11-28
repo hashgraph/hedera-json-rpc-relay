@@ -123,7 +123,7 @@ describe('Eth calls using MirrorNode', async function () {
   const contractCallData = "0xef641f44";
   const blockTimestamp = '1651560386';
   const blockTimestampHex = EthImpl.numberTo0x(Number(blockTimestamp));
-  const firstTransactionTimestampSeconds = '1653077547';
+  const firstTransactionTimestampSeconds = '1653077541';
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
   const htsTokenAddress = '0x0000000000000000000000000000000002dca431';
   const contractTimestamp1 = `${firstTransactionTimestampSeconds}.983983199`;
@@ -430,6 +430,12 @@ describe('Eth calls using MirrorNode', async function () {
     "bytecode": "0x123456",
     "runtime_bytecode": mirrorNodeDeployedBytecode
   };
+
+  const defaultContract2 = {
+    ...defaultContract,
+    "address": contractAddress2,
+    "contract_id": contractId2,
+  }
 
   const defaultHTSToken =
     {
@@ -1645,6 +1651,32 @@ describe('Eth calls using MirrorNode', async function () {
       expectLogData1(result[0]);
       expectLogData2(result[1]);
       expectLogData3(result[2]);
+    });
+
+    it('multiple addresses filter', async function () {
+      const filteredLogsAddress1 = {
+        logs: [defaultLogs.logs[0], defaultLogs.logs[1], defaultLogs.logs[2]]
+      };
+      const filteredLogsAddress2 = {
+        logs: defaultLogs3
+      };
+      mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
+      mock.onGet(`contracts/${contractAddress1}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogsAddress1);
+      mock.onGet(`contracts/${contractAddress2}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogsAddress2);
+      for (const log of filteredLogsAddress1.logs) {
+        mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
+      }
+      mock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+
+      const result = await ethImpl.getLogs(null, null, null, `${contractAddress1},${contractAddress2}`, null);
+
+      expect(result).to.exist;
+
+      expect(result.length).to.eq(4);
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+      expectLogData3(result[2]);
+      expectLogData4(result[3]);
     });
 
     it('blockHash filter', async function () {

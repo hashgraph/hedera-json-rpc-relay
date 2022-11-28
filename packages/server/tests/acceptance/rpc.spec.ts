@@ -114,7 +114,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             requestId = Utils.generateRequestId();
         });
 
-        describe.only('eth_getLogs', () => {
+        describe('eth_getLogs', () => {
 
             let log0Block, log4Block, contractAddress, contractAddress2, latestBlock, tenBlocksBehindLatest, log0, log4, log5;
 
