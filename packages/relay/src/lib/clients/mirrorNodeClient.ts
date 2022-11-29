@@ -70,6 +70,8 @@ export class MirrorNodeClient {
     private static GET_TOKENS_ENDPOINT = 'tokens';
     private static GET_TRANSACTIONS_ENDPOINT = 'transactions';
 
+    private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
+
     private static ORDER = {
         ASC: 'asc',
         DESC: 'desc'
@@ -247,9 +249,7 @@ export class MirrorNodeClient {
     public async getBalanceAtTimestamp(accountId: string, timestamp?: string, requestId?: string) {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'account.id', accountId);
-        if (timestamp && timestamp !== "") {
-            this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-        }
+        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_BALANCE_ENDPOINT,
@@ -267,12 +267,8 @@ export class MirrorNodeClient {
     public async getBlocks(blockNumber?: number | string[], timestamp?: string, limitOrderParams?: ILimitOrderParams, requestId?: string) {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'block.number', blockNumber);
-        if (timestamp) {
-            this.setQueryParam(queryParamObject, 'timestamp', timestamp);
-        }
-        if (limitOrderParams) {
-            this.setLimitOrderParams(queryParamObject, limitOrderParams);
-        }
+        this.setQueryParam(queryParamObject, 'timestamp', timestamp);
+        this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
         return this.request(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_BLOCKS_ENDPOINT,
@@ -360,7 +356,7 @@ export class MirrorNodeClient {
         return this.getPaginatedResults(
             `${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
-            'logs',
+            MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
             [400, 404],
             requestId
         );
@@ -381,7 +377,7 @@ export class MirrorNodeClient {
         return this.getPaginatedResults(
             `${apiEndpoint}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT,
-            'logs',
+            MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
             [400, 404],
             requestId
         );
