@@ -258,7 +258,8 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       }
     });
 
-    it('should be able to execute setApprovalForAllPublic', async function() {
+    //not working since 0.32.0-alpha.1.
+    xit('should be able to execute setApprovalForAllPublic', async function() {
       const txBefore = (await mainContract.isApprovedForAllPublic(NftHTSTokenContractAddress, mainContractAddress, accounts[1].wallet.address));
       const txBeforeReceipt = await txBefore.wait();
       const beforeFlag = txBeforeReceipt.events.filter(e => e.event === 'Approved')[0].args.approved;
