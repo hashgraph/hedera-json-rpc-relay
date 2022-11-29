@@ -1281,94 +1281,116 @@ export class EthImpl implements Eth {
       });
   }
 
-  async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
-    const params: any = {};
-    if (blockHash) {
-      try {
-        const block = await this.mirrorNodeClient.getBlock(blockHash, requestId);
-        if (block) {
-          params.timestamp = [
-            `gte:${block.timestamp.from}`,
-            `lte:${block.timestamp.to}`
-          ];
-        }else {
-          return [];
-        }
-      }
-      catch(e: any) {
-        if (e instanceof MirrorNodeClientError && e.isNotFound()) {
-          return [];
-        }
-
-        throw e;
-      }
-    } else {
-      const blockRangeLimit = Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
-      let fromBlockNum = 0;
-      let toBlockNum;
-
-      if (!fromBlock && !toBlock) {
-        const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
-        fromBlockNum = parseInt(blockResponse.number);
-        toBlockNum = parseInt(blockResponse.number);
-        params.timestamp = [`gte:${blockResponse.timestamp.from}`, `lte:${blockResponse.timestamp.to}`];
+  private async applyBlockHashParams(params: any, blockHash: string, requestId?: string) {
+    try {
+      const block = await this.mirrorNodeClient.getBlock(blockHash, requestId);
+      if (block) {
+        params.timestamp = [
+          `gte:${block.timestamp.from}`,
+          `lte:${block.timestamp.to}`
+        ];
       } else {
-          params.timestamp = [];
-
-          // Use the `toBlock` if it is the only passed tag, if not utilize the `fromBlock` or default to "latest"
-          const blockTag = toBlock && !fromBlock ? toBlock : fromBlock || "latest";
-
-          const fromBlockResponse = await this.getHistoricalBlockResponse(blockTag, true, requestId);
-          if (fromBlockResponse != null) {
-            params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
-            fromBlockNum = parseInt(fromBlockResponse.number);
-          } else {
-            return [];
-          }
-
-          const toBlockResponse = await this.getHistoricalBlockResponse(toBlock || "latest", true, requestId);
-          if (toBlockResponse != null) {
-            params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
-            toBlockNum = parseInt(toBlockResponse.number);
-          }
+        return false;
+      }
+    }
+    catch(e: any) {
+      if (e instanceof MirrorNodeClientError && e.isNotFound()) {
+        return false;
       }
 
-      if (fromBlockNum > toBlockNum) {
-        return [];
-      } else if ((toBlockNum - fromBlockNum) > blockRangeLimit) {
-        throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
+      throw e;
+    }
+  }
+
+  private async applyBlockRangeParams(params: any, fromBlock: string | null, toBlock: string | null, requestId?: string) {
+    const blockRangeLimit = Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
+    let fromBlockNum = 0;
+    let toBlockNum;
+
+    if (!fromBlock && !toBlock) {
+      const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
+      fromBlockNum = parseInt(blockResponse.number);
+      toBlockNum = parseInt(blockResponse.number);
+      params.timestamp = [`gte:${blockResponse.timestamp.from}`, `lte:${blockResponse.timestamp.to}`];
+    } else {
+      params.timestamp = [];
+
+      // Use the `toBlock` if it is the only passed tag, if not utilize the `fromBlock` or default to "latest"
+      const blockTag = toBlock && !fromBlock ? toBlock : fromBlock || "latest";
+
+      const fromBlockResponse = await this.getHistoricalBlockResponse(blockTag, true, requestId);
+      if (fromBlockResponse != null) {
+        params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
+        fromBlockNum = parseInt(fromBlockResponse.number);
+      } else {
+        return false;
+      }
+
+      const toBlockResponse = await this.getHistoricalBlockResponse(toBlock || "latest", true, requestId);
+      if (toBlockResponse != null) {
+        params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
+        toBlockNum = parseInt(toBlockResponse.number);
       }
     }
 
+    if (fromBlockNum > toBlockNum) {
+      return false;
+    } else if ((toBlockNum - fromBlockNum) > blockRangeLimit) {
+      throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
+    }
+  }
+
+  private applyTopicParams(params: any, topics: any[] | null) {
     if (topics) {
       for (let i = 0; i < topics.length; i++) {
         params[`topic${i}`] = topics[i];
       }
     }
+  }
+
+  private async getLogsByAddress(address: string | [string], params: any, requestId) {
+    const addresses = Array.isArray(address) ? address : [address];
+    let result = {
+      logs: []
+    };
+    const logPromises = addresses.map(addr => this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestId));
+
+    const logResults = await Promise.all(logPromises);
+    logResults.forEach(res => {
+      result.logs = result.logs.concat(res.logs);
+    })
+
+    result.logs.sort((a: any, b: any) => {
+      return a.timestamp >= b.timestamp ? 1 : -1;
+    })
+
+    return result;
+  }
+
+  async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
+    const EMPTY_RESPONSE = [];
+    const params: any = {};
+
+    if (blockHash) {
+      if ( !(await this.applyBlockHashParams(params, blockHash, requestId)) ) {
+        return EMPTY_RESPONSE;
+      }
+    } else if ( !(await this.applyBlockRangeParams(params, fromBlock, toBlock, requestId)) ) {
+        return EMPTY_RESPONSE;
+    }
+
+    this.applyTopicParams(params, topics);
 
     let result;
     if (address) {
-      const addresses = Array.isArray(address) ? address : [address];
-      result = {
-        logs: []
-      };
-      const logPromises = addresses.map(addr => this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestId));
-
-      const logResults = await Promise.all(logPromises);
-      logResults.forEach(res => {
-        result.logs = result.logs.concat(res.logs);
-      })
-
-      result.logs.sort((a, b) => {
-        return a.timestamp >= b.timestamp ? 1 : -1;
-      })
+      result = await this.getLogsByAddress(address, params, requestId);
     }
     else {
       result = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestId);
     }
 
     if (!result || !result.logs) {
-      return [];
+      return EMPTY_RESPONSE;
     }
 
     const unproccesedLogs = await this.mirrorNodeClient.pageAllResults(result, requestId);
