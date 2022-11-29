@@ -1281,7 +1281,7 @@ export class EthImpl implements Eth {
       });
   }
 
-  async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
+  async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
     const params: any = {};
     if (blockHash) {
       try {
@@ -1348,7 +1348,7 @@ export class EthImpl implements Eth {
 
     let result;
     if (address) {
-      const addresses = address.split(",");
+      const addresses = Array.isArray(address) ? address : [address];
       result = {
         logs: []
       };

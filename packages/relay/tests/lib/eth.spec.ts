@@ -1668,7 +1668,7 @@ describe('Eth calls using MirrorNode', async function () {
       }
       mock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
-      const result = await ethImpl.getLogs(null, null, null, `${contractAddress1},${contractAddress2}`, null);
+      const result = await ethImpl.getLogs(null, null, null, [contractAddress1, contractAddress2], null);
 
       expect(result).to.exist;
 

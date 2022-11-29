@@ -236,7 +236,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             it('should be able to use `address` param with multiple addresses', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': tenBlocksBehindLatest,
-                    'address': `${contractAddress},${contractAddress2},${NON_EXISTING_ADDRESS}`
+                    'address': [contractAddress, contractAddress2, NON_EXISTING_ADDRESS]
                 }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
                 expect(logs.length).to.be.eq(6);
