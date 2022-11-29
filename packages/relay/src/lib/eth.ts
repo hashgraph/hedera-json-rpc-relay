@@ -1300,44 +1300,45 @@ export class EthImpl implements Eth {
 
       throw e;
     }
+
+    return true;
   }
 
   private async applyBlockRangeParams(params: any, fromBlock: string | null, toBlock: string | null, requestId?: string) {
     const blockRangeLimit = Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
-    let fromBlockNum = 0;
-    let toBlockNum;
-
     if (!fromBlock && !toBlock) {
       const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
-      fromBlockNum = parseInt(blockResponse.number);
-      toBlockNum = parseInt(blockResponse.number);
       params.timestamp = [`gte:${blockResponse.timestamp.from}`, `lte:${blockResponse.timestamp.to}`];
     } else {
+      let fromBlockNum = 0;
+      let toBlockNum;
       params.timestamp = [];
 
-      // Use the `toBlock` if it is the only passed tag, if not utilize the `fromBlock` or default to "latest"
+      // Use the `toBlock` if it is the only passed tag, if not utilize the `fromBlock`
       const blockTag = toBlock && !fromBlock ? toBlock : fromBlock || "latest";
 
       const fromBlockResponse = await this.getHistoricalBlockResponse(blockTag, true, requestId);
-      if (fromBlockResponse != null) {
-        params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
-        fromBlockNum = parseInt(fromBlockResponse.number);
-      } else {
+      if (!fromBlockResponse) {
         return false;
       }
+
+      params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
+      fromBlockNum = parseInt(fromBlockResponse.number);
 
       const toBlockResponse = await this.getHistoricalBlockResponse(toBlock || "latest", true, requestId);
       if (toBlockResponse != null) {
         params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
         toBlockNum = parseInt(toBlockResponse.number);
       }
+
+      if (fromBlockNum > toBlockNum) {
+        return false;
+      } else if (toBlockNum - fromBlockNum > blockRangeLimit) {
+        throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
+      }
     }
 
-    if (fromBlockNum > toBlockNum) {
-      return false;
-    } else if ((toBlockNum - fromBlockNum) > blockRangeLimit) {
-      throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
-    }
+    return true;
   }
 
   private applyTopicParams(params: any, topics: any[] | null) {
