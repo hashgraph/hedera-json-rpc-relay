@@ -584,7 +584,7 @@ export class EthImpl implements Eth {
 
                 let transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
                     mirrorAccount.account,
-                    block.timestamp.from,
+                    block.timestamp.to,
                     currentTimestamp,
                     requestId
                 );

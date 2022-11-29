@@ -927,6 +927,45 @@ describe('@api RPC Server Acceptance Tests', function () {
             expect(res).to.eq(`0x${balanceAtBlock.toString(16)}`);
         });
 
+        it('@release should correctly execute "eth_getBalance" with block number in the last 15 minutes with several txs around that time', async function () {
+            const initialBalance = await relay.call('eth_getBalance', [accounts[0].address], requestId);
+
+            const acc1Nonce = await relay.getAccountNonce(accounts[1].address);
+            const gasPrice = await relay.gasPrice();
+
+            const transaction = {
+                value: ONE_TINYBAR,
+                gasLimit: 50000,
+                chainId: Number(CHAIN_ID),
+                to: accounts[0].wallet.address,
+                nonce: acc1Nonce,
+                gasPrice: gasPrice,
+            };
+
+            const signedTx1 = await accounts[1].wallet.signTransaction(transaction);
+            const txHash1 = await relay.call('eth_sendRawTransaction', [signedTx1]);
+            const tx1 = await relay.call('eth_getTransactionByHash', [txHash1]);
+
+            const signedTx2 = await accounts[1].wallet.signTransaction({...transaction, nonce: acc1Nonce + 1});
+            const txHash2 = await relay.call('eth_sendRawTransaction', [signedTx2]);
+            const tx2 = await relay.call('eth_getTransactionByHash', [txHash2]);
+
+            const signedTx3 = await accounts[1].wallet.signTransaction({...transaction, nonce: acc1Nonce + 2});
+            const txHash3 = await relay.call('eth_sendRawTransaction', [signedTx3]);
+            const tx3 = await relay.call('eth_getTransactionByHash', [txHash3]);
+
+            const endBalance = await relay.call('eth_getBalance', [accounts[0].address], requestId);
+
+            // initialBalance + sum of value of all transactions
+            const manuallyCalculatedBalance = BigNumber.from(initialBalance).add(BigNumber.from(ONE_TINYBAR).mul(3));
+            expect(BigNumber.from(endBalance).toString()).to.eq(manuallyCalculatedBalance.toString());
+
+            // Balance at the block number of tx1 should be initialBalance + the value of tx1
+            const balanceAtTx1Block = await relay.call('eth_getBalance', [accounts[0].address, tx1.blockNumber], requestId);
+            const manuallyCalculatedBalanceAtTx1Block = BigNumber.from(initialBalance).add(BigNumber.from(ONE_TINYBAR));
+            expect(BigNumber.from(balanceAtTx1Block).toString()).to.eq(manuallyCalculatedBalanceAtTx1Block.toString());
+        });
+
         describe('@release Hardcoded RPC Endpoints', () => {
             let mirrorBlock;
 
