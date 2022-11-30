@@ -1256,17 +1256,18 @@ describe('Eth calls using MirrorNode', async function () {
       const balance2 = 99960581132;
       const balance3 = 99960581133;
       const timestamp1 = 1651550386;
-      const timestamp2 = 1651560086;
+      const timestamp2 = 1651560286;
       const timestamp3 = 1651560386;
+      const timestamp4 = 1651561386;
 
       const hexBalance1 = EthImpl.numberTo0x(balance1 * constants.TINYBAR_TO_WEIBAR_COEF);
       const hexBalance2 = EthImpl.numberTo0x(balance2 * constants.TINYBAR_TO_WEIBAR_COEF);
 
       const latestBlock = Object.assign({}, defaultBlock, {
-        number: 2,
+        number: 4,
         'timestamp': {
           'from': `${timestamp3}.060890949`,
-          'to': `${timestamp3 + 1000}.060890949`
+          'to': `${timestamp4}.060890949`
         },
       });
       const recentBlock = Object.assign({}, defaultBlock, {
@@ -1285,7 +1286,7 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       beforeEach(async () => {
-        mock.onGet(`blocks?limit=1&order=desc`).reply(200, { blocks: [defaultBlock] });
+        mock.onGet(`blocks?limit=1&order=desc`).reply(200, { blocks: [latestBlock] });
         mock.onGet(`blocks/3`).reply(200, defaultBlock);
         mock.onGet(`blocks/0`).reply(200, blockZero);
         mock.onGet(`blocks/2`).reply(200, recentBlock);
@@ -1327,7 +1328,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         mock.onGet(`balances?account.id=${contractId1}`).reply(200, {
-          "timestamp": `${timestamp3}.060890949`,
+          "timestamp": `${timestamp4}.060890949`,
           "balances": [
             {
               "account": contractId1,
@@ -1365,9 +1366,13 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       it('blockNumber is in the latest 15 minutes', async () => {
-        mock.onGet(`contracts/${contractId1}`).reply(200, defaultContract);
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: []
+        });
+
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        expect(resBalance).to.equal(defHexBalance);
+        const historicalBalance = EthImpl.numberTo0x((balance3) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
       });
 
       it('blockNumber is not in the latest 15 minutes', async () => {
@@ -1376,7 +1381,7 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       it('blockNumber is in the latest 15 minutes and there have been several debit transactions', async () => {
-        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${earlierBlock.timestamp.to}&timestamp=lt:${timestamp3}.060890949`).reply(200, {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
           transactions: [
             buildCryptoTransferTransaction("0.0.98", contractId1, 100),
             buildCryptoTransferTransaction("0.0.98", contractId1, 50),
@@ -1384,13 +1389,13 @@ describe('Eth calls using MirrorNode', async function () {
           ]
         });
 
-        const resBalance = await ethImpl.getBalance(contractId1, '1');
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
         const historicalBalance = EthImpl.numberTo0x((balance3 - 175) * constants.TINYBAR_TO_WEIBAR_COEF)
         expect(resBalance).to.equal(historicalBalance);
       });
 
       it('blockNumber is in the latest 15 minutes and there have been several credit transactions', async () => {
-        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${earlierBlock.timestamp.to}&timestamp=lt:${timestamp3}.060890949`).reply(200, {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
           transactions: [
             buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
             buildCryptoTransferTransaction(contractId1, "0.0.98", 50),
@@ -1398,13 +1403,13 @@ describe('Eth calls using MirrorNode', async function () {
           ]
         });
 
-        const resBalance = await ethImpl.getBalance(contractId1, '1');
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
         const historicalBalance = EthImpl.numberTo0x((balance3 + 175) * constants.TINYBAR_TO_WEIBAR_COEF)
         expect(resBalance).to.equal(historicalBalance);
       });
 
       it('blockNumber is in the latest 15 minutes and there have been mixed credit and debit transactions', async () => {
-        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${earlierBlock.timestamp.to}&timestamp=lt:${timestamp3}.060890949`).reply(200, {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
           transactions: [
             buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
             buildCryptoTransferTransaction("0.0.98", contractId1, 50),
@@ -1413,23 +1418,23 @@ describe('Eth calls using MirrorNode', async function () {
           ]
         });
 
-        const resBalance = await ethImpl.getBalance(contractId1, '1');
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
         const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF)
         expect(resBalance).to.equal(historicalBalance);
       });
 
       it('blockNumber is in the latest 15 minutes and there have been mixed credit and debit transactions and transactions are paginated', async () => {
-        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${earlierBlock.timestamp.to}&timestamp=lt:${timestamp3}.060890949`).reply(200, {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
           transactions: [
             buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
             buildCryptoTransferTransaction("0.0.98", contractId1, 50)
           ],
           links: {
-            next: `transactions?account.id=${contractId1}&timestamp=gte:${earlierBlock.timestamp.to}&timestamp=lt:${timestamp3}.060890949&page=2`
+            next: `transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}&page=2`
           }
         });
 
-        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${earlierBlock.timestamp.to}&timestamp=lt:${timestamp3}.060890949&page=2`).reply(200, {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}&page=2`).reply(200, {
           transactions: [
             buildCryptoTransferTransaction(contractId1, "0.0.98", 25),
             buildCryptoTransferTransaction("0.0.98", contractId1, 10),
@@ -1439,7 +1444,7 @@ describe('Eth calls using MirrorNode', async function () {
           }
         });
 
-        const resBalance = await ethImpl.getBalance(contractId1, '1');
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
         const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF)
         expect(resBalance).to.equal(historicalBalance);
       });

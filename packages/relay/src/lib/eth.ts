@@ -565,8 +565,8 @@ export class EthImpl implements Eth {
 
             // If the parsed blockNumber is the same as the one from the latest block retrieve the balance from /accounts/{account.id}
             if (latestBlock && block.number !== latestBlock.number) {
-              const latestTimestamp = Number(latestBlock.timestamp.to.split('.')[0]);
-              const blockTimestamp = Number(block.timestamp.to.split('.')[0]);
+              const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
+              const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
               const timeDiff = latestTimestamp - blockTimestamp;
 
               // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
