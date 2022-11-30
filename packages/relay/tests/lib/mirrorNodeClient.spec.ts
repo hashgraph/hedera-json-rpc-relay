@@ -229,7 +229,7 @@ describe('MirrorNodeClient', async function () {
   };
   it('`getBlocks` by number', async () => {
     const number = 3;
-    mock.onGet(`blocks?block.number=${number}`).reply(200, {blocks: [block], links: {next: null}});
+    mock.onGet(`blocks?block.number=${number}&limit=100&order=asc`).reply(200, {blocks: [block], links: {next: null}});
 
     const result = await mirrorNodeInstance.getBlocks(number);
     expect(result).to.exist;
@@ -243,7 +243,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`getBlocks` by timestamp', async () => {
     const timestamp = '1651560786.960890949';
-    mock.onGet(`blocks?timestamp=${timestamp}`).reply(200, {blocks: [block], links: {next: null}});
+    mock.onGet(`blocks?timestamp=${timestamp}&limit=100&order=asc`).reply(200, {blocks: [block], links: {next: null}});
 
     const result = await mirrorNodeInstance.getBlocks(undefined, timestamp);
     expect(result).to.exist;
