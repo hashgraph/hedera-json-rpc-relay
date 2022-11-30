@@ -302,23 +302,30 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       token.name = TOKEN_UPDATE_NAME;
       token.symbol = TOKEN_UPDATE_SYMBOL;
       token.memo = TOKEN_UPDATE_MEMO;
-      token.treasury = mainContractAddress;
+      token.treasury = accounts[0].wallet.address;
     }
 
-    function checkUpdatedTokenInfo(tokenInfo) {
+    async function checkUpdatedTokenInfo(tokenInfo) {
+      //token info return treasury as long zero address, we convert it to evm address to compare
+      const treasury = await mirrorNodeAddressReq(tokenInfo.treasury);
       expect(tokenInfo.name).to.equal(TOKEN_UPDATE_NAME);
       expect(tokenInfo.symbol).to.equal(TOKEN_UPDATE_SYMBOL);
-      expect(tokenInfo.treasury).to.equal(mainContractAddress);
+      expect(treasury.toLowerCase()).to.equal(accounts[0].wallet.address.toLowerCase());
       expect(tokenInfo.memo).to.equal(TOKEN_UPDATE_MEMO);
     }
 
-    //not working since 0.32.0-alpha.1.
-    xit('should update fungible token properties', async function() {
+    async function mirrorNodeAddressReq(address){
+      const accountEvmAddress = await mirrorNode.get(`/accounts/${address}?transactiontype=cryptotransfer`, requestId);
+      return accountEvmAddress.evm_address;
+    }
+
+    it('should update fungible token properties', async function() {
       const txBeforeInfo = await mainContract.getTokenInfoPublic(HTSTokenContractAddress, { gasLimit: 1000000 });
       const tokenInfoBefore = ((await txBeforeInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
 
+      //updating only token info, not token keys
       const token = {
-        ...tokenInfoBefore, tokenKeys: [{...tokenInfoBefore.tokenKeys[0]}]
+        ...tokenInfoBefore, tokenKeys: []
       };
 
       setUpdatedValues(token);
@@ -329,16 +336,16 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
 
       const txAfterInfo = await mainContract.getTokenInfoPublic(HTSTokenContractAddress, { gasLimit: 1000000 });
       const tokenInfoAfter = ((await txAfterInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
-      checkUpdatedTokenInfo(tokenInfoAfter);
+      await checkUpdatedTokenInfo(tokenInfoAfter);
     });
 
-    //not working since 0.32.0-alpha.1.
-    xit('should update non-fungible token properties', async function() {
+    it('should update non-fungible token properties', async function() {
       const txBeforeInfo = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress, { gasLimit: 1000000 });
       const tokenInfoBefore = ((await txBeforeInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
 
+      //updating only token info, not token keys
       const token = {
-        ...tokenInfoBefore, tokenKeys: [{...tokenInfoBefore.tokenKeys[0]}]
+        ...tokenInfoBefore, tokenKeys: []
       };
 
       setUpdatedValues(token);
@@ -348,7 +355,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
 
       const txAfterInfo = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress, { gasLimit: 1000000 });
       const tokenInfoAfter = ((await txAfterInfo.wait()).events.filter(e => e.event === 'TokenInfo')[0].args.tokenInfo)[0];
-      checkUpdatedTokenInfo(tokenInfoAfter);
+      await checkUpdatedTokenInfo(tokenInfoAfter);
     });
   });
 
