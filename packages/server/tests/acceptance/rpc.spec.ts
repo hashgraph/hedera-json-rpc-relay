@@ -916,7 +916,7 @@ describe('@api RPC Server Acceptance Tests', function () {
 
         it('@release should execute "eth_getBalance" with block number in the last 15 minutes', async function () {
             const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
-            const earlierBlockNumber = latestBlock.number - 2;
+            const earlierBlockNumber = latestBlock.number - 5;
             const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), earlierBlockNumber], requestId);
             expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
         });
@@ -944,14 +944,17 @@ describe('@api RPC Server Acceptance Tests', function () {
 
             const signedTx1 = await accounts[1].wallet.signTransaction(transaction);
             const txHash1 = await relay.call('eth_sendRawTransaction', [signedTx1]);
+            await mirrorNode.get(`/contracts/results/${txHash1}`, requestId);
             const tx1 = await relay.call('eth_getTransactionByHash', [txHash1]);
 
             const signedTx2 = await accounts[1].wallet.signTransaction({...transaction, nonce: acc1Nonce + 1});
             const txHash2 = await relay.call('eth_sendRawTransaction', [signedTx2]);
+            await mirrorNode.get(`/contracts/results/${txHash2}`, requestId);
             const tx2 = await relay.call('eth_getTransactionByHash', [txHash2]);
 
             const signedTx3 = await accounts[1].wallet.signTransaction({...transaction, nonce: acc1Nonce + 2});
             const txHash3 = await relay.call('eth_sendRawTransaction', [signedTx3]);
+            await mirrorNode.get(`/contracts/results/${txHash3}`, requestId);
             const tx3 = await relay.call('eth_getTransactionByHash', [txHash3]);
 
             const endBalance = await relay.call('eth_getBalance', [accounts[0].address], requestId);
