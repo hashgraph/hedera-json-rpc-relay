@@ -942,17 +942,17 @@ describe('@api RPC Server Acceptance Tests', function () {
                 gasPrice: gasPrice,
             };
 
-            const signedTx1 = await accounts[1].wallet.signTransaction(transaction);
+            const signedTx1 = await accounts[3].wallet.signTransaction(transaction);
             const txHash1 = await relay.call('eth_sendRawTransaction', [signedTx1]);
             await mirrorNode.get(`/contracts/results/${txHash1}`, requestId);
             const tx1 = await relay.call('eth_getTransactionByHash', [txHash1]);
 
-            const signedTx2 = await accounts[1].wallet.signTransaction({...transaction, nonce: acc1Nonce + 1});
+            const signedTx2 = await accounts[3].wallet.signTransaction({...transaction, nonce: acc1Nonce + 1});
             const txHash2 = await relay.call('eth_sendRawTransaction', [signedTx2]);
             await mirrorNode.get(`/contracts/results/${txHash2}`, requestId);
             const tx2 = await relay.call('eth_getTransactionByHash', [txHash2]);
 
-            const signedTx3 = await accounts[1].wallet.signTransaction({...transaction, nonce: acc1Nonce + 2});
+            const signedTx3 = await accounts[3].wallet.signTransaction({...transaction, nonce: acc1Nonce + 2});
             const txHash3 = await relay.call('eth_sendRawTransaction', [signedTx3]);
             await mirrorNode.get(`/contracts/results/${txHash3}`, requestId);
             const tx3 = await relay.call('eth_getTransactionByHash', [txHash3]);
