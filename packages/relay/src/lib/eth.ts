@@ -1358,7 +1358,9 @@ export class EthImpl implements Eth {
 
     const logResults = await Promise.all(logPromises);
     logResults.forEach(res => {
-      result.logs = result.logs.concat(res.logs);
+      if (res?.logs) {
+        result.logs = result.logs.concat(res.logs);
+      }
     })
 
     result.logs.sort((a: any, b: any) => {
