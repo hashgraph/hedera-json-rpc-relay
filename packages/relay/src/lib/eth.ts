@@ -568,18 +568,14 @@ export class EthImpl implements Eth {
               const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
               const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
               const timeDiff = latestTimestamp - blockTimestamp;
-
               // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
               if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
-
-                const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(mirrorAccount.account, undefined, requestId);
                 let currentBalance = 0;
                 let currentTimestamp;
                 let balanceFromTxs = 0;
-
-                if (balance.balances?.length) {
-                  currentBalance = balance.balances[0].balance;
-                  currentTimestamp = balance.timestamp;
+                if (mirrorAccount.balance) {
+                  currentBalance = mirrorAccount.balance.balance;
+                  currentTimestamp = mirrorAccount.balance.timestamp;
                 }
 
                 let transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(

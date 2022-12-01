@@ -1262,6 +1262,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const hexBalance1 = EthImpl.numberTo0x(balance1 * constants.TINYBAR_TO_WEIBAR_COEF);
       const hexBalance2 = EthImpl.numberTo0x(balance2 * constants.TINYBAR_TO_WEIBAR_COEF);
+      const hexBalance3 = EthImpl.numberTo0x(balance3 * constants.TINYBAR_TO_WEIBAR_COEF);
 
       const latestBlock = Object.assign({}, defaultBlock, {
         number: 4,
@@ -1295,7 +1296,8 @@ describe('Eth calls using MirrorNode', async function () {
         mock.onGet(`accounts/${contractId1}`).reply(200, {
           account: contractId1,
           balance: {
-            balance: defBalance
+            balance: balance3,
+            timestamp: `${timestamp4}.060890949`
           }
         });
 
@@ -1352,7 +1354,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       it('latest', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, 'latest');
-        expect(resBalance).to.equal(defHexBalance);
+        expect(resBalance).to.equal(hexBalance3);
       });
 
       it('earliest', async () => {
@@ -1362,7 +1364,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       it('pending', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, 'pending');
-        expect(resBalance).to.equal(defHexBalance);
+        expect(resBalance).to.equal(hexBalance3);
       });
 
       it('blockNumber is in the latest 15 minutes', async () => {
@@ -1451,7 +1453,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       it('blockNumber is the same as the latest block', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, '3');
-        expect(resBalance).to.equal(defHexBalance);
+        expect(resBalance).to.equal(hexBalance3);
       });
     });
   });

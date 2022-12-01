@@ -916,7 +916,7 @@ describe('@api RPC Server Acceptance Tests', function () {
 
         it('@release should execute "eth_getBalance" with block number in the last 15 minutes', async function () {
             const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
-            const earlierBlockNumber = latestBlock.number - 5;
+            const earlierBlockNumber = latestBlock.number - 2;
             const res = await relay.call('eth_getBalance', [Utils.idToEvmAddress(contractId.toString()), earlierBlockNumber], requestId);
             expect(res).to.eq(ethers.utils.hexValue(ONE_WEIBAR));
         });
