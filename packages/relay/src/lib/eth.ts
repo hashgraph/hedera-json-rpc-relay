@@ -1281,7 +1281,7 @@ export class EthImpl implements Eth {
       });
   }
 
-  private async applyBlockHashParams(params: any, blockHash: string, requestId?: string) {
+  private async validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestId?: string) {
     try {
       const block = await this.mirrorNodeClient.getBlock(blockHash, requestId);
       if (block) {
@@ -1304,7 +1304,7 @@ export class EthImpl implements Eth {
     return true;
   }
 
-  private async applyBlockRangeParams(params: any, fromBlock: string | null, toBlock: string | null, requestId?: string) {
+  private async validateBlockRangeAndAddTimestampToParams(params: any, fromBlock: string | null, toBlock: string | null, requestId?: string) {
     const blockRangeLimit = Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
     if (!fromBlock && !toBlock) {
       const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
@@ -1341,7 +1341,7 @@ export class EthImpl implements Eth {
     return true;
   }
 
-  private applyTopicParams(params: any, topics: any[] | null) {
+  private addTopicsToParams(params: any, topics: any[] | null) {
     if (topics) {
       for (let i = 0; i < topics.length; i++) {
         params[`topic${i}`] = topics[i];
@@ -1375,14 +1375,14 @@ export class EthImpl implements Eth {
     const params: any = {};
 
     if (blockHash) {
-      if ( !(await this.applyBlockHashParams(params, blockHash, requestId)) ) {
+      if ( !(await this.validateBlockHashAndAddTimestampToParams(params, blockHash, requestId)) ) {
         return EMPTY_RESPONSE;
       }
-    } else if ( !(await this.applyBlockRangeParams(params, fromBlock, toBlock, requestId)) ) {
+    } else if ( !(await this.validateBlockRangeAndAddTimestampToParams(params, fromBlock, toBlock, requestId)) ) {
         return EMPTY_RESPONSE;
     }
 
-    this.applyTopicParams(params, topics);
+    this.addTopicsToParams(params, topics);
 
     let result;
     if (address) {
