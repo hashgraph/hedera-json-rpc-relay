@@ -1351,23 +1351,15 @@ export class EthImpl implements Eth {
 
   private async getLogsByAddress(address: string | [string], params: any, requestId) {
     const addresses = Array.isArray(address) ? address : [address];
-    let result = {
-      logs: []
-    };
     const logPromises = addresses.map(addr => this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestId));
 
     const logResults = await Promise.all(logPromises);
-    logResults.forEach(res => {
-      if (res?.logs) {
-        result.logs = result.logs.concat(res.logs);
-      }
-    })
-
-    result.logs.sort((a: any, b: any) => {
+    const logs = logResults.flatMap(logResult => logResult.logs ? logResult.logs : [] );
+    logs.sort((a: any, b: any) => {
       return a.timestamp >= b.timestamp ? 1 : -1;
     })
 
-    return result;
+    return logs;
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
@@ -1384,9 +1376,9 @@ export class EthImpl implements Eth {
 
     this.addTopicsToParams(params, topics);
 
-    let result;
+    let result: any = {};
     if (address) {
-      result = await this.getLogsByAddress(address, params, requestId);
+      result.logs = await this.getLogsByAddress(address, params, requestId);
     }
     else {
       result = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestId);
