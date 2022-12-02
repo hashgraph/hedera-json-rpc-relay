@@ -42,6 +42,7 @@ import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+
 const LRU = require('lru-cache');
 
 const logger = pino();
@@ -375,6 +376,18 @@ describe('Eth calls using MirrorNode', async function () {
       'hash': contractHash3,
       'contract_id': contractId2,
       'logs': defaultLogs3
+    }
+  };
+
+  const defaultDetailedContractResultsNullStateChange = {
+    ...defaultDetailedContractResults, ...{
+      'state_changes' : null
+    }
+  };
+
+  const defaultDetailedContractResultsEmptyArrayStateChange = {
+    ...defaultDetailedContractResults, ...{
+      'state_changes' : []
     }
   };
 
@@ -2213,8 +2226,40 @@ describe('Eth calls using MirrorNode', async function () {
         await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       } catch (e: any) {
         hasError = true;
-        expect(e.code).to.equal(-32001);
-        expect(e.name).to.equal('Resource not found');
+        expect(e.code).to.equal(predefined.RESOURCE_NOT_FOUND().code);
+        expect(e.name).to.equal(predefined.RESOURCE_NOT_FOUND().name);
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when state_changes is null', async function () {
+      defaultDetailedContractResultsNullStateChange
+      mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsNullStateChange);
+      let hasError = false;
+      try {
+        await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      } catch (e: any) {
+        hasError = true;
+        expect(e.code).to.equal(predefined.RESOURCE_NOT_FOUND().code);
+        expect(e.name).to.equal(predefined.RESOURCE_NOT_FOUND().name);
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when state_changes is an empty array', async function () {
+      defaultDetailedContractResultsNullStateChange
+      mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsEmptyArrayStateChange);
+      let hasError = false;
+      try {
+        await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      } catch (e: any) {
+        hasError = true;
+        expect(e.code).to.equal(predefined.RESOURCE_NOT_FOUND().code);
+        expect(e.name).to.equal(predefined.RESOURCE_NOT_FOUND().name);
       }
       expect(hasError).to.be.true;
     });
@@ -2230,8 +2275,8 @@ describe('Eth calls using MirrorNode', async function () {
         await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       } catch (e: any) {
         hasError = true;
-        expect(e.code).to.equal(-32001);
-        expect(e.name).to.equal('Resource not found');
+        expect(e.code).to.equal(predefined.RESOURCE_NOT_FOUND().code);
+        expect(e.name).to.equal(predefined.RESOURCE_NOT_FOUND().name);
       }
       expect(hasError).to.be.true;
     });
