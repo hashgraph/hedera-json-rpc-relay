@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Forbid
-  schedule: {{ .Values.rolling_restart.schedule  }}
+  schedule: {{ .Values.rolling_restart.schedule }}
   jobTemplate:
     spec:
       backoffLimit: 2
@@ -24,5 +24,31 @@ spec:
                 - >-
                   kubectl rollout restart deployment/{{ include "json-rpc-relay.fullname" . }} && 
                   kubectl rollout status deployment/{{ include "json-rpc-relay.fullname" . }}
-{{- end }}                
-            
+{{- end }}
+
+---
+{{- if .Values.test.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "json-rpc-relay.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  concurrencyPolicy: Allow
+  schedule: {{ .Values.test.schedule }}
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: {{ include "json-rpc-relay.serviceAccountName" . }}-test
+          restartPolicy: Never
+          containers:
+            - name: kubectl
+              image: postman/newman
+              command: 
+                - newman
+                - run
+                - packages/server/tests/postman.json
+                - --env-var baseUrl={{ .Values.test.baseUrl }}
+{{- end }}            

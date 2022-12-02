@@ -8,4 +8,5 @@ rules:
     resources: ["deployments"]
     resourceNames: [{{ include "json-rpc-relay.fullname" . }}]
     verbs: ["get", "list", "patch", "watch"]
-{{- end }}    
+{{- end }}
+
