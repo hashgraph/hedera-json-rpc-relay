@@ -1,9 +1,11 @@
 # Subgraph example
 
-Subgraph indexing the following contracts and events:
+Hardhat based project containing example subgraph indexing the following contracts and events:
 
 ExampleERC721 -> Transfer
+
 ExampleERC20 -> Transfer
+
 GravatarRegistry -> GravatarCreated and GravatarUpdated
 
 For more information on subgraphs, check the official TheGraph documentation https://thegraph.com/docs/en/
