@@ -34,7 +34,8 @@ import {
   defaultEvmAddress,
   defaultFromLongZeroAddress,
   expectUnsupportedMethod,
-  defaultErrorMessage
+  defaultErrorMessage,
+  buildCryptoTransferTransaction
  } from '../helpers';
 
 import pino from 'pino';
@@ -42,6 +43,7 @@ import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+
 const LRU = require('lru-cache');
 
 const logger = pino();
@@ -375,6 +377,18 @@ describe('Eth calls using MirrorNode', async function () {
       'hash': contractHash3,
       'contract_id': contractId2,
       'logs': defaultLogs3
+    }
+  };
+
+  const defaultDetailedContractResultsNullStateChange = {
+    ...defaultDetailedContractResults, ...{
+      'state_changes' : null
+    }
+  };
+
+  const defaultDetailedContractResultsEmptyArrayStateChange = {
+    ...defaultDetailedContractResults, ...{
+      'state_changes' : []
     }
   };
 
@@ -1261,17 +1275,19 @@ describe('Eth calls using MirrorNode', async function () {
       const balance2 = 99960581132;
       const balance3 = 99960581133;
       const timestamp1 = 1651550386;
-      const timestamp2 = 1651560086;
+      const timestamp2 = 1651560286;
       const timestamp3 = 1651560386;
+      const timestamp4 = 1651561386;
 
       const hexBalance1 = EthImpl.numberTo0x(balance1 * constants.TINYBAR_TO_WEIBAR_COEF);
       const hexBalance2 = EthImpl.numberTo0x(balance2 * constants.TINYBAR_TO_WEIBAR_COEF);
+      const hexBalance3 = EthImpl.numberTo0x(balance3 * constants.TINYBAR_TO_WEIBAR_COEF);
 
       const latestBlock = Object.assign({}, defaultBlock, {
-        number: 2,
+        number: 4,
         'timestamp': {
           'from': `${timestamp3}.060890949`,
-          'to': `${timestamp3 + 1000}.060890949`
+          'to': `${timestamp4}.060890949`
         },
       });
       const recentBlock = Object.assign({}, defaultBlock, {
@@ -1290,7 +1306,7 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       beforeEach(async () => {
-        mock.onGet(`blocks?limit=1&order=desc`).reply(200, { blocks: [defaultBlock] });
+        mock.onGet(`blocks?limit=1&order=desc`).reply(200, { blocks: [latestBlock] });
         mock.onGet(`blocks/3`).reply(200, defaultBlock);
         mock.onGet(`blocks/0`).reply(200, blockZero);
         mock.onGet(`blocks/2`).reply(200, recentBlock);
@@ -1299,7 +1315,8 @@ describe('Eth calls using MirrorNode', async function () {
         mock.onGet(`accounts/${contractId1}`).reply(200, {
           account: contractId1,
           balance: {
-            balance: defBalance
+            balance: balance3,
+            timestamp: `${timestamp4}.060890949`
           }
         });
 
@@ -1331,8 +1348,8 @@ describe('Eth calls using MirrorNode', async function () {
           }
         });
 
-        mock.onGet(`balances?account.id=${contractId1}&timestamp=${latestBlock.timestamp.from}`).reply(200, {
-          "timestamp": `${timestamp3}.060890949`,
+        mock.onGet(`balances?account.id=${contractId1}`).reply(200, {
+          "timestamp": `${timestamp4}.060890949`,
           "balances": [
             {
               "account": contractId1,
@@ -1356,7 +1373,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       it('latest', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, 'latest');
-        expect(resBalance).to.equal(defHexBalance);
+        expect(resBalance).to.equal(hexBalance3);
       });
 
       it('earliest', async () => {
@@ -1366,17 +1383,17 @@ describe('Eth calls using MirrorNode', async function () {
 
       it('pending', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, 'pending');
-        expect(resBalance).to.equal(defHexBalance);
+        expect(resBalance).to.equal(hexBalance3);
       });
 
       it('blockNumber is in the latest 15 minutes', async () => {
-        mock.onGet(`contracts/${contractId1}`).reply(200, defaultContract);
-        try {
-          await ethImpl.getBalance(contractId1, '2');
-        }
-        catch(error) {
-          expect(error).to.deep.equal(predefined.UNKNOWN_HISTORICAL_BALANCE);
-        }
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: []
+        });
+
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const historicalBalance = EthImpl.numberTo0x((balance3) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
       });
 
       it('blockNumber is not in the latest 15 minutes', async () => {
@@ -1384,9 +1401,78 @@ describe('Eth calls using MirrorNode', async function () {
         expect(resBalance).to.equal(hexBalance1);
       });
 
+      it('blockNumber is in the latest 15 minutes and there have been several debit transactions', async () => {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction("0.0.98", contractId1, 100),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 25),
+          ]
+        });
+
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const historicalBalance = EthImpl.numberTo0x((balance3 - 175) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
+      });
+
+      it('blockNumber is in the latest 15 minutes and there have been several credit transactions', async () => {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 50),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25),
+          ]
+        });
+
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const historicalBalance = EthImpl.numberTo0x((balance3 + 175) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
+      });
+
+      it('blockNumber is in the latest 15 minutes and there have been mixed credit and debit transactions', async () => {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 10),
+          ]
+        });
+
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
+      });
+
+      it('blockNumber is in the latest 15 minutes and there have been mixed credit and debit transactions and transactions are paginated', async () => {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50)
+          ],
+          links: {
+            next: `transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}&page=2`
+          }
+        });
+
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}&page=2`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 10),
+          ],
+          links: {
+            next: null
+          }
+        });
+
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
+      });
+
       it('blockNumber is the same as the latest block', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, '3');
-        expect(resBalance).to.equal(defHexBalance);
+        expect(resBalance).to.equal(hexBalance3);
       });
     });
   });
@@ -1566,7 +1652,7 @@ describe('Eth calls using MirrorNode', async function () {
           {...defaultLogs.logs[0], address: "0x0000000000000000000000000000000002131951"},
           {...defaultLogs.logs[1], address: "0x0000000000000000000000000000000002131952"}
         ],
-        links: {next: '/api/v1/contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0'}
+        links: {next: 'contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0'}
       };
       const filteredLogsNext = {
         logs: [
@@ -2245,8 +2331,40 @@ describe('Eth calls using MirrorNode', async function () {
         await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       } catch (e: any) {
         hasError = true;
-        expect(e.code).to.equal(-32001);
-        expect(e.name).to.equal('Resource not found');
+        expect(e.code).to.equal(predefined.RESOURCE_NOT_FOUND().code);
+        expect(e.name).to.equal(predefined.RESOURCE_NOT_FOUND().name);
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when state_changes is null', async function () {
+      defaultDetailedContractResultsNullStateChange
+      mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsNullStateChange);
+      let hasError = false;
+      try {
+        await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      } catch (e: any) {
+        hasError = true;
+        expect(e.code).to.equal(predefined.RESOURCE_NOT_FOUND().code);
+        expect(e.name).to.equal(predefined.RESOURCE_NOT_FOUND().name);
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when state_changes is an empty array', async function () {
+      defaultDetailedContractResultsNullStateChange
+      mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsEmptyArrayStateChange);
+      let hasError = false;
+      try {
+        await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      } catch (e: any) {
+        hasError = true;
+        expect(e.code).to.equal(predefined.RESOURCE_NOT_FOUND().code);
+        expect(e.name).to.equal(predefined.RESOURCE_NOT_FOUND().name);
       }
       expect(hasError).to.be.true;
     });
@@ -2262,8 +2380,8 @@ describe('Eth calls using MirrorNode', async function () {
         await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       } catch (e: any) {
         hasError = true;
-        expect(e.code).to.equal(-32001);
-        expect(e.name).to.equal('Resource not found');
+        expect(e.code).to.equal(predefined.RESOURCE_NOT_FOUND().code);
+        expect(e.name).to.equal(predefined.RESOURCE_NOT_FOUND().name);
       }
       expect(hasError).to.be.true;
     });

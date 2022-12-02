@@ -482,6 +482,7 @@ export class EthImpl implements Eth {
    */
   async getStorageAt(address: string, slot: string, blockNumberOrTag?: string | null, requestId?: string) : Promise<string> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.trace(`${requestIdPrefix} getStorageAt(address=${address}, slot=${slot}, blockNumberOrTag=${blockNumberOrTag})`);
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
     const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false);
 
@@ -498,7 +499,7 @@ export class EthImpl implements Eth {
       // retrieve the contract result details
       await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
         .then(contractResultDetails => {
-          if (contractResultDetails?.state_changes != null) {
+          if (EthImpl.isArrayNonEmpty(contractResultDetails?.state_changes)) {
             // filter the state changes to match slot and return value
             const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === slot);
             result = stateChange.value_written;
@@ -568,10 +569,33 @@ export class EthImpl implements Eth {
               const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
               const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
               const timeDiff = latestTimestamp - blockTimestamp;
-
               // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
               if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
-                throw predefined.UNKNOWN_HISTORICAL_BALANCE;
+                let currentBalance = 0;
+                let currentTimestamp;
+                let balanceFromTxs = 0;
+                if (mirrorAccount.balance) {
+                  currentBalance = mirrorAccount.balance.balance;
+                  currentTimestamp = mirrorAccount.balance.timestamp;
+                }
+
+                let transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
+                    mirrorAccount.account,
+                    block.timestamp.to,
+                    currentTimestamp,
+                    requestId
+                );
+
+                for(const tx of transactionsInTimeWindow) {
+                  for (const transfer of tx.transfers) {
+                    if (transfer.account === mirrorAccount.account && !transfer.is_approval) {
+                      balanceFromTxs += transfer.amount;
+                    }
+                  }
+                }
+
+                balanceFound = true;
+                weibars = (currentBalance - balanceFromTxs) * constants.TINYBAR_TO_WEIBAR_COEF;
               }
 
               // The block is NOT from the last 15 minutes, use /balances rest API
@@ -1430,4 +1454,9 @@ export class EthImpl implements Eth {
 
     return contractAddress;
   }
+
+  static isArrayNonEmpty(input: any): boolean {
+    return Array.isArray(input) && input.length > 0;
+  }
+
 }
