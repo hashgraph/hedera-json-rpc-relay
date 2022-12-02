@@ -1378,7 +1378,7 @@ export class EthImpl implements Eth {
     const logPromises = addresses.map(addr => this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestId));
 
     const logResults = await Promise.all(logPromises);
-    const logs = logResults.flatMap(logResult => logResult.logs ? logResult.logs : [] );
+    const logs = logResults.flatMap(logResult => logResult ? logResult : [] );
     logs.sort((a: any, b: any) => {
       return a.timestamp >= b.timestamp ? 1 : -1;
     })
@@ -1400,22 +1400,20 @@ export class EthImpl implements Eth {
 
     this.addTopicsToParams(params, topics);
 
-    let result: any = {};
+    let logResults;
     if (address) {
-      result.logs = await this.getLogsByAddress(address, params, requestId);
+      logResults = await this.getLogsByAddress(address, params, requestId);
     }
     else {
-      result = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestId);
+      logResults = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestId);
     }
 
-    if (!result || !result.logs) {
+    if (!logResults) {
       return EMPTY_RESPONSE;
     }
 
-    const unproccesedLogs = await this.mirrorNodeClient.pageAllResults(result, requestId);
-
     const logs: Log[] = [];
-    for(const log of unproccesedLogs) {
+    for(const log of logResults) {
       logs.push(
         new Log({
           address: await this.getLogEvmAddress(log.address, requestId) || log.address,
