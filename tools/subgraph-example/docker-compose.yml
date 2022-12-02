@@ -1,7 +1,7 @@
 version: '3'
 services:
   graph-node:
-    image: graphprotocol/graph-node:v0.27.0
+    image: graphprotocol/graph-node:0.28.2
     ports:
       - '8000:8000'
       - '8001:8001'
@@ -20,7 +20,7 @@ services:
       postgres_db: graph-node
       ipfs: 'ipfs:5001'
       ethereum: 'local:http://host.docker.internal:7546'
-      GRAPH_LOG: info
+      GRAPH_LOG: debug
       # GRAPH_ETHEREUM_GENESIS_BLOCK_NUMBER: 1
   ipfs:
     image: ipfs/go-ipfs:v0.10.0
@@ -42,6 +42,6 @@ services:
       POSTGRES_PASSWORD: let-me-in
       POSTGRES_DB: graph-node
       PGDATA: "/data/postgres"
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-
