@@ -1543,6 +1543,15 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_getLogs', async function () {
+    const latestBlock = {
+      ...defaultBlock,
+      number: 17,
+      'timestamp': {
+        'from': `1651560393.060890949`,
+        'to': '1651560395.060890949'
+      },
+    };
+
     const expectLogData = (res, log, tx) => {
       expect(res.address).to.eq(log.address);
       expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
@@ -1796,6 +1805,7 @@ describe('Eth calls using MirrorNode', async function () {
         },
       };
 
+      mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
       mock.onGet('blocks/5').reply(200, defaultBlock);
       mock.onGet('blocks/16').reply(200, toBlock);
       mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${toBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogs);
@@ -1811,6 +1821,8 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('with non-existing fromBlock filter', async function () {
+      mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+
       mock.onGet('blocks/5').reply(200, defaultBlock);
       mock.onGet('blocks/16').reply(404, {"_status": { "messages": [{"message": "Not found"}]}});
 
@@ -1825,6 +1837,7 @@ describe('Eth calls using MirrorNode', async function () {
         logs: [defaultLogs.logs[0]]
       };
 
+      mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
       mock.onGet('blocks/5').reply(200, defaultBlock);
       mock.onGet('blocks/16').reply(404, {"_status": { "messages": [{"message": "Not found"}]}});
       mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&limit=100&order=asc`).reply(200, filteredLogs);
@@ -1846,6 +1859,7 @@ describe('Eth calls using MirrorNode', async function () {
         },
       };
 
+      mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
       mock.onGet('blocks/16').reply(200, fromBlock);
       mock.onGet('blocks/5').reply(200, defaultBlock);
       const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null);
@@ -1855,6 +1869,8 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('with only toBlock', async function () {
+      mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+
       let hasError = false;
       try {
         await ethImpl.getLogs(null, null, '0x5', null, null);
@@ -1893,6 +1909,8 @@ describe('Eth calls using MirrorNode', async function () {
         ...defaultBlock,
         number: 1003
       };
+
+      mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
       mock.onGet('blocks/1').reply(200, fromBlock);
       mock.onGet('blocks/1003').reply(200, toBlock);
 
@@ -1932,6 +1950,7 @@ describe('Eth calls using MirrorNode', async function () {
         logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
       };
 
+      mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
       mock.onGet('blocks/5').reply(200, defaultBlock);
       mock.onGet('blocks/16').reply(200, defaultBlock);
       mock.onGet(

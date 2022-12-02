@@ -1334,14 +1334,24 @@ export class EthImpl implements Eth {
       const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
       params.timestamp = [`gte:${blockResponse.timestamp.from}`, `lte:${blockResponse.timestamp.to}`];
     } else {
-      let fromBlockNum = 0;
-      let toBlockNum;
-      params.timestamp = [];
-      if (toBlock && !fromBlock) {
+      // toBlock is not specified or is `latest` or `pending`
+      if (EthImpl.blockTagIsLatestOrPending(toBlock)) {
+        toBlock = "latest";
+      }
+
+      // toBlock is a number and is less than the current block number and fromBlock is not defined
+      else if (Number(toBlock) < Number(await this.blockNumber(requestId)) && !fromBlock) {
         throw predefined.MISSING_FROM_BLOCK_PARAM;
       }
 
-      if (!toBlock) toBlock = "latest";
+      // Set default blockTag if fromBlock is not specified
+      if (!fromBlock) {
+        toBlock = "latest";
+      }
+
+      let fromBlockNum = 0;
+      let toBlockNum;
+      params.timestamp = [];
 
       const fromBlockResponse = await this.getHistoricalBlockResponse(fromBlock, true, requestId);
       if (!fromBlockResponse) {
@@ -1351,7 +1361,7 @@ export class EthImpl implements Eth {
       params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
       fromBlockNum = parseInt(fromBlockResponse.number);
 
-      const toBlockResponse = await this.getHistoricalBlockResponse(toBlock || "latest", true, requestId);
+      const toBlockResponse = await this.getHistoricalBlockResponse(toBlock, true, requestId);
       if (toBlockResponse != null) {
         params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
         toBlockNum = parseInt(toBlockResponse.number);
