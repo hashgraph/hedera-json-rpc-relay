@@ -378,6 +378,18 @@ describe('Eth calls using MirrorNode', async function () {
     }
   };
 
+  const defaultDetailedContractResultsNullStateChange = {
+    ...defaultDetailedContractResults, ...{
+      'state_changes' : null
+    }
+  };
+
+  const defaultDetailedContractResultsEmptyArrayStateChange = {
+    ...defaultDetailedContractResults, ...{
+      'state_changes' : []
+    }
+  };
+
   const detailedContractResultNotFound = { "_status": { "messages": [{ "message": "No correlating transaction" }] } };
   const timeoutError = { "type": "Error", "message": "timeout of 10000ms exceeded" };
 
@@ -2210,6 +2222,38 @@ describe('Eth calls using MirrorNode', async function () {
       let hasError = false;
       try {
         mock.onGet(`blocks/${blockNumber}`).reply(200, null);
+        await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      } catch (e: any) {
+        hasError = true;
+        expect(e.code).to.equal(-32001);
+        expect(e.name).to.equal('Resource not found');
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when block is null', async function () {
+      defaultDetailedContractResultsNullStateChange
+      mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsNullStateChange);
+      let hasError = false;
+      try {
+        await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      } catch (e: any) {
+        hasError = true;
+        expect(e.code).to.equal(-32001);
+        expect(e.name).to.equal('Resource not found');
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when block is an empty array', async function () {
+      defaultDetailedContractResultsNullStateChange
+      mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsEmptyArrayStateChange);
+      let hasError = false;
+      try {
         await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       } catch (e: any) {
         hasError = true;
