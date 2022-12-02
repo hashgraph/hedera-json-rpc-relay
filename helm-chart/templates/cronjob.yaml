@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "json-rpc-relay.fullname" . }}
+  name: {{ include "json-rpc-relay.fullname" . }}-restart
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Forbid
@@ -31,7 +31,7 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "json-rpc-relay.fullname" . }}
+  name: {{ include "json-rpc-relay.fullname" . }}-test
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Allow
