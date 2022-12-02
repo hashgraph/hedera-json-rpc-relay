@@ -1854,6 +1854,19 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.be.empty;
     });
 
+    it('with only toBlock', async function () {
+      let hasError = false;
+      try {
+        await ethImpl.getLogs(null, null, '0x5', null, null);
+      } catch (e: any) {
+        hasError = true;
+        expect(e.code).to.equal(-32011);
+        expect(e.name).to.equal('Missing fromBlock parameter');
+        expect(e.message).to.equal('Provided toBlock parameter without specifying fromBlock');
+      }
+      expect(hasError).to.be.true;
+    });
+
     it('with block tag', async function () {
       const filteredLogs = {
         logs: [defaultLogs.logs[0]]
@@ -1865,7 +1878,7 @@ describe('Eth calls using MirrorNode', async function () {
         mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
       }
 
-      const result = await ethImpl.getLogs(null, null, 'latest', null, null);
+      const result = await ethImpl.getLogs(null, 'latest', null, null, null);
 
       expect(result).to.exist;
       expectLogData1(result[0]);

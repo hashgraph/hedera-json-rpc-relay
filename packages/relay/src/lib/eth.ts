@@ -1337,11 +1337,13 @@ export class EthImpl implements Eth {
       let fromBlockNum = 0;
       let toBlockNum;
       params.timestamp = [];
+      if (toBlock && !fromBlock) {
+        throw predefined.MISSING_FROM_BLOCK_PARAM;
+      }
 
-      // Use the `toBlock` if it is the only passed tag, if not utilize the `fromBlock`
-      const blockTag = toBlock && !fromBlock ? toBlock : fromBlock || "latest";
+      if (!toBlock) toBlock = "latest";
 
-      const fromBlockResponse = await this.getHistoricalBlockResponse(blockTag, true, requestId);
+      const fromBlockResponse = await this.getHistoricalBlockResponse(fromBlock, true, requestId);
       if (!fromBlockResponse) {
         return false;
       }

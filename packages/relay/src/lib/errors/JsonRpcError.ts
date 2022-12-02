@@ -140,5 +140,10 @@ export const predefined = {
     code: -32008,
     message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
     data: errorMessage
+  }),
+  'MISSING_FROM_BLOCK_PARAM': new JsonRpcError({
+    name: 'Missing fromBlock parameter',
+    code: -32011,
+    message: 'Provided toBlock parameter without specifying fromBlock'
   })
 };
