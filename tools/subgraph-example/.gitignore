@@ -8,10 +8,9 @@ typechain
 cache
 artifacts
 # Subgraph
-./subgraph/generated
-./subgraph/build
+subgraph/generated
+subgraph/build
 # Matchstick
-./subgraph/tests/.*
+subgraph/tests/.*
 # Graph-node
-data/ipfs
-data/postgres
+data
