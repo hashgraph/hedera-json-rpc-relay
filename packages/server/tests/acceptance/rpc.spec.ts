@@ -200,16 +200,10 @@ describe('@api RPC Server Acceptance Tests', function () {
                 }
             });
 
-            it('should be able to use `toBlock` param', async () => {
-                const logs = await relay.call('eth_getLogs', [{
+            it('should not be able to use `toBlock` without `fromBlock` param', async () => {
+                await relay.callFailing('eth_getLogs', [{
                     'toBlock': log0Block.blockNumber
-                }], requestId);
-                expect(logs.length).to.be.greaterThan(0);
-
-                const log0BlockInt = parseInt(log0Block.blockNumber);
-                for (let i in logs) {
-                    expect(parseInt(logs[i].blockNumber, 16)).to.be.lessThanOrEqual(log0BlockInt);
-                }
+                }], predefined.MISSING_FROM_BLOCK_PARAM, requestId);
             });
 
             it('should be able to use range of `fromBlock` and `toBlock` params', async () => {
