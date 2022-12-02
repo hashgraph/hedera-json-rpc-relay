@@ -14,13 +14,7 @@ task("deployERC20", "Deploys ERC20 contract", async (taskArgs, hre) => {
   const contractName = "ExampleERC20";
   await hre.run("compile");
 
-  const provider = new hre.ethers.providers.JsonRpcProvider(
-    process.env.RELAY_ENDPOINT
-  );
-  const wallet = new hre.ethers.Wallet(
-    <string>process.env.OPERATOR_PRIVATE_KEY,
-    provider
-  );
+  const wallet = createWallet(hre);
   const ERC20 = await hre.ethers.getContractFactory(
     contractName,
     wallet
@@ -32,7 +26,7 @@ task("deployERC20", "Deploys ERC20 contract", async (taskArgs, hre) => {
   const address = deployTx.contractAddress;
 
   await hre.run("graph", { contractName, address });
-  blockNumber(contractName, deployTx.blockNumber, hre);
+  updateStartBlock(contractName, deployTx.blockNumber, hre);
 
   console.log("CONTRACT DEPLOYED AT:")
   console.log(address);
@@ -47,13 +41,7 @@ task("deployERC721", "Deploys ERC721 Contract", async (taskArgs, hre) => {
   const contractName = "ExampleERC721";
   await hre.run("compile");
 
-  const provider = new hre.ethers.providers.JsonRpcProvider(
-    process.env.RELAY_ENDPOINT
-  );
-  const wallet = new hre.ethers.Wallet(
-    <string>process.env.OPERATOR_PRIVATE_KEY,
-    provider
-  );
+  const wallet = createWallet(hre);
   const contractArtifacts = await hre.ethers.getContractFactory(
     contractName,
     wallet
@@ -65,7 +53,7 @@ task("deployERC721", "Deploys ERC721 Contract", async (taskArgs, hre) => {
   const address = deployTx.contractAddress;
 
   await hre.run("graph", { contractName, address });
-  blockNumber(contractName, deployTx.blockNumber, hre);
+  updateStartBlock(contractName, deployTx.blockNumber, hre);
 
   console.log("CONTRACT DEPLOYED AT:")
   console.log(address);
@@ -80,13 +68,7 @@ task("deployGravatar", "Deploys the passed contract", async (taskArgs, hre) => {
   const contractName = "GravatarRegistry";
   await hre.run("compile");
 
-  const provider = new hre.ethers.providers.JsonRpcProvider(
-    process.env.RELAY_ENDPOINT
-  );
-  const wallet = new hre.ethers.Wallet(
-    <string>process.env.OPERATOR_PRIVATE_KEY,
-    provider
-  );
+  const wallet = createWallet(hre);
   const contractArtifacts = await hre.ethers.getContractFactory(
     contractName,
     wallet
@@ -99,7 +81,7 @@ task("deployGravatar", "Deploys the passed contract", async (taskArgs, hre) => {
   const address = deployTx.contractAddress;
 
   await hre.run("graph", { contractName, address });
-  blockNumber(contractName, deployTx.blockNumber, hre);
+  updateStartBlock(contractName, deployTx.blockNumber, hre);
 
   console.log("CONTRACT DEPLOYED AT:")
   console.log(address);
@@ -110,7 +92,7 @@ task("createGravatar", "Creates a Gravatar", async (taskArgs, hre) => {
   await createGravatar('My Gravatar', 'https://example.com/gravatars/1', hre);
 });
 
-async function blockNumber(dataSource: string, startBlock: number, hre: any) {
+function updateStartBlock(dataSource: string, startBlock: number, hre: any) {
   const filepath = path.join(__dirname, 'subgraph/networks.json');
   const networksRaw = fs.readFileSync(
     filepath,
@@ -121,6 +103,17 @@ async function blockNumber(dataSource: string, startBlock: number, hre: any) {
   const networks = JSON.parse(networksRaw);
   networks[hre.network.name][dataSource].startBlock = startBlock;
   fs.writeFileSync(filepath, JSON.stringify(networks, null, 2));
+}
+
+function createWallet(hre: any) {
+  const provider = new hre.ethers.providers.JsonRpcProvider(
+    process.env.RELAY_ENDPOINT
+  );
+
+  return new hre.ethers.Wallet(
+    <string>process.env.OPERATOR_PRIVATE_KEY,
+    provider
+  );
 }
 
 const config = {

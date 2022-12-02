@@ -28,6 +28,10 @@ ETH_GET_LOGS_BLOCK_RANGE_LIMIT=2000
 RATE_LIMIT_DISABLED = true
 ```
 
+### Set .env vars
+
+Rename `.env.example` to `.env`
+
 ### Deploy and interact the contracts using the following commands:
 
 #### ERC721:
@@ -68,6 +72,6 @@ Before deploying the subgraph, be sure to update the address (and startBlock) in
 To deploy the subgraph:
 
 1. Run `npm run create-local` or `yarn create-local`
-2. Run `npm run deploy-local --network local` or `yarn deploy-local --network local`
+2. Run `npm run deploy-local -- --network local` or `yarn deploy-local --network local`
 3. Follow the instructions
-4. After the subgraph is successfully deployed open the [GraphQL playground](http://127.0.0.1:8000/subgraphs/name/subgraph-example/graphql?query=%7B+%0A++gravatars+%7B%0A++++id%0A++++owner%0A++++displayName%0A++++imageUrl%0A++%7D%0A++erc20S+%7B%0A++++id%0A++++supply%0A++++type%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++++amount%0A++++%7D%0A++%7D%0A++erc721S+%7B%0A++++id%0A++++owner%0A++++type%0A++++tokenId%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++%7D%0A++%7D%0A%7D%0A)
+4. After the subgraph is successfully deployed open the [GraphQL playground](http://127.0.0.1:8000/subgraphs/name/subgraph-example/graphql?query=%7B+%0A++gravatars+%7B%0A++++id%0A++++owner%0A++++displayName%0A++++imageUrl%0A++%7D%0A++erc20S+%7B%0A++++id%0A++++supply%0A++++type%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++++amount%0A++++%7D%0A++%7D%0A++erc721S+%7B%0A++++id%0A++++owner%0A++++type%0A++++tokenId%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++%7D%0A++%7D%0A%7D%0A) where you can execute queries and fetch indexed data.
