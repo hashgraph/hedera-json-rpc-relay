@@ -502,7 +502,7 @@ export class EthImpl implements Eth {
           if(contractResultDetails === null) {
             throw predefined.RESOURCE_NOT_FOUND(`Contract result details for contract address ${address} at timestamp=${contractResult.results[0].timestamp}`);
           }
-          if (EthImpl.isArrayNonEmpty(contractResultDetails?.state_changes)) {
+          if (EthImpl.isArrayNonEmpty(contractResultDetails.state_changes)) {
             // filter the state changes to match slot and return value
             const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === slot);
             result = stateChange.value_written;
