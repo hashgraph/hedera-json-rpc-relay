@@ -917,9 +917,9 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
     // The "to" address must always be 42 chars.
-    if (call.to.length != 42) {
+    if (!call.to || call.to.length != 42) {
       throw new Error(requestIdPrefix+
-        " Invalid Contract Address: '" + call.to + "'. Expected length of 42 chars but was" + call.to.length
+        " Invalid Contract Address: '" + call.to + "'. Expected length of 42 chars but was" + call.to ? call.to.length : call.to
       );
     }
 
