@@ -1328,39 +1328,38 @@ export class EthImpl implements Eth {
     return true;
   }
 
-  private async validateBlockRangeAndAddTimestampToParams(params: any, fromBlock: string | null, toBlock: string | null, requestId?: string) {
+  private async validateBlockRangeAndAddTimestampToParams(params: any, fromBlock: string | 'latest', toBlock: string | 'latest', requestId?: string) {
     const blockRangeLimit = Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
-    if (!fromBlock && !toBlock) {
-      const blockResponse = await this.getHistoricalBlockResponse("latest", true, requestId);
-      params.timestamp = [`gte:${blockResponse.timestamp.from}`, `lte:${blockResponse.timestamp.to}`];
-    } else {
-      // toBlock is not specified or is `latest` or `pending`
-      if (EthImpl.blockTagIsLatestOrPending(toBlock)) {
-        toBlock = "latest";
-      }
 
-      // toBlock is a number and is less than the current block number and fromBlock is not defined
-      else if (Number(toBlock) < Number(await this.blockNumber(requestId)) && !fromBlock) {
-        throw predefined.MISSING_FROM_BLOCK_PARAM;
-      }
+    if (EthImpl.blockTagIsLatestOrPending(toBlock)) {
+      toBlock = EthImpl.blockLatest;
+    }
 
-      // Set default blockTag if fromBlock is not specified
-      if (!fromBlock) {
-        toBlock = "latest";
-      }
+    // toBlock is a number and is less than the current block number and fromBlock is not defined
+    if (Number(toBlock) < Number(await this.blockNumber(requestId)) && !fromBlock) {
+      throw predefined.MISSING_FROM_BLOCK_PARAM;
+    }
 
-      let fromBlockNum = 0;
-      let toBlockNum;
-      params.timestamp = [];
+    if (EthImpl.blockTagIsLatestOrPending(fromBlock)) {
+      fromBlock = EthImpl.blockLatest;
+    }
 
-      const fromBlockResponse = await this.getHistoricalBlockResponse(fromBlock, true, requestId);
-      if (!fromBlockResponse) {
-        return false;
-      }
+    let fromBlockNum = 0;
+    let toBlockNum;
+    params.timestamp = [];
 
-      params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
+    const fromBlockResponse = await this.getHistoricalBlockResponse(fromBlock, true, requestId);
+    if (!fromBlockResponse) {
+      return false;
+    }
+
+    params.timestamp.push(`gte:${fromBlockResponse.timestamp.from}`);
+
+    if (fromBlock === toBlock) {
+      params.timestamp.push(`lte:${fromBlockResponse.timestamp.to}`);
+    }
+    else {
       fromBlockNum = parseInt(fromBlockResponse.number);
-
       const toBlockResponse = await this.getHistoricalBlockResponse(toBlock, true, requestId);
       if (toBlockResponse != null) {
         params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
@@ -1398,7 +1397,7 @@ export class EthImpl implements Eth {
     return logs;
   }
 
-  async getLogs(blockHash: string | null, fromBlock: string | null, toBlock: string | null, address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
+  async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
     const EMPTY_RESPONSE = [];
     const params: any = {};
 

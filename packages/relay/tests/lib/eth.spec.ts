@@ -1870,6 +1870,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('with only toBlock', async function () {
       mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+      mock.onGet('blocks/5').reply(200, {blocks: [defaultBlock]});
 
       let hasError = false;
       try {
