@@ -499,13 +499,14 @@ export class EthImpl implements Eth {
       // retrieve the contract result details
       await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
         .then(contractResultDetails => {
-          if (EthImpl.isArrayNonEmpty(contractResultDetails?.state_changes)) {
+          if(contractResultDetails === null) {
+            throw predefined.RESOURCE_NOT_FOUND(`Contract result details for contract address ${address} at timestamp=${contractResult.results[0].timestamp}`);
+          }
+          if (EthImpl.isArrayNonEmpty(contractResultDetails.state_changes)) {
             // filter the state changes to match slot and return value
             const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === slot);
             result = stateChange.value_written;
-          } else {
-            throw predefined.RESOURCE_NOT_FOUND(`Contract result details for contract address ${address} at timestamp=${contractResult.results[0].timestamp}`);
-          }
+          } 
         })
         .catch((e: any) => {
           this.logger.error(

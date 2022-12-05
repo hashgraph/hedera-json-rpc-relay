@@ -2370,36 +2370,22 @@ describe('Eth calls using MirrorNode', async function () {
       expect(hasError).to.be.true;
     });
 
-    it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when state_changes is null', async function () {
+    it('eth_getStorageAt should return EthImpl.zeroHex32Byte when state_changes is null', async function () {
       defaultDetailedContractResultsNullStateChange
       mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
       mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
       mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsNullStateChange);
-      let hasError = false;
-      try {
-        await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
-      } catch (e: any) {
-        hasError = true;
-        expect(e.code).to.equal(predefined.RESOURCE_NOT_FOUND().code);
-        expect(e.name).to.equal(predefined.RESOURCE_NOT_FOUND().name);
-      }
-      expect(hasError).to.be.true;
+      const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      expect(result).to.equal(EthImpl.zeroHex32Byte);
     });
 
-    it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when state_changes is an empty array', async function () {
+    it('eth_getStorageAt should return EthImpl.zeroHex32Byte when state_changes is an empty array', async function () {
       defaultDetailedContractResultsNullStateChange
       mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
       mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
       mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsEmptyArrayStateChange);
-      let hasError = false;
-      try {
-        await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
-      } catch (e: any) {
-        hasError = true;
-        expect(e.code).to.equal(predefined.RESOURCE_NOT_FOUND().code);
-        expect(e.name).to.equal(predefined.RESOURCE_NOT_FOUND().name);
-      }
-      expect(hasError).to.be.true;
+      const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      expect(result).to.equal(EthImpl.zeroHex32Byte);
     });
 
     it('eth_getStorageAt should throw error when contract not found', async function () {
