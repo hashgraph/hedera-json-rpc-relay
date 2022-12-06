@@ -34,7 +34,8 @@ import {
   defaultEvmAddress,
   defaultFromLongZeroAddress,
   expectUnsupportedMethod,
-  defaultErrorMessage
+  defaultErrorMessage,
+  buildCryptoTransferTransaction
  } from '../helpers';
 
 import pino from 'pino';
@@ -132,6 +133,7 @@ describe('Eth calls using MirrorNode', async function () {
   const contractHash2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
   const contractHash3 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394';
   const contractAddress2 = '0x000000000000000000000000000000000000055e';
+  const wrongContractAddress = '0x00000000000000000000000000000000055e';
   const contractTimestamp2 = '1653077542.701408897';
   const contractTimestamp3 = '1653088542.123456789';
   const contractId1 = '0.0.5001';
@@ -1268,17 +1270,19 @@ describe('Eth calls using MirrorNode', async function () {
       const balance2 = 99960581132;
       const balance3 = 99960581133;
       const timestamp1 = 1651550386;
-      const timestamp2 = 1651560086;
+      const timestamp2 = 1651560286;
       const timestamp3 = 1651560386;
+      const timestamp4 = 1651561386;
 
       const hexBalance1 = EthImpl.numberTo0x(balance1 * constants.TINYBAR_TO_WEIBAR_COEF);
       const hexBalance2 = EthImpl.numberTo0x(balance2 * constants.TINYBAR_TO_WEIBAR_COEF);
+      const hexBalance3 = EthImpl.numberTo0x(balance3 * constants.TINYBAR_TO_WEIBAR_COEF);
 
       const latestBlock = Object.assign({}, defaultBlock, {
-        number: 2,
+        number: 4,
         'timestamp': {
           'from': `${timestamp3}.060890949`,
-          'to': `${timestamp3 + 1000}.060890949`
+          'to': `${timestamp4}.060890949`
         },
       });
       const recentBlock = Object.assign({}, defaultBlock, {
@@ -1297,7 +1301,7 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       beforeEach(async () => {
-        mock.onGet(`blocks?limit=1&order=desc`).reply(200, { blocks: [defaultBlock] });
+        mock.onGet(`blocks?limit=1&order=desc`).reply(200, { blocks: [latestBlock] });
         mock.onGet(`blocks/3`).reply(200, defaultBlock);
         mock.onGet(`blocks/0`).reply(200, blockZero);
         mock.onGet(`blocks/2`).reply(200, recentBlock);
@@ -1306,7 +1310,8 @@ describe('Eth calls using MirrorNode', async function () {
         mock.onGet(`accounts/${contractId1}`).reply(200, {
           account: contractId1,
           balance: {
-            balance: defBalance
+            balance: balance3,
+            timestamp: `${timestamp4}.060890949`
           }
         });
 
@@ -1338,8 +1343,8 @@ describe('Eth calls using MirrorNode', async function () {
           }
         });
 
-        mock.onGet(`balances?account.id=${contractId1}&timestamp=${latestBlock.timestamp.from}`).reply(200, {
-          "timestamp": `${timestamp3}.060890949`,
+        mock.onGet(`balances?account.id=${contractId1}`).reply(200, {
+          "timestamp": `${timestamp4}.060890949`,
           "balances": [
             {
               "account": contractId1,
@@ -1363,7 +1368,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       it('latest', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, 'latest');
-        expect(resBalance).to.equal(defHexBalance);
+        expect(resBalance).to.equal(hexBalance3);
       });
 
       it('earliest', async () => {
@@ -1373,17 +1378,17 @@ describe('Eth calls using MirrorNode', async function () {
 
       it('pending', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, 'pending');
-        expect(resBalance).to.equal(defHexBalance);
+        expect(resBalance).to.equal(hexBalance3);
       });
 
       it('blockNumber is in the latest 15 minutes', async () => {
-        mock.onGet(`contracts/${contractId1}`).reply(200, defaultContract);
-        try {
-          await ethImpl.getBalance(contractId1, '2');
-        }
-        catch(error) {
-          expect(error).to.deep.equal(predefined.UNKNOWN_HISTORICAL_BALANCE);
-        }
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: []
+        });
+
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const historicalBalance = EthImpl.numberTo0x((balance3) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
       });
 
       it('blockNumber is not in the latest 15 minutes', async () => {
@@ -1391,9 +1396,78 @@ describe('Eth calls using MirrorNode', async function () {
         expect(resBalance).to.equal(hexBalance1);
       });
 
+      it('blockNumber is in the latest 15 minutes and there have been several debit transactions', async () => {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction("0.0.98", contractId1, 100),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 25),
+          ]
+        });
+
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const historicalBalance = EthImpl.numberTo0x((balance3 - 175) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
+      });
+
+      it('blockNumber is in the latest 15 minutes and there have been several credit transactions', async () => {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 50),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25),
+          ]
+        });
+
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const historicalBalance = EthImpl.numberTo0x((balance3 + 175) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
+      });
+
+      it('blockNumber is in the latest 15 minutes and there have been mixed credit and debit transactions', async () => {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 10),
+          ]
+        });
+
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
+      });
+
+      it('blockNumber is in the latest 15 minutes and there have been mixed credit and debit transactions and transactions are paginated', async () => {
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50)
+          ],
+          links: {
+            next: `transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}&page=2`
+          }
+        });
+
+        mock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}&page=2`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 10),
+          ],
+          links: {
+            next: null
+          }
+        });
+
+        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF)
+        expect(resBalance).to.equal(historicalBalance);
+      });
+
       it('blockNumber is the same as the latest block', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, '3');
-        expect(resBalance).to.equal(defHexBalance);
+        expect(resBalance).to.equal(hexBalance3);
       });
     });
   });
@@ -1573,7 +1647,7 @@ describe('Eth calls using MirrorNode', async function () {
           {...defaultLogs.logs[0], address: "0x0000000000000000000000000000000002131951"},
           {...defaultLogs.logs[1], address: "0x0000000000000000000000000000000002131952"}
         ],
-        links: {next: '/api/v1/contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0'}
+        links: {next: 'contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0'}
       };
       const filteredLogsNext = {
         logs: [
@@ -2153,6 +2227,31 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result.name).to.equal('Contract revert executed');
       expect(result.message).to.equal('execution reverted: Set to revert');
       expect(result.data).to.equal(defaultErrorMessage);
+    });
+
+    it('eth_call with missing `to` field', async function() {
+      try {
+        await ethImpl.call({
+          "from": contractAddress1,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error: any) {
+        expect(error.message).to.equal(`Invalid Contract Address: '${undefined}'.`);
+      }
+    });
+
+    it('eth_call with wrong `to` field', async function() {
+      try {
+        await ethImpl.call({
+          "from": contractAddress1,
+          "to": wrongContractAddress,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error: any) {
+        expect(error.message).to.equal(`Invalid Contract Address: '${wrongContractAddress}'. Expected length of 42 chars but was ${wrongContractAddress.length}.`);
+      }
     });
   });
 

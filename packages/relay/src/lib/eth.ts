@@ -570,10 +570,33 @@ export class EthImpl implements Eth {
               const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
               const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
               const timeDiff = latestTimestamp - blockTimestamp;
-
               // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
               if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
-                throw predefined.UNKNOWN_HISTORICAL_BALANCE;
+                let currentBalance = 0;
+                let currentTimestamp;
+                let balanceFromTxs = 0;
+                if (mirrorAccount.balance) {
+                  currentBalance = mirrorAccount.balance.balance;
+                  currentTimestamp = mirrorAccount.balance.timestamp;
+                }
+
+                let transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
+                    mirrorAccount.account,
+                    block.timestamp.to,
+                    currentTimestamp,
+                    requestId
+                );
+
+                for(const tx of transactionsInTimeWindow) {
+                  for (const transfer of tx.transfers) {
+                    if (transfer.account === mirrorAccount.account && !transfer.is_approval) {
+                      balanceFromTxs += transfer.amount;
+                    }
+                  }
+                }
+
+                balanceFound = true;
+                weibars = (currentBalance - balanceFromTxs) * constants.TINYBAR_TO_WEIBAR_COEF;
               }
 
               // The block is NOT from the last 15 minutes, use /balances rest API
@@ -894,10 +917,9 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
     // The "to" address must always be 42 chars.
-    if (call.to.length != 42) {
-      throw new Error(requestIdPrefix+
-        " Invalid Contract Address: '" + call.to + "'. Expected length of 42 chars but was" + call.to.length
-      );
+    if (!call.to || call.to.length != 42) {
+      const callToExist = call.to && call.to.length ? ` Expected length of 42 chars but was ${call.to.length}.` : '';
+      throw new Error(`${requestIdPrefix}Invalid Contract Address: '${call.to}'.${callToExist}`);
     }
 
     try {
@@ -1348,22 +1370,20 @@ export class EthImpl implements Eth {
       }
     }
 
-    let result;
+    let results;
     if (address) {
-      result = await this.mirrorNodeClient.getContractResultsLogsByAddress(address, params, undefined, requestId);
+      results = await this.mirrorNodeClient.getContractResultsLogsByAddress(address, params, undefined, requestId);
     }
     else {
-      result = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestId);
+      results = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestId);
     }
 
-    if (!result || !result.logs) {
+    if (!results) {
       return [];
     }
 
-    const unproccesedLogs = await this.mirrorNodeClient.pageAllResults(result, requestId);
-
     const logs: Log[] = [];
-    for(const log of unproccesedLogs) {
+    for(const log of results) {
       logs.push(
         new Log({
           address: await this.getLogEvmAddress(log.address, requestId) || log.address,
