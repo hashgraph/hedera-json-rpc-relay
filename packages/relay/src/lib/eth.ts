@@ -1379,7 +1379,9 @@ export class EthImpl implements Eth {
   private addTopicsToParams(params: any, topics: any[] | null) {
     if (topics) {
       for (let i = 0; i < topics.length; i++) {
-        params[`topic${i}`] = topics[i];
+        if (!_.isNil(topics[i])) {
+          params[`topic${i}`] = topics[i];
+        }
       }
     }
   }
