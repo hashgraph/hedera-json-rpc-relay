@@ -132,6 +132,7 @@ describe('Eth calls using MirrorNode', async function () {
   const contractHash2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
   const contractHash3 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394';
   const contractAddress2 = '0x000000000000000000000000000000000000055e';
+  const wrongContractAddress = '0x00000000000000000000000000000000055e';
   const contractTimestamp2 = '1653077542.701408897';
   const contractTimestamp3 = '1653088542.123456789';
   const contractId1 = '0.0.5001';
@@ -2153,6 +2154,31 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result.name).to.equal('Contract revert executed');
       expect(result.message).to.equal('execution reverted: Set to revert');
       expect(result.data).to.equal(defaultErrorMessage);
+    });
+
+    it('eth_call with missing `to` field', async function() {
+      try {
+        await ethImpl.call({
+          "from": contractAddress1,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error: any) {
+        expect(error.message).to.equal(`Invalid Contract Address: '${undefined}'.`);
+      }
+    });
+
+    it('eth_call with wrong `to` field', async function() {
+      try {
+        await ethImpl.call({
+          "from": contractAddress1,
+          "to": wrongContractAddress,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error: any) {
+        expect(error.message).to.equal(`Invalid Contract Address: '${wrongContractAddress}'. Expected length of 42 chars but was ${wrongContractAddress.length}.`);
+      }
     });
   });
 
