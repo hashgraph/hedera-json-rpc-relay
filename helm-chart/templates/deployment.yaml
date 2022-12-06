@@ -178,7 +178,7 @@ spec:
               configMapKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: CLIENT_TRANSPORT_SECURITY
-                optional: false
+                optional: true
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
