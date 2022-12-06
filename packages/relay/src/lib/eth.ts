@@ -912,8 +912,6 @@ export class EthImpl implements Eth {
    * @param blockParam
    */
   async call(call: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError> {
-    // FIXME: In the future this will be implemented by making calls to the mirror node. For the
-    //        time being we'll eat the cost and ask the main consensus nodes instead.
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
     // The "to" address must always be 42 chars.
@@ -945,10 +943,13 @@ export class EthImpl implements Eth {
 
       // Execute the call and get the response
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}"`, call.to, gas, call.data, call.from);
-      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
 
-      // FIXME Is this right? Maybe so?
-      return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
+      const callData = {
+        ...call,
+        estimate: false
+      }
+      const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
+      return EthImpl.prepend0x(contractCallResponse.result);
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
       if (e instanceof JsonRpcError) {

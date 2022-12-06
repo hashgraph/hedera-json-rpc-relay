@@ -2116,7 +2116,7 @@ describe('Eth calls using MirrorNode', async function () {
     }
   });
 
-  describe('eth_call', async function () {
+  describe.only('eth_call', async function () {
     it('eth_call with no gas', async function () {
       sdkClientStub.submitContractCallQuery.returns({
             asBytes: function () {
