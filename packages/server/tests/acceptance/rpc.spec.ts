@@ -123,17 +123,24 @@ describe('@api RPC Server Acceptance Tests', function () {
 
         describe('eth_getLogs', () => {
 
-            let log0Block, log4Block, contractAddress;
+            let log0Block, log4Block, contractAddress, contractAddress2, latestBlock, tenBlocksBehindLatest, log0, log4, log5;
 
-            it('@release should deploy a contract', async () => {
+            before(async () => {
                 const logsContract = await servicesNode.deployContract(logsContractJson);
+
                 const mirrorNodeResp = await mirrorNode.get(`/contracts/${logsContract.contractId}`, requestId);
                 expect(mirrorNodeResp).to.have.property('evm_address');
                 expect(mirrorNodeResp.env_address).to.not.be.null;
                 contractAddress = mirrorNodeResp.evm_address;
 
+                const logsContract2 = await servicesNode.deployContract(logsContractJson);
+                const mirrorNodeResp2 = await mirrorNode.get(`/contracts/${logsContract2.contractId}`, requestId);
+                expect(mirrorNodeResp2).to.have.property('evm_address');
+                expect(mirrorNodeResp2.env_address).to.not.be.null;
+                contractAddress2 = mirrorNodeResp2.evm_address;
+
                 const params = new ContractFunctionParameters().addUint256(1);
-                const log0 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params, 75000, requestId);
+                log0 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params, 75000, requestId);
                 await accounts[1].client.executeContractCall(logsContract.contractId, 'log1', params, 75000, requestId);
 
                 params.addUint256(1);
@@ -143,10 +150,16 @@ describe('@api RPC Server Acceptance Tests', function () {
                 await accounts[1].client.executeContractCall(logsContract.contractId, 'log3', params, 75000, requestId);
 
                 params.addUint256(1);
-                const log4 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params, 75000, requestId);
+                log4 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params, 75000, requestId);
+                log5 = await accounts[1].client.executeContractCall(logsContract2.contractId, 'log4', params, 75000, requestId);
 
                 await new Promise(r => setTimeout(r, 5000));
-                const tenBlocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 10;
+                latestBlock = Number(await relay.call('eth_blockNumber', [], requestId));
+                tenBlocksBehindLatest = latestBlock - 10;
+            });
+
+            it('@release should deploy a contract', async () => {
+
                 //empty params for get logs defaults to latest block, which doesn't have required logs, that's why we fetch the last 10
                 const logs = await relay.call('eth_getLogs', [{
                     fromBlock: tenBlocksBehindLatest
@@ -187,16 +200,10 @@ describe('@api RPC Server Acceptance Tests', function () {
                 }
             });
 
-            it('should be able to use `toBlock` param', async () => {
-                const logs = await relay.call('eth_getLogs', [{
+            it('should not be able to use `toBlock` without `fromBlock` param', async () => {
+                await relay.callFailing('eth_getLogs', [{
                     'toBlock': log0Block.blockNumber
-                }], requestId);
-                expect(logs.length).to.be.greaterThan(0);
-
-                const log0BlockInt = parseInt(log0Block.blockNumber);
-                for (let i in logs) {
-                    expect(parseInt(logs[i].blockNumber, 16)).to.be.lessThanOrEqual(log0BlockInt);
-                }
+                }], predefined.MISSING_FROM_BLOCK_PARAM, requestId);
             });
 
             it('should be able to use range of `fromBlock` and `toBlock` params', async () => {
@@ -216,9 +223,6 @@ describe('@api RPC Server Acceptance Tests', function () {
 
             it('should be able to use `address` param', async () => {
                 //when we pass only address, it defaults to the latest block
-                //we fetch last 10 blocks
-                const tenBlocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 10;
-
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': tenBlocksBehindLatest,
                     'address': contractAddress
@@ -229,6 +233,22 @@ describe('@api RPC Server Acceptance Tests', function () {
                     expect(logs[i].address).to.equal(contractAddress);
                 }
             });
+
+            it('should be able to use `address` param with multiple addresses', async () => {
+                const logs = await relay.call('eth_getLogs', [{
+                    'fromBlock': tenBlocksBehindLatest,
+                    'address': [contractAddress, contractAddress2, NON_EXISTING_ADDRESS]
+                }], requestId);
+                expect(logs.length).to.be.greaterThan(0);
+                expect(logs.length).to.be.eq(6);
+
+                for (let i = 0; i < 5; i++) {
+                    expect(logs[i].address).to.equal(contractAddress);
+                }
+
+                expect(logs[5].address).to.equal(contractAddress2);
+            });
+
 
             it('should be able to use `blockHash` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{

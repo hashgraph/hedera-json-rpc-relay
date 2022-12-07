@@ -72,7 +72,7 @@ describe('RPC Server Acceptance Tests', function () {
         logger.info(`OPERATOR_ID_MAIN: ${process.env.OPERATOR_ID_MAIN}`);
         logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
         logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
-        
+
         if (USE_LOCAL_NODE === 'true') {
             runLocalHederaNetwork();
         }
