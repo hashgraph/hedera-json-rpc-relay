@@ -120,6 +120,7 @@ config:
   MIRROR_NODE_RETRIES: 3
   MIRROR_NODE_RETRY_DELAY: 500
   MIRROR_NODE_LIMIT_PARAM: 100
+  CLIENT_TRANSPORT_SECURITY: false
 
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:

@@ -173,6 +173,12 @@ spec:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: MIRROR_NODE_LIMIT_PARAM
                 optional: true
+          - name: CLIENT_TRANSPORT_SECURITY
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: CLIENT_TRANSPORT_SECURITY
+                optional: true
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
