@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "json-rpc-relay.fullname" . }}-restart
+  name: {{ printf "%s-%s" (include "json-rpc-relay.name" .) "restart" | trimSuffix "-"| trunc 52 }}
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Forbid
@@ -31,7 +31,7 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "json-rpc-relay.fullname" . }}-test
+  name: {{ printf "%s-%s" (include "json-rpc-relay.name" .) "test" | trimSuffix "-"| trunc 52 }}
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Allow
@@ -43,12 +43,31 @@ spec:
         spec:
           serviceAccountName: {{ include "json-rpc-relay.serviceAccountName" . }}-test
           restartPolicy: Never
+          initContainers:
+            - name: curl-config
+              image: curlimages/curl
+              command: 
+                - curl
+                - https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/packages/server/tests/postman.json
+                - -o
+                - postman.json
+              volumeMounts:
+              - name: config-json
+                mountPath: "/"
           containers:
-            - name: kubectl
+            - name: newman
               image: postman/newman
               command: 
                 - newman
                 - run
-                - packages/server/tests/postman.json
-                - --env-var baseUrl={{ .Values.test.baseUrl }}
+                - postman.json
+                - --env-var 
+                - baseUrl={{ .Values.test.baseUrl | quote }}
+              volumeMounts:
+              - name: config-json
+                mountPath: "/"
+                readOnly: true
+          volumes:
+            - name: config-json
+              emptyDir: {}                          
 {{- end }}            
