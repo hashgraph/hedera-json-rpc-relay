@@ -927,6 +927,8 @@ export class EthImpl implements Eth {
       if (typeof call.gas === 'string') {
         gas = Number(call.gas);
       } else {
+
+        // FIXME should we have a default value like this?
         if (call.gas == null) {
           gas = 400_000;
         } else {

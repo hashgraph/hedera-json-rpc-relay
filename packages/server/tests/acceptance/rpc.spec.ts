@@ -33,6 +33,7 @@ import basicContractJson from '../contracts/Basic.json';
 import storageContractJson from '../contracts/Storage.json';
 import reverterContractJson from '../contracts/Reverter.json';
 import logsContractJson from '../contracts/Logs.json';
+import callerContractJson from '../contracts/Caller.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
@@ -1224,6 +1225,73 @@ describe('@api RPC Server Acceptance Tests', function () {
 
                 const res = await relay.call('eth_call', [callData], requestId);
                 expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+            });
+
+            describe.only('Caller contract', () => {
+                let callerContract, callerAddress, defaultCallData;
+
+                before(async function () {
+                    callerContract = await servicesNode.deployContract(callerContractJson);
+                    // Wait for creation to propagate
+                    const callerMirror = await mirrorNode.get(`/contracts/${callerContract.contractId}`, requestId);
+                    callerAddress = `0x${callerContract.contractId.toSolidityAddress()}`;
+                    defaultCallData = {
+                        from: `0x${accounts[0].address}`,
+                        to: callerAddress,
+                        gas: 30000,
+                    };
+                });
+
+                it('calls pure method - pureMultiply', async function () {
+                    const callData = {
+                        ...defaultCallData,
+                        data: '0x0ec1551d'
+                    };
+
+                    const res = await relay.call('eth_call', [callData], requestId);
+                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                })
+
+
+                it("Should call msgSender", async function () {
+                    const callData = {
+                        ...defaultCallData,
+                        data: '0xd737d0c7'
+                    };
+
+                    const res = await relay.call('eth_call', [callData], requestId);
+                    expect(res).to.eq(callerAddress);
+                });
+
+                it("Should call txOrigin", async function () {
+                    const callData = {
+                        ...defaultCallData,
+                        data: '0xf96757d1'
+                    };
+
+                    const res = await relay.call('eth_call', [callData], requestId);
+                    expect(res).to.eq(callerAddress);
+                });
+
+                it("Should call msgSig", async function () {
+                    const callData = {
+                        ...defaultCallData,
+                        data: '0xec3e88cf'
+                    };
+
+                    const res = await relay.call('eth_call', [callData], requestId);
+                    expect(res).to.eq('0xec3e88cf00000000000000000000000000000000000000000000000000000000');
+                });
+
+                it("Should call addressBalance", async function () {
+                    const callData = {
+                        ...defaultCallData,
+                        data: '0x0ec1551d'
+                    };
+
+                    const res = await relay.call('eth_call', [callData], requestId);
+                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                });
             });
         });
 
