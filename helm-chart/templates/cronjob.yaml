@@ -70,4 +70,5 @@ spec:
           volumes:
             - name: config-json
               emptyDir: {}                          
-{{- end }}            
+{{- end }}
+            
