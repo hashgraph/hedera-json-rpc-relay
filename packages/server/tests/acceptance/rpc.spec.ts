@@ -1227,7 +1227,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
             });
 
-            describe.only('Caller contract', () => {
+            describe('Caller contract', () => {
                 let callerContract, callerAddress, defaultCallData;
 
                 before(async function () {
