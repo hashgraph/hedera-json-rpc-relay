@@ -242,10 +242,15 @@ describe('Eth calls using MirrorNode', async function () {
     "0x0000000000000000000000000000000000000000000000000000000000000005"
   ];
 
+  const defaultLogTopics1 = [
+    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+    "0x000000000000000000000000000000000000000000000000000000000208fa13",
+  ];
+
   const defaultNullLogTopics = [
     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-    null,
     "0x000000000000000000000000000000000000000000000000000000000208fa13",
+    null,
     null
   ];
 
@@ -326,7 +331,7 @@ describe('Eth calls using MirrorNode', async function () {
       "contract_id": contractId2,
       "data": "0x",
       "index": 0,
-      "topics": defaultNullLogTopics,
+      "topics": defaultLogTopics1,
       "root_contract_id": "0.0.34806097",
       "timestamp": contractTimestamp3,
       "block_hash": blockHash3 ,
@@ -1979,8 +1984,8 @@ describe('Eth calls using MirrorNode', async function () {
         `contracts/results/logs` +
         `?timestamp=gte:${defaultBlock.timestamp.from}` +
         `&timestamp=lte:${defaultBlock.timestamp.to}` +
-        `&topic0=${defaultNullLogTopics[0]}` +
-        `&topic2=${defaultNullLogTopics[2]}&limit=100&order=asc`
+        `&topic0=${defaultLogTopics1[0]}` +
+        `&topic1=${defaultLogTopics1[1]}&limit=100&order=asc`
       ).reply(200, filteredLogs);
       for (const log of filteredLogs.logs) {
         mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
