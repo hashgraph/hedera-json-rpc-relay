@@ -1,6 +1,7 @@
-import networks from "../subgraph/networks.json";
-
 export async function transferERC20(receiver: string, hre: any) {
+  const networks = await import("../subgraph/networks.json");
+
+  console.log(networks.local.ExampleERC20.address);
   const provider = new hre.ethers.providers.JsonRpcProvider(
     process.env.RELAY_ENDPOINT
   );

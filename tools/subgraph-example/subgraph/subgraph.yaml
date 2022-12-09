@@ -7,8 +7,8 @@ dataSources:
     network: local
     source:
       abi: ExampleERC721
-      address: "0x0000000000000000000000000000000000000409"
-      startBlock: 609
+      address: "0x000000000000000000000000000000000000040A"
+      startBlock: 124
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -28,8 +28,8 @@ dataSources:
     network: local
     source:
       abi: ExampleERC20
-      address: "0x000000000000000000000000000000000000040B"
-      startBlock: 656
+      address: "0x0000000000000000000000000000000000000408"
+      startBlock: 117
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -49,8 +49,8 @@ dataSources:
     network: local
     source:
       abi: GravatarRegistry
-      address: "0x000000000000000000000000000000000000040A"
-      startBlock: 626
+      address: "0x000000000000000000000000000000000000040B"
+      startBlock: 129
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

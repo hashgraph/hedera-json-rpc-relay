@@ -1,6 +1,6 @@
-import networks from "../subgraph/networks.json";
-
 export async function mintNFT(receiver: string, hre: any) {
+  const networks = await import("../subgraph/networks.json");
+
   const provider = new hre.ethers.providers.JsonRpcProvider(
     process.env.RELAY_ENDPOINT
   );
