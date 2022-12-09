@@ -56,12 +56,9 @@ contract GravatarRegistry {
     emit UpdatedGravatar(id, msg.sender, gravatars[id].displayName, _imageUrl);
   }
 
-  // the gravatar at position 0 of gravatars[]
-  // is fake
-  // it's a mythical gravatar
-  // that doesn't really exist
-  // dani will invoke this function once when this contract is deployed
-  // but then no more
+  // The gravatar at position 0 of gravatars[] is fake
+  // It's a mythical gravatar that doesn't really exist
+  // It will be created on contract deployment
   function setMythicalGravatar() private {
     gravatars.push(Gravatar(address(0), " ", " "));
   }
