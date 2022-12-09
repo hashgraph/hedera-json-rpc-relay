@@ -230,6 +230,7 @@ export class SDKClient {
         return this.executeTransaction(ethereumTransaction, callerName, requestId);  
     }
 
+    // FIXME deprecated
     async submitContractCallQuery(to: string, data: string, gas: number, from: string, callerName: string, requestId?: string): Promise<ContractFunctionResult> {
         const contract = SDKClient.prune0x(to);
         const contractId = contract.startsWith("00000000000")

@@ -50,6 +50,7 @@ import {
     contractTimestamp2,
     contractTimestamp3,
     defaultBlock,
+    defaultCallData,
     defaultContract,
     defaultContractResults,
     defaultDetailedContractResultByHash,
@@ -136,6 +137,7 @@ describe("Open RPC Specification", function () {
         for (const log of defaultLogs.logs) {
         mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
         }
+        mock.onPost(`contracts/call`, {...defaultCallData, estimate: false}).reply(200, {result: '0x12'});
         sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
         sdkClientStub.getAccountBalanceInTinyBar.returns(100000000000)
         sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));
@@ -176,10 +178,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_call"', async function () {
-        sdkClientStub.submitContractCallQuery.returns({ asBytes: () => Buffer.from('12') });
-
-        const response = await ethImpl.call(defaultTransaction, 'latest');
-
+        const response = await ethImpl.call(defaultCallData, 'latest');
         validateResponseSchema(methodsResponseSchema.eth_call, response);
     });
 

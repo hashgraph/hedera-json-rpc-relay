@@ -2116,116 +2116,87 @@ describe('Eth calls using MirrorNode', async function () {
     }
   });
 
-  describe.only('eth_call', async function () {
+  describe('eth_call', async function () {
     it('eth_call with no gas', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
-            asBytes: function () {
-              return Uint8Array.of(0);
-            }
-          }
-      );
-
-      const result = await ethImpl.call({
+      const callData = {
         "from": contractAddress1,
         "to": contractAddress2,
-        "data": contractCallData,
-      }, 'latest');
+        "data": contractCallData
+      };
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 400_000, contractAddress1, 'eth_call');
+      mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
+      const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal("0x00");
     });
 
     it('eth_call with no data', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
-            asBytes: function () {
-              return Uint8Array.of(0);
-            }
-          }
-      );
 
-      const result = await ethImpl.call({
+      const callData = {
         "from": contractAddress1,
         "to": contractAddress2,
         "gas": maxGasLimitHex
-      }, 'latest');
+      };
+      mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, undefined, maxGasLimit, contractAddress1, 'eth_call');
+      const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal("0x00");
     });
 
     it('eth_call with no from address', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
-            asBytes: function () {
-              return Uint8Array.of(0);
-            }
-          }
-      );
 
-      const result = await ethImpl.call({
+      const callData = {
         "to": contractAddress2,
         "data": contractCallData,
         "gas": maxGasLimitHex
-      }, 'latest');
-
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, undefined, 'eth_call');
+      };
+      mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
+      const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal("0x00");
     });
 
     it('eth_call with all fields', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
-            asBytes: function () {
-              return Uint8Array.of(0);
-            }
-          }
-      );
-
-      const result = await ethImpl.call({
+      const callData = {
         "from": contractAddress1,
         "to": contractAddress2,
         "data": contractCallData,
         "gas": maxGasLimitHex
-      }, 'latest');
-
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, contractAddress1, 'eth_call');
+      };
+      mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
+      const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal("0x00");
     });
 
     describe('with gas > 15_000_000', async function() {
       it('caps gas at 15_000_000', async function () {
-        sdkClientStub.submitContractCallQuery.returns({
-              asBytes: function () {
-                return Uint8Array.of(0);
-              }
-            }
-        );
-
-        const result = await ethImpl.call({
+        const callData = {
           "from": contractAddress1,
           "to": contractAddress2,
           "data": contractCallData,
           "gas": 50_000_000
-        }, 'latest');
-
-        sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 15_000_000, contractAddress1, 'eth_call');
+        };
+        mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
+        const result = await ethImpl.call(callData, 'latest');
         expect(result).to.equal("0x00");
       });
     });
 
     it('SDK returns a precheck error', async function () {
-      sdkClientStub.submitContractCallQuery.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
-
-      const result = await ethImpl.call({
+      const callData = {
         "from": contractAddress1,
         "to": contractAddress2,
         "data": contractCallData,
         "gas": maxGasLimitHex
-      }, 'latest');
+      };
+
+      // FIXME this probably is not the real behaviour
+      mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {
+        result: predefined.CONTRACT_REVERT(defaultErrorMessage).data
+      });
+
+      const result = await ethImpl.call(callData, 'latest');
 
       expect(result).to.exist;
-      expect(result.code).to.equal(-32008);
-      expect(result.name).to.equal('Contract revert executed');
-      expect(result.message).to.equal('execution reverted: Set to revert');
-      expect(result.data).to.equal(defaultErrorMessage);
+      expect(result).to.equal(predefined.CONTRACT_REVERT(defaultErrorMessage).data);
     });
   });
 
