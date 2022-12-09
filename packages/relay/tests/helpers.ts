@@ -83,6 +83,7 @@ const mockData = {
     },
 
     tokenId: '0.0.13312',
+    tokenLongZero: '0x0000000000000000000000000000000000003400',
     token: {
         "admin_key": {
           "_type": "ProtobufEncoded",
@@ -177,7 +178,7 @@ export const blockTransactionCount = 77;
 export const gasUsed1 = 200000;
 export const gasUsed2 = 800000;
 export const maxGasLimit = 250000;
-export const firstTransactionTimestampSeconds = '1653077547';
+export const firstTransactionTimestampSeconds = '1653077541';
 export const contractAddress1 = '0x000000000000000000000000000000000000055f';
 export const contractTimestamp1 = `${firstTransactionTimestampSeconds}.983983199`;
 export const contractHash1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
@@ -501,6 +502,45 @@ export const defaultDetailedContractResultByHash = {
     "type": 2,
     "v": 1,
     "nonce": 1
+};
+
+export const buildCryptoTransferTransaction = (from, to, amount, args: any = {}) => {
+    return {
+        "bytes": null,
+        "charged_tx_fee": 2116872,
+        "consensus_timestamp": args.timestamp || "1669207658.365113311",
+        "entity_id": null,
+        "max_fee": "100000000",
+        "memo_base64": "UmVsYXkgdGVzdCB0b2tlbiB0cmFuc2Zlcg==",
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.8",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "token_transfers": [],
+        "transaction_hash": args.transactionHash || "OpCU4upAgJEBv2bjaoIurl4UYI4tuNA44ChtlKj+l0g0EvKbBpVI7lmnzeswVibQ",
+        "transaction_id": args.transactionId || "0.0.28527683-1669207645-620109637",
+        "transfers": [
+        {
+            "account": "0.0.8",
+            "amount": 99202,
+            "is_approval": false
+        },
+        {
+            "account": from,
+            "amount": -1 * amount,
+            "is_approval": false
+        },
+        {
+            "account": to,
+            "amount": amount,
+            "is_approval": false
+        }
+    ],
+        "valid_duration_seconds": "120",
+        "valid_start_timestamp": "1669207645.620109637"
+    }
 };
 
 export const defaultErrorMessage = '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';
