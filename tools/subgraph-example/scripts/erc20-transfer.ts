@@ -18,7 +18,6 @@ export async function transferERC20(receiver: string, hre: any) {
   const tx = await erc20.connect(wallet).transfer(recipient.address, 1);
 
   const receipt = await tx.wait();
-  console.log(receipt);
   console.log("TX HASH:");
   console.log(receipt.transactionHash);
 }

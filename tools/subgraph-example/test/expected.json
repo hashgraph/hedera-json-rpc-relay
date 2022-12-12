@@ -18,8 +18,8 @@
       {
         "id": "0x2",
         "owner": "0x05fba803be258049a27b820088bab1cad2058871",
-        "displayName": "Another Gravatar",
-        "imageUrl": "https://example.com/gravatars/another_gravatar.png"
+        "displayName": "Second Gravatar",
+        "imageUrl": "https://example.com/gravatars/second_gravatar.png"
       }
     ]
   },

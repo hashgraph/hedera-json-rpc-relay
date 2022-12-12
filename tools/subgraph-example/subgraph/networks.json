@@ -2,15 +2,15 @@
   "local": {
     "ExampleERC721": {
       "address": "0x000000000000000000000000000000000000040A",
-      "startBlock": 124
+      "startBlock": 71
     },
     "ExampleERC20": {
       "address": "0x0000000000000000000000000000000000000408",
-      "startBlock": 117
+      "startBlock": 65
     },
     "GravatarRegistry": {
       "address": "0x000000000000000000000000000000000000040B",
-      "startBlock": 129
+      "startBlock": 77
     }
   }
 }

@@ -1,6 +1,9 @@
 import * as dotenv from "dotenv";
 import { expect } from "chai";
 import fetch from 'node-fetch'
+import expected from './expected.json'
+import isEqual from 'lodash/isequal'
+import hre from 'hardhat';
 
 dotenv.config();
 
@@ -24,41 +27,52 @@ describe("Subgraph", () => {
   // })
 
   describe("Can index past events", () => {
+    it("Indexes past GravatarRegistry events correctly", async () => {
+      const result = await getData(GRAVATAR_QUERY);
+      const gravatars = result.data.gravatars;
 
-    before("Fetch data from subgraph", async () => {
+      expect(isEqual(gravatars, expected.gravatar.initial)).to.be.true;
+    })
 
-      // erc20s = await getData(ERC20_QUERY);
-      // erc721s = await getData(ERC721_QUERY);
-    });
+    it("Indexes past ExampleERC20 events correctly", async () => {
+      const result = await getData(ERC20_QUERY);
+      const erc20 = result.data.erc20S;
+
+      expect(isEqual(erc20, expected.erc20.initial)).to.be.true;
+    })
+
+    it("Indexes past ExampleERC721 events correctly", async () => {
+      const result = await getData(ERC721_QUERY);
+      const erc721 = result.data.erc721S;
+
+      expect(isEqual(erc721, expected.erc721.initial)).to.be.true;
+    })
+  })
+
+  describe("Can index new events", () => {
+    before("Interact with contracts", async () => {
+      await hre.run('interactWithContracts')
+    })
 
     it("Indexes past GravatarRegistry events correctly", async () => {
       const result = await getData(GRAVATAR_QUERY);
       const gravatars = result.data.gravatars;
 
-      expect(gravatars.length).to.eq(1);
-      expect(gravatars[0].displayName).to.eq("My Gravatar");
-      expect(gravatars[0].imageUrl).to.eq("https://example.com/gravatars/1");
+      expect(isEqual(gravatars, expected.gravatar.updated)).to.be.true;
     })
 
     it("Indexes past ExampleERC20 events correctly", async () => {
       const result = await getData(ERC20_QUERY);
-      const erc20s = result.data.erc20S;
+      const erc20 = result.data.erc20S;
 
-      expect(erc20s.length).to.eq(1);
-      expect(erc20s[0].type).to.eq("ERC20");
-      expect(erc20s[0].supply).to.eq(20);
-      expect(erc20s[0].transfers.length).to.eq(1);
-      expect(erc20s[0].transfers[0].amount).to.eq(20);
+      expect(isEqual(erc20, expected.erc20.updated)).to.be.true;
     })
 
     it("Indexes past ExampleERC721 events correctly", async () => {
       const result = await getData(ERC721_QUERY);
-      const erc721s = result.data.erc721S;
+      const erc721 = result.data.erc721S;
 
-      expect(erc721s.length).to.eq(1);
-      expect(erc721s[0].type).to.eq("ERC721");
-      expect(erc721s[0].tokenId).to.eq("0x1");
-      expect(erc721s[0].transfers.length).to.eq(1);
+      expect(isEqual(erc721, expected.erc721.updated)).to.be.true;
     })
   })
 })

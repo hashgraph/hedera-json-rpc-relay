@@ -14,9 +14,9 @@ export async function createGravatar(name: string, url: string, hre: any, signer
 
   const tx = await gravatar.connect(wallet).createGravatar(name, url);
 
-  console.log(await tx.wait());
+  const receipt = await tx.wait();
   console.log("TX HASH:");
-  console.log(tx.hash);
+  console.log(receipt.transactionHash);
 }
 
 export async function updateGravatarName(name: string, hre: any, signer?: string | null ) {
@@ -35,7 +35,7 @@ export async function updateGravatarName(name: string, hre: any, signer?: string
 
   const tx = await gravatar.connect(owner).updateGravatarName(name);
 
-  console.log(await tx.wait());
+  const receipt = await tx.wait();
   console.log("TX HASH:");
-  console.log(tx.hash);
+  console.log(receipt.transactionHash);
 }
