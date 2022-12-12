@@ -155,6 +155,29 @@ spec:
               configMapKeyRef:
                 name: {{ include "json-rpc-relay.fullname" . }}
                 key: GAS_PRICE_TINY_BAR_BUFFER
+          - name: MIRROR_NODE_RETRIES
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: MIRROR_NODE_RETRIES
+                optional: true
+          - name: MIRROR_NODE_RETRY_DELAY
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: MIRROR_NODE_RETRY_DELAY
+                optional: true
+          - name: MIRROR_NODE_LIMIT_PARAM
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: MIRROR_NODE_LIMIT_PARAM
+                optional: true
+          - name: CLIENT_TRANSPORT_SECURITY
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "json-rpc-relay.fullname" . }}
+                key: CLIENT_TRANSPORT_SECURITY
                 optional: true
         ports:
           - containerPort: {{ .Values.ports.containerPort }}

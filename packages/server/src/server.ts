@@ -103,7 +103,7 @@ app.getKoaApp().use(async (ctx, next) => {
   if (ctx.url === '/health/readiness') {
     try {
       const result = relay.eth().chainId();
-      if (result.indexOf('0x12') > 0) {
+      if (result.indexOf('0x12') >= 0) {
         ctx.status = 200;
         ctx.body = 'OK';
       } else {

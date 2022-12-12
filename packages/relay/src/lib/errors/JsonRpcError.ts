@@ -96,6 +96,11 @@ export const predefined = {
     code: -32605,
     message: `IP Rate limit exceeded on ${methodName}`
   }),
+  'MISSING_FROM_BLOCK_PARAM': new JsonRpcError({
+    name: 'Missing fromBlock parameter',
+    code: -32011,
+    message: 'Provided toBlock parameter without specifying fromBlock'
+  }),
   'MISSING_REQUIRED_PARAMETER': (index: number | string) => new JsonRpcError({
     name: 'Missing required parameters',
     code: -32602,
@@ -155,5 +160,5 @@ export const predefined = {
     name: 'Value too low',
     code: -32602,
     message: 'Value below 10_000_000_000 wei which is 1 tinybar'
-  }),
+  })
 };
