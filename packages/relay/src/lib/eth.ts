@@ -486,6 +486,10 @@ export class EthImpl implements Eth {
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
     const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false);
 
+    // Slots in the mirror node are 66 character 0x-prefixed strings.
+    // E.g. eth_getStorageAt accepts 0x1, 0x00001 and so on so we should add the missing zeros.
+    slot = `0x${'0'.repeat(64 - slot.substring(2).length)}${slot.substring(2)}`;
+
     // To save a request to the mirror node for `latest` and `pending` blocks, we directly return null from `getHistoricalBlockResponse`
     // But if a block number or `earliest` tag is passed and the mirror node returns `null`, we should throw an error.
     if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
@@ -505,7 +509,7 @@ export class EthImpl implements Eth {
           if (EthImpl.isArrayNonEmpty(contractResultDetails.state_changes)) {
             // filter the state changes to match slot and return value
             const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === slot);
-            result = stateChange.value_written;
+            if (stateChange) result = stateChange.value_written;
           }
         })
         .catch((e: any) => {

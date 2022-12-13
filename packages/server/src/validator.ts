@@ -1,4 +1,5 @@
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
+import { setFlagsFromString } from 'v8';
 
 const BASE_HEX_REGEX = '^0[xX][a-fA-F0-9]';
 export const ERROR_CODE = -32602;
@@ -21,7 +22,7 @@ export const objects = {
       type: "blockNumber"
     },
     "address": {
-      type: "address" // This should be either address or array of addresses, but the latter is not yet supported.
+      type: "addressFilter"
     },
     "topics": {
       type: "topics"
@@ -71,6 +72,12 @@ export const TYPES = {
   "address": {
     test: (param: string) => new RegExp(BASE_HEX_REGEX + '{40}$').test(param),
     error: ADDRESS_ERROR
+  },
+  "addressFilter": {
+    test: (param: string | string[]) => {
+      return Array.isArray(param) ? validateArray("address", param.flat(), "address") : new RegExp(BASE_HEX_REGEX + '{40}$').test(param);
+    },
+    error: `${ADDRESS_ERROR} or an array of addresses`,
   },
   "array": {
     test: (name: string, param: any, innerType?: any) => {

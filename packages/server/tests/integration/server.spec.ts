@@ -1272,7 +1272,7 @@ describe('RPC Server', async function() {
           'params': [{ "address": '0x012345' }]
         });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'address' for FilterObject: ${Validator.ADDRESS_ERROR}`);
+        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'address' for FilterObject: ${Validator.TYPES.addressFilter.error}`);
       });
 
       it('validates topics filter is array', async function() {

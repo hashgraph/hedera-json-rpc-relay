@@ -220,7 +220,7 @@ describe('Validator', async () => {
       expectInvalidParam(Validator.validateParams([{"blockHash": 123}], validation), 'blockHash', Validator.BLOCK_HASH_ERROR, object);
       expectInvalidParam(Validator.validateParams([{"toBlock": 123}], validation), 'toBlock', Validator.BLOCK_NUMBER_ERROR, object);
       expectInvalidParam(Validator.validateParams([{"fromBlock": 123}], validation), 'fromBlock', Validator.BLOCK_NUMBER_ERROR, object);
-      expectInvalidParam(Validator.validateParams([{"address": "0x1"}], validation), 'address', Validator.ADDRESS_ERROR, object);
+      expectInvalidParam(Validator.validateParams([{"address": "0x1"}], validation), 'address', Validator.TYPES.addressFilter.error, object);
       expectInvalidParam(Validator.validateParams([{"topics": {}}], validation), 'topics', Validator.TYPES.topics.error, object);
       expectInvalidParam(Validator.validateParams([{"topics": [123]}], validation), 'topics', Validator.TYPES.topics.error, object);
     });
@@ -232,7 +232,7 @@ describe('Validator', async () => {
       expect(Validator.validateParams([{"fromBlock": "0x1"}], validation)).to.eq(undefined);
       expect(Validator.validateParams([{"fromBlock": "earliest"}], validation)).to.eq(undefined);
       expect(Validator.validateParams([{"address": "0x4422E9088662c44604189B2aA3ae8eE282fceBB7"}], validation)).to.eq(undefined);
-      // TODO: Add test case with array of addresses when support is added
+      expect(Validator.validateParams([{"address": ["0x4422E9088662c44604189B2aA3ae8eE282fceBB7", "0x4422E9088662c44604189B2aA3ae8eE282fceBB8"]}], validation)).to.eq(undefined);
       expect(Validator.validateParams([{"topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}], validation)).to.eq(undefined);
       expect(Validator.validateParams([{"topics": [["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "0xea443924a9fba8d643a00daf0a7956ebc37fa4e9da82f07f80c34f0f5217edf9"]]}], validation)).to.eq(undefined);
     });
