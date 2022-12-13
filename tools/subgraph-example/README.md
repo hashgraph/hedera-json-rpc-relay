@@ -94,4 +94,4 @@ Note: At this time the whole test workflow can't be proficiently automated, so y
 2. After the node has started, execute `npx hardhat prepare` task, which will deploy and interact with the contracts.
 3. Be sure to start a clean graph-node by executing `yarn/npm run graph-local-clean` and then `yarn/npm run graph-local`
 4. Create and deploy the subgraph by executing `yarn/npm run create-local` and `yarn deploy-local --network local` or `npx run deploy-local -- --network local` and follow the instructions
-5. Execute `npx hedera test`
+5. Execute `npx hardhat test`
