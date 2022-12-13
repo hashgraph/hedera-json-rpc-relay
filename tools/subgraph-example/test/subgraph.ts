@@ -13,19 +13,6 @@ const ERC20_QUERY = "query { erc20S { id supply type transfers { from to amount 
 const ERC721_QUERY = "query { erc721S { id owner type tokenId transfers { from to } } }"
 
 describe("Subgraph", () => {
-  let gravatars = {};
-  let erc20s = {};
-  let erc721s = {};
-
-  // before("Deploy subgraph", async () => {
-  //   console.log("Deploying subgraph!");
-  //   execSync('npm run graph-local-clean');
-  //   execSync('npm run graph-local -- --detach');
-  //   await sleep(5000);
-  //   execSync('npm run create-local');
-  //   execSync('npm run deploy-local -- --network local --version-label 0.0.1')
-  // })
-
   describe("Can index past events", () => {
     it("Indexes past GravatarRegistry events correctly", async () => {
       const result = await getData(GRAVATAR_QUERY);
