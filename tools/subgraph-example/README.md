@@ -34,7 +34,7 @@ RATE_LIMIT_DISABLED = true
 
 Rename `.env.example` to `.env`
 
-### Deploy and interact the contracts using the following commands:
+### Deploy and interact with the contracts using the following commands:
 
 #### ERC721:
 `npx hardhat deployERC721`
