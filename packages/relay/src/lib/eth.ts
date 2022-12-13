@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { ContractId, Hbar, EthereumTransaction } from '@hashgraph/sdk';
+import { Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
