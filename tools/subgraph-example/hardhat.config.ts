@@ -30,7 +30,6 @@ task("deployERC20", "Deploys ERC20 contract", async (taskArgs, hre) => {
 
   console.log("CONTRACT DEPLOYED AT:")
   console.log(address);
-  console.log(contract.address);
 });
 
 task("transferERC20", "Transfers ERC20 tokens to a recipient", async (taskArgs, hre) => {
@@ -57,7 +56,6 @@ task("deployERC721", "Deploys ERC721 Contract", async (taskArgs, hre) => {
 
   console.log("CONTRACT DEPLOYED AT:")
   console.log(address);
-  console.log(contract.address);
 });
 
 task("mintERC721", "Mints an ERC721 token to a recipient", async (taskArgs, hre) => {
@@ -85,7 +83,6 @@ task("deployGravatar", "Deploys the passed contract", async (taskArgs, hre) => {
 
   console.log("CONTRACT DEPLOYED AT:")
   console.log(address);
-  console.log(contract.address);
 });
 
 task("createGravatar", "Creates a Gravatar", async (taskArgs, hre) => {

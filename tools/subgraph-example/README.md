@@ -38,14 +38,17 @@ Rename `.env.example` to `.env`
 
 #### ERC721:
 `npx hardhat deployERC721`
+
 `npx hardhat mintERC721`
 
 #### ERC20:
 `npx hardhat deployERC20`
+
 `npx hardhat transferERC20`
 
 #### Gravatar:
 `npx hardhat deployGravatar`
+
 `npx hardhat createGravatar`
 
 NOTE: This example uses the [hardhat-graph](https://github.com/graphprotocol/hardhat-graph) hardhat plugin. After every contract deploy, the plugin will update the networks.json file with the contract address (and the startBlock), so you don't have to manually update it in the `subgraph.yaml` file.
