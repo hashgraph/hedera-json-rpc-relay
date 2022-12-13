@@ -1240,7 +1240,7 @@ describe('@api RPC Server Acceptance Tests', function () {
         // Test state changes with getStorageAt
         describe('eth_getStorageAt', () => {
             let storageContract, contractId, evmAddress;
-            const STORAGE_CONTRACT_UPDATE = "0x2de4e884";
+            const STORAGE_CONTRACT_UPDATE = '0x2de4e884';
 
             before(async () => {
                 storageContract = await servicesNode.deployContract(storageContractJson);
@@ -1252,8 +1252,8 @@ describe('@api RPC Server Acceptance Tests', function () {
             });
 
             it('should execute "eth_getStorageAt" request to get state changes', async function () {
-                const BEGIN_EXPECTED_STORAGE_VAL = "0x000000000000000000000000000000000000000000000000000000000000000f";
-                const END_EXPECTED_STORAGE_VAL = "0x0000000000000000000000000000000000000000000000000000000000000008";
+                const BEGIN_EXPECTED_STORAGE_VAL = '0x000000000000000000000000000000000000000000000000000000000000000f';
+                const END_EXPECTED_STORAGE_VAL = '0x0000000000000000000000000000000000000000000000000000000000000008';
 
                 const beginStorageVal = await relay.call('eth_getStorageAt', [`${evmAddress}`, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'] );
                 expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
