@@ -2583,7 +2583,7 @@ describe('Eth', async function () {
     "status": "0x1",
     "transactionHash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
     "transactionIndex": "0x1",
-    "contractAddress": "0x0000000000000000000000000000000000001b59",
+    "contractAddress": "0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9",
     "root": undefined
   };
 
