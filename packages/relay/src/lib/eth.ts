@@ -505,7 +505,9 @@ export class EthImpl implements Eth {
           if (EthImpl.isArrayNonEmpty(contractResultDetails.state_changes)) {
             // filter the state changes to match slot and return value
             const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === EthImpl.toHex32Byte(slot));
-            result = stateChange.value_written;
+            if (stateChange) {
+              result = stateChange.value_written;
+            }
           }
         })
         .catch((e: any) => {
