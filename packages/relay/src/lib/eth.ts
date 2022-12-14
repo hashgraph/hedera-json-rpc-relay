@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { Hbar, EthereumTransaction } from '@hashgraph/sdk';
+import { ContractId, Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
@@ -1031,6 +1031,12 @@ export class EthImpl implements Eth {
           ? receiptResponse.gas_price
           : receiptResponse.max_fee_per_gas;
 
+      let createdContract;
+      if (receiptResponse.created_contract_ids.length) {
+        const contract = await this.mirrorNodeClient.getContract(receiptResponse.created_contract_ids[0]);
+        createdContract = contract?.evm_address ?? EthImpl.prepend0x(ContractId.fromString(receiptResponse.created_contract_ids[0]).toSolidityAddress());
+      }
+
       // support stricter go-eth client which requires the transaction hash property on logs
       const logs = receiptResponse.logs.map(log => {
         return new Log({
@@ -1053,7 +1059,7 @@ export class EthImpl implements Eth {
         to: receiptResponse.to,
         cumulativeGasUsed: EthImpl.numberTo0x(receiptResponse.block_gas_used),
         gasUsed: EthImpl.nanOrNumberTo0x(receiptResponse.gas_used),
-        contractAddress: receiptResponse.address,
+        contractAddress: createdContract,
         logs: logs,
         logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
         transactionHash: EthImpl.toHash32(receiptResponse.hash),
