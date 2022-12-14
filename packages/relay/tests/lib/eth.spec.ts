@@ -261,7 +261,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   const defaultLogs1 = [
     {
-      "address": "0x0000000000000000000000000000000002131951",
+      "address": "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
       "bloom": logBloom1,
       "contract_id": contractId1,
       "data": "0x",
@@ -275,7 +275,7 @@ describe('Eth calls using MirrorNode', async function () {
       "transaction_index": 1
     },
     {
-      "address": "0x0000000000000000000000000000000002131951",
+      "address": "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
       "bloom": logBloom2,
       "contract_id": contractId1,
       "data": "0x",
@@ -292,7 +292,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   const defaultLogs2 = [
     {
-      "address": "0x0000000000000000000000000000000002131951",
+      "address": "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
       "bloom": logBloom3,
       "contract_id": contractId1,
       "data": "0x",
@@ -309,7 +309,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   const defaultLogs3 = [
     {
-      "address": "0x0000000000000000000000000000000002131951",
+      "address": "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
       "bloom": logBloom4,
       "contract_id": contractId2,
       "data": "0x",
@@ -326,7 +326,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   const defaultLogs4 = [
     {
-      "address": "0x0000000000000000000000000000000002131951",
+      "address": "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
       "bloom": logBloom4,
       "contract_id": contractId2,
       "data": "0x",
@@ -1679,7 +1679,7 @@ describe('Eth calls using MirrorNode', async function () {
     it('should be able to return more than two logs with limit of two per request', async function () {
       const unfilteredLogs = {
         logs: [
-          {...defaultLogs.logs[0], address: "0x0000000000000000000000000000000002131951"},
+          {...defaultLogs.logs[0], address: "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69"},
           {...defaultLogs.logs[1], address: "0x0000000000000000000000000000000002131952"},
           {...defaultLogs.logs[2], address: "0x0000000000000000000000000000000002131953"},
           {...defaultLogs.logs[3], address: "0x0000000000000000000000000000000002131954"}
@@ -1687,7 +1687,7 @@ describe('Eth calls using MirrorNode', async function () {
       }
       const filteredLogs = {
         logs: [
-          {...defaultLogs.logs[0], address: "0x0000000000000000000000000000000002131951"},
+          {...defaultLogs.logs[0], address: "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69"},
           {...defaultLogs.logs[1], address: "0x0000000000000000000000000000000002131952"}
         ],
         links: {next: 'contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0'}
@@ -1737,24 +1737,6 @@ describe('Eth calls using MirrorNode', async function () {
 
       expect(result.length).to.eq(1);
       expect(result[0].address).to.eq(defaultEvmAddress);
-    });
-
-    it('Should cache contracts/contractIdOrAddress request', async function () {
-      mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
-      mock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultLogs);
-      mock.onGet(`contracts/${defaultLogs.logs[0].address}`).replyOnce(200, defaultContract); // This mock will fire only once, if the request is not cached, the test will fail with no mock error
-
-      const result = await ethImpl.getLogs(null, null, null, null, null);
-
-      expect(cache.keyList.includes('getLogEvmAddress.0x0000000000000000000000000000000002131951')).to.be.true;
-
-      expect(result).to.exist;
-      expect(result.length).to.eq(4);
-
-      expectLogData1(result[0]);
-      expectLogData2(result[1]);
-      expectLogData3(result[2]);
-      expectLogData4(result[3]);
     });
 
     it('address filter', async function () {
@@ -2601,7 +2583,7 @@ describe('Eth', async function () {
     "status": "0x1",
     "transactionHash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
     "transactionIndex": "0x1",
-    "contractAddress": "0x0000000000000000000000000000000000001b59",
+    "contractAddress": "0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9",
     "root": undefined
   };
 
