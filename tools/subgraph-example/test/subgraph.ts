@@ -41,21 +41,21 @@ describe("Subgraph", () => {
       await hre.run('interactWithContracts')
     })
 
-    it("Indexes past GravatarRegistry events correctly", async () => {
+    it("Indexes new GravatarRegistry events correctly", async () => {
       const result = await getData(GRAVATAR_QUERY);
       const gravatars = result.data.gravatars;
 
       expect(isEqual(gravatars, expected.gravatar.updated)).to.be.true;
     })
 
-    it("Indexes past ExampleERC20 events correctly", async () => {
+    it("Indexes new ExampleERC20 events correctly", async () => {
       const result = await getData(ERC20_QUERY);
       const erc20 = result.data.erc20S;
 
       expect(isEqual(erc20, expected.erc20.updated)).to.be.true;
     })
 
-    it("Indexes past ExampleERC721 events correctly", async () => {
+    it("Indexes new ExampleERC721 events correctly", async () => {
       const result = await getData(ERC721_QUERY);
       const erc721 = result.data.erc721S;
 
