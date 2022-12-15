@@ -49,9 +49,6 @@ jobs:
       - name: Deploy subgraph
         run: npm run deploy-local -- --network local --version-label 0.0.1
 
-      - name: Check local node
-        run: npm run check:node
-
       - name: Run the tests
         uses: nick-fields/retry@v2
         with:
