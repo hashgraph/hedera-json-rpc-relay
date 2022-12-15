@@ -55,4 +55,4 @@ jobs:
           max_attempts: 10
           timeout_minutes: 10
           retry_wait_seconds: 45
-          command: npx hardhat test
+          command: npm run subgraph-test
