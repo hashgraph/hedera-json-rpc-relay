@@ -6,7 +6,7 @@ import "@typechain/hardhat";
 import "@nomiclabs/hardhat-waffle";
 import "@graphprotocol/hardhat-graph";
 import { task } from "hardhat/config";
-import { mintNFT, transferERC20, createGravatar } from "./scripts";
+import { mintNFT, transferERC20, createGravatar, updateGravatarName } from "./scripts";
 
 dotenv.config();
 
@@ -85,9 +85,45 @@ task("deployGravatar", "Deploys the passed contract", async (taskArgs, hre) => {
   console.log(address);
 });
 
-task("createGravatar", "Creates a Gravatar", async (taskArgs, hre) => {
-  await createGravatar('My Gravatar', 'https://example.com/gravatars/1', hre);
+task("createGravatar", "Creates a Gravatar")
+.addOptionalParam("signer", "The owner of the Gravatar. There can be only one Gravatar per address", <string>process.env.OPERATOR_PRIVATE_KEY)
+.addOptionalParam("name", "Gravatar name", "My Gravatar")
+.setAction(async ({ signer, name }, hre) => {
+  await createGravatar(name, `https://example.com/gravatars/${name.toLowerCase().replace(' ', '_')}.png`, hre, signer);
 });
+
+task("updateGravatar", "Creates a Gravatar")
+.addOptionalParam("signer", "The owner of the Gravatar. There can be only one Gravatar per address", <string>process.env.OPERATOR_PRIVATE_KEY)
+.setAction(async ({ signer }, hre) => {
+  await updateGravatarName('My Updated Gravatar', hre, signer);
+});
+
+task("prepare", "Deploys and interacts with contracts", async (_, hre) => {
+  console.log("Deploying ERC20!");
+  await hre.run("deployERC20");
+  console.log("Deploying ERC721!");
+  await hre.run("deployERC721");
+  console.log("Deploying Gravatar!");
+  await hre.run("deployGravatar");
+
+  console.log("Transferring ERC20!");
+  await hre.run("transferERC20")
+  console.log("Minting NFT!");
+  await hre.run("mintERC721")
+  console.log("Creating Gravatar!");
+  await hre.run("createGravatar")
+})
+
+task("interactWithContracts", "interacts with contracts", async (_, hre) => {
+  console.log("Transferring ERC20!");
+  await hre.run("transferERC20")
+  console.log("Minting NFT!");
+  await hre.run("mintERC721")
+  console.log("Updating Existing Gravatar!");
+  await hre.run("updateGravatar");
+  console.log("Creating Gravatar!");
+  await hre.run("createGravatar", { signer: process.env.RECEIVER_PRIVATE_KEY, name: "Second Gravatar" })
+})
 
 function updateStartBlock(dataSource: string, startBlock: number, hre: any) {
   const filepath = path.join(__dirname, 'subgraph/networks.json');

@@ -12,13 +12,15 @@ For more information on subgraphs, check the official TheGraph documentation htt
 
 ## Prerequisites:
 
+Note: Currently this example needs to be executed against older relay and mirror-node versions, until all fixes have been released.
+
 ### Install the dependencies:
 
 Run `npm install` or `yarn [install]`
 
 ### Run Hedera local node:
 
-To start a Hedera local node by running `npx hedera start`. Note that when the containers are up, you'll need to stop the `json-rpc-relay` container and start a local relay server.
+To start a Hedera local node by running `npx hedera start --network local-test`. Note that when the containers are up, you'll need to stop the `json-rpc-relay` container and start a local relay server.
 
 ### JSON-RPC Relay configurations:
 
@@ -80,3 +82,15 @@ To deploy the subgraph:
 2. Run `npm run deploy-local -- --network local` or `yarn deploy-local --network local`
 3. Follow the instructions
 4. After the subgraph is successfully deployed open the [GraphQL playground](http://127.0.0.1:8000/subgraphs/name/subgraph-example/graphql?query=%7B+%0A++gravatars+%7B%0A++++id%0A++++owner%0A++++displayName%0A++++imageUrl%0A++%7D%0A++erc20S+%7B%0A++++id%0A++++supply%0A++++type%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++++amount%0A++++%7D%0A++%7D%0A++erc721S+%7B%0A++++id%0A++++owner%0A++++type%0A++++tokenId%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++%7D%0A++%7D%0A%7D%0A) where you can execute queries and fetch indexed data.
+
+### Running the tests:
+
+Note: At this time the whole test workflow can't be proficiently automated, so you'll need to perform some manual steps:
+
+1. Be sure to start a clean local hedera node. If the node is currently running stop it.
+    - Run `npx hedera stop` to be sure that all containers are stopped and the temp files and volumes have been removed.
+    - Run `npx hedera start --network local-test` to start a new clean node.
+2. After the node has started, execute `npx hardhat prepare` task, which will deploy and interact with the contracts.
+3. Be sure to start a clean graph-node by executing `yarn/npm run graph-local-clean` and then `yarn/npm run graph-local`
+4. Create and deploy the subgraph by executing `yarn/npm run create-local` and `yarn deploy-local --network local` or `npx run deploy-local -- --network local` and follow the instructions
+5. Execute `npx hardhat test`
