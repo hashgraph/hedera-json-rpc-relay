@@ -2406,20 +2406,6 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
     });
 
-    it('eth_getStorageAt resolves the slot zero-padding', async function () {
-      // mirror node request mocks
-      mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
-      mock.onGet(`contracts/${contractAddress1}/results?limit=1&order=desc`).reply(200, defaultContractResults);
-      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-
-      const result = await ethImpl.getStorageAt(contractAddress1, '0x' + defaultDetailedContractResults.state_changes[0].slot.slice(-3), "latest");
-      expect(result).to.exist;
-      if (result == null) return;
-
-      // verify slot value
-      expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
-    });
-
     it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when block not found', async function () {
 
       let hasError = false;
