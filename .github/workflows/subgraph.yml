@@ -37,7 +37,7 @@ jobs:
         run: npx hardhat prepare
 
       - name: Start local graph-node
-        run: npm run graph-local
+        run: npm run graph-local -- --detach
 
       - name: Create subgraph
         run: npm run create-local
