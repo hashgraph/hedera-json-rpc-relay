@@ -1,0 +1,18 @@
+{
+  "name": "subgraph-example",
+  "license": "UNLICENSED",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ subgraph-example",
+    "create-local": "graph create --node http://localhost:8020/ subgraph-example",
+    "remove-local": "graph remove --node http://localhost:8020/ subgraph-example",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 subgraph-example",
+    "test": "graph test"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.36.1",
+    "@graphprotocol/graph-ts": "0.28.1"
+  },
+  "devDependencies": { "matchstick-as": "0.5.0" }
+}

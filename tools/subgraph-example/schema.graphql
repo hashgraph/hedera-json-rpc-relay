@@ -1,4 +1,0 @@
-type Greeting @entity {
-  id: ID!
-  greeting: String!
-}

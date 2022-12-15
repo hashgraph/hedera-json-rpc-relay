@@ -1,0 +1,69 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: ExampleERC721
+    network: local
+    source:
+      abi: ExampleERC721
+      address: "0x0000000000000000000000000000000000000409"
+      startBlock: 609
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ERC721
+        - Transfer
+      abis:
+        - name: ExampleERC721
+          file: ./abis/ExampleERC721.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+      file: ./src/example-erc-721.ts
+  - kind: ethereum
+    name: ExampleERC20
+    network: local
+    source:
+      abi: ExampleERC20
+      address: "0x000000000000000000000000000000000000040B"
+      startBlock: 656
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Transfer
+        - Token
+      abis:
+        - name: ExampleERC20
+          file: ./abis/ExampleERC20.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/example-erc-20.ts
+  - kind: ethereum
+    name: GravatarRegistry
+    network: local
+    source:
+      abi: GravatarRegistry
+      address: "0x000000000000000000000000000000000000040A"
+      startBlock: 626
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - NewGravatar
+        - UpdatedGravatar
+      abis:
+        - name: GravatarRegistry
+          file: ./abis/GravatarRegistry.json
+      eventHandlers:
+        - event: NewGravatar(uint256,address,string,string)
+          handler: handleNewGravatar
+        - event: UpdatedGravatar(uint256,address,string,string)
+          handler: handleUpdatedGravatar
+      file: ./src/gravatar-registry.ts
