@@ -53,6 +53,14 @@ npm install -g newman
 newman run packages/server/tests/postman.json --env-var baseUrl=http://localhost:7546
 ```
 
+To enable Postman test to run via helm deployment add
+```
+test:
+  enabled: true
+  schedule: '@daily' #How often to run the Postman test
+  baseUrl: "http://127.0.0.1:7546" # Relay URL to run the test against
+
+
 ### Acceptance Tests
 
 The relay has a suite of acceptance tests that may be run to confirm E2E operation of the relay in either a `hedera-local-node` or deployed env.

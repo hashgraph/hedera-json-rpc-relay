@@ -126,3 +126,9 @@ config:
 rolling_restart:
   enabled: false
   schedule: '@daily'
+
+# Enable periodic tests of the hashio base URL
+test:
+  enabled: false
+  schedule: '@daily'
+  baseUrl: "http://127.0.0.1:7546"

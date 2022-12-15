@@ -36,10 +36,11 @@ RATE_LIMIT_DISABLED = true
 
 Rename `.env.example` to `.env`
 
-### Deploy and interact the contracts using the following commands:
+### Deploy and interact with the contracts using the following commands:
 
 #### ERC721:
 `npx hardhat deployERC721`
+
 `npx hardhat mintERC721`
 
 #### ERC20:
@@ -48,11 +49,8 @@ Rename `.env.example` to `.env`
 
 #### Gravatar:
 `npx hardhat deployGravatar`
+
 `npx hardhat createGravatar`
-
-Or you can execute the following task:
-
-`npx hardhat prepare` - which will deploy an interact with the contracts.
 
 NOTE: This example uses the [hardhat-graph](https://github.com/graphprotocol/hardhat-graph) hardhat plugin. After every contract deploy, the plugin will update the networks.json file with the contract address (and the startBlock), so you don't have to manually update it in the `subgraph.yaml` file.
 
