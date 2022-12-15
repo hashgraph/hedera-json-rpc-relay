@@ -1247,7 +1247,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             });
         });
 
-        // Test state changes with getStorageAt.
+        // Test state changes with getStorageAt
         describe('eth_getStorageAt', () => {
             let storageContract, contractId, evmAddress;
             const STORAGE_CONTRACT_UPDATE = "0x2de4e884";
