@@ -50,9 +50,4 @@ jobs:
         run: npm run deploy-local -- --network local --version-label 0.0.1
 
       - name: Run the tests
-        uses: nick-fields/retry@v2
-        with:
-          max_attempts: 10
-          timeout_minutes: 10
-          retry_wait_seconds: 45
-          command: npm run subgraph-test
+        run: npx hedera test
