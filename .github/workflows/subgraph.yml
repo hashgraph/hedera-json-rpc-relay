@@ -1,0 +1,39 @@
+name: Dapp Tests
+
+on:
+  pull_request:
+    branches: [main, release/**]
+  push:
+    branches: [main, release/**]
+    tags: [v*]
+
+jobs:
+  dev-tool-workflow:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: cd ./tools/subgraph-example/ && npm ci
+
+      - name: Run local node
+        run: npx hedera start --network local-test
+
+      - name: Check local node
+        run: npm run check:node
+
+      - name: Run the tests
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 10
+          timeout_minutes: 10
+          retry_wait_seconds: 45
+          command: npx hardhat test
