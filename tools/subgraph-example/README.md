@@ -45,6 +45,7 @@ Rename `.env.example` to `.env`
 
 #### ERC20:
 `npx hardhat deployERC20`
+
 `npx hardhat transferERC20`
 
 #### Gravatar:
