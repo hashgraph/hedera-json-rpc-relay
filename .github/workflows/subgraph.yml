@@ -39,6 +39,10 @@ jobs:
       - name: Start local graph-node
         run: npm run graph-local -- --detach
 
+      - name: Sleep for 30 seconds
+        run: sleep 30s
+        shell: bash
+
       - name: Create subgraph
         run: npm run create-local
 
