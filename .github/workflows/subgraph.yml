@@ -47,7 +47,7 @@ jobs:
         run: npm run create-local
 
       - name: Deploy subgraph
-        run: npx run deploy-local -- --network local --version-label 0.0.1
+        run: npm run deploy-local -- --network local --version-label 0.0.1
 
       - name: Check local node
         run: npm run check:node
