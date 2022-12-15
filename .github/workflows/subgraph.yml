@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    defaults:
+      run:
+        working-directory: ./tools/subgraph-example/
     steps:
       - name: Setup node
         uses: actions/setup-node@v2
@@ -22,7 +25,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install dependencies
-        run: cd ./tools/subgraph-example/ && npm ci
+        run: npm ci
 
       - name: Run local node
         run: npx hedera start --network local-test
