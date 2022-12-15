@@ -1265,7 +1265,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 const BEGIN_EXPECTED_STORAGE_VAL = "0x000000000000000000000000000000000000000000000000000000000000000f";
                 const END_EXPECTED_STORAGE_VAL = "0x0000000000000000000000000000000000000000000000000000000000000008";
 
-                const beginStorageVal = await relay.call('eth_getStorageAt', [`${contractId}`, '0x', 'latest'] );
+                const beginStorageVal = await relay.call('eth_getStorageAt', [`${contractId}`, BEGIN_EXPECTED_STORAGE_VAL, 'latest'] );
                 expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL)
 
                 const gasPrice = await relay.gasPrice();
