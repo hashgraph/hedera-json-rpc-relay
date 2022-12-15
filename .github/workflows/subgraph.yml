@@ -50,4 +50,4 @@ jobs:
         run: npm run deploy-local -- --network local --version-label 0.0.1
 
       - name: Run the tests
-        run: npx hedera test
+        run: npx hardhat test
