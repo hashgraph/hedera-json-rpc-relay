@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 import { expect } from "chai";
 import fetch from 'node-fetch'
 import expected from './expected.json'
-import isEqual from 'lodash/isequal'
+import _ from 'lodash'
 import hre from 'hardhat';
 
 dotenv.config();
@@ -18,14 +18,14 @@ describe("Subgraph", () => {
       const result = await getData(GRAVATAR_QUERY);
       const gravatars = result.data.gravatars;
 
-      expect(isEqual(gravatars, expected.gravatar.initial)).to.be.true;
+      expect(_.isEqual(gravatars, expected.gravatar.initial)).to.be.true;
     })
 
     it("Indexes past ExampleERC20 events correctly", async () => {
       const result = await getData(ERC20_QUERY);
       const erc20 = result.data.erc20S;
 
-      expect(isEqual(erc20, expected.erc20.initial)).to.be.true;
+      expect(_.isEqual(erc20, expected.erc20.initial)).to.be.true;
     })
 
     it("Indexes past ExampleERC721 events correctly", async () => {
