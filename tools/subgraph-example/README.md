@@ -34,9 +34,7 @@ To start a Hedera local node by running `npx hedera start --network local-test`.
 
 #### JSON-RPC Relay configurations:
 
-Note: Currently you'll have to start the relay from the main branch in this repo, because it contains important bugfixes. This doc will be updated when a new version containing all the fixes is released.
-
-If the graph node is configured to run against a local instance of the json-rpc-relay. Be sure to set the following options in your json-rpc-relay .env file:
+If the graph node is configured to run against a local instance of the json-rpc-relay. Be sure to set the following env variables in your json-rpc-relay .env file:
 ```
 ETH_GET_LOGS_BLOCK_RANGE_LIMIT=2000
 RATE_LIMIT_DISABLED = true
@@ -63,7 +61,7 @@ Rename `.env.example` to `.env`
 
 `npx hardhat createGravatar`
 
-_NOTE: This example uses the [hardhat-graph](https://github.com/graphprotocol/hardhat-graph) hardhat plugin. After every contract deploy, the plugin will update the networks.json file with the contract address (and the startBlock), so you don't have to manually update it in the `subgraph.yaml` file._
+_NOTE: This example uses the [hardhat-graph](https://github.com/graphprotocol/hardhat-graph) plugin. After every contract deploy, the plugin will update the networks.json file with the contract address (and the startBlock), this way you can use the `--network <network_name>` option of the `deploy` command, which will automatically update the address (and startBlock) in the `subgraph.yaml` file to the last contract deployment._
 
 ### Generate the types:
 
