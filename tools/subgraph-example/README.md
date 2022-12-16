@@ -1,5 +1,7 @@
 # Subgraph example
 
+## Description:
+
 Hardhat based project containing example subgraph indexing the following contracts and events:
 
 ExampleERC721 -> Transfer
@@ -9,6 +11,12 @@ ExampleERC20 -> Transfer
 GravatarRegistry -> GravatarCreated and GravatarUpdated
 
 For more information on subgraphs, check the official TheGraph documentation https://thegraph.com/docs/en/
+
+## Introduction:
+
+1. [What is TheGraph](https://thegraph.com/docs/en/about)
+2. [How to create a subgraph](https://thegraph.com/docs/en/developing/creating-a-subgraph/)
+3. [The AssemblyScript API](https://thegraph.com/docs/en/developing/assemblyscript-api/)
 
 ## Prerequisites:
 
@@ -94,3 +102,19 @@ Note: At this time the whole test workflow can't be proficiently automated, so y
 3. Be sure to start a clean graph-node by executing `yarn/npm run graph-local-clean` and then `yarn/npm run graph-local`
 4. Create and deploy the subgraph by executing `yarn/npm run create-local` and `yarn deploy-local --network local` or `npx run deploy-local -- --network local` and follow the instructions
 5. Execute `npx hardhat test`
+
+
+## HOW TOs:
+
+### Run a private graph-node against testnet, previewnet and mainnet:
+
+The easiest way to run a local `graph-node` against `testnet`, `previewnet` or `mainnet` is using the [docker-compose](https://github.com/graphprotocol/graph-node/tree/master/docker#docker-compose) setup.
+
+1. Copy the content of the provided [docker-compose.yml](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml) file, or use the one from the [subgraph-example](./docker-compose.yml)
+2. Replace `'mainnet:http://host.docker.internal:8545'` on [this](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) line with:
+     1. `'mainnet:https://mainnet.hashio.io/api'` for `mainnet`
+     2.  `'testnet:https://testnet.hashio.io/api'` for `testnet`
+     3.  `'previewnet:https://previewnet.hashio.io/api'` for `testnet`
+3. In the `subgraph.yaml` file change the dataSources network with to the network you want to index. Also don't forget to update the address (and the startBlock).
+
+Advanced info on how to set up an indexer could be found in [The Graph Docs](https://thegraph.com/docs/en/indexing/operating-graph-node/) and the [official graph-node GitHub repository](https://github.com/graphprotocol/graph-node)
