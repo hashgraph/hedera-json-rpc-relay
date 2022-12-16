@@ -1286,7 +1286,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 await relay.call('eth_sendRawTransaction', [signedTx]);
 
                 // wait for the transaction to propogate to mirror node
-                await new Promise(r => setTimeout(r, 2000));
+                await new Promise(r => setTimeout(r, 1000));
 
                 const storageVal = await relay.call('eth_getStorageAt', [`${contractId}`, '0x', 'latest'] );
                 expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL);
