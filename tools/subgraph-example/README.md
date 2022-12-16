@@ -36,7 +36,7 @@ To start a Hedera local node by running `npx hedera start --network local-test`.
 
 Note: Currently you'll have to start the relay from the main branch in this repo, because it contains important bugfixes. This doc will be updated when a new version containing all the fixes is released.
 
-The graph node is configured to run against a local instance of the json-rpc-relay. Be sure to set the following options in your json-rpc .env file:
+If the graph node is configured to run against a local instance of the json-rpc-relay. Be sure to set the following options in your json-rpc-relay .env file:
 ```
 ETH_GET_LOGS_BLOCK_RANGE_LIMIT=2000
 RATE_LIMIT_DISABLED = true
@@ -63,7 +63,7 @@ Rename `.env.example` to `.env`
 
 `npx hardhat createGravatar`
 
-NOTE: This example uses the [hardhat-graph](https://github.com/graphprotocol/hardhat-graph) hardhat plugin. After every contract deploy, the plugin will update the networks.json file with the contract address (and the startBlock), so you don't have to manually update it in the `subgraph.yaml` file.
+_NOTE: This example uses the [hardhat-graph](https://github.com/graphprotocol/hardhat-graph) hardhat plugin. After every contract deploy, the plugin will update the networks.json file with the contract address (and the startBlock), so you don't have to manually update it in the `subgraph.yaml` file._
 
 ### Generate the types:
 
@@ -73,18 +73,17 @@ Run `npm run graph-codegen` or `yarn graph-codegen`
 
 Run `npm run graph-local` or `yarn graph-local`
 
-Note: If you run the graph-node against a local Hedera node and see this error in the graph-node console:
+_NOTE: If you run the graph-node against a local Hedera node and see this error in the graph-node console:_
+
 ```
 Trying again after eth_getBlockByNumber(0, false) RPC call failed (attempt #10) with result Err(Ethereum node could not find genesis block), provider: local-rpc-0
 ```
 
-Uncomment [this](./docker-compose.yml#L24) line and restart the node.
+_Add [this](./docker-compose.yml#L24) line to your `docker-compose.yml` and restart the node._
 
-Every time you restart the hedera-node it is recommended to do a clean-up of the graph-node. To do this run `npm run graph-local-clean` or `yarn graph-local-clean`
+_NOTE: Every time you restart the hedera-node it is recommended to do a clean-up of the graph-node. To do this run `npm run graph-local-clean` or `yarn graph-local-clean`_
 
 ### Deploy the subgraph to the local graph-node:
-
-Before deploying the subgraph, be sure to update the address (and startBlock) in `subgraph.yaml` to the address of the deployed Greeter contract.
 
 To deploy the subgraph:
 
@@ -95,11 +94,11 @@ To deploy the subgraph:
 
 ## Running the tests:
 
-Note: At this time the whole test workflow can't be proficiently automated, so you'll need to perform some manual steps:
+_NOTE: At this time the whole test workflow can't be proficiently automated, so you'll need to perform some manual steps:_
 
 1. Be sure to start a clean local hedera node. If the node is currently running stop it.
-    - Run `npx hedera stop` to be sure that all containers are stopped and the temp files and volumes have been removed.
-    - Run `npx hedera start --network local-test` to start a new clean node.
+    1. Run `npx hedera stop` to be sure that all containers are stopped and the temp files and volumes have been removed.
+    2. Run `npx hedera start --network local-test` to start a new clean node.
 2. After the node has started, execute `npx hardhat prepare` task, which will deploy and interact with the contracts.
 3. Be sure to start a clean graph-node by executing `yarn/npm run graph-local-clean` and then `yarn/npm run graph-local`
 4. Create and deploy the subgraph by executing `yarn/npm run create-local` and `yarn deploy-local --network local` or `npx run deploy-local -- --network local` and follow the instructions
