@@ -18,19 +18,21 @@ For more information on subgraphs, check the official TheGraph documentation htt
 2. [How to create a subgraph](https://thegraph.com/docs/en/developing/creating-a-subgraph/)
 3. [The AssemblyScript API](https://thegraph.com/docs/en/developing/assemblyscript-api/)
 
-## Prerequisites:
+## Try it out:
+
+### Prerequisites:
 
 Note: Currently this example needs to be executed against older relay and mirror-node versions, until all fixes have been released.
 
-### Install the dependencies:
+#### Install the dependencies:
 
 Run `npm install` or `yarn [install]`
 
-### Run Hedera local node:
+#### Run Hedera local node:
 
 To start a Hedera local node by running `npx hedera start --network local-test`. Note that when the containers are up, you'll need to stop the `json-rpc-relay` container and start a local relay server.
 
-### JSON-RPC Relay configurations:
+#### JSON-RPC Relay configurations:
 
 Note: Currently you'll have to start the relay from the main branch in this repo, because it contains important bugfixes. This doc will be updated when a new version containing all the fixes is released.
 
@@ -40,7 +42,7 @@ ETH_GET_LOGS_BLOCK_RANGE_LIMIT=2000
 RATE_LIMIT_DISABLED = true
 ```
 
-### Set .env vars
+#### Set .env vars
 
 Rename `.env.example` to `.env`
 
@@ -91,7 +93,7 @@ To deploy the subgraph:
 3. Follow the instructions
 4. After the subgraph is successfully deployed open the [GraphQL playground](http://127.0.0.1:8000/subgraphs/name/subgraph-example/graphql?query=%7B+%0A++gravatars+%7B%0A++++id%0A++++owner%0A++++displayName%0A++++imageUrl%0A++%7D%0A++erc20S+%7B%0A++++id%0A++++supply%0A++++type%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++++amount%0A++++%7D%0A++%7D%0A++erc721S+%7B%0A++++id%0A++++owner%0A++++type%0A++++tokenId%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++%7D%0A++%7D%0A%7D%0A) where you can execute queries and fetch indexed data.
 
-### Running the tests:
+## Running the tests:
 
 Note: At this time the whole test workflow can't be proficiently automated, so you'll need to perform some manual steps:
 
