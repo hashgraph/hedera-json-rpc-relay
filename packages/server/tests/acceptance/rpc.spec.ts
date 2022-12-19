@@ -1346,6 +1346,7 @@ describe('@api RPC Server Acceptance Tests', function () {
 
                 const transaction1 = {
                     ...transaction,
+                    nonce: await relay.getAccountNonce('0x' + accounts[1].address),
                     data: NEXT_STORAGE_CONTRACT_UPDATE,
                 };
                 
