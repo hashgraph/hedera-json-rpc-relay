@@ -93,7 +93,7 @@ export class EthImpl implements Eth {
    *
    * @private
    */
-   private readonly cache;
+  private readonly cache;
 
   /**
    * The sdk client use for connecting to both the consensus nodes and mirror node. The account
@@ -583,10 +583,10 @@ export class EthImpl implements Eth {
                 }
 
                 let transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
-                    mirrorAccount.account,
-                    block.timestamp.to,
-                    currentTimestamp,
-                    requestId
+                  mirrorAccount.account,
+                  block.timestamp.to,
+                  currentTimestamp,
+                  requestId
                 );
 
                 for(const tx of transactionsInTimeWindow) {
@@ -665,7 +665,7 @@ export class EthImpl implements Eth {
         }
         else if (result?.type === constants.TYPE_CONTRACT) {
           if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
-              return result?.entity.runtime_bytecode;
+            return result?.entity.runtime_bytecode;
           }
         }
       }
@@ -836,8 +836,8 @@ export class EthImpl implements Eth {
     try {
       const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
       if (result?.type === constants.TYPE_ACCOUNT) {
-          const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
-          return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
+        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
+        return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
       }
       else if (result?.type === constants.TYPE_CONTRACT) {
         return EthImpl.numberTo0x(1);
@@ -1414,7 +1414,7 @@ export class EthImpl implements Eth {
         return EMPTY_RESPONSE;
       }
     } else if ( !(await this.validateBlockRangeAndAddTimestampToParams(params, fromBlock, toBlock, requestId)) ) {
-        return EMPTY_RESPONSE;
+      return EMPTY_RESPONSE;
     }
 
     this.addTopicsToParams(params, topics);
@@ -1435,7 +1435,7 @@ export class EthImpl implements Eth {
     for(const log of logResults) {
       logs.push(
         new Log({
-          address: await this.getLogEvmAddress(log.address, requestId) || log.address,
+          address: log.address,
           blockHash: EthImpl.toHash32(log.block_hash),
           blockNumber: EthImpl.numberTo0x(log.block_number),
           data: log.data,
@@ -1455,21 +1455,6 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} maxPriorityFeePerGas()`);
     return EthImpl.zeroHex;
-  }
-
-  private async getLogEvmAddress(address: string, requestId: string | undefined) {
-    const cachedLabel = `getLogEvmAddress.${address}`;
-    let contractAddress = this.cache.get(cachedLabel);
-
-    // If contractAddress === undefined it means there's no cache record
-    // and a mirror node request should be executed.
-    if (contractAddress === undefined) {
-      const contract = await this.mirrorNodeClient.getContract(address, requestId);
-      contractAddress = contract.evm_address;
-      this.cache.set(cachedLabel, contractAddress);
-    }
-
-    return contractAddress;
   }
 
   static isArrayNonEmpty(input: any): boolean {
