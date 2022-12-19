@@ -1255,7 +1255,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 const BEGIN_EXPECTED_STORAGE_VAL = '0x000000000000000000000000000000000000000000000000000000000000000f';
                 const END_EXPECTED_STORAGE_VAL = '0x0000000000000000000000000000000000000000000000000000000000000008';
 
-                const beginStorageVal = await relay.call('eth_getStorageAt', [`${evmAddress}`, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'] );
+                const beginStorageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'] );
                 expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
 
                 const gasPrice = await relay.gasPrice();
@@ -1278,7 +1278,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 // wait for the transaction to propogate to mirror node
                 await new Promise(r => setTimeout(r, 2000));
 
-                const storageVal = await relay.call('eth_getStorageAt', [`${evmAddress}`, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'] );
+                const storageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'] );
                 expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL);
             });
         });

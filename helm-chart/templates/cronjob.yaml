@@ -2,11 +2,11 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "json-rpc-relay.fullname" . }}
+  name: {{ printf "%s-%s" (include "json-rpc-relay.name" .) "restart" | trimSuffix "-"| trunc 52 }}
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Forbid
-  schedule: {{ .Values.rolling_restart.schedule  }}
+  schedule: {{ .Values.rolling_restart.schedule }}
   jobTemplate:
     spec:
       backoffLimit: 2
@@ -24,5 +24,51 @@ spec:
                 - >-
                   kubectl rollout restart deployment/{{ include "json-rpc-relay.fullname" . }} && 
                   kubectl rollout status deployment/{{ include "json-rpc-relay.fullname" . }}
-{{- end }}                
+{{- end }}
+
+---
+{{- if .Values.test.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ printf "%s-%s" (include "json-rpc-relay.name" .) "test" | trimSuffix "-"| trunc 52 }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  concurrencyPolicy: Allow
+  schedule: {{ .Values.test.schedule }}
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: {{ include "json-rpc-relay.serviceAccountName" . }}-test
+          restartPolicy: Never
+          initContainers:
+            - name: curl-config
+              image: curlimages/curl
+              command: 
+                - curl
+                - https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/packages/server/tests/postman.json
+                - -o
+                - postman.json
+              volumeMounts:
+              - name: config-json
+                mountPath: "/"
+          containers:
+            - name: newman
+              image: postman/newman
+              command: 
+                - newman
+                - run
+                - postman.json
+                - --env-var 
+                - baseUrl={{ .Values.test.baseUrl | quote }}
+              volumeMounts:
+              - name: config-json
+                mountPath: "/"
+                readOnly: true
+          volumes:
+            - name: config-json
+              emptyDir: {}                          
+{{- end }}
             

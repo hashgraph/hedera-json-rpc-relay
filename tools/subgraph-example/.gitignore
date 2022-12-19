@@ -1,10 +1,16 @@
-# graph-cli
-build
-generated
-tests/.*
-
-# packages
 node_modules
+.env
+coverage
+coverage.json
+typechain
 
-# local graph-node
+#Hardhat files
+cache
+artifacts
+# Subgraph
+subgraph/generated
+subgraph/build
+# Matchstick
+subgraph/tests/.*
+# Graph-node
 data
