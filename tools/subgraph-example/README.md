@@ -22,7 +22,9 @@ For more information on subgraphs, check the official TheGraph documentation htt
 
 ### Prerequisites:
 
-Note: Currently this example needs to be executed against older relay and mirror-node versions, until all fixes have been released.
+Note: Currently this example needs to be executed against older relay (v0.10.0) and mirror-node (v0.67.0-rc1) versions, until all fixes have been released.
+
+The full hedera local-node config can be found [here](./configs/local-test.json)
 
 #### Install the dependencies:
 
