@@ -77,7 +77,7 @@ describe('@api RPC Server Acceptance Tests', function () {
 
     let blockNumberAtStartOfTests = 0;
     let mirrorAccount0AtStartOfTests;
-    
+
     describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
 
@@ -292,14 +292,14 @@ describe('@api RPC Server Acceptance Tests', function () {
             });
 
             it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
-                //for the purpose of the test, we are settings limit to 2, and fetching all. 
+                //for the purpose of the test, we are settings limit to 2, and fetching all.
                 //setting mirror node limit to 2 for this test only
                 process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
                 const blocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 50;
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': blocksBehindLatest,
                     'toBlock': 'latest'
-                }], requestId); 
+                }], requestId);
                 expect(logs.length).to.be.greaterThan(2);
             })
         });
@@ -1265,7 +1265,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 const BEGIN_EXPECTED_STORAGE_VAL = "0x000000000000000000000000000000000000000000000000000000000000000f";
                 const END_EXPECTED_STORAGE_VAL = "0x0000000000000000000000000000000000000000000000000000000000000008";
 
-                const beginStorageVal = await relay.call('eth_getStorageAt', [`${contractId}`, '0x', 'latest'] );
+                const beginStorageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x', 'latest'] );
                 expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
 
                 const gasPrice = await relay.gasPrice();
@@ -1274,7 +1274,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     gasLimit: 50000,
                     chainId: Number(CHAIN_ID),
                     to: evmAddress,
-                    nonce: await relay.getAccountNonce(accounts[1].address),
+                    nonce: await relay.getAccountNonce('0x' + accounts[1].address),
                     gasPrice: gasPrice,
                     data: STORAGE_CONTRACT_UPDATE,
                     maxPriorityFeePerGas: gasPrice,
@@ -1286,9 +1286,9 @@ describe('@api RPC Server Acceptance Tests', function () {
                 await relay.call('eth_sendRawTransaction', [signedTx]);
 
                 // wait for the transaction to propogate to mirror node
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 2000));
 
-                const storageVal = await relay.call('eth_getStorageAt', [`${contractId}`, '0x', 'latest'] );
+                const storageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x', 'latest'] );
                 expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL);
             });
         });
