@@ -1249,23 +1249,23 @@ describe('@api RPC Server Acceptance Tests', function () {
 
         // Test state changes with getStorageAt
         describe('eth_getStorageAt', () => {
-            let storageContract, contractId, evmAddress;
+            let storageContract, evmAddress;
             const STORAGE_CONTRACT_UPDATE = "0x2de4e884";
+            const NEXT_STORAGE_CONTRACT_UPDATE = "0x160D6484";
 
-            before(async () => {
+            this.beforeEach(async () => {
                 storageContract = await servicesNode.deployContract(storageContractJson);
                 // Wait for creation to propagate
                 await mirrorNode.get(`/contracts/${storageContract.contractId}`);
 
-                contractId = storageContract.contractId;
                 evmAddress = `0x${storageContract.contractId.toSolidityAddress()}`;
             });
 
-            it('should execute "eth_getStorageAt" request to get state changes', async function () {
+            it('should execute "eth_getStorageAt" request to get current state changes', async function () {
                 const BEGIN_EXPECTED_STORAGE_VAL = "0x000000000000000000000000000000000000000000000000000000000000000f";
                 const END_EXPECTED_STORAGE_VAL = "0x0000000000000000000000000000000000000000000000000000000000000008";
 
-                const beginStorageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x', 'latest'] );
+                const beginStorageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x', 'latest'], requestId);
                 expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
 
                 const gasPrice = await relay.gasPrice();
@@ -1283,13 +1283,78 @@ describe('@api RPC Server Acceptance Tests', function () {
                 };
 
                 const signedTx = await accounts[1].wallet.signTransaction(transaction);
-                await relay.call('eth_sendRawTransaction', [signedTx]);
+                await relay.call('eth_sendRawTransaction', [signedTx], requestId);
 
                 // wait for the transaction to propogate to mirror node
                 await new Promise(r => setTimeout(r, 2000));
 
-                const storageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x', 'latest'] );
+                const storageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x', 'latest'], requestId);
                 expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL);
+            });
+
+            it('should execute "eth_getStorageAt" request to get current state changes without passing block', async function () {
+                const BEGIN_EXPECTED_STORAGE_VAL = "0x000000000000000000000000000000000000000000000000000000000000000f";
+                const END_EXPECTED_STORAGE_VAL = "0x0000000000000000000000000000000000000000000000000000000000000008";
+
+                const beginStorageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x'], requestId);
+                expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
+
+                const gasPrice = await relay.gasPrice();
+                const transaction = {
+                    value: 0,
+                    gasLimit: 50000,
+                    chainId: Number(CHAIN_ID),
+                    to: evmAddress,
+                    nonce: await relay.getAccountNonce('0x' + accounts[1].address),
+                    gasPrice: gasPrice,
+                    data: STORAGE_CONTRACT_UPDATE,
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
+                    type: 2
+                };
+
+                const signedTx = await accounts[1].wallet.signTransaction(transaction);
+                await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+
+                // wait for the transaction to propogate to mirror node
+                await new Promise(r => setTimeout(r, 2000));
+
+                const storageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x'], requestId);
+                expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL);
+            });
+
+            it('should execute "eth_getStorageAt" request to get current state changes with passing specific block', async function () {
+                const EXPECTED_STORAGE_VAL = "0x000000000000000000000000000000000000000000000000000000000000000f";
+
+                const gasPrice = await relay.gasPrice();
+                const transaction = {
+                    value: 0,
+                    gasLimit: 50000,
+                    chainId: Number(CHAIN_ID),
+                    to: evmAddress,
+                    nonce: await relay.getAccountNonce('0x' + accounts[1].address),
+                    gasPrice: gasPrice,
+                    data: STORAGE_CONTRACT_UPDATE,
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
+                    type: 2
+                };
+
+                const signedTx = await accounts[1].wallet.signTransaction(transaction);
+                const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+                const blockNumber = await relay.call('eth_getTransactionReceipt', [transactionHash], requestId).blockNumber;
+
+                const transaction1 = {
+                    ...transaction,
+                    data: NEXT_STORAGE_CONTRACT_UPDATE,
+                };
+                
+                const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
+                const transactionHash1 = await relay.call('eth_sendRawTransaction', [signedTx1], requestId);
+
+                //Get previous state change with specific block number
+                const storageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x', blockNumber], requestId);
+                expect(storageVal).to.eq(EXPECTED_STORAGE_VAL);
             });
         });
 

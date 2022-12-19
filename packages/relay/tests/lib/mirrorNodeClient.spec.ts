@@ -522,8 +522,8 @@ describe('MirrorNodeClient', async function () {
     const result = await mirrorNodeInstance.getContractCurrentStateByAddressAndSlot(contractAddress, defaultCurrentContractState.state[0].slot);
 
     expect(result).to.exist;
-    expect(result.length).to.gt(0);
-    expect(result).to.eq(defaultCurrentContractState.state[0].value);
+    expect(result.state).to.exist;
+    expect(result.state[0].value).to.eq(defaultCurrentContractState.state[0].value);
   });
 
   it('`getContractCurrentStateByAddressAndSlot` - incorrect address', async () => {
