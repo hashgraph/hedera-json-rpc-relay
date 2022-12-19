@@ -2374,6 +2374,34 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_getStorageAt', async function() {
+    it('eth_getStorageAt with match with block and slot less than 32 bytes and without leading zeroes', async function() {
+      // mirror node request mocks
+      mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+
+      const result = await ethImpl.getStorageAt(contractAddress1, '0x101', EthImpl.numberTo0x(blockNumber));
+      expect(result).to.exist;
+      if (result == null) return;
+
+      // verify slot value
+      expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+    });
+
+    it('eth_getStorageAt with match with block and slot less than 32 bytes and leading zeroes', async function() {
+      // mirror node request mocks
+      mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      mock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
+      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+
+      const result = await ethImpl.getStorageAt(contractAddress1, '0x0000101', EthImpl.numberTo0x(blockNumber));
+      expect(result).to.exist;
+      if (result == null) return;
+
+      // verify slot value
+      expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+    });
+
     it('eth_getStorageAt with match with block', async function () {
       // mirror node request mocks
       mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);

@@ -504,8 +504,10 @@ export class EthImpl implements Eth {
           }
           if (EthImpl.isArrayNonEmpty(contractResultDetails.state_changes)) {
             // filter the state changes to match slot and return value
-            const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === slot);
-            result = stateChange.value_written;
+            const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === EthImpl.toHex32Byte(slot));
+            if (stateChange) {
+              result = stateChange.value_written;
+            }
           }
         })
         .catch((e: any) => {
@@ -1125,6 +1127,10 @@ export class EthImpl implements Eth {
 
   private static blockTagIsLatestOrPending = (tag) => {
     return tag == null || tag === EthImpl.blockLatest || tag === EthImpl.blockPending;
+  }
+
+  private static toHex32Byte(input: string): string {
+    return input.length === 66 ? input : EthImpl.emptyHex + this.prune0x(input).padStart(64, '0');
   }
 
   /**
