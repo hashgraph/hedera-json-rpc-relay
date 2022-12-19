@@ -1324,7 +1324,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             });
 
             it('should execute "eth_getStorageAt" request to get current state changes with passing specific block', async function () {
-                const EXPECTED_STORAGE_VAL = "0x000000000000000000000000000000000000000000000000000000000000000f";
+                const EXPECTED_STORAGE_VAL = "0x0000000000000000000000000000000000000000000000000000000000000008";
 
                 const gasPrice = await relay.gasPrice();
                 const transaction = {
@@ -1352,6 +1352,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 
                 const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
                 const transactionHash1 = await relay.call('eth_sendRawTransaction', [signedTx1], requestId);
+                await new Promise(r => setTimeout(r, 2000));
 
                 //Get previous state change with specific block number
                 const storageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x', blockNumber], requestId);
