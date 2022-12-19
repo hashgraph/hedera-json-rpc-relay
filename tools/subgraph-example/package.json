@@ -44,6 +44,6 @@
     "create-local": "graph create --node http://127.0.0.1:8020 subgraph-example",
     "deploy-local": "cd ./subgraph && graph deploy --ipfs http://127.0.0.1:5001 --node http://127.0.0.1:8020 subgraph-example",
     "hardhat-local": "hardhat node --hostname 0.0.0.0",
-    "hedera-local": "hedera start"
+    "subgraph-test": "hardhat test"
   }
 }
