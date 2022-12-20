@@ -1071,17 +1071,6 @@ describe('RPC Server', async function() {
         BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.DEFAULT_HEX_ERROR}`);
       });
 
-      it('validates parameter 2 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getStorageAt',
-          'params': ["0x0000000000000000000000000000000000000001", "0x1"]
-        });
-
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 2');
-      });
-
       it('validates parameter 2 is valid block number', async function() {
         const res = await this.testClient.post('/', {
           'id': '2',

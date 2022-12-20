@@ -608,7 +608,6 @@ app.useRpc('eth_getStorageAt', async (params: any) => {
         type: 'hex'
       },
       2: {
-        required: true,
         type: 'blockNumber'
       },
     }

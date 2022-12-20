@@ -14,16 +14,6 @@ describe('Validator', async () => {
     }
   }
 
-  function expectMissingParam(result: any, index: number | string, object?: string) {
-    expect(result instanceof JsonRpcError).to.eq(true);
-    expect(result.name).to.eq("Missing required parameters");
-    if (object) {
-      expect(result.message).to.eq(`Missing value for required parameter '${index}' for ${object}`);
-    } else {
-      expect(result.message).to.eq(`Missing value for required parameter ${index}`);
-    }
-  }
-
   describe('validates Address type correctly', async () => {
     const validation = { 0: { type: 'address' } };
 
