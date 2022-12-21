@@ -131,14 +131,21 @@ app.getKoaApp().use(async (ctx, next) => {
   }
 });
 
-const logAndHandleResponse = async (methodName, methodFunction) => {
+const logAndHandleResponse = async (methodName: any, methodParams: any, methodFunction: any) => {
   const start = Date.now();
   let ms;
   const requestId = generateRequestId();
   const requestIdPrefix = requestId ? `[${REQUEST_ID_STRING}${requestId}]` : '';
   logger.debug(`${requestIdPrefix} ${methodName}`);
   const messagePrefix = `${requestIdPrefix} [POST] ${methodName}:`;
+
   try {
+
+    const methodValidations = Validator.METHODS[methodName];
+    if (methodValidations) {
+      Validator.validateParams(methodParams, methodValidations);
+    }
+
     const response = await methodFunction(requestId);
     const status = response instanceof JsonRpcError ? response.code.toString() : responseSuccessStatusCode;
     ms = Date.now() - start;
@@ -192,14 +199,14 @@ const logAndHandleResponse = async (methodName, methodFunction) => {
  * returns: false
  */
 app.useRpc('net_listening', async () => {
-  return logAndHandleResponse('net_listening', () => '' + relay.net().listening());
+  return logAndHandleResponse('net_listening', [], () => '' + relay.net().listening());
 });
 
 /**
  *  Returns the current network ID
  */
 app.useRpc('net_version', async () => {
-  return logAndHandleResponse('net_version', () => relay.net().version());
+  return logAndHandleResponse('net_version', [], () => relay.net().version());
 });
 
 /**
@@ -208,7 +215,7 @@ app.useRpc('net_version', async () => {
  * returns: Block number - hex encoded integer
  */
 app.useRpc('eth_blockNumber', async () => {
-  return logAndHandleResponse('eth_blockNumber', (requestId) => relay.eth().blockNumber(requestId));
+  return logAndHandleResponse('eth_blockNumber', [], (requestId) => relay.eth().blockNumber(requestId));
 });
 
 /**
@@ -218,19 +225,7 @@ app.useRpc('eth_blockNumber', async () => {
  * returns: Gas used - hex encoded integer
  */
 app.useRpc('eth_estimateGas', async (params: any) => {
-  const validationError = Validator.validateParams(params, {
-    0: {
-      type: 'transaction',
-      required: true
-    },
-    1: {
-      type: 'blockNumber'
-    }
-  });
-
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_estimateGas', (requestId) =>
+  return logAndHandleResponse('eth_estimateGas', params, (requestId) =>
     relay.eth().estimateGas(params?.[0], params?.[1], requestId));
 });
 
@@ -242,20 +237,7 @@ app.useRpc('eth_estimateGas', async (params: any) => {
  * returns: Balance - hex encoded integer
  */
 app.useRpc('eth_getBalance', async (params: any) => {
-  const validationError = Validator.validateParams(params, {
-    0: {
-      type: 'address',
-      required: true
-    },
-    1: {
-      type: 'blockNumber',
-      required: true
-    }
-  });
-
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getBalance', (requestId) =>
+  return logAndHandleResponse('eth_getBalance', params, (requestId) =>
     relay.eth().getBalance(params?.[0], params?.[1], requestId));
 });
 
@@ -267,19 +249,7 @@ app.useRpc('eth_getBalance', async (params: any) => {
  * returns: Bytecode - hex encoded bytes
  */
 app.useRpc('eth_getCode', async (params: any) => {
-  const validationError = Validator.validateParams(params, {
-    0: {
-      type: 'address',
-      required: true
-    },
-    1: {
-      type: 'blockNumber',
-      required: true
-    }
-  });
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getCode', (requestId) =>
+  return logAndHandleResponse('eth_getCode', params, (requestId) =>
     relay.eth().getCode(params?.[0], params?.[1], requestId));
 });
 
@@ -289,7 +259,7 @@ app.useRpc('eth_getCode', async (params: any) => {
  * returns: Chain ID - integer
  */
 app.useRpc('eth_chainId', async () => {
-  return logAndHandleResponse('eth_chainId', (requestId) =>
+  return logAndHandleResponse('eth_chainId', [], (requestId) =>
     relay.eth().chainId(requestId));
 });
 
@@ -301,21 +271,7 @@ app.useRpc('eth_chainId', async () => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByNumber', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'blockNumber'
-      },
-      1: {
-        required: true,
-        type: 'boolean'
-      }
-    }
-  );
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getBlockByNumber', (requestId) =>
+  return logAndHandleResponse('eth_getBlockByNumber', params, (requestId) =>
     relay.eth().getBlockByNumber(params?.[0], Boolean(params?.[1]), requestId));
 });
 
@@ -327,21 +283,7 @@ app.useRpc('eth_getBlockByNumber', async (params: any) => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByHash', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'blockHash'
-      },
-      1: {
-        required: true,
-        type: 'boolean'
-      }
-    }
-  );
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getBlockByHash', (requestId) =>
+  return logAndHandleResponse('eth_getBlockByHash', params, (requestId) =>
     relay.eth().getBlockByHash(params?.[0], Boolean(params?.[1]), requestId));
 });
 
@@ -351,7 +293,7 @@ app.useRpc('eth_getBlockByHash', async (params: any) => {
  * returns: Gas price - hex encoded integer
  */
 app.useRpc('eth_gasPrice', async () => {
-  return logAndHandleResponse('eth_gasPrice', (requestId) => relay.eth().gasPrice(requestId));
+  return logAndHandleResponse('eth_gasPrice', [], (requestId) => relay.eth().gasPrice(requestId));
 });
 
 /**
@@ -362,21 +304,7 @@ app.useRpc('eth_gasPrice', async () => {
  * returns: Transaction count - hex encoded integer
  */
 app.useRpc('eth_getTransactionCount', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'address'
-      },
-      1: {
-        required: true,
-        type: 'blockNumber'
-      }
-    }
-  );
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getTransactionCount', (requestId) =>
+  return logAndHandleResponse('eth_getTransactionCount', params, (requestId) =>
     relay.eth().getTransactionCount(params?.[0], params?.[1], requestId));
 });
 
@@ -387,21 +315,7 @@ app.useRpc('eth_getTransactionCount', async (params: any) => {
  * returns: Value - hex encoded bytes
  */
 app.useRpc('eth_call', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'transaction'
-      },
-      1: {
-        required: true,
-        type: 'blockNumber'
-      }
-    }
-  );
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_call', (requestId) =>
+  return logAndHandleResponse('eth_call', params, (requestId) =>
     relay.eth().call(params?.[0], params?.[1], requestId));
 });
 
@@ -412,18 +326,7 @@ app.useRpc('eth_call', async (params: any) => {
  * returns: Transaction hash - 32 byte hex value
  */
 app.useRpc('eth_sendRawTransaction', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'hex'
-      }
-    }
-  );
-
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_sendRawTransaction', (requestId) =>
+  return logAndHandleResponse('eth_sendRawTransaction', params, (requestId) =>
   relay.eth().sendRawTransaction(params?.[0], requestId));
 });
 
@@ -434,23 +337,12 @@ app.useRpc('eth_sendRawTransaction', async (params: any) => {
  * returns: Transaction Receipt - object
  */
 app.useRpc('eth_getTransactionReceipt', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'transactionHash'
-      }
-    }
-  );
-
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getTransactionReceipt', (requestId) =>
+  return logAndHandleResponse('eth_getTransactionReceipt', params, (requestId) =>
     relay.eth().getTransactionReceipt(params?.[0], requestId));
 });
 
 app.useRpc('web3_clientVersion', async () => {
-  return logAndHandleResponse('web3_clientVersion', () => relay.web3().clientVersion());
+  return logAndHandleResponse('web3_clientVersion', [], () => relay.web3().clientVersion());
 });
 
 /**
@@ -459,7 +351,7 @@ app.useRpc('web3_clientVersion', async () => {
  * returns: Accounts - hex encoded address
  */
 app.useRpc('eth_accounts', async () => {
-  return logAndHandleResponse('eth_accounts', (requestId) => relay.eth().accounts(requestId));
+  return logAndHandleResponse('eth_accounts', [], (requestId) => relay.eth().accounts(requestId));
 });
 
 /**
@@ -469,18 +361,7 @@ app.useRpc('eth_accounts', async () => {
  * returns: Transaction Object
  */
 app.useRpc('eth_getTransactionByHash', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'transactionHash'
-      }
-    }
-  );
-
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getTransactionByHash', (requestId) =>
+  return logAndHandleResponse('eth_getTransactionByHash', params, (requestId) =>
     relay.eth().getTransactionByHash(params[0], requestId));
 });
 
@@ -497,25 +378,7 @@ app.useRpc('eth_getTransactionByHash', async (params: any) => {
  *      - reward - Array of effective priority fee per gas data.
  */
 app.useRpc('eth_feeHistory', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'hex'
-      },
-      1: {
-        required: true,
-        type: 'blockNumber'
-      },
-      2: {
-        type: ['array']
-      }
-    }
-  );
-
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_feeHistory', (requestId) =>
+  return logAndHandleResponse('eth_feeHistory', params, (requestId) =>
     relay.eth().feeHistory(Number(params?.[0]), params?.[1], params?.[2], requestId));
 });
 
@@ -526,17 +389,7 @@ app.useRpc('eth_feeHistory', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'blockHash'
-      }
-    }
-  );
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getBlockTransactionCountByHash', (requestId) =>
+  return logAndHandleResponse('eth_getBlockTransactionCountByHash', params, (requestId) =>
     relay.eth().getBlockTransactionCountByHash(params?.[0], requestId));
 });
 
@@ -547,17 +400,7 @@ app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
  * returns: Block Transaction Count - Hex encoded integer
  */
 app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'blockNumber'
-      }
-    }
-  );
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getBlockTransactionCountByNumber', (requestId) =>
+  return logAndHandleResponse('eth_getBlockTransactionCountByNumber', params, (requestId) =>
     relay.eth().getBlockTransactionCountByNumber(params?.[0], requestId));
 });
 
@@ -568,21 +411,14 @@ app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
  * returns: Logs - Array of log objects
  */
 app.useRpc('eth_getLogs', async (params: any) => {
-  const validationError = Validator.validateParams(params, {
-    0: {
-      type: 'filter',
-      required: true
-    }
-  });
+  const filter = params[0];
 
-  if (validationError) return validationError;
-  params = params[0];
-  return logAndHandleResponse('eth_getLogs', (requestId) => relay.eth().getLogs(
-    params.blockHash,
-    params.fromBlock,
-    params.toBlock,
-    params.address,
-    params.topics,
+  return logAndHandleResponse('eth_getLogs', params, (requestId) => relay.eth().getLogs(
+    filter.blockHash,
+    filter.fromBlock,
+    filter.toBlock,
+    filter.address,
+    filter.topics,
     requestId
   ));
 });
@@ -597,24 +433,7 @@ app.useRpc('eth_getLogs', async (params: any) => {
  * returns: Value - The storage value
  */
 app.useRpc('eth_getStorageAt', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'address'
-      },
-      1: {
-        required: true,
-        type: 'hex'
-      },
-      2: {
-        type: 'blockNumber'
-      },
-    }
-  );
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getStorageAt', (requestId) =>
+  return logAndHandleResponse('eth_getStorageAt', params, (requestId) =>
     relay.eth().getStorageAt(params?.[0], params?.[1], params?.[2], requestId));
 });
 
@@ -626,21 +445,7 @@ app.useRpc('eth_getStorageAt', async (params: any) => {
  * returns: Transaction
  */
 app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'blockHash'
-      },
-      1: {
-        required: true,
-        type: 'hex'
-      }
-    }
-  );
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getTransactionByBlockHashAndIndex', (requestId) =>
+  return logAndHandleResponse('eth_getTransactionByBlockHashAndIndex', params, (requestId) =>
     relay.eth().getTransactionByBlockHashAndIndex(params?.[0], params?.[1], requestId));
 });
 
@@ -652,21 +457,7 @@ app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
  * returns: Transaction
  */
 app.useRpc('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
-  const validationError = Validator.validateParams(params,
-    {
-      0: {
-        required: true,
-        type: 'blockNumber'
-      },
-      1: {
-        required: true,
-        type: 'hex'
-      }
-    }
-  );
-  if (validationError) return validationError;
-
-  return logAndHandleResponse('eth_getTransactionByBlockNumberAndIndex', (requestId) =>
+  return logAndHandleResponse('eth_getTransactionByBlockNumberAndIndex', params, (requestId) =>
     relay.eth().getTransactionByBlockNumberAndIndex(params?.[0], params?.[1], requestId));
 });
 
@@ -680,7 +471,7 @@ app.useRpc('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
  * returns: null
  */
 app.useRpc('eth_getUncleByBlockHashAndIndex', async () => {
-  return logAndHandleResponse('eth_getUncleByBlockHashAndIndex', (requestId) =>
+  return logAndHandleResponse('eth_getUncleByBlockHashAndIndex', [], (requestId) =>
     relay.eth().getUncleByBlockHashAndIndex(requestId));
 });
 
@@ -693,7 +484,7 @@ app.useRpc('eth_getUncleByBlockHashAndIndex', async () => {
  * returns: null
  */
 app.useRpc('eth_getUncleByBlockNumberAndIndex', async () => {
-  return logAndHandleResponse('eth_getUncleByBlockNumberAndIndex', (requestId) =>
+  return logAndHandleResponse('eth_getUncleByBlockNumberAndIndex', [], (requestId) =>
     relay.eth().getUncleByBlockNumberAndIndex(requestId));
 });
 
@@ -705,7 +496,7 @@ app.useRpc('eth_getUncleByBlockNumberAndIndex', async () => {
  * returns: 0x0
  */
 app.useRpc('eth_getUncleCountByBlockHash', async () => {
-  return logAndHandleResponse('eth_getUncleCountByBlockHash', (requestId) =>
+  return logAndHandleResponse('eth_getUncleCountByBlockHash', [], (requestId) =>
     relay.eth().getUncleCountByBlockHash(requestId));
 });
 
@@ -717,7 +508,7 @@ app.useRpc('eth_getUncleCountByBlockHash', async () => {
  * returns: 0x0
  */
 app.useRpc('eth_getUncleCountByBlockNumber', async () => {
-  return logAndHandleResponse('eth_getUncleCountByBlockNumber', (requestId) =>
+  return logAndHandleResponse('eth_getUncleCountByBlockNumber', [], (requestId) =>
     relay.eth().getUncleCountByBlockNumber(requestId));
 });
 
@@ -728,7 +519,7 @@ app.useRpc('eth_getUncleCountByBlockNumber', async () => {
  * returns: code: -32000
  */
 app.useRpc('eth_getWork', async () => {
-  return logAndHandleResponse('eth_getWork', (requestId) => relay.eth().getWork(requestId));
+  return logAndHandleResponse('eth_getWork', [], (requestId) => relay.eth().getWork(requestId));
 });
 
 /**
@@ -739,7 +530,7 @@ app.useRpc('eth_getWork', async () => {
  * returns: 0x0
  */
 app.useRpc('eth_hashrate', async () => {
-  return logAndHandleResponse('eth_hashrate', (requestId) => relay.eth().hashrate(requestId));
+  return logAndHandleResponse('eth_hashrate', [], (requestId) => relay.eth().hashrate(requestId));
 });
 
 /**
@@ -750,7 +541,7 @@ app.useRpc('eth_hashrate', async () => {
  * returns: false
  */
 app.useRpc('eth_mining', async () => {
-  return logAndHandleResponse('eth_mining', (requestId) => relay.eth().mining(requestId));
+  return logAndHandleResponse('eth_mining', [], (requestId) => relay.eth().mining(requestId));
 });
 
 /**
@@ -761,7 +552,7 @@ app.useRpc('eth_mining', async () => {
  * returns: false
  */
 app.useRpc('eth_submitWork', async () => {
-  return logAndHandleResponse('eth_submitWork', (requestId) => relay.eth().submitWork(requestId));
+  return logAndHandleResponse('eth_submitWork', [], (requestId) => relay.eth().submitWork(requestId));
 });
 
 /**
@@ -771,7 +562,7 @@ app.useRpc('eth_submitWork', async () => {
  * returns: false
  */
 app.useRpc('eth_syncing', async () => {
-  return logAndHandleResponse('eth_syncing', (requestId) => relay.eth().syncing(requestId));
+  return logAndHandleResponse('eth_syncing', [], (requestId) => relay.eth().syncing(requestId));
 });
 
 /**
@@ -780,7 +571,7 @@ app.useRpc('eth_syncing', async () => {
  * returns: string
  */
 app.useRpc('web3_client_version', async () => {
-  return logAndHandleResponse('web3_client_version', () => relay.web3().clientVersion());
+  return logAndHandleResponse('web3_client_version', [], () => relay.web3().clientVersion());
 });
 
 /**
@@ -792,34 +583,34 @@ app.useRpc('web3_client_version', async () => {
  * returns: 0x0
  */
 app.useRpc('eth_maxPriorityFeePerGas', async () => {
-  return logAndHandleResponse('eth_maxPriorityFeePerGas', (requestId) => relay.eth().maxPriorityFeePerGas(requestId));
+  return logAndHandleResponse('eth_maxPriorityFeePerGas', [], (requestId) => relay.eth().maxPriorityFeePerGas(requestId));
 });
 
 /**
  * Not supported
  */
 app.useRpc('eth_submitHashrate', async () => {
-  return logAndHandleResponse('eth_submitHashrate', (requestId) => relay.eth().submitHashrate(requestId));
+  return logAndHandleResponse('eth_submitHashrate', [], (requestId) => relay.eth().submitHashrate(requestId));
 });
 
 app.useRpc('eth_signTransaction', async () => {
-  return logAndHandleResponse('eth_signTransaction', (requestId) => relay.eth().signTransaction(requestId));
+  return logAndHandleResponse('eth_signTransaction', [], (requestId) => relay.eth().signTransaction(requestId));
 });
 
 app.useRpc('eth_sign', async () => {
-  return logAndHandleResponse('eth_sign', (requestId) => relay.eth().sign(requestId));
+  return logAndHandleResponse('eth_sign', [], (requestId) => relay.eth().sign(requestId));
 });
 
 app.useRpc('eth_sendTransaction', async () => {
-  return logAndHandleResponse('eth_sendTransaction', (requestId) => relay.eth().sendTransaction(requestId));
+  return logAndHandleResponse('eth_sendTransaction', [], (requestId) => relay.eth().sendTransaction(requestId));
 });
 
 app.useRpc('eth_protocolVersion', async () => {
-  return logAndHandleResponse('eth_protocolVersion', (requestId) => relay.eth().protocolVersion(requestId));
+  return logAndHandleResponse('eth_protocolVersion', [], (requestId) => relay.eth().protocolVersion(requestId));
 });
 
 app.useRpc('eth_coinbase', async () => {
-  return logAndHandleResponse('eth_coinbase', (requestId) => relay.eth().coinbase(requestId));
+  return logAndHandleResponse('eth_coinbase', [], (requestId) => relay.eth().coinbase(requestId));
 });
 
 app.getKoaApp().use(cors());

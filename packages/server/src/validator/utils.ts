@@ -74,13 +74,13 @@ export const TYPES = {
   },
   "addressFilter": {
     test: (param: string | string[]) => {
-      return Array.isArray(param) ? validateArray("address", param.flat(), "address") : new RegExp(BASE_HEX_REGEX + '{40}$').test(param);
+      return Array.isArray(param) ? validateArray(param.flat(), "address") : new RegExp(BASE_HEX_REGEX + '{40}$').test(param);
     },
     error: `${ADDRESS_ERROR} or an array of addresses`,
   },
   "array": {
     test: (name: string, param: any, innerType?: any) => {
-      return Array.isArray(param) ? validateArray(name, param, innerType) : false;
+      return Array.isArray(param) ? validateArray(param, innerType) : false;
     },
     error: 'Expected Array'
   },
@@ -99,11 +99,7 @@ export const TYPES = {
   "filter": {
     test: (param: any) => {
       if(Object.prototype.toString.call(param) === "[object Object]") {
-        try {
-          return new FilterObject(param).validate();
-        } catch(error) {
-          return error;
-        }
+        return new FilterObject(param).validate();
       }
 
       return false;
@@ -120,18 +116,14 @@ export const TYPES = {
   },
   'topics': {
     test: (param: string[] | string[][]) => {
-      return Array.isArray(param) ? validateArray("topics", param.flat(), "topicHash") : false;
+      return Array.isArray(param) ? validateArray(param.flat(), "topicHash") : false;
     },
     error: `Expected an array or array of arrays containing ${HASH_ERROR} of a topic`,
   },
   "transaction": {
     test: (param: any) => {
       if(Object.prototype.toString.call(param) === "[object Object]") {
-        try {
-          return new TransactionObject(param).validate();
-        } catch(error) {
-          return error;
-        }
+        return new TransactionObject(param).validate();
       }
 
       return false;
@@ -155,7 +147,7 @@ export class TransactionObject {
   data?: string;
 
   constructor(transaction: any) {
-    hasUnexpectedParams(transaction, objects.transaction);
+    hasUnexpectedParams(transaction, objects.transaction, this.name());
     this.from = transaction.from;
     this.to = transaction.to;
     this.gas = transaction.gas;
@@ -183,7 +175,7 @@ export class FilterObject {
   topics?: string[] | string[][];
 
   constructor (filter: any) {
-    hasUnexpectedParams(filter, objects.filter);
+    hasUnexpectedParams(filter, objects.filter, this.name());
     this.blockHash = filter.blockHash;
     this.fromBlock = filter.fromBlock;
     this.toBlock = filter.toBlock;
@@ -193,7 +185,7 @@ export class FilterObject {
 
   validate() {
     if (this.blockHash && (this.toBlock || this.fromBlock)) {
-      return predefined.INVALID_PARAMETER(0, "Can't use both blockHash and toBlock/fromBlock");
+      throw predefined.INVALID_PARAMETER(0, "Can't use both blockHash and toBlock/fromBlock");
     }
 
     return validateObject(this, objects.filter);
@@ -209,10 +201,7 @@ export function validateParams(params: any, indexes: any)  {
     const validation = indexes[Number(index)];
     const param = params[Number(index)];
 
-    const result = validateParam(index, param, validation);
-    if (result instanceof JsonRpcError) {
-      return result;
-    }
+    validateParam(index, param, validation);
   }
 }
 
@@ -221,19 +210,17 @@ function validateParam(index: number | string, param: any, validation: any) {
   const paramType = isArray ? TYPES[validation.type[0]] : TYPES[validation.type];
 
   if (paramType === undefined) {
-    return predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
+    throw predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
   }
 
   if (requiredIsMissing(param, validation.required)) {
-    return predefined.MISSING_REQUIRED_PARAMETER(index);
+    throw predefined.MISSING_REQUIRED_PARAMETER(index);
   }
 
   if (param != null) {
     const result = isArray? paramType.test(index, param, validation.type[1]) : paramType.test(param);
-    if (result instanceof JsonRpcError) {
-      return result;
-    } else if(result === false) {
-      return predefined.INVALID_PARAMETER(index, paramType.error);
+    if(result === false) {
+      throw predefined.INVALID_PARAMETER(index, paramType.error);
     }
   }
 }
@@ -248,13 +235,23 @@ function validateObject(object: any, filters: any) {
     const param = object[property];
 
     if (validation.required && param === undefined) {
-      return predefined.MISSING_REQUIRED_PARAMETER(`'${property}' for ${object.name()}`);
+      throw predefined.MISSING_REQUIRED_PARAMETER(`'${property}' for ${object.name()}`);
     }
 
     if (param !== undefined) {
-      const result = TYPES[validation.type].test(param);
-      if(!result || result instanceof JsonRpcError) {
-        return predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, TYPES[validation.type].error);
+
+      try {
+        const result = TYPES[validation.type].test(param);
+
+        if(!result) {
+          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, TYPES[validation.type].error);
+        }
+      } catch(error: any) {
+        if (error instanceof JsonRpcError) {
+          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, TYPES[validation.type].error);
+        }
+
+        throw error;
       }
     }
   }
@@ -262,23 +259,19 @@ function validateObject(object: any, filters: any) {
   return true;
 }
 
-function validateArray(name: string, array: any[], innerType?: string) {
+function validateArray(array: any[], innerType?: string) {
   if (!innerType) return true;
 
   const isInnerType = (element: any) => TYPES[innerType].test(element);
 
-  return !array.every(isInnerType)
-  ? predefined.INVALID_PARAMETER(name, TYPES[innerType].error)
-  : true;
+  return array.every(isInnerType);
 }
 
-function hasUnexpectedParams(actual: any, expected: any) {
+function hasUnexpectedParams(actual: any, expected: any, object: string) {
   const expectedParams = Object.keys(expected);
   const actualParams = Object.keys(actual);
   const unknownParam = actualParams.find((param: any) => !expectedParams.includes(param));
   if (unknownParam) {
-    throw predefined.INTERNAL_ERROR(`Unexpected parameter '${unknownParam}'`);
+    throw predefined.INVALID_PARAMETER(`'${unknownParam}' for ${object}`, `Unknown parameter`);
   }
 };
-
-export * as Validator from "./validator";
