@@ -233,15 +233,15 @@ function validateObject(object: any, filters: any) {
   for (const property of Object.keys(object)) {
     const validation = filters[property];
     const param = object[property];
+    let result;
 
-    if (validation.required && param === undefined) {
+    if (requiredIsMissing(param, validation.required)) {
       throw predefined.MISSING_REQUIRED_PARAMETER(`'${property}' for ${object.name()}`);
     }
 
     if (param !== undefined) {
-
       try {
-        const result = TYPES[validation.type].test(param);
+        result = TYPES[validation.type].test(param);
 
         if(!result) {
           throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, TYPES[validation.type].error);
