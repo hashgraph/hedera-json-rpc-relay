@@ -506,7 +506,7 @@ export class EthImpl implements Eth {
             // filter the state changes to match slot and return value
             const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === slot);
             result = stateChange.value_written;
-          } 
+          }
         })
         .catch((e: any) => {
           this.logger.error(
@@ -914,6 +914,11 @@ export class EthImpl implements Eth {
   async call(call: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
+
+    if (!call.to) {
+      throw predefined.INVALID_PARAMETERS;
+    }
+
     // The "to" address must always be 42 chars.
     if (call.to.length != 42) {
       throw new Error(requestIdPrefix+

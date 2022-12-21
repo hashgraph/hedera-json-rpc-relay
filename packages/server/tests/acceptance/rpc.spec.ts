@@ -1242,7 +1242,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     };
                 });
 
-                it('calls pure method - pureMultiply', async function () {
+                it('001 Should call pureMultiply', async function () {
                     const callData = {
                         ...defaultCallData,
                         data: '0x0ec1551d'
@@ -1253,7 +1253,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 })
 
 
-                it("Should call msgSender", async function () {
+                it("002 Should call msgSender", async function () {
                     const callData = {
                         ...defaultCallData,
                         data: '0xd737d0c7'
@@ -1263,7 +1263,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     expect(res).to.eq(callerAddress);
                 });
 
-                it("Should call txOrigin", async function () {
+                it("003 Should call txOrigin", async function () {
                     const callData = {
                         ...defaultCallData,
                         data: '0xf96757d1'
@@ -1273,7 +1273,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     expect(res).to.eq(callerAddress);
                 });
 
-                it("Should call msgSig", async function () {
+                it("005 Should call msgSig", async function () {
                     const callData = {
                         ...defaultCallData,
                         data: '0xec3e88cf'
@@ -1283,7 +1283,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     expect(res).to.eq('0xec3e88cf00000000000000000000000000000000000000000000000000000000');
                 });
 
-                it("Should call addressBalance", async function () {
+                it("006 Should call addressBalance", async function () {
                     const callData = {
                         ...defaultCallData,
                         data: '0x0ec1551d'
@@ -1292,6 +1292,48 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const res = await relay.call('eth_call', [callData], requestId);
                     expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
                 });
+
+                it("007 'data' from request body with wrong method signature", async function () {
+                    const callData = {
+                        ...defaultCallData,
+                        data: '0x3ec4de3800000000000000000000000067d8d32e9bf1a9968a5ff53b87d777aa8ebbee69'
+                    };
+
+                    const res = await relay.call('eth_call', [callData], requestId);
+                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                });
+
+                it("008 'data' from request body with wrong encoded parameter", async function () {
+                    const callData = {
+                        ...defaultCallData,
+                        data: '0x3ec4de350000000000000000000000000000000000000000000000000000000000000005'
+                    };
+
+                    const res = await relay.call('eth_call', [callData], requestId);
+                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                });
+
+                it("009 should work for missing 'from' field", async function () {
+                    const callData = {
+                        to: callerAddress,
+                        gas: 30000,
+                        data: '0x0ec1551d'
+                    };
+
+                    const res = await relay.call('eth_call', [callData], requestId);
+                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                });
+
+                it("010 should fail for missing 'to' field", async function () {
+                    const callData = {
+                        from: `0x${accounts[0].address}`,
+                        gas: 30000,
+                        data: '0x0ec1551d'
+                    };
+
+                    await relay.callFailing('eth_call', [callData], predefined.INVALID_PARAMETERS, requestId);
+                });
+
             });
         });
 

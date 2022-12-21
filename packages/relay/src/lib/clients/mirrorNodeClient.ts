@@ -26,6 +26,8 @@ import { Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
 import axiosRetry from 'axios-retry';
 
+type REQUEST_METHODS = 'GET' | 'POST';
+
 export interface ILimitOrderParams {
     limit?: number;
     order?: string;
@@ -164,7 +166,7 @@ export class MirrorNodeClient {
         this.logger.info(`Mirror Node client successfully configured to ${this.baseUrl}`);
     }
 
-    private async request(path: string, pathLabel: string, method: 'GET' | 'POST', data?: any, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
+    private async request(path: string, pathLabel: string, method: REQUEST_METHODS, data?: any, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
         const start = Date.now();
         const requestIdPrefix = formatRequestIdMessage(requestId);
         let ms;
@@ -194,7 +196,7 @@ export class MirrorNodeClient {
             ms = Date.now() - start;
             const effectiveStatusCode = error.response?.status || MirrorNodeClientError.ErrorCodes[error.code] || MirrorNodeClient.unknownServerErrorHttpStatusCode;
             this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
-            this.handleError(error, path, effectiveStatusCode, allowedErrorStatuses, requestId);
+            this.handleError(error, path, effectiveStatusCode, method, allowedErrorStatuses, requestId);
         }
         return null;
     }
@@ -207,16 +209,16 @@ export class MirrorNodeClient {
         return this.request(path, pathLabel, 'POST', data, allowedErrorStatuses, requestId);
     }
 
-    handleError(error: any, path: string, effectiveStatusCode: number, allowedErrorStatuses?: number[], requestId?: string) {
+    handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, allowedErrorStatuses?: number[], requestId?: string) {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
             if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
-                this.logger.debug(`${requestIdPrefix} [GET] ${path} ${effectiveStatusCode} status`);
+                this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
                 return null;
             }
         }
 
-        this.logger.error(new Error(error.message), `${requestIdPrefix} [GET] ${path} ${effectiveStatusCode} status`);
+        this.logger.error(new Error(error.message), `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
         throw new MirrorNodeClientError(error.message, effectiveStatusCode);
     }
 
