@@ -488,29 +488,40 @@ export class MirrorNodeClient {
     }
 
     public async resolveEntityType(entityIdentifier: string, requestId?: string) {
-        const contractResult = await this.getContract(entityIdentifier, requestId);
-        if (contractResult) {
-            return {
-                type: constants.TYPE_CONTRACT,
-                entity: contractResult
-            };
+        const promises = [
+            this.getContract(entityIdentifier, requestId),
+            this.getAccount(entityIdentifier, requestId),
+            this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId)
+        ];
+        // maps the promises with indices of the promises array
+        // because there is no such method as Promise.raceWithIndex in js
+        // the index is needed afterward for detecting the resolved promise type (contract, account, or token)
+        const data = await Promise.race(promises.map((promise, index) => promise.then(value => ({ value, index }))));
+
+        if (!data.value) {
+            return null;
         }
-        const accountResult = await this.getAccount(entityIdentifier, requestId);
-        if (accountResult) {
-            return {
-                type: constants.TYPE_ACCOUNT,
-                entity: accountResult
-            };
-        }
-        const tokenResult = await this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId);
-        if (tokenResult) {
-            return {
-                type: constants.TYPE_TOKEN,
-                entity: tokenResult
+
+        let type;
+        switch (data.index) {
+            case 0: {
+                type = constants.TYPE_CONTRACT;
+                break;
+            }
+            case 1: {
+                type = constants.TYPE_ACCOUNT;
+                break;
+            }
+            case 2: {
+                type = constants.TYPE_TOKEN;
+                break;
             }
         }
 
-        return null;
+        return {
+            type,
+            entity: data.value
+        };
     }
 
     //exposing mirror node instance for tests
