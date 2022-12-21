@@ -37,14 +37,14 @@ export default class Assertions {
 
     static assertId = (id) => {
         const [shard, realm, num] = id.split('.');
-        expect(shard).to.not.be.null;
-        expect(realm).to.not.be.null;
-        expect(num).to.not.be.null;
+        expect(shard, 'Id shard should not be null').to.not.be.null;
+        expect(realm, 'Id realm should not be null').to.not.be.null;
+        expect(num, 'Id num should not be null').to.not.be.null;
     };
 
     static unsupportedResponse = (resp: any) => {
-        expect(resp.error.code).to.eq(-32601);
-        expect(resp.error.message.endsWith('Unsupported JSON-RPC method')).to.be.true;
+        expect(resp.error.code, 'Unsuported response.error.code should equal -32601').to.eq(-32601);
+        expect(resp.error.message.endsWith('Unsupported JSON-RPC method'), "Unsuported response.error.code should end with 'Unsupported JSON-RPC method'").to.be.true;
     };
 
     static expectedError = () => {
@@ -69,33 +69,33 @@ export default class Assertions {
             expect(Number(relayResponse.baseFeePerGas)).to.be.gt(0);
         }
 
-        expect(relayResponse.difficulty).to.be.equal(ethers.utils.hexValue(0));
-        expect(relayResponse.extraData).to.be.equal(Assertions.emptyHex);
-        expect(relayResponse.miner).to.be.equal(ethers.constants.AddressZero);
-        expect(relayResponse.mixHash).to.be.equal(Assertions.zeroHex32Byte);
-        expect(relayResponse.nonce).to.be.equal(Assertions.zeroHex8Byte);
-        expect(relayResponse.receiptsRoot).to.be.equal(Assertions.zeroHex32Byte);
-        expect(relayResponse.sha3Uncles).to.be.equal(Assertions.emptyArrayHex);
-        expect(relayResponse.stateRoot).to.be.equal(Assertions.zeroHex32Byte);
-        expect(relayResponse.totalDifficulty).to.be.equal(ethers.utils.hexValue(0));
-        expect(relayResponse.uncles).to.be.exist;
-        expect(relayResponse.uncles.length).to.eq(0);
-        expect(relayResponse.logsBloom).to.eq(Assertions.emptyBloom);
-        expect(relayResponse.gasLimit).to.equal(ethers.utils.hexValue(Assertions.maxBlockGasLimit));
+        expect(relayResponse.difficulty, "Assert block: 'dificulty' shuld equal zero in hex").to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.extraData, "Assert block: 'extraDta' shuld equal empty hex").to.be.equal(Assertions.emptyHex);
+        expect(relayResponse.miner, "Assert block: 'miner' shuld equal zero address").to.be.equal(ethers.constants.AddressZero);
+        expect(relayResponse.mixHash, "Assert block: 'mixHash' shuld equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
+        expect(relayResponse.nonce, "Assert block: 'nonce' shuld equal zero 8byte hex").to.be.equal(Assertions.zeroHex8Byte);
+        expect(relayResponse.receiptsRoot, "Assert block: 'receiptsRoot' shuld equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
+        expect(relayResponse.sha3Uncles, "Assert block: 'sha3Uncles' shuld equal empty array hex").to.be.equal(Assertions.emptyArrayHex);
+        expect(relayResponse.stateRoot, "Assert block: 'stateRoot' shuld equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
+        expect(relayResponse.totalDifficulty, "Assert block: 'totalDifficulty' shuld equal zero in hex").to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.uncles, "Assert block: 'uncles' property exists").to.be.exist;
+        expect(relayResponse.uncles.length, "Assert block: 'uncles' length shuld equal 0").to.eq(0);
+        expect(relayResponse.logsBloom, "Assert block: 'logsBloom' shuld equal emptyBloom").to.eq(Assertions.emptyBloom);
+        expect(relayResponse.gasLimit, "Assert block: 'gasLimit' shuld equal 'maxBlockGasLimit'").to.equal(ethers.utils.hexValue(Assertions.maxBlockGasLimit));
 
         // Assert dynamic values
-        expect(relayResponse.hash).to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
-        expect(relayResponse.number).to.be.equal(ethers.utils.hexValue(mirrorNodeResponse.number));
-        expect(relayResponse.transactions.length).to.equal(mirrorTransactions.length);
-        expect(relayResponse.parentHash).to.equal(mirrorNodeResponse.previous_hash.slice(0, 66));
-        expect(relayResponse.size).to.equal(ethers.utils.hexValue(mirrorNodeResponse.size | 0));
-        expect(relayResponse.gasUsed).to.equal(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
-        expect(relayResponse.timestamp).to.equal(ethers.utils.hexValue(Number(mirrorNodeResponse.timestamp.from.split('.')[0])));
+        expect(relayResponse.hash, "Assert block: 'hash' shuld equal mirrorNode response").to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
+        expect(relayResponse.number, "Assert block: 'hash' shuld equal mirrorNode response").to.be.equal(ethers.utils.hexValue(mirrorNodeResponse.number));
+        expect(relayResponse.transactions.length, "Assert block: 'transactions' count shuld equal mirrorNode response").to.equal(mirrorTransactions.length);
+        expect(relayResponse.parentHash, "Assert block: 'parentHash' shuld equal mirrorNode response").to.equal(mirrorNodeResponse.previous_hash.slice(0, 66));
+        expect(relayResponse.size, "Assert block: 'size' shuld equal mirrorNode response").to.equal(ethers.utils.hexValue(mirrorNodeResponse.size | 0));
+        expect(relayResponse.gasUsed, "Assert block: 'gasUsed' shuld equal mirrorNode response").to.equal(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
+        expect(relayResponse.timestamp, "Assert block: 'timestamp' shuld equal mirrorNode response").to.equal(ethers.utils.hexValue(Number(mirrorNodeResponse.timestamp.from.split('.')[0])));
         if (relayResponse.transactions.length) {
-            expect(relayResponse.transactionsRoot).to.equal(mirrorNodeResponse.hash.slice(0, 66));
+            expect(relayResponse.transactionsRoot, "Assert block: 'transactionsRoot' shuld equal mirrorNode response").to.equal(mirrorNodeResponse.hash.slice(0, 66));
         }
         else {
-            expect(relayResponse.transactionsRoot).to.equal(Assertions.ethEmptyTrie);
+            expect(relayResponse.transactionsRoot, "Assert block: 'transactionsRoot' shuld equal 'ethEmptyTrie'").to.equal(Assertions.ethEmptyTrie);
         }
 
         // Assert transactions
@@ -112,87 +112,87 @@ export default class Assertions {
     }
 
     public static transaction(relayResponse, mirrorNodeResponse) {
-        expect(relayResponse.blockHash).to.eq(mirrorNodeResponse.block_hash.slice(0, 66));
-        expect(relayResponse.blockNumber).to.eq(ethers.utils.hexValue(mirrorNodeResponse.block_number));
+        expect(relayResponse.blockHash, "Assert transaction: 'blockHash' should equal mirrorNode response").to.eq(mirrorNodeResponse.block_hash.slice(0, 66));
+        expect(relayResponse.blockNumber, "Assert transaction: 'blockNumber' should equal mirrorNode response").to.eq(ethers.utils.hexValue(mirrorNodeResponse.block_number));
         // expect(relayResponse.chainId).to.eq(mirrorNodeResponse.chain_id); // FIXME must not be null!
-        expect(relayResponse.from).to.eq(mirrorNodeResponse.from);
-        expect(relayResponse.gas).to.eq(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
+        expect(relayResponse.from, "Assert transaction: 'from' should equal mirrorNode response").to.eq(mirrorNodeResponse.from);
+        expect(relayResponse.gas, "Assert transaction: 'gas' should equal mirrorNode response").to.eq(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
         // expect(relayResponse.gasPrice).to.eq(mirrorNodeResponse.gas_price); // FIXME must not be null!
-        expect(relayResponse.hash).to.eq(mirrorNodeResponse.hash.slice(0, 66));
-        expect(relayResponse.input).to.eq(mirrorNodeResponse.function_parameters);
+        expect(relayResponse.hash, "Assert transaction: 'hash' should equal mirrorNode response").to.eq(mirrorNodeResponse.hash.slice(0, 66));
+        expect(relayResponse.input, "Assert transaction: 'input' should equal mirrorNode response").to.eq(mirrorNodeResponse.function_parameters);
         if (relayResponse.to || mirrorNodeResponse.to) {
-            expect(relayResponse.to).to.eq(mirrorNodeResponse.to);
+            expect(relayResponse.to, "Assert transaction: 'to' should equal mirrorNode response").to.eq(mirrorNodeResponse.to);
         }
-        expect(relayResponse.transactionIndex).to.eq(ethers.utils.hexValue(mirrorNodeResponse.transaction_index));
-        expect(relayResponse.value).to.eq(ethers.utils.hexValue(mirrorNodeResponse.amount));
+        expect(relayResponse.transactionIndex, "Assert transaction: 'transactionIndex' should equal mirrorNode response").to.eq(ethers.utils.hexValue(mirrorNodeResponse.transaction_index));
+        expect(relayResponse.value, "Assert transaction: 'value' should equal mirrorNode response").to.eq(ethers.utils.hexValue(mirrorNodeResponse.amount));
     }
 
     static transactionReceipt = (transactionReceipt, mirrorResult) => {
-        expect(transactionReceipt.blockHash).to.exist;
-        expect(transactionReceipt.blockHash).to.not.eq('0x0');
-        expect(transactionReceipt.blockHash).to.eq(mirrorResult.block_hash.slice(0, 66));
+        expect(transactionReceipt.blockHash, "Assert transactionReceipt: 'blockHash' should exists").to.exist;
+        expect(transactionReceipt.blockHash, "Assert transactionReceipt: 'blockHash' should not be 0x0").to.not.eq('0x0');
+        expect(transactionReceipt.blockHash, "Assert transactionReceipt: 'vablockHashlue' should equal mirrorNode response").to.eq(mirrorResult.block_hash.slice(0, 66));
 
-        expect(transactionReceipt.blockNumber).to.exist;
-        expect(Number(transactionReceipt.blockNumber)).to.gt(0);
-        expect(transactionReceipt.blockNumber).to.eq(ethers.utils.hexValue(mirrorResult.block_number));
+        expect(transactionReceipt.blockNumber, "Assert transactionReceipt: 'blockNumber' should exist").to.exist;
+        expect(Number(transactionReceipt.blockNumber), "Assert transactionReceipt: 'blockNumber' should be > 0").to.gt(0);
+        expect(transactionReceipt.blockNumber, "Assert transactionReceipt: 'blockNumber' should equal mirrorNode response").to.eq(ethers.utils.hexValue(mirrorResult.block_number));
 
-        expect(transactionReceipt.cumulativeGasUsed).to.exist;
-        expect(Number(transactionReceipt.cumulativeGasUsed)).to.gt(0);
-        expect(Number(transactionReceipt.cumulativeGasUsed)).to.eq(mirrorResult.block_gas_used);
+        expect(transactionReceipt.cumulativeGasUsed, "Assert transactionReceipt: 'cumulativeGasUsed' should exist").to.exist;
+        expect(Number(transactionReceipt.cumulativeGasUsed), "Assert transactionReceipt: 'cumulativeGasUsed' should be > 0").to.gt(0);
+        expect(Number(transactionReceipt.cumulativeGasUsed), "Assert transactionReceipt: 'cumulativeGasUsed' should equal mirrorNode response").to.eq(mirrorResult.block_gas_used);
 
-        expect(transactionReceipt.gasUsed).to.exist;
-        expect(Number(transactionReceipt.gasUsed)).to.gt(0);
-        expect(Number(transactionReceipt.gasUsed)).to.eq(mirrorResult.gas_used);
+        expect(transactionReceipt.gasUsed, "Assert transactionReceipt: 'gasUsed' should exist").to.exist;
+        expect(Number(transactionReceipt.gasUsed), "Assert transactionReceipt: 'gasUsed' should be > 0").to.gt(0);
+        expect(Number(transactionReceipt.gasUsed), "Assert transactionReceipt: 'gasUsed' should equal mirrorNode response").to.eq(mirrorResult.gas_used);
 
-        expect(transactionReceipt.logsBloom).to.exist;
-        expect(transactionReceipt.logsBloom).to.not.eq('0x0');
-        expect(transactionReceipt.logsBloom).to.eq(mirrorResult.bloom);
+        expect(transactionReceipt.logsBloom, "Assert transactionReceipt: 'logsBloom' should exist").to.exist;
+        expect(transactionReceipt.logsBloom, "Assert transactionReceipt: 'logsBloom' should not be 0x0").to.not.eq('0x0');
+        expect(transactionReceipt.logsBloom, "Assert transactionReceipt: 'logsBloom' should equal mirrorNode response").to.eq(mirrorResult.bloom);
 
-        expect(transactionReceipt.transactionHash).to.exist;
-        expect(transactionReceipt.transactionHash).to.not.eq('0x0');
-        expect(transactionReceipt.transactionHash).to.eq(mirrorResult.hash);
+        expect(transactionReceipt.transactionHash, "Assert transactionReceipt: 'transactionHash' should exist").to.exist;
+        expect(transactionReceipt.transactionHash, "Assert transactionReceipt: 'transactionHash' should equal mirrorNode response").to.not.eq('0x0');
+        expect(transactionReceipt.transactionHash, "Assert transactionReceipt: 'transactionHash' should equal mirrorNode response").to.eq(mirrorResult.hash);
 
-        expect(transactionReceipt.transactionIndex).to.exist;
-        expect(Number(transactionReceipt.transactionIndex)).to.eq(mirrorResult.transaction_index);
+        expect(transactionReceipt.transactionIndex, "Assert transactionReceipt: 'transactionIndex' should exist").to.exist;
+        expect(Number(transactionReceipt.transactionIndex), "Assert transactionReceipt: 'transactionIndex' should equal mirrorNode response").to.eq(mirrorResult.transaction_index);
 
-        expect(transactionReceipt.effectiveGasPrice).to.exist;
-        expect(Number(transactionReceipt.effectiveGasPrice)).to.gt(0);
+        expect(transactionReceipt.effectiveGasPrice, "Assert transactionReceipt: 'effectiveGasPrice' should exist").to.exist;
+        expect(Number(transactionReceipt.effectiveGasPrice), "Assert transactionReceipt: 'effectiveGasPrice' should be > 0").to.gt(0);
         const effectiveGas = mirrorResult.max_fee_per_gas === undefined || mirrorResult.max_fee_per_gas == '0x'
             ? mirrorResult.gas_price
             : mirrorResult.max_fee_per_gas;
         const mirrorEffectiveGasPrice = Utils.tinyBarsToWeibars(effectiveGas);
-        expect(BigNumber.from(transactionReceipt.effectiveGasPrice).toString()).to.eq(mirrorEffectiveGasPrice.toString());
+        expect(BigNumber.from(transactionReceipt.effectiveGasPrice).toString(), "Assert transactionReceipt: 'effectiveGasPrice' should equal mirrorNode response").to.eq(mirrorEffectiveGasPrice.toString());
 
-        expect(transactionReceipt.status).to.exist;
-        expect(transactionReceipt.status).to.eq(mirrorResult.status);
+        expect(transactionReceipt.status, "Assert transactionReceipt: 'status' should exist").to.exist;
+        expect(transactionReceipt.status, "Assert transactionReceipt: 'status' should equal mirrorNode response").to.eq(mirrorResult.status);
 
-        expect(transactionReceipt.logs).to.exist;
-        expect(transactionReceipt.logs.length).to.eq(mirrorResult.logs.length);
-        expect(transactionReceipt.logs).to.deep.eq(mirrorResult.logs);
+        expect(transactionReceipt.logs, "Assert transactionReceipt: 'logs' should exist").to.exist;
+        expect(transactionReceipt.logs.length, "Assert transactionReceipt: 'logs' count should equal to mirrorNode response").to.eq(mirrorResult.logs.length);
+        expect(transactionReceipt.logs, "Assert transactionReceipt: 'logs' should equal mirrorNode response").to.deep.eq(mirrorResult.logs);
 
-        expect(transactionReceipt.from).to.eq(mirrorResult.from);
+        expect(transactionReceipt.from, "Assert transactionReceipt: 'from' should equal mirrorNode response").to.eq(mirrorResult.from);
 
-        expect(transactionReceipt.to).to.eq(mirrorResult.to);
+        expect(transactionReceipt.to, "Assert transactionReceipt: 'to' should equal mirrorNode response").to.eq(mirrorResult.to);
     };
 
     public static feeHistory(res: any, expected: any) {
-        expect(res.baseFeePerGas).to.exist.to.be.an('Array');
-        expect(res.gasUsedRatio).to.exist.to.be.an('Array');
-        expect(res.oldestBlock).to.exist;
-        expect(res.baseFeePerGas.length).to.equal(expected.resultCount + 1);
-        expect(res.gasUsedRatio.length).to.equal(expected.resultCount);
+        expect(res.baseFeePerGas, "Assert feeHistory: 'baseFeePerGas' should exist and be an Array").to.exist.to.be.an('Array');
+        expect(res.gasUsedRatio, "Assert feeHistory: 'gasUsedRatio' should exist and be an Array").to.exist.to.be.an('Array');
+        expect(res.oldestBlock, "Assert feeHistory: 'oldestBlock' should exist").to.exist;
+        expect(res.baseFeePerGas.length, "Assert feeHistory: 'baseFeePerGas' length should equal passed expected value").to.equal(expected.expected + 1);
+        expect(res.gasUsedRatio.length, "Assert feeHistory: 'gasUsedRatio' length should equal passed expected value").to.equal(expected.resultCount);
 
-        expect(res.oldestBlock).to.equal(expected.oldestBlock);
+        expect(res.oldestBlock, "Assert feeHistory: 'oldestBlock' should equal passed expected value").to.equal(expected.oldestBlock);
 
-        res.gasUsedRatio.map((gasRatio: string) => expect(gasRatio).to.equal(`0x${Assertions.defaultGasUsed.toString(16)}`))
+        res.gasUsedRatio.map((gasRatio: string) => expect(gasRatio, "Assert feeHistory: 'gasRatio' should equal 'defaultGasUsed'").to.equal(`0x${Assertions.defaultGasUsed.toString(16)}`));
 
         if (expected.checkReward) {
-            expect(res.reward).to.exist.to.be.an('Array');
-            expect(res.reward.length).to.equal(expected.resultCount);
+            expect(res.reward, "Assert feeHistory: 'reward' should exist and be an Array").to.exist.to.be.an('Array');
+            expect(res.reward.length, "Assert feeHistory: 'reward' length should equal passed expected value").to.equal(expected.resultCount);
         }
     }
 
-    static unknownResponse(err) {
+    static unknownResponse(err: any) {
         Assertions.jsonRpcError(err, predefined.INTERNAL_ERROR());
     }
 
