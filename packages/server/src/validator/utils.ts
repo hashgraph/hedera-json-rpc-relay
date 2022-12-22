@@ -1,213 +1,9 @@
+import { Validator } from ".";
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 
-const BASE_HEX_REGEX = '^0[xX][a-fA-F0-9]';
-export const ERROR_CODE = -32602;
-export const DEFAULT_HEX_ERROR = 'Expected 0x prefixed hexadecimal value';
-export const HASH_ERROR = '0x prefixed string representing the hash (32 bytes)';
-export const ADDRESS_ERROR = 'Expected 0x prefixed string representing the address (20 bytes)';
-export const BLOCK_NUMBER_ERROR = 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"';
-export const BLOCK_HASH_ERROR = `Expected ${HASH_ERROR} of a block`;
-export const TRANSACTION_HASH_ERROR = `Expected ${HASH_ERROR} of a transaction`;
-export const TOPIC_HASH_ERROR = `Expected ${HASH_ERROR} of a topic`;
-export const objects = {
-  "filter": {
-    "blockHash": {
-      type: "blockHash"
-    },
-    "fromBlock": {
-      type: "blockNumber"
-    },
-    "toBlock": {
-      type: "blockNumber"
-    },
-    "address": {
-      type: "addressFilter"
-    },
-    "topics": {
-      type: "topics"
-    }
-  },
-  "transaction": {
-    "from": {
-      type: "address"
-    },
-    "to": {
-      type: "address"
-    },
-    "gas": {
-      type: "hex"
-    },
-    "gasPrice": {
-      type: "hex"
-    },
-    "maxPriorityFeePerGas": {
-      type: "hex"
-    },
-    "maxFeePerGas": {
-      type: "hex"
-    },
-    "value": {
-      type: "hex"
-    },
-    "data": {
-      type: "hex"
-    },
-    "type": {
-      type: "hex"
-    },
-    "chainId": {
-      type: "hex"
-    },
-    "nonce": {
-      type: "hex"
-    },
-    "input": {
-      type: "hex"
-    }
-  }
-};
-
-export const TYPES = {
-  "address": {
-    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{40}$').test(param),
-    error: ADDRESS_ERROR
-  },
-  "addressFilter": {
-    test: (param: string | string[]) => {
-      return Array.isArray(param) ? validateArray(param.flat(), "address") : new RegExp(BASE_HEX_REGEX + '{40}$').test(param);
-    },
-    error: `${ADDRESS_ERROR} or an array of addresses`,
-  },
-  "array": {
-    test: (name: string, param: any, innerType?: any) => {
-      return Array.isArray(param) ? validateArray(param, innerType) : false;
-    },
-    error: 'Expected Array'
-  },
-  'blockHash': {
-    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
-    error: BLOCK_HASH_ERROR
-  },
-  'blockNumber': {
-    test: (param: string) => /^0[xX]([1-9A-Fa-f]+[0-9A-Fa-f]{0,13}|0)$/.test(param) && Number.MAX_SAFE_INTEGER >= Number(param) || ["earliest", "latest", "pending"].includes(param),
-    error: BLOCK_NUMBER_ERROR
-  },
-  'boolean': {
-    test: (param: boolean) => param === true || param === false,
-    error: 'Expected boolean type'
-  },
-  "filter": {
-    test: (param: any) => {
-      if(Object.prototype.toString.call(param) === "[object Object]") {
-        return new FilterObject(param).validate();
-      }
-
-      return false;
-    },
-    error: `Expected FilterObject`
-  },
-  'hex': {
-    test: (param: string) => new RegExp(BASE_HEX_REGEX).test(param),
-    error: DEFAULT_HEX_ERROR
-  },
-  'topicHash': {
-    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param) || param === null,
-    error: TOPIC_HASH_ERROR
-  },
-  'topics': {
-    test: (param: string[] | string[][]) => {
-      return Array.isArray(param) ? validateArray(param.flat(), "topicHash") : false;
-    },
-    error: `Expected an array or array of arrays containing ${HASH_ERROR} of a topic`,
-  },
-  "transaction": {
-    test: (param: any) => {
-      if(Object.prototype.toString.call(param) === "[object Object]") {
-        return new TransactionObject(param).validate();
-      }
-
-      return false;
-    },
-    error: 'Expected TransactionObject'
-  },
-  'transactionHash': {
-    test: (param: string) => new RegExp(BASE_HEX_REGEX + '{64}$').test(param),
-    error: TRANSACTION_HASH_ERROR
-  }
-};
-
-export class TransactionObject {
-  from?: string;
-  to: string;
-  gas?: string;
-  gasPrice?: string;
-  maxPriorityFeePerGas?: string;
-  maxFeePerGas?: string;
-  value?: string;
-  data?: string;
-
-  constructor(transaction: any) {
-    hasUnexpectedParams(transaction, objects.transaction, this.name());
-    this.from = transaction.from;
-    this.to = transaction.to;
-    this.gas = transaction.gas;
-    this.gasPrice = transaction.gasPrice;
-    this.maxPriorityFeePerGas = transaction.maxPriorityFeePerGas;
-    this.maxFeePerGas = transaction.maxFeePerGas;
-    this.value = transaction.value;
-    this.data = transaction.data;
-  }
-
-  validate() {
-    return validateObject(this, objects.transaction);
-  }
-
-  name() {
-    return this.constructor.name;
-  }
-};
-
-export class FilterObject {
-  blockHash: string;
-  fromBlock?: string;
-  toBlock?: string;
-  address?: string | string[];
-  topics?: string[] | string[][];
-
-  constructor (filter: any) {
-    hasUnexpectedParams(filter, objects.filter, this.name());
-    this.blockHash = filter.blockHash;
-    this.fromBlock = filter.fromBlock;
-    this.toBlock = filter.toBlock;
-    this.address = filter.address;
-    this.topics = filter.topics;
-  }
-
-  validate() {
-    if (this.blockHash && (this.toBlock || this.fromBlock)) {
-      throw predefined.INVALID_PARAMETER(0, "Can't use both blockHash and toBlock/fromBlock");
-    }
-
-    return validateObject(this, objects.filter);
-  }
-
-  name() {
-    return this.constructor.name;
-  }
-};
-
-export function validateParams(params: any, indexes: any)  {
-  for (const index of Object.keys(indexes)) {
-    const validation = indexes[Number(index)];
-    const param = params[Number(index)];
-
-    validateParam(index, param, validation);
-  }
-}
-
-function validateParam(index: number | string, param: any, validation: any) {
+export function validateParam(index: number | string, param: any, validation: any) {
   const isArray = Array.isArray(validation.type);
-  const paramType = isArray ? TYPES[validation.type[0]] : TYPES[validation.type];
+  const paramType = isArray ? Validator.TYPES[validation.type[0]] :Validator. TYPES[validation.type];
 
   if (paramType === undefined) {
     throw predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
@@ -225,11 +21,7 @@ function validateParam(index: number | string, param: any, validation: any) {
   }
 }
 
-function requiredIsMissing(param: any, required: boolean) {
-  return required && param === undefined;
-}
-
-function validateObject(object: any, filters: any) {
+export function validateObject(object: any, filters: any) {
   for (const property of Object.keys(object)) {
     const validation = filters[property];
     const param = object[property];
@@ -241,14 +33,14 @@ function validateObject(object: any, filters: any) {
 
     if (param !== undefined) {
       try {
-        result = TYPES[validation.type].test(param);
+        result = Validator.TYPES[validation.type].test(param);
 
         if(!result) {
-          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, TYPES[validation.type].error);
+          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, Validator.TYPES[validation.type].error);
         }
       } catch(error: any) {
         if (error instanceof JsonRpcError) {
-          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, TYPES[validation.type].error);
+          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, Validator.TYPES[validation.type].error);
         }
 
         throw error;
@@ -259,15 +51,15 @@ function validateObject(object: any, filters: any) {
   return true;
 }
 
-function validateArray(array: any[], innerType?: string) {
+export function validateArray(array: any[], innerType?: string) {
   if (!innerType) return true;
 
-  const isInnerType = (element: any) => TYPES[innerType].test(element);
+  const isInnerType = (element: any) => Validator.TYPES[innerType].test(element);
 
   return array.every(isInnerType);
 }
 
-function hasUnexpectedParams(actual: any, expected: any, object: string) {
+export function hasUnexpectedParams(actual: any, expected: any, object: string) {
   const expectedParams = Object.keys(expected);
   const actualParams = Object.keys(actual);
   const unknownParam = actualParams.find((param: any) => !expectedParams.includes(param));
@@ -275,3 +67,7 @@ function hasUnexpectedParams(actual: any, expected: any, object: string) {
     throw predefined.INVALID_PARAMETER(`'${unknownParam}' for ${object}`, `Unknown parameter`);
   }
 };
+
+export function requiredIsMissing(param: any, required: boolean) {
+  return required && param === undefined;
+}

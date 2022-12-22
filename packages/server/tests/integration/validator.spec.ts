@@ -1,4 +1,3 @@
-import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 import { Validator } from '../../src/validator';
