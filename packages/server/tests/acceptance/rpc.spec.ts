@@ -1345,7 +1345,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 await new Promise(r => setTimeout(r, 2000));
 
                 //Get previous state change with specific block number
-                const storageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x', blockNumber], requestId);
+                const storageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockNumber], requestId);
                 expect(storageVal).to.eq(EXPECTED_STORAGE_VAL);
             });
         });
