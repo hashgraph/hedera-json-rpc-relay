@@ -43,8 +43,8 @@ export default class Assertions {
     };
 
     static unsupportedResponse = (resp: any) => {
-        expect(resp.error.code, 'Unsuported response.error.code should equal -32601').to.eq(-32601);
-        expect(resp.error.message.endsWith('Unsupported JSON-RPC method'), "Unsuported response.error.code should end with 'Unsupported JSON-RPC method'").to.be.true;
+        expect(resp.error.code, 'Unsupported response.error.code should equal -32601').to.eq(-32601);
+        expect(resp.error.message.endsWith('Unsupported JSON-RPC method'), "Unsupported response.error.code should end with 'Unsupported JSON-RPC method'").to.be.true;
     };
 
     static expectedError = () => {
@@ -69,33 +69,33 @@ export default class Assertions {
             expect(Number(relayResponse.baseFeePerGas)).to.be.gt(0);
         }
 
-        expect(relayResponse.difficulty, "Assert block: 'dificulty' shuld equal zero in hex").to.be.equal(ethers.utils.hexValue(0));
-        expect(relayResponse.extraData, "Assert block: 'extraDta' shuld equal empty hex").to.be.equal(Assertions.emptyHex);
-        expect(relayResponse.miner, "Assert block: 'miner' shuld equal zero address").to.be.equal(ethers.constants.AddressZero);
-        expect(relayResponse.mixHash, "Assert block: 'mixHash' shuld equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
-        expect(relayResponse.nonce, "Assert block: 'nonce' shuld equal zero 8byte hex").to.be.equal(Assertions.zeroHex8Byte);
-        expect(relayResponse.receiptsRoot, "Assert block: 'receiptsRoot' shuld equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
-        expect(relayResponse.sha3Uncles, "Assert block: 'sha3Uncles' shuld equal empty array hex").to.be.equal(Assertions.emptyArrayHex);
-        expect(relayResponse.stateRoot, "Assert block: 'stateRoot' shuld equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
-        expect(relayResponse.totalDifficulty, "Assert block: 'totalDifficulty' shuld equal zero in hex").to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.difficulty, "Assert block: 'difficulty' should equal zero in hex").to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.extraData, "Assert block: 'extraDta' should equal empty hex").to.be.equal(Assertions.emptyHex);
+        expect(relayResponse.miner, "Assert block: 'miner' should equal zero address").to.be.equal(ethers.constants.AddressZero);
+        expect(relayResponse.mixHash, "Assert block: 'mixHash' should equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
+        expect(relayResponse.nonce, "Assert block: 'nonce' should equal zero 8byte hex").to.be.equal(Assertions.zeroHex8Byte);
+        expect(relayResponse.receiptsRoot, "Assert block: 'receiptsRoot' should equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
+        expect(relayResponse.sha3Uncles, "Assert block: 'sha3Uncles' should equal empty array hex").to.be.equal(Assertions.emptyArrayHex);
+        expect(relayResponse.stateRoot, "Assert block: 'stateRoot' should equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
+        expect(relayResponse.totalDifficulty, "Assert block: 'totalDifficulty' should equal zero in hex").to.be.equal(ethers.utils.hexValue(0));
         expect(relayResponse.uncles, "Assert block: 'uncles' property exists").to.be.exist;
-        expect(relayResponse.uncles.length, "Assert block: 'uncles' length shuld equal 0").to.eq(0);
-        expect(relayResponse.logsBloom, "Assert block: 'logsBloom' shuld equal emptyBloom").to.eq(Assertions.emptyBloom);
-        expect(relayResponse.gasLimit, "Assert block: 'gasLimit' shuld equal 'maxBlockGasLimit'").to.equal(ethers.utils.hexValue(Assertions.maxBlockGasLimit));
+        expect(relayResponse.uncles.length, "Assert block: 'uncles' length should equal 0").to.eq(0);
+        expect(relayResponse.logsBloom, "Assert block: 'logsBloom' should equal emptyBloom").to.eq(Assertions.emptyBloom);
+        expect(relayResponse.gasLimit, "Assert block: 'gasLimit' should equal 'maxBlockGasLimit'").to.equal(ethers.utils.hexValue(Assertions.maxBlockGasLimit));
 
         // Assert dynamic values
-        expect(relayResponse.hash, "Assert block: 'hash' shuld equal mirrorNode response").to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
-        expect(relayResponse.number, "Assert block: 'hash' shuld equal mirrorNode response").to.be.equal(ethers.utils.hexValue(mirrorNodeResponse.number));
-        expect(relayResponse.transactions.length, "Assert block: 'transactions' count shuld equal mirrorNode response").to.equal(mirrorTransactions.length);
-        expect(relayResponse.parentHash, "Assert block: 'parentHash' shuld equal mirrorNode response").to.equal(mirrorNodeResponse.previous_hash.slice(0, 66));
-        expect(relayResponse.size, "Assert block: 'size' shuld equal mirrorNode response").to.equal(ethers.utils.hexValue(mirrorNodeResponse.size | 0));
-        expect(relayResponse.gasUsed, "Assert block: 'gasUsed' shuld equal mirrorNode response").to.equal(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
-        expect(relayResponse.timestamp, "Assert block: 'timestamp' shuld equal mirrorNode response").to.equal(ethers.utils.hexValue(Number(mirrorNodeResponse.timestamp.from.split('.')[0])));
+        expect(relayResponse.hash, "Assert block: 'hash' should equal mirrorNode response").to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
+        expect(relayResponse.number, "Assert block: 'hash' should equal mirrorNode response").to.be.equal(ethers.utils.hexValue(mirrorNodeResponse.number));
+        expect(relayResponse.transactions.length, "Assert block: 'transactions' count should equal mirrorNode response").to.equal(mirrorTransactions.length);
+        expect(relayResponse.parentHash, "Assert block: 'parentHash' should equal mirrorNode response").to.equal(mirrorNodeResponse.previous_hash.slice(0, 66));
+        expect(relayResponse.size, "Assert block: 'size' should equal mirrorNode response").to.equal(ethers.utils.hexValue(mirrorNodeResponse.size | 0));
+        expect(relayResponse.gasUsed, "Assert block: 'gasUsed' should equal mirrorNode response").to.equal(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
+        expect(relayResponse.timestamp, "Assert block: 'timestamp' should equal mirrorNode response").to.equal(ethers.utils.hexValue(Number(mirrorNodeResponse.timestamp.from.split('.')[0])));
         if (relayResponse.transactions.length) {
-            expect(relayResponse.transactionsRoot, "Assert block: 'transactionsRoot' shuld equal mirrorNode response").to.equal(mirrorNodeResponse.hash.slice(0, 66));
+            expect(relayResponse.transactionsRoot, "Assert block: 'transactionsRoot' should equal mirrorNode response").to.equal(mirrorNodeResponse.hash.slice(0, 66));
         }
         else {
-            expect(relayResponse.transactionsRoot, "Assert block: 'transactionsRoot' shuld equal 'ethEmptyTrie'").to.equal(Assertions.ethEmptyTrie);
+            expect(relayResponse.transactionsRoot, "Assert block: 'transactionsRoot' should equal 'ethEmptyTrie'").to.equal(Assertions.ethEmptyTrie);
         }
 
         // Assert transactions
@@ -179,7 +179,7 @@ export default class Assertions {
         expect(res.baseFeePerGas, "Assert feeHistory: 'baseFeePerGas' should exist and be an Array").to.exist.to.be.an('Array');
         expect(res.gasUsedRatio, "Assert feeHistory: 'gasUsedRatio' should exist and be an Array").to.exist.to.be.an('Array');
         expect(res.oldestBlock, "Assert feeHistory: 'oldestBlock' should exist").to.exist;
-        expect(res.baseFeePerGas.length, "Assert feeHistory: 'baseFeePerGas' length should equal passed expected value").to.equal(expected.expected + 1);
+        expect(res.baseFeePerGas.length, "Assert feeHistory: 'baseFeePerGas' length should equal passed expected value").to.equal(expected.resultCount + 1);
         expect(res.gasUsedRatio.length, "Assert feeHistory: 'gasUsedRatio' length should equal passed expected value").to.equal(expected.resultCount);
 
         expect(res.oldestBlock, "Assert feeHistory: 'oldestBlock' should equal passed expected value").to.equal(expected.oldestBlock);
