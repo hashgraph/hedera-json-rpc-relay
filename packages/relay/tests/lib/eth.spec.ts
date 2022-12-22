@@ -388,6 +388,18 @@ describe('Eth calls using MirrorNode', async function () {
     'v': 1
   };
 
+  const defaultCurrentContractState = {
+    "state": [
+      {
+        'address': contractAddress1,
+        'contract_id': contractId1,
+        'timestamp': contractTimestamp1,
+        'slot': '0x0000000000000000000000000000000000000000000000000000000000000101',
+        'value': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+      }
+    ]
+  }
+
   const defaultDetailedContractResults2 = {
     ...defaultDetailedContractResults, ...{
       'timestamp': contractTimestamp2,
@@ -1973,7 +1985,6 @@ describe('Eth calls using MirrorNode', async function () {
         mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
       }
       const result = await ethImpl.getLogs(null, null, null, null, defaultNullLogTopics);
-      console.log(result);
 
       expect(result).to.exist;
       expect(result[0].topics.length).to.eq(defaultLogs4[0].topics.length)
@@ -2418,31 +2429,28 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('eth_getStorageAt with match with latest block', async function () {
       // mirror node request mocks
-      mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [defaultBlock]});
-      mock.onGet(`contracts/${contractAddress1}/results?limit=1&order=desc`).reply(200, defaultContractResults);
-      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/${contractAddress1}/state?slot=${defaultCurrentContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultCurrentContractState);
 
-      const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, "latest");
+      const result = await ethImpl.getStorageAt(contractAddress1, defaultCurrentContractState.state[0].slot, "latest");
       expect(result).to.exist;
       if (result == null) return;
 
       // verify slot value
-      expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+      expect(result).equal(defaultCurrentContractState.state[0].value);
     });
 
     // Block number is a required param, this should not work and should be removed when/if validations are added.
     // Instead the relay should return `missing value for required argument <argumentIndex> error`.
     it('eth_getStorageAt with match null block', async function () {
       // mirror node request mocks
-      mock.onGet(`contracts/${contractAddress1}/results?limit=1&order=desc`).reply(200, defaultContractResults);
-      mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      mock.onGet(`contracts/${contractAddress1}/state?slot=${defaultCurrentContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultCurrentContractState);
 
       const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot);
       expect(result).to.exist;
       if (result == null) return;
 
       // verify slot value
-      expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+      expect(result).equal(defaultCurrentContractState.state[0].value);
     });
 
     it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when block not found', async function () {
