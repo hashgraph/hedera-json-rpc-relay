@@ -488,17 +488,24 @@ export class MirrorNodeClient {
     }
 
     public async resolveEntityType(entityIdentifier: string, requestId?: string) {
-        const promises = [
-            this.getContract(entityIdentifier, requestId),
-            this.getAccount(entityIdentifier, requestId),
-            this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId)
-        ];
-        // maps the promises with indices of the promises array
-        // because there is no such method as Promise.raceWithIndex in js
-        // the index is needed afterward for detecting the resolved promise type (contract, account, or token)
-        const data = await Promise.race(promises.map((promise, index) => promise.then(value => ({ value, index }))));
+        const buildPromise = (fn) => new Promise((resolve, reject) => fn.then((values) => {
+            if (values == null) reject();
+            resolve(values);
+        }));
 
-        if (!data.value) {
+        let data;
+        try {
+            const promises = [
+                buildPromise(this.getContract(entityIdentifier, requestId)),
+                buildPromise(this.getAccount(entityIdentifier, requestId)),
+                buildPromise(this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId))
+            ];
+            // maps the promises with indices of the promises array
+            // because there is no such method as Promise.anyWithIndex in js
+            // the index is needed afterward for detecting the resolved promise type (contract, account, or token)
+            // @ts-ignore
+            data = await Promise.any(promises.map((promise, index) => promise.then(value => ({ value, index }))));
+        } catch (e) {
             return null;
         }
 
