@@ -344,28 +344,28 @@ class BaseTest {
   }
 
   static defaultResponseChecks(response) {
-    expect(response).to.have.property('data');
-    expect(response.data).to.have.property('id');
-    expect(response.data).to.have.property('jsonrpc');
-    expect(response.data).to.have.property('result');
-    expect(response.data.id).to.be.equal('2');
-    expect(response.data.jsonrpc).to.be.equal('2.0');
+    expect(response, "Default response: Should have 'data' property").to.have.property('data');
+    expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
+    expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
+    expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
+    expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
+    expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
   }
 
   static errorResponseChecks(response, code, message, name?) {
-    expect(response).to.have.property('data');
-    expect(response.data).to.have.property('id');
-    expect(response.data).to.have.property('jsonrpc');
-    expect(response.data.id).to.be.equal('2');
-    expect(response.data.jsonrpc).to.be.equal('2.0');
-    expect(response.data).to.have.property('error');
-    expect(response.data.error).to.have.property('code');
-    expect(response.data.error.code).to.be.equal(code);
-    expect(response.data.error).to.have.property('message');
-    expect(response.data.error.message.endsWith(message)).to.be.true;
+    expect(response, "Error response: should have 'data' property").to.have.property('data');
+    expect(response.data, "Error response: 'data' should have 'id' property").to.have.property('id');
+    expect(response.data, "Error response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
+    expect(response.data.id, "Error response: 'data.id' should equal '2'").to.be.equal('2');
+    expect(response.data.jsonrpc, "Error response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
+    expect(response.data, "Error response: 'data' should have 'error' property").to.have.property('error');
+    expect(response.data.error, "Error response: 'data.error' should have 'code' property").to.have.property('code');
+    expect(response.data.error.code, "Error response: 'data.error.code' should equal passed 'code' value").to.be.equal(code);
+    expect(response.data.error, "Error response: 'error' should have 'message' property").to.have.property('message');
+    expect(response.data.error.message.endsWith(message), "Error response: 'data.error.message' should end with passed 'message' value").to.be.true;
     if (name) {
-      expect(response.data.error).to.have.property('name');
-      expect(response.data.error.name).to.be.equal(name);
+      expect(response.data.error, "Error response: 'data.error' should have 'name' property").to.have.property('name');
+      expect(response.data.error.name, "Error response: 'data.error.name' should match passed 'name' value").to.be.equal(name);
     }
   }
 
