@@ -10,13 +10,13 @@
     "keywords": [],
     "author": "Hedera Smart Contracts Team",
     "devDependencies": {
-        "@types/chai": "^4.3.0",
-        "@types/mocha": "^9.1.0",
-        "@types/node": "^17.0.14",
-        "chai": "^4.3.6",
+        "@types/chai": "^4.3.4",
+        "@types/mocha": "^10.0.1",
+        "@types/node": "^18.11.17",
+        "chai": "^4.3.7",
         "sinon": "^14.0.0",
-        "ts-mocha": "^9.0.2",
-        "typescript": "^4.6.4"
+        "ts-mocha": "^10.0.0",
+        "typescript": "^4.9.4"
     },
     "scripts": {
         "build": "pnpm run clean && pnpm run compile",
@@ -27,12 +27,12 @@
         "test": "nyc ts-mocha --recursive ./tests/**/*.spec.ts --exit"
     },
     "dependencies": {
-        "@hashgraph/sdk": "^2.19.0",
+        "@hashgraph/sdk": "^2.19.1",
         "@keyvhq/core": "^1.6.9",
         "axios": "^0.26.1",
         "buffer": "^6.0.3",
-        "dotenv": "^16.0.0",
-        "ethers": "^5.6.8",
+        "dotenv": "^16.0.3",
+        "ethers": "^5.7.2",
         "find-config": "^1.0.0",
         "lru-cache": "^7.14.0",
         "keccak": "^3.0.2",
@@ -41,7 +41,7 @@
         "lodash": "^4.17.21",
         "pino": "^7.11.0",
         "rlp": "^3.0.0",
-        "axios-retry": "^3.2.5"
+        "axios-retry": "^3.3.1"
     },
     "nyc": {
         "check-coverage": false,
