@@ -2,10 +2,10 @@ name: Postman Endpoint Tests
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [main, release/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+    branches: [main, release/**]
+    tags: [v*]
 
 jobs:
   setup-local-hedera:
@@ -14,13 +14,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Setup node
-        uses: actions/setup-node@v2
+      - name: Setup Node.js TLS 18
+        uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
 
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install packages
         run: npm ci
@@ -43,8 +43,8 @@ jobs:
       - name: Install newman
         run: npm install -g newman
 
-      - name: Run the newman script        
-        uses: nick-fields/retry@v2
+      - name: Run the newman script
+        uses: nick-fields/retry@v3
         with:
           max_attempts: 10
           timeout_minutes: 10

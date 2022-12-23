@@ -2,24 +2,22 @@ name: Tests
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [main, release/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+    branches: [main, release/**]
+    tags: [v*]
 
 jobs:
-
   test-node:
-
     name: Tests
 
     runs-on: ubuntu-latest
 
     steps:
-      - name: Use Node.js TLS 16.x
-        uses: actions/setup-node@v1
+      - name: Setup Node.js TLS 18
+        uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: 18
 
       - name: Checkout repository
         uses: actions/checkout@v2

@@ -21,10 +21,10 @@ jobs:
       _MITSHM: 0
       DBUS_SESSION_BUS_ADDRESS: /dev/null
     steps:
-      - name: Setup node
-        uses: actions/setup-node@v2
+      - name: Setup Node.js TLS 18
+        uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
 
       - name: Setup xvfb (Linux)
         run: |
@@ -32,7 +32,7 @@ jobs:
           Xvfb -screen 0 1024x768x24 :99 &
 
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install packages
         run: npm ci

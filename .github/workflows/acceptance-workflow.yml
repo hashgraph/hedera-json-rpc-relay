@@ -14,13 +14,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Setup node
-        uses: actions/setup-node@v2
+      - name: Setup Node.js TLS 18
+        uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
 
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install packages
         run: npm ci
@@ -38,7 +38,7 @@ jobs:
         run: npx lerna run build
 
       - name: Run acceptance tests
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v3
         with:
           max_attempts: 3
           timeout_minutes: 20
