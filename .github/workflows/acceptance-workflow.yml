@@ -38,7 +38,7 @@ jobs:
         run: npx lerna run build
 
       - name: Run acceptance tests
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v2
         with:
           max_attempts: 3
           timeout_minutes: 20

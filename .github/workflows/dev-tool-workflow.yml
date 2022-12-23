@@ -51,7 +51,7 @@ jobs:
         run: npm run check:node
 
       - name: Run the tests
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v2
         with:
           max_attempts: 10
           timeout_minutes: 10
