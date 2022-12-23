@@ -197,124 +197,146 @@ describe('RPC Server', async function() {
   });
 
   it('should execute "web3_sha"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'web3_sha',
-      'params': [null]
-    });
-
-    BaseTest.methodNotFoundCheck(res);
+    try{
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'web3_sha',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.methodNotFoundCheck(error.response);
+    }
   });
 
   it('should execute "net_peerCount"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'net_peerCount',
-      'params': [null]
-    });
-
-    BaseTest.methodNotFoundCheck(res);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'net_peerCount',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.methodNotFoundCheck(error.response);
+    }
   });
 
   it('should execute "eth_submitHashrate"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_submitHashrate',
-      'params': [null]
-    });
-
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'eth_submitHashrate',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+    }
   });
 
   it('should execute "eth_signTypedData"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_signTypedData',
-      'params': [null]
-    });
-
-    BaseTest.methodNotFoundCheck(res);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'eth_signTypedData',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.methodNotFoundCheck(error.response);
+    }
   });
 
   it('should execute "eth_signTransaction"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_signTransaction',
-      'params': [null]
-    });
-
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'eth_signTransaction',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+    }
   });
 
   it('should execute "eth_sign"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_sign',
-      'params': [null]
-    });
-
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'eth_sign',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+    }
   });
 
   it('should execute "eth_sendTransaction"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_sendTransaction',
-      'params': [null]
-    });
-
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'eth_sendTransaction',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+    }
   });
 
   it('should execute "eth_protocolVersion"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_protocolVersion',
-      'params': [null]
-    });
-
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'eth_protocolVersion',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+    }
   });
 
   it('should execute "eth_getProof"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_getProof',
-      'params': [null]
-    });
-
-    BaseTest.methodNotFoundCheck(res);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'eth_getProof',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.methodNotFoundCheck(error.response);
+    }
   });
 
   it('should execute "eth_coinbase"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_coinbase',
-      'params': [null]
-    });
-
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'eth_coinbase',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+    }
   });
 
   it('should execute "eth_getWork"', async function() {
-    const res = await this.testClient.post('/', {
-      'id': '2',
-      'jsonrpc': '2.0',
-      'method': 'eth_getWork',
-      'params': [null]
-    });
-
-    BaseTest.unsupportedJsonRpcMethodChecks(res);
+    try {
+      await this.testClient.post('/', {
+        'id': '2',
+        'jsonrpc': '2.0',
+        'method': 'eth_getWork',
+        'params': [null]
+      });
+    } catch (error) {
+      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+    }
   });
 
   it('should execute "eth_maxPriorityFeePerGas"', async function() {
@@ -370,10 +392,14 @@ class BaseTest {
   }
 
   static unsupportedJsonRpcMethodChecks(response) {
+    expect(response.status).to.eq(400);
+    expect(response.statusText).to.eq('Bad Request');
     this.errorResponseChecks(response, -32601, 'Unsupported JSON-RPC method');
   }
 
   static methodNotFoundCheck(response) {
+    expect(response.status).to.eq(400);
+    expect(response.statusText).to.eq('Bad Request');
     this.errorResponseChecks(response, -32601, 'Method not found');
   }
 }
