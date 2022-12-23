@@ -52,7 +52,8 @@ export default class KoaJsonRpc {
 
   constructor(logger: Logger, register: Registry, opts?) {
     this.koaApp = new Koa();
-    this.limit = '1mb';
+    const limit = process.env.INPUT_SIZE_LIMIT || 1;
+    this.limit = limit + 'mb';
     this.duration = parseInt(process.env.LIMIT_DURATION!) || 60000;
     this.registry = Object.create(null);
     this.registryTotal = Object.create(null);
