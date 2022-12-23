@@ -74,12 +74,12 @@ export default class RelayClient {
     async callUnsupported(methodName: string, params: any[], requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
-            const res = await this.call(methodName, params, requestId);
-            this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
-            Assertions.expectedError();
+            await this.call(methodName, params, requestId);
         } catch (err) {
-            Assertions.unsupportedResponse(err);
-            return err;
+            this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${err.body}`);
+            const response = JSON.parse(err.body);
+            Assertions.unsupportedResponse(response);
+            return response;
         }
     };
 
@@ -122,7 +122,7 @@ export default class RelayClient {
 
     /**
      * @param requestId
-     * 
+     *
      * Returns the result of eth_gasPrice as a Number.
      */
     async gasPrice(requestId?: string): Promise<number> {
