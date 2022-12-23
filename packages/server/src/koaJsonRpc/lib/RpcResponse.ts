@@ -19,7 +19,8 @@
  */
 
 export default function jsonResp(id, error, result) {
-  const o: any = {};
+  const response: any = {};
+
   if (error && result) {
     throw new Error('Mutually exclusive error and result exist');
   }
@@ -29,7 +30,7 @@ export default function jsonResp(id, error, result) {
   }
 
   if (typeof result !== 'undefined') {
-    o.result = result;
+    response.result = result;
   } else if (error) {
     if (typeof error.code !== 'number') {
       throw new TypeError(`Invalid error code type ${typeof error.code}`);
@@ -39,12 +40,12 @@ export default function jsonResp(id, error, result) {
       throw new TypeError(`Invalid error message type ${typeof error.message}`);
     }
 
-    o.error = error;
+    response.error = error;
   } else {
     throw new Error('Missing result or error');
   }
 
-  o.jsonrpc = '2.0';
-  o.id = id;
-  return o;
+  response.jsonrpc = '2.0';
+  response.id = id;
+  return response;
 }
