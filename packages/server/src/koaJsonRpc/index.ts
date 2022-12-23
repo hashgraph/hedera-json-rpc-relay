@@ -36,6 +36,7 @@ import {
 } from './lib/RpcError';
 import Koa from 'koa';
 import { Registry } from 'prom-client';
+import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
@@ -99,11 +100,13 @@ export default class KoaJsonRpc {
         ctx.request.method !== 'POST'
       ) {
         ctx.body = jsonResp(body.id || null, new InvalidRequest(), undefined);
+        ctx.status = 400;
         return;
       }
 
       if (!this.registry[body.method]) {
         ctx.body = jsonResp(body.id, new MethodNotFound(), undefined);
+        ctx.status = 400;
         return;
       }
 
@@ -111,6 +114,7 @@ export default class KoaJsonRpc {
       const methodTotalLimit = this.registryTotal[methodName];
       if (this.ratelimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit)) {
         ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
+        ctx.status = 409;
         return;
       }
 
@@ -119,13 +123,18 @@ export default class KoaJsonRpc {
       } catch (e: any) {
         if (e instanceof InvalidParamsError) {
           ctx.body = jsonResp(body.id, new InvalidParamsError(e.message), undefined);
+          ctx.status = 400;
           return;
         }
         ctx.body = jsonResp(body.id, new InternalError(e.message), undefined);
+        ctx.status = 500;
         return;
       }
 
       ctx.body = jsonResp(body.id, null, result);
+      if (result instanceof JsonRpcError) {
+        ctx.status = (result.code == -32603) ? 500 : 400;
+      }
     };
   }
 
