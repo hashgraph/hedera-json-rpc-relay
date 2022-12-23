@@ -487,18 +487,31 @@ export class MirrorNodeClient {
         }
     }
 
-    public async resolveEntityType(entityIdentifier: string, requestId?: string) {
+    public async resolveEntityType(
+      entityIdentifier: string,
+      requestId?: string,
+      searchableTypes: any[] = [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT, constants.TYPE_TOKEN]
+    ) {
         const buildPromise = (fn) => new Promise((resolve, reject) => fn.then((values) => {
             if (values == null) reject();
             resolve(values);
         }));
 
+        if (searchableTypes.find(t => t === constants.TYPE_CONTRACT)) {
+            const contract = await this.getContract(entityIdentifier, requestId);
+            if (contract) {
+                return {
+                    type: constants.TYPE_CONTRACT,
+                    entity: contract
+                };
+            }
+        }
+
         let data;
         try {
             const promises = [
-                buildPromise(this.getContract(entityIdentifier, requestId)),
-                buildPromise(this.getAccount(entityIdentifier, requestId)),
-                buildPromise(this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId))
+                searchableTypes.find(t => t === constants.TYPE_ACCOUNT) ? buildPromise(this.getAccount(entityIdentifier, requestId)) : Promise.reject(),
+                searchableTypes.find(t => t === constants.TYPE_TOKEN) ? buildPromise(this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId)) : Promise.reject()
             ];
             // maps the promises with indices of the promises array
             // because there is no such method as Promise.anyWithIndex in js
@@ -512,14 +525,10 @@ export class MirrorNodeClient {
         let type;
         switch (data.index) {
             case 0: {
-                type = constants.TYPE_CONTRACT;
-                break;
-            }
-            case 1: {
                 type = constants.TYPE_ACCOUNT;
                 break;
             }
-            case 2: {
+            case 1: {
                 type = constants.TYPE_TOKEN;
                 break;
             }
