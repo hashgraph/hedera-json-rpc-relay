@@ -25,6 +25,8 @@ import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
 import app from '../../src/server';
 import { Validator } from '../../src/validator';
+import Assertions from '../helpers/assertions';
+import { InvalidParams } from '../../src/koaJsonRpc/lib/RpcError';
 
 const MISSING_PARAM_ERROR = "Missing value for required parameter";
 
@@ -84,6 +86,7 @@ describe('RPC Server', async function() {
         'method': 'eth_getTransactionByHash',
         'params': ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392']
       });
+      Assertions.expectedError();
     } catch (error) {
       expect(error.message).to.equal('Request failed with status code 500');
     }
@@ -206,6 +209,8 @@ describe('RPC Server', async function() {
         'method': 'web3_sha',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.methodNotFoundCheck(error.response);
     }
@@ -219,6 +224,8 @@ describe('RPC Server', async function() {
         'method': 'net_peerCount',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.methodNotFoundCheck(error.response);
     }
@@ -232,6 +239,8 @@ describe('RPC Server', async function() {
         'method': 'eth_submitHashrate',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
@@ -245,6 +254,8 @@ describe('RPC Server', async function() {
         'method': 'eth_signTypedData',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.methodNotFoundCheck(error.response);
     }
@@ -258,6 +269,8 @@ describe('RPC Server', async function() {
         'method': 'eth_signTransaction',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
@@ -271,6 +284,8 @@ describe('RPC Server', async function() {
         'method': 'eth_sign',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
@@ -284,6 +299,8 @@ describe('RPC Server', async function() {
         'method': 'eth_sendTransaction',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
@@ -297,6 +314,8 @@ describe('RPC Server', async function() {
         'method': 'eth_protocolVersion',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
@@ -310,6 +329,8 @@ describe('RPC Server', async function() {
         'method': 'eth_getProof',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.methodNotFoundCheck(error.response);
     }
@@ -323,6 +344,8 @@ describe('RPC Server', async function() {
         'method': 'eth_coinbase',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
@@ -336,6 +359,8 @@ describe('RPC Server', async function() {
         'method': 'eth_getWork',
         'params': [null]
       });
+
+      Assertions.expectedError();
     } catch (error) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
@@ -356,967 +381,1296 @@ describe('RPC Server', async function() {
   describe('Validator', async function() {
     describe('eth_estimateGas', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + " 0");
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + " 0");
+        }
       });
 
       it('validates parameter 0 is TransactionObject', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': ["0x0"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': ["0x0"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, "Expected TransactionObject");
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, "Expected TransactionObject");
+        }
       });
 
       it('validates Transaction `to` param is address', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x1"}]
-        });
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'to' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
-      });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': [{"to": "0x1"}]
+          });
+
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'to' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
+        }      });
 
       it('validates Transaction `from` param is address', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "from": '0x1'}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': [{"from": '0x1'}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'from' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'from' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
+        }
       });
 
       it('validates Transaction `gas` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "gas": 123}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': [{"gas": 123}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'gas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
+
       });
 
       it('validates Transaction `gasPrice` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "gasPrice": 123}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': [{"gasPrice": 123}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gasPrice' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'gasPrice' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
+
       });
 
       it('validates Transaction `maxPriorityFeePerGas` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "maxPriorityFeePerGas": 123}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': [{"maxPriorityFeePerGas": 123}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxPriorityFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'maxPriorityFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
+
       });
 
       it('validates Transaction `maxFeePerGas` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "maxFeePerGas": "123"}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': [{"maxFeePerGas": "123"}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'maxFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
 
       it('validates Transaction `value` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "value": "123"}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': [{"value": "123"}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'value' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'value' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
 
       it('validates Transaction `data` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "data": "123"}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': [{"data": "123"}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'data' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'data' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
-
-      it('validates Block param is not required', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x0000000000000000000000000000000000000001"}]
-        });
-
-        BaseTest.defaultResponseChecks(res);
-      });
-
 
       it('validates Block param is valid block hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x0000000000000000000000000000000000000001"}, "123"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': [{"to": "0x0000000000000000000000000000000000000001"}, "123"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates Block param is valid tag', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_estimateGas',
-          'params': [{"to": "0x0000000000000000000000000000000000000001"}, "newest"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_estimateGas',
+            'params': [{"to": "0x0000000000000000000000000000000000000001"}, "newest"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
     });
 
     describe('eth_getBalance', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBalance',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBalance',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is of type Address', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBalance',
-          'params': ["0x0"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBalance',
+            'params': ["0x0"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, Validator.ADDRESS_ERROR);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, Validator.ADDRESS_ERROR);
+        }
       });
 
       it('validates parameter 1 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBalance',
-          'params': ["0x0000000000000000000000000000000000000001"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBalance',
+            'params': ["0x0000000000000000000000000000000000000001"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+        }
       });
 
       it('validates parameter 1 is valid block number', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBalance',
-          'params': ["0x0000000000000000000000000000000000000001", "123"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBalance',
+            'params': ["0x0000000000000000000000000000000000000001", "123"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+
+        }
       });
 
       it('validates parameter 1 is valid block tag', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBalance',
-          'params': ["0x0000000000000000000000000000000000000001", "newest"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBalance',
+            'params': ["0x0000000000000000000000000000000000000001", "newest"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
     });
 
     describe('eth_getCode', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getCode',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getCode',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+
+        }
       });
 
       it('validates parameter 0 is address', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getCode',
-          'params': ['0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35']
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getCode',
+            'params': ['0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35']
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.ADDRESS_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.ADDRESS_ERROR}`);
+        }
       });
 
       it('validates parameter 1 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getCode',
-          'params': ["0x0000000000000000000000000000000000000001"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getCode',
+            'params': ["0x0000000000000000000000000000000000000001"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+        }
       });
 
       it('validates parameter 1 is valid block number', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getCode',
-          'params': ["0x0000000000000000000000000000000000000001", "123"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getCode',
+            'params': ["0x0000000000000000000000000000000000000001", "123"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates parameter 1 is valid block tag', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getCode',
-          'params': ["0x0000000000000000000000000000000000000001", "newest"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getCode',
+            'params': ["0x0000000000000000000000000000000000000001", "newest"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
     });
 
     describe('eth_getBlockByNumber', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockByNumber',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockByNumber',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is valid block number', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockByNumber',
-          'params': [1]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockByNumber',
+            'params': [1]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates parameter 0 is valid block tag', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockByNumber',
-          'params': ["newest"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockByNumber',
+            'params': ["newest"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates parameter 1 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockByNumber',
-          'params': ["0x1"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockByNumber',
+            'params': ["0x1"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+        }
       });
 
       it('validates parameter 1 is boolean', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockByNumber',
-          'params': ["0x1", "true"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockByNumber',
+            'params': ["0x1", "true"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: Expected boolean type`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: Expected boolean type`);
+        }
       });
     });
 
     describe('eth_getBlockByHash', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockByHash',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockByHash',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is a block hash', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockByHash',
-          'params': ['0x1']
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockByHash',
+            'params': ['0x1']
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_HASH_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_HASH_ERROR}`);
+        }
       });
 
       it('validates parameter 1 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockByHash',
-          'params': ["0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockByHash',
+            'params': ["0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+        }
       });
 
       it('validates parameter 1 is boolean', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockByHash',
-          'params': ["0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6", "true"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockByHash',
+            'params': ["0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6", "true"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: Expected boolean type`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: Expected boolean type`);
+        }
       });
     });
 
     describe('eth_getTransactionCount', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionCount',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionCount',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is an address', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionCount',
-          'params': ["0x0001"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionCount',
+            'params': ["0x0001"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.ADDRESS_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.ADDRESS_ERROR}`);
+        }
       });
 
       it('validates parameter 1 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionCount',
-          'params': ["0x0000000000000000000000000000000000000001"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionCount',
+            'params': ["0x0000000000000000000000000000000000000001"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+        }
       });
 
       it('validates parameter 1 is a valid block number', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionCount',
-          'params': ["0x0000000000000000000000000000000000000001", 123]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionCount',
+            'params': ["0x0000000000000000000000000000000000000001", 123]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates parameter 1 is a valid block tag', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionCount',
-          'params': ["0x0000000000000000000000000000000000000001", 'newest']
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionCount',
+            'params': ["0x0000000000000000000000000000000000000001", 'newest']
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
     });
 
     describe('eth_call', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is TransactionObject', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': ["0x0"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': ["0x0"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, "Expected TransactionObject");
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, "Expected TransactionObject");
+        }
       });
 
       it('validates Transaction `to` param is address', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{"to": "0x1"}]
-        });
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'to' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
-      });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"to": "0x1"}]
+          });
+
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'to' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
+        }      });
 
       it('validates Transaction `from` param is address', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "from": '0x1'}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"from": '0x1'}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'from' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'from' for TransactionObject: ${Validator.ADDRESS_ERROR}`);
+        }
       });
 
       it('validates Transaction `gas` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "gas": 123}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"gas": 123}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'gas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
 
       it('validates Transaction `gasPrice` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "gasPrice": 123}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"gasPrice": 123}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'gasPrice' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'gasPrice' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
 
       it('validates Transaction `maxPriorityFeePerGas` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "maxPriorityFeePerGas": 123}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"maxPriorityFeePerGas": 123}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxPriorityFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'maxPriorityFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
 
       it('validates Transaction `maxFeePerGas` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "maxFeePerGas": "123"}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"maxFeePerGas": "123"}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'maxFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'maxFeePerGas' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
 
       it('validates Transaction `value` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "value": "123"}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"value": "123"}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'value' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'value' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
 
       it('validates Transaction `data` param is hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{"to": "0x0000000000000000000000000000000000000001", "data": "123"}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"data": "123"}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'data' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'data' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
 
       it('validates Block param is valid block hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{"to": "0x0000000000000000000000000000000000000001"}, "123"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"to": "0x0000000000000000000000000000000000000001"}, "123"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates Block param is valid tag', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_call',
-          'params': [{"to": "0x0000000000000000000000000000000000000001"}, "newest"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"to": "0x0000000000000000000000000000000000000001"}, "newest"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
     });
 
     describe('eth_sendRawTransaction', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_sendRawTransaction',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_sendRawTransaction',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is valid hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_sendRawTransaction',
-          'params': ['f868']
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_sendRawTransaction',
+            'params': ['f868']
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
     });
 
     describe('eth_getTransactionByHash', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByHash',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByHash',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is block hash', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByHash',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByHash',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
     });
 
     describe('eth_feeHistory', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_feeHistory',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_feeHistory',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 1 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_feeHistory',
-          'params': ["0x5"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_feeHistory',
+            'params': ["0x5"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+        }
       });
 
       it('validates parameter 2 is array', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_feeHistory',
-          'params': ["0x5", "latest", {}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_feeHistory',
+            'params': ["0x5", "latest", {}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 2: Expected Array`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 2: Expected Array`);
+        }
       });
     });
 
     describe('eth_getBlockTransactionCountByHash', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockTransactionCountByHash',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockTransactionCountByHash',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is block hash', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockTransactionCountByHash',
-          'params': ["0x1234"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockTransactionCountByHash',
+            'params': ["0x1234"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_HASH_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_HASH_ERROR}`);
+        }
       });
     });
 
     describe('eth_getBlockTransactionCountByNumber', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockTransactionCountByNumber',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockTransactionCountByNumber',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is block number', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockTransactionCountByNumber',
-          'params': ["1234"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockTransactionCountByNumber',
+            'params': ["1234"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates parameter 0 is valid block tag', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getBlockTransactionCountByNumber',
-          'params': ["newest"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBlockTransactionCountByNumber',
+            'params': ["newest"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
     });
 
     describe('eth_getStorageAt', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getStorageAt',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getStorageAt',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is valid address', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getStorageAt',
-          'params': ["0000000000000000000000000000000000000001"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getStorageAt',
+            'params': ["0000000000000000000000000000000000000001"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.ADDRESS_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.ADDRESS_ERROR}`);
+        }
       });
 
       it('validates parameter 1 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getStorageAt',
-          'params': ["0x0000000000000000000000000000000000000001"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getStorageAt',
+            'params': ["0x0000000000000000000000000000000000000001"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+        }
       });
 
       it('validates parameter 1 is valid hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getStorageAt',
-          'params': ["0x0000000000000000000000000000000000000001", 1234]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getStorageAt',
+            'params': ["0x0000000000000000000000000000000000000001", 1234]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
 
       it('validates parameter 2 is valid block number', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getStorageAt',
-          'params': ["0x0000000000000000000000000000000000000001", "0x1", 123]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getStorageAt',
+            'params': ["0x0000000000000000000000000000000000000001", "0x1", 123]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 2: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 2: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates parameter 2 is valid block tag', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getStorageAt',
-          'params': ["0x0000000000000000000000000000000000000001", "0x1", "newest"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getStorageAt',
+            'params': ["0x0000000000000000000000000000000000000001", "0x1", "newest"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 2: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 2: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
     });
 
     describe('eth_getTransactionByBlockHashAndIndex', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByBlockHashAndIndex',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByBlockHashAndIndex',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is valid block hash', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByBlockHashAndIndex',
-          'params': ["0x1a2b3c"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByBlockHashAndIndex',
+            'params': ["0x1a2b3c"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_HASH_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_HASH_ERROR}`);
+        }
       });
 
       it('validates parameter 1 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByBlockHashAndIndex',
-          'params': ["0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByBlockHashAndIndex',
+            'params': ["0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+        }
       });
 
       it('validates parameter 1 is valid hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByBlockHashAndIndex',
-          'params': ["0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35", "08"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByBlockHashAndIndex',
+            'params': ["0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35", "08"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
     });
 
     describe('eth_getTransactionByBlockNumberAndIndex', async function() {
       it('validates parameter 0 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByBlockNumberAndIndex',
-          'params': []
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByBlockNumberAndIndex',
+            'params': []
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
       });
 
       it('validates parameter 0 is valid block number', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByBlockNumberAndIndex',
-          'params': [123]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByBlockNumberAndIndex',
+            'params': [123]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates parameter 0 is valid block tag', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByBlockNumberAndIndex',
-          'params': ["newest"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByBlockNumberAndIndex',
+            'params': ["newest"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates parameter 1 exists', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByBlockNumberAndIndex',
-          'params': ["0x5BAD55"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByBlockNumberAndIndex',
+            'params': ["0x5BAD55"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
+        }
       });
 
       it('validates parameter 1 is valid hex', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getTransactionByBlockNumberAndIndex',
-          'params': ["0x5BAD55", "08"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionByBlockNumberAndIndex',
+            'params': ["0x5BAD55", "08"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.DEFAULT_HEX_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.DEFAULT_HEX_ERROR}`);
+        }
       });
     });
 
     describe('eth_getLogs', async () => {
       it('validates parameter 0 is Filter Object', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getLogs',
-          'params': ["0x1"]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getLogs',
+            'params': ["0x1"]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.TYPES['filter'].error}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: ${Validator.TYPES['filter'].error}`);
+        }
       });
 
       it('validates parameter Filter Object does not contain both block hash and fromBlock/toBlock', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getLogs',
-          'params': [{ "blockHash": "0x123", "toBlock": "latest" }]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getLogs',
+            'params': [{ "blockHash": "0x123", "toBlock": "latest" }]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 0: Can't use both blockHash and toBlock/fromBlock`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: Can't use both blockHash and toBlock/fromBlock`);
+        }
       });
 
       it('validates blockHash filter', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getLogs',
-          'params': [{ "blockHash": "0x123" }]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getLogs',
+            'params': [{ "blockHash": "0x123" }]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'blockHash' for FilterObject: ${Validator.BLOCK_HASH_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockHash' for FilterObject: ${Validator.BLOCK_HASH_ERROR}`);
+        }
       });
 
       it('validates toBlock filter', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getLogs',
-          'params': [{ "toBlock": 123 }]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getLogs',
+            'params': [{ "toBlock": 123 }]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'toBlock' for FilterObject: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'toBlock' for FilterObject: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates toBlock filter', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getLogs',
-          'params': [{ "fromBlock": 123 }]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getLogs',
+            'params': [{ "fromBlock": 123 }]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'fromBlock' for FilterObject: ${Validator.BLOCK_NUMBER_ERROR}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'fromBlock' for FilterObject: ${Validator.BLOCK_NUMBER_ERROR}`);
+        }
       });
 
       it('validates address filter', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getLogs',
-          'params': [{ "address": '0x012345' }]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getLogs',
+            'params': [{ "address": '0x012345' }]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'address' for FilterObject: ${Validator.TYPES.addressFilter.error}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'address' for FilterObject: ${Validator.TYPES.addressFilter.error}`);
+        }
       });
 
       it('validates topics filter is array', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getLogs',
-          'params': [{ "topics": {}}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getLogs',
+            'params': [{ "topics": {}}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}`);
+        }
       });
 
       it('validates topics filter is array of topic hashes', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getLogs',
-          'params': [{ "topics": [123]}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getLogs',
+            'params': [{ "topics": [123]}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}`);
+        }
       });
 
       it('validates topics filter is array of array of topic hashes', async function() {
-        const res = await this.testClient.post('/', {
-          'id': '2',
-          'jsonrpc': '2.0',
-          'method': 'eth_getLogs',
-          'params': [{ "topics": [[123]]}]
-        });
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getLogs',
+            'params': [{ "topics": [[123]]}]
+          });
 
-        BaseTest.errorResponseChecks(res, Validator.ERROR_CODE, `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}`);
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}`);
+        }
       });
     });
   });
@@ -1361,15 +1715,21 @@ class BaseTest {
     }
   }
 
-  static unsupportedJsonRpcMethodChecks(response) {
+  static unsupportedJsonRpcMethodChecks(response: any) {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
     this.errorResponseChecks(response, -32601, 'Unsupported JSON-RPC method');
   }
 
-  static methodNotFoundCheck(response) {
+  static methodNotFoundCheck(response: any) {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
     this.errorResponseChecks(response, -32601, 'Method not found');
+  }
+
+  static invalidParamError(response: any, code: number, message: string) {
+    expect(response.status).to.eq(400);
+    expect(response.statusText).to.eq('Bad Request');
+    this.errorResponseChecks(response, code, message);
   }
 }

@@ -447,25 +447,25 @@ describe('Validator', async () => {
   describe('validates transactionHash type correctly', async () => {
     const validation = { 0: { type: 'transactionHash' } };
 
-    it('throws an error if transaction is smaller than 32bytes', async () => {
+    it('throws an error if transactionHash is smaller than 32bytes', async () => {
       expect(() => Validator.validateParams(["0xdec54931fcfe"], validation)).to.throw(
         expectInvalidParam(0, Validator.TRANSACTION_HASH_ERROR)
       );
     });
 
-    it('throws an error if transaction is larger than 32bytes', async () => {
+    it('throws an error if transactionHash is larger than 32bytes', async () => {
       expect(() => Validator.validateParams(["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb555555"], validation)).to.throw(
         expectInvalidParam(0, Validator.TRANSACTION_HASH_ERROR)
       );
     });
 
-    it('throws an error if transaction is NOT 0x prefixed', async () => {
+    it('throws an error if transactionHash is NOT 0x prefixed', async () => {
       expect(() => Validator.validateParams(["790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], validation)).to.throw(
         expectInvalidParam(0, Validator.TRANSACTION_HASH_ERROR)
       );
     });
 
-    it('throws an error if transaction is other type', async () => {
+    it('throws an error if transactionHash is other type', async () => {
       expect(() => Validator.validateParams(["string"], validation)).to.throw(
         expectInvalidParam(0, Validator.TRANSACTION_HASH_ERROR)
       );
@@ -480,7 +480,7 @@ describe('Validator', async () => {
       );
     });
 
-    it('does not throw an error if transaction is valid', async () => {
+    it('does not throw an error if transactionHash is valid', async () => {
       const result = Validator.validateParams(["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"], validation);
 
       expect(result).to.eq(undefined);
