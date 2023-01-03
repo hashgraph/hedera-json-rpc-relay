@@ -68,10 +68,11 @@ export class Precheck {
   }
 
   async verifyAccount(tx: Transaction, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     // verify account
     const accountInfo = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
     if (accountInfo == null) {
-      this.logger.trace(`${requestId} Failed to retrieve address '${tx.from}' account details from mirror node on verify account precheck for sendRawTransaction(transaction=${JSON.stringify(tx)})`);
+      this.logger.trace(`${requestIdPrefix} Failed to retrieve address '${tx.from}' account details from mirror node on verify account precheck for sendRawTransaction(transaction=${JSON.stringify(tx)})`);
       throw predefined.RESOURCE_NOT_FOUND(`address '${tx.from}'.`);
     }
 
@@ -82,7 +83,8 @@ export class Precheck {
    * @param tx
    */
   async nonce(tx: Transaction, accountInfoNonce: number, requestId?: string) {
-    this.logger.trace(`${requestId} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`);
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.trace(`${requestIdPrefix} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`);
 
     // @ts-ignore
     if (accountInfoNonce > tx.nonce) {

@@ -64,6 +64,7 @@ export class MirrorNodeClient {
     private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
     private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
     private static GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
+    private static GET_STATE_ENDPOINT = '/state';
     private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
     private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
     private static GET_NETWORK_FEES_ENDPOINT = 'network/fees';
@@ -71,6 +72,7 @@ export class MirrorNodeClient {
     private static GET_TRANSACTIONS_ENDPOINT = 'transactions';
 
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
+    private static CONTRACT_STATE_PROPERTY = 'state';
 
     private static ORDER = {
         ASC: 'asc',
@@ -430,13 +432,27 @@ export class MirrorNodeClient {
             requestId);
     }
 
-    public async getLatestContractResultsByAddress(address: string, blockEndTimestamp: string | undefined, limit: number) {
+    public async getLatestContractResultsByAddress(address: string, blockEndTimestamp: string | undefined, limit: number, requestId?: string) {
         // retrieve the timestamp of the contract
         const contractResultsParams: IContractResultsParams = blockEndTimestamp
             ? { timestamp: `lte:${blockEndTimestamp}` }
             : {};
         const limitOrderParams: ILimitOrderParams = this.getLimitOrderQueryParam(limit, 'desc');
-        return this.getContractResultsByAddress(address, contractResultsParams, limitOrderParams);
+        return this.getContractResultsByAddress(address, contractResultsParams, limitOrderParams, requestId);
+    }
+
+    public async getContractCurrentStateByAddressAndSlot(address: string, slot: string, requestId?: string) {
+        const limitOrderParams: ILimitOrderParams = this.getLimitOrderQueryParam(constants.MIRROR_NODE_QUERY_LIMIT, constants.ORDER.DESC);
+        const queryParamObject = {};
+
+        this.setQueryParam(queryParamObject, 'slot', slot);
+        this.setLimitOrderParams(queryParamObject, limitOrderParams);
+        const queryParams = this.getQueryParams(queryParamObject);
+
+        return this.request(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${address}${MirrorNodeClient.GET_STATE_ENDPOINT}${queryParams}`,
+        MirrorNodeClient.GET_STATE_ENDPOINT,
+        [400, 404],
+        requestId);
     }
 
     getQueryParams(params: object) {
