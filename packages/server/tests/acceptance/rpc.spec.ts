@@ -1067,7 +1067,7 @@ describe('@api RPC Server Acceptance Tests', function () {
             });
         });
 
-        describe.only('@release Unsupported RPC Endpoints', () => {
+        describe('@release Unsupported RPC Endpoints', () => {
 
             it('should not support "eth_submitHashrate"', async function () {
                 await relay.callUnsupported('eth_submitHashrate', [], requestId);
