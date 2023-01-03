@@ -42,7 +42,9 @@ const cors = require('koa-cors');
 const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
-const app = new KoaJsonRpc(logger, register);
+const app = new KoaJsonRpc(logger, register, {
+  limit: process.env.INPUT_SIZE_LIMIT ? process.env.INPUT_SIZE_LIMIT + 'mb' : null
+});
 
 const REQUEST_ID_STRING = `Request ID: `;
 const responseSuccessStatusCode = '200';
