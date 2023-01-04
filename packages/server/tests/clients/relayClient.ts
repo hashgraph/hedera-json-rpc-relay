@@ -75,6 +75,7 @@ export default class RelayClient {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
             await this.call(methodName, params, requestId);
+            Assertions.expectedError();
         } catch (err) {
             this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${err.body}`);
             const response = JSON.parse(err.body);

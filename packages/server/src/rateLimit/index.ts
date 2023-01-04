@@ -113,7 +113,7 @@ export default class RateLimit {
   }
 
   private decreaseRemaining(ip: string, methodName: string) {
-    let remaining =
+    const remaining =
       this.database[ip].methodInfo[methodName].remaining > 0
         ? this.database[ip].methodInfo[methodName].remaining - 1
         : 0;
