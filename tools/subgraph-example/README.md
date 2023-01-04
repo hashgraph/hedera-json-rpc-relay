@@ -115,7 +115,7 @@ The easiest way to run a local `graph-node` against `testnet`, `previewnet` or `
 2. Replace `'mainnet:http://host.docker.internal:8545'` on [this](https://github.com/graphprotocol/graph-node/blob/master/docker/docker-compose.yml#L22) line with:
      1. `'mainnet:https://mainnet.hashio.io/api'` for `mainnet`
      2.  `'testnet:https://testnet.hashio.io/api'` for `testnet`
-     3.  `'previewnet:https://previewnet.hashio.io/api'` for `testnet`
+     3.  `'previewnet:https://previewnet.hashio.io/api'` for `previewnet`
 3. In the `subgraph.yaml` file change the dataSources network with to the network you want to index. Also don't forget to update the address (and the startBlock).
 
 Advanced info on how to set up an indexer could be found in [The Graph Docs](https://thegraph.com/docs/en/indexing/operating-graph-node/) and the [official graph-node GitHub repository](https://github.com/graphprotocol/graph-node)

@@ -7,7 +7,7 @@ const net = require("net");
     const isLocalNode = !supportedEnvs.includes(network.toLowerCase());
     if (isLocalNode) {
         let nodeStarted = false;
-        let retries = 10;
+        const retries = 10;
         while (!nodeStarted && retries >= 0) {
             net
             .createConnection('5600', '127.0.0.1')
