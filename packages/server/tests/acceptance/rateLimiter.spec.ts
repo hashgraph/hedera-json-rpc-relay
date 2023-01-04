@@ -33,7 +33,7 @@ import BaseHTSJson from '../contracts/contracts_v1/BaseHTS.json';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
     this.timeout(480 * 1000); // 480 seconds
-    
+
     const accounts: AliasAccount[] = [];
 
     // @ts-ignore
@@ -132,9 +132,9 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                 const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, accounts[1].wallet);
                 const baseHTS = await baseHTSFactory.deploy({gasLimit: 10_000_000});
                 const { contractAddress } = await baseHTS.deployTransaction.wait();
-            
+
                 return contractAddress;
-              }
+            }
 
             it('should fail to execute "eth_sendRawTransaction" due to HBAR rate limit exceeded ', async function () {
                 await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
@@ -165,7 +165,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
-                        nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+                        nonce: await relay.getAccountNonce('0x' + accounts[1].address, requestId),
                         maxPriorityFeePerGas: gasPrice,
                         maxFeePerGas: gasPrice,
                     };

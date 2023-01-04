@@ -2632,7 +2632,7 @@ describe('Eth', async function () {
   it('should execute "eth_chainId"', async function () {
     const chainId = await Relay.eth().chainId();
 
-    expect(chainId).to.be.equal(`0x${process.env.CHAIN_ID}`);
+    expect(chainId).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
   });
 
   it('should execute "eth_accounts"', async function () {
