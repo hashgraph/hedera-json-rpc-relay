@@ -137,7 +137,7 @@ describe("Open RPC Specification", function () {
         mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
         }
         sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
-        sdkClientStub.getAccountBalanceInTinyBar.returns(100000000000)
+        sdkClientStub.getAccountBalanceInTinyBar.returns(100000000000);
         sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));
         sdkClientStub.getAccountInfo.returns({ ethereumNonce: '0x1' });
         sdkClientStub.submitEthereumTransaction.returns({});

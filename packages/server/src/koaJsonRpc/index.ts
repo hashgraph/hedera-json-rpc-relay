@@ -21,7 +21,7 @@
 import { methodConfiguration } from './lib/methodConfiguration';
 import InvalidParamsError from './lib/RpcInvalidError';
 import jsonResp from './lib/RpcResponse';
-import RateLimit from '../ratelimit';
+import RateLimit from '../rateLimit';
 import parse from 'co-body';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -48,7 +48,7 @@ export default class KoaJsonRpc {
   private methodConfig: any;
   private duration: number;
   private limit: string;
-  private ratelimit: RateLimit;
+  private rateLimit: RateLimit;
   private koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
 
   constructor(logger: Logger, register: Registry, opts?) {
@@ -61,7 +61,7 @@ export default class KoaJsonRpc {
     if (opts) {
       this.limit = opts.limit || this.limit;
     }
-    this.ratelimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
+    this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
   }
 
   useRpc(name, func) {
@@ -112,7 +112,7 @@ export default class KoaJsonRpc {
 
       const methodName = body.method;
       const methodTotalLimit = this.registryTotal[methodName];
-      if (this.ratelimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit)) {
+      if (this.rateLimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit)) {
         ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
         ctx.status = 409;
         return;

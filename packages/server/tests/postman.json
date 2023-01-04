@@ -151,7 +151,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_estimateGas\",\n    \"params\": []\n}",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_estimateGas\",\n    \"params\": [{\"to\":\"0xd3CdA913deB6f67967B99D67aCDFa1712C293601\"}]\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -197,7 +197,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_feeHistory\",\n    \"params\": [3, \"latest\", [25, 75]]\n}",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_feeHistory\",\n    \"params\": [\"0x3\", \"latest\", [25, 75]]\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -277,7 +277,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_getBalance\",\n    \"params\": [\"0x0000000000000000000000000000000000000062\"]\n}",
+					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_getBalance\",\n    \"params\": [\"0x0000000000000000000000000000000000000062\", \"latest\"]\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -337,7 +337,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"eth_getBlockByNumber\",\n    \"params\": [\n        \"latest\",\n        true\n    ]\n}",
+					"raw": "{\"id\": \"test_id\",\"jsonrpc\": \"2.0\",\"method\": \"eth_getBlockByNumber\",\"params\": [\"latest\", true]}",
 					"options": {
 						"raw": {
 							"language": "json"
