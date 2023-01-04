@@ -120,6 +120,8 @@ export class RelayImpl implements Relay {
       }
     }
 
+    client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
+
     logger.info(`SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${client.operatorAccountId}`);
     return client;
   }

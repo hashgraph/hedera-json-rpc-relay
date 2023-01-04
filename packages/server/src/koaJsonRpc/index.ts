@@ -21,7 +21,7 @@
 import { methodConfiguration } from './lib/methodConfiguration';
 import InvalidParamsError from './lib/RpcInvalidError';
 import jsonResp from './lib/RpcResponse';
-import RateLimit from '../ratelimit';
+import RateLimit from '../rateLimit';
 import parse from 'co-body';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -36,6 +36,7 @@ import {
 } from './lib/RpcError';
 import Koa from 'koa';
 import { Registry } from 'prom-client';
+import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
@@ -47,7 +48,7 @@ export default class KoaJsonRpc {
   private methodConfig: any;
   private duration: number;
   private limit: string;
-  private ratelimit: RateLimit;
+  private rateLimit: RateLimit;
   private koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
 
   constructor(logger: Logger, register: Registry, opts?) {
@@ -60,7 +61,7 @@ export default class KoaJsonRpc {
     if (opts) {
       this.limit = opts.limit || this.limit;
     }
-    this.ratelimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
+    this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
   }
 
   useRpc(name, func) {
@@ -99,18 +100,21 @@ export default class KoaJsonRpc {
         ctx.request.method !== 'POST'
       ) {
         ctx.body = jsonResp(body.id || null, new InvalidRequest(), undefined);
+        ctx.status = 400;
         return;
       }
 
       if (!this.registry[body.method]) {
         ctx.body = jsonResp(body.id, new MethodNotFound(), undefined);
+        ctx.status = 400;
         return;
       }
 
       const methodName = body.method;
       const methodTotalLimit = this.registryTotal[methodName];
-      if (this.ratelimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit)) {
+      if (this.rateLimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit)) {
         ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
+        ctx.status = 409;
         return;
       }
 
@@ -119,13 +123,18 @@ export default class KoaJsonRpc {
       } catch (e: any) {
         if (e instanceof InvalidParamsError) {
           ctx.body = jsonResp(body.id, new InvalidParamsError(e.message), undefined);
+          ctx.status = 400;
           return;
         }
         ctx.body = jsonResp(body.id, new InternalError(e.message), undefined);
+        ctx.status = 500;
         return;
       }
 
       ctx.body = jsonResp(body.id, null, result);
+      if (result instanceof JsonRpcError) {
+        ctx.status = (result.code == -32603) ? 500 : 400;
+      }
     };
   }
 

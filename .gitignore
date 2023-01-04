@@ -6,7 +6,5 @@ tsconfig.tsbuildinfo
 .idea
 .vscode/
 .devcontainer/
-packages/relay/coverage/**
-packages/server/coverage/**
-packages/relay/.nyc_output/**
-packages/server/.nyc_output/**
+**/**/coverage/
+**/**/.nyc_output/

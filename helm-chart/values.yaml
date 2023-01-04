@@ -40,7 +40,6 @@ service:
   type: ClusterIP
   port: 7546
   annotations: {}
-  annotations_JSON: {}
 
 ingress:
   enabled: false
@@ -120,8 +119,15 @@ config:
   MIRROR_NODE_RETRIES: 3
   MIRROR_NODE_RETRY_DELAY: 500
   MIRROR_NODE_LIMIT_PARAM: 100
+  CLIENT_TRANSPORT_SECURITY: false
 
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:
   enabled: false
   schedule: '@daily'
+
+# Enable periodic tests of the hashio base URL
+test:
+  enabled: false
+  schedule: '@daily'
+  baseUrl: "http://127.0.0.1:7546"
