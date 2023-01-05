@@ -23,7 +23,7 @@ the [JSON RPC Specification](https://playground.open-rpc.org/?schemaUrl=https://
 
 You must have installed
 
-- [node (version 16)](https://nodejs.org/en/about/)
+- [node (version 18)](https://nodejs.org/en/about/)
 - [npm](https://www.npmjs.com/)
 - [pnpm](https://pnpm.io/)
 - [Docker](https://docs.docker.com/engine/reference/commandline/docker/)
@@ -54,7 +54,8 @@ newman run packages/server/tests/postman.json --env-var baseUrl=http://localhost
 ```
 
 To enable Postman test to run via helm deployment add
-```
+
+````
 test:
   enabled: true
   schedule: '@daily' #How often to run the Postman test
@@ -93,7 +94,7 @@ GAS_PRICE_TINY_BAR_BUFFER = 10000000000
 MIRROR_NODE_RETRIES = 3
 MIRROR_NODE_RETRY_DELAY = 500
 MIRROR_NODE_LIMIT_PARAM = 100
-```
+````
 
 Note: Read more about `DEV_MODE` [here](docs/dev-mode.md)
 The following table highlights some initial configuration values to consider
