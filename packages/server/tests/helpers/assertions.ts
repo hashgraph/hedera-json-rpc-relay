@@ -101,11 +101,12 @@ export default class Assertions {
         // Assert transactions
         for (const i in relayResponse.transactions) {
             const tx = relayResponse.transactions[i];
-            const mirrorTx = mirrorTransactions[i];
             if ( hydratedTransactions ) {
+                const mirrorTx = mirrorTransactions.find(mTx => mTx.hash.slice(0,66) === tx.hash);
                 Assertions.transaction(tx, mirrorTx);
             }
             else {
+                const mirrorTx = mirrorTransactions.find(mTx => mTx.hash.slice(0,66) === tx);
                 expect(tx).to.eq(mirrorTx.hash.slice(0, 66));
             }
         }
