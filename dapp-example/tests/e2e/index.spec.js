@@ -67,6 +67,7 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Associate HTS', function() {
+    cy.resetMetamaskAccount();
     cy.get('#htsTokenAssociateBtn').should('not.be.disabled').click();
     cy.confirmMetamaskTransaction();
 
