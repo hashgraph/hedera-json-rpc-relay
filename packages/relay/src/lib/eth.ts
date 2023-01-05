@@ -714,7 +714,7 @@ export class EthImpl implements Eth {
     }
 
     try {
-      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
+      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN]);
       if (result) {
         if (result?.type === constants.TYPE_TOKEN) {
           this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
@@ -891,7 +891,7 @@ export class EthImpl implements Eth {
 
     // check consensus node as back up
     try {
-      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId);
+      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId, [constants.TYPE_ACCOUNT, constants.TYPE_CONTRACT]);
       if (result?.type === constants.TYPE_ACCOUNT) {
         const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
         return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
