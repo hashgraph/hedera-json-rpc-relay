@@ -611,8 +611,13 @@ describe('@api-chunk-2 RPC Server Acceptance Tests', function () {
             describe('Gas Price related RPC endpoints', () => {
                 let lastBlockBeforeUpdate;
                 let lastBlockAfterUpdate;
+                let feeScheduleContentAtStart;
+                let exchangeRateContentAtStart;
 
                 before(async () => {
+                    feeScheduleContentAtStart = await servicesNode.getFileContent(FEE_SCHEDULE_FILE_ID);
+                    exchangeRateContentAtStart = await servicesNode.getFileContent(EXCHANGE_RATE_FILE_ID);
+
                     await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_DEFAULT, requestId);
                     await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, EXCHANGE_RATE_FILE_CONTENT_DEFAULT, requestId);
                     lastBlockBeforeUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
@@ -620,6 +625,12 @@ describe('@api-chunk-2 RPC Server Acceptance Tests', function () {
                     await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, FEE_SCHEDULE_FILE_CONTENT_UPDATED, requestId);
                     await new Promise(resolve => setTimeout(resolve, 4000));
                     lastBlockAfterUpdate = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
+                });
+
+                after(async () => {
+                    await servicesNode.updateFileContent(FEE_SCHEDULE_FILE_ID, feeScheduleContentAtStart.toString('hex'), requestId);
+                    await servicesNode.updateFileContent(EXCHANGE_RATE_FILE_ID, exchangeRateContentAtStart.toString('hex'), requestId);
+                    await new Promise(resolve => setTimeout(resolve, 4000));
                 });
 
                 it('should call eth_feeHistory with updated fees', async function () {
