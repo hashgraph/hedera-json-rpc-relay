@@ -21,7 +21,7 @@
     "http-server": "^14.1.1"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "react-scripts --openssl-legacy-provider start",
     "build": "react-scripts build",
     "bootstrap": "env-cmd node tests/e2e/bootstrap.js",
     "test": "env-cmd npx synpress run -cf synpress.js",
