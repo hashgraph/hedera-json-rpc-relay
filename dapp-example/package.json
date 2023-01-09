@@ -14,9 +14,8 @@
     "react-scripts": "5.0.1"
   },
   "devDependencies": {
-    "@synthetixio/synpress": "^1.2.0",
-    "@testing-library/cypress": "^8.0.3",
-    "cypress": "^10.1.0",
+    "@synthetixio/synpress": "^3.0.5",
+    "cypress": "^12.3.0",
     "cypress-wait-until": "^1.7.2",
     "env-cmd": "^10.1.0",
     "http-server": "^14.1.1"
@@ -24,8 +23,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "bootstrap": "env-cmd node tests/support/bootstrap.js",
-    "test": "env-cmd npx synpress run -cf synpress.json",
+    "bootstrap": "env-cmd node tests/e2e/bootstrap.js",
+    "test": "env-cmd npx synpress run -cf synpress.js",
     "start-prod": "http-server build -p 3000 -a localhost",
     "eject": "react-scripts eject"
   },
