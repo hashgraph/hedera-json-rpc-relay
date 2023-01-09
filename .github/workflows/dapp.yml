@@ -70,6 +70,9 @@ jobs:
         env:
           CI: false
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Run the dapp tests
         uses: nick-fields/retry@v2
         with:
