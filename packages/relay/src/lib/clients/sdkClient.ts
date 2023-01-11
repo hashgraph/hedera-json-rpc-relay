@@ -258,7 +258,7 @@ export class SDKClient {
     }
 
     async increaseCostAndRetryExecution(query: Query<any>, baseCost: Hbar, client: Client, maxRetries: number, currentRetry: number, requestId?: string) {
-        const baseMultiplier = 1.1;
+        const baseMultiplier = constants.QUERY_COST_INCREMENTATION_STEP;
         const multiplier = Math.pow(baseMultiplier, currentRetry);
 
         const cost = Hbar.fromTinybars(
