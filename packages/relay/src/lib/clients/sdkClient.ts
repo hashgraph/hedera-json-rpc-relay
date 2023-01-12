@@ -302,11 +302,17 @@ export class SDKClient {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
 
-            const baseCost = await query.getCost(this.clientMain);
-            let {resp, cost} = await this.increaseCostAndRetryExecution(query, baseCost, client, 3, 0, requestId);
-            cost = cost.toTinybars().toNumber();
-            if (cost) {
+            let resp, cost;
+            if (query.paymentTransactionId) {
+                const baseCost = await query.getCost(this.clientMain);
+                const res = await this.increaseCostAndRetryExecution(query, baseCost, client, 3, 0, requestId);
+                resp = res.resp;
+                cost = res.cost.toTinybars().toNumber();
                 this.hbarLimiter.addExpense(cost, currentDateNow);
+            }
+            else {
+                resp = await query.execute(client);
+                cost = query._queryPayment?.toTinybars().toNumber();
             }
 
             this.logger.info(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${Status.Success} (${Status.Success._code}), cost: ${query._queryPayment}`);
