@@ -29,5 +29,12 @@ module.exports = defineConfig({
     baseUrl: 'http://localhost:3000',
     specPattern: 'tests/e2e/specs/**/*.{js,jsx,ts,tsx}',
     supportFile: 'tests/e2e/support.js'
+  },
+  reporter: 'cypress-multi-reporters',
+  reporterOptions: {
+    reporterEnabled: 'spec, mocha-junit-reporter',
+    'mochaJunitReporterOptions': {
+      'includePending': true
+    }
   }
 });

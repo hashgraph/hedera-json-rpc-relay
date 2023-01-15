@@ -14,32 +14,22 @@ jobs:
     timeout-minutes: 35
     permissions:
       contents: write
-    env:
-      DISPLAY: :99
-      QT_X11_NO_MITSHM: 1
-      _X11_NO_MITSHM: 1
-      _MITSHM: 0
-      DBUS_SESSION_BUS_ADDRESS: /dev/null
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
       - name: Setup node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: 18.13.0
-
-      - name: Setup xvfb (Linux)
-        run: |
-          sudo apt-get install -y libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libgconf-2-4 libnss3 libxss1 libasound2 libxtst6 xauth xvfb
-          Xvfb -screen 0 1024x768x24 :99 &
-
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
       - name: Install packages
         run: npm ci
 
       - name: Create .env file
         run: |
-          cp ./packages/server/tests/localAcceptance.env ./dapp-example/.env
+          cp ./dapp-example/localDappCI.env ./dapp-example/.env
           cp ./packages/server/tests/localAcceptance.env .env
 
       - name: Lerna Bootstrap
@@ -54,28 +44,17 @@ jobs:
       - name: Run RPC Server
         run: npm run integration:prerequisite &
 
-      - name: Install dapp dependencies
-        run: cd ./dapp-example/ && npm ci
-
       - name: Check local node
         run: npm run check:node
 
-      - name: Run the dapp bootstrap script
-        run: npm run bootstrap --prefix ./dapp-example/
+      - name: Build, Bootstrap & Test the dapp in Docker
+        run: docker-compose up --exit-code-from synpress
+        working-directory: ./dapp-example/
 
-      - name: Build & Run the dapp
-        run: |
-          npm run build --prefix ./dapp-example/
-          npm run start --prefix ./dapp-example/ &
-        env:
-          CI: false
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
-      - name: Run the dapp tests
-        uses: nick-fields/retry@v2
+      - name: Publish Reports
+        uses: mikepenz/action-junit-report@v3
+        if: always()
         with:
-          max_attempts: 10
-          timeout_minutes: 10
-          command: npm run test --prefix ./dapp-example/
+          check_name: Dapp Test Report
+          report_paths: "**/*.xml"
+          detailed_summary: true
