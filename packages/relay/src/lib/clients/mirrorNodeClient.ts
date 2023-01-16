@@ -90,9 +90,11 @@ export class MirrorNodeClient {
      */
     private readonly logger: Logger;
 
-    private readonly client: AxiosInstance;
+    private readonly restClient: AxiosInstance;
+    private readonly web3Client: AxiosInstance;
 
-    public readonly baseUrl: string;
+    public readonly restUrl: string;
+    public readonly web3Url: string;
 
     /**
      * The metrics register used for metrics tracking.
@@ -133,23 +135,25 @@ export class MirrorNodeClient {
         return axiosClient;
     }
 
-    constructor(baseUrl: string, logger: Logger, register: Registry, axiosClient?: AxiosInstance) {
-        if (axiosClient !== undefined) {
-            this.baseUrl = '';
-            this.client = axiosClient;
+    constructor(restUrl: string, logger: Logger, register: Registry, restClient?: AxiosInstance, web3Url?: string, web3Client?: AxiosInstance) {
+        if (!web3Url) {
+            web3Url = restUrl;
+        }
+
+        if (restClient !== undefined) {
+            this.restUrl = '';
+            this.web3Url = '';
+
+            this.restClient = restClient;
+            this.web3Client = !!web3Client ? web3Client : restClient;
         } else {
-            if (!baseUrl.match(/^https?:\/\//)) {
-                baseUrl = `https://${baseUrl}`;
-            }
+            restUrl = this.buildUrl(restUrl);
+            web3Url = this.buildUrl(web3Url);
 
-            if (!baseUrl.match(/\/$/)) {
-                baseUrl = `${baseUrl}/`;
-            }
-
-            baseUrl = `${baseUrl}api/v1/`;
-
-            this.baseUrl = baseUrl;
-            this.client = axiosClient ? axiosClient : this.createAxiosClient(baseUrl);
+            this.restUrl = restUrl;
+            this.web3Url = web3Url;
+            this.restClient = restClient ? restClient : this.createAxiosClient(restUrl);
+            this.web3Client = web3Client ? web3Client : this.createAxiosClient(web3Url);
         }
 
         this.logger = logger;
@@ -165,7 +169,19 @@ export class MirrorNodeClient {
             registers: [register]
         });
 
-        this.logger.info(`Mirror Node client successfully configured to ${this.baseUrl}`);
+        this.logger.info(`Mirror Node client successfully configured to REST url: ${this.restUrl} and Web3 url: ${this.web3Url} `);
+    }
+    
+    private buildUrl(baseUrl: string) {
+        if (!baseUrl.match(/^https?:\/\//)) {
+            baseUrl = `https://${baseUrl}`;
+        }
+
+        if (!baseUrl.match(/\/$/)) {
+            baseUrl = `${baseUrl}/`;
+        }
+
+        return `${baseUrl}api/v1/`;
     }
 
     private async request(path: string, pathLabel: string, method: REQUEST_METHODS, data?: any, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
@@ -175,22 +191,21 @@ export class MirrorNodeClient {
         try {
             let response;
             if (method === 'GET') {
-                response = await this.client.get(path, {
+                response = await this.restClient.get(path, {
                     headers:{
                         'requestId': requestId || ''
                     }
                 });
             }
             else {
-                response = await this.client.post(path, data, {
+                response = await this.web3Client.post(path, data, {
                     headers:{
                         'requestId': requestId || ''
                     }
                 });
             }
 
-            const
-            ms = Date.now() - start;
+            const ms = Date.now() - start;
             this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${response.status} ${ms} ms`);
             this.mirrorResponseHistogram.labels(pathLabel, response.status).observe(ms);
             return response.data;
@@ -472,7 +487,7 @@ export class MirrorNodeClient {
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
 
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${address}${MirrorNodeClient.GET_STATE_ENDPOINT}${queryParams}`,
+        return this.get(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${address}${MirrorNodeClient.GET_STATE_ENDPOINT}${queryParams}`,
         MirrorNodeClient.GET_STATE_ENDPOINT,
         [400, 404],
         requestId);
@@ -557,7 +572,11 @@ export class MirrorNodeClient {
     }
 
     //exposing mirror node instance for tests
-    public getMirrorNodeInstance(){
-        return this.client;
+    public getMirrorNodeRestInstance(){
+        return this.restClient;
+    }
+
+    public getMirrorNodeWeb3Instance(){
+        return this.web3Client;
     }
 }

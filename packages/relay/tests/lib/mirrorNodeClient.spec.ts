@@ -57,10 +57,10 @@ describe('MirrorNodeClient', async function () {
     expect(mirrorNodeInstance.request).to.exist;
   });
 
-  it('`baseUrl` is exposed and correct', async () => {
+  it('`restUrl` is exposed and correct', async () => {
     const domain = process.env.MIRROR_NODE_URL.replace(/^https?:\/\//, "");
     const prodMirrorNodeInstance = new MirrorNodeClient(domain, logger.child({ name: `mirror-node` }), registry);
-    expect(prodMirrorNodeInstance.baseUrl).to.eq(`https://${domain}/api/v1/`);
+    expect(prodMirrorNodeInstance.restUrl).to.eq(`https://${domain}/api/v1/`);
   });
 
   it('`getQueryParams` general', async () => {
