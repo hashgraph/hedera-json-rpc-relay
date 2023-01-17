@@ -260,13 +260,15 @@ describe("Open RPC Specification", function () {
         validateResponseSchema(methodsResponseSchema.eth_getBlockTransactionCountByNumber, response);
     });
 
-    it('should execute "eth_getCode" with block tag', async function () {
+    it('should execute "eth_getCode" with block tag', async function() {
+        mock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(404);
         const response = await ethImpl.getCode(contractAddress1, 'latest');
 
         validateResponseSchema(methodsResponseSchema.eth_getCode, response);
     });
 
-    it('should execute "eth_getCode" with block number', async function () {
+    it('should execute "eth_getCode" with block number', async function() {
+        mock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(404);
         const response = await ethImpl.getCode(contractAddress1, '0x3');
 
         validateResponseSchema(methodsResponseSchema.eth_getCode, response);

@@ -29,7 +29,7 @@ export default class Assertions {
     static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
     static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
     static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
-    static defaultGasPrice = 720_000_000_000;
+    static defaultGasPrice = 710_000_000_000;
     static datedGasPrice = 570_000_000_000;
     static updatedGasPrice = 640_000_000_000;
     static maxBlockGasLimit = 15_000_000;
@@ -101,11 +101,12 @@ export default class Assertions {
         // Assert transactions
         for (const i in relayResponse.transactions) {
             const tx = relayResponse.transactions[i];
-            const mirrorTx = mirrorTransactions[i];
             if ( hydratedTransactions ) {
+                const mirrorTx = mirrorTransactions.find(mTx => mTx.hash.slice(0,66) === tx.hash);
                 Assertions.transaction(tx, mirrorTx);
             }
             else {
+                const mirrorTx = mirrorTransactions.find(mTx => mTx.hash.slice(0,66) === tx);
                 expect(tx).to.eq(mirrorTx.hash.slice(0, 66));
             }
         }
