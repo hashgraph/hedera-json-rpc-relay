@@ -1096,7 +1096,7 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_PARAMS_ERROR}`);
         }
       });
 
@@ -1111,7 +1111,38 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_PARAMS_ERROR}`);
+        }
+      });
+
+      it('validates Block param is valid block hash', async function() {
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"to": "0x0000000000000000000000000000000000000001"}, { "blockHash": "0x123" }]
+          });
+
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockHash' for BlockHashObject: ${Validator.BLOCK_HASH_ERROR}`);
+        }
+      });
+
+      it('validates Block param is valid block number', async function() {
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_call',
+            'params': [{"to": "0x0000000000000000000000000000000000000001"}, { "blockNumber": "123" }]
+          });
+
+          Assertions.expectedError();
+        } catch (error) {
+          console.log(error.response)
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockNumber' for BlockNumberObject: ${Validator.BLOCK_NUMBER_ERROR}`);
         }
       });
     });
