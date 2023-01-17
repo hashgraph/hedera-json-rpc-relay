@@ -17,8 +17,12 @@ contract Caller {
         return tx.origin;
     }
 
-    function msgSig() public view returns (bytes4) {
+    function msgSig() public pure returns (bytes4) {
         return msg.sig;
+    }
+
+    function msgValue() public payable returns (uint) {
+        return msg.value;
     }
 
     function addressBalance(address addr) public view returns (uint256) {

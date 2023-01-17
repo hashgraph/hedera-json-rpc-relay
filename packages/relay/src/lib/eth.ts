@@ -21,6 +21,7 @@
 import { Eth } from '../index';
 import { Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import {BigNumber as BN} from "bignumber.js";
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
 import { MirrorNodeClient, SDKClient } from './clients';
@@ -977,7 +978,7 @@ export class EthImpl implements Eth {
     // The "to" address must always be 42 chars.
     if (!call.to || call.to.length != 42) {
       const callToExist = call.to && call.to.length ? ` Expected length of 42 chars but was ${call.to.length}.` : '';
-      throw new Error(`${requestIdPrefix}Invalid Contract Address: '${call.to}'.${callToExist}`);
+      throw predefined.INVALID_CONTRACT_ADDRESS(call.to, callToExist);
     }
 
     try {
@@ -995,6 +996,11 @@ export class EthImpl implements Eth {
         }
       }
 
+      let value: string | null = null;
+      if (typeof call.value === 'string') {
+        value = (new BN(call.value)).toString();
+      }
+
       // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
       // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
       if (gas > constants.BLOCK_GAS_LIMIT) {
@@ -1007,10 +1013,16 @@ export class EthImpl implements Eth {
 
       const callData = {
         ...call,
+        gas,
+        value,
         estimate: false
       }
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
-      return EthImpl.prepend0x(contractCallResponse.result);
+      if (contractCallResponse && contractCallResponse.result) {
+        return EthImpl.prepend0x(contractCallResponse.result);
+      }
+
+      return EthImpl.emptyHex;
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
       if (e instanceof JsonRpcError) {

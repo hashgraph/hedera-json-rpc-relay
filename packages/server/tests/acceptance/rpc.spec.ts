@@ -1248,7 +1248,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     defaultCallData = {
                         from: `0x${accounts[0].address}`,
                         to: callerAddress,
-                        gas: 30000,
+                        gas: `0x7530`,
                     };
                 });
 
@@ -1258,10 +1258,9 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: '0x0ec1551d'
                     };
 
-                    const res = await relay.call('eth_call', [callData], requestId);
+                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
                     expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
-                })
-
+                });
 
                 it("002 Should call msgSender", async function () {
                     const callData = {
@@ -1269,8 +1268,8 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: '0xd737d0c7'
                     };
 
-                    const res = await relay.call('eth_call', [callData], requestId);
-                    expect(res).to.eq(callerAddress);
+                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                    expect(res).to.eq(`0x${accounts[0].address.padStart(64, '0')}`);
                 });
 
                 it("003 Should call txOrigin", async function () {
@@ -1279,8 +1278,19 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: '0xf96757d1'
                     };
 
-                    const res = await relay.call('eth_call', [callData], requestId);
-                    expect(res).to.eq(callerAddress);
+                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                    expect(res).to.eq(`0x${accounts[0].address.padStart(64, '0')}`);
+                });
+
+                it("004 Should call msgValue", async function () {
+                    const callData = {
+                        ...defaultCallData,
+                        data: '0xddf363d7',
+                        value: '0x3e8'
+                    };
+
+                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                    expect(res).to.eq('0x00000000000000000000000000000000000000000000000000000000000003e8');
                 });
 
                 it("005 Should call msgSig", async function () {
@@ -1289,7 +1299,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: '0xec3e88cf'
                     };
 
-                    const res = await relay.call('eth_call', [callData], requestId);
+                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
                     expect(res).to.eq('0xec3e88cf00000000000000000000000000000000000000000000000000000000');
                 });
 
@@ -1299,7 +1309,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: '0x0ec1551d'
                     };
 
-                    const res = await relay.call('eth_call', [callData], requestId);
+                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
                     expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
                 });
 
@@ -1309,8 +1319,8 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: '0x3ec4de3800000000000000000000000067d8d32e9bf1a9968a5ff53b87d777aa8ebbee69'
                     };
 
-                    const res = await relay.call('eth_call', [callData], requestId);
-                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                    expect(res).to.eq('0x');
                 });
 
                 it("008 'data' from request body with wrong encoded parameter", async function () {
@@ -1319,29 +1329,27 @@ describe('@api RPC Server Acceptance Tests', function () {
                         data: '0x3ec4de350000000000000000000000000000000000000000000000000000000000000005'
                     };
 
-                    const res = await relay.call('eth_call', [callData], requestId);
-                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000000');
                 });
 
                 it("009 should work for missing 'from' field", async function () {
                     const callData = {
                         to: callerAddress,
-                        gas: 30000,
                         data: '0x0ec1551d'
                     };
 
-                    const res = await relay.call('eth_call', [callData], requestId);
+                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
                     expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
                 });
 
                 it("010 should fail for missing 'to' field", async function () {
                     const callData = {
                         from: `0x${accounts[0].address}`,
-                        gas: 30000,
                         data: '0x0ec1551d'
                     };
 
-                    await relay.callFailing('eth_call', [callData], predefined.INVALID_PARAMETERS, requestId);
+                    await relay.callFailing('eth_call', [callData, 'latest'], predefined.INVALID_CONTRACT_ADDRESS(undefined, ''), requestId);
                 });
 
             });

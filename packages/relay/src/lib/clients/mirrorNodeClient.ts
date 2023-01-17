@@ -494,7 +494,7 @@ export class MirrorNodeClient {
     }
 
     public async postContractCall(callData: string, requestId?: string) {
-        return this.post(MirrorNodeClient.CONTRACT_CALL_ENDPOINT, callData, MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [], requestId);
+        return this.post(MirrorNodeClient.CONTRACT_CALL_ENDPOINT, callData, MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [400], requestId);
     }
 
     getQueryParams(params: object) {

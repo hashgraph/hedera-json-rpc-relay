@@ -160,5 +160,10 @@ export const predefined = {
     name: 'Value too low',
     code: -32602,
     message: 'Value below 10_000_000_000 wei which is 1 tinybar'
+  }),
+  'INVALID_CONTRACT_ADDRESS':  (address, message: string | null) => new JsonRpcError({
+    name: 'Invalid Contract Address',
+    code: -32012,
+    message: `Invalid Contract Address: ${address}. ${message ? `: ${message}` : '' }`
   })
 };
