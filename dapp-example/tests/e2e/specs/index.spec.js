@@ -1,5 +1,5 @@
 import 'cypress-wait-until';
-import * as htsData from '../../src/contracts/.htsTokenInfo.json';
+import * as htsData from '../../../src/contracts/.htsTokenInfo.json';
 
 describe('Test Core Hedera User Scenarios', function() {
   this.timeout(180000);
@@ -58,9 +58,7 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Transfer HBARs', function() {
-    cy.resetMetamaskAccount();
-
-    cy.get('#sendHbarsToField').type('0x54C51b7637BF6fE9709e1e0EBc8b2Ca6a24b0f0A');
+    cy.get('#sendHbarsToField').clear().type('0x54C51b7637BF6fE9709e1e0EBc8b2Ca6a24b0f0A');
     cy.get('#sendHbarsAmountField').clear().type('10000000000000000').trigger('change');
     cy.get('#sendHbarsBtn').should('not.be.disabled').click();
     cy.confirmMetamaskTransaction();
@@ -69,7 +67,6 @@ describe('Test Core Hedera User Scenarios', function() {
   }).timeout(180000);
 
   it('Associate HTS', function() {
-    cy.resetMetamaskAccount();
     cy.get('#htsTokenAssociateBtn').should('not.be.disabled').click();
     cy.confirmMetamaskTransaction();
 

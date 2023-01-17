@@ -503,30 +503,57 @@ export class MirrorNodeClient {
         }
     }
 
-    public async resolveEntityType(entityIdentifier: string, requestId?: string) {
-        const contractResult = await this.getContract(entityIdentifier, requestId);
-        if (contractResult) {
-            return {
-                type: constants.TYPE_CONTRACT,
-                entity: contractResult
-            };
-        }
-        const accountResult = await this.getAccount(entityIdentifier, requestId);
-        if (accountResult) {
-            return {
-                type: constants.TYPE_ACCOUNT,
-                entity: accountResult
-            };
-        }
-        const tokenResult = await this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId);
-        if (tokenResult) {
-            return {
-                type: constants.TYPE_TOKEN,
-                entity: tokenResult
+    public async resolveEntityType(
+      entityIdentifier: string,
+      requestId?: string,
+      searchableTypes: any[] = [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT, constants.TYPE_TOKEN]
+    ) {
+        const buildPromise = (fn) => new Promise((resolve, reject) => fn.then((values) => {
+            if (values == null) reject();
+            resolve(values);
+        }));
+
+        if (searchableTypes.find(t => t === constants.TYPE_CONTRACT)) {
+            const contract = await this.getContract(entityIdentifier, requestId);
+            if (contract) {
+                return {
+                    type: constants.TYPE_CONTRACT,
+                    entity: contract
+                };
             }
         }
 
-        return null;
+        let data;
+        try {
+            const promises = [
+                searchableTypes.find(t => t === constants.TYPE_ACCOUNT) ? buildPromise(this.getAccount(entityIdentifier, requestId)) : Promise.reject(),
+                searchableTypes.find(t => t === constants.TYPE_TOKEN) ? buildPromise(this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId)) : Promise.reject()
+            ];
+            // maps the promises with indices of the promises array
+            // because there is no such method as Promise.anyWithIndex in js
+            // the index is needed afterward for detecting the resolved promise type (contract, account, or token)
+            // @ts-ignore
+            data = await Promise.any(promises.map((promise, index) => promise.then(value => ({ value, index }))));
+        } catch (e) {
+            return null;
+        }
+
+        let type;
+        switch (data.index) {
+            case 0: {
+                type = constants.TYPE_ACCOUNT;
+                break;
+            }
+            case 1: {
+                type = constants.TYPE_TOKEN;
+                break;
+            }
+        }
+
+        return {
+            type,
+            entity: data.value
+        };
     }
 
     //exposing mirror node instance for tests
