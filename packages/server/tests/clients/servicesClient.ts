@@ -291,8 +291,7 @@ export default class ServicesClient {
         const query = new FileContentsQuery()
             .setFileId(fileId);
 
-        const data = await query.execute(this.client);
-        return data;
+        return await query.execute(this.client);
     }
 
     async updateFileContent(fileId: string, content: string, requestId?: string): Promise<void> {
