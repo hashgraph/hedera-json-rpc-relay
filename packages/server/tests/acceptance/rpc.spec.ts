@@ -690,6 +690,55 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(info.created_contract_ids.length).to.be.equal(1);
             });
 
+            it('should execute "eth_sendRawTransaction" and deploy a contract with more than 2 HBAR transaction fee and less than max transaction fee', async function () {
+                const balanceBefore = await relay.getBalance(accounts[2].wallet.address, 'latest', requestId);
+
+                const gasPrice = await relay.gasPrice(requestId);
+                const transaction = {
+                    type: 2,
+                    chainId: Number(CHAIN_ID),
+                    nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
+                    gasLimit: constants.BLOCK_GAS_LIMIT,
+                    data: '0x' + '00'.repeat(40000)
+                };
+
+                const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+                const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+                const balanceAfter = await relay.getBalance(accounts[2].wallet.address, 'latest', requestId);
+                expect(info).to.have.property('contract_id');
+                expect(info.contract_id).to.not.be.null;
+                expect(info).to.have.property('created_contract_ids');
+                expect(info.created_contract_ids.length).to.be.equal(1);
+                const diffInHbars = (balanceBefore - balanceAfter) / constants.TINYBAR_TO_WEIBAR_COEF / 100_000_000;
+                expect(diffInHbars).to.be.greaterThan(2);
+                expect(diffInHbars).to.be.lessThan(gasPrice * constants.BLOCK_GAS_LIMIT / constants.TINYBAR_TO_WEIBAR_COEF / 100_000_000);
+            });
+
+            it('should execute "eth_sendRawTransaction" and deploy a contract with more than max transaction fee', async function () {
+                const gasPrice = await relay.gasPrice(requestId);
+                const transaction = {
+                    type: 2,
+                    chainId: Number(CHAIN_ID),
+                    nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
+                    gasLimit: constants.BLOCK_GAS_LIMIT,
+                    data: '0x' + '00'.repeat(60000)
+                };
+
+                const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                let hasError = false;
+                try {
+                    await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+                } catch (e) {
+                    hasError = true;
+                }
+                expect(hasError).to.be.true;
+            });
+
             describe('Prechecks', async function () {
                 it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
                     const transaction = {

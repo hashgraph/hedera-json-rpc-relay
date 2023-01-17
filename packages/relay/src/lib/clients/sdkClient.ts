@@ -227,6 +227,9 @@ export class SDKClient {
             ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId)
         }
 
+        const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction');
+        ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.BLOCK_GAS_LIMIT)));
+
         return this.executeTransaction(ethereumTransaction, callerName, requestId);  
     }
 
