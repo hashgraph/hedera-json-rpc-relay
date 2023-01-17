@@ -21,7 +21,7 @@
 import path from 'path';
 import axios from 'axios';
 import dotenv from 'dotenv';
-import MockAdapter from 'axios-restMock-adapter';
+import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';

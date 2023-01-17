@@ -974,10 +974,6 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    if (!call.to) {
-      throw predefined.INVALID_PARAMETERS;
-    }
-
     // The "to" address must always be 42 chars.
     if (!call.to || call.to.length != 42) {
       const callToExist = call.to && call.to.length ? ` Expected length of 42 chars but was ${call.to.length}.` : '';
