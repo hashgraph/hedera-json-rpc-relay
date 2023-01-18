@@ -31,6 +31,7 @@ import parentContractJson from '../contracts/Parent.json';
 import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
+import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
 
 describe('@api-chunk-1 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
