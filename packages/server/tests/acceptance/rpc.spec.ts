@@ -1276,7 +1276,8 @@ describe('@api RPC Server Acceptance Tests', function () {
                     data: BASIC_CONTRACT_PING_CALL_DATA
                 };
 
-                await relay.callFailing('eth_call', [callData, 'latest'], predefined.INTERNAL_ERROR(), requestId);
+                const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                expect(res).to.eq('0x');
             });
 
             it('should execute "eth_call" without from field', async function () {

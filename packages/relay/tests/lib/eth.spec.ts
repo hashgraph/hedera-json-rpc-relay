@@ -2232,8 +2232,14 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_call', async function () {
+    const defaultCallData = {
+      "gas": 400000,
+      "value": null
+    }
+
     it('eth_call with no gas', async function () {
       const callData = {
+        ...defaultCallData,
         "from": contractAddress1,
         "to": contractAddress2,
         "data": contractCallData
@@ -2245,11 +2251,11 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_call with no data', async function () {
-
       const callData = {
+        ...defaultCallData,
         "from": contractAddress1,
         "to": contractAddress2,
-        "gas": maxGasLimitHex
+        "gas": maxGasLimit
       };
       web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
 
@@ -2258,11 +2264,11 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_call with no from address', async function () {
-
       const callData = {
+        ...defaultCallData,
         "to": contractAddress2,
         "data": contractCallData,
-        "gas": maxGasLimitHex
+        "gas": maxGasLimit
       };
       web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
       const result = await ethImpl.call(callData, 'latest');
@@ -2271,36 +2277,37 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('eth_call with all fields', async function () {
       const callData = {
+        ...defaultCallData,
         "from": contractAddress1,
         "to": contractAddress2,
         "data": contractCallData,
-        "gas": maxGasLimitHex
+        "gas": maxGasLimit
       };
       web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal("0x00");
     });
 
-    describe('with gas > 15_000_000', async function() {
-      it('caps gas at 15_000_000', async function () {
-        const callData = {
-          "from": contractAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": 50_000_000
-        };
-        web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
-        const result = await ethImpl.call(callData, 'latest');
-        expect(result).to.equal("0x00");
-      });
+    it('caps gas at 15_000_000', async function () {
+      const callData = {
+        ...defaultCallData,
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": 50_000_000
+      };
+      web3Mock.onPost('contracts/call', {...callData, estimate: false, gas: 15_000_000}).reply(200, {result: `0x00`});
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.equal("0x00");
     });
 
     it('SDK returns a precheck error', async function () {
       const callData = {
+        ...defaultCallData,
         "from": contractAddress1,
         "to": contractAddress2,
         "data": contractCallData,
-        "gas": maxGasLimitHex
+        "gas": maxGasLimit
       };
 
       // FIXME this probably is not the real behaviour
@@ -2317,25 +2324,27 @@ describe('Eth calls using MirrorNode', async function () {
     it('eth_call with missing `to` field', async function() {
       try {
         await ethImpl.call({
+          ...defaultCallData,
           "from": contractAddress1,
           "data": contractCallData,
-          "gas": maxGasLimitHex
+          "gas": maxGasLimit
         }, 'latest');
       } catch (error: any) {
-        expect(error.message).to.equal(`Invalid Contract Address: '${undefined}'.`);
+        expect(error.message).to.equal(`Invalid Contract Address: ${undefined}.`);
       }
     });
 
     it('eth_call with wrong `to` field', async function() {
       try {
         await ethImpl.call({
+          ...defaultCallData,
           "from": contractAddress1,
           "to": wrongContractAddress,
           "data": contractCallData,
-          "gas": maxGasLimitHex
+          "gas": maxGasLimit
         }, 'latest');
       } catch (error: any) {
-        expect(error.message).to.equal(`Invalid Contract Address: '${wrongContractAddress}'. Expected length of 42 chars but was ${wrongContractAddress.length}.`);
+        expect(error.message).to.equal(`Invalid Contract Address: ${wrongContractAddress}. Expected length of 42 chars but was ${wrongContractAddress.length}.`);
       }
     });
   });

@@ -977,7 +977,7 @@ export class EthImpl implements Eth {
 
     // The "to" address must always be 42 chars.
     if (!call.to || call.to.length != 42) {
-      const callToExist = call.to && call.to.length ? ` Expected length of 42 chars but was ${call.to.length}.` : '';
+      const callToExist = call.to && call.to.length ? `Expected length of 42 chars but was ${call.to.length}.` : '';
       throw predefined.INVALID_CONTRACT_ADDRESS(call.to, callToExist);
     }
 

@@ -178,7 +178,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_call"', async function () {
-        const response = await ethImpl.call(defaultCallData, 'latest');
+        const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
         validateResponseSchema(methodsResponseSchema.eth_call, response);
     });
 

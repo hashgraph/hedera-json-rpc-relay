@@ -164,6 +164,6 @@ export const predefined = {
   'INVALID_CONTRACT_ADDRESS':  (address, message: string | null) => new JsonRpcError({
     name: 'Invalid Contract Address',
     code: -32012,
-    message: `Invalid Contract Address: ${address}. ${message ? `: ${message}` : '' }`
+    message: `Invalid Contract Address: ${address}.${message ? ` ${message}` : '' }`
   })
 };
