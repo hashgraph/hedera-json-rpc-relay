@@ -14,7 +14,7 @@ export const METHODS = {
       required: true
     },
     1: {
-      type: 'blockParams',
+      type: 'blockNumber',
       required: true
     }
   },
@@ -24,7 +24,7 @@ export const METHODS = {
       required: true
     },
     1: {
-      type: 'blockParams',
+      type: 'blockNumber',
       required: true
     }
   },
@@ -55,7 +55,7 @@ export const METHODS = {
     },
     1: {
       required: true,
-      type: 'blockParams'
+      type: 'blockNumber'
     }
   },
   "eth_call": {
@@ -127,7 +127,7 @@ export const METHODS = {
       type: 'hex'
     },
     2: {
-      type: 'blockParams'
+      type: 'blockNumber'
     }
   },
   "eth_getTransactionByBlockHashAndIndex": {
