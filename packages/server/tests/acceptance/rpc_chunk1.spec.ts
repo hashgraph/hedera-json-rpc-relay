@@ -73,7 +73,7 @@ describe('@api-chunk-1 RPC Server Acceptance Tests', function () {
 
             accounts[0] = await servicesNode.createAliasAccount(10, null, requestId);
             accounts[1] = await servicesNode.createAliasAccount(10, null, requestId);
-            accounts[2] = await servicesNode.createAliasAccount(30, null, requestId);
+            accounts[2] = await servicesNode.createAliasAccount(40, null, requestId);
             contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
