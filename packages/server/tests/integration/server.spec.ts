@@ -609,7 +609,7 @@ describe('RPC Server', async function() {
         }
       });
 
-      it('validates parameter 1 is valid block number', async function() {
+      it('validates parameter 1 is non valid block number', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -620,12 +620,11 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
-
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_PARAMS_ERROR}`);
         }
       });
 
-      it('validates parameter 1 is valid block tag', async function() {
+      it('validates parameter 1 is non valid block tag', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -636,7 +635,37 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_PARAMS_ERROR}`);
+        }
+      });
+
+      it('validates Block param is non valid block hash object', async function() {
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBalance',
+            'params': ["0x0000000000000000000000000000000000000001", { "blockHash": "0x123" }]
+          });
+
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockHash' for BlockHashObject: ${Validator.BLOCK_HASH_ERROR}`);
+        }
+      });
+
+      it('validates Block param is non valid block number object', async function() {
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getBalance',
+            'params': ["0x0000000000000000000000000000000000000001", { "blockNumber": "123" }]
+          });
+
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockNumber' for BlockNumberObject: ${Validator.BLOCK_NUMBER_ERROR}`);
         }
       });
     });
@@ -688,7 +717,7 @@ describe('RPC Server', async function() {
         }
       });
 
-      it('validates parameter 1 is valid block number', async function() {
+      it('validates parameter 1 is non valid block number', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -699,11 +728,11 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_PARAMS_ERROR}`);
         }
       });
 
-      it('validates parameter 1 is valid block tag', async function() {
+      it('validates parameter 1 is non valid block tag', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -714,7 +743,37 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_PARAMS_ERROR}`);
+        }
+      });
+
+      it('validates Block param is non valid block hash object', async function() {
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getCode',
+            'params': ["0x0000000000000000000000000000000000000001", { "blockHash": "0x123" }]
+          });
+          0x1204567890abcde
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockHash' for BlockHashObject: ${Validator.BLOCK_HASH_ERROR}`);
+        }
+      });
+
+      it('validates Block param is non valid block number object', async function() {
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getCode',
+            'params': ["0x0000000000000000000000000000000000000001", { "blockNumber": "123" }]
+          });
+
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockNumber' for BlockNumberObject: ${Validator.BLOCK_NUMBER_ERROR}`);
         }
       });
     });
@@ -904,7 +963,7 @@ describe('RPC Server', async function() {
         }
       });
 
-      it('validates parameter 1 is a valid block number', async function() {
+      it('validates parameter 1 is a non valid block number', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -915,11 +974,11 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_PARAMS_ERROR}`);
         }
       });
 
-      it('validates parameter 1 is a valid block tag', async function() {
+      it('validates parameter 1 is a non valid block tag', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -930,7 +989,37 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_PARAMS_ERROR}`);
+        }
+      });
+
+      it('validates Block param is non valid block hash object', async function() {
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionCount',
+            'params': ["0x0000000000000000000000000000000000000001", { "blockHash": "0x123" }]
+          });
+          0x1204567890abcde
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockHash' for BlockHashObject: ${Validator.BLOCK_HASH_ERROR}`);
+        }
+      });
+
+      it('validates Block param is non valid block number object', async function() {
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getTransactionCount',
+            'params': ["0x0000000000000000000000000000000000000001", { "blockNumber": "123" }]
+          });
+
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockNumber' for BlockNumberObject: ${Validator.BLOCK_NUMBER_ERROR}`);
         }
       });
     });
@@ -1085,7 +1174,7 @@ describe('RPC Server', async function() {
         }
       });
 
-      it('validates Block param is valid block hex', async function() {
+      it('validates Block param is non valid block hex', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -1100,7 +1189,7 @@ describe('RPC Server', async function() {
         }
       });
 
-      it('validates Block param is valid tag', async function() {
+      it('validates Block param is non valid tag', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -1115,7 +1204,7 @@ describe('RPC Server', async function() {
         }
       });
 
-      it('validates Block param is valid block hash', async function() {
+      it('validates Block param is non valid block hash', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -1130,7 +1219,7 @@ describe('RPC Server', async function() {
         }
       });
 
-      it('validates Block param is valid block number', async function() {
+      it('validates Block param is non valid block number', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -1141,7 +1230,6 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          console.log(error.response)
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockNumber' for BlockNumberObject: ${Validator.BLOCK_NUMBER_ERROR}`);
         }
       });
@@ -1383,7 +1471,7 @@ describe('RPC Server', async function() {
         }
       });
 
-      it('validates parameter 1 is valid hex', async function() {
+      it('validates parameter 1 is non valid hex', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -1398,7 +1486,7 @@ describe('RPC Server', async function() {
         }
       });
 
-      it('validates parameter 2 is valid block number', async function() {
+      it('validates parameter 2 is non valid block number', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -1409,11 +1497,11 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 2: ${Validator.BLOCK_NUMBER_ERROR}`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 2: ${Validator.BLOCK_PARAMS_ERROR}`);
         }
       });
 
-      it('validates parameter 2 is valid block tag', async function() {
+      it('validates parameter 2 is non valid block tag', async function() {
         try {
           await this.testClient.post('/', {
             'id': '2',
@@ -1424,7 +1512,37 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 2: ${Validator.BLOCK_NUMBER_ERROR}`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 2: ${Validator.BLOCK_PARAMS_ERROR}`);
+        }
+      });
+
+      it('validates Block param is non valid block hash object', async function() {
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getStorageAt',
+            'params': ["0x0000000000000000000000000000000000000001", "0x1", { "blockHash": "0x123" }]
+          });
+          0x1204567890abcde
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockHash' for BlockHashObject: ${Validator.BLOCK_HASH_ERROR}`);
+        }
+      });
+
+      it('validates Block param is non valid block number object', async function() {
+        try {
+          await this.testClient.post('/', {
+            'id': '2',
+            'jsonrpc': '2.0',
+            'method': 'eth_getStorageAt',
+            'params': ["0x0000000000000000000000000000000000000001", "0x1", { "blockNumber": "123" }]
+          });
+
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'blockNumber' for BlockNumberObject: ${Validator.BLOCK_NUMBER_ERROR}`);
         }
       });
     });

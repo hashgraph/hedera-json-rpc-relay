@@ -1300,7 +1300,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
             });
 
-            it('should fail to execute "eth_call" with correct block number', async function () {
+            it('should execute "eth_call" with correct block number', async function () {
                 const callData = {
                     from: '0x' + accounts[2].address,
                     to: evmAddress,
@@ -1311,7 +1311,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
             });
 
-            it('should fail to execute "eth_call" with correct block hash', async function () {
+            it('should execute "eth_call" with correct block hash object', async function () {
                 const blockHash = '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3';
                 const callData = {
                     from: '0x' + accounts[2].address,
@@ -1323,7 +1323,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
             });
 
-            it('should fail to execute "eth_call" with correct block hash', async function () {
+            it('should execute "eth_call" with correct block number object', async function () {
                 const callData = {
                     from: '0x' + accounts[2].address,
                     to: evmAddress,
