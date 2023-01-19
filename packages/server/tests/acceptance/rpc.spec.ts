@@ -1303,6 +1303,164 @@ describe('@api RPC Server Acceptance Tests', function () {
             });
 
             describe('Caller contract', () => {
+                let callerContract, callerAddress, defaultCallData, activeAccount;
+
+                const describes = [
+                    {
+                        title: 'With long-zero address',
+                        beforeFunc: async function () {
+                            activeAccount = accounts[0];
+                            callerContract = await servicesNode.deployContract(callerContractJson);
+                            // Wait for creation to propagate
+                            const callerMirror = await mirrorNode.get(`/contracts/${callerContract.contractId}`, requestId);
+                            callerAddress = `0x${callerContract.contractId.toSolidityAddress()}`;
+                            defaultCallData = {
+                                from: `0x${activeAccount.address}`,
+                                to: callerAddress,
+                                gas: `0x7530`,
+                            };
+                        }
+                    },
+                    {
+                        title: 'With evm address',
+                        beforeFunc: async function () {
+                            activeAccount = accounts[3];
+                            callerContract = await Utils.deployContractWithEthers([], callerContractJson, activeAccount.wallet, relay);
+                            // Wait for creation to propagate
+                            const callerMirror = await mirrorNode.get(`/contracts/${callerContract.address}`, requestId);
+                            callerAddress = callerMirror.evm_address;
+                            defaultCallData = {
+                                from: `0x${activeAccount.address}`,
+                                to: callerAddress,
+                                gas: `0x7530`,
+                            };
+                        }
+                    }
+                ]
+
+
+                for(let desc of describes) {
+                    describe(desc.title, () => {
+                        before(desc.beforeFunc);
+
+                        it('001 Should call pureMultiply', async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0x0ec1551d'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                        });
+
+                        it("002 Should call msgSender", async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0xd737d0c7'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            expect(res).to.eq(`0x${activeAccount.address.padStart(64, '0')}`);
+                        });
+
+                        it("003 Should call txOrigin", async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0xf96757d1'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            expect(res).to.eq(`0x${activeAccount.address.padStart(64, '0')}`);
+                        });
+
+                        it("004 Should call msgValue", async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0xddf363d7',
+                                value: '0x3e8'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            expect(res).to.eq('0x00000000000000000000000000000000000000000000000000000000000003e8');
+                        });
+
+                        it("005 Should call msgSig", async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0xec3e88cf'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            expect(res).to.eq('0xec3e88cf00000000000000000000000000000000000000000000000000000000');
+                        });
+
+                        it("006 Should call addressBalance", async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0x0ec1551d'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                        });
+
+                        it("007 'data' from request body with wrong method signature", async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0x3ec4de3800000000000000000000000067d8d32e9bf1a9968a5ff53b87d777aa8ebbee69'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            expect(res).to.eq('0x');
+                        });
+
+                        it("008 'data' from request body with wrong encoded parameter", async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0x3ec4de350000000000000000000000000000000000000000000000000000000000000005'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000000');
+                        });
+
+                        it("009 should work for missing 'from' field", async function () {
+                            const callData = {
+                                to: callerAddress,
+                                data: '0x0ec1551d'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                        });
+
+                        it("010 should fail for missing 'to' field", async function () {
+                            const callData = {
+                                from: `0x${accounts[0].address}`,
+                                data: '0x0ec1551d'
+                            };
+
+                            await relay.callFailing('eth_call', [callData, 'latest'], predefined.INVALID_CONTRACT_ADDRESS(undefined, ''), requestId);
+                        });
+
+                        it("011 Should fail when calling msgValue with more value than available balance", async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0xddf363d7',
+                                value: '0x3e80000000'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+
+                            // TODO assert correct message
+                            expect(res).to.eq('0x');
+                        });
+                    })
+                }
+            });
+
+
+            describe('Caller contract deployed with evm_address', () => {
                 let callerContract, callerAddress, defaultCallData;
 
                 before(async function () {
@@ -1326,97 +1484,6 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const res = await relay.call('eth_call', [callData, 'latest'], requestId);
                     expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
                 });
-
-                it("002 Should call msgSender", async function () {
-                    const callData = {
-                        ...defaultCallData,
-                        data: '0xd737d0c7'
-                    };
-
-                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                    expect(res).to.eq(`0x${accounts[0].address.padStart(64, '0')}`);
-                });
-
-                it("003 Should call txOrigin", async function () {
-                    const callData = {
-                        ...defaultCallData,
-                        data: '0xf96757d1'
-                    };
-
-                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                    expect(res).to.eq(`0x${accounts[0].address.padStart(64, '0')}`);
-                });
-
-                it("004 Should call msgValue", async function () {
-                    const callData = {
-                        ...defaultCallData,
-                        data: '0xddf363d7',
-                        value: '0x3e8'
-                    };
-
-                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                    expect(res).to.eq('0x00000000000000000000000000000000000000000000000000000000000003e8');
-                });
-
-                it("005 Should call msgSig", async function () {
-                    const callData = {
-                        ...defaultCallData,
-                        data: '0xec3e88cf'
-                    };
-
-                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                    expect(res).to.eq('0xec3e88cf00000000000000000000000000000000000000000000000000000000');
-                });
-
-                it("006 Should call addressBalance", async function () {
-                    const callData = {
-                        ...defaultCallData,
-                        data: '0x0ec1551d'
-                    };
-
-                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
-                });
-
-                it("007 'data' from request body with wrong method signature", async function () {
-                    const callData = {
-                        ...defaultCallData,
-                        data: '0x3ec4de3800000000000000000000000067d8d32e9bf1a9968a5ff53b87d777aa8ebbee69'
-                    };
-
-                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                    expect(res).to.eq('0x');
-                });
-
-                it("008 'data' from request body with wrong encoded parameter", async function () {
-                    const callData = {
-                        ...defaultCallData,
-                        data: '0x3ec4de350000000000000000000000000000000000000000000000000000000000000005'
-                    };
-
-                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000000');
-                });
-
-                it("009 should work for missing 'from' field", async function () {
-                    const callData = {
-                        to: callerAddress,
-                        data: '0x0ec1551d'
-                    };
-
-                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                    expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
-                });
-
-                it("010 should fail for missing 'to' field", async function () {
-                    const callData = {
-                        from: `0x${accounts[0].address}`,
-                        data: '0x0ec1551d'
-                    };
-
-                    await relay.callFailing('eth_call', [callData, 'latest'], predefined.INVALID_CONTRACT_ADDRESS(undefined, ''), requestId);
-                });
-
             });
         });
 
