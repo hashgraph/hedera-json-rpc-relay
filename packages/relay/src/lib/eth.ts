@@ -603,12 +603,6 @@ export class EthImpl implements Eth {
       }
     }
 
-    // Cache is only set for `not found` balances
-    const cachedLabel = `getBalance.${account}.${blockNumberOrTag}`;
-    const cachedResponse: string | undefined = this.cache.get(cachedLabel);
-    if (cachedResponse != undefined) {
-      return cachedResponse;
-    }
     let blockNumber = null;
     let balanceFound = false;
     let weibars: BigNumber | number = 0;
@@ -678,7 +672,6 @@ export class EthImpl implements Eth {
 
       if (!balanceFound) {
         this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
-        this.cache.set(cachedLabel, EthImpl.zeroHex);
         return EthImpl.zeroHex;
       }
 
