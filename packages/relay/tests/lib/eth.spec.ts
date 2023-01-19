@@ -2237,6 +2237,11 @@ describe('Eth calls using MirrorNode', async function () {
       "value": null
     }
 
+    // FIXME temporary workaround until precompiles are implemented in Mirror node evm module
+    beforeEach(() => {
+      restMock.onGet(`tokens/${defaultContractResults.results[1].contract_id}`).reply(404, null);
+    })
+
     it('eth_call with no gas', async function () {
       const callData = {
         ...defaultCallData,

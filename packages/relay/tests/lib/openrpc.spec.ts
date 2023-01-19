@@ -128,6 +128,7 @@ describe("Open RPC Specification", function () {
         mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
         mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
         mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, defaultDetailedContractResults3);
+        mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, null);
         mock.onGet(`accounts/${contractAddress1}`).reply(200, { account: contractAddress1 });
         mock.onGet(`accounts/${contractAddress3}`).reply(200, { account: contractAddress3 });
         mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
