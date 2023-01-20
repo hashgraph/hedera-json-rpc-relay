@@ -690,6 +690,55 @@ describe('@api RPC Server Acceptance Tests', function () {
                 expect(info.created_contract_ids.length).to.be.equal(1);
             });
 
+            it('should execute "eth_sendRawTransaction" and deploy a contract with more than 2 HBAR transaction fee and less than max transaction fee', async function () {
+                const balanceBefore = await relay.getBalance(accounts[2].wallet.address, 'latest', requestId);
+
+                const gasPrice = await relay.gasPrice(requestId);
+                const transaction = {
+                    type: 2,
+                    chainId: Number(CHAIN_ID),
+                    nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
+                    gasLimit: constants.BLOCK_GAS_LIMIT,
+                    data: '0x' + '00'.repeat(40000)
+                };
+
+                const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+                const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+                const balanceAfter = await relay.getBalance(accounts[2].wallet.address, 'latest', requestId);
+                expect(info).to.have.property('contract_id');
+                expect(info.contract_id).to.not.be.null;
+                expect(info).to.have.property('created_contract_ids');
+                expect(info.created_contract_ids.length).to.be.equal(1);
+                const diffInHbars = (balanceBefore - balanceAfter) / constants.TINYBAR_TO_WEIBAR_COEF / 100_000_000;
+                expect(diffInHbars).to.be.greaterThan(2);
+                expect(diffInHbars).to.be.lessThan(gasPrice * constants.BLOCK_GAS_LIMIT / constants.TINYBAR_TO_WEIBAR_COEF / 100_000_000);
+            });
+
+            it('should execute "eth_sendRawTransaction" and deploy a contract with more than max transaction fee', async function () {
+                const gasPrice = await relay.gasPrice(requestId);
+                const transaction = {
+                    type: 2,
+                    chainId: Number(CHAIN_ID),
+                    nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
+                    gasLimit: constants.BLOCK_GAS_LIMIT,
+                    data: '0x' + '00'.repeat(60000)
+                };
+
+                const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                let hasError = false;
+                try {
+                    await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+                } catch (e) {
+                    hasError = true;
+                }
+                expect(hasError).to.be.true;
+            });
+
             describe('Prechecks', async function () {
                 it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
                     const transaction = {
@@ -1249,6 +1298,101 @@ describe('@api RPC Server Acceptance Tests', function () {
 
                 const res = await relay.call('eth_call', [callData, 'latest'], requestId);
                 expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+            });
+
+            it('should execute "eth_call" with correct block number', async function () {
+                const callData = {
+                    from: '0x' + accounts[2].address,
+                    to: evmAddress,
+                    data: BASIC_CONTRACT_PING_CALL_DATA
+                };
+                
+                const res = await relay.call('eth_call', [callData, '0x1'], requestId);
+                expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+            });
+
+            it('should execute "eth_call" with correct block hash object', async function () {
+                const blockHash = '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3';
+                const callData = {
+                    from: '0x' + accounts[2].address,
+                    to: evmAddress,
+                    data: BASIC_CONTRACT_PING_CALL_DATA
+                };
+                
+                const res = await relay.call('eth_call', [callData, {'blockHash' : blockHash}], requestId);
+                expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+            });
+
+            it('should execute "eth_call" with correct block number object', async function () {
+                const callData = {
+                    from: '0x' + accounts[2].address,
+                    to: evmAddress,
+                    data: BASIC_CONTRACT_PING_CALL_DATA
+                };
+                
+                const res = await relay.call('eth_call', [callData, {'blockNumber' : '0x1'}], requestId);
+                expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+            });
+
+            it('should fail to execute "eth_call" with wrong block tag', async function () {
+                const callData = {
+                    from: '0x' + accounts[2].address,
+                    to: evmAddress,
+                    data: BASIC_CONTRACT_PING_CALL_DATA
+                };
+                
+                try {
+                    await relay.call('eth_call', [callData, 'newest'], requestId);
+                    Assertions.expectedError();
+                } catch (error) {
+                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending'));
+                }
+            });
+
+            it('should fail to execute "eth_call" with wrong block number', async function () {
+                const callData = {
+                    from: '0x' + accounts[2].address,
+                    to: evmAddress,
+                    data: BASIC_CONTRACT_PING_CALL_DATA
+                };
+                
+                try {
+                    await relay.call('eth_call', [callData, '123'], requestId);
+                    Assertions.expectedError();
+                } catch (error) {
+                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending'));
+                }
+            });
+
+            it('should fail to execute "eth_call" with wrong block hash object', async function () {
+                const callData = {
+                    from: '0x' + accounts[2].address,
+                    to: evmAddress,
+                    data: BASIC_CONTRACT_PING_CALL_DATA
+                };
+                
+                try {
+                    await relay.call('eth_call', [callData, {'blockHash' : '0x123'}], requestId);
+                    Assertions.expectedError();
+                } catch (error) {
+
+                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block'));
+                }
+            });
+
+            it('should fail to execute "eth_call" with wrong block number object', async function () {
+                const callData = {
+                    from: '0x' + accounts[2].address,
+                    to: evmAddress,
+                    data: BASIC_CONTRACT_PING_CALL_DATA
+                };
+                
+                try {
+                    await relay.call('eth_call', [callData, {'blockNumber' : '123'}], requestId);
+                    Assertions.expectedError();
+                } catch (error) {
+                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"'));
+                }
             });
         });
 

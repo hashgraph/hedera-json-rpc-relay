@@ -227,6 +227,9 @@ export class SDKClient {
             ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId)
         }
 
+        const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction');
+        ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.BLOCK_GAS_LIMIT)));
+
         return this.executeTransaction(ethereumTransaction, callerName, requestId);  
     }
 
@@ -254,10 +257,31 @@ export class SDKClient {
                 .setPaymentTransactionId(TransactionId.generate(this.clientMain.operatorAccountId));
         }
 
-        const cost = await contractCallQuery
-            .getCost(this.clientMain);
-        return this.executeQuery(contractCallQuery
-            .setQueryPayment(cost), this.clientMain, callerName, requestId);
+        return this.executeQuery(contractCallQuery, this.clientMain, callerName, requestId);
+    }
+
+    async increaseCostAndRetryExecution(query: Query<any>, baseCost: Hbar, client: Client, maxRetries: number, currentRetry: number, requestId?: string) {
+        const baseMultiplier = constants.QUERY_COST_INCREMENTATION_STEP;
+        const multiplier = Math.pow(baseMultiplier, currentRetry);
+
+        const cost = Hbar.fromTinybars(
+            baseCost._valueInTinybar.multipliedBy(multiplier).toFixed(0)
+        );
+
+        try {
+            const resp = await query.setQueryPayment(cost).execute(client);
+            return {resp, cost};
+        }
+        catch(e: any) {
+            const sdkClientError = new SDKClientError(e);
+            if (maxRetries > currentRetry && sdkClientError.isInsufficientTxFee()) {
+                const newRetry = currentRetry + 1;
+                this.logger.info(`${requestId} Retrying query execution with increased cost, retry number: ${newRetry}`);
+                return await this.increaseCostAndRetryExecution(query, baseCost, client, maxRetries, newRetry, requestId);
+            }
+
+            throw e;
+        }
     }
 
     private convertGasPriceToTinyBars = (feeComponents: FeeComponents | undefined, exchangeRates: ExchangeRates) => {
@@ -281,10 +305,17 @@ export class SDKClient {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
 
-            const resp = await query.execute(client);
-            const cost = query._queryPayment?.toTinybars().toNumber();
-            if (cost) {
+            let resp, cost;
+            if (query.paymentTransactionId) {
+                const baseCost = await query.getCost(this.clientMain);
+                const res = await this.increaseCostAndRetryExecution(query, baseCost, client, 3, 0, requestId);
+                resp = res.resp;
+                cost = res.cost.toTinybars().toNumber();
                 this.hbarLimiter.addExpense(cost, currentDateNow);
+            }
+            else {
+                resp = await query.execute(client);
+                cost = query._queryPayment?.toTinybars().toNumber();
             }
 
             this.logger.info(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${Status.Success} (${Status.Success._code}), cost: ${query._queryPayment}`);

@@ -23,12 +23,24 @@ export const TYPES = {
     error: Constants.BLOCK_HASH_ERROR
   },
   'blockNumber': {
-    test: (param: string) => /^0[xX]([1-9A-Fa-f]+[0-9A-Fa-f]{0,13}|0)$/.test(param) && Number.MAX_SAFE_INTEGER >= Number(param) || ["earliest", "latest", "pending"].includes(param),
+    test: (param: string) => /^0[xX]([1-9A-Fa-f][0-9A-Fa-f]{0,13}|0)$/.test(param) && Number.MAX_SAFE_INTEGER >= Number(param) || ["earliest", "latest", "pending"].includes(param),
     error: Constants.BLOCK_NUMBER_ERROR
   },
   'boolean': {
     test: (param: boolean) => param === true || param === false,
     error: 'Expected boolean type'
+  },
+  'blockParams': {
+    test: (param: any) => {
+      if(Object.prototype.toString.call(param) === "[object Object]") {
+        if (param.hasOwnProperty('blockHash')) {
+          return new Validator.BlockHashObject(param).validate();
+        }
+        return new Validator.BlockNumberObject(param).validate();
+      }
+      return /^0[xX]([1-9A-Fa-f]+[0-9A-Fa-f]{0,13}|0)$/.test(param) && Number.MAX_SAFE_INTEGER >= Number(param) || ["earliest", "latest", "pending"].includes(param)
+    },
+    error: Constants.BLOCK_PARAMS_ERROR
   },
   "filter": {
     test: (param: any) => {

@@ -51,5 +51,9 @@ export class SDKClientError extends Error {
     return this.isValidNetworkError() && 
       (this.statusCode === Status.InvalidContractId._code || this.message?.includes(Status.InvalidContractId.toString()));
   }
+
+  public isInsufficientTxFee(): boolean {
+    return this.statusCode === Status.InsufficientTxFee._code;
+  }
 }
   
