@@ -2,6 +2,16 @@ import { Validator } from ".";
 import { predefined } from '@hashgraph/json-rpc-relay';
 
 export const OBJECTS_VALIDATIONS = {
+  "blockHashObject": {
+    "blockHash": {
+      type: "blockHash"
+    }
+  },
+  "blockNumberObject": {
+    "blockNumber": {
+      type: "blockNumber"
+    }
+  },
   "filter": {
     "blockHash": {
       type: "blockHash"
@@ -118,3 +128,38 @@ export class FilterObject {
     return this.constructor.name;
   }
 };
+
+export class BlockHashObject {
+  blockHash: string;
+
+  constructor (param: any) {
+    Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.blockHashObject, this.name());
+    this.blockHash = param.blockHash;
+  }
+
+  validate() {
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.blockHashObject);
+  }
+
+  name() {
+    return this.constructor.name;
+  }
+};
+
+export class BlockNumberObject {
+  blockNumber: string;
+
+  constructor (param: any) {
+    Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.blockNumberObject, this.name());
+    this.blockNumber = param.blockNumber;
+  }
+
+  validate() {
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.blockNumberObject);
+  }
+
+  name() {
+    return this.constructor.name;
+  }
+};
+
