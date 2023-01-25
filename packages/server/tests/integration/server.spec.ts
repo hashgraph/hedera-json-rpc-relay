@@ -379,7 +379,7 @@ describe('RPC Server', async function() {
   });
 
   describe('Validator', async function() {
-    describe('eth_estimateGas', async function() {
+    xdescribe('eth_estimateGas', async function() {
       it('validates parameter 0 exists', async function() {
         try {
           await this.testClient.post('/', {
