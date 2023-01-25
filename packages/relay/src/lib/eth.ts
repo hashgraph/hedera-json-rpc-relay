@@ -1004,25 +1004,28 @@ export class EthImpl implements Eth {
       // Execute the call and get the response
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}"`, call.to, gas, call.data, call.from);
 
-      // FIXME temporary workaround until precompiles are implemented in Mirror node evm module
-      const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
-      if (!isHts) {
-        const callData = {
-          ...call,
-          gas,
-          value,
-          estimate: false
+      // ETH_CALL_CONSENSUS = false enables the use of Mirror node
+      if (process.env.ETH_CALL_CONSENSUS && process.env.ETH_CALL_CONSENSUS != 'true') {
+        // FIXME temporary workaround until precompiles are implemented in Mirror node evm module
+        const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
+        if (!isHts) {
+          const callData = {
+            ...call,
+            gas,
+            value,
+            estimate: false
+          }
+          const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
+          if (contractCallResponse && contractCallResponse.result) {
+            return EthImpl.prepend0x(contractCallResponse.result);
+          }
+          return EthImpl.emptyHex;
         }
-        const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
-        if (contractCallResponse && contractCallResponse.result) {
-          return EthImpl.prepend0x(contractCallResponse.result);
-        }
-        return EthImpl.emptyHex;
       }
-      else {
-        const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
-        return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
-      }
+
+      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
+      return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
+
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
       if (e instanceof JsonRpcError) {
