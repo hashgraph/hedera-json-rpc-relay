@@ -1,12 +1,13 @@
 export const METHODS = {
+  // TODO: Implement this check once the method is completely ready
   "eth_estimateGas": {
-    0: {
-      type: 'transaction',
-      required: true
-    },
-    1: {
-      type: 'blockNumber'
-    }
+  //   0: {
+  //     type: 'transaction',
+  //     required: true
+  //   },
+  //   1: {
+  //     type: 'blockNumber'
+  //   }
   },
   "eth_getBalance": {
     0: {

@@ -46,12 +46,43 @@ task('contract-call', async (taskArgs) => {
   return contractCall(taskArgs.contractAddress, taskArgs.msg);
 });
 
+task('test-previewnet', async (taskArgs) => {
+  // const hollowWallet = hre.ethers.Wallet.createRandom().connect(ethers.provider);
+  const hollowWallet = {address: '0x27ba0FadDb727a3c710d0fC2dcaFa79cEA3331f2'};
+  console.log(hollowWallet.address);
+  const signer = (await hre.ethers.getSigners())[0];
+  console.log(await hre.ethers.provider.getBalance(hollowWallet.address));
+  console.log(await hre.ethers.provider.getBalance(signer.address));
+});
+
 module.exports = {
   solidity: '0.8.4',
-  defaultNetwork: 'relay',
+  defaultNetwork: 'h_previewnet',
   networks: {
-    relay: {
-      url: process.env.RELAY_ENDPOINT
+    h_relay: {
+      url: 'http://localhost:7546',
+      accounts: [
+        "0x484961ec6c67c270dc5659ea8bb61489967c6acc574d81b1e046e072d5d2436d",
+        "0xb46751179bc8aa9e129d34463e46cd924055112eb30b31637b5081b56ad96129",
+      ],
+      chainId: 296
+    },
+    h_testnet: {
+      timeout: 600_000,
+      url: "https://testnet.hashio.io/api",
+      accounts: [
+        "0x484961ec6c67c270dc5659ea8bb61489967c6acc574d81b1e046e072d5d2436d",
+        "0xb46751179bc8aa9e129d34463e46cd924055112eb30b31637b5081b56ad96129",
+      ],
+      chainId: 296
+    },
+    h_previewnet: {
+      timeout: 600_000,
+      url: "https://previewnet.hashio.io/api",
+      accounts: [
+        "0x551692d20bc9e0e704f9165533ffef060f5f6d33359078fe29d3c35958c4c743",
+      ],
+      chainId: 297
     }
   }
 };
