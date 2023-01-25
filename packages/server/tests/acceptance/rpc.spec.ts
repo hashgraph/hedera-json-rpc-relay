@@ -1522,7 +1522,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                                 data: '0x0ec1551d'
                             };
 
-                            await relay.callFailing('eth_call', [callData, 'latest'], predefined.INVALID_CONTRACT_ADDRESS(undefined, ''), requestId);
+                            await relay.callFailing('eth_call', [callData, 'latest'], predefined.INVALID_CONTRACT_ADDRESS(undefined), requestId);
                         });
 
                         // value is processed only when eth_call goes through the mirror node

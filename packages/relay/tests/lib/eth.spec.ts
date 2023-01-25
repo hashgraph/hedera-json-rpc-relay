@@ -2396,7 +2396,7 @@ describe('Eth calls using MirrorNode', async function () {
       process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
     })
 
-    // FIXME temporary workaround until precompiles are implemented in Mirror node evm module
+    //temporary workaround until precompiles are implemented in Mirror node evm module
     beforeEach(() => {
       restMock.onGet(`tokens/${defaultContractResults.results[1].contract_id}`).reply(404, null);
     })

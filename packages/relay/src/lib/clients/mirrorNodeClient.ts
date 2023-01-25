@@ -222,7 +222,8 @@ export class MirrorNodeClient {
         return this.request(path, pathLabel, 'GET', null, allowedErrorStatuses, requestId);
     }
 
-    async post(path: string, data: any = {}, pathLabel: string, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
+    async post(path: string, data: any, pathLabel: string, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
+        if (!data) data = {};
         return this.request(path, pathLabel, 'POST', data, allowedErrorStatuses, requestId);
     }
 

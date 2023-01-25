@@ -970,24 +970,12 @@ export class EthImpl implements Eth {
 
     // The "to" address must always be 42 chars.
     if (!call.to || call.to.length != 42) {
-      const callToExist = call.to && call.to.length ? `Expected length of 42 chars but was ${call.to.length}.` : '';
-      throw predefined.INVALID_CONTRACT_ADDRESS(call.to, callToExist);
+      throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
 
     try {
       // Get a reasonable value for "gas" if it is not specified.
-      let gas: number;
-      if (typeof call.gas === 'string') {
-        gas = Number(call.gas);
-      } else {
-
-        // FIXME should we have a default value like this?
-        if (call.gas == null) {
-          gas = 400_000;
-        } else {
-          gas = call.gas;
-        }
-      }
+      let gas = Number(call.gas) || 400_000;
 
       let value: string | null = null;
       if (typeof call.value === 'string') {
@@ -1006,7 +994,7 @@ export class EthImpl implements Eth {
 
       // ETH_CALL_CONSENSUS = false enables the use of Mirror node
       if (process.env.ETH_CALL_CONSENSUS && process.env.ETH_CALL_CONSENSUS != 'true') {
-        // FIXME temporary workaround until precompiles are implemented in Mirror node evm module
+        //temporary workaround until precompiles are implemented in Mirror node evm module
         const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
         if (!isHts) {
           const callData = {
