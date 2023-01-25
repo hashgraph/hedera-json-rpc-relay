@@ -65,7 +65,7 @@ export const METHODS = {
     },
     1: {
       required: true,
-      type: 'blockNumber'
+      type: 'blockParams'
     }
   },
   "eth_sendRawTransaction": {

@@ -604,12 +604,6 @@ export class EthImpl implements Eth {
       }
     }
 
-    // Cache is only set for `not found` balances
-    const cachedLabel = `getBalance.${account}.${blockNumberOrTag}`;
-    const cachedResponse: string | undefined = this.cache.get(cachedLabel);
-    if (cachedResponse != undefined) {
-      return cachedResponse;
-    }
     let blockNumber = null;
     let balanceFound = false;
     let weibars: BigNumber | number = 0;
@@ -679,7 +673,6 @@ export class EthImpl implements Eth {
 
       if (!balanceFound) {
         this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
-        this.cache.set(cachedLabel, EthImpl.zeroHex);
         return EthImpl.zeroHex;
       }
 
@@ -1073,7 +1066,7 @@ export class EthImpl implements Eth {
 
     return new Transaction({
       accessList: undefined, // we don't support access lists, so punt for now
-      blockHash: contractResult.block_hash.substring(0, 66),
+      blockHash: EthImpl.toHash32(contractResult.block_hash),
       blockNumber: EthImpl.numberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
       from: fromAddress,
@@ -1260,7 +1253,7 @@ export class EthImpl implements Eth {
       }
     }
 
-    const blockHash = blockResponse.hash.substring(0, 66);
+    const blockHash = EthImpl.toHash32(blockResponse.hash);
     const transactionArray = showDetails ? transactionObjects : transactionHashes;
     return new Block({
       baseFeePerGas: await this.gasPrice(requestId),
@@ -1350,7 +1343,7 @@ export class EthImpl implements Eth {
           const sSig = contractResultDetails.s === null ? null : contractResultDetails.s.substring(0, 66);
           return new Transaction({
             accessList: undefined, // we don't support access lists for now, so punt
-            blockHash: contractResultDetails.block_hash.substring(0, 66),
+            blockHash: EthImpl.toHash32(contractResultDetails.block_hash),
             blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
             chainId: contractResultDetails.chain_id,
             from: contractResultDetails.from.substring(0, 42),

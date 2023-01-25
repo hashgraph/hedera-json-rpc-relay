@@ -171,9 +171,10 @@ describe('@erc20 Acceptance Tests', async function () {
                                 });
 
                                 it('emits a transfer event', async function () {
-                                    await expect(tx)
-                                        .to.emit(contract, 'Transfer')
-                                        .withArgs(tokenOwnerWallet.address, toWallet.address, amount);
+                                    const transferEvent = (await tx.wait()).events.filter(e => e.event === 'Transfer')[0].args;
+                                    expect(transferEvent.from).to.eq(tokenOwnerWallet.address);
+                                    expect(transferEvent.to).to.eq(toWallet.address);
+                                    expect(transferEvent.value).to.eq(amount);
                                 });
 
                                 it ('other account transfers tokens back to owner', async function () {
@@ -194,9 +195,10 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 it('emits an approval event', async function () {
                                     const allowance = await contract.allowance(tokenOwner, spender);
-                                    await expect(tx)
-                                        .to.emit(contract, 'Approval')
-                                        .withArgs(tokenOwnerWallet.address, spenderWallet.address, allowance);
+                                    const approvalEvent = (await tx.wait()).events.filter(e => e.event === 'Approval')[0].args;
+                                    expect(approvalEvent.owner).to.eq(tokenOwnerWallet.address);
+                                    expect(approvalEvent.spender).to.eq(spenderWallet.address);
+                                    expect(approvalEvent.value).to.eq(allowance);
                                 });
 
                                 describe('when the token owner has enough balance', function () {
@@ -224,9 +226,10 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     it('emits a transfer event', async function () {
-                                        await expect(tx)
-                                            .to.emit(contract, 'Transfer')
-                                            .withArgs(tokenOwnerWallet.address, toWallet.address, amount);
+                                        const transferEvent = (await tx.wait()).events.filter(e => e.event === 'Transfer')[0].args;
+                                        expect(transferEvent.from).to.eq(tokenOwnerWallet.address);
+                                        expect(transferEvent.to).to.eq(toWallet.address);
+                                        expect(transferEvent.value).to.eq(amount);
                                     });
                                 });
 
