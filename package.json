@@ -21,9 +21,9 @@
     },
     "scripts": {
         "acceptancetest": "ts-mocha packages/server/tests/acceptance/index.spec.ts --exit",
-        "acceptancetest:api_chunk1": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-chunk-1' --exit",
-        "acceptancetest:api_chunk2": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-chunk-2' --exit",
-        "acceptancetest:api_chunk3": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-chunk-3' --exit",
+        "acceptancetest:api_batch1": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-batch-1' --exit",
+        "acceptancetest:api_batch2": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-batch-2' --exit",
+        "acceptancetest:api_batch3": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-batch-3' --exit",
         "acceptancetest:erc20": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@erc20' --exit",
         "acceptancetest:ratelimiter": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@ratelimiter' --exit",
         "acceptancetest:tokencreate": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokencreate' --exit",

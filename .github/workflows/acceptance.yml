@@ -8,23 +8,23 @@ on:
     tags: [v*]
 
 jobs:
-  api_chunk_1:
+  api_batch_1:
     name: API Chunk 1
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: api_chunk1
+      testfilter: api_batch1
 
-  api_chunk_2:
+  api_batch_2:
     name: API Chunk 2
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: api_chunk2
+      testfilter: api_batch2
 
-  api_chunk3:
+  api_batch3:
     name: API Chunk 3
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: api_chunk3
+      testfilter: api_batch3
 
   erc20:
     name: ERC20

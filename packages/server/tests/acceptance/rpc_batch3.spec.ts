@@ -28,7 +28,7 @@ import {Utils} from '../helpers/utils';
 import reverterContractJson from '../contracts/Reverter.json';
 import {EthImpl} from '@hashgraph/json-rpc-relay/src/lib/eth';
 
-describe('@api-chunk-3 RPC Server Acceptance Tests', function () {
+describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
     const accounts: AliasAccount[] = [];
