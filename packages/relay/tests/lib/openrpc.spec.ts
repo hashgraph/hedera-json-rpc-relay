@@ -178,9 +178,20 @@ describe("Open RPC Specification", function () {
         validateResponseSchema(methodsResponseSchema.eth_blockNumber, response);
     });
 
-    it('should execute "eth_call"', async function () {
+    it('should execute "eth_call" against mirror node', async function () {
+        let initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
+        process.env.ETH_CALL_CONSENSUS = 'false';
         const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
         validateResponseSchema(methodsResponseSchema.eth_call, response);
+        process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
+    });
+
+    it('should execute "eth_call" against consensus node', async function () {
+        let initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
+        process.env.ETH_CALL_CONSENSUS = 'true';
+        sdkClientStub.submitContractCallQuery.returns({ asBytes: () => Buffer.from('12') });
+        const response = await ethImpl.call(defaultTransaction, 'latest')
+        process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
     });
 
     it('should execute "eth_chainId"', function () {

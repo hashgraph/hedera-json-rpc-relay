@@ -2231,11 +2231,170 @@ describe('Eth calls using MirrorNode', async function () {
     }
   });
 
-  describe('eth_call', async function () {
+  describe('eth_call using consensus node', async function () {
+    let initialEthCallConesneusFF;
+
+    before(() => {
+      initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
+      process.env.ETH_CALL_CONSENSUS = 'true';
+    });
+
+    after(() => {
+      process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
+    })
+
+    it('eth_call with no gas', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0);
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+      }, 'latest');
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 400_000, contractAddress1, 'eth_call');
+      expect(result).to.equal("0x00");
+    });
+
+    it('eth_call with no data', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0);
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "gas": maxGasLimitHex
+      }, 'latest');
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, undefined, maxGasLimit, contractAddress1, 'eth_call');
+      expect(result).to.equal("0x00");
+    });
+
+    it('eth_call with no from address', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0);
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest');
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, undefined, 'eth_call');
+      expect(result).to.equal("0x00");
+    });
+
+    it('eth_call with all fields', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0);
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest');
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, contractAddress1, 'eth_call');
+      expect(result).to.equal("0x00");
+    });
+
+    describe('with gas > 15_000_000', async function() {
+      it('caps gas at 15_000_000', async function () {
+        sdkClientStub.submitContractCallQuery.returns({
+              asBytes: function () {
+                return Uint8Array.of(0);
+              }
+            }
+        );
+
+        const result = await ethImpl.call({
+          "from": contractAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": 50_000_000
+        }, 'latest');
+
+        sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 15_000_000, contractAddress1, 'eth_call');
+        expect(result).to.equal("0x00");
+      });
+    });
+
+    it('SDK returns a precheck error', async function () {
+      sdkClientStub.submitContractCallQuery.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
+
+      const result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest');
+
+      expect(result).to.exist;
+      expect(result.code).to.equal(-32008);
+      expect(result.name).to.equal('Contract revert executed');
+      expect(result.message).to.equal('execution reverted: Set to revert');
+      expect(result.data).to.equal(defaultErrorMessage);
+    });
+
+    it('eth_call with missing `to` field', async function() {
+      try {
+        await ethImpl.call({
+          "from": contractAddress1,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error: any) {
+        expect(error.message).to.equal(`Invalid Contract Address: ${undefined}.`);
+      }
+    });
+
+    it('eth_call with wrong `to` field', async function() {
+      try {
+        await ethImpl.call({
+          "from": contractAddress1,
+          "to": wrongContractAddress,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error: any) {
+        expect(error.message).to.equal(`Invalid Contract Address: ${wrongContractAddress}. Expected length of 42 chars but was ${wrongContractAddress.length}.`);
+      }
+    });
+  });
+
+  describe('eth_call using mirror node', async function () {
     const defaultCallData = {
       "gas": 400000,
       "value": null
     }
+    let initialEthCallConesneusFF;
+
+    before(() => {
+      initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
+      process.env.ETH_CALL_CONSENSUS = 'false';
+    });
+
+    after(() => {
+      process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
+    })
 
     // FIXME temporary workaround until precompiles are implemented in Mirror node evm module
     beforeEach(() => {
