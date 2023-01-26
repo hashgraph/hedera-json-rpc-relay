@@ -652,8 +652,6 @@ describe('Eth calls using MirrorNode', async function () {
     // mirror node request mocks
     mock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResults);
-    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-    mock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
     mock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
     expect(result).to.exist;
@@ -667,7 +665,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(2);
     expect((result.transactions[0] as string)).equal(contractHash1);
-    expect((result.transactions[1] as string)).equal(contractHash1);
+    expect((result.transactions[1] as string)).equal(contractHash2);
 
     // verify expected constants
     verifyBlockConstants(result);
@@ -826,8 +824,6 @@ describe('Eth calls using MirrorNode', async function () {
     // mirror node request mocks
     mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
     mock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResults);
-    mock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-    mock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
     mock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, false);
@@ -842,7 +838,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(2);
     expect((result.transactions[0] as string)).equal(contractHash1);
-    expect((result.transactions[1] as string)).equal(contractHash1);
+    expect((result.transactions[1] as string)).equal(contractHash2);
 
     // verify expected constants
     verifyBlockConstants(result);
