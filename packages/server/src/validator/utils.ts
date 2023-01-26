@@ -31,16 +31,17 @@ export function validateObject(object: any, filters: any) {
       throw predefined.MISSING_REQUIRED_PARAMETER(`'${property}' for ${object.name()}`);
     }
 
-    if (param !== undefined) {
+    console.log(`${object.name()} isValidAndNonNullableParam: property ${property}, value: ${param}, isNullable: ${validation.nullable}`)
+    if (isValidAndNonNullableParam(param, validation.nullable)) {
       try {
         result = Validator.TYPES[validation.type].test(param);
 
         if(!result) {
-          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, Validator.TYPES[validation.type].error);
+          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}, value: ${param}`, Validator.TYPES[validation.type].error);
         }
       } catch(error: any) {
         if (error instanceof JsonRpcError) {
-          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, Validator.TYPES[validation.type].error);
+          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}, value: ${param}`, Validator.TYPES[validation.type].error);
         }
 
         throw error;
@@ -70,4 +71,8 @@ export function hasUnexpectedParams(actual: any, expected: any, object: string) 
 
 export function requiredIsMissing(param: any, required: boolean) {
   return required && param === undefined;
+}
+
+export function isValidAndNonNullableParam(param: any, nullable: boolean) {
+  return param !== undefined && (param !== null || !nullable);
 }
