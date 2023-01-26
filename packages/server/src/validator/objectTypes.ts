@@ -31,43 +31,43 @@ export const OBJECTS_VALIDATIONS = {
   },
   "transaction": {
     "from": {
-      type: "address",
+      type: "address"
     },
     "to": {
-      type: "address",
+      type: "address"
     },
     "gas": {
-      type: "hex",
+      type: "hex"
     },
     "gasPrice": {
-      type: "hex",
+      type: "hex"
     },
     "maxPriorityFeePerGas": {
-      type: "hex",
+      type: "hex"
     },
     "maxFeePerGas": {
-      type: "hex",
+      type: "hex"
     },
     "value": {
-      type: "hex",
+      type: "hex"
     },
     "data": {
-      type: "hex",
+      type: "hex"
     },
     "type": {
-      type: "hex",
+      type: "hex"
     },
     "chainId": {
-      type: "hex",
+      type: "hex"
     },
     "nonce": {
-      type: "hex",
+      type: "hex"
     },
     "input": {
-      type: "hex",
+      type: "hex"
     },
     "accessList": {
-      type: "array",
+      type: "array"
     }
   }
 };
