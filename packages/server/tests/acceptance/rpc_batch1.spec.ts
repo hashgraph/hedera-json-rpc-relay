@@ -37,7 +37,6 @@ import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
 import { resourceLimits } from 'worker_threads';
-import { contractAddress1 } from '../../../relay/tests/helpers';
 
 describe('@api RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
