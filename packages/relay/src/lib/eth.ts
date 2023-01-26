@@ -53,6 +53,7 @@ export class EthImpl implements Eth {
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   static defaultGas = EthImpl.numberTo0x(constants.TX_DEFAULT_GAS);
   static gasTxBaseCost = EthImpl.numberTo0x(constants.TX_BASE_COST);
+  static gasTxHollowAccountCreation = EthImpl.numberTo0x(constants.TX_HOLLOW_ACCOUNT_CREATION_GAS);
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasUsedRatio = 0.5;
@@ -326,7 +327,8 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
     if (!transaction || !transaction.data || transaction.data === '0x') {
-      return EthImpl.gasTxBaseCost;
+      const toAccount = await this.mirrorNodeClient.getAccount(transaction.to);
+      return toAccount ? EthImpl.gasTxBaseCost : EthImpl.gasTxHollowAccountCreation;
     } else {
       return EthImpl.defaultGas;
     }
