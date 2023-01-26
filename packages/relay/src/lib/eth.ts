@@ -1223,9 +1223,13 @@ export class EthImpl implements Eth {
     for (const result of contractResults.results) {
       // depending on stage of contract execution revert the result.to value may be null
       if (!_.isNil(result.to)) {
-        const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
-        if (transaction !== null) {
-          showDetails ? transactionObjects.push(transaction) : transactionHashes.push(transaction.hash);
+        if(showDetails) {
+          const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
+          if (transaction !== null) {
+            transactionObjects.push(transaction);
+          }  
+        } else {
+          transactionHashes.push(result.hash);
         }
       }
     }
