@@ -2048,6 +2048,88 @@ describe('Eth calls using MirrorNode', async function () {
     expect(rewards[1]).to.equal('0x0');
   });
 
+  it('eth_feeHistory with latest param', async function () {
+    const previousBlock = {...defaultBlock, number: blockNumber2, timestamp: {
+      from: '1651560386.060890948',
+      to: '1651560389.060890948'
+    }};
+    const latestBlock = {...defaultBlock, number: blockNumber3};
+    const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
+    const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
+
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+    mock.onGet(`blocks/${previousBlock.number}`).reply(200, previousBlock);
+    mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+    mock.onGet(`network/fees?timestamp=lte:${previousBlock.timestamp.to}`).reply(200, previousFees);
+    mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
+
+    const feeHistory = await ethImpl.feeHistory(1, 'latest', [25, 75]);
+    expect(feeHistory).to.exist;
+    expect(feeHistory['oldestBlock']).to.eq('0x' + blockNumber3);
+  });
+
+  it('eth_feeHistory with pending param', async function () {
+    const previousBlock = {...defaultBlock, number: blockNumber2, timestamp: {
+      from: '1651560386.060890948',
+      to: '1651560389.060890948'
+    }};
+    const latestBlock = {...defaultBlock, number: blockNumber3};
+    const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
+    const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
+
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+    mock.onGet(`blocks/${previousBlock.number}`).reply(200, previousBlock);
+    mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+    mock.onGet(`network/fees?timestamp=lte:${previousBlock.timestamp.to}`).reply(200, previousFees);
+    mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
+
+    const feeHistory = await ethImpl.feeHistory(1, 'pending', [25, 75]);
+    expect(feeHistory).to.exist;
+    expect(feeHistory['oldestBlock']).to.eq('0x' + blockNumber3);
+  });
+
+  it('eth_feeHistory with earliest param', async function () {
+    const firstBlockIndex = 0;
+    const secondBlockIndex = 1;
+    const previousBlock = {...defaultBlock, number: firstBlockIndex, timestamp: {
+      from: '1651560386.060890948',
+      to: '1651560389.060890948'
+    }};
+    const latestBlock = {...defaultBlock, number: secondBlockIndex};
+    const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
+    const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
+
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+    mock.onGet(`blocks/${previousBlock.number}`).reply(200, previousBlock);
+    mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+    mock.onGet(`network/fees?timestamp=lte:${previousBlock.timestamp.to}`).reply(200, previousFees);
+    mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
+
+    const feeHistory = await ethImpl.feeHistory(1, 'earliest', [25, 75]);
+    expect(feeHistory).to.exist;
+    expect(feeHistory['oldestBlock']).to.eq('0x' + firstBlockIndex);
+  });
+
+  it('eth_feeHistory with number param', async function () {
+    const previousBlock = {...defaultBlock, number: blockNumber2, timestamp: {
+      from: '1651560386.060890948',
+      to: '1651560389.060890948'
+    }};
+    const latestBlock = {...defaultBlock, number: blockNumber3};
+    const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
+    const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
+
+    mock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+    mock.onGet(`blocks/${previousBlock.number}`).reply(200, previousBlock);
+    mock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+    mock.onGet(`network/fees?timestamp=lte:${previousBlock.timestamp.to}`).reply(200, previousFees);
+    mock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
+
+    const feeHistory = await ethImpl.feeHistory(1, '0x'+blockNumber3, [25, 75]);
+    expect(feeHistory).to.exist;
+    expect(feeHistory['oldestBlock']).to.eq('0x' + blockNumber3);
+  });
+
   it('eth_feeHistory with max results', async function () {
     const maxResultsCap = Number(constants.DEFAULT_FEE_HISTORY_MAX_RESULTS);
 
