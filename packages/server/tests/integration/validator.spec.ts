@@ -520,4 +520,54 @@ describe('Validator', async () => {
       );
     });
   });
+
+  describe('validates validateObject with transaction object', async () => {
+    it('returns true when transaction data is null and is nullable is true', async () => {
+      const result = Validator.validateObject({ data: null }, {
+        data: {
+          type: 'hex',
+          nullable: false
+        }
+      });
+
+      expect(result).to.be.true;
+    });
+
+    it('throws an error if Transaction Object data param is null and isnullable is false', async () => {
+      expect(() => Validator.validateObject({ data: null }, {
+        data: {
+          type: 'hex',
+          nullable: false
+        }
+      })).to.throw(
+        expectInvalidParam("data", "Invalid parameter", 'TransactionObject')
+      );
+    });
+  });
+
+  describe('validates isValidAndNonNullableParam', async () => {
+    it('returns false if transaction data is undefined and isnullable is true', async () => {
+      expect(Validator.isValidAndNonNullableParam(undefined, true)).to.be.false;
+    });
+
+    it('returns false if transaction data is undefined and isnullable is false', async () => {
+      expect(Validator.isValidAndNonNullableParam(undefined, false)).to.be.false;
+    });
+
+    it('returns false if transaction data is null and isnullable is true', async () => {
+      expect(Validator.isValidAndNonNullableParam(null, true)).to.be.false;
+    });
+
+    it('returns false if transaction data is null and isnullable is false', async () => {
+      expect(Validator.isValidAndNonNullableParam(null, false)).to.be.true;
+    });
+
+    it('returns false if transaction data is a valid 0x value and isnullable is false', async () => {
+      expect(Validator.isValidAndNonNullableParam('0x', false)).to.be.true;
+    });
+
+    it('returns false if transaction data is a valid 0x value and isnullable is true', async () => {
+      expect(Validator.isValidAndNonNullableParam('0x', true)).to.be.true;
+    });
+  });
 });

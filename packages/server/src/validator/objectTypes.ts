@@ -67,7 +67,7 @@ export const OBJECTS_VALIDATIONS = {
     },
     "data": {
       type: "hex",
-      nullable: false
+      nullable: true
     },
     "type": {
       type: "hex",
@@ -115,7 +115,6 @@ export class TransactionObject {
   }
 
   validate() {
-    console.log(`transaction: ${JSON.stringify(this)}`)
     return Validator.validateObject(this, OBJECTS_VALIDATIONS.transaction);
   }
 
