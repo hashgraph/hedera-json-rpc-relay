@@ -173,7 +173,9 @@ export class EthImpl implements Eth {
 
     try {
       const latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestId);
-      const newestBlockNumber = await this.translateBlockTag(newestBlock, requestId);
+      const newestBlockNumber = (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending)
+        ? latestBlockNumber
+        : await this.translateBlockTag(newestBlock, requestId);
 
       if (newestBlockNumber > latestBlockNumber) {
         return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
@@ -1237,9 +1239,13 @@ export class EthImpl implements Eth {
     for (const result of contractResults.results) {
       // depending on stage of contract execution revert the result.to value may be null
       if (!_.isNil(result.to)) {
-        const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
-        if (transaction !== null) {
-          showDetails ? transactionObjects.push(transaction) : transactionHashes.push(transaction.hash);
+        if(showDetails) {
+          const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
+          if (transaction !== null) {
+            transactionObjects.push(transaction);
+          }  
+        } else {
+          transactionHashes.push(result.hash);
         }
       }
     }
