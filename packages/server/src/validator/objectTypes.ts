@@ -32,55 +32,42 @@ export const OBJECTS_VALIDATIONS = {
   "transaction": {
     "from": {
       type: "address",
-      require: false
     },
     "to": {
       type: "address",
-      require: false
     },
     "gas": {
       type: "hex",
-      require: false
     },
     "gasPrice": {
       type: "hex",
-      require: false
     },
     "maxPriorityFeePerGas": {
       type: "hex",
-      require: false
     },
     "maxFeePerGas": {
       type: "hex",
-      require: false
     },
     "value": {
       type: "hex",
-      require: false
     },
     "data": {
       type: "hex",
-      require: false
     },
     "type": {
       type: "hex",
-      require: false
     },
     "chainId": {
       type: "hex",
-      require: false
     },
     "nonce": {
       type: "hex",
-      require: false
     },
     "input": {
       type: "hex",
-      require: false
     },
     "accessList": {
       type: "array",
-      require: false
     }
   }
 };
