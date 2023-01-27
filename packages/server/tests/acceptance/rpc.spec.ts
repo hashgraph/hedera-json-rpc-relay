@@ -961,8 +961,8 @@ describe('@api RPC Server Acceptance Tests', function () {
             it('should not be able to execute "eth_estimateGas" with wrong from field', async function () {
                 try {
                     await relay.call('eth_estimateGas', [{
-                        from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
-                        to: '0xae410f34f7487e2cd03396499cebb09b79f45',
+                        from: '0x114f60009ee6b84861c0cdae8829751e517b',
+                        to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
                         value: '0xa688906bd8b00000',
                         gas: '0xd97010',
                         accessList: []
@@ -972,7 +972,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const err = JSON.parse(error.body);
                     expect(error).to.not.be.null;
                     expect(err.error.name).to.be.equal('Invalid parameter');
-                    expect(err.error.message.endsWith(`Invalid parameter 'to' for TransactionObject: Expected 0x prefixed string representing the address (20 bytes)`)).to.be.true;
+                    expect(err.error.message.endsWith(`Invalid parameter 'from' for TransactionObject: Expected 0x prefixed string representing the address (20 bytes), value: 0x114f60009ee6b84861c0cdae8829751e517b`)).to.be.true;
                 }
             });
 
@@ -990,7 +990,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const err = JSON.parse(error.body);
                     expect(error).to.not.be.null;
                     expect(err.error.name).to.be.equal('Invalid parameter');
-                    expect(err.error.message.endsWith(`Invalid parameter 'to' for TransactionObject: Expected 0x prefixed string representing the address (20 bytes)`)).to.be.true;
+                    expect(err.error.message.endsWith(`Invalid parameter 'to' for TransactionObject: Expected 0x prefixed string representing the address (20 bytes), value: 0xae410f34f7487e2cd03396499cebb09b79f45`)).to.be.true;
                 } 
             });
 
@@ -1008,7 +1008,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const err = JSON.parse(error.body);
                     expect(error).to.not.be.null;
                     expect(err.error.name).to.be.equal('Invalid parameter');
-                    expect(err.error.message.endsWith(`Invalid parameter 'value' for TransactionObject: Expected 0x prefixed hexadecimal value`)).to.be.true;
+                    expect(err.error.message.endsWith(`Invalid parameter 'value' for TransactionObject: Expected 0x prefixed hexadecimal value, value: 123`)).to.be.true;
                 } 
             });
 
@@ -1026,7 +1026,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     const err = JSON.parse(error.body);
                     expect(error).to.not.be.null;
                     expect(err.error.name).to.be.equal('Invalid parameter');
-                    expect(err.error.message.endsWith(`Invalid parameter 'gas' for TransactionObject: Expected 0x prefixed hexadecimal value`)).to.be.true;
+                    expect(err.error.message.endsWith(`Invalid parameter 'gas' for TransactionObject: Expected 0x prefixed hexadecimal value, value: 123`)).to.be.true;
                 } 
             });
         });
@@ -1454,7 +1454,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     await relay.call('eth_call', [callData, 'newest'], requestId);
                     Assertions.expectedError();
                 } catch (error) {
-                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending'));
+                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending, value: newest'));
                 }
             });
 
@@ -1469,7 +1469,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     await relay.call('eth_call', [callData, '123'], requestId);
                     Assertions.expectedError();
                 } catch (error) {
-                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending'));
+                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending, value: 123'));
                 }
             });
 
@@ -1485,7 +1485,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     Assertions.expectedError();
                 } catch (error) {
 
-                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block'));
+                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block, value: 0x123'));
                 }
             });
 
@@ -1500,7 +1500,7 @@ describe('@api RPC Server Acceptance Tests', function () {
                     await relay.call('eth_call', [callData, {'blockNumber' : '123'}], requestId);
                     Assertions.expectedError();
                 } catch (error) {
-                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"'));
+                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'));
                 }
             });
         });
