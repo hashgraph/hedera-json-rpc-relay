@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
-import { Validator } from '../../src/validator';
+import { OBJECTS_VALIDATIONS, TransactionObject, Validator } from '../../src/validator';
 
 describe('Validator', async () => {
   function expectInvalidParam(index: number | string, message: string, object?: string) {
@@ -522,16 +522,22 @@ describe('Validator', async () => {
   });
 
   describe('validates validateObject with transaction object', async () => {
-    const transactionFilterObject = { data: null, name() { return 'transaction'; }}
+    const transactionFilterObject = new TransactionObject({from: '0xdd94180d1c8e069fc7e6760d5bf7dee477fe617b', gasPrice: '0x0', value: '0x0', data: null});
+    it('returns true when transaction data is null and is nullable is true', async () => {
+      const result = Validator.validateObject(transactionFilterObject, {...OBJECTS_VALIDATIONS.transaction, data: {
+        type: 'hex',
+        nullable: true
+      }});
+
+      expect(result).to.be.true;
+    });
 
     it('throws an error if Transaction Object data param is null and isnullable is false', async () => {
-      expect(() => Validator.validateObject(transactionFilterObject, {
-        data: {
+      expect(() => Validator.validateObject(transactionFilterObject, {...OBJECTS_VALIDATIONS.transaction, data: {
           type: 'hex',
           nullable: false
-        },
-      })).to.throw(
-        expectInvalidParam("data", "Expected 0x prefixed hexadecimal value", 'transaction, value: null')
+        }})).to.throw(
+        expectInvalidParam("data", "Expected 0x prefixed hexadecimal value", 'TransactionObject, value: null')
       );
     });
   });
