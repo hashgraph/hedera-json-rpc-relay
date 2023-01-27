@@ -324,7 +324,7 @@ export class EthImpl implements Eth {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async estimateGas(transaction: any, _blockParam: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    this.logger.trace(`${requestIdPrefix} estimateGas()`);
+    this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
     if (!transaction || !transaction.data || transaction.data === '0x') {
       return EthImpl.gasTxBaseCost;
     } else {
