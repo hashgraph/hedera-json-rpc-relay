@@ -30,3 +30,4 @@ data:
   MIRROR_NODE_RETRIES: {{ .Values.config.MIRROR_NODE_RETRIES | quote }}
   MIRROR_NODE_RETRY_DELAY: {{ .Values.config.MIRROR_NODE_RETRY_DELAY | quote }}
   MIRROR_NODE_LIMIT_PARAM: {{ .Values.config.MIRROR_NODE_LIMIT_PARAM | quote }}
+  INPUT_SIZE_LIMIT: {{ .Values.config.INPUT_SIZE_LIMIT | quote }}
