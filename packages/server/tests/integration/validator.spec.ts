@@ -522,25 +522,16 @@ describe('Validator', async () => {
   });
 
   describe('validates validateObject with transaction object', async () => {
-    it('returns true when transaction data is null and is nullable is true', async () => {
-      const result = Validator.validateObject({ data: null }, {
-        data: {
-          type: 'hex',
-          nullable: false
-        }
-      });
-
-      expect(result).to.be.true;
-    });
+    const transactionFilterObject = { data: null, name() { return 'transaction'; }}
 
     it('throws an error if Transaction Object data param is null and isnullable is false', async () => {
-      expect(() => Validator.validateObject({ data: null }, {
+      expect(() => Validator.validateObject(transactionFilterObject, {
         data: {
           type: 'hex',
           nullable: false
-        }
+        },
       })).to.throw(
-        expectInvalidParam("data", "Invalid parameter", 'TransactionObject')
+        expectInvalidParam("data", "Expected 0x prefixed hexadecimal value", 'transaction, value: null')
       );
     });
   });
