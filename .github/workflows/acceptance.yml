@@ -9,19 +9,19 @@ on:
 
 jobs:
   api_batch_1:
-    name: API Chunk 1
+    name: API Batch 1
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api_batch1
 
   api_batch_2:
-    name: API Chunk 2
+    name: API Batch 2
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api_batch2
 
   api_batch3:
-    name: API Chunk 3
+    name: API Batch 3
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api_batch3
