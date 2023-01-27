@@ -41,6 +41,7 @@ import {
     TransactionId,
     AccountAllowanceApproveTransaction,
     AccountBalance,
+    FileContentsQuery
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
@@ -284,6 +285,13 @@ export default class ServicesClient {
             .setAccountId(this.client.operatorAccountId!))
             .execute(this.client);
         return accountBalance.hbars;
+    }
+
+    async getFileContent(fileId: string): Promise<any> {
+        const query = new FileContentsQuery()
+            .setFileId(fileId);
+
+        return await query.execute(this.client);
     }
 
     async updateFileContent(fileId: string, content: string, requestId?: string): Promise<void> {
