@@ -160,9 +160,9 @@
                             "description": "An array of gas used ratio.",
                             "type": "array",
                             "items": {
-                                "title": "hex encoded unsigned integer",
-                                "type": "string",
-                                "pattern": "^0x([1-9a-f]+[0-9a-f]*|0|0.8)$"
+                                "title": "floating point number",
+                                "type": "number",
+                                "pattern": "^([0-9].[0-9]*|0)$"
                             }
                         },
                         "baseFeePerGas": {
