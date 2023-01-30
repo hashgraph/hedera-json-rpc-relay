@@ -8,11 +8,23 @@ on:
     tags: [v*]
 
 jobs:
-  api:
-    name: API
+  api_batch_1:
+    name: API Batch 1
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: api
+      testfilter: api_batch1
+
+  api_batch_2:
+    name: API Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api_batch2
+
+  api_batch3:
+    name: API Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api_batch3
 
   erc20:
     name: ERC20

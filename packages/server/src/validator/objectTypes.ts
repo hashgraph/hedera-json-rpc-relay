@@ -65,6 +65,9 @@ export const OBJECTS_VALIDATIONS = {
     },
     "input": {
       type: "hex"
+    },
+    "accessList": {
+      type: "array"
     }
   }
 };

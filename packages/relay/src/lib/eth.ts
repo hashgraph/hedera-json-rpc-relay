@@ -55,7 +55,7 @@ export class EthImpl implements Eth {
   static gasTxBaseCost = EthImpl.numberTo0x(constants.TX_BASE_COST);
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
-  static defaultGasUsedRatio = EthImpl.numberTo0x(0.5);
+  static defaultGasUsedRatio = 0.5;
   static feeHistoryZeroBlockCountResponse = { gasUsedRatio: null, oldestBlock: EthImpl.zeroHex };
   static feeHistoryEmptyResponse = { baseFeePerGas: [], gasUsedRatio: [], reward: [], oldestBlock: EthImpl.zeroHex };
   static redirectBytecodePrefix = '6080604052348015600f57600080fd5b506000610167905077618dc65e';
@@ -221,7 +221,7 @@ export class EthImpl implements Eth {
     const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;
     const feeHistory = {
       baseFeePerGas: [] as string[],
-      gasUsedRatio: [] as string[],
+      gasUsedRatio: [] as number[],
       oldestBlock: EthImpl.numberTo0x(oldestBlockNumber),
     };
 

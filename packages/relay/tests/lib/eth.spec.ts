@@ -2041,7 +2041,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(feeHistory['baseFeePerGas'][0]).to.equal('0x870ab1a800');
     expect(feeHistory['baseFeePerGas'][1]).to.equal('0x84b6a5c400');
     expect(feeHistory['baseFeePerGas'][2]).to.equal('0x84b6a5c400');
-    expect(feeHistory['gasUsedRatio'][0]).to.equal(`0x${gasUsedRatio.toString(16)}`);
+    expect(feeHistory['gasUsedRatio'][0]).to.equal(gasUsedRatio);
     expect(feeHistory['oldestBlock']).to.equal(`0x${previousBlock.number.toString(16)}`);
     const rewards = feeHistory['reward'][0];
     expect(rewards[0]).to.equal('0x0');
@@ -2159,7 +2159,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     expect(firstFeeHistory).to.exist;
     expect(firstFeeHistory['baseFeePerGas'][0]).to.equal('0x84b6a5c400');
-    expect(firstFeeHistory['gasUsedRatio'][0]).to.equal(`0x${gasUsedRatio.toString(16)}`);
+    expect(firstFeeHistory['gasUsedRatio'][0]).to.equal(gasUsedRatio);
     expect(firstFeeHistory['oldestBlock']).to.equal(`0x${latestBlock.number.toString(16)}`);
 
     expect(firstFeeHistory).to.equal(secondFeeHistory);
@@ -2184,7 +2184,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(feeHistory).to.exist;
 
     expect(feeHistory['baseFeePerGas'][0]).to.equal(fauxGasWeiBarHex);
-    expect(feeHistory['gasUsedRatio'][0]).to.equal(`0x${gasUsedRatio.toString(16)}`);
+    expect(feeHistory['gasUsedRatio'][0]).to.equal(gasUsedRatio);
     expect(feeHistory['oldestBlock']).to.equal(`0x${latestBlock.number.toString(16)}`);
     const rewards = feeHistory['reward'][0];
     expect(rewards[0]).to.equal('0x0');
@@ -2209,7 +2209,7 @@ describe('Eth calls using MirrorNode', async function () {
     const feeHistory = await ethImpl.feeHistory(1, 'latest', null);
 
     expect(feeHistory['baseFeePerGas'][0]).to.equal(fauxGasWeiBarHex);
-    expect(feeHistory['gasUsedRatio'][0]).to.equal(`0x${gasUsedRatio.toString(16)}`);
+    expect(feeHistory['gasUsedRatio'][0]).to.equal(gasUsedRatio);
     expect(feeHistory['oldestBlock']).to.equal(`0x${latestBlock.number.toString(16)}`);
   });
 
