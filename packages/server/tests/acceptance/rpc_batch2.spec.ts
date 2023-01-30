@@ -49,6 +49,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     let contractExecuteTimestamp;
     let mirrorContract;
     let mirrorContractDetails;
+    let mirrorSecondaryAccount;
     let requestId;
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
@@ -99,6 +100,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
             // get contract result details
             mirrorContractDetails = await mirrorNode.get(`/contracts/${contractId}/results/${contractExecuteTimestamp}`, requestId);
+            mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`, requestId)).accounts[0];
 
             const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
             blockNumberAtStartOfTests = latestBlock.number;
@@ -115,6 +117,32 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 expect(res).to.contain('0x');
                 expect(res).to.not.be.equal('0x');
                 expect(res).to.not.be.equal('0x0');
+            });
+
+            it('@release should execute "eth_estimateGas" for contract call', async function() {
+                const res = await relay.call('eth_estimateGas', [{
+                    to: mirrorContract.evm_address,
+                    data: BASIC_CONTRACT_PING_CALL_DATA
+                }], requestId);
+                expect(res).to.contain('0x');
+                expect(res).to.equal(EthImpl.defaultGas);
+            });
+
+            it('@release should execute "eth_estimateGas" for existing account', async function() {
+                const res = await relay.call('eth_estimateGas', [{
+                    to: mirrorSecondaryAccount.evm_address
+                }], requestId);
+                expect(res).to.contain('0x');
+                expect(res).to.equal(EthImpl.gasTxBaseCost);
+            });
+
+            it('@release should execute "eth_estimateGas" hollow account creation', async function() {
+                const hollowAccount = ethers.Wallet.createRandom();
+                const res = await relay.call('eth_estimateGas', [{
+                    to: hollowAccount.address
+                }], requestId);
+                expect(res).to.contain('0x');
+                expect(res).to.equal(EthImpl.gasTxHollowAccountCreation);
             });
 
             it('should execute "eth_estimateGas" with to, from, value and gas filed', async function () {
