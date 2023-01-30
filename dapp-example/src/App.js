@@ -8,6 +8,7 @@ import useHederaSdk from "./hooks/useHederaSdk";
 import ContractInteractions from "./components/ContractInteractions";
 import TransferHTSTokensForm from './components/TransferHTSTokensForm';
 import AssociateHTSTokensForm from './components/AssociateHTSTokensForm';
+import ActivateHollowAccountForm from './components/ActivateHollowAccountForm';
 
 function App() {
   const [errorMessage, setErrorMessage] = useState(null);
@@ -19,6 +20,7 @@ function App() {
   const [hbarsAmount, setHbarsAmount] = useState(0);
   const [hbarsToAddress, setHbarsToAddress] = useState('');
   const [sendHbarMsg, setSendHbarMsg] = useState(null);
+  const [toBalanceAfterTransfer, setToBalanceAfterTransfer] = useState('');
 
   const { recoveredPublicKeyToAccountId } = useHederaSdk();
 
@@ -38,6 +40,7 @@ function App() {
         setHbarsAmount(0)
         setHbarsToAddress('')
         setHbarsToAddress(null)
+        setToBalanceAfterTransfer('')
       });
     }
   }, []);
@@ -123,10 +126,17 @@ function App() {
   }, [signer, address]);
 
   const sendHbarsBtnHandle = useCallback(async () => {
-    await signer.sendTransaction({
+    const tx = await signer.sendTransaction({
       to: hbarsToAddress,
-      value: hbarsAmount
+      value: hbarsAmount,
+      gasLimit: 600_000
     });
+    await tx.wait();
+
+    setToBalanceAfterTransfer(ethers.utils.formatEther(await window.ethereum.request({
+      method: 'eth_getBalance',
+      params: [hbarsToAddress, 'latest']
+    })));
     setSendHbarMsg('Done');
   }, [signer, hbarsToAddress, hbarsAmount]);
 
@@ -190,6 +200,7 @@ function App() {
             value={hbarsAmount}
             onChange={(e) => setHbarsAmount(e.target.value)}
           />
+          <Typography variant="h6" id="toBalanceAfterTransfer"> Balance after transfer: {toBalanceAfterTransfer} </Typography>
           <Button id="sendHbarsBtn" onClick={sendHbarsBtnHandle} disabled={!isConnected} size="medium" variant="contained" color="primary">
             Send
           </Button>
@@ -205,6 +216,9 @@ function App() {
           </Box>
           <Box sx={{ mt: '2em', mb: '2em' }}>
             <AssociateHTSTokensForm isConnected={isConnected} signer={signer} chain={chain} address={address} />
+          </Box>
+          <Box sx={{ mt: '2em', mb: '2em' }}>
+            <ActivateHollowAccountForm isConnected={isConnected} signer={signer} chain={chain} address={address} />
           </Box>
         </Grid>
       </Grid>

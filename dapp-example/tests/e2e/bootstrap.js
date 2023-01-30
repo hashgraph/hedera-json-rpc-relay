@@ -121,6 +121,22 @@ const deployHederaTokenService = async function(wallet) {
   return contractAddress;
 };
 
+const deployAndFundContractTransferTx = async function(wallet) {
+  const contractArtifact = require('../../src/contracts/ContractTransferTx.json');
+
+  const contractFactory = new ethers.ContractFactory(contractArtifact.abi, contractArtifact.bytecode, wallet);
+  const contract = await contractFactory.deploy({ gasLimit: 1_000_000 });
+  const { contractAddress } = await contract.deployTransaction.wait();
+
+  await (new HederaSDK.TransferTransaction()
+    .addHbarTransfer(HederaSDK.AccountId.fromEvmAddress(0,0, contractAddress), new HederaSDK.Hbar(100))
+    .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-100)))
+    .setTransactionMemo('relay dapp ContractTransferTx funding')
+    .execute(client);
+
+  return contractAddress;
+};
+
 (async () => {
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
   if (mainPrivateKeyString === '') {
@@ -140,12 +156,13 @@ const deployHederaTokenService = async function(wallet) {
   const receiverAccountId = (await createAccountFromCompressedPublicKey(receiverCompressedKey)).accountId;
   console.log(`Receiver wallet account private: ${receiverPrivateKeyString}, public: ${receiverCompressedKey}, id: ${receiverAccountId}`);
 
+  const ContractTransferTxAddress = await deployAndFundContractTransferTx(mainWallet);
   const HTSContractAddress = await deployHederaTokenService(mainWallet);
   console.log(`HTS Contract Address: ${HTSContractAddress}`);
   const { tokenId, tokenAddress } = await createHTSToken();
   const token2 = await createHTSToken();
-  fs.writeFileSync(path.resolve(__dirname + '../../../src/contracts/') + '/.htsTokenInfo.json',
-    `{"HTS_ADDRESS":"${tokenAddress}", "HTS_SECOND_ADDRESS":"${token2.tokenAddress}", "HTS_CONTRACT_ADDRESS": "${HTSContractAddress}"}`);
+  fs.writeFileSync(path.resolve(__dirname + '../../../src/contracts/') + '/.bootstrapInfo.json',
+    `{"HTS_ADDRESS":"${tokenAddress}", "HTS_SECOND_ADDRESS":"${token2.tokenAddress}", "HTS_CONTRACT_ADDRESS": "${HTSContractAddress}", "CONTRACT_TRANSFER_TX_ADDRESS": "${ContractTransferTxAddress}"}`);
 
   await associateHTSToken(mainAccountId, tokenId, mainPrivateKeyString);
   await approveHTSToken(mainAccountId, tokenId);

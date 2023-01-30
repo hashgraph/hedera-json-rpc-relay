@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { Button, TextField, Typography } from "@mui/material";
 import { ethers } from 'ethers';
 import HederaTokenService from '../contracts/HederaTokenService.json'
-import htsTokenInfo from '../contracts/.htsTokenInfo.json'
+import bootstrapInfo from '../contracts/.bootstrapInfo.json'
 
 const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -12,12 +12,12 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
     // clear state vars on a chain or address have changed
     useEffect(() => {
         setIsLoading(false);
-        setHtsTokenAddress(htsTokenInfo.HTS_SECOND_ADDRESS);
+        setHtsTokenAddress(bootstrapInfo.HTS_SECOND_ADDRESS);
         setHtsTokenAssocaiteMsg(null);
     }, [chain, address])
 
     const htsTokenAssociate = useCallback(async () => {
-      const contract = new ethers.Contract(htsTokenInfo.HTS_CONTRACT_ADDRESS, HederaTokenService.abi, signer);
+      const contract = new ethers.Contract(bootstrapInfo.HTS_CONTRACT_ADDRESS, HederaTokenService.abi, signer);
 
       try {
         setIsLoading(true);
