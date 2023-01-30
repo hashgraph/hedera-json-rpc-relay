@@ -147,13 +147,11 @@ export class MirrorNodeClient {
             this.restClient = restClient;
             this.web3Client = !!web3Client ? web3Client : restClient;
         } else {
-            restUrl = this.buildUrl(restUrl);
-            web3Url = this.buildUrl(web3Url);
+            this.restUrl = this.buildUrl(restUrl);
+            this.web3Url = this.buildUrl(web3Url);
 
-            this.restUrl = restUrl;
-            this.web3Url = web3Url;
-            this.restClient = restClient ? restClient : this.createAxiosClient(restUrl);
-            this.web3Client = web3Client ? web3Client : this.createAxiosClient(web3Url);
+            this.restClient = restClient ? restClient : this.createAxiosClient(this.restUrl);
+            this.web3Client = web3Client ? web3Client : this.createAxiosClient(this.web3Url);
         }
 
         this.logger = logger;
@@ -190,19 +188,17 @@ export class MirrorNodeClient {
         let ms;
         try {
             let response;
+            const headers = {
+                headers:{
+                    'requestId': requestId || ''
+                }
+            };
+
             if (method === 'GET') {
-                response = await this.restClient.get(path, {
-                    headers:{
-                        'requestId': requestId || ''
-                    }
-                });
+                response = await this.restClient.get(path, headers);
             }
             else {
-                response = await this.web3Client.post(path, data, {
-                    headers:{
-                        'requestId': requestId || ''
-                    }
-                });
+                response = await this.web3Client.post(path, data, headers);
             }
 
             const ms = Date.now() - start;
