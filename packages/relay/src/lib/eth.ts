@@ -326,8 +326,10 @@ export class EthImpl implements Eth {
   async estimateGas(transaction: any, _blockParam: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
+    //this checks whether this is a transfer transaction and not a contract function execution
     if (!transaction || !transaction.data || transaction.data === '0x') {
       const toAccount = await this.mirrorNodeClient.getAccount(transaction.to);
+      // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
       return toAccount ? EthImpl.gasTxBaseCost : EthImpl.gasTxHollowAccountCreation;
     } else {
       return EthImpl.defaultGas;
