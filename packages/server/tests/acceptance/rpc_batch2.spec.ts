@@ -720,7 +720,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                     await relay.call('eth_call', [callData, {'blockNumber': '123'}], requestId);
                     Assertions.expectedError();
                 } catch (error) {
-                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 0x123'));
+                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'));
                 }
             });
 
