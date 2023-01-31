@@ -157,6 +157,7 @@ const deployAndFundContractTransferTx = async function(wallet) {
   console.log(`Receiver wallet account private: ${receiverPrivateKeyString}, public: ${receiverCompressedKey}, id: ${receiverAccountId}`);
 
   const ContractTransferTxAddress = await deployAndFundContractTransferTx(mainWallet);
+  console.log(`Contract Transfer Tx Address: ${ContractTransferTxAddress}`);
   const HTSContractAddress = await deployHederaTokenService(mainWallet);
   console.log(`HTS Contract Address: ${HTSContractAddress}`);
   const { tokenId, tokenAddress } = await createHTSToken();
