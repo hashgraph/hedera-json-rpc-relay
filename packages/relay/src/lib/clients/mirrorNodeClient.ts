@@ -25,6 +25,7 @@ import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
 import axiosRetry from 'axios-retry';
+const LRU = require('lru-cache');
 
 export interface ILimitOrderParams {
     limit?: number;
@@ -99,6 +100,8 @@ export class MirrorNodeClient {
 
     private mirrorResponseHistogram;
 
+    private readonly cache;
+
     protected createAxiosClient(
         baseUrl: string
     ): AxiosInstance {
@@ -126,7 +129,7 @@ export class MirrorNodeClient {
             },
             shouldResetTimeout: true
         });
-        
+
         return axiosClient;
     }
 
@@ -163,6 +166,7 @@ export class MirrorNodeClient {
         });
 
         this.logger.info(`Mirror Node client successfully configured to ${this.baseUrl}`);
+        this.cache = new LRU({ max: constants.CACHE_MAX, ttl: constants.CACHE_TTL.ONE_HOUR });
     }
 
     async request(path: string, pathLabel: string, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
@@ -508,6 +512,12 @@ export class MirrorNodeClient {
       requestId?: string,
       searchableTypes: any[] = [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT, constants.TYPE_TOKEN]
     ) {
+        const cachedLabel = `resolveEntityType.${entityIdentifier}`;
+        const cachedResponse: { type: string, entity: any } | undefined = this.cache.get(cachedLabel);
+        if (cachedResponse != undefined) {
+            return cachedResponse;
+        }
+
         const buildPromise = (fn) => new Promise((resolve, reject) => fn.then((values) => {
             if (values == null) reject();
             resolve(values);
@@ -516,10 +526,12 @@ export class MirrorNodeClient {
         if (searchableTypes.find(t => t === constants.TYPE_CONTRACT)) {
             const contract = await this.getContract(entityIdentifier, requestId);
             if (contract) {
-                return {
+                const response = {
                     type: constants.TYPE_CONTRACT,
                     entity: contract
                 };
+                this.cache.set(cachedLabel, response);
+                return response;
             }
         }
 
@@ -550,10 +562,12 @@ export class MirrorNodeClient {
             }
         }
 
-        return {
+        const response = {
             type,
             entity: data.value
         };
+        this.cache.set(cachedLabel, response);
+        return response;
     }
 
     //exposing mirror node instance for tests
