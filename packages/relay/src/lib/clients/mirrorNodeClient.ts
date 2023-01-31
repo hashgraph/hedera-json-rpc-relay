@@ -26,6 +26,8 @@ import { Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
 import axiosRetry from 'axios-retry';
 
+type REQUEST_METHODS = 'GET' | 'POST';
+
 export interface ILimitOrderParams {
     limit?: number;
     order?: string;
@@ -70,6 +72,7 @@ export class MirrorNodeClient {
     private static GET_NETWORK_FEES_ENDPOINT = 'network/fees';
     private static GET_TOKENS_ENDPOINT = 'tokens';
     private static GET_TRANSACTIONS_ENDPOINT = 'transactions';
+    private static CONTRACT_CALL_ENDPOINT = 'contracts/call';
 
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
     private static CONTRACT_STATE_PROPERTY = 'state';
@@ -87,9 +90,11 @@ export class MirrorNodeClient {
      */
     private readonly logger: Logger;
 
-    private readonly client: AxiosInstance;
+    private readonly restClient: AxiosInstance;
+    private readonly web3Client: AxiosInstance;
 
-    public readonly baseUrl: string;
+    public readonly restUrl: string;
+    public readonly web3Url: string;
 
     /**
      * The metrics register used for metrics tracking.
@@ -130,23 +135,23 @@ export class MirrorNodeClient {
         return axiosClient;
     }
 
-    constructor(baseUrl: string, logger: Logger, register: Registry, axiosClient?: AxiosInstance) {
-        if (axiosClient !== undefined) {
-            this.baseUrl = '';
-            this.client = axiosClient;
+    constructor(restUrl: string, logger: Logger, register: Registry, restClient?: AxiosInstance, web3Url?: string, web3Client?: AxiosInstance) {
+        if (!web3Url) {
+            web3Url = restUrl;
+        }
+
+        if (restClient !== undefined) {
+            this.restUrl = '';
+            this.web3Url = '';
+
+            this.restClient = restClient;
+            this.web3Client = !!web3Client ? web3Client : restClient;
         } else {
-            if (!baseUrl.match(/^https?:\/\//)) {
-                baseUrl = `https://${baseUrl}`;
-            }
+            this.restUrl = this.buildUrl(restUrl);
+            this.web3Url = this.buildUrl(web3Url);
 
-            if (!baseUrl.match(/\/$/)) {
-                baseUrl = `${baseUrl}/`;
-            }
-
-            baseUrl = `${baseUrl}api/v1/`;
-
-            this.baseUrl = baseUrl;
-            this.client = axiosClient ? axiosClient : this.createAxiosClient(baseUrl);
+            this.restClient = restClient ? restClient : this.createAxiosClient(this.restUrl);
+            this.web3Client = web3Client ? web3Client : this.createAxiosClient(this.web3Url);
         }
 
         this.logger = logger;
@@ -162,47 +167,77 @@ export class MirrorNodeClient {
             registers: [register]
         });
 
-        this.logger.info(`Mirror Node client successfully configured to ${this.baseUrl}`);
+        this.logger.info(`Mirror Node client successfully configured to REST url: ${this.restUrl} and Web3 url: ${this.web3Url} `);
+    }
+    
+    private buildUrl(baseUrl: string) {
+        if (!baseUrl.match(/^https?:\/\//)) {
+            baseUrl = `https://${baseUrl}`;
+        }
+
+        if (!baseUrl.match(/\/$/)) {
+            baseUrl = `${baseUrl}/`;
+        }
+
+        return `${baseUrl}api/v1/`;
     }
 
-    async request(path: string, pathLabel: string, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
+    private async request(path: string, pathLabel: string, method: REQUEST_METHODS, data?: any, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
         const start = Date.now();
         const requestIdPrefix = formatRequestIdMessage(requestId);
         let ms;
         try {
-            const response = await this.client.get(path, {
+            let response;
+            const headers = {
                 headers:{
                     'requestId': requestId || ''
                 }
-            });
-            ms = Date.now() - start;
-            this.logger.debug(`${requestIdPrefix} [GET] ${path} ${response.status} ${ms} ms`);
+            };
+
+            if (method === 'GET') {
+                response = await this.restClient.get(path, headers);
+            }
+            else {
+                response = await this.web3Client.post(path, data, headers);
+            }
+
+            const ms = Date.now() - start;
+            this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${response.status} ${ms} ms`);
             this.mirrorResponseHistogram.labels(pathLabel, response.status).observe(ms);
             return response.data;
         } catch (error: any) {
             ms = Date.now() - start;
             const effectiveStatusCode = error.response?.status || MirrorNodeClientError.ErrorCodes[error.code] || MirrorNodeClient.unknownServerErrorHttpStatusCode;
             this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
-            this.handleError(error, path, effectiveStatusCode, allowedErrorStatuses, requestId);
+            this.handleError(error, path, effectiveStatusCode, method, allowedErrorStatuses, requestId);
         }
         return null;
     }
 
-    handleError(error: any, path: string, effectiveStatusCode: number, allowedErrorStatuses?: number[], requestId?: string) {
+    async get(path: string, pathLabel: string, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
+        return this.request(path, pathLabel, 'GET', null, allowedErrorStatuses, requestId);
+    }
+
+    async post(path: string, data: any, pathLabel: string, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
+        if (!data) data = {};
+        return this.request(path, pathLabel, 'POST', data, allowedErrorStatuses, requestId);
+    }
+
+    handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, allowedErrorStatuses?: number[], requestId?: string) {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
             if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
-                this.logger.debug(`${requestIdPrefix} [GET] ${path} ${effectiveStatusCode} status`);
+                this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
                 return null;
             }
         }
 
-        this.logger.error(new Error(error.message), `${requestIdPrefix} [GET] ${path} ${effectiveStatusCode} status`);
+        this.logger.error(new Error(error.message), `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
         throw new MirrorNodeClientError(error.message, effectiveStatusCode);
     }
 
     async getPaginatedResults(url: string, pathLabel: string, resultProperty: string, allowedErrorStatuses?: number[], requestId?: string, results = [], page = 1) {
-        const result = await this.request(url, pathLabel, allowedErrorStatuses, requestId);
+        const result = await this.get(url, pathLabel, allowedErrorStatuses, requestId);
 
         if (result && result[resultProperty]) {
             results = results.concat(result[resultProperty]);
@@ -219,14 +254,14 @@ export class MirrorNodeClient {
     }
 
     public async getAccountLatestTransactionByAddress(idOrAliasOrEvmAddress: string, requestId?: string): Promise<object> {
-        return this.request(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?order=desc&limit=1`,
+        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?order=desc&limit=1`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
             [400],
             requestId);
     }
 
     public async getAccount(idOrAliasOrEvmAddress: string, requestId?: string) {
-        return this.request(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}`,
+        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
             [400, 404],
             requestId);
@@ -253,14 +288,14 @@ export class MirrorNodeClient {
         this.setQueryParam(queryParamObject, 'account.id', accountId);
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
+        return this.get(`${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_BALANCE_ENDPOINT,
             [400, 404],
             requestId);
     }
 
     public async getBlock(hashOrBlockNumber: string | number, requestId?: string) {
-        return this.request(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`,
+        return this.get(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`,
             MirrorNodeClient.GET_BLOCK_ENDPOINT,
             [400, 404],
             requestId);
@@ -272,21 +307,21 @@ export class MirrorNodeClient {
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`,
+        return this.get(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_BLOCKS_ENDPOINT,
             [400, 404],
             requestId);
     }
 
     public async getContract(contractIdOrAddress: string, requestId?: string) {
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`,
+        return this.get(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`,
             MirrorNodeClient.GET_CONTRACT_ENDPOINT,
             [400, 404],
             requestId);
     }
 
     public async getContractResult(transactionIdOrHash: string, requestId?: string) {
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`,
+        return this.get(`${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT,
             [400, 404],
             requestId);
@@ -297,14 +332,14 @@ export class MirrorNodeClient {
         this.setContractResultsParams(queryParamObject, contractResultsParams);
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
+        return this.get(`${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT,
             [400, 404],
             requestId);
     }
 
     public async getContractResultsDetails(contractId: string, timestamp: string, requestId?: string) {
-        return this.request(`${this.getContractResultsDetailsByContractIdAndTimestamp(contractId, timestamp)}`,
+        return this.get(`${this.getContractResultsDetailsByContractIdAndTimestamp(contractId, timestamp)}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT,
             [400, 404],
             requestId);
@@ -319,14 +354,14 @@ export class MirrorNodeClient {
         this.setContractResultsParams(queryParamObject, contractResultsParams);
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}${queryParams}`,
+        return this.get(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT,
             [400],
             requestId);
     }
 
     public async getContractResultsByAddressAndTimestamp(contractIdOrAddress: string, timestamp: string, requestId?: string) {
-        return this.request(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}/${timestamp}`,
+        return this.get(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}/${timestamp}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT,
             [206, 400, 404],
             requestId);
@@ -398,7 +433,7 @@ export class MirrorNodeClient {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`,
+        return this.get(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT,
             [400, 404],
             requestId);
@@ -409,7 +444,7 @@ export class MirrorNodeClient {
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         this.setQueryParam(queryParamObject, 'order', order);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.request(`${MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT}${queryParams}`,
+        return this.get(`${MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT,
             [400, 404],
             requestId);
@@ -426,7 +461,7 @@ export class MirrorNodeClient {
     }
 
     public async getTokenById(tokenId: string, requestId?: string) {
-        return this.request(`${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}`,
+        return this.get(`${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}`,
             MirrorNodeClient.GET_TOKENS_ENDPOINT,
             [400, 404],
             requestId);
@@ -449,10 +484,14 @@ export class MirrorNodeClient {
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
 
-        return this.request(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${address}${MirrorNodeClient.GET_STATE_ENDPOINT}${queryParams}`,
+        return this.get(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${address}${MirrorNodeClient.GET_STATE_ENDPOINT}${queryParams}`,
         MirrorNodeClient.GET_STATE_ENDPOINT,
         [400, 404],
         requestId);
+    }
+
+    public async postContractCall(callData: string, requestId?: string) {
+        return this.post(MirrorNodeClient.CONTRACT_CALL_ENDPOINT, callData, MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [400], requestId);
     }
 
     getQueryParams(params: object) {
@@ -557,7 +596,11 @@ export class MirrorNodeClient {
     }
 
     //exposing mirror node instance for tests
-    public getMirrorNodeInstance(){
-        return this.client;
+    public getMirrorNodeRestInstance(){
+        return this.restClient;
+    }
+
+    public getMirrorNodeWeb3Instance(){
+        return this.web3Client;
     }
 }

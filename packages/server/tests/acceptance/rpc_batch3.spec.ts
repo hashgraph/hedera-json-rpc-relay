@@ -27,6 +27,10 @@ import {Utils} from '../helpers/utils';
 // local resources
 import reverterContractJson from '../contracts/Reverter.json';
 import {EthImpl} from '@hashgraph/json-rpc-relay/src/lib/eth';
+import {predefined} from "@hashgraph/json-rpc-relay";
+import Assertions from "../helpers/assertions";
+import basicContractJson from '../contracts/Basic.json';
+import callerContractJson from '../contracts/Caller.json';
 
 describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -42,6 +46,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
 
     let reverterContract, reverterEvmAddress, requestId;
+    const NON_EXISTING_ADDRESS = '0x5555555555555555555555555555555555555555';
+    const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
+    const BASIC_CONTRACT_PING_RESULT = '0x0000000000000000000000000000000000000000000000000000000000000001';
     const PURE_METHOD_CALL_DATA = '0xb2e0100c';
     const VIEW_METHOD_CALL_DATA = '0x90e9b875';
     const PAYABLE_METHOD_CALL_DATA = '0xd0efd7ef';
@@ -60,11 +67,336 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         requestId = Utils.generateRequestId();
 
         accounts[0] = await servicesNode.createAliasAccount(30, null, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(10, relay.provider, requestId);
 
         reverterContract = await servicesNode.deployContract(reverterContractJson);
         // Wait for creation to propagate
         await mirrorNode.get(`/contracts/${reverterContract.contractId}`, requestId);
         reverterEvmAddress = `0x${reverterContract.contractId.toSolidityAddress()}`;
+    });
+
+
+    describe('eth_call', () => {
+        let basicContract, evmAddress;
+
+        before(async () => {
+            basicContract = await servicesNode.deployContract(basicContractJson);
+            // Wait for creation to propagate
+            await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
+
+            evmAddress = `0x${basicContract.contractId.toSolidityAddress()}`;
+        });
+
+        it('@release should execute "eth_call" request to Basic contract', async function () {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: evmAddress,
+                gas: EthImpl.numberTo0x(30000),
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+            expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+        });
+
+        it('should fail "eth_call" request without data field', async function () {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: evmAddress,
+                gas: EthImpl.numberTo0x(30000)
+            };
+
+            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+            expect(res).to.eq('0x'); // confirm no error
+        });
+
+        it('should fail "eth_call" for non-existing contract address', async function () {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: NON_EXISTING_ADDRESS,
+                gas: EthImpl.numberTo0x(30000),
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            await relay.callFailing('eth_call', [callData, 'latest'], predefined.INTERNAL_ERROR(), requestId);
+        });
+
+        it('should execute "eth_call" without from field', async function () {
+            const callData = {
+                to: evmAddress,
+                gas: EthImpl.numberTo0x(30000),
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+            expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+        });
+
+        it('should execute "eth_call" without gas field', async function () {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: evmAddress,
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+            expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+        });
+
+
+        it('should execute "eth_call" with correct block number', async function () {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: evmAddress,
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            const res = await relay.call('eth_call', [callData, '0x1'], requestId);
+            expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+        });
+
+        it('should execute "eth_call" with correct block hash object', async function () {
+            const blockHash = '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3';
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: evmAddress,
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            const res = await relay.call('eth_call', [callData, {'blockHash': blockHash}], requestId);
+            expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+        });
+
+        it('should execute "eth_call" with correct block number object', async function () {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: evmAddress,
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            const res = await relay.call('eth_call', [callData, {'blockNumber': '0x1'}], requestId);
+            expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+        });
+
+        it('should fail to execute "eth_call" with wrong block tag', async function () {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: evmAddress,
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            try {
+                await relay.call('eth_call', [callData, 'newest'], requestId);
+                Assertions.expectedError();
+            } catch (error) {
+                Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: newest'));
+            }
+        });
+
+        it('should fail to execute "eth_call" with wrong block number', async function () {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: evmAddress,
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            try {
+                await relay.call('eth_call', [callData, '123'], requestId);
+                Assertions.expectedError();
+            } catch (error) {
+                Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'));
+            }
+        });
+
+        it('should fail to execute "eth_call" with wrong block hash object', async function () {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: evmAddress,
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            try {
+                await relay.call('eth_call', [callData, {'blockHash': '0x123'}], requestId);
+                Assertions.expectedError();
+            } catch (error) {
+
+                Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block, value: 0x123'));
+            }
+        });
+
+        it('should fail to execute "eth_call" with wrong block number object', async function () {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: evmAddress,
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            try {
+                await relay.call('eth_call', [callData, {'blockNumber': '123'}], requestId);
+                Assertions.expectedError();
+            } catch (error) {
+                Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'));
+            }
+        });
+
+        describe('Caller contract', () => {
+            let callerContract, callerAddress, defaultCallData, activeAccount;
+
+            const describes = [
+                {
+                    title: 'With long-zero address',
+                    beforeFunc: async function () {
+                        activeAccount = accounts[0];
+                        callerContract = await servicesNode.deployContract(callerContractJson);
+                        // Wait for creation to propagate
+                        const callerMirror = await mirrorNode.get(`/contracts/${callerContract.contractId}`, requestId);
+                        callerAddress = `0x${callerContract.contractId.toSolidityAddress()}`;
+                        defaultCallData = {
+                            from: `0x${activeAccount.address}`,
+                            to: callerAddress,
+                            gas: `0x7530`,
+                        };
+                    }
+                },
+                {
+                    title: 'With evm address',
+                    beforeFunc: async function () {
+                        activeAccount = accounts[1];
+                        callerContract = await Utils.deployContractWithEthers([], callerContractJson, activeAccount.wallet, relay);
+                        // Wait for creation to propagate
+                        const callerMirror = await mirrorNode.get(`/contracts/${callerContract.address}`, requestId);
+                        callerAddress = callerMirror.evm_address;
+                        defaultCallData = {
+                            from: `0x${activeAccount.address}`,
+                            to: callerAddress,
+                            gas: `0x7530`,
+                        };
+                    }
+                }
+            ]
+
+            for (let desc of describes) {
+                describe(desc.title, () => {
+                    before(desc.beforeFunc);
+
+                    it('001 Should call pureMultiply', async function () {
+                        const callData = {
+                            ...defaultCallData,
+                            data: '0x0ec1551d'
+                        };
+
+                        const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                        expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                    });
+
+                    it("002 Should call msgSender", async function () {
+                        const callData = {
+                            ...defaultCallData,
+                            data: '0xd737d0c7'
+                        };
+
+                        const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                        expect(res).to.eq(`0x${activeAccount.address.padStart(64, '0')}`);
+                    });
+
+                    it("003 Should call txOrigin", async function () {
+                        const callData = {
+                            ...defaultCallData,
+                            data: '0xf96757d1'
+                        };
+
+                        const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                        expect(res).to.eq(`0x${activeAccount.address.padStart(64, '0')}`);
+                    });
+
+                    it("004 Should call msgSig", async function () {
+                        const callData = {
+                            ...defaultCallData,
+                            data: '0xec3e88cf'
+                        };
+
+                        const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                        expect(res).to.eq('0xec3e88cf00000000000000000000000000000000000000000000000000000000');
+                    });
+
+                    it("005 Should call addressBalance", async function () {
+                        const callData = {
+                            ...defaultCallData,
+                            data: '0x0ec1551d'
+                        };
+
+                        const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                        expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                    });
+
+                    it("006 'data' from request body with wrong method signature", async function () {
+                        const callData = {
+                            ...defaultCallData,
+                            data: '0x3ec4de3800000000000000000000000067d8d32e9bf1a9968a5ff53b87d777aa8ebbee69'
+                        };
+
+                        await relay.callFailing('eth_call', [callData, 'latest'], predefined.CONTRACT_REVERT(), requestId);
+                    });
+
+                    it("007 'data' from request body with wrong encoded parameter", async function () {
+                        const callData = {
+                            ...defaultCallData,
+                            data: '0x3ec4de350000000000000000000000000000000000000000000000000000000000000005'
+                        };
+
+                        const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                        expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000000');
+                    });
+
+                    it("008 should work for missing 'from' field", async function () {
+                        const callData = {
+                            to: callerAddress,
+                            data: '0x0ec1551d'
+                        };
+
+                        const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                        expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
+                    });
+
+                    it("009 should fail for missing 'to' field", async function () {
+                        const callData = {
+                            from: `0x${accounts[0].address}`,
+                            data: '0x0ec1551d'
+                        };
+
+                        await relay.callFailing('eth_call', [callData, 'latest'], predefined.INVALID_CONTRACT_ADDRESS(undefined), requestId);
+                    });
+
+                    // value is processed only when eth_call goes through the mirror node
+                    if (process.env.ETH_CALL_CONSENSUS && process.env.ETH_CALL_CONSENSUS === 'false') {
+                        it("010 Should call msgValue", async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0xddf363d7',
+                                value: '0x3e8'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            expect(res).to.eq('0x00000000000000000000000000000000000000000000000000000000000003e8');
+                        });
+
+
+                        it("011 Should fail when calling msgValue with more value than available balance", async function () {
+                            const callData = {
+                                ...defaultCallData,
+                                data: '0xddf363d7',
+                                value: '0x3e80000000'
+                            };
+
+                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+
+                            // TODO assert correct message
+                            expect(res).to.eq('0x');
+                        });
+                    }
+                })
+            }
+        });
     });
 
     describe('Contract call reverts', async () => {

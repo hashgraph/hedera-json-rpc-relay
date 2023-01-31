@@ -72,4 +72,36 @@ export class Utils {
     static formatRequestIdMessage = (requestId?: string): string => {
         return requestId ? `[Request ID: ${requestId}]` : '';
     };
+
+    static deployContractWithEthers = async (constructorArgs:any[] = [], contractJson, wallet, relay) => {
+        const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
+        let contract = await factory.deploy(...constructorArgs);
+        await contract.deployed();
+
+        // re-init the contract with the deployed address
+        const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
+        contract = new ethers.Contract(receipt.to, contractJson.abi, wallet);
+        return contract;
+    }
+
+    static createHTS = async (tokenName, symbol, adminAccount, initialSupply, abi, associatedAccounts, owner, servicesNode, requestId) => {
+        const htsResult = await servicesNode.createHTS({
+            tokenName,
+            symbol,
+            treasuryAccountId: adminAccount.accountId.toString(),
+            initialSupply,
+            adminPrivateKey: adminAccount.privateKey,
+        });
+
+        // Associate and approve token for all accounts
+        for (const account of associatedAccounts) {
+            await servicesNode.associateHTSToken(account.accountId, htsResult.receipt.tokenId, account.privateKey, htsResult.client, requestId);
+            await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId, htsResult.client, requestId);
+        }
+
+        // Setup initial balance of token owner account
+        await servicesNode.transferHTSToken(owner.accountId, htsResult.receipt.tokenId, initialSupply, htsResult.client, requestId);
+        const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
+        return new ethers.Contract(evmAddress, abi, owner.wallet);
+    };
 }
