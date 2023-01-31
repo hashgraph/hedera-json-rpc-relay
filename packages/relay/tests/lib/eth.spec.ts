@@ -2227,7 +2227,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_estimateGas transfer to existing account', async function() {
     const receiverAddress = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
-    mock.onGet(`accounts/${receiverAddress}`).reply(200, { address: receiverAddress });
+    restMock.onGet(`accounts/${receiverAddress}`).reply(200, { address: receiverAddress });
 
     const gas = await ethImpl.estimateGas({
       to: receiverAddress,
@@ -2237,19 +2237,19 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_estimateGas empty call returns transfer cost', async function () {
-    mock.onGet(`accounts/undefined`).reply(404);
+    restMock.onGet(`accounts/undefined`).reply(404);
     const gas = await ethImpl.estimateGas({}, null);
     expect(gas).to.equal(EthImpl.gasTxHollowAccountCreation);
   });
 
   it('eth_estimateGas empty input transfer cost', async function () {
-    mock.onGet(`accounts/undefined`).reply(404);
+    restMock.onGet(`accounts/undefined`).reply(404);
     const gas = await ethImpl.estimateGas({ data: "" }, null);
     expect(gas).to.equal(EthImpl.gasTxHollowAccountCreation);
   });
 
   it('eth_estimateGas zero input returns transfer cost', async function () {
-    mock.onGet(`accounts/undefined`).reply(404);
+    restMock.onGet(`accounts/undefined`).reply(404);
     const gas = await ethImpl.estimateGas({ data: "0x" }, null);
     expect(gas).to.equal(EthImpl.gasTxHollowAccountCreation);
   });
