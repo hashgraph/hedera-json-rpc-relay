@@ -59,7 +59,9 @@ export class RelayImpl implements Relay {
     const mirrorNodeClient = new MirrorNodeClient(
       process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
-      register
+      register,
+      undefined,
+      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
     );
 
     const sdkClient = new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), register);
