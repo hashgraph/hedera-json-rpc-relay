@@ -67,6 +67,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         requestId = Utils.generateRequestId();
 
         accounts[0] = await servicesNode.createAliasAccount(30, null, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(10, relay.provider, requestId);
 
         reverterContract = await servicesNode.deployContract(reverterContractJson);
         // Wait for creation to propagate
@@ -260,7 +261,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 {
                     title: 'With evm address',
                     beforeFunc: async function () {
-                        activeAccount = accounts[3];
+                        activeAccount = accounts[1];
                         callerContract = await Utils.deployContractWithEthers([], callerContractJson, activeAccount.wallet, relay);
                         // Wait for creation to propagate
                         const callerMirror = await mirrorNode.get(`/contracts/${callerContract.address}`, requestId);
