@@ -674,7 +674,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                     await relay.call('eth_call', [callData, 'newest'], requestId);
                     Assertions.expectedError();
                 } catch (error) {
-                    Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending, value: newest'));
+                    Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: newest'));
                 }
             });
 
@@ -689,7 +689,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                     await relay.call('eth_call', [callData, '123'], requestId);
                     Assertions.expectedError();
                 } catch (error) {
-                    Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending, value: 123'));
+                    Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'));
                 }
             });
 
@@ -720,7 +720,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                     await relay.call('eth_call', [callData, {'blockNumber': '123'}], requestId);
                     Assertions.expectedError();
                 } catch (error) {
-                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"'));
+                    Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 0x123'));
                 }
             });
 
