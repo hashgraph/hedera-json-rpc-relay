@@ -207,6 +207,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_estimateGas"', async function () {
+        mock.onGet(`accounts/undefined`).reply(404);
         const response = await ethImpl.estimateGas({}, null);
 
         validateResponseSchema(methodsResponseSchema.eth_estimateGas, response);
