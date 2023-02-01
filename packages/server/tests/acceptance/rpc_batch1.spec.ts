@@ -856,6 +856,32 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 expect(res).to.be.equal('0x0');
             });
 
+            it('should execute "eth_getTransactionCount" from hollow account', async function() {
+                const hollowAccount = ethers.Wallet.createRandom();
+                const resBeforeCreation = await relay.call('eth_getTransactionCount', [hollowAccount.address, 'latest'], requestId);
+                expect(resBeforeCreation).to.be.equal('0x0');
+
+                const signedTxHollowAccountCreation = await accounts[2].wallet.signTransaction({
+                    ...defaultLondonTransactionData,
+                    value: '5000000000000000000', // 5 HBARs
+                    to: hollowAccount.address,
+                    nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId)
+                });
+                const txHashHAC = await relay.call('eth_sendRawTransaction', [signedTxHollowAccountCreation], requestId);
+                await mirrorNode.get(`/contracts/results/${txHashHAC}`, requestId);
+
+                const signTxFromHollowAccount = await hollowAccount.signTransaction({
+                    ...defaultLondonTransactionData,
+                    to: mirrorContract.evm_address,
+                    nonce: await relay.getAccountNonce(hollowAccount.address, requestId)
+                });
+                const txHashHA = await relay.call('eth_sendRawTransaction', [signTxFromHollowAccount], requestId);
+                await mirrorNode.get(`/contracts/results/${txHashHA}`, requestId);
+
+                const resAfterCreation = await relay.call('eth_getTransactionCount', [hollowAccount.address, 'latest'], requestId);
+                expect(resAfterCreation).to.be.equal('0x1');
+            });
+
             it('should execute "eth_getTransactionCount" for account with non-zero nonce', async function () {
                 const account = await servicesNode.createAliasAccount(10, null, requestId);
                 // Wait for account creation to propagate
