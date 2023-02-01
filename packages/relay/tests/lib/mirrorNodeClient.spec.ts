@@ -57,10 +57,10 @@ describe('MirrorNodeClient', async function () {
     expect(mirrorNodeInstance.request).to.exist;
   });
 
-  it('`baseUrl` is exposed and correct', async () => {
+  it('`restUrl` is exposed and correct', async () => {
     const domain = process.env.MIRROR_NODE_URL.replace(/^https?:\/\//, "");
     const prodMirrorNodeInstance = new MirrorNodeClient(domain, logger.child({ name: `mirror-node` }), registry);
-    expect(prodMirrorNodeInstance.baseUrl).to.eq(`https://${domain}/api/v1/`);
+    expect(prodMirrorNodeInstance.restUrl).to.eq(`https://${domain}/api/v1/`);
   });
 
   it('`getQueryParams` general', async () => {
@@ -100,7 +100,7 @@ describe('MirrorNodeClient', async function () {
     expect(queryParamsString).equal('?topic0=0x0a&topic0=0x0b&topic1=0x0c&topic2=0x0d&topic2=0x0e&topic3=0x0f');
   });
 
-  it('`request` works', async () => {
+  it('`get` works', async () => {
     mock.onGet('accounts').reply(200, {
       'accounts': [
         {
@@ -126,7 +126,7 @@ describe('MirrorNodeClient', async function () {
     });
 
     // const customMirrorNodeInstance = new MirrorNodeClient('', logger.child({ name: `mirror-node`}), instance);
-    const result = await mirrorNodeInstance.request('accounts');
+    const result = await mirrorNodeInstance.get('accounts');
     expect(result).to.exist;
     expect(result.links).to.exist;
     expect(result.links.next).to.exist;
@@ -140,9 +140,21 @@ describe('MirrorNodeClient', async function () {
     });
   });
 
+  it('`post` works', async () => {
+    const mockResult = {
+      result: '0x3234333230'
+    };
+    mock.onPost('contracts/call', {foo: 'bar'}).reply(200, mockResult);
+
+    const result = await mirrorNodeInstance.post('contracts/call', {foo: 'bar'});
+    expect(result).to.exist;
+    expect(result.result).to.exist;
+    expect(result.result).to.eq(mockResult.result);
+  });
+
   it('call to non-existing REST route returns 404', async () => {
     try {
-      expect(await mirrorNodeInstance.request('non-existing-route')).to.throw();
+      expect(await mirrorNodeInstance.get('non-existing-route')).to.throw();
     } catch (err: any) {
       expect(err.statusCode).to.eq(404);
     }

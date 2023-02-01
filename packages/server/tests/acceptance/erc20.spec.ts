@@ -24,10 +24,10 @@ import chai, {expect} from "chai";
 chai.use(solidity);
 
 import { AliasAccount } from '../clients/servicesClient';
+import {Utils} from '../helpers/utils';
 import { ethers, BigNumber } from 'ethers';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import Assertions from '../helpers/assertions';
-import {Utils} from '../helpers/utils';
 import { EthImpl } from "@hashgraph/json-rpc-relay/src/lib/eth";
 
 
@@ -70,8 +70,8 @@ describe('@erc20 Acceptance Tests', async function () {
         // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
         await new Promise(r => setTimeout(r, 5000));
 
-        contracts.push(await deployErc20([name, symbol, initialHolder, initialSupply], ERC20MockJson));
-        contracts.push(await createHTS(name, symbol, accounts[0], 10000, ERC20MockJson.abi, [accounts[1], accounts[2]]));
+        contracts.push(await Utils.deployContractWithEthers([name, symbol, initialHolder, initialSupply], ERC20MockJson, accounts[0].wallet, relay));
+        contracts.push(await Utils.createHTS(name, symbol, accounts[0], 10000, ERC20MockJson.abi, [accounts[1], accounts[2]], accounts[0], servicesNode, requestId));
     });
 
     this.beforeEach(async () => {
@@ -336,36 +336,4 @@ describe('@erc20 Acceptance Tests', async function () {
             });
         });
     }
-
-
-    async function deployErc20(constructorArgs:any[] = [], contractJson) {
-        const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, accounts[0].wallet);
-        let contract = await factory.deploy(...constructorArgs);
-        await contract.deployed();
-
-        // re-init the contract with the deployed address
-        const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
-        contract = new ethers.Contract(receipt.to, contractJson.abi, accounts[0].wallet);
-        return contract;
-    }
-
-    const createHTS = async(tokenName, symbol, adminAccount, initialSupply, abi, associatedAccounts) => {
-        const htsResult = await servicesNode.createHTS({
-            tokenName,
-            symbol,
-            treasuryAccountId: adminAccount.accountId.toString(),
-            initialSupply,
-            adminPrivateKey: adminAccount.privateKey,
-        });
-
-        // Associate and approve token for all accounts
-        for (const account of associatedAccounts) {
-            await servicesNode.associateHTSToken(account.accountId, htsResult.receipt.tokenId, account.privateKey, htsResult.client, requestId);
-            await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId, htsResult.client, requestId);
-        }
-        // Setup initial balance of token owner account
-        await servicesNode.transferHTSToken(accounts[0].accountId, htsResult.receipt.tokenId, initialSupply, htsResult.client.operatorAccountId, requestId);
-        const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
-        return new ethers.Contract(evmAddress, abi, accounts[0].wallet);
-    };
 });
