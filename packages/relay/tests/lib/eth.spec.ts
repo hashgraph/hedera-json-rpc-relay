@@ -35,8 +35,8 @@ import {
   defaultFromLongZeroAddress,
   expectUnsupportedMethod,
   defaultErrorMessage,
-  buildCryptoTransferTransaction
- } from '../helpers';
+  buildCryptoTransferTransaction, contractAddress3
+} from '../helpers';
 
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
@@ -1541,23 +1541,23 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('should return the bytecode from SDK if Mirror Node returns 404', async () => {
-      mock.onGet(`contracts/${contractAddress1}`).reply(404, defaultContract);
-      mock.onGet(`accounts/${contractAddress1}`).reply(404, null);
-      mock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
+      mock.onGet(`contracts/${contractAddress2}`).reply(404, defaultContract);
+      mock.onGet(`accounts/${contractAddress2}`).reply(404, null);
+      mock.onGet(`tokens/0.0.${parseInt(contractAddress2, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
-      const res = await ethImpl.getCode(contractAddress1, null);
+      const res = await ethImpl.getCode(contractAddress2, null);
       expect(res).to.equal(deployedBytecode);
     });
 
     it('should return the bytecode from SDK if Mirror Node returns empty runtime_bytecode', async () => {
-      mock.onGet(`contracts/${contractAddress1}`).reply(404, {
+      mock.onGet(`contracts/${contractAddress3}`).reply(404, {
         ...defaultContract,
         runtime_bytecode: EthImpl.emptyHex
       });
-      mock.onGet(`accounts/${contractAddress1}`).reply(404, null);
-      mock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
+      mock.onGet(`accounts/${contractAddress3}`).reply(404, null);
+      mock.onGet(`tokens/0.0.${parseInt(contractAddress3, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
-      const res = await ethImpl.getCode(contractAddress1, null);
+      const res = await ethImpl.getCode(contractAddress3, null);
       expect(res).to.equal(deployedBytecode);
     });
 
