@@ -50,6 +50,7 @@ import {
     contractTimestamp2,
     contractTimestamp3,
     defaultBlock,
+    defaultCallData,
     defaultContract,
     defaultContractResults,
     defaultDetailedContractResultByHash,
@@ -127,6 +128,7 @@ describe("Open RPC Specification", function () {
         mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
         mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
         mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, defaultDetailedContractResults3);
+        mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, null);
         mock.onGet(`accounts/${contractAddress1}`).reply(200, { account: contractAddress1 });
         mock.onGet(`accounts/${contractAddress3}`).reply(200, { account: contractAddress3 });
         mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
@@ -136,6 +138,7 @@ describe("Open RPC Specification", function () {
         for (const log of defaultLogs.logs) {
         mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
         }
+        mock.onPost(`contracts/call`, {...defaultCallData, estimate: false}).reply(200, {result: '0x12'});
         sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
         sdkClientStub.getAccountBalanceInTinyBar.returns(100000000000);
         sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));
@@ -175,12 +178,20 @@ describe("Open RPC Specification", function () {
         validateResponseSchema(methodsResponseSchema.eth_blockNumber, response);
     });
 
-    it('should execute "eth_call"', async function () {
-        sdkClientStub.submitContractCallQuery.returns({ asBytes: () => Buffer.from('12') });
-
-        const response = await ethImpl.call(defaultTransaction, 'latest');
-
+    it('should execute "eth_call" against mirror node', async function () {
+        let initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
+        process.env.ETH_CALL_CONSENSUS = 'false';
+        const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
         validateResponseSchema(methodsResponseSchema.eth_call, response);
+        process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
+    });
+
+    it('should execute "eth_call" against consensus node', async function () {
+        let initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
+        process.env.ETH_CALL_CONSENSUS = 'true';
+        sdkClientStub.submitContractCallQuery.returns({ asBytes: () => Buffer.from('12') });
+        const response = await ethImpl.call(defaultTransaction, 'latest')
+        process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
     });
 
     it('should execute "eth_chainId"', function () {
@@ -196,6 +207,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_estimateGas"', async function () {
+        mock.onGet(`accounts/undefined`).reply(404);
         const response = await ethImpl.estimateGas({}, null);
 
         validateResponseSchema(methodsResponseSchema.eth_estimateGas, response);

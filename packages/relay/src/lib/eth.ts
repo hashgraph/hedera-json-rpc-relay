@@ -21,6 +21,7 @@
 import { Eth } from '../index';
 import { Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import {BigNumber as BN} from "bignumber.js";
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
 import { MirrorNodeClient, SDKClient } from './clients';
@@ -53,6 +54,7 @@ export class EthImpl implements Eth {
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   static defaultGas = EthImpl.numberTo0x(constants.TX_DEFAULT_GAS);
   static gasTxBaseCost = EthImpl.numberTo0x(constants.TX_BASE_COST);
+  static gasTxHollowAccountCreation = EthImpl.numberTo0x(constants.TX_HOLLOW_ACCOUNT_CREATION_GAS);
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasUsedRatio = 0.5;
@@ -324,9 +326,12 @@ export class EthImpl implements Eth {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async estimateGas(transaction: any, _blockParam: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    this.logger.trace(`${requestIdPrefix} estimateGas()`);
+    this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
+    //this checks whether this is a transfer transaction and not a contract function execution
     if (!transaction || !transaction.data || transaction.data === '0x') {
-      return EthImpl.gasTxBaseCost;
+      const toAccount = await this.mirrorNodeClient.getAccount(transaction.to);
+      // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
+      return toAccount ? EthImpl.gasTxBaseCost : EthImpl.gasTxHollowAccountCreation;
     } else {
       return EthImpl.defaultGas;
     }
@@ -495,10 +500,10 @@ export class EthImpl implements Eth {
 
   /**
    * Returns the current state value filtered by address and slot.
-   * @param address 
-   * @param slot 
-   * @param requestId 
-   * @returns 
+   * @param address
+   * @param slot
+   * @param requestId
+   * @returns
    */
   private async getCurrentState(address: string, slot: string, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
@@ -526,11 +531,11 @@ export class EthImpl implements Eth {
 
   /**
    * Returns the state value of contract filtered by address, slot and block number.
-   * @param address 
-   * @param slot 
-   * @param blockNumberOrTag 
-   * @param requestId 
-   * @returns 
+   * @param address
+   * @param slot
+   * @param blockNumberOrTag
+   * @param requestId
+   * @returns
    */
   private async getStateFromBlock(address: string, slot: string, blockNumberOrTag?: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
@@ -575,8 +580,8 @@ export class EthImpl implements Eth {
 
   /**
    * Checks and return correct format from input.
-   * @param input 
-   * @returns 
+   * @param input
+   * @returns
    */
   private static toHex32Byte(input: string): string {
     return input.length === 66 ? input : EthImpl.emptyHex + this.prune0x(input).padStart(64, '0');
@@ -966,27 +971,21 @@ export class EthImpl implements Eth {
    * @param blockParam
    */
   async call(call: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError> {
-    // FIXME: In the future this will be implemented by making calls to the mirror node. For the
-    //        time being we'll eat the cost and ask the main consensus nodes instead.
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
+
     // The "to" address must always be 42 chars.
     if (!call.to || call.to.length != 42) {
-      const callToExist = call.to && call.to.length ? ` Expected length of 42 chars but was ${call.to.length}.` : '';
-      throw new Error(`${requestIdPrefix}Invalid Contract Address: '${call.to}'.${callToExist}`);
+      throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
 
     try {
       // Get a reasonable value for "gas" if it is not specified.
-      let gas: number;
-      if (typeof call.gas === 'string') {
-        gas = Number(call.gas);
-      } else {
-        if (call.gas == null) {
-          gas = 400_000;
-        } else {
-          gas = call.gas;
-        }
+      let gas = Number(call.gas) || 400_000;
+
+      let value: string | null = null;
+      if (typeof call.value === 'string') {
+        value = (new BN(call.value)).toString();
       }
 
       // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
@@ -998,10 +997,29 @@ export class EthImpl implements Eth {
 
       // Execute the call and get the response
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}"`, call.to, gas, call.data, call.from);
-      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
 
-      // FIXME Is this right? Maybe so?
+      // ETH_CALL_CONSENSUS = false enables the use of Mirror node
+      if (process.env.ETH_CALL_CONSENSUS == 'false') {
+        //temporary workaround until precompiles are implemented in Mirror node evm module
+        const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
+        if (!isHts) {
+          const callData = {
+            ...call,
+            gas,
+            value,
+            estimate: false
+          }
+          const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
+          if (contractCallResponse && contractCallResponse.result) {
+            return EthImpl.prepend0x(contractCallResponse.result);
+          }
+          return EthImpl.emptyHex;
+        }
+      }
+
+      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
+
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
       if (e instanceof JsonRpcError) {

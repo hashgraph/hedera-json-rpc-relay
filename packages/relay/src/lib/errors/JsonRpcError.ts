@@ -160,5 +160,13 @@ export const predefined = {
     name: 'Value too low',
     code: -32602,
     message: 'Value below 10_000_000_000 wei which is 1 tinybar'
-  })
+  }),
+  'INVALID_CONTRACT_ADDRESS':  (address) => {
+    const message = address && address.length ? ` Expected length of 42 chars but was ${address.length}.` : ''
+    return new JsonRpcError({
+      name: 'Invalid Contract Address',
+      code: -32012,
+      message: `Invalid Contract Address: ${address}.${message}`
+    })
+  }
 };
