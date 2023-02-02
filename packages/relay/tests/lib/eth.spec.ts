@@ -136,6 +136,7 @@ describe('Eth calls using MirrorNode', async function () {
   const contractHash2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
   const contractHash3 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394';
   const contractAddress2 = '0x000000000000000000000000000000000000055e';
+  const contractAddress3 = '0x000000000000000000000000000000000000255c';
   const wrongContractAddress = '0x00000000000000000000000000000000055e';
   const contractTimestamp2 = '1653077542.701408897';
   const contractTimestamp3 = '1653088542.123456789';
@@ -1548,23 +1549,23 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('should return the bytecode from SDK if Mirror Node returns 404', async () => {
-      restMock.onGet(`contracts/${contractAddress1}`).reply(404, defaultContract);
-      restMock.onGet(`accounts/${contractAddress1}`).reply(404, null);
-      restMock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
+      restMock.onGet(`contracts/${contractAddress2}`).reply(404, defaultContract);
+      restMock.onGet(`accounts/${contractAddress2}`).reply(404, null);
+      restMock.onGet(`tokens/0.0.${parseInt(contractAddress2, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
-      const res = await ethImpl.getCode(contractAddress1, null);
+      const res = await ethImpl.getCode(contractAddress2, null);
       expect(res).to.equal(deployedBytecode);
     });
 
     it('should return the bytecode from SDK if Mirror Node returns empty runtime_bytecode', async () => {
-      restMock.onGet(`contracts/${contractAddress1}`).reply(404, {
+      restMock.onGet(`contracts/${contractAddress3}`).reply(404, {
         ...defaultContract,
         runtime_bytecode: EthImpl.emptyHex
       });
-      restMock.onGet(`accounts/${contractAddress1}`).reply(404, null);
-      restMock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
+      restMock.onGet(`accounts/${contractAddress3}`).reply(404, null);
+      restMock.onGet(`tokens/0.0.${parseInt(contractAddress3, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
-      const res = await ethImpl.getCode(contractAddress1, null);
+      const res = await ethImpl.getCode(contractAddress3, null);
       expect(res).to.equal(deployedBytecode);
     });
 
