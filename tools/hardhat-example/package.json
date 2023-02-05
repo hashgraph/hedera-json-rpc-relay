@@ -1,11 +1,11 @@
 {
   "name": "hardhat-project",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
-    "hardhat": "^2.12.0"
+    "@nomicfoundation/hardhat-toolbox": "^2.0.1",
+    "hardhat": "^2.12.6"
   },
   "dependencies": {
-    "@hashgraph/hethers": "^1.1.2",
-    "dotenv": "^16.0.1"
+    "@hashgraph/hedera-local": "^2.4.5",
+    "dotenv": "^16.0.3"
   }
 }
