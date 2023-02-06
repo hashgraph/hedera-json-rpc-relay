@@ -16,8 +16,6 @@ Create `.env` file based on `.env.example`
 # Alias accounts keys
 OPERATOR_PRIVATE_KEY=
 RECEIVER_PRIVATE_KEY=
-OPERATOR_PRIVATE_KEY_TESTNET=
-RECEIVER_PRIVATE_KEY_TESTNET=
 ```
 
 ## Setup & Install
