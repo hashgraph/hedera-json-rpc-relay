@@ -34,6 +34,7 @@ import { formatRequestIdMessage } from '../formatters';
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
+import crypto from 'crypto';
 
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
@@ -981,7 +982,9 @@ export class EthImpl implements Eth {
 
     try {
       // check cache if contract has since been updated then query node
-      const cachedLabel = `call.${call.to}`;
+      const dataHash = crypto.createHash('md5').update(call.data).digest(); /// call data may be large so hash to reduce key size.
+      // cache response by method, contract and call data
+      const cachedLabel = `call.${call.to}.${dataHash}`;
       const cachedResponse = this.cache.get(cachedLabel);
 
       // cache is object comprising of response data and timestamp of latest update. 
