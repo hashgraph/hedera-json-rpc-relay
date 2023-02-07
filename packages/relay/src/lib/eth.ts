@@ -31,6 +31,7 @@ import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
+import crypto from 'crypto';
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -64,6 +65,7 @@ export class EthImpl implements Eth {
   static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
   static iHTSAddress = '0x0000000000000000000000000000000000000167';
   static invalidEVMInstruction = '0xfe';
+  static ethCallCacheTtl = process.env.ETH_CALL_CACHE_TTL || 200;
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -1017,7 +1019,14 @@ export class EthImpl implements Eth {
         }
       }
 
-      let cachedResponse = this.cache.get(`eth_call: ${call.data} from ${call.to}`);
+      let data = call.data;
+      if (data) {
+        data = crypto.createHash('sha1').update(call.data).digest('hex');
+      }
+
+      const cacheKey = `eth_call:.${call.to}.${data}`;
+      let cachedResponse = this.cache.get(cacheKey);
+
       if (cachedResponse != undefined) {
         this.logger.debug(`${requestIdPrefix} eth_call returned cached response: ${cachedResponse}`);
         return cachedResponse;
@@ -1025,8 +1034,8 @@ export class EthImpl implements Eth {
 
       const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
       const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
-      
-      this.cache.set(`eth_call: ${call.data} from ${call.to}`, formattedCallReponse, { ttl: 200 });
+
+      this.cache.set(cacheKey, formattedCallReponse, { ttl: EthImpl.ethCallCacheTtl });
       return formattedCallReponse;
 
     } catch (e: any) {
