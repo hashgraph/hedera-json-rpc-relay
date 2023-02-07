@@ -1024,8 +1024,10 @@ export class EthImpl implements Eth {
       }
 
       const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
-      this.cache.set(`eth_call: ${call.data} from ${call.to}`, EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex')), { ttl: 200 });
-      return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
+      const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
+      
+      this.cache.set(`eth_call: ${call.data} from ${call.to}`, formattedCallReponse, { ttl: 200 });
+      return formattedCallReponse;
 
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
