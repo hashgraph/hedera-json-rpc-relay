@@ -168,5 +168,15 @@ export const predefined = {
       code: -32012,
       message: `Invalid Contract Address: ${address}.${message}`
     })
-  }
+  },
+  'COULD_NOT_ESTIMATE_GAS_PRICE': new JsonRpcError({
+    name: 'Could not estimate gas price',
+    code: -32604,
+    message: 'Error encountered estimating the gas price'
+  }),
+  'COULD_NOT_RETRIEVE_LATEST_BLOCK': new JsonRpcError({
+    name: 'Could not retrieve latest block',
+    code: -32607,
+    message: 'Error encountered retrieving latest block'
+  })
 };

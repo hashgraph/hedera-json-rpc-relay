@@ -2279,7 +2279,8 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_gasPrice with no EthereumTransaction gas returned', async function () {
-    const partialNetworkFees = Object.assign({}, defaultNetworkFees);
+    // deep copy defaultNetworkFees to avoid mutating the original object
+    const partialNetworkFees = JSON.parse(JSON.stringify(defaultNetworkFees));
     partialNetworkFees.fees.splice(2);
 
     restMock.onGet(`network/fees`).reply(200, partialNetworkFees);
@@ -2287,7 +2288,8 @@ describe('Eth calls using MirrorNode', async function () {
     try {
       await ethImpl.gasPrice();
     } catch (error: any) {
-      expect(error.message).to.equal('Error encountered estimating the gas price');
+      expect(error.message).to.equal(predefined.COULD_NOT_ESTIMATE_GAS_PRICE.message);
+      expect(error.code).to.equal(predefined.COULD_NOT_ESTIMATE_GAS_PRICE.code);
     }
   });
 
@@ -2324,7 +2326,8 @@ describe('Eth calls using MirrorNode', async function () {
     try {
       await ethImpl.gasPrice();
     } catch (error: any) {
-      expect(error.message).to.equal('Error encountered estimating the gas price');
+      expect(error.message).to.equal(predefined.COULD_NOT_ESTIMATE_GAS_PRICE.message);
+      expect(error.code).to.equal(predefined.COULD_NOT_ESTIMATE_GAS_PRICE.code);
     }
   });
 
@@ -2621,8 +2624,8 @@ describe('Eth calls using MirrorNode', async function () {
         await ethImpl.sendRawTransaction(txHash);
       } catch (e) {
         hasError = true;
-        expect(e.code).to.equal(-32603);
-        expect(e.name).to.equal('Internal error');
+        expect(e.code).to.equal(predefined.INTERNAL_ERROR().code);
+        expect(e.message).to.equal(predefined.INTERNAL_ERROR().message);
       }
       expect(hasError).to.be.true;
     });

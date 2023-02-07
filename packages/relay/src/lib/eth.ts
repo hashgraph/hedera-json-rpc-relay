@@ -290,7 +290,7 @@ export class EthImpl implements Eth {
       }
     }
 
-    throw new Error('Error encountered estimating the gas price');
+    throw predefined.COULD_NOT_ESTIMATE_GAS_PRICE;
   }
 
   /**
@@ -306,7 +306,7 @@ export class EthImpl implements Eth {
       return EthImpl.numberTo0x(blocks[0].number);
     }
 
-    throw new Error(`Error encountered retrieving latest block`);
+    throw predefined.COULD_NOT_RETRIEVE_LATEST_BLOCK;
   }
 
   /**
@@ -894,10 +894,6 @@ export class EthImpl implements Eth {
       const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction, requestId);
       await this.precheck.sendRawTransactionCheck(transaction, gasPrice, requestId);
     } catch (e: any) {
-      if (e instanceof JsonRpcError) {
-        return e;
-      }
-
       throw this.genericErrorHandler(e);
     }
 
@@ -1512,7 +1508,7 @@ export class EthImpl implements Eth {
       throw error;
     }
 
-    return error;
+    return predefined.INTERNAL_ERROR();
   }
 
 }
