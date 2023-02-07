@@ -1021,8 +1021,7 @@ export class EthImpl implements Eth {
 
       let data = call.data;
       if (data) {
-        // tslint:disable-next-line:S4790
-        data = crypto.createHash('sha1').update(call.data).digest('hex');
+        data = crypto.createHash('sha1').update(call.data).digest('hex'); // NOSONAR
       }
 
       const cacheKey = `eth_call:.${call.to}.${data}`;
