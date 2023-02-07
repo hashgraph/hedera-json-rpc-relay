@@ -982,12 +982,20 @@ export class EthImpl implements Eth {
     try {
       // check cache if contract has since been updated then query node
       const cachedLabel = `call.${call.to}`;
-      const cachedResponse: string = this.cache.get(cachedLabel);
-      let latestStateUpdate = cachedResponse != undefined ? cachedResponse : '';
+      const cachedResponse = this.cache.get(cachedLabel);
 
-      if (await this.hasContractStateSeenAnUpdate(call.to, latestStateUpdate, requestId)) {
-        return cachedResponse;
+      // cache is object comprising of response data and timestamp of latest update. 
+      let formattedResponse = { callResponse: '', callTimestamp: '0'};
+      if (cachedResponse != undefined) {
+        formattedResponse = { ...cachedResponse };
       }
+
+      const latestMirrorStateUpdate = await this.hasContractStateSeenAnUpdate(call.to, formattedResponse.callTimestamp, requestId);
+      if (latestMirrorStateUpdate === null) {
+        return formattedResponse.callResponse;
+      }
+
+      formattedResponse.callTimestamp = latestMirrorStateUpdate;
 
       // Get a reasonable value for "gas" if it is not specified.
       let gas = Number(call.gas) || 400_000;
@@ -1008,7 +1016,6 @@ export class EthImpl implements Eth {
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}"`, call.to, gas, call.data, call.from);
 
       // ETH_CALL_CONSENSUS = false enables the use of Mirror node
-      let response;
       if (process.env.ETH_CALL_CONSENSUS == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
@@ -1021,17 +1028,17 @@ export class EthImpl implements Eth {
           }
           const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
           if (contractCallResponse && contractCallResponse.result) {
-            response = EthImpl.prepend0x(contractCallResponse.result);
+            formattedResponse.callResponse = EthImpl.prepend0x(contractCallResponse.result);
           }
-          response = EthImpl.emptyHex;
+          formattedResponse.callResponse = EthImpl.emptyHex;
         }
       }
 
       const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
-      response = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
+      formattedResponse.callResponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
-      this.cache.set(cachedLabel, response);
-      return response;
+      this.cache.set(cachedLabel, formattedResponse);
+      return formattedResponse.callResponse;
 
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
@@ -1534,7 +1541,7 @@ export class EthImpl implements Eth {
     return EthImpl.zeroHex;
   }
 
-  private async hasContractStateSeenAnUpdate(to: string, latestStateUpdate: string, requestId?: string): Promise<boolean> {
+  private async hasContractStateSeenAnUpdate(to: string, latestStateUpdate: string, requestId?: string): Promise<string | null> {
     // If latestMirrorStateUpdate from mirror is greater than cached value then return true to indicate node query
     return await this.mirrorNodeClient.getContractCurrentStateByAddress(to, requestId)
       .then(response => {
@@ -1557,12 +1564,16 @@ export class EthImpl implements Eth {
             return 0;
           })[0].timestamp;
 
-          if (latestStateUpdate > latestMirrorStateUpdate) {
-            return true;
+          // if the mirror node reports a state slot with timestamp greater than last observed timestamp return newer value
+          if (latestMirrorStateUpdate > latestStateUpdate) {
+            return latestMirrorStateUpdate;
           }
+
+          // when valid state exist but is older return null to signify cache return.
+          return null;
         }
 
-        return false;
+        return latestStateUpdate;
       })
       .catch((e: any) => {
         this.logger.error(
