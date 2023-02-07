@@ -980,6 +980,15 @@ export class EthImpl implements Eth {
     }
 
     try {
+      // check cache if contract has since been updated then query node
+      const cachedLabel = `call.${call.to}`;
+      const cachedResponse: string = this.cache.get(cachedLabel);
+      let latestStateUpdate = cachedResponse != undefined ? cachedResponse : '';
+
+      if (await this.hasContractStateSeenAnUpdate(call.to, latestStateUpdate, requestId)) {
+        return cachedResponse;
+      }
+
       // Get a reasonable value for "gas" if it is not specified.
       let gas = Number(call.gas) || 400_000;
 
@@ -999,6 +1008,7 @@ export class EthImpl implements Eth {
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}"`, call.to, gas, call.data, call.from);
 
       // ETH_CALL_CONSENSUS = false enables the use of Mirror node
+      let response;
       if (process.env.ETH_CALL_CONSENSUS == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
@@ -1011,14 +1021,17 @@ export class EthImpl implements Eth {
           }
           const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
           if (contractCallResponse && contractCallResponse.result) {
-            return EthImpl.prepend0x(contractCallResponse.result);
+            response = EthImpl.prepend0x(contractCallResponse.result);
           }
-          return EthImpl.emptyHex;
+          response = EthImpl.emptyHex;
         }
       }
 
       const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
-      return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
+      response = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
+
+      this.cache.set(cachedLabel, response);
+      return response;
 
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
@@ -1519,6 +1532,45 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} maxPriorityFeePerGas()`);
     return EthImpl.zeroHex;
+  }
+
+  private async hasContractStateSeenAnUpdate(to: string, latestStateUpdate: string, requestId?: string): Promise<boolean> {
+    // If latestMirrorStateUpdate from mirror is greater than cached value then return true to indicate node query
+    return await this.mirrorNodeClient.getContractCurrentStateByAddress(to, requestId)
+      .then(response => {
+        if(response === null) {
+          throw predefined.RESOURCE_NOT_FOUND(`Cannot find current state for contract address ${to}`);
+        }
+
+        let latestMirrorStateUpdate = '';
+        if (response.state.length > 0) {
+          // sort in descending order of timestamp and pick first element
+          latestMirrorStateUpdate = response.state.sort((x, y) => {
+            if (x.timestamp > y.timestamp) {
+              return -1;
+            }
+
+            if (x.timestamp < y.timestamp) {
+              return 1;
+            }
+
+            return 0;
+          })[0].timestamp;
+
+          if (latestStateUpdate > latestMirrorStateUpdate) {
+            return true;
+          }
+        }
+
+        return false;
+      })
+      .catch((e: any) => {
+        this.logger.error(
+          e,
+          `${formatRequestIdMessage(requestId)} Failed to retrieve current contract state for address ${to}`,
+        );
+        throw e;
+      });
   }
 
   static isArrayNonEmpty(input: any): boolean {

@@ -2413,6 +2413,36 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.equal("0x00");
     });
 
+    it('eth_call with all fields is cached', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(1);
+            }
+          }
+      );
+
+      const result = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest');
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, contractAddress1, 'eth_call');
+      expect(result).to.equal("0x01");
+
+
+      const result2 = await ethImpl.call({
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest');
+
+      expect(result2).to.equal("0x01");
+      sinon.assert.calledOnce(sdkClientStub.submitContractCallQuery);
+    });
+
     describe('with gas > 15_000_000', async function() {
       it('caps gas at 15_000_000', async function () {
         sdkClientStub.submitContractCallQuery.returns({

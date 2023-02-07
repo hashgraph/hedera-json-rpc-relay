@@ -480,6 +480,16 @@ export class MirrorNodeClient {
         return this.getContractResultsByAddress(address, contractResultsParams, limitOrderParams, requestId);
     }
 
+    public async getContractCurrentStateByAddress(address: string, requestId?: string) {
+        return this.getPaginatedResults(
+            `${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${address}${MirrorNodeClient.GET_STATE_ENDPOINT}`,
+            MirrorNodeClient.GET_STATE_ENDPOINT,
+            MirrorNodeClient.CONTRACT_STATE_PROPERTY,
+            [400, 404],
+            requestId
+        );
+    }
+
     public async getContractCurrentStateByAddressAndSlot(address: string, slot: string, requestId?: string) {
         const limitOrderParams: ILimitOrderParams = this.getLimitOrderQueryParam(constants.MIRROR_NODE_QUERY_LIMIT, constants.ORDER.DESC);
         const queryParamObject = {};

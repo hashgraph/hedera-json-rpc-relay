@@ -529,6 +529,16 @@ describe('MirrorNodeClient', async function () {
     expect(firstResult.index).equal(log.index);
   });
 
+
+  it('`getContractCurrentStateByAddress`', async () => {
+    mock.onGet(`contracts/${contractAddress}/state`).reply(200, defaultCurrentContractState);
+    const result = await mirrorNodeInstance.getContractCurrentStateByAddress(contractAddress);
+
+    expect(result).to.exist;
+    expect(result.state).to.exist;
+    expect(result.state[0].value).to.eq(defaultCurrentContractState.state[0].value);
+  });
+
   it('`getContractCurrentStateByAddressAndSlot`', async () => {
     mock.onGet(`contracts/${contractAddress}/state?slot=${defaultCurrentContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultCurrentContractState);
     const result = await mirrorNodeInstance.getContractCurrentStateByAddressAndSlot(contractAddress, defaultCurrentContractState.state[0].slot);
