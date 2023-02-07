@@ -20,6 +20,8 @@
 
 require('dotenv').config();
 require('@nomicfoundation/hardhat-toolbox');
+require('@nomicfoundation/hardhat-chai-matchers');
+require('@nomiclabs/hardhat-ethers');
 
 task('show-balance', async () => {
   const showBalance = require('./scripts/showBalance');
@@ -27,8 +29,8 @@ task('show-balance', async () => {
 });
 
 task('transfer-hbars', async () => {
-  const transferHbars = require('./scripts/transferHbars');
-  return transferHbars();
+  const transferHbar = require('./scripts/transferHbars');
+  return transferHbar();
 });
 
 task('deploy-contract', async () => {
@@ -46,12 +48,31 @@ task('contract-call', async (taskArgs) => {
   return contractCall(taskArgs.contractAddress, taskArgs.msg);
 });
 
+/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: '0.8.4',
-  defaultNetwork: 'relay',
+  mocha: {
+    timeout: 3600000,
+  },
+  solidity: {
+    version: '0.8.9',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 500,
+      },
+    },
+  },
+  defaultNetwork: 'local',
   networks: {
-    relay: {
-      url: process.env.RELAY_ENDPOINT
-    }
-  }
+    local: {
+      url: process.env.RELAY_ENDPOINT,
+      accounts: [process.env.OPERATOR_PRIVATE_KEY, process.env.RECEIVER_PRIVATE_KEY],
+      chainId: 298,
+    },
+    testnet: {
+      url: 'https://testnet.hashio.io/api',
+      accounts: [],
+      chainId: 296,
+    },
+  },
 };
