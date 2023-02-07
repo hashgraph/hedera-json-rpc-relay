@@ -2413,6 +2413,42 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.equal("0x00");
     });
 
+    //Return once the value, then it's being fetched from cache. After the loop we reset the sdkClientStub, so that it returns nothing, if we get an error in the next request that means that the cache was cleared.
+    it('eth_call should cache the response for 200ms', async function () {
+      sdkClientStub.submitContractCallQuery.returns({
+        asBytes: function () {
+          return Uint8Array.of(0);
+            }
+          }
+      );
+
+      for (let index = 0; index < 3; index++) {
+        const result = await ethImpl.call({
+          "from": contractAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+        expect(result).to.equal("0x00");
+        await new Promise(r => setTimeout(r, 50));
+      }
+
+      sinon.resetBehavior();
+      await new Promise(r => setTimeout(r, 200));
+      try {
+        await ethImpl.call({
+          "from": contractAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error) {
+        expect(error.code).to.equal(predefined.INTERNAL_ERROR().code);
+        expect(error.name).to.equal(predefined.INTERNAL_ERROR().name);
+      }
+
+    });
+
     describe('with gas > 15_000_000', async function() {
       it('caps gas at 15_000_000', async function () {
         sdkClientStub.submitContractCallQuery.returns({

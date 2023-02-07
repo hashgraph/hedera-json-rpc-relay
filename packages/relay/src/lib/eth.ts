@@ -1017,7 +1017,14 @@ export class EthImpl implements Eth {
         }
       }
 
+      let cachedResponse = this.cache.get(`eth_call: ${call.data} from ${call.to}`);
+      if (cachedResponse != undefined) {
+        this.logger.debug(`${requestIdPrefix} eth_call returned cached response: ${cachedResponse}`);
+        return cachedResponse;
+      }
+
       const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
+      this.cache.set(`eth_call: ${call.data} from ${call.to}`, EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex')), { ttl: 200 });
       return EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
     } catch (e: any) {
