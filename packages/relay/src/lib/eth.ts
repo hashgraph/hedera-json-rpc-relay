@@ -355,8 +355,7 @@ export class EthImpl implements Eth {
 
       return EthImpl.numberTo0x(gasPrice);
     } catch (error) {
-      this.logger.error(error, `${requestIdPrefix} Failed to retrieve gasPrice`);
-      throw error;
+      throw this.genericErrorHandler(error, `${requestIdPrefix} Failed to retrieve gasPrice`);
     }
   }
 
@@ -518,12 +517,8 @@ export class EthImpl implements Eth {
         result = response.state[0].value;
       }
     })
-    .catch((e: any) => {
-      this.logger.error(
-        e,
-        `${requestIdPrefix} Failed to retrieve current contract state for address ${address} at slot=${slot}`,
-      );
-      throw e;
+    .catch((error: any) => {
+      throw this.genericErrorHandler(error, `${requestIdPrefix} Failed to retrieve current contract state for address ${address} at slot=${slot}`);
     });
 
     return result;
@@ -566,12 +561,11 @@ export class EthImpl implements Eth {
             }
           } 
         })
-        .catch((e: any) => {
-          this.logger.error(
-            e,
-            `${requestIdPrefix} Failed to retrieve contract result details for contract address ${address} at slot ${slot} and timestamp=${contractResult.results[0].timestamp}`,
+        .catch((error: any) => {
+          throw this.genericErrorHandler(
+              error,
+              `${requestIdPrefix} Failed to retrieve contract result details for contract address ${address} at slot ${slot} and timestamp=${contractResult.results[0].timestamp}`
           );
-          throw e;
         });
     }
 
@@ -683,9 +677,8 @@ export class EthImpl implements Eth {
       }
 
       return EthImpl.numberTo0x(weibars);
-    } catch (e: any) {
-      this.logger.error(e, `${requestIdPrefix} Error raised during getBalance for account ${account}`);
-      throw e;
+    } catch (error: any) {
+      throw this.genericErrorHandler(error, `${requestIdPrefix} Error raised during getBalance for account ${account}`);
     }
   }
 
@@ -756,8 +749,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
     return this.getBlock(hash, showDetails, requestId).catch((e: any) => {
-      this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-      throw predefined.INTERNAL_ERROR();
+      throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
     });
   }
 
@@ -770,8 +762,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
     return this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
-      this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
-      throw predefined.INTERNAL_ERROR();
+      throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
     });
   }
 
@@ -787,8 +778,7 @@ export class EthImpl implements Eth {
       .getBlock(hash, requestId)
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
-        this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-        throw predefined.INTERNAL_ERROR();
+        throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
       });
   }
 
@@ -804,8 +794,7 @@ export class EthImpl implements Eth {
       .getBlock(blockNum, requestId)
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
-        this.logger.error(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNum}`, blockNum);
-        throw predefined.INTERNAL_ERROR();
+        throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNum}`);
       });
   }
 
@@ -821,17 +810,8 @@ export class EthImpl implements Eth {
     return this.mirrorNodeClient
       .getContractResults({ blockHash: blockHash, transactionIndex: Number(transactionIndex) }, undefined, requestId)
       .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
-      .catch((e: any) => {
-        if (e instanceof JsonRpcError) {
-          throw e;
-        }
-
-        this.logger.error(
-          e,
-          `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`
-        );
-
-        throw predefined.INTERNAL_ERROR();
+      .catch((error: any) => {
+        throw this.genericErrorHandler(error, `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`);
       });
   }
 
@@ -853,16 +833,7 @@ export class EthImpl implements Eth {
       .getContractResults({ blockNumber: blockNum, transactionIndex: Number(transactionIndex) }, undefined, requestId)
       .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
       .catch((e: any) => {
-        if (e instanceof JsonRpcError) {
-          throw e;
-        }
-
-        this.logger.error(
-          e,
-          `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`
-        );
-
-        throw predefined.INTERNAL_ERROR();
+        throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`);
       });
   }
 
@@ -927,7 +898,7 @@ export class EthImpl implements Eth {
         return e;
       }
 
-      throw predefined.INTERNAL_ERROR();
+      throw this.genericErrorHandler(e);
     }
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
@@ -1523,6 +1494,25 @@ export class EthImpl implements Eth {
 
   static isArrayNonEmpty(input: any): boolean {
     return Array.isArray(input) && input.length > 0;
+  }
+
+  genericErrorHandler(error: any, logMessage?: string) {
+    if (logMessage) {
+      this.logger.error(error, logMessage);
+    }
+    else {
+      this.logger.error(error);
+    }
+
+    if (error instanceof SDKClientError && error.isGrpcTimeout()) {
+      throw predefined.REQUEST_TIMEOUT;
+    }
+
+    if (error instanceof JsonRpcError) {
+      throw error;
+    }
+
+    return error;
   }
 
 }

@@ -95,6 +95,11 @@ export class SDKClient {
     // populate with consensusnode requests via SDK
     constructor(clientMain: Client, logger: Logger, register: Registry) {
         this.clientMain = clientMain;
+
+        if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
+            this.clientMain = clientMain.setMaxExecutionTime(Number(process.env.CONSENSUS_MAX_EXECUTION_TIME));
+        }
+
         this.logger = logger;
         this.register = register;
         this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
@@ -348,6 +353,11 @@ export class SDKClient {
             if (e instanceof JsonRpcError){
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
+
+            if (sdkClientError.isGrpcTimeout()) {
+                throw predefined.REQUEST_TIMEOUT;
+            }
+
             throw sdkClientError;
         }
     };
