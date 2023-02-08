@@ -476,7 +476,6 @@ export class SDKClient {
             status,
             caller)
             .observe(resolvedCost);
-        this.operatorAccountGauge.labels(mode, type, this.operatorAccountId).dec(resolvedCost);
     };
 
     /**

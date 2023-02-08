@@ -167,7 +167,8 @@ export class MirrorNodeClient {
             name: metricHistogramName,
             help: 'Mirror node response method statusCode latency histogram',
             labelNames: ['method', 'statusCode'],
-            registers: [register]
+            registers: [register],
+            buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
         });
 
         this.logger.info(`Mirror Node client successfully configured to REST url: ${this.restUrl} and Web3 url: ${this.web3Url} `);
