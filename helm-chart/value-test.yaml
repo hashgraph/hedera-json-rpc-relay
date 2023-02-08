@@ -121,6 +121,7 @@ config:
   MIRROR_NODE_LIMIT_PARAM: 100
   INPUT_SIZE_LIMIT: 1
   ETH_CALL_CACHE_TTL: 200
+  CONSENSUS_MAX_EXECUTION_TIME: 10000
   
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:
