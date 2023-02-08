@@ -1022,7 +1022,7 @@ export class EthImpl implements Eth {
   async getTransactionByHash(hash: string, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionByHash(hash=${hash})`, hash);
-    const contractResult = await this.mirrorNodeClient.getContractResult(hash, requestId);
+    const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestId);
     if (contractResult === null || contractResult.hash === undefined) {
       return null;
     }
@@ -1077,7 +1077,7 @@ export class EthImpl implements Eth {
   async getTransactionReceipt(hash: string, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
-    const receiptResponse = await this.mirrorNodeClient.getContractResult(hash, requestId);
+    const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestId);
     if (receiptResponse === null || receiptResponse.hash === undefined) {
       this.logger.trace(`${requestIdPrefix} no receipt for ${hash}`);
       // block not found
