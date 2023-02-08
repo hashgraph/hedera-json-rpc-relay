@@ -26,4 +26,4 @@ yarn-error.log*
 /screenshots
 /cypress
 
-src/contracts/.htsTokenInfo.json
+src/contracts/.bootstrapInfo.json
