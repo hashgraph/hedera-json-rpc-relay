@@ -19,9 +19,11 @@
  */
 
 import app from './server';
+import socketApp from './webSocketServer';
 
 async function main() {
-  await app.listen({ port: 7546 });
+  socketApp.listen({port: process.env.WEB_SOCKET_PORT});
+  await app.listen({ port: process.env.SERVER_PORT });
 }
 
 main();
