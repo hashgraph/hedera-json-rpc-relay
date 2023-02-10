@@ -127,7 +127,7 @@ describe('RPC Server Acceptance Tests', function () {
         // set env variables for docker images until local-node is updated
         process.env['NETWORK_NODE_IMAGE_TAG'] = '0.35.0-alpha.2';
         process.env['HAVEGED_IMAGE_TAG'] = '0.35.0-alpha.2';
-        process.env['MIRROR_IMAGE_TAG'] = '0.74.0-rc2';
+        process.env['MIRROR_IMAGE_TAG'] = '0.75.0-SNAPSHOT';
 
         console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
