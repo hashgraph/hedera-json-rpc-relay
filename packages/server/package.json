@@ -7,6 +7,7 @@
     "author": "Hedera Smart Contracts Team",
     "dependencies": {
         "@hashgraph/json-rpc-relay": "file:../relay",
+        "@kasa/koa-request-id": "^2.0.1",
         "axios": "^0.27.2",
         "co-body": "6.1.0",
         "dotenv": "^16.0.0",

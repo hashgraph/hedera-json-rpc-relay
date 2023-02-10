@@ -22,7 +22,6 @@ import { Relay, RelayImpl, JsonRpcError, predefined, MirrorNodeClientError } fro
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
 import { Validator } from './validator';
-import crypto from 'crypto';
 import pino from 'pino';
 import path from 'path';
 import fs from 'fs';
@@ -136,7 +135,8 @@ app.getKoaApp().use(async (ctx, next) => {
 const logAndHandleResponse = async (methodName: any, methodParams: any, methodFunction: any) => {
   const start = Date.now();
   let ms;
-  const requestId = generateRequestId();
+
+  const requestId = app.getRequestId();
   const requestIdPrefix = requestId ? `[${REQUEST_ID_STRING}${requestId}]` : '';
   logger.debug(`${requestIdPrefix} ${methodName}`);
   const messagePrefix = `${requestIdPrefix} [POST] ${methodName}:`;
@@ -186,15 +186,6 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
       data: error.data,
     }, requestId);
   }
-};
-
-/**
- * Generates random trace id for requests.
- *
- * returns: string
- */
- const generateRequestId = () :string => {
-  return crypto.randomUUID();
 };
 
 /**
