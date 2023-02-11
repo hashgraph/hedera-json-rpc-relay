@@ -48,7 +48,7 @@ const USE_LOCAL_NODE = process.env.LOCAL_NODE || 'true';
 const NETWORK = process.env.HEDERA_NETWORK || '';
 const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
 const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
-const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
+const MIRROR_NODE_URL = 'https://integration.mirrornode.hedera-ops.com:5551';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 let startOperatorBalance: Hbar;
