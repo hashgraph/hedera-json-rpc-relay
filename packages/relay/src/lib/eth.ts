@@ -190,13 +190,14 @@ export class EthImpl implements Eth {
         return EthImpl.feeHistoryZeroBlockCountResponse;
       }
 
-      let feeHistory: object | undefined = this.cache.get(constants.CACHE_KEY.FEE_HISTORY);
+      const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join('')}`;
+      let feeHistory: object | undefined = this.cache.get(cacheKey);
       if (!feeHistory) {
-
         feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
-
-        this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.FEE_HISTORY} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-        this.cache.set(constants.CACHE_KEY.FEE_HISTORY, feeHistory);
+        if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
+          this.logger.trace(`${requestIdPrefix} caching ${cacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+          this.cache.set(cacheKey, feeHistory);
+        }
       }
 
       return feeHistory;
