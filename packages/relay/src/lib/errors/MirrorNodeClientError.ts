@@ -21,6 +21,7 @@
 
 export class MirrorNodeClientError extends Error {
     public statusCode: number;
+    public errorMessage?: string;
 
     static retryErrorCodes: Array<number> = [400, 404, 408, 425, 500]
 
@@ -42,6 +43,10 @@ export class MirrorNodeClientError extends Error {
 
     public isTimeout(): boolean {
       return this.statusCode === MirrorNodeClientError.ErrorCodes.ECONNABORTED;
+    }
+
+    public isContractReverted(): boolean {
+      return this.statusCode === MirrorNodeClientError.ErrorCodes.CONTRACT_REVERT_EXECUTED;
     }
 
     public isNotFound(): boolean {
