@@ -154,8 +154,8 @@ function defaultMetrics() {
 
 function markdownReport(data, isFirstColumnUrl, scenarios) {
   const firstColumnName = isFirstColumnUrl ? 'URL' : 'Scenario';
-  const header = `| ${firstColumnName} | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Comment |
-|----------|-----|-------|-----|----------|-------------------|---------|`;
+  const header = `| ${firstColumnName} | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | P(95) Req Duration | Comment |
+|----------|-----|-------|-----|----------|-------------------|-------------------------|---------|`;
 
   // collect the metrics
   const {metrics} = data;
@@ -198,9 +198,10 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
       const rps = ((httpReqs * 1.0 / duration) * 1000).toFixed(2);
       const passRps = (rps * passPercentage / 100.0).toFixed(2);
       const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
+      const httpP95Duration = scenarioMetric['http_req_duration'].values["p(95)"].toFixed(2);
 
       const firstColumn = isFirstColumnUrl ? scenarioUrls[scenario] : scenario;
-      markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | |\n`;
+      markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | ${httpP95Duration}ms | |\n`;
     } catch (err) {
       console.error(`Unable to render report for scenario ${scenario}`);
     }

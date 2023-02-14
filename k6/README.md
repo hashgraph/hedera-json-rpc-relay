@@ -45,7 +45,7 @@ particular parameter, then its value will be found by querying either the rest o
 To run all tests, just do
 
 ```shell
-k6 run src/sceanrios/apis.js
+k6 run src/scenarios/apis.js
 ```
 
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
@@ -411,7 +411,7 @@ With the test suite mode, a simplified markdown format report `report.md` will a
 To run a single test, such as the `eth_chainid` test, just do
 
 ```shell
-k6 run src/sceanrios/test/eth_chainid.js
+k6 run src/scenarios/test/eth_chainid.js
 ```
 
 When it completes, k6 will show a similar summary report. However, there won't be a `report.md` report.
