@@ -19,25 +19,25 @@
  */
 
 import { Logger } from 'pino';
-import { Gauge, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../formatters';
+import { Counter, Registry } from 'prom-client';
 
 export default class RateLimit {
   private duration: number;
   private database: any;
   private logger: Logger;
-  private ipRateLimitGauge: Gauge;
+  private ipRateLimitCounter: Counter;
 
   constructor(logger: Logger, register: Registry, duration) {
     this.logger = logger;
     this.duration = duration;
     this.database = Object.create(null);
 
-    const metricGaugeName = 'rpc_relay_ip_rate_limit';
-    register.removeSingleMetric(metricGaugeName);
-    this.ipRateLimitGauge = new Gauge({
-        name: metricGaugeName,
-        help: 'Relay ip rate limit gauge',
+    const metricCounterName = 'rpc_relay_ip_rate_limit';
+    register.removeSingleMetric(metricCounterName);
+    this.ipRateLimitCounter = new Counter({
+        name: metricCounterName,
+        help: 'Relay ip rate limit counter',
         labelNames: ['methodName'],
         registers: [register],
     });
@@ -52,10 +52,13 @@ export default class RateLimit {
         return false;
       }
 
-      this.ipRateLimitGauge.labels(methodName).inc(1);
 
       const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
       this.logger.warn(`${requestIdPrefix}, Rate limit call to ${methodName}, ${this.database[ip].methodInfo[methodName].remaining} out of ${total} calls remaining`);
+
+      this.ipRateLimitCounter.labels(methodName).inc(1);
+      this.logger.warn(`Rate limit call to ${methodName}, ${this.database[ip].methodInfo[methodName].remaining} out of ${total} calls remaining`);
+
       return true;
     } else {
       this.reset(ip, methodName, total);
