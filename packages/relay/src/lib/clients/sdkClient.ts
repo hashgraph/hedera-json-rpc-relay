@@ -97,6 +97,8 @@ export class SDKClient {
         this.clientMain = clientMain;
 
         if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
+            // sets the maximum time in ms for the SDK to wait when submitting
+            // a transaction/query before throwing a TIMEOUT error
             this.clientMain = clientMain.setMaxExecutionTime(Number(process.env.CONSENSUS_MAX_EXECUTION_TIME));
         }
 
