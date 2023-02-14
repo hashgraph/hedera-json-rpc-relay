@@ -20,6 +20,7 @@
 
 import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
+import { formatRequestIdMessage } from '../formatters';
 
 export default class RateLimit {
   private duration: number;
@@ -42,7 +43,7 @@ export default class RateLimit {
     });
   }
 
-  shouldRateLimit(ip: string, requestId: string, methodName: string, total: number): boolean {
+  shouldRateLimit(ip: string, methodName: string, total: number, requestId: string): boolean {
     if (process.env.RATE_LIMIT_DISABLED && process.env.RATE_LIMIT_DISABLED === 'true') return false;
     this.precheck(ip, methodName, total);
     if (!this.shouldReset(ip)) {
@@ -52,7 +53,9 @@ export default class RateLimit {
       }
 
       this.ipRateLimitGauge.labels(methodName).inc(1);
-      this.logger.warn(`[Request ID: ${requestId}], Rate limit call to ${methodName}, ${this.database[ip].methodInfo[methodName].remaining} out of ${total} calls remaining`);
+
+      const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
+      this.logger.warn(`${requestIdPrefix}, Rate limit call to ${methodName}, ${this.database[ip].methodInfo[methodName].remaining} out of ${total} calls remaining`);
       return true;
     } else {
       this.reset(ip, methodName, total);

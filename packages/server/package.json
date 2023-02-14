@@ -7,7 +7,6 @@
     "author": "Hedera Smart Contracts Team",
     "dependencies": {
         "@hashgraph/json-rpc-relay": "file:../relay",
-        "@kasa/koa-request-id": "^2.0.1",
         "axios": "^0.27.2",
         "co-body": "6.1.0",
         "dotenv": "^16.0.0",
@@ -18,7 +17,8 @@
         "koa-router": "^10.1.1",
         "mocha": "^9.2.2",
         "pino": "^7.11.0",
-        "pino-pretty": "^7.6.1"
+        "pino-pretty": "^7.6.1",
+        "uuid": "^3.3.2"
     },
     "devDependencies": {
         "@hashgraph/hedera-local": "^2.4.5",
