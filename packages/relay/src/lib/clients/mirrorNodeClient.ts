@@ -332,6 +332,21 @@ export class MirrorNodeClient {
             requestId);
     }
 
+    /**
+     * In some very rare cases the /contracts/results api is called before all the data is saved in
+     * the mirror node DB and `transaction_index` is returned as `undefined`. A single re-fetch is sufficient to
+     * resolve this problem.
+     * @param transactionIdOrHash
+     * @param requestId
+     */
+    public async getContractResultWithRetry(transactionIdOrHash: string, requestId?: string) {
+        let contractResult = await this.getContractResult(transactionIdOrHash, requestId);
+        if (contractResult && typeof contractResult.transaction_index === 'undefined') {
+            return this.getContractResult(transactionIdOrHash, requestId);
+        }
+        return contractResult;
+    }
+
     public async getContractResults(contractResultsParams?: IContractResultsParams, limitOrderParams?: ILimitOrderParams, requestId?: string) {
         const queryParamObject = {};
         this.setContractResultsParams(queryParamObject, contractResultsParams);

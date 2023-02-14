@@ -32,3 +32,4 @@ data:
   MIRROR_NODE_LIMIT_PARAM: {{ .Values.config.MIRROR_NODE_LIMIT_PARAM | quote }}
   INPUT_SIZE_LIMIT: {{ .Values.config.INPUT_SIZE_LIMIT | quote }}
   ETH_CALL_CACHE_TTL: {{ .Values.config.ETH_CALL_CACHE_TTL | quote }}
+  CONSENSUS_MAX_EXECUTION_TIME: {{ .Values.config.CONSENSUS_MAX_EXECUTION_TIME | quote }}
