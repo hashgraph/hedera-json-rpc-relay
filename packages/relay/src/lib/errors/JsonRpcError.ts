@@ -162,7 +162,7 @@ export const predefined = {
     message: 'Value below 10_000_000_000 wei which is 1 tinybar'
   }),
   'INVALID_CONTRACT_ADDRESS':  (address) => {
-    let message = `Invalid Contract Address: ${address}`;
+    let message = `Invalid Contract Address: ${address}.`;
     if (address && address.length) {
       message = `${message} Expected length of 42 chars but was ${address.length}.`;
     }
