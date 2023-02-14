@@ -48,8 +48,11 @@ describe('MirrorNodeClient', async function () {
       },
       timeout: 20 * 1000
     });
-    mock = new MockAdapter(instance);
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
+  })
+
+  beforeEach(() => {
+    mock = new MockAdapter(instance);
   })
 
   it('it should have a `request` method ', async () => {
@@ -403,6 +406,33 @@ describe('MirrorNodeClient', async function () {
     expect(result.contract_id).equal(detailedContractResult.contract_id);
     expect(result.to).equal(detailedContractResult.to);
     expect(result.v).equal(detailedContractResult.v);
+  });
+
+  it('`getContractResultsWithRetry` by hash', async () => {
+    const hash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+    mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
+
+    const result = await mirrorNodeInstance.getContractResultWithRetry(hash);
+    expect(result).to.exist;
+    expect(result.contract_id).equal(detailedContractResult.contract_id);
+    expect(result.to).equal(detailedContractResult.to);
+    expect(result.v).equal(detailedContractResult.v);
+    expect(result.transaction_index).equal(detailedContractResult.transaction_index);
+    expect(mock.history.get.length).to.eq(1); // is called twice
+  });
+
+  it('`getContractResultsWithRetry` by hash retries once', async () => {
+    const hash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+    mock.onGet(`contracts/results/${hash}`).replyOnce(200, {...detailedContractResult, transaction_index: undefined});
+    mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
+
+    const result = await mirrorNodeInstance.getContractResultWithRetry(hash);
+    expect(result).to.exist;
+    expect(result.contract_id).equal(detailedContractResult.contract_id);
+    expect(result.to).equal(detailedContractResult.to);
+    expect(result.v).equal(detailedContractResult.v);
+    expect(result.transaction_index).equal(detailedContractResult.transaction_index);
+    expect(mock.history.get.length).to.eq(2); // is called twice
   });
 
   it('`getContractResults` detailed', async () => {
