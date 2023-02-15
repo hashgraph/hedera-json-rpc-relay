@@ -162,11 +162,25 @@ export const predefined = {
     message: 'Value below 10_000_000_000 wei which is 1 tinybar'
   }),
   'INVALID_CONTRACT_ADDRESS':  (address) => {
-    const message = address && address.length ? ` Expected length of 42 chars but was ${address.length}.` : ''
+    let message = `Invalid Contract Address: ${address}.`;
+    if (address && address.length) {
+      message = `${message} Expected length of 42 chars but was ${address.length}.`;
+    }
+
     return new JsonRpcError({
       name: 'Invalid Contract Address',
       code: -32012,
-      message: `Invalid Contract Address: ${address}.${message}`
+      message: message
     })
-  }
+  },
+  'COULD_NOT_ESTIMATE_GAS_PRICE': new JsonRpcError({
+    name: 'Could not estimate gas price',
+    code: -32604,
+    message: 'Error encountered estimating the gas price'
+  }),
+  'COULD_NOT_RETRIEVE_LATEST_BLOCK': new JsonRpcError({
+    name: 'Could not retrieve latest block',
+    code: -32607,
+    message: 'Error encountered retrieving latest block'
+  })
 };

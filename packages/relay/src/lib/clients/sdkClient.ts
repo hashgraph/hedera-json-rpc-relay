@@ -62,6 +62,7 @@ const _ = require('lodash');
 export class SDKClient {
     static transactionMode = 'TRANSACTION';
     static queryMode = 'QUERY';
+    static recordMode = 'RECORD';
     /**
      * The client to use for connecting to the main consensus network. The account
      * associated with this client will pay for all operations on the main network.
@@ -95,6 +96,13 @@ export class SDKClient {
     // populate with consensusnode requests via SDK
     constructor(clientMain: Client, logger: Logger, register: Registry) {
         this.clientMain = clientMain;
+
+        if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
+            // sets the maximum time in ms for the SDK to wait when submitting
+            // a transaction/query before throwing a TIMEOUT error
+            this.clientMain = clientMain.setMaxExecutionTime(Number(process.env.CONSENSUS_MAX_EXECUTION_TIME));
+        }
+
         this.logger = logger;
         this.register = register;
         this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
@@ -133,7 +141,7 @@ export class SDKClient {
 
         const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
         const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
-        this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration);
+        this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
     }
 
     async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
@@ -300,7 +308,7 @@ export class SDKClient {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         const currentDateNow = Date.now();
         try {
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow);
+            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.queryMode, callerName);
             if (shouldLimit) {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
@@ -348,6 +356,11 @@ export class SDKClient {
             if (e instanceof JsonRpcError){
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
+
+            if (sdkClientError.isGrpcTimeout()) {
+                throw predefined.REQUEST_TIMEOUT;
+            }
+
             throw sdkClientError;
         }
     };
@@ -357,7 +370,7 @@ export class SDKClient {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         const currentDateNow = Date.now();
         try {
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow);
+            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
             if (shouldLimit) {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
@@ -411,7 +424,7 @@ export class SDKClient {
             if (!resp.getRecord) {
                 throw new SDKClientError({}, `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
             }
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow);
+            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, transactionName);
             if (shouldLimit) {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
@@ -476,7 +489,6 @@ export class SDKClient {
             status,
             caller)
             .observe(resolvedCost);
-        this.operatorAccountGauge.labels(mode, type, this.operatorAccountId).dec(resolvedCost);
     };
 
     /**

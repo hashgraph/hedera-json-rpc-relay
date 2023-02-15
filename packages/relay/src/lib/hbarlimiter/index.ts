@@ -19,6 +19,7 @@
  */
 
 import { Logger } from 'pino';
+import { Registry, Counter } from 'prom-client';
 
 export default class HbarLimit {
     private enabled: boolean = false;
@@ -27,10 +28,13 @@ export default class HbarLimit {
     private total: number = 0;
     private reset: number;
     private logger: Logger;
+    private hbarLimitCounter: Counter;
+    private readonly register: Registry;
 
-    constructor(logger: Logger, currentDateNow: number, total: number, duration: number) {
+    constructor(logger: Logger, currentDateNow: number, total: number, duration: number, register: Registry) {
         this.logger = logger;
         this.enabled = false;
+        this.register = register;
 
         if (total && duration) {
             this.enabled = true;
@@ -39,12 +43,21 @@ export default class HbarLimit {
         }
         this.remainingBudget = this.total;
         this.reset = currentDateNow + this.duration;
+
+        const metricCounterName = 'rpc_relay_hbar_rate_limit';
+        register.removeSingleMetric(metricCounterName);
+        this.hbarLimitCounter = new Counter({
+            name: metricCounterName,
+            help: 'Relay Hbar limit counter',
+            registers: [register],
+            labelNames: ["mode","methodName"]
+        });
     }
     
     /**
      * Decides whether we should limit expenses, based on remaining budget.
      */
-    shouldLimit(currentDateNow: number): boolean {
+    shouldLimit(currentDateNow: number, mode: string, methodName: string): boolean {
         if (!this.enabled) {
             return false;
         }
@@ -54,6 +67,7 @@ export default class HbarLimit {
         }
 
         if (this.remainingBudget <= 0) {
+            this.hbarLimitCounter.labels(mode, methodName).inc(1);
             this.logger.warn(`Rate limit incoming calls, ${this.remainingBudget} out of ${this.total} tℏ left in relay budget until ${this.reset}`);
             return true;
         }
