@@ -2,7 +2,11 @@ version: "3.7"
 services:
   relay:
     container_name:  hedera-jspn-rpc-relay
+<<<<<<< HEAD
     image: "ghcr.io/hashgraph/hedera-json-rpc-relay:0.18.0-alpha-1"
+=======
+    image: "ghcr.io/hashgraph/hedera-json-rpc-relay:0.18.0-rc1"
+>>>>>>> 83ea31c (Bump 0.18.0-rc1)
     restart: "unless-stopped"
     ports:
       - 7546:7546
