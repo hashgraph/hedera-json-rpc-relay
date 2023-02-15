@@ -274,7 +274,7 @@ WebSockets in general are resource intensive. We could implement a throttling me
 2. Implement a global limit for maximum concurrent connections.
 3. Explore the possibility of adding a TTL limit for every connection.
 4. Explore the option to add a limit for the total subscribed time per IP ( `sum(connection * subscribed_time)` ). There could theoretically be a way to charge users to increase this limit, for example through via a smart contract. Alternatively users could be encouraged to run their own instances of the relay.
-5. Users should be responsible to renew their subscription in the case of an error. If for some reason the relay is restarted it should not automatically try to restore all previous connections and subscriptions.
+5. Users should be required to renew their subscription in the case of an error. If for some reason the relay is restarted it should not automatically try to restore all previous connections and subscriptions.
 
 ## Open Questions
 
@@ -305,7 +305,7 @@ WebSockets in general are resource intensive. We could implement a throttling me
 8. Add scheduled job function for looping through all saved filters and returns result to it's corresponding socket with the respective subscription id.
 9. Extend current rate limiter class to support websocket limitation.
 10. Add logic to delete subsciption upon connection break or request.
-11. Determine the reasonable default limits for: ip based limits, global limits. This should be done after the connection logic is implemented so that we can measure the average resources used by a single connection.
+11. Determine the reasonable default limits for ip based limits and global limits. This should be done after the connection logic is implemented so that we can measure the average resources used by a single connection.
 
 #### Milestone 3 (use Mirror-Node GraphQL API)
 
