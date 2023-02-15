@@ -1,10 +1,8 @@
 # Subscription design
 
-## Problems in current design
+## Purpose
 
-JSON-RPC Relay currently doesn't support subscription using websocket as is common in many other relays and is expected by many web3 tool, which makes:
-
-- polling for event logs, new blocks and transactions very hard for developers
+JSON-RPC Relay currently doesn't support subscription using websocket as is common in many other relays and is expected by many web3 tool, which makes polling for event logs, new blocks and transactions very hard for developers.
 
 ## Goals
 
