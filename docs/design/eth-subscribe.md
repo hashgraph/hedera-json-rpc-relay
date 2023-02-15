@@ -2,13 +2,13 @@
 
 ## Purpose
 
-JSON-RPC Relay currently doesn't support subscription using websocket as is common in many other relays and is expected by many web3 tool, which makes polling for event logs, new blocks and transactions very hard for developers.
+The JSON-RPC Relay currently doesn't support subscription using websocket as is common in many other relays and is expected by many web3 tool, which makes polling for event logs, new blocks and transactions very hard for developers.
 
 ## Goals
 
-1. Implement websocket subscription in the server
+1. Implement websocket subscription in the relay
 2. Introduce two new methods - `eth_subscribe` and `eth_unsubscribe`
-3. Support subscription for event logs.
+3. Support subscription for event logs
 
 ## Non-Goals
 
@@ -24,6 +24,24 @@ JSON-RPC Relay currently doesn't support subscription using websocket as is comm
 |          logs          |      Emits logs attached to a new block that match certain topic filters.      |       Yes, initially        |
 |        newHeads        |               Emits new blocks that are added to the blockchain.               | No, maybe in future release |
 | newPendingTransactions | Emits transaction hashes that are sent to the network and marked as `pending`. | No, maybe in future release |
+
+### Initiating a subscription
+
+#### Request
+
+```javascript
+// initiate websocket stream first
+wscat -c wss://testnet.hashio.io/api
+
+// then call subscription
+{"jsonrpc":"2.0","id": 1, "method": "eth_subscribe", "params": [SUBSCRIPTION_TYPE, PARAMS]}
+```
+
+#### Response
+
+```javascript
+{"jsonrpc":"2.0","id": 1, "result": SUBSCRIPTION_ID}
+```
 
 ### Logs
 
@@ -50,12 +68,13 @@ wscat -c wss://testnet.hashio.io/api
 
 #### Response
 
+This response is sent whenever new data is available.
+
 ```json
 {
-  "jsonrpc": "2.0",
   "method": "eth_subscription",
   "params": {
-    "subscription": "0x4a8a4c0517381924f9838102c5a4dcb7",
+    "subscription": SUBSCRIPTION_ID,
     "result": {
       "address": "0x8320fe7702b96808f7bbc0d4a888ed1468216cfd",
       "blockHash": "0x61cdb2a09ab99abf791d474f20c2ea89bf8de2923a2d42bb49944c8c993cbf04",
@@ -86,11 +105,10 @@ wscat -c wss://testnet.hashio.io/api
 
 #### Response
 
-```json
-{"jsonrpc":"2.0", "id":1, "result":"0x9ce59a13059e417087c02d3236a0b1cc"}
+This response is sent whenever new data is available.
 
+```json
 {
-   "jsonrpc": "2.0",
    "method": "eth_subscription",
    "params": {
      "result": {
@@ -109,7 +127,7 @@ wscat -c wss://testnet.hashio.io/api
        "timestamp": "0x56ffeff8",
        "transactionsRoot": "0x0167ffa60e3ebc0b080cdb95f7c0087dd6c0e61413140e39d94d3468d7c9689f"
      },
-   "subscription": "0x9ce59a13059e417087c02d3236a0b1cc"
+   "subscription": SUBSCRIPTION_ID
    }
  }
 ```
@@ -132,6 +150,8 @@ wscat -c wss://testnet.hashio.io/api
 
 #### Response
 
+This response is sent whenever new data is available.
+
 ```json
 {"id":1,"result":"0xc3b33aa549fb9a60e95d21862596617c","jsonrpc":"2.0"}
 
@@ -139,7 +159,7 @@ wscat -c wss://testnet.hashio.io/api
     "jsonrpc":"2.0",
     "method":"eth_subscription",
     "params":{
-        "subscription":"0xc3b33aa549fb9a60e95d21862596617c",
+        "subscription": SUBSCRIPTION_ID,
         "result":"0xd6fdc5cc41a9959e922f30cb772a9aef46f4daea279307bc5f7024edc4ccd7fa"
     }
 }
