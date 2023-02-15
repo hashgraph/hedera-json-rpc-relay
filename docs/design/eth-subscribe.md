@@ -70,7 +70,7 @@ wscat -c wss://testnet.hashio.io/api
 
 This response is sent whenever new data is available.
 
-```json
+```javascript
 {
   "method": "eth_subscription",
   "params": {
@@ -107,7 +107,7 @@ wscat -c wss://testnet.hashio.io/api
 
 This response is sent whenever new data is available.
 
-```json
+```javascript
 {
    "method": "eth_subscription",
    "params": {
@@ -152,7 +152,7 @@ wscat -c wss://testnet.hashio.io/api
 
 This response is sent whenever new data is available.
 
-```json
+```javascript
 {"id":1,"result":"0xc3b33aa549fb9a60e95d21862596617c","jsonrpc":"2.0"}
 
 {
