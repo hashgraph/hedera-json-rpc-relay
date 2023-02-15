@@ -26,6 +26,7 @@ import parse from 'co-body';
 import dotenv from 'dotenv';
 import path from 'path';
 import { Logger } from 'pino';
+
 import {
   ParseError,
   InvalidRequest,
@@ -50,9 +51,11 @@ export default class KoaJsonRpc {
   private limit: string;
   private rateLimit: RateLimit;
   private koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
+  private requestId: string;
 
   constructor(logger: Logger, register: Registry, opts?) {
     this.koaApp = new Koa();
+    this.requestId = '';
     this.limit = '1mb';
     this.duration = parseInt(process.env.LIMIT_DURATION!) || 60000;
     this.registry = Object.create(null);
@@ -110,9 +113,10 @@ export default class KoaJsonRpc {
         return;
       }
 
+      this.requestId = ctx.state.reqId;
       const methodName = body.method;
       const methodTotalLimit = this.registryTotal[methodName];
-      if (this.rateLimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit)) {
+      if (this.rateLimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit, this.requestId)) {
         ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
         ctx.status = 409;
         return;
@@ -140,5 +144,9 @@ export default class KoaJsonRpc {
 
   getKoaApp(): Koa<Koa.DefaultState, Koa.DefaultContext> {
     return this.koaApp;
+  }
+
+  getRequestId(): string {
+    return this.requestId;
   }
 }
