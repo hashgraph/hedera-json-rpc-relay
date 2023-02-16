@@ -39,7 +39,7 @@ export class Precheck {
     this.logger = logger;
   }
 
-  private static parseTxIfNeeded(transaction: string | Transaction): Transaction {
+  public static parseTxIfNeeded(transaction: string | Transaction): Transaction {
     return typeof transaction === 'string'
       ? ethers.utils.parseTransaction(transaction)
       : transaction;

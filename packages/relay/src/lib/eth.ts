@@ -900,13 +900,16 @@ export class EthImpl implements Eth {
       throw this.genericErrorHandler(e);
     }
 
+    const parsedTx = Precheck.parseTxIfNeeded(transaction);
+    const interactingEntity = parsedTx.to ? parsedTx.to.toString() : '';
+
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     try {
       const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
 
       try {
         // Wait for the record from the execution.
-        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, requestId);
+        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
         if (!record) {
           this.logger.warn(`${requestIdPrefix} No record retrieved`);
           throw predefined.INTERNAL_ERROR();
