@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The JSON-RPC Relay currently doesn't support subscription using websocket as is common in many other relays and is expected by many web3 tool, which makes polling for event logs, new blocks and transactions very hard for developers.
+The JSON-RPC Relay currently doesn't support subscription using websocket as is common in many other relays and is expected by many web3 tools, which makes polling for event logs, new blocks and transactions very hard for developers.
 
 ## Goals
 
@@ -14,16 +14,17 @@ The JSON-RPC Relay currently doesn't support subscription using websocket as is 
 
 1. Add long-term memory to the relay
 2. Reduce the efficiency of the relay or mirror node due to high resource usage
+3. Support subscription for new blocks and pending transactions
 
 ## Architecture
 
 ### Subscription Types
 
-|   Subscription Type    |                                  Description                                   |           Support           |
-| :--------------------: | :----------------------------------------------------------------------------: | :-------------------------: |
-|          logs          |      Emits logs attached to a new block that match certain topic filters.      |       Yes, initially        |
-|        newHeads        |               Emits new blocks that are added to the blockchain.               | No, maybe in future release |
-| newPendingTransactions | Emits transaction hashes that are sent to the network and marked as `pending`. | No, maybe in future release |
+|   Subscription Type    |                                  Description                                   |                           Support                           |
+| :--------------------: | :----------------------------------------------------------------------------: |:-----------------------------------------------------------:|
+|          logs          |      Emits logs attached to a new block that match certain topic filters.      |                       Yes, initially                        |
+|        newHeads        |               Emits new blocks that are added to the blockchain.               |                 No, maybe in future release                 |
+| newPendingTransactions | Emits transaction hashes that are sent to the network and marked as `pending`. | No, as Hedera does not have pending transactions on a node. |
 
 ### Initiating a subscription
 
@@ -31,7 +32,7 @@ The JSON-RPC Relay currently doesn't support subscription using websocket as is 
 
 ```javascript
 // initiate websocket stream first
-wscat -c wss://testnet.hashio.io/api
+wscat -c wss://<env>.hashio.io/api
 
 // then call subscription
 {"jsonrpc":"2.0","id": 1, "method": "eth_subscribe", "params": [SUBSCRIPTION_TYPE, PARAMS]}
@@ -60,7 +61,7 @@ An object with the following fields:
 
 ```javascript
 // initiate websocket stream first
-wscat -c wss://testnet.hashio.io/api
+wscat -c wss://<env>.hashio.io/api
 
 // then call subscription
 {"jsonrpc":"2.0","id": 1, "method": "eth_subscribe", "params": ["logs", {"address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", "topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}]}
@@ -97,7 +98,7 @@ This response is sent whenever new data is available.
 
 ```javascript
 // initiate websocket stream first
-wscat -c wss://testnet.hashio.io/api
+wscat -c wss://<env>.hashio.io/api
 
 // then call subscription
 {"jsonrpc":"2.0","id": 1, "method": "eth_subscribe", "params": ["newHeads"]}
@@ -142,7 +143,7 @@ Returns the hash for all transactions that are added to the pending state (regar
 
 ```javascript
 // initiate websocket stream first
-wscat -c wss://testnet.hashio.io/api
+wscat -c wss://<env>.hashio.io/api
 
 // then call subscription
 {"jsonrpc":"2.0","id": 2, "method": "eth_subscribe", "params": ["newPendingTransactions"]}
