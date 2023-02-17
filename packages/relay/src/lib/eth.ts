@@ -891,11 +891,13 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
+    let interactingEntity = '';
     this.logger.trace(`${requestIdPrefix} sendRawTransaction(transaction=${transaction})`);
-
     try {
+      const parsedTx = Precheck.parseTxIfNeeded(transaction);
+      interactingEntity = parsedTx.to ? parsedTx.to.toString() : '';
       const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction, requestId);
-      await this.precheck.sendRawTransactionCheck(transaction, gasPrice, requestId);
+      await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestId);
     } catch (e: any) {
       throw this.genericErrorHandler(e);
     }
@@ -906,7 +908,7 @@ export class EthImpl implements Eth {
 
       try {
         // Wait for the record from the execution.
-        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, requestId);
+        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
         if (!record) {
           this.logger.warn(`${requestIdPrefix} No record retrieved`);
           throw predefined.INTERNAL_ERROR();
