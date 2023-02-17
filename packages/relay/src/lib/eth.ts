@@ -1065,7 +1065,7 @@ export class EthImpl implements Eth {
       to: contractResult.to?.substring(0, 42),
       transactionIndex: EthImpl.numberTo0x(contractResult.transaction_index),
       type: EthImpl.nullableNumberTo0x(contractResult.type),
-      v: EthImpl.nullableNumberTo0x(contractResult.v),
+      v: EthImpl.nanOrNumberTo0x(contractResult.v),
       value: EthImpl.nanOrNumberTo0x(contractResult.amount),
     });
   }
@@ -1346,7 +1346,7 @@ export class EthImpl implements Eth {
             to: contractResultDetails.to.substring(0, 42),
             transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
             type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
-            v: EthImpl.nullableNumberTo0x(contractResultDetails.v),
+            v: EthImpl.nanOrNumberTo0x(contractResultDetails.v),
             value: EthImpl.nanOrNumberTo0x(contractResultDetails.amount),
           });
         }
