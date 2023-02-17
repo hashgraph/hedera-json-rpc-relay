@@ -891,17 +891,16 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
+    let interactingEntity = '';
     this.logger.trace(`${requestIdPrefix} sendRawTransaction(transaction=${transaction})`);
-
     try {
+      const parsedTx = Precheck.parseTxIfNeeded(transaction);
+      interactingEntity = parsedTx.to ? parsedTx.to.toString() : '';
       const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction, requestId);
-      await this.precheck.sendRawTransactionCheck(transaction, gasPrice, requestId);
+      await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestId);
     } catch (e: any) {
       throw this.genericErrorHandler(e);
     }
-
-    const parsedTx = Precheck.parseTxIfNeeded(transaction);
-    const interactingEntity = parsedTx.to ? parsedTx.to.toString() : '';
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     try {

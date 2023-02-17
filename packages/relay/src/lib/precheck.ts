@@ -55,9 +55,8 @@ export class Precheck {
    * @param transaction
    * @param gasPrice
    */
-  async sendRawTransactionCheck(transaction: string, gasPrice: number, requestId?: string) {
-    const parsedTx = Precheck.parseTxIfNeeded(transaction);
-
+  async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId?: string) {
+    
     this.gasLimit(parsedTx, requestId);
     const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
     await this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
