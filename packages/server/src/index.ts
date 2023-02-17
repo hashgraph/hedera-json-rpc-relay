@@ -18,8 +18,30 @@
  *
  */
 
-import app from './server';
-import socketApp from './webSocketServer';
+import server from './server';
+import socketServer from './webSocketServer';
+import { Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { Registry } from 'prom-client';
+import pino from 'pino';
+
+const mainLogger = pino({
+  name: 'hedera-json-rpc-relay',
+  level: process.env.LOG_LEVEL || 'trace',
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: true
+    }
+  }
+});
+
+const logger = mainLogger.child({ name: 'rpc-server' });
+const register = new Registry();
+const relay: Relay = new RelayImpl(logger, register);
+
+const app = server(relay, register, logger);
+const socketApp = socketServer(relay, register, logger);
 
 async function main() {
   socketApp.listen({port: process.env.WEB_SOCKET_PORT});
