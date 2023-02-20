@@ -62,6 +62,7 @@ const _ = require('lodash');
 export class SDKClient {
     static transactionMode = 'TRANSACTION';
     static queryMode = 'QUERY';
+    static recordMode = 'RECORD';
     /**
      * The client to use for connecting to the main consensus network. The account
      * associated with this client will pay for all operations on the main network.
@@ -95,6 +96,13 @@ export class SDKClient {
     // populate with consensusnode requests via SDK
     constructor(clientMain: Client, logger: Logger, register: Registry) {
         this.clientMain = clientMain;
+
+        if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
+            // sets the maximum time in ms for the SDK to wait when submitting
+            // a transaction/query before throwing a TIMEOUT error
+            this.clientMain = clientMain.setMaxExecutionTime(Number(process.env.CONSENSUS_MAX_EXECUTION_TIME));
+        }
+
         this.logger = logger;
         this.register = register;
         this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
@@ -105,7 +113,7 @@ export class SDKClient {
         this.consensusNodeClientHistorgram = new Histogram({
             name: metricHistogramName,
             help: 'Relay consensusnode mode type status cost histogram',
-            labelNames: ['mode', 'type', 'status', 'caller'],
+            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
             registers: [register]
         });
 
@@ -133,12 +141,12 @@ export class SDKClient {
 
         const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
         const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
-        this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration);
+        this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
     }
 
     async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
         return this.executeQuery(new AccountBalanceQuery()
-            .setAccountId(AccountId.fromString(account)), this.clientMain, callerName, requestId);
+            .setAccountId(AccountId.fromString(account)), this.clientMain, callerName, account, requestId);
     }
 
     async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
@@ -153,17 +161,17 @@ export class SDKClient {
 
     async getAccountInfo(address: string, callerName: string, requestId?: string): Promise<AccountInfo> {
         return this.executeQuery(new AccountInfoQuery()
-            .setAccountId(AccountId.fromString(address)), this.clientMain, callerName, requestId);
+            .setAccountId(AccountId.fromString(address)), this.clientMain, callerName, address, requestId);
     }
 
     async getContractByteCode(shard: number | Long, realm: number | Long, address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
         return this.executeQuery(new ContractByteCodeQuery()
-            .setContractId(ContractId.fromEvmAddress(shard, realm, address)), this.clientMain, callerName, requestId);
+            .setContractId(ContractId.fromEvmAddress(shard, realm, address)), this.clientMain, callerName, address, requestId);
     }
 
     async getContractBalance(contract: string, callerName: string, requestId?: string): Promise<AccountBalance> {
         return this.executeQuery(new AccountBalanceQuery()
-            .setContractId(ContractId.fromString(contract)), this.clientMain, callerName, requestId);
+            .setContractId(ContractId.fromString(contract)), this.clientMain, callerName, contract, requestId);
     }
 
     async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
@@ -203,7 +211,7 @@ export class SDKClient {
 
     async getFileIdBytes(address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
         return this.executeQuery(new FileContentsQuery()
-            .setFileId(address), this.clientMain, callerName, requestId);
+            .setFileId(address), this.clientMain, callerName, address, requestId);
     }
 
     async getRecord(transactionResponse: TransactionResponse) {
@@ -213,6 +221,7 @@ export class SDKClient {
     async submitEthereumTransaction(transactionBuffer: Uint8Array, callerName: string, requestId?: string): Promise<TransactionResponse> {
         const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
         const ethereumTransaction = new EthereumTransaction();
+        const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
 
         if (ethereumTransactionData.toBytes().length <= 5120) {
             ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
@@ -230,7 +239,7 @@ export class SDKClient {
         const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction');
         ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.BLOCK_GAS_LIMIT)));
 
-        return this.executeTransaction(ethereumTransaction, callerName, requestId);  
+        return this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId);
     }
 
     async submitContractCallQuery(to: string, data: string, gas: number, from: string, callerName: string, requestId?: string): Promise<ContractFunctionResult> {
@@ -257,7 +266,7 @@ export class SDKClient {
                 .setPaymentTransactionId(TransactionId.generate(this.clientMain.operatorAccountId));
         }
 
-        return this.executeQuery(contractCallQuery, this.clientMain, callerName, requestId);
+        return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestId);
     }
 
     async increaseCostAndRetryExecution(query: Query<any>, baseCost: Hbar, client: Client, maxRetries: number, currentRetry: number, requestId?: string) {
@@ -296,11 +305,11 @@ export class SDKClient {
         );
     };
 
-    private executeQuery = async (query: Query<any>, client: Client, callerName: string, requestId?: string) => {
+    private executeQuery = async (query: Query<any>, client: Client, callerName: string, interactingEntity: string, requestId?: string) => {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         const currentDateNow = Date.now();
         try {
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow);
+            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.queryMode, callerName);
             if (shouldLimit) {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
@@ -324,7 +333,8 @@ export class SDKClient {
                 query.constructor.name,
                 Status.Success,
                 cost,
-                callerName);
+                callerName,
+                interactingEntity);
             return resp;
         }
         catch (e: any) {
@@ -335,7 +345,8 @@ export class SDKClient {
                 query.constructor.name,
                 sdkClientError.status,
                 cost,
-                callerName);
+                callerName,
+                interactingEntity);
             this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${query._queryPayment}`);
             if (cost) {
                 this.hbarLimiter.addExpense(cost, currentDateNow);
@@ -348,16 +359,21 @@ export class SDKClient {
             if (e instanceof JsonRpcError){
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
+
+            if (sdkClientError.isGrpcTimeout()) {
+                throw predefined.REQUEST_TIMEOUT;
+            }
+
             throw sdkClientError;
         }
     };
 
-    private executeTransaction = async (transaction: Transaction, callerName: string, requestId?: string): Promise<TransactionResponse> => {
+    private executeTransaction = async (transaction: Transaction, callerName: string, interactingEntity: string, requestId?: string): Promise<TransactionResponse> => {
         const transactionType = transaction.constructor.name;
         const requestIdPrefix = formatRequestIdMessage(requestId);
         const currentDateNow = Date.now();
         try {
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow);
+            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
             if (shouldLimit) {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
@@ -387,7 +403,8 @@ export class SDKClient {
                         transactionType,
                         sdkClientError.status,
                         transactionFee.toTinybars().toNumber(),
-                        callerName);
+                        callerName,
+                        interactingEntity);
 
                     this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
                 } catch (err: any) {
@@ -404,14 +421,14 @@ export class SDKClient {
         }
     };
 
-    async executeGetTransactionRecord(resp: TransactionResponse, transactionName: string, callerName: string, requestId?: string): Promise<TransactionRecord> {
+    async executeGetTransactionRecord(resp: TransactionResponse, transactionName: string, callerName: string, interactingEntity: string, requestId?: string): Promise<TransactionRecord> {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         const currentDateNow = Date.now();
         try {
             if (!resp.getRecord) {
                 throw new SDKClientError({}, `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
             }
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow);
+            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, transactionName);
             if (shouldLimit) {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
@@ -425,7 +442,8 @@ export class SDKClient {
                 transactionName,
                 transactionRecord.receipt.status,
                 cost,
-                callerName);
+                callerName,
+                interactingEntity);
 
             this.hbarLimiter.addExpense(cost, currentDateNow);
 
@@ -450,7 +468,8 @@ export class SDKClient {
                         transactionName,
                         sdkClientError.status,
                         transactionFee.toTinybars().toNumber(),
-                        callerName);
+                        callerName,
+                        interactingEntity);
 
                     this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
                 } catch (err: any) {
@@ -468,15 +487,15 @@ export class SDKClient {
         }
     };
 
-    private captureMetrics = (mode, type, status, cost, caller) => {
+    private captureMetrics = (mode, type, status, cost, caller, interactingEntity) => {
         const resolvedCost = cost ? cost : 0;
         this.consensusNodeClientHistorgram.labels(
             mode,
             type,
             status,
-            caller)
+            caller,
+            interactingEntity)
             .observe(resolvedCost);
-        this.operatorAccountGauge.labels(mode, type, this.operatorAccountId).dec(resolvedCost);
     };
 
     /**

@@ -168,7 +168,8 @@ export class MirrorNodeClient {
             name: metricHistogramName,
             help: 'Mirror node response method statusCode latency histogram',
             labelNames: ['method', 'statusCode'],
-            registers: [register]
+            registers: [register],
+            buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000] // ms (milliseconds)
         });
 
         this.logger.info(`Mirror Node client successfully configured to REST url: ${this.restUrl} and Web3 url: ${this.web3Url} `);
@@ -337,6 +338,21 @@ export class MirrorNodeClient {
             MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT,
             [400, 404],
             requestId);
+    }
+
+    /**
+     * In some very rare cases the /contracts/results api is called before all the data is saved in
+     * the mirror node DB and `transaction_index` is returned as `undefined`. A single re-fetch is sufficient to
+     * resolve this problem.
+     * @param transactionIdOrHash
+     * @param requestId
+     */
+    public async getContractResultWithRetry(transactionIdOrHash: string, requestId?: string) {
+        let contractResult = await this.getContractResult(transactionIdOrHash, requestId);
+        if (contractResult && typeof contractResult.transaction_index === 'undefined') {
+            return this.getContractResult(transactionIdOrHash, requestId);
+        }
+        return contractResult;
     }
 
     public async getContractResults(contractResultsParams?: IContractResultsParams, limitOrderParams?: ILimitOrderParams, requestId?: string) {
