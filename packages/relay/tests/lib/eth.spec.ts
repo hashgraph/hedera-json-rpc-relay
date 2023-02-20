@@ -3273,6 +3273,24 @@ describe('Eth', async function () {
       expect(result.value).to.eq('0x0');
     });
 
+    it('handles transactions with v as null', async function () {
+      // mirror node request mocks
+      const detailedResultsWithNullNullableValues = {
+        ...defaultDetailedContractResultByHash,
+        v: null
+      };
+
+      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
+      const result = await ethImpl.getTransactionByHash(defaultTxHash);
+      if (result == null) return;
+
+      expect(result).to.exist;
+      expect(result.v).to.eq('0x0');
+    });
+
     it('returns reverted transactions', async function () {
       restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHashReverted);
       restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
