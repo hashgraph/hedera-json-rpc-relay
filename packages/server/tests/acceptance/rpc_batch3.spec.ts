@@ -74,17 +74,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         // Wait for creation to propagate
         await mirrorNode.get(`/contracts/${reverterContract.contractId}`, requestId);
         reverterEvmAddress = `0x${reverterContract.contractId.toSolidityAddress()}`;
-
-
-        // FIXME remove this once error messages have been added to the mirror node
-        if (process.env.ETH_CALL_CONSENSUS && process.env.ETH_CALL_CONSENSUS === 'false') {
-            PURE_METHOD_ERROR_DATA = '';
-            VIEW_METHOD_ERROR_DATA = '';
-            PURE_METHOD_ERROR_MESSAGE = 'execution reverted: ';
-            VIEW_METHOD_ERROR_MESSAGE = 'execution reverted: ';
-        }
-
-        });
+    });
 
 
     describe('eth_call', () => {
@@ -427,7 +417,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             }, requestId);
         });
 
-        it('Returns revert message for view methods', async () => {
+        it.only('Returns revert message for view methods', async () => {
             const callData = {
                 from: '0x' + accounts[0].address,
                 to: reverterEvmAddress,
@@ -546,7 +536,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             });
         });
 
-        // FIXME
         describe('eth_call for reverted pure contract calls', async function () {
             beforeEach(async () => {
                 requestId = Utils.generateRequestId();
@@ -557,34 +546,25 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                     data: '0x2dac842f',
                     method: 'revertWithNothingPure',
                     message: '',
-
-                    // FIXME uncomment this once error messages have been added to the mirror node
-                    // errorData: '0x'
+                    errorData: '0x'
                 },
                 {
                     data: '0x8b153371',
                     method: 'revertWithStringPure',
-
-                    // FIXME uncomment this once error messages have been added to the mirror node
-                    message: '',
-                    // message: 'Some revert message',
-                    // errorData: '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000'
+                    message: 'Some revert message',
+                    errorData: '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000'
                 },
                 {
                     data: '0x35314694',
                     method: 'revertWithCustomErrorPure',
                     message: '',
-
-                    // FIXME uncomment this once error messages have been added to the mirror node
-                    // errorData: '0x0bd3d39c'
+                    errorData: '0x0bd3d39c'
                 },
                 {
                     data: '0x83889056',
                     method: 'revertWithPanicPure',
                     message: '',
-
-                    // FIXME uncomment this once error messages have been added to the mirror node
-                    // errorData: '0x4e487b710000000000000000000000000000000000000000000000000000000000000012'
+                    errorData: '0x4e487b710000000000000000000000000000000000000000000000000000000000000012'
                 }
             ];
 
