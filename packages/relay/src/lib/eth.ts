@@ -764,9 +764,21 @@ export class EthImpl implements Eth {
   async getBlockByNumber(blockNumOrTag: string, showDetails: boolean, requestId?: string): Promise<Block | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
-    return this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
-      throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
-    });
+
+    const cacheKey = `eth_getBlockByNumber_${blockNumOrTag}_${showDetails}`;
+    let block = this.cache.get(cacheKey);
+    if (!block) {
+      block = this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
+        throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
+      });
+
+      if (blockNumOrTag != EthImpl.blockLatest && blockNumOrTag != EthImpl.blockPending) {
+        this.logger.trace(`${requestIdPrefix} caching ${cacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        this.cache.set(cacheKey, block);
+      }
+    }
+
+    return block;
   }
 
   /**
