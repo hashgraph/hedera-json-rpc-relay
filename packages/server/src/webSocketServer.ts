@@ -1,29 +1,45 @@
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import Koa from 'koa';
 import jsonResp from './koaJsonRpc/lib/RpcResponse';
 import websockify from 'koa-websocket';
 import { predefined } from '@hashgraph/json-rpc-relay';
 
 export default (relay, register, logger) => {
-    // the magic happens right here
     const app = websockify(new Koa(), {});
 
     const SUBSCRIPTION_ID = '0x9ce59a13059e417087c02d3236a0b1cc';
-    const CHAIN_ID = '0x1234';
 
     app.ws.use((ctx) => {
         ctx.websocket.on('message', async (msg) => {
             const base64 = msg.toString('base64');
             const request = JSON.parse(Buffer.from(base64, 'base64').toString('ascii'));
             const {method, params} = request;
-
             let response;
-            switch (method) {
-                case 'eth_subscribe': {
-                    const event = params[0];
-                    const filter = params[1];
 
-                    response = JSON.stringify(jsonResp(request.id, null, SUBSCRIPTION_ID));
+            if (method === 'eth_subscribe') {
+                const event = params[0];
+                const filter = params[1];
 
+                if (event === 'logs') {
                     setInterval(() => {
                         ctx.websocket.send(JSON.stringify({
                             method: 'eth_subscription',
@@ -49,20 +65,32 @@ export default (relay, register, logger) => {
                             }
                         }));
                     }, 3000);
-
-                    break;
+                }
+                else if (event === 'newHeads') {
+                    // not supported
+                }
+                else if (event === 'newPendingTransactions') {
+                    // not supported
+                }
+                else {
+                    // invalid event
                 }
 
-                case 'eth_chainId': {
-                    response = JSON.stringify(jsonResp(request.id, null, CHAIN_ID));
-                    break;
-                }
-
-                default: {
-                    response = JSON.stringify(jsonResp(request.id, predefined.INTERNAL_ERROR(), null));
-                }
+                response = jsonResp(request.id, null, SUBSCRIPTION_ID);
             }
-            ctx.websocket.send(response);
+            else if (method === 'eth_unsubscribe') {
+                // TODO
+            }
+
+            // Clients want to know the chainId after connecting
+            else if (method === 'eth_chainId') {
+                response = jsonResp(request.id, null, relay.eth().chainId());
+            }
+            else {
+                response = jsonResp(request.id, predefined.INTERNAL_ERROR(), null);
+            }
+
+            ctx.websocket.send(JSON.stringify(response));
         });
 
         ctx.websocket.on('error', console.error);
