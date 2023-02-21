@@ -27,6 +27,8 @@ export interface Poll {
     lastPolled?: number
 }
 
+const LOGGER_PREFIX = 'Poller:';
+
 export class Poller {
     private mirrorNodeClient: MirrorNodeClient;
     private logger: Logger;
@@ -42,9 +44,10 @@ export class Poller {
     poll() {
         this.polls.forEach(async poll => {
             try {
+                this.logger.info(`${LOGGER_PREFIX} Fetching data for ${poll.uri}`);
                 // const data = await this.mirrorNodeClient.get(poll.uri, 'contracts/results/logs');
 
-                const data = {
+                const data = [{
                     "address": "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
                     "topics": [
                         "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
@@ -58,9 +61,15 @@ export class Poller {
                     "blockHash": "0xac9655fba9d7288b9a3d42f772430c37b312418a4890cd6f6a88c8dc4d335feb",
                     "logIndex": "0x2b",
                     "removed": false
-                };
+                }];
 
-                poll.callback(data);
+                if (Array.isArray(data)) {
+                    data.forEach(d => poll.callback(d));
+                }
+                else {
+                    poll.callback(data);
+                }
+
                 poll.lastPolled = Date.now();
             }
             catch(error) {
@@ -70,28 +79,46 @@ export class Poller {
     }
 
     start() {
-        this.interval = setInterval(this.poll, 3000);
+        this.logger.info(`${LOGGER_PREFIX} Starting polling`);
+        this.interval = setInterval(this.poll.bind(this), 3000);
     }
 
     stop() {
+        this.logger.info(`${LOGGER_PREFIX} Stopping polling`);
         clearInterval(this.interval);
+        delete this.interval;
     }
 
     add(uri: string, callback: Function) {
         if (!this.hasPoll(uri)) {
+            this.logger.info(`${LOGGER_PREFIX} Polling for ${uri}`);
             this.polls.push({
                 uri,
                 callback,
                 lastPolled: 0
             })
         }
+
+        if (!this.isPolling()) {
+            this.start();
+        }
     }
 
     remove(uri: string) {
+        this.logger.info(`${LOGGER_PREFIX} No longer polling for ${uri}`);
         this.polls = this.polls.filter(p => p.uri !== uri);
+
+        if (!this.polls.length) {
+            this.logger.info(`${LOGGER_PREFIX} No active polls.`);
+            this.stop();
+        }
     }
 
     hasPoll(uri): boolean {
-        return !!this.polls.filter(p => p.uri !== uri);
+        return !!this.polls.filter(p => p.uri !== uri).length;
+    }
+
+    isPolling() {
+        return !!this.interval;
     }
 }

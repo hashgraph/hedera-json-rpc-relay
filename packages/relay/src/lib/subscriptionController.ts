@@ -26,10 +26,12 @@ export interface Subscriber {
     subscriptionId: string
 }
 
+const LOGGER_PREFIX = 'Subscriptions:';
+
 export class SubscriptionController {
     private poller: Poller;
     private logger: Logger;
-    private subscriptions: {};
+    private subscriptions: {[key: string]: Subscriber[]};
 
     constructor(poller: Poller, logger: Logger) {
         this.poller = poller;
@@ -37,29 +39,68 @@ export class SubscriptionController {
         this.subscriptions = {};
     }
 
-    generateSubId() {
-        return '0x9ce59a13059e417087c02d3236a0b1cc';
+    // Generates a random 16 byte hex string
+    generateId() {
+        let id = '0x';
+        for (let i = 0; i < 3; i++) {
+            id += Math.floor(Math.random() * 10000000000).toString(16).padStart(8, '0').slice(-8);
+        }
+        id += Date.now().toString(16).slice(-8);
+        return id;
     }
 
-    subscribe(connection, uri) {
+    subscribe(connection, uri: string) {
         if (!this.subscriptions[uri]) {
             this.subscriptions[uri] = [];
         }
 
-        const subscriptionId = this.generateSubId();
+        const subId = this.generateId();
+
+        this.logger.info(`${LOGGER_PREFIX} New subscription ${subId}, listening for ${uri}`);
 
         this.subscriptions[uri].push({
-            subscriptionId: subscriptionId,
+            subscriptionId: subId,
             connection
         });
 
-        this.poller.add(uri, this.notifySubscribers.bind(uri));
-        return subscriptionId;
+        this.poller.add(uri, this.notifySubscribers.bind(this, uri));
+        return subId;
+    }
+
+    unsubscribe(connection, subId?: string) {
+        const {id} = connection;
+
+        if (subId) {
+            this.logger.info(`${LOGGER_PREFIX} Unsubscribing connection ${id} from subscription ${subId}`);
+        }
+        else {
+            this.logger.info(`${LOGGER_PREFIX} Unsubscribing all instances of connection ${id}`);
+        }
+
+        for (const [uri, subs] of Object.entries(this.subscriptions)) {
+            this.subscriptions[uri] = subs.filter(sub => {
+                const match = sub.connection.id === id && (!subId || subId === sub.subscriptionId);
+                if (match) {
+                    this.logger.info(`${LOGGER_PREFIX} Unsubscribing ${sub.subscriptionId}, from ${uri}`);
+                }
+
+                return !match;
+            });
+
+            if (!this.subscriptions[uri].length) {
+                this.logger.info(`${LOGGER_PREFIX} No subscribers for ${uri}`);
+                delete this.subscriptions[uri];
+                this.poller.remove(uri);
+            }
+        }
+
+        return true;
     }
 
     notifySubscribers(uri, data) {
         if (this.subscriptions[uri] && this.subscriptions[uri].length) {
             this.subscriptions[uri].forEach(sub => {
+                this.logger.info(`${LOGGER_PREFIX} Sending new data from ${uri} to subscriptionId ${sub.subscriptionId}, connectionId ${sub.connection.id}`);
                 sub.connection.send(JSON.stringify({
                     method: 'eth_subscription',
                     params: {

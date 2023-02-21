@@ -32,6 +32,14 @@ export interface Relay {
   net(): Net;
 
   eth(): Eth;
+
+  subs(): Subs;
+}
+
+export interface Subs {
+  subscribe(connection, uri): string;
+
+  unsubscribe(connection, uri): boolean;
 }
 
 export interface Web3 {
