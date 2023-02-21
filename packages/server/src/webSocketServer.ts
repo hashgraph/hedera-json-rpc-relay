@@ -40,11 +40,11 @@ export default (relay, register, logger) => {
 
             if (method === 'eth_subscribe') {
                 const event = params[0];
-                const filter = params[1];
+                const filters = params[1];
                 let subscriptionId;
 
                 if (event === 'logs') {
-                    subscriptionId = relay.subs().subscribe(ctx.websocket, 'contracts/results/logs');
+                    subscriptionId = relay.subs().subscribe(ctx.websocket, event, filters);
                 }
                 else if (event === 'newHeads') {
                     // not supported

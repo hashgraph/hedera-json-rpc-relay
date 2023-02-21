@@ -75,7 +75,7 @@ export class RelayImpl implements Relay {
       logger.child({ name: 'relay-eth' }),
       chainId);
 
-    const poller = new Poller(mirrorNodeClient, logger);
+    const poller = new Poller(this.ethImpl, logger);
     this.subImpl = new SubscriptionController(poller, logger);
 
     logger.info('Relay running with chainId=%s', chainId);
