@@ -332,9 +332,21 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
     //this checks whether this is a transfer transaction and not a contract function execution
     if (!transaction || !transaction.data || transaction.data === '0x') {
-      const toAccount = await this.mirrorNodeClient.getAccount(transaction.to);
+      const accountCacheKey = `account_${transaction.to}`;
+      let toAccount: object | null = this.cache.get(accountCacheKey);
+      if (!toAccount) {
+        toAccount = await this.mirrorNodeClient.getAccount(transaction.to);
+      }
+
       // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
-      return toAccount ? EthImpl.gasTxBaseCost : EthImpl.gasTxHollowAccountCreation;
+      if (toAccount) {
+        this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        this.cache.set(accountCacheKey, toAccount);
+
+        return EthImpl.gasTxBaseCost;
+      }
+
+      return EthImpl.gasTxHollowAccountCreation;
     } else {
       return EthImpl.defaultGas;
     }
@@ -562,7 +574,7 @@ export class EthImpl implements Eth {
             if (stateChange) {
               result = stateChange.value_written;
             }
-          } 
+          }
         })
         .catch((error: any) => {
           throw this.genericErrorHandler(
@@ -896,7 +908,7 @@ export class EthImpl implements Eth {
     try {
       const parsedTx = Precheck.parseTxIfNeeded(transaction);
       interactingEntity = parsedTx.to ? parsedTx.to.toString() : '';
-      const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction, requestId);
+      const gasPrice = Number(await this.gasPrice(requestId));
       await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestId);
     } catch (e: any) {
       throw this.genericErrorHandler(e);
@@ -1033,7 +1045,17 @@ export class EthImpl implements Eth {
     let fromAddress;
     if (contractResult.from) {
       fromAddress = contractResult.from.substring(0, 42);
-      const accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
+
+      const accountCacheKey = `account_${fromAddress}`;
+      let accountResult: any | null = this.cache.get(accountCacheKey);
+      if (!accountResult) {
+        accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
+        if (accountResult) {
+          this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+          this.cache.set(accountCacheKey, accountResult);
+        }
+      }
+
       if (accountResult && accountResult.evm_address && accountResult.evm_address.length > 0) {
         fromAddress = accountResult.evm_address.substring(0,42);
       }
@@ -1235,7 +1257,7 @@ export class EthImpl implements Eth {
           const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
           if (transaction !== null) {
             transactionObjects.push(transaction);
-          }  
+          }
         } else {
           transactionHashes.push(result.hash);
         }
