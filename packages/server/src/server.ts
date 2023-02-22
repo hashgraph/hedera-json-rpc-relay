@@ -228,15 +228,6 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
 };
 
 /**
- * Generates random trace id for requests.
- *
- * returns: string
- */
- const generateRequestId = () :string => {
-  return crypto.randomUUID();
-};
-
-/**
  * returns: false
  */
 app.useRpc('net_listening', async () => {

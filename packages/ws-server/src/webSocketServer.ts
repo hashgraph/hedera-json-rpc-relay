@@ -19,7 +19,7 @@
  */
 
 import Koa from 'koa';
-import jsonResp from '@hashgraph/json-rpc-server/src/koaJsonRpc/lib/RpcResponse';
+import jsonResp from './lib/RpcResponse';
 import websockify from 'koa-websocket';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { Relay, RelayImpl } from '@hashgraph/json-rpc-relay';

@@ -37,9 +37,11 @@ export interface Relay {
 }
 
 export interface Subs {
-  subscribe(connection, uri): string;
+  generateId(): string;
 
-  unsubscribe(connection, uri): boolean;
+  subscribe(connection, event: string, filters?: {}): string;
+
+  unsubscribe(connection, subscriptionId?: string): boolean;
 }
 
 export interface Web3 {
