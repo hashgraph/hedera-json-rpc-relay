@@ -52,32 +52,21 @@ export class Poller {
                 if (event === 'logs') {
                     data = await this.eth.getLogs(
                         null,
-                        poll.lastPolled || null,
-                        'latest',
+                        null,
+                        null,
                         filters.address || null,
                         filters.topics || null
                     );
 
-                    if (data && data.lenth) {
+                    this.logger.debug('===============================');
+                    this.logger.debug(poll.lastPolled);
+                    this.logger.debug(data);
+                    this.logger.debug('===============================');
+
+                    if (data && data.length) {
                         const blockNumbers = data.map(log => log.blockNumber).sort();
                         this.polls[pollIndex].lastPolled = blockNumbers[blockNumbers.length - 1];
                     }
-
-                    // data = [{
-                    //     "address": "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
-                    //     "topics": [
-                    //         "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
-                    //         "0x000000000000000000000000700551055c4efd25a7ce9d9e6ce0b3ec126d3909",
-                    //         "0x0000000000000000000000007728ebf957c39e0ef55fb65bac49ef40c82422a3"
-                    //     ],
-                    //     "data": "0x00000000000000000000000000000000000000000000000000000000000f4240",
-                    //     "blockNumber": "0x807fdc",
-                    //     "transactionHash": "0xc79166c9d56f04e26562a0c479e9c0e46a0a7973993bcd22b94e6382b4c5b07f",
-                    //     "transactionIndex": "0x17",
-                    //     "blockHash": "0xac9655fba9d7288b9a3d42f772430c37b312418a4890cd6f6a88c8dc4d335feb",
-                    //     "logIndex": "0x2b",
-                    //     "removed": false
-                    // }];
                 }
                 else if (event === 'newHeads') {
                     // not supported
@@ -104,7 +93,7 @@ export class Poller {
 
     start() {
         this.logger.info(`${LOGGER_PREFIX} Starting polling`);
-        this.interval = setInterval(this.poll.bind(this), 3000);
+        this.interval = setInterval(this.poll.bind(this), 500);
     }
 
     stop() {
