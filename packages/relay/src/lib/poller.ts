@@ -34,6 +34,7 @@ export class Poller {
     private logger: Logger;
     private polls: Poll[];
     private interval?: NodeJS.Timer;
+    private latestBlock?: string;
 
     constructor(eth: Eth, logger: Logger) {
         this.eth = eth;
@@ -41,7 +42,7 @@ export class Poller {
         this.polls = [];
     }
 
-    poll() {
+    public poll() {
         this.polls.forEach(async (poll, pollIndex) => {
             try {
                 this.logger.info(`${LOGGER_PREFIX} Fetching data for ${poll.tag}`);
@@ -52,24 +53,16 @@ export class Poller {
                 if (event === 'logs') {
                     data = await this.eth.getLogs(
                         null,
-                        null,
-                        null,
+                        poll.lastPolled || this.latestBlock || 'latest',
+                        'latest',
                         filters.address || null,
                         filters.topics || null
                     );
 
-                    this.logger.debug('===============================');
-                    this.logger.debug(poll.lastPolled);
-                    this.logger.debug(data);
-                    this.logger.debug('===============================');
-
-                    if (data && data.length) {
-                        const blockNumbers = data.map(log => log.blockNumber).sort();
-                        this.polls[pollIndex].lastPolled = blockNumbers[blockNumbers.length - 1];
-                    }
+                    poll.lastPolled = this.latestBlock;
                 }
                 else if (event === 'newHeads') {
-                    // not supported
+                    data = this.latestBlock;
                 }
                 else if (event === 'newPendingTransacitons') {
                     // not supported
@@ -93,7 +86,10 @@ export class Poller {
 
     start() {
         this.logger.info(`${LOGGER_PREFIX} Starting polling`);
-        this.interval = setInterval(this.poll.bind(this), 500);
+        this.interval = setInterval(async () => {
+            this.latestBlock = await this.eth.blockNumber();
+            this.poll();
+        }, 500);
     }
 
     stop() {
@@ -102,12 +98,12 @@ export class Poller {
         delete this.interval;
     }
 
-    add(tag: string, callback: Function) {
+    async add(tag: string, callback: Function) {
         if (!this.hasPoll(tag)) {
             this.logger.info(`${LOGGER_PREFIX} Polling for ${tag}`);
             this.polls.push({
                 tag,
-                callback,
+                callback
             })
         }
 

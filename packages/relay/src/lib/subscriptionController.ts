@@ -20,6 +20,9 @@
 
 import { Poller } from './poller';
 import { Logger } from 'pino';
+import LRU from "lru-cache";
+import constants from "./constants";
+import crypto from "crypto";
 
 export interface Subscriber {
     connection: any,
@@ -32,11 +35,13 @@ export class SubscriptionController {
     private poller: Poller;
     private logger: Logger;
     private subscriptions: {[key: string]: Subscriber[]};
+    private cache;
 
     constructor(poller: Poller, logger: Logger) {
         this.poller = poller;
         this.logger = logger;
         this.subscriptions = {};
+        this.cache = new LRU({ max: constants.CACHE_MAX, ttl: 2000 });
     }
 
     // Generates a random 16 byte hex string
@@ -108,14 +113,21 @@ export class SubscriptionController {
     notifySubscribers(tag, data) {
         if (this.subscriptions[tag] && this.subscriptions[tag].length) {
             this.subscriptions[tag].forEach(sub => {
-                this.logger.info(`${LOGGER_PREFIX} Sending new data from ${tag} to subscriptionId ${sub.subscriptionId}, connectionId ${sub.connection.id}`);
-                sub.connection.send(JSON.stringify({
-                    method: 'eth_subscription',
-                    params: {
-                        result: data,
-                        subscription: sub.subscriptionId
-                    }
-                }));
+                const subscriptionData = {
+                    result: data,
+                    subscription: sub.subscriptionId
+                };
+                const hash = crypto.createHash('sha1').update(JSON.stringify(subscriptionData)).digest('hex');
+
+                // If the hash exists in the cache then the data has recently been sent to the subscriber
+                if (!this.cache.get(hash)) {
+                    this.cache.set(hash, true);
+                    this.logger.info(`${LOGGER_PREFIX} Sending new data from ${tag} to subscriptionId ${sub.subscriptionId}, connectionId ${sub.connection.id}`);
+                    sub.connection.send(JSON.stringify({
+                        method: 'eth_subscription',
+                        params: subscriptionData
+                    }));
+                }
             })
         }
     }
