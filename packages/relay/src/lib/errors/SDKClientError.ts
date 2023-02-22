@@ -55,5 +55,10 @@ export class SDKClientError extends Error {
   public isInsufficientTxFee(): boolean {
     return this.statusCode === Status.InsufficientTxFee._code;
   }
+
+  public isGrpcTimeout(): boolean {
+    // The SDK uses the same code for Grpc Timeout as INVALID_TRANSACTION_ID
+    return this.statusCode === Status.InvalidTransactionId._code;
+  }
 }
   
