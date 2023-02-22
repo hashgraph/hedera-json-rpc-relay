@@ -758,7 +758,7 @@ export class EthImpl implements Eth {
 
   /**
    * Gets the block by its block number.
-   * @param blockNumOrTag
+   * @param blockNumOrTag Possible values are earliest/pending/latest or hex, and can't be null (validator check).
    * @param showDetails
    */
   async getBlockByNumber(blockNumOrTag: string, showDetails: boolean, requestId?: string): Promise<Block | null> {
@@ -768,7 +768,7 @@ export class EthImpl implements Eth {
     const cacheKey = `eth_getBlockByNumber_${blockNumOrTag}_${showDetails}`;
     let block = this.cache.get(cacheKey);
     if (!block) {
-      block = this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
+      block = await this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
         throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
       });
 

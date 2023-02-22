@@ -677,6 +677,21 @@ describe('Eth calls using MirrorNode', async function () {
     verifyBlockConstants(result);
   });
 
+  it('eth_getBlockByNumber should return cached result', async function() {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+    restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResults);
+    restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+    restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
+    restMock.onGet('network/fees').reply(200, defaultNetworkFees);
+    const resBeforeCache = await ethImpl.getBl  ockByNumber(EthImpl.numberTo0x(blockNumber), false);
+
+    restMock.onGet(`blocks/${blockNumber}`).reply(404);
+    const resAfterCache = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
+
+    expect(resBeforeCache).to.eq(resAfterCache);
+  });
+
   it('eth_getBlockByNumber with zero transactions', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, gas_used: 0});
