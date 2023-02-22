@@ -48,7 +48,6 @@ const app = new KoaJsonRpc(logger, register, {
   limit: process.env.INPUT_SIZE_LIMIT ? process.env.INPUT_SIZE_LIMIT + 'mb' : null
 });
 
-const REQUEST_ID_STRING = `Request ID: `;
 const responseSuccessStatusCode = '200';
 const responseInternalErrorCode = '-32603';
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
@@ -166,13 +165,13 @@ app.getKoaApp().use(async (ctx, next) => {
     ctx.set(options.expose, id);
   }
 
+  ctx.state.start = Date.now();
   ctx.state.reqId = id;
 
   return next();
 });
 
 const logAndHandleResponse = async (methodName: any, methodParams: any, methodFunction: any) => {
-  const start = Date.now();
   let ms;
 
   const requestId = app.getRequestId();
@@ -189,7 +188,7 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
 
     const response = await methodFunction(requestId);
     const status = response instanceof JsonRpcError ? response.code.toString() : responseSuccessStatusCode;
-    ms = Date.now() - start;
+    ms = Date.now() - app.getStartTimestamp();
     methodResponseHistogram.labels(methodName, status).observe(ms);
     logger.info(`${messagePrefix} ${status} ${ms} ms `);
     if (response instanceof JsonRpcError) {
@@ -203,7 +202,7 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
     }
     return response;
   } catch (e: any) {
-    ms = Date.now() - start;
+    ms = Date.now() - app.getStartTimestamp();
     methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
     logger.error(e, `${messagePrefix} ${responseInternalErrorCode} ${ms} ms`);
 
