@@ -333,6 +333,7 @@ export class SDKClient {
                 query.constructor.name,
                 Status.Success,
                 cost,
+                0,
                 callerName,
                 interactingEntity);
             return resp;
@@ -345,6 +346,7 @@ export class SDKClient {
                 query.constructor.name,
                 sdkClientError.status,
                 cost,
+                0,
                 callerName,
                 interactingEntity);
             this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${query._queryPayment}`);
@@ -403,6 +405,7 @@ export class SDKClient {
                         transactionType,
                         sdkClientError.status,
                         transactionFee.toTinybars().toNumber(),
+                        transctionRecord?.contractFunctionResult?.gasUsed,
                         callerName,
                         interactingEntity);
 
@@ -442,6 +445,7 @@ export class SDKClient {
                 transactionName,
                 transactionRecord.receipt.status,
                 cost,
+                transactionRecord?.contractFunctionResult?.gasUsed,
                 callerName,
                 interactingEntity);
 
@@ -468,6 +472,7 @@ export class SDKClient {
                         transactionName,
                         sdkClientError.status,
                         transactionFee.toTinybars().toNumber(),
+                        transctionRecord?.contractFunctionResult?.gasUsed,
                         callerName,
                         interactingEntity);
 
@@ -487,8 +492,9 @@ export class SDKClient {
         }
     };
 
-    private captureMetrics = (mode, type, status, cost, caller, interactingEntity) => {
+    private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
         const resolvedCost = cost ? cost : 0;
+        const resolvedGas = gas ? gas : 0;
         this.consensusNodeClientHistorgram.labels(
             mode,
             type,
@@ -496,6 +502,13 @@ export class SDKClient {
             caller,
             interactingEntity)
             .observe(resolvedCost);
+        this.consensusNodeClientHistorgram.labels(
+            mode,
+            type,
+            status,
+            caller,
+            interactingEntity)
+            .observe(resolvedGas);
     };
 
     /**
