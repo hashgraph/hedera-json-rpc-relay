@@ -2238,6 +2238,25 @@ describe('Eth calls using MirrorNode', async function () {
     expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
+  it('eth_estimateGas transfer to existing cached account', async function() {
+    const receiverAddress = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
+    restMock.onGet(`accounts/${receiverAddress}`).reply(200, { address: receiverAddress });
+
+    const gasBeforeCache = await ethImpl.estimateGas({
+      to: receiverAddress,
+      value: 100_000_000_000
+    }, null);
+
+    restMock.onGet(`accounts/${receiverAddress}`).reply(404);
+    const gasAfterCache = await ethImpl.estimateGas({
+      to: receiverAddress,
+      value: 100_000_000_000
+    }, null);
+
+    expect(gasBeforeCache).to.equal(EthImpl.gasTxBaseCost);
+    expect(gasAfterCache).to.equal(EthImpl.gasTxBaseCost);
+  });
+
   it('eth_estimateGas empty call returns transfer cost', async function () {
     restMock.onGet(`accounts/undefined`).reply(404);
     const gas = await ethImpl.estimateGas({}, null);
@@ -3165,6 +3184,19 @@ describe('Eth', async function () {
 
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
       expect(result).to.equal(null);
+    });
+
+    it('account should be cached', async function() {
+      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
+      const resBeforeCache = await ethImpl.getTransactionByHash(defaultTxHash);
+
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(404);
+      const resAfterCache = await ethImpl.getTransactionByHash(defaultTxHash);
+
+      expect(resBeforeCache).to.deep.equal(resAfterCache);
     });
 
     it('returns correct transaction for existing hash', async function () {
