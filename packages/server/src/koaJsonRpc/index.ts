@@ -43,6 +43,13 @@ import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
+const INTERNAL_ERROR = "INTERNAL ERROR";
+const INVALID_PARAMS_ERROR = "INVALID PARAMS ERROR";
+const INVALID_REQUEST = "INVALID REQUEST";
+const IP_RATE_LIMIT_EXCEEDED = "IP RATE LIMIT EXCEEDED";
+const JSON_RPC_ERROR = "JSON RPC ERROR"
+const METHOD_NOT_FOUND = "METHOD NOT FOUND";
+
 export default class KoaJsonRpc {
   private registry: any;
   private registryTotal: any;
@@ -116,7 +123,7 @@ export default class KoaJsonRpc {
         ctx.body = jsonResp(body.id || null, new InvalidRequest(), undefined);
         ctx.status = 400;
         ms = Date.now() - this.startTimestamp;
-        this.logger.error(`${messagePrefix} ${ctx.status} (INVALID REQUEST) ${ms} ms`);
+        this.logger.error(`${messagePrefix} ${ctx.status} (${INVALID_REQUEST}) ${ms} ms`);
         return;
       }
 
@@ -124,7 +131,7 @@ export default class KoaJsonRpc {
         ctx.body = jsonResp(body.id, new MethodNotFound(), undefined);
         ctx.status = 400;
         ms = Date.now() - this.startTimestamp;
-        this.logger.error(`${messagePrefix} ${ctx.status} (METHOD NOT FOUND) ${ms} ms`);
+        this.logger.error(`${messagePrefix} ${ctx.status} (${METHOD_NOT_FOUND}) ${ms} ms`);
         return;
       }
 
@@ -134,7 +141,7 @@ export default class KoaJsonRpc {
         ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
         ctx.status = 409;
         ms = Date.now() - this.startTimestamp;
-        this.logger.warn(`${messagePrefix} ${ctx.status} (IP RATE LIMIT EXCEEDED) ${ms} ms`);
+        this.logger.warn(`${messagePrefix} ${ctx.status} (${IP_RATE_LIMIT_EXCEEDED}) ${ms} ms`);
         return;
       }
 
@@ -145,13 +152,13 @@ export default class KoaJsonRpc {
           ctx.body = jsonResp(body.id, new InvalidParamsError(e.message), undefined);
           ctx.status = 400;
           ms = Date.now() - this.startTimestamp;
-          this.logger.error(`${messagePrefix} ${ctx.status} (INVALID PARAMS ERROR) ${ms} ms`);
+          this.logger.error(`${messagePrefix} ${ctx.status} (${INVALID_PARAMS_ERROR}) ${ms} ms`);
           return;
         }
         ctx.body = jsonResp(body.id, new InternalError(e.message), undefined);
         ctx.status = 500;
         ms = Date.now() - this.startTimestamp;
-        this.logger.error(`${messagePrefix} ${ctx.status} (INTERNAL ERROR) ${ms} ms`);
+        this.logger.error(`${messagePrefix} ${ctx.status} (${INTERNAL_ERROR}) ${ms} ms`);
         return;
       }
 
@@ -159,7 +166,7 @@ export default class KoaJsonRpc {
       if (result instanceof JsonRpcError) {
         ctx.status = (result.code == -32603) ? 500 : 400;
         ms = Date.now() - this.startTimestamp;
-        this.logger.error(`${messagePrefix} ${ctx.status} (${result.code}) (JSON RPC ERROR) ${ms} ms`);
+        this.logger.error(`${messagePrefix} ${ctx.status} (${result.code}) (${JSON_RPC_ERROR}) ${ms} ms`);
       }
     };
   }
