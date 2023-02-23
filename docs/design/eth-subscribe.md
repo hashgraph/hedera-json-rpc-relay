@@ -18,6 +18,8 @@ The JSON-RPC Relay currently doesn't support subscription using websocket as is 
 
 ## Architecture
 
+The websocket connections should be handled by its own node process, this can be done by creating a new package - `ws-server`;
+
 ### Subscription Types
 
 |   Subscription Type    |                                  Description                                   |                           Support                           |
@@ -314,17 +316,18 @@ WebSockets in general are resource intensive. We could implement a throttling me
 
 #### Milestone 2
 
-1. Implement library for websocket support in the server.
-2. Extend current koa server logic.
-3. Introduce `eth_subscribe` and `eth_unsubscribe` to both server and relay part.
-4. Add logic to save all subsciption IDs.
-5. Add logic to save addresses to which clients are subscribed.
-6. Expand logic with topic filters.
-7. Expand logic to work with multiple contracts.
-8. Add scheduled job function for looping through all saved filters and returns result to it's corresponding socket with the respective subscription id.
-9. Extend current rate limiter class to support websocket limitation.
-10. Add logic to delete subsciption upon connection break or request.
-11. Determine the reasonable default limits for ip based limits and global limits. This should be done after the connection logic is implemented so that we can measure the average resources used by a single connection.
+1. Create a separate `ws-server` package.
+2. Implement library for websocket support in the server.
+3. Extend current koa server logic.
+4. Introduce `eth_subscribe` and `eth_unsubscribe` to both server and relay part.
+5. Add logic to save all subsciption IDs.
+6. Add logic to save addresses to which clients are subscribed.
+7. Expand logic with topic filters.
+8. Expand logic to work with multiple contracts.
+9. Add scheduled job function for looping through all saved filters and returns result to it's corresponding socket with the respective subscription id.
+10. Extend current rate limiter class to support websocket limitation.
+11. Add logic to delete subsciption upon connection break or request.
+12. Determine the reasonable default limits for ip based limits and global limits. This should be done after the connection logic is implemented so that we can measure the average resources used by a single connection.
 
 #### Milestone 3 (use Mirror-Node GraphQL API)
 
