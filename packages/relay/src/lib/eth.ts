@@ -770,15 +770,27 @@ export class EthImpl implements Eth {
 
   /**
    * Gets the block by its block number.
-   * @param blockNumOrTag
+   * @param blockNumOrTag Possible values are earliest/pending/latest or hex, and can't be null (validator check).
    * @param showDetails
    */
   async getBlockByNumber(blockNumOrTag: string, showDetails: boolean, requestId?: string): Promise<Block | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
-    return this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
-      throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
-    });
+
+    const cacheKey = `eth_getBlockByNumber_${blockNumOrTag}_${showDetails}`;
+    let block = this.cache.get(cacheKey);
+    if (!block) {
+      block = await this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
+        throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
+      });
+
+      if (blockNumOrTag != EthImpl.blockLatest && blockNumOrTag != EthImpl.blockPending) {
+        this.logger.trace(`${requestIdPrefix} caching ${cacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        this.cache.set(cacheKey, block);
+      }
+    }
+
+    return block;
   }
 
   /**
