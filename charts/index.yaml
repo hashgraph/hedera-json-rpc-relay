@@ -3,9 +3,9 @@ entries:
   hedera-json-rpc-relay:
   - apiVersion: v2
     appVersion: 0.17.1
-    created: "2023-02-22T16:47:41.228622-07:00"
+    created: "2023-02-24T16:16:40.509806-07:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
-    digest: c23c290ebd7f2d0fadae3a8ed7801eef807a70a516955d611882b1e7fabe5024
+    digest: 3acfa6d9455e2dfd068bfd26d5e95235644a1b89c3107b11683a858058da1e3d
     home: https://github.com/hashgraph/hedera-json-rpc-relay
     name: hedera-json-rpc-relay
     type: application
@@ -14,7 +14,7 @@ entries:
     version: 0.17.1
   - apiVersion: v2
     appVersion: 0.7.0
-    created: "2023-02-22T16:47:41.228098-07:00"
+    created: "2023-02-24T16:16:40.5093-07:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 4645cb0b71202cee6652ca59022c5181455bf8b21084ce84744b366f18d95d40
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -25,7 +25,7 @@ entries:
     version: 0.1.1
   - apiVersion: v2
     appVersion: 0.7.0
-    created: "2023-02-22T16:47:41.227631-07:00"
+    created: "2023-02-24T16:16:40.507433-07:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: b4967f9d76d88a307b5cfe91773171aec1a674f35201aa55941745d6719cf772
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -34,4 +34,4 @@ entries:
     urls:
     - hedera-json-rpc-relay-0.1.0.tgz
     version: 0.1.0
-generated: "2023-02-22T16:47:41.225831-07:00"
+generated: "2023-02-24T16:16:40.506844-07:00"
