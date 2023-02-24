@@ -44,14 +44,13 @@ export class SubscriptionController {
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: 2000 });
     }
 
+    createHash(data) {
+        return crypto.createHash('sha1').update(data.toString()).digest('hex');
+    }
+
     // Generates a random 16 byte hex string
     generateId() {
-        let id = '0x';
-        for (let i = 0; i < 3; i++) {
-            id += Math.floor(Math.random() * 10000000000).toString(16).padStart(8, '0').slice(-8);
-        }
-        id += Date.now().toString(16).slice(-8);
-        return id;
+        return "0x" + crypto.randomBytes(16).toString('hex');
     }
 
     subscribe(connection, event: string, filters?: {}) {
@@ -117,7 +116,7 @@ export class SubscriptionController {
                     result: data,
                     subscription: sub.subscriptionId
                 };
-                const hash = crypto.createHash('sha1').update(JSON.stringify(subscriptionData)).digest('hex');
+                const hash = this.createHash(JSON.stringify(subscriptionData));
 
                 // If the hash exists in the cache then the data has recently been sent to the subscriber
                 if (!this.cache.get(hash)) {

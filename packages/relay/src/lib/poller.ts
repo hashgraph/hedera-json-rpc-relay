@@ -62,7 +62,7 @@ export class Poller {
                     poll.lastPolled = this.latestBlock;
                 }
                 else if (event === 'newHeads') {
-                    data = this.latestBlock;
+                    // not supported
                 }
                 else if (event === 'newPendingTransacitons') {
                     // not supported

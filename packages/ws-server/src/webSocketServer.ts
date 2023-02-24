@@ -65,7 +65,7 @@ app.ws.use((ctx) => {
                 subscriptionId = relay.subs().subscribe(ctx.websocket, event, filters);
             }
             else if (event === 'newHeads') {
-                subscriptionId = relay.subs().subscribe(ctx.websocket, event);
+                // not supported
             }
             else if (event === 'newPendingTransactions') {
                 // not supported
