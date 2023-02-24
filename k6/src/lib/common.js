@@ -26,23 +26,37 @@ setDefaultValuesForEnvParameters();
 
 const SCENARIO_DURATION_METRIC_NAME = 'scenario_duration';
 
-const options = {
-  thresholds: {
-    checks: [`rate>=${__ENV['DEFAULT_PASS_RATE']}`], // min % that should pass the checks,
-    http_req_duration: [`p(95)<${__ENV['DEFAULT_MAX_DURATION']}`], // 95% requests should receive response in less than max duration
-  },
-  insecureSkipTLSVerify: true,
-  noConnectionReuse: true,
-  noVUConnectionReuse: true,
-};
+function getOptions(maxDuration = __ENV['DEFAULT_MAX_DURATION']){
 
-const scenario = {
-  duration: __ENV.DEFAULT_DURATION,
-  exec: 'run',
-  executor: 'constant-vus',
-  gracefulStop: (__ENV.DEFAULT_GRACEFUL_STOP != null && __ENV.DEFAULT_GRACEFUL_STOP) || '5s',
-  vus: __ENV.DEFAULT_VUS,
-};
+  if(parseInt(__ENV['DEFAULT_MAX_DURATION']) > parseInt(maxDuration)){
+    maxDuration = __ENV['DEFAULT_MAX_DURATION'];
+  }
+
+  return {
+    thresholds: {
+      checks: [`rate>=${__ENV['DEFAULT_PASS_RATE']}`], // min % that should pass the checks,
+      http_req_duration: [`p(95)<${maxDuration}`], // 95% requests should receive response in less than max duration
+    },
+    insecureSkipTLSVerify: true,
+    noConnectionReuse: true,
+    noVUConnectionReuse: true,
+  };
+}
+
+function getScenarioOptions(testDuration = __ENV.DEFAULT_DURATION){
+
+  if(parseInt(__ENV['DEFAULT_DURATION'].toString().substring(0, __ENV['DEFAULT_DURATION'].toString().length-1)) > parseInt(testDuration.substring(0,testDuration.length-1))){
+    testDuration = __ENV['DEFAULT_DURATION'];
+  }
+
+  return {
+    duration: testDuration,
+    exec: 'run',
+    executor: 'constant-vus',
+    gracefulStop: (__ENV.DEFAULT_GRACEFUL_STOP != null && __ENV.DEFAULT_GRACEFUL_STOP) || '5s',
+    vus: __ENV.DEFAULT_VUS,
+  };
+}
 
 function getMetricNameWithTags(name, ...tags) {
   return tags.length === 0 ? name : `${name}{${tags}}`;
@@ -66,15 +80,33 @@ function getNextStartTime(startTime, duration, gracefulStop) {
   return `${parseInt(startTime) + parseInt(duration) + parseInt(gracefulStop)}s`;
 }
 
-function getOptionsWithScenario(name, tags = {}) {
-  return Object.assign({}, options, {
+function getOptionsWithScenario(name, tags = {}, maxDuration = undefined, testDuration = undefined) {
+  return Object.assign({}, getOptions(maxDuration), {
     scenarios: {
-      [name]: Object.assign({}, scenario, {tags}),
+      [name]: Object.assign({}, getScenarioOptions(testDuration), {tags}),
     },
   });
 }
 
+function getFilteredTests(tests){
+  if(__ENV.FILTER_TEST && __ENV.FILTER_TEST !== "*") {
+    const filteredTests = __ENV.FILTER_TEST.split(",");
+
+    const newTests = {};
+    for (let i = 0; i < filteredTests.length; i++) {
+      const testName = filteredTests[i];
+      newTests[testName] = tests[testName];
+    }
+
+    return newTests;
+  } else {
+    return tests;
+  }
+}
+
 function getSequentialTestScenarios(tests) {
+  tests = getFilteredTests(tests);
+
   let startTime = '0s';
   let duration = '0s';
   let gracefulStop = '0s';
@@ -111,7 +143,7 @@ function getSequentialTestScenarios(tests) {
     }
   }
 
-  const testOptions = Object.assign({}, options, {scenarios, thresholds});
+  const testOptions = Object.assign({}, getOptions(), {scenarios, thresholds});
 
   return {funcs, options: testOptions, scenarioDurationGauge: new Gauge(SCENARIO_DURATION_METRIC_NAME)};
 }
@@ -154,8 +186,8 @@ function defaultMetrics() {
 
 function markdownReport(data, isFirstColumnUrl, scenarios) {
   const firstColumnName = isFirstColumnUrl ? 'URL' : 'Scenario';
-  const header = `| ${firstColumnName} | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | P(95) Req Duration | Comment |
-|----------|-----|-------|-----|----------|-------------------|-------------------------|---------|`;
+  const header = `| ${firstColumnName} | VUS | Reqs | Pass % | RPS (1/s) | Pass RPS (1/s) | Avg. Req Duration (ms) | Median (ms) | Min (ms) | Max (ms) | P(90) (ms) | P(95) (ms) | Comment |
+|----------|-----|------|--------|-----|----------|-------------------|-------|-----|-----|-------|-------|---------|`;
 
   // collect the metrics
   const {metrics} = data;
@@ -188,7 +220,10 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
   }
 
   // Generate the markdown report
-  let markdown = `${header}\n`;
+  let markdown = '# K6 Performance Test Results \n\n';
+  markdown += `JSON-RPC-RELAY URL:  ${__ENV['RELAY_BASE_URL']}\n\n`;
+  markdown += `Timestamp: ${new Date(Date.now()).toISOString()} \n\n`;
+  markdown += `${header}\n`;
   for (const scenario of Object.keys(scenarioMetrics).sort()) {
     try {
       const scenarioMetric = scenarioMetrics[scenario];
@@ -199,9 +234,13 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
       const passRps = (rps * passPercentage / 100.0).toFixed(2);
       const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
       const httpP95Duration = scenarioMetric['http_req_duration'].values["p(95)"].toFixed(2);
+      const httpP90Duration = scenarioMetric['http_req_duration'].values["p(90)"].toFixed(2);
+      const httpMedDuration = scenarioMetric['http_req_duration'].values["med"].toFixed(2);
+      const httpMinDuration = scenarioMetric['http_req_duration'].values["min"].toFixed(2);
+      const httpMaxDuration = scenarioMetric['http_req_duration'].values["max"].toFixed(2);
 
       const firstColumn = isFirstColumnUrl ? scenarioUrls[scenario] : scenario;
-      markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | ${httpP95Duration}ms | |\n`;
+      markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${httpReqs} | ${passPercentage} | ${rps} | ${passRps} | ${httpReqDuration} | ${httpMedDuration} | ${httpMinDuration} | ${httpMaxDuration} | ${httpP90Duration} | ${httpP95Duration} | |\n`;
     } catch (err) {
       console.error(`Unable to render report for scenario ${scenario}`);
     }
@@ -215,13 +254,15 @@ function TestScenarioBuilder() {
   this._name = null;
   this._request = null;
   this._tags = {};
+  this._testDuration = undefined;
+  this._maxDuration = undefined;
 
   this.build = function () {
     const that = this;
     return {
-      options: getOptionsWithScenario(that._name, that._tags),
-      run: function (testParameters) {
-        const response = that._request(testParameters);
+      options: getOptionsWithScenario(that._name, that._tags, that._maxDuration, that._testDuration),
+      run: function (testParameters, iteration = 0) {
+        const response = that._request(testParameters, iteration);
         check(response, that._checks);
       },
     };
@@ -244,6 +285,16 @@ function TestScenarioBuilder() {
 
   this.tags = function (tags) {
     this._tags = tags;
+    return this;
+  }
+
+  this.testDuration = function (testDuration) {
+    this._testDuration = testDuration;
+    return this;
+  }
+
+  this.maxDuration = function (maxDuration){
+    this._maxDuration = maxDuration;
     return this;
   }
 
