@@ -494,7 +494,7 @@ export class SDKClient {
 
     private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
         const resolvedCost = cost ? cost : 0;
-        const resolvedGas = gas ? gas : 0;
+        const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
         this.consensusNodeClientHistorgram.labels(
             mode,
             type,
