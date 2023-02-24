@@ -227,7 +227,6 @@ export class SDKClient {
             ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
         } else {
             const fileId = await this.createFile(ethereumTransactionData.callData, this.clientMain, requestId);
-
             if(!fileId) {
                 const requestIdPrefix = formatRequestIdMessage(requestId);
                 throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
