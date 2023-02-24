@@ -227,7 +227,7 @@ export class SDKClient {
             ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
         } else {
             const fileId = await this.createFile(ethereumTransactionData.callData, this.clientMain, requestId);
-        
+
             if(!fileId) {
                 const requestIdPrefix = formatRequestIdMessage(requestId);
                 throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
@@ -393,19 +393,19 @@ export class SDKClient {
             if (sdkClientError.isValidNetworkError()) {
 
                 try {
-                    const transctionRecord = await new TransactionRecordQuery()
+                    const transactionRecord = await new TransactionRecordQuery()
                         .setTransactionId(transaction.transactionId!)
                         .setNodeAccountIds(transaction.nodeAccountIds!)
                         .setValidateReceiptStatus(false)
                         .execute(this.clientMain);
-                    transactionFee = transctionRecord.transactionFee;
+                    transactionFee = transactionRecord.transactionFee;
 
                     this.captureMetrics(
                         SDKClient.transactionMode,
                         transactionType,
                         sdkClientError.status,
                         transactionFee.toTinybars().toNumber(),
-                        transctionRecord?.contractFunctionResult?.gasUsed,
+                        transactionRecord?.contractFunctionResult?.gasUsed,
                         callerName,
                         interactingEntity);
 
@@ -460,19 +460,19 @@ export class SDKClient {
             if (sdkClientError.isValidNetworkError()) {
                 try {
                     // pull transaction record for fee
-                    const transctionRecord = await new TransactionRecordQuery()
+                    const transactionRecord = await new TransactionRecordQuery()
                         .setTransactionId(resp.transactionId!)
                         .setNodeAccountIds([resp.nodeId])
                         .setValidateReceiptStatus(false)
                         .execute(this.clientMain);
-                    transactionFee = transctionRecord.transactionFee;
+                    transactionFee = transactionRecord.transactionFee;
 
                     this.captureMetrics(
                         SDKClient.transactionMode,
                         transactionName,
                         sdkClientError.status,
                         transactionFee.toTinybars().toNumber(),
-                        transctionRecord?.contractFunctionResult?.gasUsed,
+                        transactionRecord?.contractFunctionResult?.gasUsed,
                         callerName,
                         interactingEntity);
 
