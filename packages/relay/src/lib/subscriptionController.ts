@@ -45,7 +45,7 @@ export class SubscriptionController {
     }
 
     createHash(data) {
-        return crypto.createHash('sha1').update(data.toString()).digest('hex');
+        return crypto.createHash('sha3').update(data.toString()).digest('hex');
     }
 
     // Generates a random 16 byte hex string
