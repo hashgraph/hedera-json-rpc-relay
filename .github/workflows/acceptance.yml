@@ -55,3 +55,11 @@ jobs:
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: htsprecompilev1
+
+  websocket:
+    name: Websocket
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws
+    environment:
+      TEST_WS_SERVER: true
