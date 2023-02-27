@@ -21,8 +21,7 @@
 import Koa from 'koa';
 import jsonResp from './lib/RpcResponse';
 import websockify from 'koa-websocket';
-import { predefined } from '@hashgraph/json-rpc-relay';
-import { Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { Relay, RelayImpl, predefined } from '@hashgraph/json-rpc-relay';
 import { Registry } from 'prom-client';
 import pino from 'pino';
 
@@ -46,8 +45,6 @@ const app = websockify(new Koa(), {});
 const LOGGER_PREFIX = 'WebSocket:';
 
 app.ws.use((ctx) => {
-
-    // FIXME
     ctx.websocket.id = relay.subs().generateId();
     logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
 
