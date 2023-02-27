@@ -26,6 +26,8 @@ import parse from 'co-body';
 import dotenv from 'dotenv';
 import path from 'path';
 import { Logger } from 'pino';
+import { formatRequestIdMessage } from '../formatters';
+
 import {
   ParseError,
   InvalidRequest,
@@ -41,6 +43,13 @@ import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
+const INTERNAL_ERROR = "INTERNAL ERROR";
+const INVALID_PARAMS_ERROR = "INVALID PARAMS ERROR";
+const INVALID_REQUEST = "INVALID REQUEST";
+const IP_RATE_LIMIT_EXCEEDED = "IP RATE LIMIT EXCEEDED";
+const JSON_RPC_ERROR = "JSON RPC ERROR"
+const METHOD_NOT_FOUND = "METHOD NOT FOUND";
+
 export default class KoaJsonRpc {
   private registry: any;
   private registryTotal: any;
@@ -50,9 +59,13 @@ export default class KoaJsonRpc {
   private limit: string;
   private rateLimit: RateLimit;
   private koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
+  private requestId: string;
+  private logger: Logger;
+  private startTimestamp!: number;
 
   constructor(logger: Logger, register: Registry, opts?) {
     this.koaApp = new Koa();
+    this.requestId = '';
     this.limit = '1mb';
     this.duration = parseInt(process.env.LIMIT_DURATION!) || 60000;
     this.registry = Object.create(null);
@@ -61,6 +74,7 @@ export default class KoaJsonRpc {
     if (opts) {
       this.limit = opts.limit || this.limit;
     }
+    this.logger = logger;
     this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
   }
 
@@ -75,8 +89,12 @@ export default class KoaJsonRpc {
 
   rpcApp() {
     return async (ctx, next) => {
-      let body, result;
+      this.startTimestamp = ctx.state.start;
+      let body, ms, result;
 
+      this.requestId = ctx.state.reqId;
+      const requestIdPrefix =  formatRequestIdMessage(this.requestId);
+      
       if (this.token) {
         const headerToken = ctx.get('authorization').split(' ').pop();
         if (headerToken !== this.token) {
@@ -93,6 +111,9 @@ export default class KoaJsonRpc {
         return;
       }
 
+      const methodName = body.method;
+      const messagePrefix = `${requestIdPrefix} [POST] ${methodName}:`;
+
       if (
         body.jsonrpc !== '2.0' ||
         !hasOwnProperty(body, 'method') ||
@@ -101,20 +122,26 @@ export default class KoaJsonRpc {
       ) {
         ctx.body = jsonResp(body.id || null, new InvalidRequest(), undefined);
         ctx.status = 400;
+        ms = Date.now() - this.startTimestamp;
+        this.logger.error(`${messagePrefix} ${ctx.status} (${INVALID_REQUEST}) ${ms} ms`);
         return;
       }
 
       if (!this.registry[body.method]) {
         ctx.body = jsonResp(body.id, new MethodNotFound(), undefined);
         ctx.status = 400;
+        ms = Date.now() - this.startTimestamp;
+        this.logger.error(`${messagePrefix} ${ctx.status} (${METHOD_NOT_FOUND}) ${ms} ms`);
         return;
       }
 
-      const methodName = body.method;
+ 
       const methodTotalLimit = this.registryTotal[methodName];
-      if (this.rateLimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit)) {
+      if (this.rateLimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit, this.requestId)) {
         ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
         ctx.status = 409;
+        ms = Date.now() - this.startTimestamp;
+        this.logger.warn(`${messagePrefix} ${ctx.status} (${IP_RATE_LIMIT_EXCEEDED}) ${ms} ms`);
         return;
       }
 
@@ -124,21 +151,35 @@ export default class KoaJsonRpc {
         if (e instanceof InvalidParamsError) {
           ctx.body = jsonResp(body.id, new InvalidParamsError(e.message), undefined);
           ctx.status = 400;
+          ms = Date.now() - this.startTimestamp;
+          this.logger.error(`${messagePrefix} ${ctx.status} (${INVALID_PARAMS_ERROR}) ${ms} ms`);
           return;
         }
         ctx.body = jsonResp(body.id, new InternalError(e.message), undefined);
         ctx.status = 500;
+        ms = Date.now() - this.startTimestamp;
+        this.logger.error(`${messagePrefix} ${ctx.status} (${INTERNAL_ERROR}) ${ms} ms`);
         return;
       }
 
       ctx.body = jsonResp(body.id, null, result);
       if (result instanceof JsonRpcError) {
         ctx.status = (result.code == -32603) ? 500 : 400;
+        ms = Date.now() - this.startTimestamp;
+        this.logger.error(`${messagePrefix} ${ctx.status} (${result.code}) (${JSON_RPC_ERROR}) ${ms} ms`);
       }
     };
   }
 
   getKoaApp(): Koa<Koa.DefaultState, Koa.DefaultContext> {
     return this.koaApp;
+  }
+
+  getRequestId(): string {
+    return this.requestId;
+  }
+
+  getStartTimestamp(): number {
+    return this.startTimestamp;
   }
 }

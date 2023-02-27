@@ -22,10 +22,11 @@ import { Relay, RelayImpl, JsonRpcError, predefined, MirrorNodeClientError } fro
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
 import { Validator } from './validator';
-import crypto from 'crypto';
 import pino from 'pino';
 import path from 'path';
 import fs from 'fs';
+import { v4 as uuid } from 'uuid';
+import { formatRequestIdMessage } from './formatters';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -47,7 +48,6 @@ const app = new KoaJsonRpc(logger, register, {
   limit: process.env.INPUT_SIZE_LIMIT ? process.env.INPUT_SIZE_LIMIT + 'mb' : null
 });
 
-const REQUEST_ID_STRING = `Request ID: `;
 const responseSuccessStatusCode = '200';
 const responseInternalErrorCode = '-32603';
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
@@ -134,11 +134,48 @@ app.getKoaApp().use(async (ctx, next) => {
   }
 });
 
+app.getKoaApp().use(async (ctx, next) => {
+  const options = {
+    expose: ctx.get('Request-Id'),
+    header: ctx.get('Request-Id'),
+    query: ctx.get('query')
+  };
+
+  for (const key in options) {
+    if (typeof options[key] !== 'boolean' && typeof options[key] !== 'string') {
+      throw new Error(`Option \`${key}\` requires a boolean or a string`);
+    }
+  }
+
+  let id = '';
+  
+  if (options.query) {
+    id = options.query as string;
+  }
+
+  if (!id && options.header) {
+    id = options.header;
+  }
+
+  if (!id) {
+    id = uuid();
+  }
+
+  if (options.expose) {
+    ctx.set(options.expose, id);
+  }
+
+  ctx.state.start = Date.now();
+  ctx.state.reqId = id;
+
+  return next();
+});
+
 const logAndHandleResponse = async (methodName: any, methodParams: any, methodFunction: any) => {
-  const start = Date.now();
   let ms;
-  const requestId = generateRequestId();
-  const requestIdPrefix = requestId ? `[${REQUEST_ID_STRING}${requestId}]` : '';
+
+  const requestId = app.getRequestId();
+  const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
   logger.debug(`${requestIdPrefix} ${methodName}`);
   const messagePrefix = `${requestIdPrefix} [POST] ${methodName}:`;
 
@@ -151,7 +188,7 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
 
     const response = await methodFunction(requestId);
     const status = response instanceof JsonRpcError ? response.code.toString() : responseSuccessStatusCode;
-    ms = Date.now() - start;
+    ms = Date.now() - app.getStartTimestamp();
     methodResponseHistogram.labels(methodName, status).observe(ms);
     logger.info(`${messagePrefix} ${status} ${ms} ms `);
     if (response instanceof JsonRpcError) {
@@ -165,7 +202,7 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
     }
     return response;
   } catch (e: any) {
-    ms = Date.now() - start;
+    ms = Date.now() - app.getStartTimestamp();
     methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
     logger.error(e, `${messagePrefix} ${responseInternalErrorCode} ${ms} ms`);
 
@@ -187,15 +224,6 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
       data: error.data,
     }, requestId);
   }
-};
-
-/**
- * Generates random trace id for requests.
- *
- * returns: string
- */
- const generateRequestId = () :string => {
-  return crypto.randomUUID();
 };
 
 /**
