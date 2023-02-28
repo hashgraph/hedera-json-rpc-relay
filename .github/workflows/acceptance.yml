@@ -61,5 +61,3 @@ jobs:
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: ws
-    environment:
-      TEST_WS_SERVER: true
