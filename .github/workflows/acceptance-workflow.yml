@@ -48,4 +48,4 @@ jobs:
           timeout_minutes: 20
           command: npm run acceptancetest:${{ inputs.testfilter }}
         env:
-          TEST_WS_SERVER:${{ inputs.test_ws_server }}
+          TEST_WS_SERVER: ${{ inputs.test_ws_server }}
