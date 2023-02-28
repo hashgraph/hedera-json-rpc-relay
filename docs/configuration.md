@@ -24,8 +24,8 @@ These properties are noted below and should be custom set per deployment.
 The following table lists the available properties along with their default values for the [Server package](/packages/server/). 
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
-| Name  | Default   | Description    |
-|-----------------------------------------------------------------------------|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Name                          | Default       | Description                                                   |
+|-------------------------------|---------------|---------------------------------------------------------------|
 | `CHAIN_ID`                    | ""            | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively. |
 | `HBAR_RATE_LIMIT_DURATION`    | "60000"       | hbar budget limit duration. This creates a timestamp, which resets all limits, when it's reached. Default is to 60000 (1 minute).   |
 | `HBAR_RATE_LIMIT_TINYBAR`    | "5000_000_000" | total hbar budget in tinybars.   |
@@ -42,8 +42,8 @@ Unless you need to set a non-default value, it is recommended to only populate o
 The following table lists the available properties along with their default values for the [Relay package](/packages/relay/). 
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
-| Name  | Default   | Description    |
-|-----------------------------------------------------------------------------|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Name                              | Default       | Description                                                   |
+|-----------------------------------|---------------|---------------------------------------------------------|
 | `CLIENT_TRANSPORT_SECURITY`       | "false"       | Flag to enable or disable TLS for both networks.   |
 | `CONSENSUS_MAX_EXECUTION_TIME`    | "15000"       | Maximum time in ms the SDK will wait when submitting a transaction/query before throwing a TIMEOUT error.   |
 | `DEFAULT_RATE_LIMIT`              | "200"         | default fallback rate limit, if no other is configured.   |
@@ -68,8 +68,8 @@ Unless you need to set a non-default value, it is recommended to only populate o
 The following table lists the available properties along with their default values for the tests utilized in the [Server](/packages/server/) and [Relay](/packages/relay/) packages. 
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
-| Name  | Default   | Description    |
-|-----------------------------------------------------------------------------|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Name                          | Default       | Description                                                   |
+|-------------------------------|---------------|---------------------------------------------------------|
 | `LOCAL_NODE`      | ""        | Flag if relay is hosted in the Hedera local node setup.   |
 | `E2E_RELAY_HOST`  | ""        | Remote relay url to point to.   |
 | `DEV_MODE`        | "false"   | Flag if relay should operate in developer optimization mode.   |
