@@ -123,7 +123,7 @@ export class RelayImpl implements Relay {
     }
 
     client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
-    client.setRequestTimeout(parseInt(process.env.SDK_REQUEST_TIMEOUT || ''));
+    client.setRequestTimeout(parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000'));
 
     logger.info(`SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${client.operatorAccountId} with request timeout value: ${process.env.SDK_REQUEST_TIMEOUT}`);
 
