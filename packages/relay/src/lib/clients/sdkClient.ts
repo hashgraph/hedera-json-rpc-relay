@@ -113,7 +113,7 @@ export class SDKClient {
         this.consensusNodeClientHistorgram = new Histogram({
             name: metricHistogramName,
             help: 'Relay consensusnode mode type status cost histogram',
-            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity', 'type'],
             registers: [register]
         });
 
@@ -499,14 +499,16 @@ export class SDKClient {
             type,
             status,
             caller,
-            interactingEntity)
+            interactingEntity,
+            'cost')
             .observe(resolvedCost);
         this.consensusNodeClientHistorgram.labels(
             mode,
             type,
             status,
             caller,
-            interactingEntity)
+            interactingEntity,
+            'gas')
             .observe(resolvedGas);
     };
 
