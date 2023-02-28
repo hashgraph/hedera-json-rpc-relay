@@ -326,10 +326,24 @@ export class MirrorNodeClient {
     }
 
     public async getContractResult(transactionIdOrHash: string, requestId?: string) {
-        return this.get(`${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`,
+
+        const cacheKey = `getContractResult.${transactionIdOrHash}`;
+        const cachedResponse = this.cache.get(cacheKey);
+
+        if(cachedResponse != undefined) {
+            return cachedResponse;
+        }
+
+        const response = await this.get(`${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT,
             [400, 404],
             requestId);
+
+        if(response != undefined && response.result === "SUCCESS") {
+            this.cache.set(cacheKey, response);
+        }
+
+        return response;
     }
 
     /**
@@ -340,7 +354,7 @@ export class MirrorNodeClient {
      * @param requestId
      */
     public async getContractResultWithRetry(transactionIdOrHash: string, requestId?: string) {
-        let contractResult = await this.getContractResult(transactionIdOrHash, requestId);
+        const contractResult = await this.getContractResult(transactionIdOrHash, requestId);
         if (contractResult && typeof contractResult.transaction_index === 'undefined') {
             return this.getContractResult(transactionIdOrHash, requestId);
         }
