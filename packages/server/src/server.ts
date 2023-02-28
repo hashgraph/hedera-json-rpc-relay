@@ -192,7 +192,7 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
     methodResponseHistogram.labels(methodName, status).observe(ms);
     logger.info(`${messagePrefix} ${status} ${ms} ms `);
     if (response instanceof JsonRpcError) {
-      logger.error(`returning error to sender: ${requestIdPrefix} ${response.message}`);
+      logger.error(`${requestIdPrefix} returning error to sender: ${response.message}`);
       return new JsonRpcError({
         name: response.name,
         code: response.code,
@@ -216,7 +216,7 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
       error = e;
     }
 
-    logger.error(`returning error to sender: ${requestIdPrefix} ${error.message}`);
+    logger.error(`${requestIdPrefix} returning error to sender: ${error.message}`);
     return new JsonRpcError({
       name: error.name,
       code: error.code,
