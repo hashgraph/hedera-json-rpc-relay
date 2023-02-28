@@ -58,8 +58,8 @@ jobs:
 
   websocket:
     name: Websocket
+    env:
+      TEST_WS_SERVER: true
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: ws
-    env:
-      TEST_WS_SERVER: true
