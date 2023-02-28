@@ -62,18 +62,20 @@ Below is a table of provided methods.
 | [eth_chainId](https://besu.hyperledger.org/en/stable/Reference/API-Methods/#eth_chainid)                                                  | [Chain_ID](../README.md#configuration)    | Relay Only    |
 | [eth_coinbase](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_coinbase)                                                       | `-32601`                                  | N/A   |
 | [eth_estimateGas](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_estimategas)                                                 | N/A                                       | Both Nodes  |
-| [eth_feeHistory](https://besu.hyperledger.org/en/stable/Reference/API-Methods/#eth_feehistory)                                            | N/A                                       | Both Nodes  |
-| [eth_gasPrice](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gasprice)                                                       | N/A                                       | Both Nodes  |
+| [eth_feeHistory](https://besu.hyperledger.org/en/stable/Reference/API-Methods/#eth_feehistory)                                            | N/A                                       | Mirror Node, Consensus Node backup  |
+| [eth_gasPrice](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gasprice)                                                       | N/A                                       | Mirror Node, Consensus Node backup  |
 | [eth_getBalance](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance)                                                   | N/A                                       | Consensus Node    |
 | [eth_getBlockByHash](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash)                                           | N/A                                       | Mirror Node   |
 | [eth_getBlockByNumber](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber)                                       | N/A                                       | Mirror Node   |
 | [eth_getBlockTransactionCountByHash](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblocktransactioncountbyhash)           | N/A                                       | Mirror Node   |
 | [eth_getBlockTransactionCountByNumber](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblocktransactioncountbynumber)       | N/A                                       | Mirror Node   |
+| [eth_getCode](https://besu.hyperledger.org/en/stable/Reference/API-Methods/#eth_getCode)                                                  | N/A    | Mirror Node, Consensus Node backup    |
 | [eth_getLogs](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getlogs)                                                         | N/A                                       | Mirror Node   |
+| [eth_getStorageAt](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getStorageAt)                                                         | N/A                                       | Mirror Node   |
 | [eth_getTransactionByBlockHashAndIndex](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyblockhashandindex)     | N/A                                       | Mirror Node   |
 | [eth_getTransactionByBlockNumberAndIndex](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyblocknumberandindex) | N/A                                       | Mirror Node   |
 | [eth_getTransactionByHash](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyhash)                               | N/A                                       | Mirror Node   |
-| [eth_getTransactionCount](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount)                                 | N/A                                       | Mirror Node   |
+| [eth_getTransactionCount](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount)                                 | N/A                                       | Mirror Node, Consensus Node backup   |
 | [eth_getTransactionReceipt](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt)                             | N/A                                       | Mirror Node
 | [eth_getUncleByBlockHashAndIndex](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getunclebyblockhashandindex)                 | `null`                                    | N/A   |
 | [eth_getUncleByBlockNumberAndIndex](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getunclebyblocknumberandindex)             | `null`                                    | N/A   |
