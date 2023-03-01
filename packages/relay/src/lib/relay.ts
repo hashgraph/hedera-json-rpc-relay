@@ -24,6 +24,7 @@ import { Relay, Eth, Net, Web3 } from '../index';
 import { Web3Impl } from './web3';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
+import { Poller } from './poller';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNodeClient, SDKClient } from './clients';
@@ -71,6 +72,10 @@ export class RelayImpl implements Relay {
       mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId);
+
+    if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
+      const poller = new Poller(this.ethImpl, logger);
+    }
 
     logger.info('Relay running with chainId=%s', chainId);
   }
