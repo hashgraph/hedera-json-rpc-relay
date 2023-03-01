@@ -308,6 +308,7 @@ The following test cases should be covered but additional tests would be welcome
 6. Exceeding the global subscription limit.
 7. Exceeding the IP subscription limit.
 8. Unsubscribing due to automatic subscription termination. 
+9. E2E test using popular libraries (`ethers.js WebSocketProvider`) that include - connecting, subscribing, receiving data, unsubscribing
 
 ## Non-Functional Requirements
 
