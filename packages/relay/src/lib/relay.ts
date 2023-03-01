@@ -41,7 +41,7 @@ export class RelayImpl implements Relay {
   private readonly web3Impl: Web3;
   private readonly netImpl: Net;
   private readonly ethImpl: Eth;
-  private readonly subImpl: Subs;
+  private readonly subImpl?: Subs;
 
   constructor(logger: Logger, register: Registry) {
     dotenv.config({ path: findConfig('.env') || '' });
@@ -75,7 +75,9 @@ export class RelayImpl implements Relay {
       chainId);
 
 
-    this.subImpl = new SubscriptionController(logger);
+    if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
+      this.subImpl = new SubscriptionController(logger);
+    }
 
     logger.info('Relay running with chainId=%s', chainId);
   }
@@ -92,7 +94,7 @@ export class RelayImpl implements Relay {
     return this.ethImpl;
   }
 
-  subs(): Subs {
+  subs(): Subs | undefined {
     return this.subImpl;
   }
 

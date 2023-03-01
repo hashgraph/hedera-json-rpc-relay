@@ -33,7 +33,7 @@ export interface Relay {
 
   eth(): Eth;
 
-  subs(): Subs;
+  subs(): Subs | undefined;
 }
 
 export interface Subs {
