@@ -287,26 +287,43 @@ if (success) {
 |     32610     |                                    Invalid subscription parameters: {detailed reason}                                    |               Occurs when there is an error due to the provided subscription parameters, i.e. the address does not exist.               |
 |     32611     |                                                   Subscription aborted                                                   |                          Occurs when the subscription is aborted by the relay, i.e. a maximum TTL is reached.                           |
 
+## Rate Limits
+
+Active subscriptions should be limited in some way. We should create a flexible and configurable system for limiting subscriptions on a global and an IP level. This should be done by extending the existing `RateLimit` class as needed.
+
+1. Add a configurable global limit on the total active subscriptions.
+2. Add a configurable limit on the total active subscriptions per IP.
+3. Add a TTL to subscriptions, i. e. automatically terminate a subscription after a configurable time period.
+4. Make it possible to disable all of those limits if needed.
+
+## Tests
+
+The following test cases should be covered but additional tests would be welcome.
+
+1. Connecting to the ws-server works.
+2. Subscribing to the `logs` event with all possible filter combinations - no filters, by address, by topics, multiple addresses, etc..
+3. Unsubscribing from an active subscription.
+4. Receiving the correct log data after an async process generates logs for that match/don't match the subscription filters.
+5. Multiple active subscriptions and each of them receives their appropriate log data.
+6. Exceeding the global subscription limit.
+7. Exceeding the IP subscription limit.
+8. Unsubscribing due to automatic subscription termination. 
+
 ## Non-Functional Requirements
 
-WebSockets in general are resource intensive. We could implement a throttling mechanism. Every live socket connection would also result in additional requests to the Mirror Node every n seconds. This means that we need to introduce a rate limiting feature, like 5 concurrent connections by IP.
-
-1. Implement an IP based limit for maximum concurrent connections.
-2. Implement a global limit for maximum concurrent connections.
-3. Explore the possibility of adding a TTL limit for every connection.
-4. Explore the option to add a limit for the total subscribed time per IP ( `sum(connection * subscribed_time)` ). There could theoretically be a way to charge users to increase this limit, for example through via a smart contract. Alternatively users could be encouraged to run their own instances of the relay.
-5. Users should be required to renew their subscription in the case of an error. If for some reason the relay is restarted it should not automatically try to restore all previous connections and subscriptions.
+Users should be required to renew their subscription in the case of an error or if the subscription was closed from the relay side. If for some reason the relay is restarted it should not automatically try to restore all previous connections and subscriptions.
 
 ## Open Questions
 
-1. How will we limit connections and subscriptions?
-2. Is it reasonable to add a TTL timer to subscriptions?
+1. How is the deployment going to be handled?
+2. Will the `ws-socket` process run in a separate docker container?
 
 ## Answered Questions
 
 1. How will we implement the `subscribe` and `unsubscribe` flow?
 2. How will the relay poll the mirror node?
 3. How will the relay send subscription results to users in real time?
+4. What kind of limits will be implemented?
 
 ## Tasks (in suggested order):
 
@@ -327,7 +344,10 @@ WebSockets in general are resource intensive. We could implement a throttling me
 9. Add scheduled job function for looping through all saved filters and returns result to it's corresponding socket with the respective subscription id.
 10. Extend current rate limiter class to support websocket limitation.
 11. Add logic to delete subsciption upon connection break or request.
-12. Determine the reasonable default limits for ip based limits and global limits. This should be done after the connection logic is implemented so that we can measure the average resources used by a single connection.
+12. Implement global subscription limits.
+13. Implement IP based subscription limits.
+14. Implement TTL to subscriptions.
+15. Determine the reasonable default limits for ip based limits and global limits. This should be done after the connection logic is implemented so that we can measure the average resources used by a single connection.
 
 #### Milestone 3 (use Mirror-Node GraphQL API)
 
