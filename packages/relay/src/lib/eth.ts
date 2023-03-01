@@ -335,7 +335,7 @@ export class EthImpl implements Eth {
       const accountCacheKey = `account_${transaction.to}`;
       let toAccount: object | null = this.cache.get(accountCacheKey);
       if (!toAccount) {
-        toAccount = await this.mirrorNodeClient.getAccount(transaction.to);
+        toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
       }
 
       // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
