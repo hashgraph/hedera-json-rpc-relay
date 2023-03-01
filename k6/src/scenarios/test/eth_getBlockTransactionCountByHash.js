@@ -31,6 +31,8 @@ const {options, run} = new TestScenarioBuilder()
     return http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [testParameters.DEFAULT_BLOCK_HASH]), httpParams);
   })
   .check(methodName, (r) => isNonErrorResponse(r))
+  .maxDuration(3500)
+  .testDuration("4s")
   .build();
 
 export {options, run};

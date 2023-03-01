@@ -29,6 +29,8 @@ const {options, run} = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request((testParameters) => http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [testParameters.DEFAULT_ENTITY_FROM, 'latest']), httpParams))
   .check(methodName, (r) => isNonErrorResponse(r))
+  .testDuration("3s")
+  .maxDuration(3500)
   .build();
 
 export {options, run};
