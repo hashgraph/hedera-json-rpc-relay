@@ -326,20 +326,23 @@ export class MirrorNodeClient {
     }
 
     public async getContractResult(transactionIdOrHash: string, requestId?: string) {
-
+        const requestIdPrefix = formatRequestIdMessage(requestId);
         const cacheKey = `getContractResult.${transactionIdOrHash}`;
         const cachedResponse = this.cache.get(cacheKey);
+        const path = `${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`;
 
         if(cachedResponse != undefined) {
+            this.logger.trace(`${requestIdPrefix} returning cached response for ${path}:${JSON.stringify(cachedResponse)}`);
             return cachedResponse;
         }
 
-        const response = await this.get(`${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`,
+        const response = await this.get(path,
             MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT,
             [400, 404],
             requestId);
 
         if(response != undefined && response.transaction_index != undefined && response.result === "SUCCESS") {
+            this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(response)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
             this.cache.set(cacheKey, response);
         }
 
