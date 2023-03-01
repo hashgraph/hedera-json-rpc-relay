@@ -1,0 +1,62 @@
+{
+    "name": "@hashgraph/json-rpc-ws-server",
+    "version": "0.18.0-SNAPSHOT",
+    "description": "Hedera Hashgraph Ethereum JSON RPC socket server. Accepts socket connections for the purpose of subscribing to real-time data.",
+    "main": "dist/index.js",
+    "keywords": [],
+    "author": "Hedera Smart Contracts Team",
+    "dependencies": {
+        "@hashgraph/json-rpc-relay": "file:../relay",
+        "@hashgraph/json-rpc-server": "file:../server",
+        "axios": "^0.27.2",
+        "co-body": "6.1.0",
+        "dotenv": "^16.0.0",
+        "koa": "^2.13.4",
+        "koa-body-parser": "^0.2.1",
+        "koa-cors": "^0.0.16",
+        "koa-logger": "^3.2.1",
+        "koa-router": "^10.1.1",
+        "koa-websocket": "^7.0.0",
+        "mocha": "^9.2.2",
+        "pino": "^7.11.0",
+        "pino-pretty": "^7.6.1"
+    },
+    "devDependencies": {
+        "@hashgraph/hedera-local": "^2.4.5",
+        "@hashgraph/sdk": "^2.19.2",
+        "@koa/cors": "^3.1.0",
+        "@types/chai": "^4.3.0",
+        "@types/cors": "^2.8.12",
+        "@types/express": "^4.17.13",
+        "@types/koa-bodyparser": "^4.3.5",
+        "@types/koa-router": "^7.4.4",
+        "@types/mocha": "^9.1.0",
+        "@types/node": "^17.0.31",
+        "axios-retry": "^3.2.5",
+        "chai": "^4.3.6",
+        "ethers": "^5.6.8",
+        "shelljs": "^0.8.5",
+        "ts-mocha": "^9.0.2",
+        "ts-node": "^10.8.1",
+        "typescript": "^4.5.5"
+    },
+    "scripts": {
+        "build": "pnpm clean && pnpm compile",
+        "clean": "rm -rf ./dist && rm -rf tsconfig.tsbuildinfo",
+        "compile": "tsc -b tsconfig.json",
+        "acceptancetest": "ts-mocha tests/acceptance/index.spec.ts",
+        "start": "node dist/index.js",
+        "test": "",
+        "integration:prerequisite": "ts-node ./tests/helpers/prerequisite.ts"
+    },
+    "nyc": {
+        "check-coverage": false,
+        "reporter": [
+            "html",
+            "lcov",
+            "text",
+            "text-summary"
+        ],
+        "report-dir": "coverage"
+    }
+}
