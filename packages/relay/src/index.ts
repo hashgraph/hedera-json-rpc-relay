@@ -32,6 +32,16 @@ export interface Relay {
   net(): Net;
 
   eth(): Eth;
+
+  subs(): Subs;
+}
+
+export interface Subs {
+  generateId(): string;
+
+  subscribe(connection, event: string, filters?: {}): string;
+
+  unsubscribe(connection, subscriptionId?: string): boolean;
 }
 
 export interface Web3 {
