@@ -339,7 +339,7 @@ export class MirrorNodeClient {
             [400, 404],
             requestId);
 
-        if(response != undefined && response.result === "SUCCESS") {
+        if(response != undefined && response.transaction_index != undefined && response.result === "SUCCESS") {
             this.cache.set(cacheKey, response);
         }
 
