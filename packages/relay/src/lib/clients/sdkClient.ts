@@ -89,7 +89,8 @@ export class SDKClient {
      */
     private readonly hbarLimiter: HbarLimit;
 
-    private consensusNodeClientHistorgram;
+    private consensusNodeClientHistorgramCost;
+    private consensusNodeClientHistorgramGasFee;
     private operatorAccountGauge;
     private operatorAccountId;
 
@@ -108,12 +109,20 @@ export class SDKClient {
         this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
 
         // clear and create metrics in registry
-        const metricHistogramName = 'rpc_relay_consensusnode_response';
-        register.removeSingleMetric(metricHistogramName);
-        this.consensusNodeClientHistorgram = new Histogram({
-            name: metricHistogramName,
+        const metricHistogramCost = 'rpc_relay_consensusnode_cost';
+        register.removeSingleMetric(metricHistogramCost);
+        this.consensusNodeClientHistorgramCost = new Histogram({
+            name: metricHistogramCost,
             help: 'Relay consensusnode mode type status cost histogram',
-            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity', 'type'],
+            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+            registers: [register]
+        });
+        const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
+        register.removeSingleMetric(metricHistogramGasFee);
+        this.consensusNodeClientHistorgramGasFee = new Histogram({
+            name: metricHistogramGasFee,
+            help: 'Relay consensusnode mode type status gas fee histogram',
+            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
             registers: [register]
         });
 
@@ -494,22 +503,20 @@ export class SDKClient {
     private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
         const resolvedCost = cost ? cost : 0;
         const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
-        this.consensusNodeClientHistorgram.labels(
-            mode,
-            type,
-            status,
-            caller,
-            interactingEntity,
-            'cost')
-            .observe(resolvedCost);
-        this.consensusNodeClientHistorgram.labels(
-            mode,
-            type,
-            status,
-            caller,
-            interactingEntity,
-            'gas')
-            .observe(resolvedGas);
+        this.consensusNodeClientHistorgramCost.labels(
+          mode,
+          type,
+          status,
+          caller,
+          interactingEntity)
+          .observe(resolvedCost);
+        this.consensusNodeClientHistorgramGasFee.labels(
+          mode,
+          type,
+          status,
+          caller,
+          interactingEntity)
+          .observe(resolvedGas);
     };
 
     /**
