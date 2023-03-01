@@ -930,8 +930,6 @@ export class EthImpl implements Eth {
       throw this.genericErrorHandler(e);
     }
 
-
-
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     try {
       const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
