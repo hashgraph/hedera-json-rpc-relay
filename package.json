@@ -30,6 +30,7 @@
         "acceptancetest:tokenmanagement": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokenmanagement' --exit",
         "acceptancetest:htsprecompilev1": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompilev1' --exit",
         "acceptancetest:release": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit",
+        "acceptancetest:ws": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@web-socket' --exit",
         "build": "npx lerna run build",
         "build-and-test": "npx lerna run build && npx lerna run test",
         "build:docker": "docker build . -t ${npm_package_name}",

@@ -6,6 +6,10 @@ on:
       testfilter:
         required: true
         type: string
+      test_ws_server:
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   acceptance-workflow:
@@ -43,3 +47,6 @@ jobs:
           max_attempts: 3
           timeout_minutes: 20
           command: npm run acceptancetest:${{ inputs.testfilter }}
+        env:
+          TEST_WS_SERVER: ${{ inputs.test_ws_server }}
+          SUBSCRIPTIONS_ENABLED: ${{ inputs.test_ws_server }}
