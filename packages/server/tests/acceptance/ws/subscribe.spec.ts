@@ -35,11 +35,11 @@ describe('@web-socket Acceptance Tests', async function () {
     let wsProvider;
     let subId;
 
-    this.beforeAll(async () => {
-        wsProvider = new ethers.providers.WebSocketProvider(
-            `ws://localhost:${process.env.WEB_SOCKET_PORT}`
-        );
-    });
+    // this.beforeAll(async () => {
+    //     wsProvider = new ethers.providers.WebSocketProvider(
+    //         `ws://localhost:${process.env.WEB_SOCKET_PORT}`
+    //     );
+    // });
 
     this.beforeEach(async () => {
         requestId = Utils.generateRequestId();
