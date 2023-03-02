@@ -26,8 +26,8 @@ import {Utils} from '../helpers/utils';
 
 // local resources
 import reverterContractJson from '../contracts/Reverter.json';
-import {EthImpl} from '@hashgraph/json-rpc-relay/src/lib/eth';
-import {predefined} from "@hashgraph/json-rpc-relay";
+import {EthImpl} from '../../../../packages/relay/src/lib/eth';
+import {predefined} from '../../../../packages/relay';
 import Assertions from "../helpers/assertions";
 import basicContractJson from '../contracts/Basic.json';
 import callerContractJson from '../contracts/Caller.json';

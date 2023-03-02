@@ -27,7 +27,7 @@ import { ContractFunctionParameters } from '@hashgraph/sdk';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
-import { predefined } from '@hashgraph/json-rpc-relay/src/lib/errors/JsonRpcError';
+import { predefined } from '../../../../packages/relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
 import BaseHTSJson from '../contracts/contracts_v1/BaseHTS.json';
 
