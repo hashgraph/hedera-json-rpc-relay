@@ -296,6 +296,16 @@ Active subscriptions should be limited in some way. We should create a flexible 
 3. Add a TTL to subscriptions, i. e. automatically terminate a subscription after a configurable time period.
 4. Make it possible to disable all of those limits if needed.
 
+
+## Metric Capturing
+
+Capture metrics for the following:
+
+1. Log every call to `eth_subscribe` and `eth_unsubscribe`, as a total amount and broken down by IP.
+2. The duration of active subscriptions.
+3. The total amount of requests to the mirror node per subscription.
+4. The amount of requests to the mirror node per subscription that have returned non-null data.
+
 ## Tests
 
 The following test cases should be covered but additional tests would be welcome.
