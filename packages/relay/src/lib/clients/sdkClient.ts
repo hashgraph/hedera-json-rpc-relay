@@ -89,8 +89,8 @@ export class SDKClient {
      */
     private readonly hbarLimiter: HbarLimit;
 
-    private consensusNodeClientHistorgramCost;
-    private consensusNodeClientHistorgramGasFee;
+    private consensusNodeClientHistogramCost;
+    private consensusNodeClientHistogramGasFee;
     private operatorAccountGauge;
     private operatorAccountId;
 
@@ -111,7 +111,7 @@ export class SDKClient {
         // clear and create metrics in registry
         const metricHistogramCost = 'rpc_relay_consensusnode_cost';
         register.removeSingleMetric(metricHistogramCost);
-        this.consensusNodeClientHistorgramCost = new Histogram({
+        this.consensusNodeClientHistogramCost = new Histogram({
             name: metricHistogramCost,
             help: 'Relay consensusnode mode type status cost histogram',
             labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
@@ -119,7 +119,7 @@ export class SDKClient {
         });
         const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
         register.removeSingleMetric(metricHistogramGasFee);
-        this.consensusNodeClientHistorgramGasFee = new Histogram({
+        this.consensusNodeClientHistogramGasFee = new Histogram({
             name: metricHistogramGasFee,
             help: 'Relay consensusnode mode type status gas fee histogram',
             labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
@@ -503,14 +503,14 @@ export class SDKClient {
     private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
         const resolvedCost = cost ? cost : 0;
         const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
-        this.consensusNodeClientHistorgramCost.labels(
+        this.consensusNodeClientHistogramCost.labels(
           mode,
           type,
           status,
           caller,
           interactingEntity)
           .observe(resolvedCost);
-        this.consensusNodeClientHistorgramGasFee.labels(
+        this.consensusNodeClientHistogramGasFee.labels(
           mode,
           type,
           status,
