@@ -28,9 +28,9 @@ const url = __ENV.RELAY_BASE_URL;
 const methodName = 'eth_call';
 const {options, run} = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
-  .request(() => http.post(
+  .request((testParameters) => http.post(
       url, 
-      getPayLoad(methodName, [{"from":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b","gas":"0x186a0","to":"0x0000000000000000000000000000000002be87bf","data":"0x8d337b81000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"}, "0x151c8bb"]), 
+      getPayLoad(methodName, [{"from":testParameters.from,"to":testParameters.contractAddress,"data":"0xcfae3217"}, "latest"]),
       httpParams
     )
   )

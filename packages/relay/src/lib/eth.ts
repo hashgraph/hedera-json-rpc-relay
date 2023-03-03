@@ -332,9 +332,21 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
     //this checks whether this is a transfer transaction and not a contract function execution
     if (!transaction || !transaction.data || transaction.data === '0x') {
-      const toAccount = await this.mirrorNodeClient.getAccount(transaction.to);
+      const accountCacheKey = `account_${transaction.to}`;
+      let toAccount: object | null = this.cache.get(accountCacheKey);
+      if (!toAccount) {
+        toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
+      }
+
       // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
-      return toAccount ? EthImpl.gasTxBaseCost : EthImpl.gasTxHollowAccountCreation;
+      if (toAccount) {
+        this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        this.cache.set(accountCacheKey, toAccount);
+
+        return EthImpl.gasTxBaseCost;
+      }
+
+      return EthImpl.gasTxHollowAccountCreation;
     } else {
       return EthImpl.defaultGas;
     }
@@ -562,7 +574,7 @@ export class EthImpl implements Eth {
             if (stateChange) {
               result = stateChange.value_written;
             }
-          } 
+          }
         })
         .catch((error: any) => {
           throw this.genericErrorHandler(
@@ -758,15 +770,27 @@ export class EthImpl implements Eth {
 
   /**
    * Gets the block by its block number.
-   * @param blockNumOrTag
+   * @param blockNumOrTag Possible values are earliest/pending/latest or hex, and can't be null (validator check).
    * @param showDetails
    */
   async getBlockByNumber(blockNumOrTag: string, showDetails: boolean, requestId?: string): Promise<Block | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
-    return this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
-      throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
-    });
+
+    const cacheKey = `eth_getBlockByNumber_${blockNumOrTag}_${showDetails}`;
+    let block = this.cache.get(cacheKey);
+    if (!block) {
+      block = await this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
+        throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
+      });
+
+      if (blockNumOrTag != EthImpl.blockLatest && blockNumOrTag != EthImpl.blockPending) {
+        this.logger.trace(`${requestIdPrefix} caching ${cacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        this.cache.set(cacheKey, block);
+      }
+    }
+
+    return block;
   }
 
   /**
@@ -892,13 +916,17 @@ export class EthImpl implements Eth {
   async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let interactingEntity = '';
-    this.logger.trace(`${requestIdPrefix} sendRawTransaction(transaction=${transaction})`);
+    let originatingAddress = '';
     try {
       const parsedTx = Precheck.parseTxIfNeeded(transaction);
       interactingEntity = parsedTx.to ? parsedTx.to.toString() : '';
-      const gasPrice = await this.getFeeWeibars(EthImpl.ethSendRawTransaction, requestId);
+      originatingAddress = parsedTx.from ? parsedTx.from.toString() : '';
+      this.logger.trace(`${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
+
+      const gasPrice = Number(await this.gasPrice(requestId));
       await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestId);
     } catch (e: any) {
+      this.logger.warn(`${requestIdPrefix} Error on precheck sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
       throw this.genericErrorHandler(e);
     }
 
@@ -1033,7 +1061,17 @@ export class EthImpl implements Eth {
     let fromAddress;
     if (contractResult.from) {
       fromAddress = contractResult.from.substring(0, 42);
-      const accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
+
+      const accountCacheKey = `account_${fromAddress}`;
+      let accountResult: any | null = this.cache.get(accountCacheKey);
+      if (!accountResult) {
+        accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
+        if (accountResult) {
+          this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+          this.cache.set(accountCacheKey, accountResult);
+        }
+      }
+
       if (accountResult && accountResult.evm_address && accountResult.evm_address.length > 0) {
         fromAddress = accountResult.evm_address.substring(0,42);
       }
@@ -1067,7 +1105,7 @@ export class EthImpl implements Eth {
       to: contractResult.to?.substring(0, 42),
       transactionIndex: EthImpl.numberTo0x(contractResult.transaction_index),
       type: EthImpl.nullableNumberTo0x(contractResult.type),
-      v: EthImpl.nullableNumberTo0x(contractResult.v),
+      v: EthImpl.nanOrNumberTo0x(contractResult.v),
       value: EthImpl.nanOrNumberTo0x(contractResult.amount),
     });
   }
@@ -1235,7 +1273,7 @@ export class EthImpl implements Eth {
           const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
           if (transaction !== null) {
             transactionObjects.push(transaction);
-          }  
+          }
         } else {
           transactionHashes.push(result.hash);
         }
@@ -1348,7 +1386,7 @@ export class EthImpl implements Eth {
             to: contractResultDetails.to.substring(0, 42),
             transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
             type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
-            v: EthImpl.nullableNumberTo0x(contractResultDetails.v),
+            v: EthImpl.nanOrNumberTo0x(contractResultDetails.v),
             value: EthImpl.nanOrNumberTo0x(contractResultDetails.amount),
           });
         }

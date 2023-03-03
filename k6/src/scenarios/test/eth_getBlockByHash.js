@@ -27,8 +27,10 @@ import {setupTestParameters} from "./bootstrapEnvParameters.js";
 const methodName = 'eth_getBlockByHash';
 const {options, run} = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
-  .request((testParameters) => http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [testParameters.DEFAULT_BLOCK_HASH, "latest"]), httpParams))
+  .request((testParameters) => http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [testParameters.DEFAULT_BLOCK_HASH, true]), httpParams))
   .check(methodName, (r) => isNonErrorResponse(r))
+  .testDuration("3s")
+  .maxDuration(2000)
   .build();
 
 export {options, run};

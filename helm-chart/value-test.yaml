@@ -117,11 +117,12 @@ config:
   DEV_MODE: false
   GAS_PRICE_TINY_BAR_BUFFER: 10000000000
   MIRROR_NODE_RETRIES: 3
-  MIRROR_NODE_RETRY_DELAY: 500
+  MIRROR_NODE_RETRY_DELAY: 250
   MIRROR_NODE_LIMIT_PARAM: 100
   INPUT_SIZE_LIMIT: 1
   ETH_CALL_CACHE_TTL: 200
   CONSENSUS_MAX_EXECUTION_TIME: 15000
+  SDK_REQUEST_TIMEOUT: 10000
   
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:
