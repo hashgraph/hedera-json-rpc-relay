@@ -109,7 +109,7 @@ export class SDKClient {
         this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
 
         // clear and create metrics in registry
-        const metricHistogramCost = 'rpc_relay_consensusnode_cost';
+        const metricHistogramCost = 'rpc_relay_consensusnode_response';
         register.removeSingleMetric(metricHistogramCost);
         this.consensusNodeClientHistogramCost = new Histogram({
             name: metricHistogramCost,
