@@ -27,7 +27,7 @@ The following table highlights each relay endpoint and the TIER associated with 
 
 | Method endpoint                           | Tier              |
 |-------------------------------------------|-------------------|
-| `eth_accounts`                            | TIER_3_RATE_LIMIT |
+| `eth_accounts`                            | TIER_2_RATE_LIMIT |
 | `eth_blockNumber`                         | TIER_2_RATE_LIMIT |
 | `eth_call`                                | TIER_1_RATE_LIMIT |
 | `eth_chainId`                             | TIER_2_RATE_LIMIT |
