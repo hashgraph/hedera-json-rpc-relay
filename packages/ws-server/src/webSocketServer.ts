@@ -44,11 +44,22 @@ const relay: Relay = new RelayImpl(logger, register);
 const app = websockify(new Koa(), {});
 const LOGGER_PREFIX = 'WebSocket:';
 
+const MAX_CONNECTIONS = parseInt(process.env.CONNECTION_LIMIT || '10');
+let connectedClients = 0;
+
 app.ws.use((ctx) => {
     ctx.websocket.id = relay.subs().generateId();
     logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
 
+    if (connectedClients >= MAX_CONNECTIONS) {
+        ctx.websocket.send("Connections exceeded");
+        ctx.websocket.close();
+        return;
+    }
+    connectedClients++;
+
     ctx.websocket.on('message', async (msg) => {
+
         const request = JSON.parse(msg.toString('ascii'));
         const {method, params} = request;
         let response;
@@ -94,6 +105,7 @@ app.ws.use((ctx) => {
     ctx.websocket.on('error', console.error);
 
     ctx.websocket.on('close', function () {
+        connectedClients--;
         relay.subs().unsubscribe(ctx.websocket);
         console.log('stopping client interval');
     });
