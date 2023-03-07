@@ -69,3 +69,4 @@ console.log(helmChartPath);
 execSync("npm install")
 console.log("package-lock.json");
 console.log("All files were bumped successfully!")
+
