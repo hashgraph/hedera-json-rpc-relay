@@ -125,10 +125,11 @@ The Relay supports Docker image building and Docker Compose container management
 > **_NOTE:_** docker compose is for development purposes only.
 
 ### Bumping version
-In order to bump version for all packages and files altogether there is an npm task called 'bump-version' that needs a parameter called semver with the version to bump to:
+In order to bump version for all packages and files altogether there is an npm task called 'bump-version' that needs a parameter called `semver` and optional parameter `snapshot` with the version to bump and boolean respectively:
 ```
-npm run bump-version --semver=0.21.0-rc1
+npm run bump-version --semver=0.21.0-rc1 --snapshot=true
 ```
+`snapshot` parameter is `false` by default.
 
 ### Image Build (optional)
 
