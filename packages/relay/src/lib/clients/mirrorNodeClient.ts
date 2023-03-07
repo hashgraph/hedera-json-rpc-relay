@@ -327,7 +327,7 @@ export class MirrorNodeClient {
 
     public async getContractResult(transactionIdOrHash: string, requestId?: string) {
         const requestIdPrefix = formatRequestIdMessage(requestId);
-        const cacheKey = `getContractResult.${transactionIdOrHash}`;
+        const cacheKey = `${constants.CACHE_KEY.GET_CONTRACT_RESULT}.${transactionIdOrHash}`;
         const cachedResponse = this.cache.get(cacheKey);
         const path = `${MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT}${transactionIdOrHash}`;
 
