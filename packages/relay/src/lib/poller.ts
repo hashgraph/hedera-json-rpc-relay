@@ -35,11 +35,13 @@ export class Poller {
     private polls: Poll[];
     private interval?: NodeJS.Timer;
     private latestBlock?: string;
+    private pollingInterval: number;
 
     constructor(eth: Eth, logger: Logger) {
         this.eth = eth;
         this.logger = logger;
         this.polls = [];
+        this.pollingInterval = Number(process.env.POLLING_INTERVAL) || 500;
     }
 
     public poll() {
@@ -61,14 +63,8 @@ export class Poller {
 
                     poll.lastPolled = this.latestBlock;
                 }
-                else if (event === 'newHeads') {
-                    // not supported
-                }
-                else if (event === 'newPendingTransacitons') {
-                    // not supported
-                }
                 else {
-                    // invalid event
+                    this.logger.error(`${LOGGER_PREFIX} Polling for unsupported event: ${event}. Tag: ${poll.tag}`);
                 }
 
                 if (Array.isArray(data)) {
@@ -89,7 +85,7 @@ export class Poller {
         this.interval = setInterval(async () => {
             this.latestBlock = await this.eth.blockNumber();
             this.poll();
-        }, 500);
+        }, this.pollingInterval);
     }
 
     stop() {
