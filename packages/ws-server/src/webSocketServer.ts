@@ -44,9 +44,11 @@ const relay: Relay = new RelayImpl(logger, register);
 const app = websockify(new Koa(), {});
 const LOGGER_PREFIX = 'WebSocket:';
 
+const CHAIN_ID = relay.eth().chainId();
+const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
+
 app.ws.use((ctx) => {
     ctx.websocket.id = '0x00000000000000000000000000000000';
-    // ctx.websocket.id = relay.subs().generateId();
     logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
 
     ctx.websocket.on('message', async (msg) => {
@@ -60,17 +62,16 @@ app.ws.use((ctx) => {
             let subscriptionId;
 
             if (event === 'logs') {
-                // subscriptionId = relay.subs().subscribe(ctx.websocket, event, filters);
                 subscriptionId = '0x00000000000000000000000000000000';
             }
             else if (event === 'newHeads') {
-                // not supported
+                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
             }
             else if (event === 'newPendingTransactions') {
-                // not supported
+                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
             }
             else {
-                // invalid event
+                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
             }
 
             response = jsonResp(request.id, null, subscriptionId);
@@ -78,17 +79,16 @@ app.ws.use((ctx) => {
         else if (method === 'eth_unsubscribe') {
             const subId = params[0];
             logger.info(`${LOGGER_PREFIX} eth_unsubscribe ${subId} ${ctx.websocket.id}`);
-            // const result = relay.subs().unsubscribe(ctx.websocket, subId);
             const result = true;
             response = jsonResp(request.id, null, result);
         }
 
         // Clients want to know the chainId after connecting
         else if (method === 'eth_chainId') {
-            response = jsonResp(request.id, null, relay.eth().chainId());
+            response = jsonResp(request.id, null, CHAIN_ID);
         }
         else {
-            response = jsonResp(request.id, predefined.INTERNAL_ERROR(), null);
+            response = jsonResp(request.id, DEFAULT_ERROR, null);
         }
 
         ctx.websocket.send(JSON.stringify(response));
@@ -97,7 +97,6 @@ app.ws.use((ctx) => {
     ctx.websocket.on('error', console.error);
 
     ctx.websocket.on('close', function () {
-        // relay.subs().unsubscribe(ctx.websocket);
         console.log('stopping client interval');
     });
 

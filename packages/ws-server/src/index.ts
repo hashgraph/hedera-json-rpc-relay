@@ -21,7 +21,7 @@
 import app from './webSocketServer';
 
 async function main() {
-  app.listen({ port: process.env.WEB_SOCKET_PORT });
+  app.listen({ port: process.env.WEB_SOCKET_PORT || 8546 });
 }
 
 main();
