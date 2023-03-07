@@ -18,7 +18,6 @@
  *
  */
 
-// import { Poller } from './poller';
 import { Logger } from 'pino';
 import LRU from "lru-cache";
 import constants from "./constants";
@@ -32,14 +31,11 @@ export interface Subscriber {
 const LOGGER_PREFIX = 'Subscriptions:';
 
 export class SubscriptionController {
-    // private poller: Poller;
     private logger: Logger;
     private subscriptions: {[key: string]: Subscriber[]};
     private cache;
 
-    // constructor(poller: Poller, logger: Logger) {
     constructor(logger: Logger) {
-        // this.poller = poller;
         this.logger = logger;
         this.subscriptions = {};
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: 2000 });
@@ -76,7 +72,6 @@ export class SubscriptionController {
             connection
         });
 
-        // this.poller.add(tag, this.notifySubscribers.bind(this, tag));
         return subId;
     }
 
@@ -103,7 +98,6 @@ export class SubscriptionController {
             if (!this.subscriptions[tag].length) {
                 this.logger.info(`${LOGGER_PREFIX} No subscribers for ${tag}`);
                 delete this.subscriptions[tag];
-                // this.poller.remove(tag);
             }
         }
 
