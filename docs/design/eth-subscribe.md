@@ -54,7 +54,7 @@ wscat -c wss://<env>.hashio.io/api
 
 An object with the following fields:
 
-- address (optional): [`string`] or [`array of strings`] Singular address or array of addresses. Only logs created from one of these addresses will be emitted.
+- address (optional): `string` or [`array of strings`] Singular address or array of addresses. Only logs created from one of these addresses will be emitted. Initially only `string` should be supported and filtering by multiple addresses can be added at a later stage.
 - topics: an array of topic specifiers.
   - Each topic specifier is either null, a single string, or an array of strings.
   - For every non-null topic, a log will be emitted when activity associated with that topic occurs.
@@ -89,82 +89,6 @@ This response is sent whenever new data is available.
       "transactionIndex": "0x0"
     }
   }
-}
-```
-
-### newHeads
-
-     The newHeads subscription type emits an event any time a new header (block) is added to the chain, including during a chain reorganization.
-
-#### Request
-
-```javascript
-// initiate websocket stream first
-wscat -c wss://<env>.hashio.io/api
-
-// then call subscription
-{"jsonrpc":"2.0","id": 1, "method": "eth_subscribe", "params": ["newHeads"]}
-```
-
-#### Response
-
-This response is sent whenever new data is available.
-
-```javascript
-{
-   "method": "eth_subscription",
-   "params": {
-     "result": {
-       "difficulty": "0x15d9223a23aa",
-       "extraData": "0xd983010305844765746887676f312e342e328777696e646f7773",
-       "gasLimit": "0x47e7c4",
-       "gasUsed": "0x38658",
-       "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-       "miner": "0xf8b483dba2c3b7176a3da549ad41a48bb3121069",
-       "nonce": "0x084149998194cc5f",
-       "number": "0x1348c9",
-       "parentHash": "0x7736fab79e05dc611604d22470dadad26f56fe494421b5b333de816ce1f25701",
-       "receiptRoot": "0x2fab35823ad00c7bb388595cb46652fe7886e00660a01e867824d3dceb1c8d36",
-       "sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-       "stateRoot": "0xb3346685172db67de536d8765c43c31009d0eb3bd9c501c9be3229203f15f378",
-       "timestamp": "0x56ffeff8",
-       "transactionsRoot": "0x0167ffa60e3ebc0b080cdb95f7c0087dd6c0e61413140e39d94d3468d7c9689f"
-     },
-   "subscription": SUBSCRIPTION_ID
-   }
- }
-```
-
-### newPendingTransactions
-
-     The newPendingTransactions subscription type subscribes to all pending transactions via WebSockets (regardless if you sent them or not), and returns their transaction hashes.
-
-Returns the hash for all transactions that are added to the pending state (regardless if you sent them or not).
-
-#### Request
-
-```javascript
-// initiate websocket stream first
-wscat -c wss://<env>.hashio.io/api
-
-// then call subscription
-{"jsonrpc":"2.0","id": 2, "method": "eth_subscribe", "params": ["newPendingTransactions"]}
-```
-
-#### Response
-
-This response is sent whenever new data is available.
-
-```javascript
-{"id":1,"result":"0xc3b33aa549fb9a60e95d21862596617c","jsonrpc":"2.0"}
-
-{
-    "jsonrpc":"2.0",
-    "method":"eth_subscription",
-    "params":{
-        "subscription": SUBSCRIPTION_ID,
-        "result":"0xd6fdc5cc41a9959e922f30cb772a9aef46f4daea279307bc5f7024edc4ccd7fa"
-    }
 }
 ```
 
@@ -248,7 +172,7 @@ var subscription = web3.eth.subscribe(
   }
 );
 
-// unsubscribes the subscriptionsubscription.unsubscribe(function(error, success){
+// unsubscribes the subscription
 if (success) {
   console.log('Successfully unsubscribed!');
 }
@@ -291,9 +215,9 @@ if (success) {
 
 Active subscriptions should be limited in some way. We should create a flexible and configurable system for limiting subscriptions on a global and an IP level. This should be done by extending the existing `RateLimit` class as needed.
 
-1. Add a configurable global limit on the total active subscriptions.
-2. Add a configurable limit on the total active subscriptions per IP.
-3. Add a TTL to subscriptions, i. e. automatically terminate a subscription after a configurable time period.
+1. Add a configurable global limit on the total active subscriptions. Initial default of 10.
+2. Add a configurable limit on the total active subscriptions per IP. Initial default of 1.
+3. Add a TTL to subscriptions, i. e. automatically terminate a subscription after a configurable time period. Initial default of 5 minutes.
 4. Make it possible to disable all of those limits if needed.
 
 
@@ -324,10 +248,10 @@ The following test cases should be covered but additional tests would be welcome
 
 Users should be required to renew their subscription in the case of an error or if the subscription was closed from the relay side. If for some reason the relay is restarted it should not automatically try to restore all previous connections and subscriptions.
 
-## Open Questions
+## Deployment
 
-1. How is the deployment going to be handled?
-2. Will the `ws-socket` process run in a separate docker container?
+The ws-server process will run in the same docker container.
+A feature flag should be added to specify whether the `server`, `ws-server` or both should be running.
 
 ## Answered Questions
 
