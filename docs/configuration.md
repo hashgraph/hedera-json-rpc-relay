@@ -29,7 +29,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `CHAIN_ID`                    | ""            | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively. |
 | `HBAR_RATE_LIMIT_DURATION`    | "60000"       | hbar budget limit duration. This creates a timestamp, which resets all limits, when it's reached. Default is to 60000 (1 minute).   |
 | `HBAR_RATE_LIMIT_TINYBAR`    | "5000_000_000" | total hbar budget in tinybars.   |
-| `HEDERA_NETWORK`              | ""                         | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`   |
+| `HEDERA_NETWORK`              | ""                         | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `MAINNET`, `PREVIEWNET`, `TESTNET` or a map of network IPs -> node accountIds e.g. `{"127.0.0.1:50211":"0.0.3"}`   |
 | `INPUT_SIZE_LIMIT`            | "1mb"         | The [koa-jsonrpc](https://github.com/Bitclimb/koa-jsonrpc) maximum size allowed for requests   |
 | `OPERATOR_ID_MAIN`            | ""            | Operator account ID used to pay for transactions.   |
 | `OPERATOR_KEY_MAIN`           | ""            | Operator private key used to sign transactions in hex encoded DER format.  |
@@ -56,7 +56,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `MIRROR_NODE_LIMIT_PARAM`         | "100"         | The mirror node custom limit value to be set on GET requests. This optimizes the flow to reduce the number of calls made to the mirror node by setting a limit larger than it's default limit.   |
 | `MIRROR_NODE_RETRIES`             | "3"           | The maximum number of retries on a GET request to the mirror node when an acceptable error code is returned.   |
 | `MIRROR_NODE_RETRY_DELAY`         | "250"         | The dealy in ms between retry requests.   |
-| `MIRROR_NODE_URL`                 | ""            | The Mirror Node API endpoint. Official endpoints are Previewnet (https://previewnet.mirrornode.hedera.com/v1/api), Testnet (https://testnet.mirrornode.hedera.com/v1/api), Mainnet (https://mainnet-public.mirrornode.hedera.com/v1/api). See [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api)   |
+| `MIRROR_NODE_URL`                 | ""            | The Mirror Node API endpoint. Official endpoints are Previewnet (https://previewnet.mirrornode.hedera.com), Testnet (https://testnet.mirrornode.hedera.com), Mainnet (https://mainnet-public.mirrornode.hedera.com). See [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api)   |
 | `SDK_REQUEST_TIMEOUT`             | "10000"       | The complete timeout for running the SDK `execute()` method. This controls the GRPC channel timeout cofig when querying with network nodes.   |
 | `TIER_1_RATE_LIMIT`               | "100"         | Maximum restrictive request count limit used for expensive endpoints rate limiting.   |
 | `TIER_2_RATE_LIMIT`               | "800"         | Maximum moderate request count limit used for non expensive endpoints.   |
@@ -104,6 +104,7 @@ CONSENSUS_MAX_EXECUTION_TIME = 10000
 SDK_REQUEST_TIMEOUT = 10000
 ````
 
-Note: Read more about `DEV_MODE` [here](./dev-mode.md)
 
-> **_NOTE:_** Acceptance tests can be pointed at a remote location. In this case be sure to appropriately update these values to point away from your local host and to valid deployed services.
+> **_NOTE:_** Acceptance tests can be pointed at a remote locations (previewnet and testnet and custom environments). In this case configuration will require details for remote consensus node gRPC endpoints [previewnet / testnet](https://docs.hedera.com/hedera/networks/testnet/testnet-nodes) / [mainnet](https://docs.hedera.com/hedera/networks/mainnet/mainnet-nodes) and [Mirror Node REST API endpoints](https://docs.hedera.com/hedera/sdks-and-apis/rest-api), be sure to configure `HEDERA_NETWORK` and `MIRROR_NODE_URL` appropriately to point away from your local host and to valid deployed services. When pointing to previewnet and testnet, account Ids (`OPERATOR_ID_MAIN`) and private keys (`OPERATOR_KEY_MAIN`) for previewnet and tests may be obtained from the [Hedera Portal](http://portal.hedera.com).
+
+> **_NOTE 2:_**: Read more about `DEV_MODE` [here](./dev-mode.md)
