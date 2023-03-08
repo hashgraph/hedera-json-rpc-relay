@@ -27,11 +27,11 @@ checkVersion(newVersion);
 
 console.log(`Bumping version to: ${newVersion}`);
 console.log(`is Snapshot: ${isSnapshot}`);
-// bumping version using replace for 'packages/relay/package.json', 'packages/server/package.json', 'docs/openrpc.json'
+// bumping version using replace for 'packages/relay/package.json', 'packages/server/package.json', 'docs/openrpc.json', 'packages/ws-server/package.json'
 replace({
     regex: '\"version\": \"\\d+\\.\\d+\\.\\d+(-\\w+)?\"',
     replacement: `"version": "${newVersion}"`,
-    paths: ['packages/relay/package.json', 'packages/server/package.json', 'docs/openrpc.json'],
+    paths: ['packages/relay/package.json', 'packages/server/package.json', 'docs/openrpc.json', 'packages/ws-server/package.json'],
     recursive: false,
     silent: false,
 });
