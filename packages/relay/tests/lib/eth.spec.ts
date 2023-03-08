@@ -26,7 +26,7 @@ import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-import { RelayImpl } from '@hashgraph/json-rpc-relay';
+import { RelayImpl } from '../../../../packages/relay';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';

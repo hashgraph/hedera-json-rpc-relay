@@ -29,7 +29,7 @@ import axios from 'axios';
 import sinon from 'sinon';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { RelayImpl } from '@hashgraph/json-rpc-relay';
+import { RelayImpl } from '../../../../packages/relay';
 import { Registry } from 'prom-client';
 
 import { EthImpl } from '../../src/lib/eth';

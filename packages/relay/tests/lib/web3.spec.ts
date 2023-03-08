@@ -22,7 +22,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import { RelayImpl } from '@hashgraph/json-rpc-relay';
+import { RelayImpl } from '../../../../packages/relay';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
