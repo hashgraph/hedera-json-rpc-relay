@@ -16,6 +16,7 @@ data:
   MIRROR_NODE_URL: {{ .Values.config.MIRROR_NODE_URL | quote }}
   LOCAL_NODE: {{ .Values.config.LOCAL_NODE | quote }}
   SERVER_PORT: {{ .Values.config.SERVER_PORT | quote }}
+  WEB_SOCKET_PORT: {{ .Values.config.WEB_SOCKET_PORT | quote }}
   CHAIN_ID: {{ .Values.config.CHAIN_ID | quote }}
   DEFAULT_RATE_LIMIT: {{ .Values.config.DEFAULT_RATE_LIMIT | quote }}
   TIER_1_RATE_LIMIT: {{ .Values.config.TIER_1_RATE_LIMIT | quote }}

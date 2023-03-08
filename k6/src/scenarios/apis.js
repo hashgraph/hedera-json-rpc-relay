@@ -34,7 +34,7 @@ function handleSummary(data) {
 
 function run(testParameters) {
   const scenario = exec.scenario;
-  funcs[scenario.name](testParameters);
+  funcs[scenario.name](testParameters, scenario.iterationInTest);
   scenarioDurationGauge.add(Date.now() - scenario.startTime, {scenario: scenario.name});
 }
 

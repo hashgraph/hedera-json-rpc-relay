@@ -335,7 +335,7 @@ export class EthImpl implements Eth {
       const accountCacheKey = `account_${transaction.to}`;
       let toAccount: object | null = this.cache.get(accountCacheKey);
       if (!toAccount) {
-        toAccount = await this.mirrorNodeClient.getAccount(transaction.to);
+        toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
       }
 
       // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
@@ -916,13 +916,17 @@ export class EthImpl implements Eth {
   async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let interactingEntity = '';
-    this.logger.trace(`${requestIdPrefix} sendRawTransaction(transaction=${transaction})`);
+    let originatingAddress = '';
     try {
       const parsedTx = Precheck.parseTxIfNeeded(transaction);
       interactingEntity = parsedTx.to ? parsedTx.to.toString() : '';
+      originatingAddress = parsedTx.from ? parsedTx.from.toString() : '';
+      this.logger.trace(`${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
+
       const gasPrice = Number(await this.gasPrice(requestId));
       await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestId);
     } catch (e: any) {
+      this.logger.warn(`${requestIdPrefix} Error on precheck sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
       throw this.genericErrorHandler(e);
     }
 

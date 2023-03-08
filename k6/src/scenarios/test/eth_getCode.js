@@ -28,7 +28,7 @@ const methodName = 'eth_getCode';
 const {options, run} = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request((testParameters) => {
-    return http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [testParameters.DEFAULT_CONTRACT_ADDRESS]), httpParams);
+    return http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [testParameters.contractAddress, "latest"]), httpParams);
   })
   .check(methodName, (r) => isNonErrorResponse(r))
   .build();
