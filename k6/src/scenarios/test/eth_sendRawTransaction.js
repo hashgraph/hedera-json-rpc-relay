@@ -25,14 +25,21 @@ import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
 
 const url = __ENV.RELAY_BASE_URL;
 
+
 const methodName = 'eth_sendRawTransaction';
 const {options, run} = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
-  .request(() => http.post(
-    url, 
-    getPayLoad(methodName, ["0x02f87582012805860104c533c000860104c533c000830186a0940000000000000000000000000000000002be87bf80841ec6b60ac080a061b63e1d3aee1330681802cf8be6989f794e653c2f8cc5f950bbc20de71ce204a01b9038e8c0641e9674b45b31292bd6173a8ec3015a2d00854bfebd163a364f79"]), 
-    httpParams))
+  .request((testParameters, iteration) => {
+      const lastValidSignedTrx = (parseInt(testParameters.signedTxs.length) >= parseInt(iteration)) ? iteration : testParameters.signedTxs.length-1;
+      return http.post(
+          url,
+          getPayLoad(methodName, [testParameters.signedTxs[lastValidSignedTrx]]),
+          httpParams)
+      }
+  )
   .check(methodName, (r) => isNonErrorResponse(r))
+  .testDuration("5s")
+  .maxDuration(4000)
   .build();
 
 export {options, run};

@@ -1,0 +1,15 @@
+{
+  "name": "hedera-rpc-relay-k6-perf-test",
+  "version": "0.1.0",
+  "description": "Performance Test for hedera-json-rpc-relay using node and k6",
+  "type": "module",
+  "scripts": {
+    "prep-and-run": "npm run prep && npm run k6",
+    "prep": "env-cmd node src/prepare/prep.js",
+    "k6": "env-cmd --use-shell k6 run src/scenarios/apis.js"
+  },
+  "dependencies": {
+    "env-cmd": "^10.1.0",
+    "ethers": "^5.6.8"
+  }
+}
