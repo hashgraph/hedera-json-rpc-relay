@@ -57,7 +57,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `MIRROR_NODE_RETRIES`             | "3"           | The maximum number of retries on a GET request to the mirror node when an acceptable error code is returned.   |
 | `MIRROR_NODE_RETRY_DELAY`         | "250"         | The dealy in ms between retry requests.   |
 | `MIRROR_NODE_URL`                 | ""            | The Mirror Node API endpoint. Official endpoints are Previewnet (https://previewnet.mirrornode.hedera.com), Testnet (https://testnet.mirrornode.hedera.com), Mainnet (https://mainnet-public.mirrornode.hedera.com). See [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api)   |
-| `SDK_REQUEST_TIMEOUT`             | "10000"       | The complete timeout for running the SDK `execute()` method. This controls the GRPC channel timeout cofig when querying with network nodes.   |
+| `SDK_REQUEST_TIMEOUT`             | "10000"       | The complete timeout for running the SDK `execute()` method. This controls the GRPC channel timeout config when querying with network nodes.   |
 | `TIER_1_RATE_LIMIT`               | "100"         | Maximum restrictive request count limit used for expensive endpoints rate limiting.   |
 | `TIER_2_RATE_LIMIT`               | "800"         | Maximum moderate request count limit used for non expensive endpoints.   |
 | `TIER_3_RATE_LIMIT`               | "1600"        | Maximum relaxed request count limit used for static return endpoints.   |
