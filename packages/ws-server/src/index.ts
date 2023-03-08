@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@
  *
  */
 
-import app from './server';
+import app from './webSocketServer';
 
 async function main() {
-  await app.listen({ port: process.env.SERVER_PORT || 7546 });
+  app.listen({ port: process.env.WEB_SOCKET_PORT || 8546 });
 }
 
 main();
