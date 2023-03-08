@@ -49,11 +49,11 @@ describe('MirrorNodeClient', async function () {
       timeout: 20 * 1000
     });
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
-  })
+  });
 
   beforeEach(() => {
     mock = new MockAdapter(instance);
-  })
+  });
 
   it('it should have a `request` method ', async () => {
     expect(mirrorNodeInstance).to.exist;
@@ -384,7 +384,7 @@ describe('MirrorNodeClient', async function () {
         'value': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
       }
     ]
-  }
+  };
 
   it('`getContractResults` by transactionId', async () => {
     const transactionId = '0.0.10-167654-000123456';
@@ -398,7 +398,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getContractResults` by hash', async () => {
-    const hash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+    const hash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6391';
     mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
 
     const result = await mirrorNodeInstance.getContractResult(hash);
@@ -408,8 +408,19 @@ describe('MirrorNodeClient', async function () {
     expect(result.v).equal(detailedContractResult.v);
   });
 
+  it('`getContractResults` by hash using cache', async () => {
+    const hash = '0x07cad7b827375d10d73af57b6a3e84353645fdb1305ea58ff52dda53ec640533';
+    mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
+    const resultBeforeCached = await mirrorNodeInstance.getContractResult(hash);
+
+    mock.onGet(`contracts/results/${hash}`).reply(400, null);
+    const resultAfterCached = await mirrorNodeInstance.getContractResult(hash);
+
+    expect(resultBeforeCached).to.eq(resultAfterCached);
+  });
+
   it('`getContractResultsWithRetry` by hash', async () => {
-    const hash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+    const hash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6399';
     mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
 
     const result = await mirrorNodeInstance.getContractResultWithRetry(hash);
@@ -422,7 +433,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getContractResultsWithRetry` by hash retries once', async () => {
-    const hash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+    const hash = '0x2a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6397';
     mock.onGet(`contracts/results/${hash}`).replyOnce(200, {...detailedContractResult, transaction_index: undefined});
     mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
 
@@ -704,7 +715,7 @@ describe('MirrorNodeClient', async function () {
       }
 
       return mockedResults;
-    }
+    };
 
     it('works when there is only 1 page', async () => {
       const mockedResults = [{
@@ -726,7 +737,7 @@ describe('MirrorNodeClient', async function () {
       expect(results).to.exist;
       expect(results).to.deep.equal(mockedResults);
 
-    })
+    });
 
     it('works when there are several pages', async () => {
       const pages = 5;

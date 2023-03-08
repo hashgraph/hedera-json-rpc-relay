@@ -20,7 +20,10 @@
 
 enum CACHE_KEY {
     GAS_PRICE = 'gas_price',
-    FEE_HISTORY = 'fee_history'
+    FEE_HISTORY = 'fee_history',
+    GET_CONTRACT_RESULT = 'getContractResult'
+
+
 }
 
 enum CACHE_TTL {

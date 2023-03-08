@@ -3113,9 +3113,11 @@ describe('Eth', async function () {
         max_fee_per_gas: null
       };
 
-      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, contractResult);
+      const uniqueTxHash = '0x07cdd7b820375d10d73af57a6a3e84353645fdb1305ea58ff52daa53ec640533';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, contractResult);
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
-      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+      const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
 
       expect(receipt).to.exist;
       if (receipt == null) return;
@@ -3143,9 +3145,12 @@ describe('Eth', async function () {
         error_message: defaultErrorMessage
       };
 
-      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWithErrorMessage);
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0x04cad7b827375d10d73af57b6a3e843536457d31305ea58ff52dda53ec640533';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, receiptWithErrorMessage);
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
-      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+      const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
 
       expect(receipt).to.exist;
       expect(receipt.revertReason).to.eq(defaultErrorMessage);
@@ -3156,9 +3161,12 @@ describe('Eth', async function () {
         ...defaultDetailedContractResultByHash,
         gas_used: null
       };
-      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWithNullGasUsed);
+
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0x08cad7b827375d12d73af57b6a3e84353645fd31305ea59ff52dda53ec640533';
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, receiptWithNullGasUsed);
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
-      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+      const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
 
       expect(receipt).to.exist;
       if (receipt == null) return;
@@ -3166,8 +3174,11 @@ describe('Eth', async function () {
     });
 
     it('handles missing transaction index', async function() {
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0x17cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+
       // mirror node request mocks
-      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, {
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {
         ...defaultDetailedContractResultByHash, ...{
           transaction_index: undefined
         }
@@ -3175,7 +3186,7 @@ describe('Eth', async function () {
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(200, {
         evm_address: contractEvmAddress
       });
-      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+      const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
 
       expect(receipt).to.exist;
 
@@ -3185,9 +3196,12 @@ describe('Eth', async function () {
   });
 
   describe('eth_getTransactionByHash', async function () {
+    // fake unique hash so request dont re-use the cached value but the mock defined
+    const uniqueTxHash = '0x27cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+
     it('returns `null` for non-existing hash', async function () {
       // mirror node request mocks
-      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(404, {
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(404, {
         '_status': {
           'messages': [
             {
@@ -3197,7 +3211,7 @@ describe('Eth', async function () {
         }
       });
 
-      const result = await ethImpl.getTransactionByHash(defaultTxHash);
+      const result = await ethImpl.getTransactionByHash(uniqueTxHash);
       expect(result).to.equal(null);
     });
 
@@ -3255,11 +3269,14 @@ describe('Eth', async function () {
         s: null
       };
 
-      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0x97cad7b827375d12d73af57b6a3f84353645fd31305ea58ff52dda53ec640533';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
       restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
-      const result = await ethImpl.getTransactionByHash(defaultTxHash);
+      const result = await ethImpl.getTransactionByHash(uniqueTxHash);
       if (result == null) return;
 
       expect(result).to.exist;
@@ -3291,11 +3308,14 @@ describe('Eth', async function () {
         gas_used: null
       };
 
-      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
       restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
-      const result = await ethImpl.getTransactionByHash(defaultTxHash);
+      const result = await ethImpl.getTransactionByHash(uniqueTxHash);
       if (result == null) return;
 
       expect(result).to.exist;
@@ -3309,11 +3329,14 @@ describe('Eth', async function () {
         amount: null
       };
 
-      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0x0aaad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
       restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
-      const result = await ethImpl.getTransactionByHash(defaultTxHash);
+      const result = await ethImpl.getTransactionByHash(uniqueTxHash);
       if (result == null) return;
 
       expect(result).to.exist;
@@ -3327,11 +3350,14 @@ describe('Eth', async function () {
         v: null
       };
 
-      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0xb4cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
       restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
-      const result = await ethImpl.getTransactionByHash(defaultTxHash);
+      const result = await ethImpl.getTransactionByHash(uniqueTxHash);
       if (result == null) return;
 
       expect(result).to.exist;
@@ -3374,13 +3400,16 @@ describe('Eth', async function () {
       const initialDevModeValue = process.env.DEV_MODE;
       process.env.DEV_MODE = 'true';
 
-      restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHashReverted);
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0xa8cad7b827375d12d73af57b6a3f84353645fd31305ea58ff52dda53ec640533';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, defaultDetailedContractResultByHashReverted);
       restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
 
       try {
-        const result = await ethImpl.getTransactionByHash(defaultTxHash);
+        const result = await ethImpl.getTransactionByHash(uniqueTxHash);
         expect(true).to.eq(false);
       }
       catch(error) {
