@@ -20,8 +20,9 @@
 
 import { Logger } from 'pino';
 import LRU from "lru-cache";
-import constants from "./constants";
 import crypto from "crypto";
+import constants from "./constants";
+import { Poller } from './poller';
 
 export interface Subscriber {
     connection: any,
@@ -31,18 +32,20 @@ export interface Subscriber {
 const LOGGER_PREFIX = 'Subscriptions:';
 
 export class SubscriptionController {
+    private poller: Poller;
     private logger: Logger;
     private subscriptions: {[key: string]: Subscriber[]};
     private cache;
 
-    constructor(logger: Logger) {
+    constructor(poller: Poller, logger: Logger) {
+        this.poller = poller;
         this.logger = logger;
         this.subscriptions = {};
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: 2000 });
     }
 
     createHash(data) {
-        return crypto.createHash('sha3').update(data.toString()).digest('hex');
+        return crypto.createHash('sha256').update(data.toString()).digest('hex');
     }
 
     // Generates a random 16 byte hex string
@@ -72,6 +75,8 @@ export class SubscriptionController {
             connection
         });
 
+        this.poller.add(tag, this.notifySubscribers.bind(this, tag));
+
         return subId;
     }
 
@@ -98,6 +103,7 @@ export class SubscriptionController {
             if (!this.subscriptions[tag].length) {
                 this.logger.info(`${LOGGER_PREFIX} No subscribers for ${tag}`);
                 delete this.subscriptions[tag];
+                this.poller.remove(tag);
             }
         }
 

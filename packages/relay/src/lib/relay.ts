@@ -24,6 +24,7 @@ import { Relay, Eth, Net, Web3, Subs } from '../index';
 import { Web3Impl } from './web3';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
+import { Poller } from './poller';
 import { SubscriptionController } from './subscriptionController';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
@@ -76,7 +77,8 @@ export class RelayImpl implements Relay {
 
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
-      this.subImpl = new SubscriptionController(logger);
+      const poller = new Poller(this.ethImpl, logger);
+      this.subImpl = new SubscriptionController(poller, logger);
     }
 
     logger.info('Relay running with chainId=%s', chainId);
