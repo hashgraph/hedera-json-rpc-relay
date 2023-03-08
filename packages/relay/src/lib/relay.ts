@@ -20,11 +20,12 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-import { Relay, Eth, Net, Web3 } from '../index';
+import { Relay, Eth, Net, Web3, Subs } from '../index';
 import { Web3Impl } from './web3';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
 import { Poller } from './poller';
+import { SubscriptionController } from './subscriptionController';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNodeClient, SDKClient } from './clients';
@@ -41,6 +42,7 @@ export class RelayImpl implements Relay {
   private readonly web3Impl: Web3;
   private readonly netImpl: Net;
   private readonly ethImpl: Eth;
+  private readonly subImpl?: Subs;
 
   constructor(logger: Logger, register: Registry) {
     dotenv.config({ path: findConfig('.env') || '' });
@@ -73,8 +75,10 @@ export class RelayImpl implements Relay {
       logger.child({ name: 'relay-eth' }),
       chainId);
 
+
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
       const poller = new Poller(this.ethImpl, logger);
+      this.subImpl = new SubscriptionController(logger);
     }
 
     logger.info('Relay running with chainId=%s', chainId);
@@ -90,6 +94,10 @@ export class RelayImpl implements Relay {
 
   eth(): Eth {
     return this.ethImpl;
+  }
+
+  subs(): Subs | undefined {
+    return this.subImpl;
   }
 
   initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
