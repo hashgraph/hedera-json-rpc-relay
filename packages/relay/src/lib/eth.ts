@@ -195,7 +195,7 @@ export class EthImpl implements Eth {
       if (!feeHistory) {
         feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
         if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
-          this.logger.trace(`${requestIdPrefix} caching ${cacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+          this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(feeHistory)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
           this.cache.set(cacheKey, feeHistory);
         }
       }
@@ -340,7 +340,7 @@ export class EthImpl implements Eth {
 
       // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
       if (toAccount) {
-        this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey}:${JSON.stringify(toAccount)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         this.cache.set(accountCacheKey, toAccount);
 
         return EthImpl.gasTxBaseCost;
@@ -364,7 +364,7 @@ export class EthImpl implements Eth {
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestId);
 
-        this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE}:${gasPrice} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice);
       }
 
@@ -785,7 +785,7 @@ export class EthImpl implements Eth {
       });
 
       if (blockNumOrTag != EthImpl.blockLatest && blockNumOrTag != EthImpl.blockPending) {
-        this.logger.trace(`${requestIdPrefix} caching ${cacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(block)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
         this.cache.set(cacheKey, block);
       }
     }
@@ -1067,7 +1067,7 @@ export class EthImpl implements Eth {
       if (!accountResult) {
         accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
         if (accountResult) {
-          this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+          this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey}:${JSON.stringify(accountResult)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
           this.cache.set(accountCacheKey, accountResult);
         }
       }
