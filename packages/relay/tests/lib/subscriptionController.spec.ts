@@ -20,6 +20,7 @@
 
 
 import pino from "pino";
+// @ts-ignore
 import {SubscriptionController} from "../../src/lib/subscriptionController";
 import {expect} from "chai";
 import {Poller} from "../../src/lib/poller";
@@ -120,7 +121,7 @@ describe("subscriptionController", async function() {
 
         const subId = subscriptionController.subscribe(wsConnection, 'logs');
 
-        expect(spy.args[0][0]).to.be.eq(`{"event":"logs"}`);
+        expect(spy.getCall(0).args[0]).to.be.eq(`{"event":"logs"}`);
         expect(subId).to.be.length(34);
     });
 
@@ -132,8 +133,25 @@ describe("subscriptionController", async function() {
 
         subscriptionController.notifySubscribers(`{"event":"logs"}`, testData);
 
-        expect(spy.args[0][0]).to.be.eq(`{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId}"}}`);
+        expect(spy.getCall(0).args[0]).to.be.eq(`{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId}"}}`);
     });
+
+
+    it('notifySubscribers should notify multiple subscribers with data', async function () {
+        const wsConnection1 = new MockWsConnection("2");
+        const subId1 = subscriptionController.subscribe(wsConnection1, 'logs');
+        const spy1 = sandbox.spy(wsConnection1, 'send');
+        const wsConnection2 = new MockWsConnection("2");
+        const subId2 = subscriptionController.subscribe(wsConnection2, 'logs');
+        const spy2 = sandbox.spy(wsConnection2, 'send');
+        const testData = "test example data";
+
+        subscriptionController.notifySubscribers(`{"event":"logs"}`, testData);
+
+        expect(spy1.getCall(0).args[0]).to.be.eq(`{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId1}"}}`);
+        expect(spy2.getCall(0).args[0]).to.be.eq(`{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId2}"}}`);
+    });
+
 
     it('notifySubscribers should use cache to not send the data again', async function () {
         const wsConnection = new MockWsConnection("3");
@@ -145,8 +163,19 @@ describe("subscriptionController", async function() {
         subscriptionController.notifySubscribers(`{"event":"logs"}`, testData); // should hit cache
         subscriptionController.notifySubscribers(`{"event":"logs"}`, testData); // should hit cache
 
-        expect(spy.args[0][0]).to.be.eq(`{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId}"}}`);
-        expect(spy.args.length).to.be.eq(1); // even after making 3 calls, only 1 time spy reports being called on send method
+        expect(spy.getCall(0).args[0]).to.be.eq(`{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId}"}}`);
+        expect(spy.callCount).to.be.eq(1); // even after making 3 calls, only 1 time spy reports being called on send method
+    });
+
+    it('notifySubscribers using a Tag that has no subscribers should not send anything to connection', async function () {
+        const wsConnection = new MockWsConnection("3");
+        subscriptionController.subscribe(wsConnection, 'logs');
+        const spy = sandbox.spy(wsConnection, 'send');
+        const testData = "test example data cached";
+
+        subscriptionController.notifySubscribers(`{"event":"logs" filters:{"topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}}`, testData);
+
+        expect(spy.callCount).to.be.eq(0);
     });
 
     it('Unsubscribing all subscriptions from same connection', async function () {
@@ -160,13 +189,13 @@ describe("subscriptionController", async function() {
         const status = subscriptionController.unsubscribe(wsConnection);
 
         expect(status).to.be.eq(true);
-        expect(loggerSpy.args[0][0]).to.be.eq(`Subscriptions: Unsubscribing all instances of connection ${wsConnection.id}`);
-        expect(loggerSpy.args[1][0]).to.be.eq(`Subscriptions: Unsubscribing ${subId}, from ${JSON.stringify(tag1)}`);
-        expect(loggerSpy.args[2][0]).to.be.eq(`Subscriptions: Unsubscribing ${subId2}, from ${JSON.stringify(tag2)}`);
+        expect(loggerSpy.getCall(0).args[0]).to.be.eq(`Subscriptions: Unsubscribing all instances of connection ${wsConnection.id}`);
+        expect(loggerSpy.getCall(1).args[0]).to.be.eq(`Subscriptions: Unsubscribing ${subId}, from ${JSON.stringify(tag1)}`);
+        expect(loggerSpy.getCall(2).args[0]).to.be.eq(`Subscriptions: Unsubscribing ${subId2}, from ${JSON.stringify(tag2)}`);
     });
 
     it('Unsubscribing single subscriptions from connection', async function () {
-        const wsConnection = new MockWsConnection("4");
+        const wsConnection = new MockWsConnection("5");
         const tag1 = { event: "logs"};
         const tag2 = { event: "logs", filters:{"topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}};
         subscriptionController.subscribe(wsConnection, tag1.event);
@@ -176,8 +205,17 @@ describe("subscriptionController", async function() {
         const status = subscriptionController.unsubscribe(wsConnection, subId2);
 
         expect(status).to.be.eq(true);
-        expect(loggerSpy.args[0][0]).to.be.eq(`Subscriptions: Unsubscribing connection ${wsConnection.id} from subscription ${subId2}`);
-        expect(loggerSpy.args[1][0]).to.be.eq(`Subscriptions: Unsubscribing ${subId2}, from ${JSON.stringify(tag2)}`);
+        expect(loggerSpy.getCall(0).args[0]).to.be.eq(`Subscriptions: Unsubscribing connection ${wsConnection.id} from subscription ${subId2}`);
+        expect(loggerSpy.getCall(1).args[0]).to.be.eq(`Subscriptions: Unsubscribing ${subId2}, from ${JSON.stringify(tag2)}`);
+    });
+
+    it('Unsubscribing without a valid subscription or ws conn should return true', async function () {
+        const wsConnection = new MockWsConnection("6");
+        const notRealSubId = "0x123456";
+
+        const status = subscriptionController.unsubscribe(wsConnection, notRealSubId);
+
+        expect(status).to.be.eq(true);
     });
 
 });
