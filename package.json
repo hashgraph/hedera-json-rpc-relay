@@ -12,7 +12,8 @@
         "ethereum-waffle": "^4.0.7",
         "nodemon": "^2.0.15",
         "nyc": "^15.1.0",
-        "prettier": "^2.5.1"
+        "prettier": "^2.5.1",
+        "replace": "^1.2.2"
     },
     "workspaces": {
         "packages": [
@@ -47,7 +48,8 @@
         "test": "npx lerna run test",
         "openrpctest": "ts-mocha packages/relay/tests/lib/openrpc.spec.ts --exit",
         "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts",
-        "check:node": "ts-node packages/server/tests/helpers/nodeCheck.ts"
+        "check:node": "ts-node packages/server/tests/helpers/nodeCheck.ts",
+        "bump-version": "SEM_VER=${npm_config_semver} SNAPSHOT=${npm_config_snapshot} node scripts/.bump-version.js"
     },
     "dependencies": {
         "@hashgraph/hedera-local": "^2.5.1",
