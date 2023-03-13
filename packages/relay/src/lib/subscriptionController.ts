@@ -128,7 +128,7 @@ export class SubscriptionController {
                         params: subscriptionData
                     }));
                 }
-            })
+            });
         }
     }
 }
