@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,6 +106,7 @@ describe("subscriptionController", async function() {
         const generatedId = subscriptionController.generateId();
 
         expect(generatedId).to.be.length(34);
+        expect(generatedId.substring(0,2)).to.be.eq("0x");
     });
 
     it('generatedId should be unique', async () => {
@@ -113,6 +114,8 @@ describe("subscriptionController", async function() {
         const generatedId2 = subscriptionController.generateId();
 
         expect(generatedId).not.to.be.eq(generatedId2);
+        expect(generatedId.substring(0,2)).to.be.eq("0x");
+        expect(generatedId2.substring(0,2)).to.be.eq("0x");
     });
 
     it('when subscribing should return subId and poller should add(tag)', async function () {
