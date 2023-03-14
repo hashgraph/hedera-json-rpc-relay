@@ -89,7 +89,8 @@ export class SDKClient {
      */
     private readonly hbarLimiter: HbarLimit;
 
-    private consensusNodeClientHistorgram;
+    private consensusNodeClientHistogramCost;
+    private consensusNodeClientHistogramGasFee;
     private operatorAccountGauge;
     private operatorAccountId;
 
@@ -108,11 +109,19 @@ export class SDKClient {
         this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
 
         // clear and create metrics in registry
-        const metricHistogramName = 'rpc_relay_consensusnode_response';
-        register.removeSingleMetric(metricHistogramName);
-        this.consensusNodeClientHistorgram = new Histogram({
-            name: metricHistogramName,
+        const metricHistogramCost = 'rpc_relay_consensusnode_response';
+        register.removeSingleMetric(metricHistogramCost);
+        this.consensusNodeClientHistogramCost = new Histogram({
+            name: metricHistogramCost,
             help: 'Relay consensusnode mode type status cost histogram',
+            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+            registers: [register]
+        });
+        const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
+        register.removeSingleMetric(metricHistogramGasFee);
+        this.consensusNodeClientHistogramGasFee = new Histogram({
+            name: metricHistogramGasFee,
+            help: 'Relay consensusnode mode type status gas fee histogram',
             labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
             registers: [register]
         });
@@ -227,7 +236,6 @@ export class SDKClient {
             ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
         } else {
             const fileId = await this.createFile(ethereumTransactionData.callData, this.clientMain, requestId);
-        
             if(!fileId) {
                 const requestIdPrefix = formatRequestIdMessage(requestId);
                 throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
@@ -333,6 +341,7 @@ export class SDKClient {
                 query.constructor.name,
                 Status.Success,
                 cost,
+                0,
                 callerName,
                 interactingEntity);
             return resp;
@@ -345,6 +354,7 @@ export class SDKClient {
                 query.constructor.name,
                 sdkClientError.status,
                 cost,
+                0,
                 callerName,
                 interactingEntity);
             this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${query._queryPayment}`);
@@ -391,18 +401,19 @@ export class SDKClient {
             if (sdkClientError.isValidNetworkError()) {
 
                 try {
-                    const transctionRecord = await new TransactionRecordQuery()
+                    const transactionRecord = await new TransactionRecordQuery()
                         .setTransactionId(transaction.transactionId!)
                         .setNodeAccountIds(transaction.nodeAccountIds!)
                         .setValidateReceiptStatus(false)
                         .execute(this.clientMain);
-                    transactionFee = transctionRecord.transactionFee;
+                    transactionFee = transactionRecord.transactionFee;
 
                     this.captureMetrics(
                         SDKClient.transactionMode,
                         transactionType,
                         sdkClientError.status,
                         transactionFee.toTinybars().toNumber(),
+                        transactionRecord?.contractFunctionResult?.gasUsed,
                         callerName,
                         interactingEntity);
 
@@ -442,6 +453,7 @@ export class SDKClient {
                 transactionName,
                 transactionRecord.receipt.status,
                 cost,
+                transactionRecord?.contractFunctionResult?.gasUsed,
                 callerName,
                 interactingEntity);
 
@@ -456,18 +468,19 @@ export class SDKClient {
             if (sdkClientError.isValidNetworkError()) {
                 try {
                     // pull transaction record for fee
-                    const transctionRecord = await new TransactionRecordQuery()
+                    const transactionRecord = await new TransactionRecordQuery()
                         .setTransactionId(resp.transactionId!)
                         .setNodeAccountIds([resp.nodeId])
                         .setValidateReceiptStatus(false)
                         .execute(this.clientMain);
-                    transactionFee = transctionRecord.transactionFee;
+                    transactionFee = transactionRecord.transactionFee;
 
                     this.captureMetrics(
                         SDKClient.transactionMode,
                         transactionName,
                         sdkClientError.status,
                         transactionFee.toTinybars().toNumber(),
+                        transactionRecord?.contractFunctionResult?.gasUsed,
                         callerName,
                         interactingEntity);
 
@@ -487,15 +500,23 @@ export class SDKClient {
         }
     };
 
-    private captureMetrics = (mode, type, status, cost, caller, interactingEntity) => {
+    private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
         const resolvedCost = cost ? cost : 0;
-        this.consensusNodeClientHistorgram.labels(
-            mode,
-            type,
-            status,
-            caller,
-            interactingEntity)
-            .observe(resolvedCost);
+        const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
+        this.consensusNodeClientHistogramCost.labels(
+          mode,
+          type,
+          status,
+          caller,
+          interactingEntity)
+          .observe(resolvedCost);
+        this.consensusNodeClientHistogramGasFee.labels(
+          mode,
+          type,
+          status,
+          caller,
+          interactingEntity)
+          .observe(resolvedGas);
     };
 
     /**

@@ -20,7 +20,7 @@
 
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import { RelayImpl } from '@hashgraph/json-rpc-relay';
+import { RelayImpl } from '../../../../packages/relay';
 
 import pino from 'pino';
 const logger = pino();

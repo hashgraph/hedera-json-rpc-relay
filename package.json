@@ -12,7 +12,8 @@
         "ethereum-waffle": "^4.0.7",
         "nodemon": "^2.0.15",
         "nyc": "^15.1.0",
-        "prettier": "^2.5.1"
+        "prettier": "^2.5.1",
+        "replace": "^1.2.2"
     },
     "workspaces": {
         "packages": [
@@ -30,6 +31,7 @@
         "acceptancetest:tokenmanagement": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokenmanagement' --exit",
         "acceptancetest:htsprecompilev1": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompilev1' --exit",
         "acceptancetest:release": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit",
+        "acceptancetest:ws": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@web-socket' --exit",
         "build": "npx lerna run build",
         "build-and-test": "npx lerna run build && npx lerna run test",
         "build:docker": "docker build . -t ${npm_package_name}",
@@ -41,18 +43,21 @@
         "setup": "npx lerna bootstrap --hoist",
         "lint": "npx lerna run lint",
         "start": "npx lerna exec --scope @hashgraph/json-rpc-server -- npm run start",
+        "start:ws": "npx lerna exec --scope @hashgraph/json-rpc-ws-server -- npm run start",
         "start:docker": "docker run --name hedera-relay -d -p 7546:7546 ${npm_package_name}:latest",
         "test": "npx lerna run test",
         "openrpctest": "ts-mocha packages/relay/tests/lib/openrpc.spec.ts --exit",
         "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts",
-        "check:node": "ts-node packages/server/tests/helpers/nodeCheck.ts"
+        "check:node": "ts-node packages/server/tests/helpers/nodeCheck.ts",
+        "bump-version": "SEM_VER=${npm_config_semver} SNAPSHOT=${npm_config_snapshot} node scripts/.bump-version.js"
     },
     "dependencies": {
-        "@hashgraph/hedera-local": "^2.5.0",
+        "@hashgraph/hedera-local": "^2.5.1",
         "@open-rpc/schema-utils-js": "^1.16.1",
         "@types/find-config": "^1.0.1",
         "keyv-file": "^0.2.0",
         "koa-cors": "^0.0.16",
+        "koa-websocket": "^7.0.0",
         "lerna": "^6.0.3",
         "pino": "^7.11.0",
         "pino-pretty": "^7.6.1",

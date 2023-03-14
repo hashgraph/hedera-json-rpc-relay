@@ -68,45 +68,20 @@ The relay has a suite of acceptance tests that may be run to confirm E2E operati
 
 #### Configuration
 
+The JSON RPC Relay offers multiple environment variable configuration porperties to configure the relay for appropriate use.
+More details can be found at [Configuration](/docs/configuration.md)
 As in the case of a fully deployed relay the acceptance tests utilize the `.env` file. See the [Configuration](#configuration) for setup details.
 
-For test context additional fields need to be set. The following example showcases a `hedera-local-node` instance (where values match those noted on [Local Node Network Variables](https://github.com/hashgraph/hedera-local-node#network-variables)
+Note: Read more about `DEV_MODE` which provides optimal local and developer testing configurations [here](docs/dev-mode.md)
 
-```.env
-HEDERA_NETWORK={"127.0.0.1:50211":"0.0.3"}
-OPERATOR_ID_MAIN=0.0.2
-OPERATOR_KEY_MAIN=302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137
-CHAIN_ID=0x12a
-MIRROR_NODE_URL=http://127.0.0.1:5551
-LOCAL_NODE=true
-SERVER_PORT=7546
-E2E_RELAY_HOST=http://127.0.0.1:7546
-DEFAULT_RATE_LIMIT: 200
-TIER_1_RATE_LIMIT: 100
-TIER_2_RATE_LIMIT: 800
-TIER_3_RATE_LIMIT: 1600
-LIMIT_DURATION = 60000
-HBAR_RATE_LIMIT_TINYBAR = 6000000000
-HBAR_RATE_LIMIT_DURATION = 60000
-RATE_LIMIT_DISABLED = false
-DEV_MODE = false
-GAS_PRICE_TINY_BAR_BUFFER = 10000000000
-MIRROR_NODE_RETRIES = 3
-MIRROR_NODE_RETRY_DELAY = 500
-MIRROR_NODE_LIMIT_PARAM = 100
-INPUT_SIZE_LIMIT = 1
-ETH_CALL_CACHE_TTL = 200
-CONSENSUS_MAX_EXECUTION_TIME = 10000
-````
-
-Note: Read more about `DEV_MODE` [here](docs/dev-mode.md)
 The following table highlights some initial configuration values to consider
 
 | Config     | Default | Description                                                                                                                                                                      |
 | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CHAIN_ID` | `0x12a` | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively |
+| `HEDERA_NETWORK` | `` | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER` |
+| `MIRROR_NODE_URL` | `` | The Mirror Node API endpoint. Official endpoints are Previewnet (https://previewnet.mirrornode.hedera.com/v1/api), Testnet (https://testnet.mirrornode.hedera.com/v1/api), Mainnet (https://mainnet-public.mirrornode.hedera.com/v1/api). See [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api) |
 
-> **_NOTE:_** Acceptance tests can be pointed at a remote location. In this case be sure to appropriately update these values to point away from your local host and to valid deployed services.
 
 #### Run
 
@@ -121,6 +96,13 @@ npm run acceptancetest
 The Relay supports Docker image building and Docker Compose container management using the provided [Dockerfile](Dockerfile) and [docker-compose](docker-compose.yml) files.
 
 > **_NOTE:_** docker compose is for development purposes only.
+
+### Bumping version
+In order to bump version for all packages and files altogether there is an npm task called 'bump-version' that needs a parameter called `semver` and optional parameter `snapshot` with the version to bump and boolean respectively:
+```
+npm run bump-version --semver=0.21.0-rc1 --snapshot=true
+```
+`snapshot` parameter is `false` by default.
 
 ### Image Build (optional)
 

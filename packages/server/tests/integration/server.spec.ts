@@ -84,7 +84,7 @@ describe('RPC Server', async function() {
         'id': '2',
         'jsonrpc': '2.0',
         'method': 'eth_getTransactionByHash',
-        'params': ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392']
+        'params': ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7237170ae5e5e7957eb6392']
       });
       Assertions.expectedError();
     } catch (error) {
