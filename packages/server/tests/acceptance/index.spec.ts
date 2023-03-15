@@ -154,6 +154,7 @@ describe('RPC Server Acceptance Tests', function () {
 
         if (process.env.TEST_WS_SERVER === 'true') {
             socketServer = wsApp.listen({port: process.env.WEB_SOCKET_PORT || 8546});
+            global.socketServer = socketServer;   
         }
     }
 
