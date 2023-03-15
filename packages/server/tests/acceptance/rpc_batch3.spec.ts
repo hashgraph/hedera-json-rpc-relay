@@ -345,10 +345,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                             data: '0x3ec4de350000000000000000000000000000000000000000000000000000000000000005'
                         };
 
-                        console.log("~~~~~~~~~~~~~~~~~~~");
-                        console.log(callData);
-                        console.log("~~~~~~~~~~~~~~~~~~~");
-
                         const res = await relay.call('eth_call', [callData, 'latest'], requestId);
                         expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000000');
                     });
@@ -417,7 +413,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             }, requestId);
         });
 
-        it.only('Returns revert message for view methods', async () => {
+        it('Returns revert message for view methods', async () => {
             const callData = {
                 from: '0x' + accounts[0].address,
                 to: reverterEvmAddress,
