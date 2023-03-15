@@ -65,16 +65,16 @@ const decodeErrorMessage = (message?: string): string => {
 
 
 const encodeErrorMessage = (message?: string, signature?: string): string => {
-    const offsetBites = 32;
+    if (!signature) signature = 'Error(string)';
+    let sig = createHash('keccak256').update(signature).digest('hex').substring(0, 8);
 
+    const offsetBites = 32;
     let dataOffset = '';
     let dataLength = '';
     let data = '';
-    let sig = '';
 
     if (message?.length) {
         if (!signature) signature = 'Error(string)';
-
         sig = createHash('keccak256').update(signature).digest('hex').substring(0, 8);
         dataOffset = Number(offsetBites).toString(16).padStart(64, '0');
         dataLength = Number(message.length).toString(16).padStart(64, '0');
