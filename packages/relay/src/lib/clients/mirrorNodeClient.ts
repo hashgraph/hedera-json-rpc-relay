@@ -240,7 +240,7 @@ export class MirrorNodeClient {
 
         this.logger.error(new Error(error.message), `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
 
-        const mirrorError = new MirrorNodeClientError(error.message, effectiveStatusCode);
+        const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
 
         if (mirrorError.isContractReverted()) {
             throw predefined.CONTRACT_REVERT(mirrorError.errorMessage);

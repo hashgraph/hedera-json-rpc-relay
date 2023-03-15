@@ -19,6 +19,7 @@
  */
 
 import constants from "./lib/constants";
+const createHash = require('keccak');
 
 const hashNumber = (num) => {
   return '0x' + num.toString(16);
@@ -40,6 +41,14 @@ function hexToASCII(str: string): string {
     return ascii;
 }
 
+function ASCIIToHex(str: string): string {
+    let hex = '';
+    for(let n = 0; n < str.length; n++) {
+        hex += str.charCodeAt(n).toString(16);
+    }
+    return hex;
+}
+
 /**
  * Converts an EVM ErrorMessage to a readable form. For example this :
  * 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000
@@ -54,4 +63,28 @@ const decodeErrorMessage = (message?: string): string => {
     return hexToASCII(resultCodeHex);
 };
 
-export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage };
+
+const encodeErrorMessage = (message?: string, signature?: string): string => {
+    const offsetBites = 32;
+
+    let dataOffset = '';
+    let dataLength = '';
+    let data = '';
+    let sig = '';
+
+    if (message?.length) {
+        if (!signature) signature = 'Error(string)';
+
+        sig = createHash('keccak256').update(signature).digest('hex').substring(0, 8);
+        dataOffset = Number(offsetBites).toString(16).padStart(64, '0');
+        dataLength = Number(message.length).toString(16).padStart(64, '0');
+
+        data = ASCIIToHex(message).padEnd(64, '0');
+    }
+
+
+    return `0x${sig}${dataOffset}${dataLength}${data}`;
+};
+
+
+export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, encodeErrorMessage };

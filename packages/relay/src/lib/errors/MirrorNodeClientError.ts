@@ -19,6 +19,8 @@
  *
  */
 
+import {encodeErrorMessage} from "../../formatters";
+
 export class MirrorNodeClientError extends Error {
     public statusCode: number;
     public errorMessage?: string;
@@ -34,10 +36,19 @@ export class MirrorNodeClientError extends Error {
       NOT_FOUND: 404
     };
 
-    constructor(message: string, statusCode: number) {
-      super(message);
-      this.statusCode = statusCode;
+    constructor(error: any, statusCode: number) {
+      if (error.response?.data?._status?.messages?.length) {
+          const msg = error.response.data._status.messages[0];
+          const {message, detail, data} = msg;
+          super(message);
 
+          this.errorMessage = encodeErrorMessage(detail, data);
+      }
+      else {
+          super(error.message);
+      }
+
+      this.statusCode = statusCode;
       Object.setPrototypeOf(this, MirrorNodeClientError.prototype);
     }
 
