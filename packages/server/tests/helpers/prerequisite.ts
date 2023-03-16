@@ -21,7 +21,7 @@ const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
     shell.exec(`npm install @hashgraph/hedera-local -g`);
 
     console.log('Starting local node...');
-    shell.exec(`hedera start -d --turbo`);
+    shell.exec(`hedera start -d`);
     console.log('Hedera Hashgraph local node env started');
   }
 
