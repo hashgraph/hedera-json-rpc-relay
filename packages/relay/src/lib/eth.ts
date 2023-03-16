@@ -979,6 +979,19 @@ export class EthImpl implements Eth {
       throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
 
+    // If "From" is distinct from blank, we check is a valid account
+    if(call.from) {
+      const validFromAccount = await this.mirrorNodeClient.resolveEntityType(call.from, requestId, [constants.TYPE_ACCOUNT]);
+      if (!validFromAccount) {
+        throw predefined.NON_EXISTING_ACCOUNT(call.from);
+      }
+    }
+    // Check "To" is a valid Contract or HTS Address
+    const validToContractOrHTS = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT]);
+    if(!validToContractOrHTS) {
+      throw predefined.NON_EXISTING_CONTRACT(call.to);
+    }
+
     try {
       // Get a reasonable value for "gas" if it is not specified.
       let gas = Number(call.gas) || 400_000;

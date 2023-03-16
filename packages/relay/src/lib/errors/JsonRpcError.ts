@@ -171,7 +171,31 @@ export const predefined = {
       name: 'Invalid Contract Address',
       code: -32012,
       message: message
-    })
+    });
+  },
+  'NON_EXISTING_CONTRACT':  (address) => {
+    let message = `Non Existing Contract Address: ${address}.`;
+    if (address && address.length) {
+      message = `${message} Expected a Contract or Token Address.`;
+    }
+
+    return new JsonRpcError({
+      name: 'Non Existing Contract Address',
+      code: -32013,
+      message: message
+    });
+  },
+  'NON_EXISTING_ACCOUNT':  (address) => {
+    let message = `Non Existing Account Address: ${address}.`;
+    if (address && address.length) {
+      message = `${message} Expected an Account Address.`;
+    }
+
+    return new JsonRpcError({
+      name: 'Not an Account Address',
+      code: -32014,
+      message: message
+    });
   },
   'COULD_NOT_ESTIMATE_GAS_PRICE': new JsonRpcError({
     name: 'Could not estimate gas price',
