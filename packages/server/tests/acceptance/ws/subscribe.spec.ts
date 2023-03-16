@@ -89,7 +89,6 @@ describe('@web-socket Acceptance Tests', async function() {
         requestId = Utils.generateRequestId();
         // Stabilizes the initial connection test.
         await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log("----------------------");
     });
 
     this.afterEach(async () => {
