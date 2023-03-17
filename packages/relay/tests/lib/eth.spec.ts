@@ -145,6 +145,7 @@ describe('Eth calls using MirrorNode', async function () {
   const gasUsedRatio = 0.5;
   const deployedBytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
   const mirrorNodeDeployedBytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100321234';
+  const accountAddress1 = '0x13212A14deaf2775a5b3bEcC857806D5c719d3f2';
 
   const defaultBlock = {
     'count': blockTransactionCount,
@@ -402,7 +403,7 @@ describe('Eth calls using MirrorNode', async function () {
         'value': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
       }
     ]
-  }
+  };
 
   const defaultDetailedContractResults2 = {
     ...defaultDetailedContractResults, ...{
@@ -494,7 +495,7 @@ describe('Eth calls using MirrorNode', async function () {
     ...defaultContract,
     "address": contractAddress2,
     "contract_id": contractId2,
-  }
+  };
 
   const defaultHTSToken =
     {
@@ -561,7 +562,7 @@ describe('Eth calls using MirrorNode', async function () {
           }
         ]
       }
-    }
+    };
 
 
   this.afterEach(() => {
@@ -1252,7 +1253,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('should return balance from mirror node with block number passed as param the same as latest', async () => {
-      const blockNumber = "0x2710"
+      const blockNumber = "0x2710";
       restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
         blocks: [{
           number: 10000
@@ -1270,7 +1271,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('should return balance from mirror node with block number passed as param, one behind latest', async () => {
-      const blockNumber = "0x270F"
+      const blockNumber = "0x270F";
       restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
         blocks: [{
           number: 10000
@@ -1452,7 +1453,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x((balance3) * constants.TINYBAR_TO_WEIBAR_COEF)
+        const historicalBalance = EthImpl.numberTo0x((balance3) * constants.TINYBAR_TO_WEIBAR_COEF);
         expect(resBalance).to.equal(historicalBalance);
       });
 
@@ -1471,7 +1472,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x((balance3 - 175) * constants.TINYBAR_TO_WEIBAR_COEF)
+        const historicalBalance = EthImpl.numberTo0x((balance3 - 175) * constants.TINYBAR_TO_WEIBAR_COEF);
         expect(resBalance).to.equal(historicalBalance);
       });
 
@@ -1485,7 +1486,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x((balance3 + 175) * constants.TINYBAR_TO_WEIBAR_COEF)
+        const historicalBalance = EthImpl.numberTo0x((balance3 + 175) * constants.TINYBAR_TO_WEIBAR_COEF);
         expect(resBalance).to.equal(historicalBalance);
       });
 
@@ -1500,7 +1501,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF)
+        const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF);
         expect(resBalance).to.equal(historicalBalance);
       });
 
@@ -1526,7 +1527,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF)
+        const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF);
         expect(resBalance).to.equal(historicalBalance);
       });
 
@@ -1715,7 +1716,7 @@ describe('Eth calls using MirrorNode', async function () {
           {...defaultLogs.logs[2], address: "0x0000000000000000000000000000000002131953"},
           {...defaultLogs.logs[3], address: "0x0000000000000000000000000000000002131954"}
         ]
-      }
+      };
       const filteredLogs = {
         logs: [
           {...defaultLogs.logs[0], address: "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69"},
@@ -2006,7 +2007,7 @@ describe('Eth calls using MirrorNode', async function () {
       const result = await ethImpl.getLogs(null, null, null, null, defaultNullLogTopics);
 
       expect(result).to.exist;
-      expect(result[0].topics.length).to.eq(defaultLogs4[0].topics.length)
+      expect(result[0].topics.length).to.eq(defaultLogs4[0].topics.length);
       for (let index = 0; index < result[0].topics.length; index++) {
         expect(result[0].topics[index]).to.eq(defaultLogs4[0].topics[index]);
       }
@@ -2158,7 +2159,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     restMock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [{...defaultBlock, number: 10}]});
     restMock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultNetworkFees);
-    Array.from(Array(11).keys()).map(blockNumber => restMock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, number: blockNumber}))
+    Array.from(Array(11).keys()).map(blockNumber => restMock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, number: blockNumber}));
 
     const feeHistory = await ethImpl.feeHistory(200, '0x9', [0]);
 
@@ -2376,9 +2377,16 @@ describe('Eth calls using MirrorNode', async function () {
 
     after(() => {
       process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
-    })
+    });
 
     it('eth_call with no gas', async function () {
+      restMock.onGet(`contracts/${accountAddress1}`).reply(404);
+      restMock.onGet(`accounts/${accountAddress1}`).reply(200, {
+        account: "0.0.1723",
+        evm_address: accountAddress1
+      });
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+
       sdkClientStub.submitContractCallQuery.returns({
             asBytes: function () {
               return Uint8Array.of(0);
@@ -2387,12 +2395,12 @@ describe('Eth calls using MirrorNode', async function () {
       );
 
       const result = await ethImpl.call({
-        "from": contractAddress1,
+        "from": accountAddress1,
         "to": contractAddress2,
         "data": contractCallData,
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 400_000, contractAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 400_000, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
@@ -2405,12 +2413,12 @@ describe('Eth calls using MirrorNode', async function () {
       );
 
       const result = await ethImpl.call({
-        "from": contractAddress1,
+        "from": accountAddress1,
         "to": contractAddress2,
         "gas": maxGasLimitHex
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, undefined, maxGasLimit, contractAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, undefined, maxGasLimit, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
@@ -2441,13 +2449,13 @@ describe('Eth calls using MirrorNode', async function () {
       );
 
       const result = await ethImpl.call({
-        "from": contractAddress1,
+        "from": accountAddress1,
         "to": contractAddress2,
         "data": contractCallData,
         "gas": maxGasLimitHex
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, contractAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
@@ -2462,7 +2470,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       for (let index = 0; index < 3; index++) {
         const result = await ethImpl.call({
-          "from": contractAddress1,
+          "from": accountAddress1,
           "to": contractAddress2,
           "data": contractCallData,
           "gas": maxGasLimitHex
@@ -2475,7 +2483,7 @@ describe('Eth calls using MirrorNode', async function () {
       await new Promise(r => setTimeout(r, 200));
       try {
         await ethImpl.call({
-          "from": contractAddress1,
+          "from": accountAddress1,
           "to": contractAddress2,
           "data": contractCallData,
           "gas": maxGasLimitHex
@@ -2497,13 +2505,13 @@ describe('Eth calls using MirrorNode', async function () {
         );
 
         const result = await ethImpl.call({
-          "from": contractAddress1,
+          "from": accountAddress1,
           "to": contractAddress2,
           "data": contractCallData,
           "gas": 50_000_000
         }, 'latest');
 
-        sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 15_000_000, contractAddress1, 'eth_call');
+        sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
         expect(result).to.equal("0x00");
       });
     });
@@ -2512,7 +2520,7 @@ describe('Eth calls using MirrorNode', async function () {
       sdkClientStub.submitContractCallQuery.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
 
       const result = await ethImpl.call({
-        "from": contractAddress1,
+        "from": accountAddress1,
         "to": contractAddress2,
         "data": contractCallData,
         "gas": maxGasLimitHex
@@ -2555,7 +2563,7 @@ describe('Eth calls using MirrorNode', async function () {
     const defaultCallData = {
       "gas": 400000,
       "value": null
-    }
+    };
     let initialEthCallConesneusFF;
 
     before(() => {
@@ -2565,17 +2573,17 @@ describe('Eth calls using MirrorNode', async function () {
 
     after(() => {
       process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
-    })
+    });
 
     //temporary workaround until precompiles are implemented in Mirror node evm module
     beforeEach(() => {
       restMock.onGet(`tokens/${defaultContractResults.results[1].contract_id}`).reply(404, null);
-    })
+    });
 
     it('eth_call with no gas', async function () {
       const callData = {
         ...defaultCallData,
-        "from": contractAddress1,
+        "from": accountAddress1,
         "to": contractAddress2,
         "data": contractCallData
       };
@@ -2588,7 +2596,7 @@ describe('Eth calls using MirrorNode', async function () {
     it('eth_call with no data', async function () {
       const callData = {
         ...defaultCallData,
-        "from": contractAddress1,
+        "from": accountAddress1,
         "to": contractAddress2,
         "gas": maxGasLimit
       };
@@ -2613,7 +2621,7 @@ describe('Eth calls using MirrorNode', async function () {
     it('eth_call with all fields', async function () {
       const callData = {
         ...defaultCallData,
-        "from": contractAddress1,
+        "from": accountAddress1,
         "to": contractAddress2,
         "data": contractCallData,
         "gas": maxGasLimit
@@ -2626,7 +2634,7 @@ describe('Eth calls using MirrorNode', async function () {
     it('caps gas at 15_000_000', async function () {
       const callData = {
         ...defaultCallData,
-        "from": contractAddress1,
+        "from": accountAddress1,
         "to": contractAddress2,
         "data": contractCallData,
         "gas": 50_000_000
@@ -2639,7 +2647,7 @@ describe('Eth calls using MirrorNode', async function () {
     it('SDK returns a precheck error', async function () {
       const callData = {
         ...defaultCallData,
-        "from": contractAddress1,
+        "from": accountAddress1,
         "to": contractAddress2,
         "data": contractCallData,
         "gas": maxGasLimit
@@ -2786,7 +2794,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_getStorageAt should return EthImpl.zeroHex32Byte when state_changes is null', async function () {
-      defaultDetailedContractResultsNullStateChange
+      defaultDetailedContractResultsNullStateChange;
       restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
       restMock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
       restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsNullStateChange);
@@ -2795,7 +2803,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_getStorageAt should return EthImpl.zeroHex32Byte when state_changes is an empty array', async function () {
-      defaultDetailedContractResultsNullStateChange
+      defaultDetailedContractResultsNullStateChange;
       restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
       restMock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
       restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsEmptyArrayStateChange);

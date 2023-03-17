@@ -981,14 +981,14 @@ export class EthImpl implements Eth {
 
     // If "From" is distinct from blank, we check is a valid account
     if(call.from) {
-      const validFromAccount = await this.mirrorNodeClient.resolveEntityType(call.from, requestId, [constants.TYPE_ACCOUNT]);
-      if (!validFromAccount) {
+      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, requestId, [constants.TYPE_ACCOUNT]);
+      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
         throw predefined.NON_EXISTING_ACCOUNT(call.from);
       }
     }
     // Check "To" is a valid Contract or HTS Address
-    const validToContractOrHTS = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT]);
-    if(!validToContractOrHTS) {
+    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT]);
+    if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
       throw predefined.NON_EXISTING_CONTRACT(call.to);
     }
 
@@ -1015,7 +1015,7 @@ export class EthImpl implements Eth {
       if (process.env.ETH_CALL_CONSENSUS == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
-        if (!isHts) {
+        if (!(isHts?.type === constants.TYPE_TOKEN)) {
           const callData = {
             ...call,
             gas,

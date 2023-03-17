@@ -157,7 +157,7 @@ describe("Open RPC Specification", function () {
         }
 
         expect(ajv.errors).to.be.null;
-    }
+    };
 
     it(`validates the openrpc document`, async () => {
         const rpcDocument = await parseOpenRPCDocument(JSON.stringify(openRpcSchema));
@@ -181,6 +181,13 @@ describe("Open RPC Specification", function () {
     it('should execute "eth_call" against mirror node', async function () {
         let initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
         process.env.ETH_CALL_CONSENSUS = 'false';
+        mock.onGet(`contracts/${defaultCallData.from}`).reply(404);
+        mock.onGet(`accounts/${defaultCallData.from}`).reply(200, {
+            account: "0.0.1723",
+            evm_address: defaultCallData.from
+        });
+        mock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);
+
         const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
         validateResponseSchema(methodsResponseSchema.eth_call, response);
         process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
@@ -189,8 +196,15 @@ describe("Open RPC Specification", function () {
     it('should execute "eth_call" against consensus node', async function () {
         let initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
         process.env.ETH_CALL_CONSENSUS = 'true';
+        mock.onGet(`contracts/${defaultCallData.from}`).reply(404);
+        mock.onGet(`accounts/${defaultCallData.from}`).reply(200, {
+            account: "0.0.1723",
+            evm_address: defaultCallData.from
+        });
+        mock.onGet(`contracts/${defaultTransaction.to}`).reply(200, defaultContract);
+
         sdkClientStub.submitContractCallQuery.returns({ asBytes: () => Buffer.from('12') });
-        const response = await ethImpl.call(defaultTransaction, 'latest')
+        const response = await ethImpl.call(defaultTransaction, 'latest');
         process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
     });
 
@@ -450,13 +464,13 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "net_version"', function () {
-        const response = Relay.net().version()
+        const response = Relay.net().version();
 
         validateResponseSchema(methodsResponseSchema.net_version, response);
     });
 
     it('should execute "web3_clientVersion"', function () {
-        const response = Relay.web3().clientVersion()
+        const response = Relay.web3().clientVersion();
 
         validateResponseSchema(methodsResponseSchema.web3_clientVersion, response);
     });
