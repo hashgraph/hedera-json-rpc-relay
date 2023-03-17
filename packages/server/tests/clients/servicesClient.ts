@@ -41,7 +41,10 @@ import {
     TransactionId,
     AccountAllowanceApproveTransaction,
     AccountBalance,
-    FileContentsQuery
+    FileContentsQuery,
+    TokenType,
+    TokenSupplyType,
+    TokenMintTransaction
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
@@ -318,6 +321,18 @@ export default class ServicesClient {
         return ethers.BigNumber.from(balance.hbars.toTinybars().toString()).mul(ServicesClient.TINYBAR_TO_WEIBAR_COEF);
     }
 
+    getClient() {
+        let network = this.network;
+        try {
+            network = JSON.parse(this.network);
+        }
+        catch(e) {
+            // network config is a string and not a valid JSON
+        }
+
+        return Client.forNetwork(network);
+    }
+
     async createHTS( args = {
         tokenName: 'Default Name',
         symbol: 'HTS',
@@ -330,15 +345,7 @@ export default class ServicesClient {
         const expiration = new Date();
         expiration.setDate(expiration.getDate() + 30);
 
-        let network = this.network;
-        try {
-            network = JSON.parse(this.network);
-        }
-        catch(e) {
-            // network config is a string and not a valid JSON
-        }
-
-        const htsClient = Client.forNetwork(network);
+        const htsClient = this.getClient();
         htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
 
         const tokenCreate = await (await new TokenCreateTransaction()
@@ -350,9 +357,66 @@ export default class ServicesClient {
             .setInitialSupply(args.initialSupply)
             .setTransactionId(TransactionId.generate(AccountId.fromString(args.treasuryAccountId)))
             .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]]))
+            .setFreezeKey(args.adminPrivateKey)
             .execute(htsClient);
 
         const receipt = await tokenCreate.getReceipt(this.client);
+        return {
+            client: htsClient,
+            receipt
+        };
+    }
+
+    async createNFT(args = {
+        tokenName: 'Default Name',
+        symbol: 'HTS',
+        treasuryAccountId: '0.0.2',
+        maxSupply: 5000,
+        adminPrivateKey: this.DEFAULT_KEY,
+    }) {
+        const {} = args;
+
+        const htsClient = this.getClient();
+        htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
+
+        let nftCreate = await (await new TokenCreateTransaction()
+            .setTokenName(args.tokenName)
+            .setTokenSymbol(args.symbol)
+            .setTokenType(TokenType.NonFungibleUnique)
+            .setDecimals(0)
+            .setInitialSupply(0)
+            .setTreasuryAccountId(AccountId.fromString(args.treasuryAccountId))
+            .setSupplyType(TokenSupplyType.Finite)
+            .setMaxSupply(args.maxSupply)
+            .setSupplyKey(args.adminPrivateKey)
+            .setTransactionId(TransactionId.generate(AccountId.fromString(args.treasuryAccountId)))
+            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]]))
+            .execute(htsClient);
+
+
+        const receipt = await nftCreate.getReceipt(this.client);
+        return {
+            client: htsClient,
+            receipt
+        };
+    }
+
+    async mintNFT(args = {
+        tokenId: '0.0.1000',
+        metadata: "abcde",
+        treasuryAccountId: '0.0.2',
+        adminPrivateKey: this.DEFAULT_KEY
+    }) {
+        const htsClient = this.getClient();
+        htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
+
+        // Mint new NFT
+        let mintTx = await (await new TokenMintTransaction()
+            .setTokenId(args.tokenId)
+            .setMetadata([Buffer.from(args.metadata)]))
+            .execute(htsClient);
+
+        const receipt = await mintTx.getReceipt(this.client);
         return {
             client: htsClient,
             receipt
