@@ -29,11 +29,10 @@ import bodyParser from "koa-bodyparser";
 const {ethers} = require('ethers');
 
 const FOUR_TWENTY_NINE_RESPONSE = 'Unexpected server response: 429';
+const WS_RELAY_URL = `ws://localhost:${process.env.WEB_SOCKET_PORT}`;
 
 const establishConnection = async () => {
-        const provider = await new ethers.providers.WebSocketProvider(
-            `ws://localhost:${process.env.WEB_SOCKET_PORT}`
-        );
+        const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
         await provider.send('eth_chainId');
 }; 
 
@@ -82,9 +81,7 @@ describe('@web-socket Acceptance Tests', async function() {
         const { socketServer } = global;
         server = socketServer;
         
-        wsProvider = await new ethers.providers.WebSocketProvider(
-            `ws://localhost:${process.env.WEB_SOCKET_PORT}`
-        );
+        wsProvider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
 
         requestId = Utils.generateRequestId();
         // Stabilizes the initial connection test.
@@ -110,7 +107,7 @@ describe('@web-socket Acceptance Tests', async function() {
         it('Establishes multiple connections', async function() {
 
             const secondProvider = new ethers.providers.WebSocketProvider(
-                    `ws://localhost:${process.env.WEB_SOCKET_PORT}`
+                   WS_RELAY_URL
             );
 
             const response = await secondProvider.send('eth_chainId');

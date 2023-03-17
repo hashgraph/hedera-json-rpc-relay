@@ -111,7 +111,6 @@ app.ws.use((ctx) => {
     ctx.websocket.on('error', console.error);
 
     ctx.websocket.on('close', function () {
-        connectedClients--;
         relay.subs()?.unsubscribe(ctx.websocket);
         console.log('stopping client interval');
     });
