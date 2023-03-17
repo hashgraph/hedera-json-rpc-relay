@@ -192,7 +192,7 @@ export const predefined = {
     }
 
     return new JsonRpcError({
-      name: 'Not an Account Address',
+      name: 'Non Existing Account Address',
       code: -32014,
       message: message
     });
