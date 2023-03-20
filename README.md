@@ -60,7 +60,7 @@ test:
   enabled: true
   schedule: '@daily' #How often to run the Postman test
   baseUrl: "http://127.0.0.1:7546" # Relay URL to run the test against
-
+````
 
 ### Acceptance Tests
 
