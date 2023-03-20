@@ -621,7 +621,7 @@ export class EthImpl implements Eth {
 
     let blockNumber = null;
     let balanceFound = false;
-    let weibars: BigNumber | number = 0;
+    let weibars: BigInt = BigInt(0);
     const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
 
     try {
@@ -665,7 +665,7 @@ export class EthImpl implements Eth {
                 }
 
                 balanceFound = true;
-                weibars = (currentBalance - balanceFromTxs) * constants.TINYBAR_TO_WEIBAR_COEF;
+                weibars = BigInt(currentBalance - balanceFromTxs) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
               }
 
               // The block is NOT from the last 15 minutes, use /balances rest API
@@ -673,7 +673,7 @@ export class EthImpl implements Eth {
                 const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(mirrorAccount.account, block.timestamp.from, requestId);
                 balanceFound = true;
                 if (balance.balances?.length) {
-                  weibars = balance.balances[0].balance * constants.TINYBAR_TO_WEIBAR_COEF;
+                  weibars = BigInt(balance.balances[0].balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
                 }
               }
             }
@@ -683,7 +683,7 @@ export class EthImpl implements Eth {
 
       if (!balanceFound && mirrorAccount?.balance) {
         balanceFound = true;
-        weibars = mirrorAccount.balance.balance * constants.TINYBAR_TO_WEIBAR_COEF;
+        weibars = BigInt(mirrorAccount.balance.balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
       }
 
       if (!balanceFound) {
@@ -1192,7 +1192,7 @@ export class EthImpl implements Eth {
     return input.startsWith(EthImpl.emptyHex) ? input : EthImpl.emptyHex + input;
   }
 
-  static numberTo0x(input: number | BigNumber): string {
+  static numberTo0x(input: number | BigNumber | BigInt): string {
     return EthImpl.emptyHex + input.toString(16);
   }
 
