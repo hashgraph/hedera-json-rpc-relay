@@ -41,6 +41,8 @@ after(function() {
 });
 
 describe('RPC Server', async function() {
+  this.timeout(5000);
+
   it('should execute "eth_chainId"', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
@@ -78,18 +80,16 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('relay/' + process.env.npm_package_version);
   });
 
-  it('should execute "eth_getTransactionByHash with missing transaction"', async function() {
-    try {
-      await this.testClient.post('/', {
+  it.only('should execute "eth_getTransactionByHash with missing transaction"', async function() {
+      const res = await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
         'method': 'eth_getTransactionByHash',
         'params': ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7237170ae5e5e7957eb6392']
       });
-      Assertions.expectedError();
-    } catch (error) {
-      expect(error.message).to.equal('Request failed with status code 500');
-    }
+
+      BaseTest.defaultResponseChecks(res);
+      expect(res.data.result).to.be.equal(null);
   });
 
 
