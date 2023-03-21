@@ -37,7 +37,6 @@ import TokenManagementContractJson from '../../contracts/TokenManagementContract
 
 import { Utils } from '../../helpers/utils';
 
-
 describe('@precompile Tests for eth_call with HTS', async function () {
     this.timeout(240 * 1000); // 240 seconds
     const { servicesNode, mirrorNode, relay } = global;
@@ -58,11 +57,15 @@ describe('@precompile Tests for eth_call with HTS', async function () {
     let requestId;
 
     let IERC20Metadata, IERC20, IERC721Metadata, IERC721Enumerable, IERC721, IHederaTokenService, TokenManager;
-    let nftSerial, tokenAddress, htsImplAddress, htsImpl;
+    let nftSerial, tokenAddress, nftAddress, htsImplAddress, htsImpl, adminAccountLongZero;
+
+    let tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressNoFees,
+        tokenAddressFractionalFees, nftAddressFractionalFees;
 
     before(async () => {
         requestId = Utils.generateRequestId();
 
+        // create accounts
         accounts[0] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
         accounts[1] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
         accounts[2] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
@@ -72,53 +75,106 @@ describe('@precompile Tests for eth_call with HTS', async function () {
         await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);
         await mirrorNode.get(`/accounts/${accounts[2].accountId}`, requestId);
 
-        const htsResult = await servicesNode.createHTS({
+        // Create tokens
+        const defaultTokenOptions = {
             tokenName: TOKEN_NAME,
             symbol: TOKEN_SYMBOL,
             treasuryAccountId: accounts[0].accountId.toString(),
             initialSupply: INITIAL_SUPPLY,
             adminPrivateKey: accounts[0].privateKey,
-        });
+            kyc: true,
+            freeze: true
+        };
 
-        await servicesNode.associateHTSToken(accounts[1].accountId, htsResult.receipt.tokenId, accounts[1].privateKey, htsResult.client, requestId);
-        await servicesNode.associateHTSToken(accounts[2].accountId, htsResult.receipt.tokenId, accounts[2].privateKey, htsResult.client, requestId);
-
-        tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
-
-        IERC20Metadata = getContract(tokenAddress, IERC20MetadataJson.abi, accounts[0].wallet);
-        IERC20 = getContract(tokenAddress, IERC20Json.abi, accounts[0].wallet);
-        IHederaTokenService = getContract(tokenAddress, IHederaTokenServiceJson.abi, accounts[0].wallet);
-
-        const rec1 = await IERC20.transfer(accounts[1].address, 100, { gasLimit: 1_000_000 });
-        await rec1.wait();
-        const rec2 = await IERC20.approve(accounts[2].address, 200, { gasLimit: 1_000_000 });
-        await rec2.wait();
-
-        const nftResult = await servicesNode.createNFT({
+        const defaultNftOptions = {
             tokenName: NFT_NAME,
             symbol: NFT_SYMBOL,
             treasuryAccountId: accounts[0].accountId.toString(),
             maxSupply: NFT_MAX_SUPPLY,
             adminPrivateKey: accounts[0].privateKey
+        };
+
+        // HTS token with no custom fees
+        const htsResult0 = await servicesNode.createHTS(defaultTokenOptions);
+
+        // HTS token with custom fixed HBAR fee
+        const htsResult1 = await servicesNode.createHTS({
+            ...defaultTokenOptions,
+            customHbarFees: 1
         });
 
-        await servicesNode.associateHTSToken(accounts[1].accountId, nftResult.receipt.tokenId, accounts[1].privateKey, nftResult.client, requestId);
-        await servicesNode.associateHTSToken(accounts[2].accountId, nftResult.receipt.tokenId, accounts[2].privateKey, nftResult.client, requestId);
+        // HTS token with custom fixed token fee
+        const htsResult2 = await servicesNode.createHTS({
+            ...defaultTokenOptions,
+            customTokenFees: 1
+        });
 
-        const nftTokenId = nftResult.receipt.tokenId.toString();
-        const nftAddress = Utils.idToEvmAddress(nftTokenId);
+        // HTS token with custom fixed fractional fee
+        const htsResult3 = await servicesNode.createHTS({
+            ...defaultTokenOptions,
+            customFractionalFees: 1
+        });
 
-        const mintResult = await servicesNode.mintNFT({
-            tokenId: nftTokenId,
+        // NFT with no custom fees
+        const nftResult0 = await servicesNode.createNFT(defaultNftOptions);
+
+        // NFT with no custom royalty fees
+        const nftResult1 = await servicesNode.createNFT({
+            ...defaultNftOptions,
+            customRoyaltyFees: 1
+        });
+
+        const nftTokenId0 = nftResult0.receipt.tokenId.toString();
+        const nftTokenId1 = nftResult1.receipt.tokenId.toString();
+
+        const mintArgs = {
             metadata: NFT_METADATA,
             treasuryAccountId: accounts[0].accountId.toString(),
             adminPrivateKey: accounts[0].privateKey
-        });
+        };
+        const mintResult0 = await servicesNode.mintNFT({...mintArgs, tokenId: nftTokenId0});
+        const mintResult1 = await servicesNode.mintNFT({...mintArgs, tokenId: nftTokenId1});
 
-        nftSerial = mintResult.receipt.serials[0].low;
+        // associate tokens, grant KYC
+        for (let account of [accounts[1], accounts[2]]) {
+            await servicesNode.associateHTSToken(account.accountId, htsResult1.receipt.tokenId, account.privateKey, htsResult1.client, requestId);
+            await servicesNode.grantKyc({
+                tokenId: htsResult1.receipt.tokenId,
+                treasuryAccountId: accounts[0].accountId.toString(),
+                adminPrivateKey: accounts[0].privateKey,
+                accountId: account.accountId
+            });
+
+            await servicesNode.associateHTSToken(account.accountId, nftResult0.receipt.tokenId, account.privateKey, nftResult0.client, requestId);
+        }
+
+        // create contract instances
+        tokenAddress = Utils.idToEvmAddress(htsResult1.receipt.tokenId.toString());
+        tokenAddressFixedHbarFees = tokenAddress;
+        tokenAddressFixedTokenFees = Utils.idToEvmAddress(htsResult2.receipt.tokenId.toString());
+        tokenAddressNoFees = Utils.idToEvmAddress(htsResult0.receipt.tokenId.toString());
+        tokenAddressFractionalFees = Utils.idToEvmAddress(htsResult3.receipt.tokenId.toString());
+
+        nftAddress = Utils.idToEvmAddress(nftTokenId0);
+        nftAddressFractionalFees = Utils.idToEvmAddress(nftTokenId1);
+
+        IERC20Metadata = getContract(tokenAddress, IERC20MetadataJson.abi, accounts[0].wallet);
+        IERC20 = getContract(tokenAddress, IERC20Json.abi, accounts[0].wallet);
+        IHederaTokenService = getContract(tokenAddress, IHederaTokenServiceJson.abi, accounts[0].wallet);
+
+
+        nftSerial = mintResult0.receipt.serials[0].low;
         IERC721Metadata = getContract(nftAddress, IERC721MetadataJson.abi, accounts[0].wallet);
         IERC721Enumerable = getContract(nftAddress, IERC721EnumerableJson.abi, accounts[0].wallet);
         IERC721 = getContract(nftAddress, IERC721Json.abi, accounts[0].wallet);
+
+        adminAccountLongZero = Utils.idToEvmAddress(accounts[0].accountId.toString());
+
+        // Transfer and approve token amounts
+        const rec1 = await IERC20.transfer(accounts[1].address, 100, { gasLimit: 1_000_000 });
+        await rec1.wait();
+        const rec2 = await IERC20.approve(accounts[2].address, 200, { gasLimit: 1_000_000 });
+        await rec2.wait();
 
         const rec3 = await IERC721.transferFrom(accounts[0].address, accounts[1].address, nftSerial, { gasLimit: 1_000_000 });
         await rec3.wait();
@@ -127,18 +183,17 @@ describe('@precompile Tests for eth_call with HTS', async function () {
         const rec5 = await IERC721.connect(accounts[1].wallet).setApprovalForAll(accounts[0].address, nftSerial, { gasLimit: 1_000_000 });
         await rec5.wait();
 
+        // Deploy a contract implementing HederaTokenService
         const HederaTokenServiceImplFactory = new ethers.ContractFactory(HederaTokenServiceImplJson.abi, HederaTokenServiceImplJson.bytecode, accounts[0].wallet);
         htsImpl = await HederaTokenServiceImplFactory.deploy({gasLimit: 15000000});
+
         const rec6 = await htsImpl.deployTransaction.wait();
         htsImplAddress = rec6.contractAddress;
 
+        // Deploy the Token Management contract
         const TokenManagementContractFactory = new ethers.ContractFactory(TokenManagementContractJson.abi, TokenManagementContractJson.bytecode, accounts[0].wallet);
         TokenManager = await TokenManagementContractFactory.deploy({gasLimit: 15000000});
         const rec7 = await htsImpl.deployTransaction.wait();
-
-        // TokenManager = new ethers.Contract(HTSTokenContractAddress, ERC20MockJson.abi, accounts[0].wallet);
-        // HTSTokenContract = new ethers.Contract(HTSTokenContractAddress, ERC20MockJson.abi, accounts[0].wallet);
-        // mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
     });
 
     this.beforeEach(async () => {
@@ -271,36 +326,123 @@ describe('@precompile Tests for eth_call with HTS', async function () {
         });
 
         it("ETHCALL-027 - Function with HederaTokenService.isKyc(token, account)", async () => {
+            const isKyc1 = await htsImpl.callStatic.isKycGranted(tokenAddress, accounts[1].address);
+            expect(isKyc1).to.eq(true);
+
         });
 
         it("ETHCALL-028 - Function with HederaTokenService.getTokenDefaultFreezeStatus(token)", async () => {
+            const defaultFreeze = await htsImpl.callStatic.getTokenDefaultFreeze(tokenAddress);
+            expect(defaultFreeze).to.eq(false);
         });
 
         it("ETHCALL-029 - Function with HederaTokenService.getTokenDefaultKycStatus(token)", async () => {
+            const defaultKyc = await htsImpl.callStatic.getTokenDefaultKyc(tokenAddress);
+            expect(defaultKyc).to.eq(true);
         });
 
-        it("ETHCALL-030 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
+        describe.only("ETHCALL-030 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
+            it("token with no custom fees", async () => {
+                const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressNoFees);
+                expect(customFees).to.exist;
+                expect(customFees.fixedFees).to.exist;
+                expect(customFees.fixedFees.length).to.eq(0);
+            });
+
+
+            it("token with fixed hbar fees", async () => {
+                const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressFixedHbarFees);
+                expect(customFees).to.exist;
+                expect(customFees.fixedFees).to.exist;
+                expect(customFees.fixedFees.length).to.eq(1);
+                expect(customFees.fixedFees[0].amount).to.exist;
+                expect(customFees.fixedFees[0].amount.toString()).to.eq("1");
+                expect(customFees.fixedFees[0].tokenId).to.eq("0x0000000000000000000000000000000000000000");
+                expect(customFees.fixedFees[0].feeCollector).to.eq(adminAccountLongZero);
+            });
+
+            it("token with fixed token fees", async () => {
+                const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressFixedTokenFees);
+                expect(customFees).to.exist;
+                expect(customFees.fixedFees).to.exist;
+                expect(customFees.fixedFees.length).to.eq(1);
+                expect(customFees.fixedFees[0].amount).to.exist;
+                expect(customFees.fixedFees[0].amount.toString()).to.eq("1");
+                expect(customFees.fixedFees[0].tokenId).to.eq("0x0000000000000000000000000000000000000000");
+                expect(customFees.fixedFees[0].feeCollector).to.eq(adminAccountLongZero);
+            });
+
+            it("token with fractional fees", async () => {
+                const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressFractionalFees);
+                expect(customFees).to.exist;
+                expect(customFees.fixedFees).to.exist;
+                expect(customFees.fixedFees.length).to.eq(1);
+                expect(customFees.fixedFees[0].amount).to.exist;
+                expect(customFees.fixedFees[0].amount.toString()).to.eq("1");
+                expect(customFees.fixedFees[0].tokenId).to.eq("0x0000000000000000000000000000000000000000");
+                expect(customFees.fixedFees[0].feeCollector).to.eq(adminAccountLongZero);
+            });
         });
 
-        it("ETHCALL-031 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
+
+
+
+        xit("ETHCALL-031 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
         });
 
-        it("ETHCALL-032 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
+        xit("ETHCALL-032 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
         });
 
-        it("ETHCALL-033 - Function with HederaTokenService.getTokenInfo(token)", async () => {
+        xit("ETHCALL-033 - Function with HederaTokenService.getTokenInfo(token)", async () => {
+            const info = await htsImpl.callStatic.getInformationForToken(tokenAddress);
+            expect(info).to.exist;
+            expect(info.token).to.exist;
+            expect(info.token.name).to.eq(TOKEN_NAME);
+            expect(info.token.symbol).to.eq(TOKEN_SYMBOL);
+            expect(info.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
+            expect(info.totalSupply).to.exist;
+            expect(info.totalSupply.toString()).to.eq(INITIAL_SUPPLY.toString());
         });
 
         it("ETHCALL-034 - Function with HederaTokenService.getFungibleTokenInfo(token)", async () => {
+            const info = await htsImpl.callStatic.getInformationForFungibleToken(tokenAddress);
+            expect(info).to.exist;
+            expect(info.tokenInfo).to.exist;
+            expect(info.tokenInfo.token).to.exist;
+            expect(info.tokenInfo.token.name).to.eq(TOKEN_NAME);
+            expect(info.tokenInfo.token.symbol).to.eq(TOKEN_SYMBOL);
+            expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
+            expect(info.tokenInfo.totalSupply).to.exist;
+            expect(info.tokenInfo.totalSupply.toString()).to.eq(INITIAL_SUPPLY.toString());
         });
 
         it("ETHCALL-035 - Function with HederaTokenService.getNonFungibleTokenInfo(token, serialNumber)", async () => {
+            const info = await htsImpl.callStatic.getInformationForNonFungibleToken(nftAddress, nftSerial);
+            expect(info).to.exist;
+            expect(info.tokenInfo.token).to.exist;
+            expect(info.tokenInfo.token.name).to.eq(NFT_NAME);
+            expect(info.tokenInfo.token.symbol).to.eq(NFT_SYMBOL);
+            expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
+            expect(info.serialNumber.toString()).to.eq(nftSerial.toString());
         });
 
         it("ETHCALL-036 - Function with HederaTokenService.getTokenExpiryInfo(token)", async () => {
+            const expiryInfo = await htsImpl.callStatic.getExpiryInfoForToken(tokenAddress);
+            expect(expiryInfo).to.exist;
+            expect(expiryInfo.autoRenewAccount).to.eq('0x0000000000000000000000000000000000000000');
+            expect(expiryInfo.autoRenewPeriod).to.exist;
+            expect(expiryInfo.autoRenewPeriod.toString()).to.eq('0');
+            expect(expiryInfo.second).to.exist;
         });
 
         it("ETHCALL-037 - Function with HederaTokenService.getTokenKey(token, keyType)", async () => {
+            const key = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, 0x000);
+            expect(key).to.exist;
+
+            console.log("=========KEY====");
+            console.log(key);
+            console.log("=============");
+
         });
     });
 

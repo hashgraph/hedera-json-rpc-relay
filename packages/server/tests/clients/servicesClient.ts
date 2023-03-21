@@ -44,7 +44,11 @@ import {
     FileContentsQuery,
     TokenType,
     TokenSupplyType,
-    TokenMintTransaction
+    TokenMintTransaction,
+    TokenGrantKycTransaction,
+    CustomFixedFee,
+    CustomFractionalFee,
+    CustomRoyaltyFee
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
@@ -339,6 +343,12 @@ export default class ServicesClient {
         treasuryAccountId: '0.0.2',
         initialSupply: 5000,
         adminPrivateKey: this.DEFAULT_KEY,
+        kyc: false,
+        freeze: false,
+        customHbarFees: false,
+        customTokenFees: false,
+        customRoyaltyFees: false,
+        customFractionalFees: false,
     }) {
         const {} = args;
 
@@ -348,7 +358,7 @@ export default class ServicesClient {
         const htsClient = this.getClient();
         htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
 
-        const tokenCreate = await (await new TokenCreateTransaction()
+        const transaction = new TokenCreateTransaction()
             .setTokenName(args.tokenName)
             .setTokenSymbol(args.symbol)
             .setExpirationTime(expiration)
@@ -356,8 +366,48 @@ export default class ServicesClient {
             .setTreasuryAccountId(AccountId.fromString(args.treasuryAccountId))
             .setInitialSupply(args.initialSupply)
             .setTransactionId(TransactionId.generate(AccountId.fromString(args.treasuryAccountId)))
-            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]]))
-            .setFreezeKey(args.adminPrivateKey)
+            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]]);
+
+        if (args.kyc) {
+            transaction.setKycKey(args.adminPrivateKey);
+        }
+
+        if (args.freeze) {
+            transaction.setFreezeKey(args.adminPrivateKey);
+        }
+
+        if (args.customHbarFees) {
+            transaction.setCustomFees(
+                [
+                    new CustomFixedFee()
+                    .setHbarAmount(args.customHbarFees)
+                    .setFeeCollectorAccountId(AccountId.fromString(args.treasuryAccountId))
+                ],
+            )
+        }
+
+        if (args.customTokenFees) {
+            transaction.setCustomFees(
+                [
+                    new CustomFixedFee()
+                    .setAmount(args.customTokenFees)
+                    .setFeeCollectorAccountId(AccountId.fromString(args.treasuryAccountId))
+                ],
+            )
+        }
+
+        if (args.customFractionalFees) {
+            transaction.setCustomFees(
+                [
+                    new CustomFractionalFee()
+                    .setNumerator(args.customFractionalFees)
+                    .setDenominator(args.customFractionalFees * 10)
+                    .setFeeCollectorAccountId(AccountId.fromString(args.treasuryAccountId))
+                ]
+            )
+        }
+
+        const tokenCreate = await (await transaction)
             .execute(htsClient);
 
         const receipt = await tokenCreate.getReceipt(this.client);
@@ -373,13 +423,14 @@ export default class ServicesClient {
         treasuryAccountId: '0.0.2',
         maxSupply: 5000,
         adminPrivateKey: this.DEFAULT_KEY,
+        customRoyaltyFees: false,
     }) {
         const {} = args;
 
         const htsClient = this.getClient();
         htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
 
-        let nftCreate = await (await new TokenCreateTransaction()
+        const transaction = new TokenCreateTransaction()
             .setTokenName(args.tokenName)
             .setTokenSymbol(args.symbol)
             .setTokenType(TokenType.NonFungibleUnique)
@@ -390,8 +441,20 @@ export default class ServicesClient {
             .setMaxSupply(args.maxSupply)
             .setSupplyKey(args.adminPrivateKey)
             .setTransactionId(TransactionId.generate(AccountId.fromString(args.treasuryAccountId)))
-            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]]))
-            .execute(htsClient);
+            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]]);
+
+        if (args.customRoyaltyFees) {
+            transaction.setCustomFees(
+                [
+                    new CustomRoyaltyFee()
+                        .setNumerator(args.customRoyaltyFees)
+                        .setDenominator(args.customRoyaltyFees * 10)
+                        .setFeeCollectorAccountId(AccountId.fromString(args.treasuryAccountId))
+                ]
+            )
+        }
+
+        let nftCreate = await (await transaction).execute(htsClient);
 
 
         const receipt = await nftCreate.getReceipt(this.client);
@@ -417,6 +480,30 @@ export default class ServicesClient {
             .execute(htsClient);
 
         const receipt = await mintTx.getReceipt(this.client);
+        return {
+            client: htsClient,
+            receipt
+        };
+    }
+
+    async grantKyc(args = {
+        tokenId: '0.0.1000',
+        treasuryAccountId: '0.0.2',
+        adminPrivateKey: this.DEFAULT_KEY,
+        accountId: '0.0.1001'
+    }) {
+        const htsClient = this.getClient();
+        htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
+
+        //Enable KYC flag on account and freeze the transaction for manual signing
+        const transaction = await (await new TokenGrantKycTransaction()
+            .setAccountId(args.accountId)
+            .setTokenId(args.tokenId))
+            .execute(htsClient);
+
+        //Request the receipt of the transaction
+        const receipt = await transaction.getReceipt(htsClient);
+
         return {
             client: htsClient,
             receipt
