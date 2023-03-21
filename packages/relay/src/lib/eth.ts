@@ -979,6 +979,19 @@ export class EthImpl implements Eth {
       throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
 
+    // If "From" is distinct from blank, we check is a valid account
+    if(call.from) {
+      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, requestId, [constants.TYPE_ACCOUNT]);
+      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
+        throw predefined.NON_EXISTING_ACCOUNT(call.from);
+      }
+    }
+    // Check "To" is a valid Contract or HTS Address
+    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT]);
+    if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
+      throw predefined.NON_EXISTING_CONTRACT(call.to);
+    }
+
     try {
       // Get a reasonable value for "gas" if it is not specified.
       let gas = Number(call.gas) || 400_000;
@@ -1002,7 +1015,7 @@ export class EthImpl implements Eth {
       if (process.env.ETH_CALL_CONSENSUS == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
-        if (!isHts) {
+        if (!(isHts?.type === constants.TYPE_TOKEN)) {
           const callData = {
             ...call,
             gas,

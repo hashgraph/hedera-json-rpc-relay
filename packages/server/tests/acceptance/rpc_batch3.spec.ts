@@ -119,7 +119,18 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
 
-            await relay.callFailing('eth_call', [callData, 'latest'], predefined.CONTRACT_REVERT(), requestId);
+            await relay.callFailing('eth_call', [callData, 'latest'], predefined.NON_EXISTING_CONTRACT(NON_EXISTING_ADDRESS), requestId);
+        });
+
+        it('should fail "eth_call" for non-existing to account address', async function () {
+            const callData = {
+                from: NON_EXISTING_ADDRESS,
+                to: evmAddress,
+                gas: EthImpl.numberTo0x(30000),
+                data: BASIC_CONTRACT_PING_CALL_DATA
+            };
+
+            await relay.callFailing('eth_call', [callData, 'latest'], predefined.NON_EXISTING_ACCOUNT(NON_EXISTING_ADDRESS), requestId);
         });
 
         it('should execute "eth_call" without from field', async function () {
@@ -274,7 +285,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         };
                     }
                 }
-            ]
+            ];
 
             for (let desc of describes) {
                 describe(desc.title, () => {
@@ -392,7 +403,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                             await relay.callFailing('eth_call', [callData, 'latest'], predefined.CONTRACT_REVERT(), requestId);
                         });
                     }
-                })
+                });
             }
         });
     });

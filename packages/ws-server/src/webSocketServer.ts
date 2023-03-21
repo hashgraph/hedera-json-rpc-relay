@@ -24,6 +24,7 @@ import websockify from 'koa-websocket';
 import { Relay, RelayImpl, predefined } from '@hashgraph/json-rpc-relay';
 import { Registry } from 'prom-client';
 import pino from 'pino';
+import { Socket } from 'dgram';
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -40,8 +41,18 @@ const mainLogger = pino({
 const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
+let connectedClients = 0;
+const MAX_CONNECTIONS = parseInt(process.env.CONNECTION_LIMIT || '10');
 
-const app = websockify(new Koa(), {});
+const app = websockify(new Koa(), { 
+        verifyClient: function(info, done) {
+            if (connectedClients >= MAX_CONNECTIONS) {
+                return done(false, 429, 'Connection limit exceeded');
+            }
+            done(true);
+        }
+});
+
 const LOGGER_PREFIX = 'WebSocket:';
 
 const CHAIN_ID = relay.eth().chainId();
@@ -50,6 +61,8 @@ const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
 app.ws.use((ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
     logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
+
+    connectedClients = ctx.app.server._connections;
 
     ctx.websocket.on('message', async (msg) => {
         ctx.websocket.id = relay.subs()?.generateId();
