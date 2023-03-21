@@ -119,7 +119,7 @@ export class Poller {
     }
 
     hasPoll(tag): boolean {
-        return !!this.polls.filter(p => p.tag !== tag).length;
+        return !!this.polls.filter(p => p.tag === tag).length;
     }
 
     isPolling() {

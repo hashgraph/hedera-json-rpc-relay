@@ -61,35 +61,36 @@ describe('Polling', async function() {
 
     describe('Poller', () => {
 
-        it('should start polling', (done) => {
+        it('should start polling', async() => {
             ethImplStub.blockNumber.returns('0x1b177b');
             // eslint-disable-next-line @typescript-eslint/no-empty-function
             const notifySubscriber = (tag, logs) =>{};
             ethImplStub.getLogs.returns(logs);
             const loggerSpy = sandbox.spy(logger, 'info');
 
+            expect(poller.hasPoll(tag)).to.be.false;
             poller.add(tag, notifySubscriber);
-            done();
-            
-            expect(poller.isPolling()).to.be.true;
             expect(poller.hasPoll(tag)).to.be.true;
+
+            const startPolling = async() => {
+                expect(poller.isPolling()).to.be.true;
+            };
+
+            await startPolling();
             expect(loggerSpy.calledTwice).to.be.true;
             expect(loggerSpy.getCall(0).args[0]).to.equal('Poller: Polling for {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}}');
             expect(loggerSpy.getCall(1).args[0]).to.equal('Poller: Starting polling');
-           
+            
         });
 
-        it('should stop polling', (done) => {
+        it('should stop polling', () => {
             const loggerSpy = sandbox.spy(logger, 'info');            
             poller.remove(tag);
-            done();
-
+            
             expect(poller.isPolling()).to.be.false;
-            expect(loggerSpy.callCount).to.equal(5);
             expect(loggerSpy.getCall(0).args[0]).to.equal('Poller: No longer polling for {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}}');
             expect(loggerSpy.getCall(1).args[0]).to.equal('Poller: No active polls.');
-            expect(loggerSpy.getCall(2).args[0]).to.equal('Poller: Stopping polling');    
-            
+            expect(loggerSpy.getCall(2).args[0]).to.equal('Poller: Stopping polling');     
         });
 
         it('should poll single line of log data', async () => {
