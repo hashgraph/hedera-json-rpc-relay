@@ -242,7 +242,7 @@ export class MirrorNodeClient {
 
         const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
 
-        if (mirrorError.isContractReverted()) {
+        if (mirrorError.isContractReverted() && !mirrorError.isNotSupported()) {
             throw predefined.CONTRACT_REVERT(mirrorError.errorMessage);
         }
 
