@@ -37,7 +37,6 @@ replace({
 // bump only when is not snapshot
 if(!isSnapshot) {
     // bump docker-compose.yml version
-    // bump helm chart versions
     replace({
         regex: 'image: "ghcr.io\\/hashgraph\\/hedera-json-rpc-relay:(main|\\d+\\.\\d+\\.\\d+(-\\w+)?)\\"',
         replacement: `image: "ghcr.io/hashgraph/hedera-json-rpc-relay:${newVersion}"`,
