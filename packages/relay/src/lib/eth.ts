@@ -915,7 +915,7 @@ export class EthImpl implements Eth {
    * @param call
    * @param blockParam
    */
-  async call(call: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError> {
+  async call(call: any, blockParam: string | null, requestId?: string, isFallback?: boolean): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
@@ -957,7 +957,8 @@ export class EthImpl implements Eth {
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}"`, call.to, gas, call.data, call.from);
 
       // ETH_CALL_CONSENSUS = false enables the use of Mirror node
-      if (process.env.ETH_CALL_CONSENSUS == 'false') {
+      // isFallback=true forces the call to go through the Consensus network
+      if (process.env.ETH_CALL_CONSENSUS == 'false' && !isFallback) {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
         if (!(isHts?.type === constants.TYPE_TOKEN)) {
@@ -995,6 +996,12 @@ export class EthImpl implements Eth {
       return formattedCallReponse;
 
     } catch (e: any) {
+      // Temporary workaround until mirror node web3 module implements the support of precompiles
+      // If mirror node throws NOT_SUPPORTED rerun eth_call and force it to go through the Consensus network
+      if (e instanceof MirrorNodeClientError && e.isNotSupported()) {
+        return this.call(call, blockParam, requestId, true);
+      }
+
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
       if (e instanceof JsonRpcError) {
         return e;

@@ -68,7 +68,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         requestId = Utils.generateRequestId();
 
         accounts[0] = await servicesNode.createAliasAccount(30, null, requestId);
-        accounts[1] = await servicesNode.createAliasAccount(10, relay.provider, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
 
         reverterContract = await servicesNode.deployContract(reverterContractJson);
         // Wait for creation to propagate
@@ -601,6 +601,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         const TOKEN_NAME = Utils.randomString(10);
         const TOKEN_SYMBOL = Utils.randomString(5);
         const INITIAL_SUPPLY = 100000;
+        const IS_TOKEN_ADDRESS_SIGNATURE = '0xbff9834f000000000000000000000000';
 
         let htsImpl, tokenAddress;
 
@@ -608,21 +609,27 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const htsResult = await servicesNode.createHTS({
                 tokenName: TOKEN_NAME,
                 symbol: TOKEN_SYMBOL,
-                treasuryAccountId: accounts[0].accountId.toString(),
+                treasuryAccountId: accounts[1].accountId.toString(),
                 initialSupply: INITIAL_SUPPLY,
-                adminPrivateKey: accounts[0].privateKey
+                adminPrivateKey: accounts[1].privateKey
             });
 
             tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
 
             // Deploy a contract implementing HederaTokenService
-            const HederaTokenServiceImplFactory = new ethers.ContractFactory(HederaTokenServiceImplJson.abi, HederaTokenServiceImplJson.bytecode, accounts[0].wallet);
+            const HederaTokenServiceImplFactory = new ethers.ContractFactory(HederaTokenServiceImplJson.abi, HederaTokenServiceImplJson.bytecode, accounts[1].wallet);
             htsImpl = await HederaTokenServiceImplFactory.deploy({gasLimit: 15000000});
         });
 
-        it("ETHCALL-025 - Function with HederaTokenService.isToken(token)", async () => {
-            const isToken = await htsImpl.callStatic.isTokenAddress(tokenAddress);
-            expect(isToken).to.eq(true);
+        it("Function calling HederaTokenService.isToken(token)", async () => {
+            const callData = {
+                from: '0x' + accounts[1].address,
+                to: htsImpl.address,
+                gas: EthImpl.numberTo0x(30000),
+                data: IS_TOKEN_ADDRESS_SIGNATURE + tokenAddress.replace('0x', '')
+            };
+
+            await relay.callFailing('eth_call', [callData, 'latest'], predefined.CONTRACT_REVERT());
         });
     });
 });
