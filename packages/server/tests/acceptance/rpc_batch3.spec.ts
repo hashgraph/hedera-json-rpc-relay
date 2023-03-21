@@ -31,6 +31,7 @@ import {predefined} from '../../../../packages/relay';
 import Assertions from "../helpers/assertions";
 import basicContractJson from '../contracts/Basic.json';
 import callerContractJson from '../contracts/Caller.json';
+import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 
 describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -593,6 +594,35 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                     }, requestId);
                 });
             }
+        });
+    });
+
+    describe('eth_call with contract that calls precompiles', async () => {
+        const TOKEN_NAME = Utils.randomString(10);
+        const TOKEN_SYMBOL = Utils.randomString(5);
+        const INITIAL_SUPPLY = 100000;
+
+        let htsImpl, tokenAddress;
+
+        before(async () => {
+            const htsResult = await servicesNode.createHTS({
+                tokenName: TOKEN_NAME,
+                symbol: TOKEN_SYMBOL,
+                treasuryAccountId: accounts[0].accountId.toString(),
+                initialSupply: INITIAL_SUPPLY,
+                adminPrivateKey: accounts[0].privateKey
+            });
+
+            tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
+
+            // Deploy a contract implementing HederaTokenService
+            const HederaTokenServiceImplFactory = new ethers.ContractFactory(HederaTokenServiceImplJson.abi, HederaTokenServiceImplJson.bytecode, accounts[0].wallet);
+            htsImpl = await HederaTokenServiceImplFactory.deploy({gasLimit: 15000000});
+        });
+
+        it("ETHCALL-025 - Function with HederaTokenService.isToken(token)", async () => {
+            const isToken = await htsImpl.callStatic.isTokenAddress(tokenAddress);
+            expect(isToken).to.eq(true);
         });
     });
 });
