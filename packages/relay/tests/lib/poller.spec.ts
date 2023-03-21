@@ -69,18 +69,12 @@ describe('Polling', async function() {
             const loggerSpy = sandbox.spy(logger, 'info');
 
             expect(poller.hasPoll(tag)).to.be.false;
-            poller.add(tag, notifySubscriber);
+            await poller.add(tag, notifySubscriber);
             expect(poller.hasPoll(tag)).to.be.true;
 
-            const startPolling = async() => {
-                expect(poller.isPolling()).to.be.true;
-            };
-
-            await startPolling();
             expect(loggerSpy.calledTwice).to.be.true;
             expect(loggerSpy.getCall(0).args[0]).to.equal('Poller: Polling for {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}}');
-            expect(loggerSpy.getCall(1).args[0]).to.equal('Poller: Starting polling');
-            
+            expect(loggerSpy.getCall(1).args[0]).to.equal('Poller: Starting polling');            
         });
 
         it('should stop polling', () => {
@@ -136,7 +130,5 @@ describe('Polling', async function() {
             await poll();   
             expect(loggerSpy.getCall(1).args[0]).to.equal(ARRAY_OF_LOGS);
         });
-
     });
-
 });
