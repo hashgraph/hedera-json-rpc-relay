@@ -1,6 +1,4 @@
 const replace = require("replace");
-const yaml = require('js-yaml');
-const fs = require('fs');
 const {execSync} = require('child_process')
 
 const versionRegex = /\d+\.\d+\.\d+(-\w+)?/i;
@@ -38,12 +36,15 @@ replace({
 
 // bump only when is not snapshot
 if(!isSnapshot) {
-    // bump docker-compose.js version
-    const dockerComposePath = 'docker-compose.yml';
-    let dockerComposeYml = yaml.load(fs.readFileSync(dockerComposePath));
-    dockerComposeYml.services.relay.image = `ghcr.io/hashgraph/hedera-json-rpc-relay:${newVersion}`
-    fs.writeFileSync(dockerComposePath, yaml.dump(dockerComposeYml));
-    console.log(dockerComposePath);
+    // bump docker-compose.yml version
+    // bump helm chart versions
+    replace({
+        regex: 'image: "ghcr.io\\/hashgraph\\/hedera-json-rpc-relay:(main|\\d+\\.\\d+\\.\\d+(-\\w+)?)\\"',
+        replacement: `image: "ghcr.io/hashgraph/hedera-json-rpc-relay:${newVersion}"`,
+        paths: ['docker-compose.yml'],
+        recursive: false,
+        silent: false,
+    });
 
     const majorMinorVersion = `${newVersion.split(".")[0]}.${newVersion.split(".")[1]}`;
 
@@ -58,12 +59,20 @@ if(!isSnapshot) {
 }
 
 // bump helm chart versions
-const helmChartPath = 'helm-chart/Chart.yaml';
-let doc = yaml.load(fs.readFileSync(helmChartPath, 'utf-8'));
-doc.version = newVersion;
-doc.appVersion = `${newVersion}`;
-fs.writeFileSync(helmChartPath, yaml.dump(doc));
-console.log(helmChartPath);
+replace({
+    regex: 'version: \\d+\\.\\d+\\.\\d+(-\\w+)?',
+    replacement: `version: ${newVersion}`,
+    paths: ['helm-chart/Chart.yaml'],
+    recursive: false,
+    silent: false,
+});
+replace({
+    regex: 'appVersion: \"\\d+\\.\\d+\\.\\d+(-\\w+)?\"',
+    replacement: `appVersion: "${newVersion}"`,
+    paths: ['helm-chart/Chart.yaml'],
+    recursive: false,
+    silent: false,
+});
 
 // bump package-lock.json using npm itself, by running install it will update packages versions based on previous files
 execSync("npm install")
