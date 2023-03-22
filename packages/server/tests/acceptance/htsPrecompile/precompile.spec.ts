@@ -21,6 +21,7 @@
 // external resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
+import {Hbar} from '@hashgraph/sdk';
 
 chai.use(solidity);
 
@@ -53,14 +54,18 @@ describe('@precompile Tests for eth_call with HTS', async function () {
     const NFT_MAX_SUPPLY = 100;
     const NFT_METADATA = 'ABCDE';
 
+    const ZERO_HEX = '0x0000000000000000000000000000000000000000';
+    const EMPTY_HEX = '0x';
+
     const accounts: AliasAccount[] = [];
     let requestId;
 
     let IERC20Metadata, IERC20, IERC721Metadata, IERC721Enumerable, IERC721, IHederaTokenService, TokenManager;
-    let nftSerial, tokenAddress, nftAddress, htsImplAddress, htsImpl, adminAccountLongZero;
+    let nftSerial, tokenAddress, nftAddress, htsImplAddress, htsImpl, adminAccountLongZero, account1LongZero, account2LongZero;
 
     let tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressNoFees,
-        tokenAddressFractionalFees, nftAddressFractionalFees;
+        tokenAddressFractionalFees, nftAddressRoyaltyFees,
+        tokenAddresses, nftAddresses;
 
     before(async () => {
         requestId = Utils.generateRequestId();
@@ -156,7 +161,7 @@ describe('@precompile Tests for eth_call with HTS', async function () {
         tokenAddressFractionalFees = Utils.idToEvmAddress(htsResult3.receipt.tokenId.toString());
 
         nftAddress = Utils.idToEvmAddress(nftTokenId0);
-        nftAddressFractionalFees = Utils.idToEvmAddress(nftTokenId1);
+        nftAddressRoyaltyFees = Utils.idToEvmAddress(nftTokenId1);
 
         IERC20Metadata = getContract(tokenAddress, IERC20MetadataJson.abi, accounts[0].wallet);
         IERC20 = getContract(tokenAddress, IERC20Json.abi, accounts[0].wallet);
@@ -169,6 +174,8 @@ describe('@precompile Tests for eth_call with HTS', async function () {
         IERC721 = getContract(nftAddress, IERC721Json.abi, accounts[0].wallet);
 
         adminAccountLongZero = Utils.idToEvmAddress(accounts[0].accountId.toString());
+        account1LongZero = Utils.idToEvmAddress(accounts[1].accountId.toString());
+        account2LongZero = Utils.idToEvmAddress(accounts[2].accountId.toString());
 
         // Transfer and approve token amounts
         const rec1 = await IERC20.transfer(accounts[1].address, 100, { gasLimit: 1_000_000 });
@@ -194,6 +201,9 @@ describe('@precompile Tests for eth_call with HTS', async function () {
         const TokenManagementContractFactory = new ethers.ContractFactory(TokenManagementContractJson.abi, TokenManagementContractJson.bytecode, accounts[0].wallet);
         TokenManager = await TokenManagementContractFactory.deploy({gasLimit: 15000000});
         const rec7 = await htsImpl.deployTransaction.wait();
+
+        tokenAddresses = [tokenAddressNoFees, tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressFractionalFees];
+        nftAddresses = [nftAddress, nftAddressRoyaltyFees];
     });
 
     this.beforeEach(async () => {
@@ -240,13 +250,33 @@ describe('@precompile Tests for eth_call with HTS', async function () {
             expect(totalSupply).to.eq(INITIAL_SUPPLY);
         });
 
-        it("ETHCALL-015 - Function with IERC20(token).balanceOf(account)", async () => {
+        it("ETHCALL-015 - Function with IERC20(token).balanceOf(account) - using long zero address", async () => {
+            const balance = await IERC20.balanceOf(account1LongZero);
+            expect(balance).to.eq(100);
+        });
+
+        it("ETHCALL-044 - Function with IERC20(token).balanceOf(account) - using evm address", async () => {
             const balance = await IERC20.balanceOf(accounts[1].address);
             expect(balance).to.eq(100);
         });
 
-        it("ETHCALL-016 - Function with IERC20(token).allowance(owner, spender)", async () => {
+        it("ETHCALL-016 - Function with IERC20(token).allowance(owner, spender) - using both evm addresses", async () => {
             const allowance = await IERC20.allowance(accounts[0].address, accounts[2].address);
+            expect(allowance).to.eq(200);
+        });
+
+        it("ETHCALL-016 - Function with IERC20(token).allowance(owner, spender) - using both long zero addresses", async () => {
+            const allowance = await IERC20.allowance(adminAccountLongZero, account2LongZero);
+            expect(allowance).to.eq(200);
+        });
+
+        it("ETHCALL-016 - Function with IERC20(token).allowance(owner, spender) - using evm address for owner", async () => {
+            const allowance = await IERC20.allowance(accounts[0].address, account2LongZero);
+            expect(allowance).to.eq(200);
+        });
+
+        it("ETHCALL-016 - Function with IERC20(token).allowance(owner, spender) - using evm address for spender", async () => {
+            const allowance = await IERC20.allowance(adminAccountLongZero, accounts[2].address);
             expect(allowance).to.eq(200);
         });
     });
@@ -293,8 +323,23 @@ describe('@precompile Tests for eth_call with HTS', async function () {
             expect(approval.toLowerCase()).to.eq(`0x${accounts[2].address}`);
         });
 
-        it("ETHCALL-022 - Function with IERC721(token).isApprovedForAll(owner, operator)", async () => {
+        it("ETHCALL-022 - Function with IERC721(token).isApprovedForAll(owner, operator) - using both evm addresses", async () => {
             const approvalForAll = await IERC721.isApprovedForAll(accounts[1].address, accounts[0].address);
+            expect(approvalForAll).to.eq(true);
+        });
+
+        it("ETHCALL-022 - Function with IERC721(token).isApprovedForAll(owner, operator) - using both long zero addresses addresses", async () => {
+            const approvalForAll = await IERC721.isApprovedForAll(account1LongZero, adminAccountLongZero);
+            expect(approvalForAll).to.eq(true);
+        });
+
+        it("ETHCALL-022 - Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for owner", async () => {
+            const approvalForAll = await IERC721.isApprovedForAll(accounts[1].address, adminAccountLongZero);
+            expect(approvalForAll).to.eq(true);
+        });
+
+        it("ETHCALL-022 - Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for operator", async () => {
+            const approvalForAll = await IERC721.isApprovedForAll(account1LongZero, accounts[0].address);
             expect(approvalForAll).to.eq(true);
         });
 
@@ -310,7 +355,7 @@ describe('@precompile Tests for eth_call with HTS', async function () {
             expect(isToken).to.eq(true);
         });
 
-        it("ETHCALL-026 - Function with HederaTokenService.isFrozen(token, account)", async () => {
+        it("ETHCALL-026 - Function with HederaTokenService.isFrozen(token, account) - using evm address", async () => {
             // freeze token
             const freezeTx = await TokenManager.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
             const responseCodeFreeze = (await freezeTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
@@ -325,10 +370,29 @@ describe('@precompile Tests for eth_call with HTS', async function () {
             expect(responseCodeUnfreeze).to.equal(TX_SUCCESS_CODE);
         });
 
-        it("ETHCALL-027 - Function with HederaTokenService.isKyc(token, account)", async () => {
+        it("ETHCALL-026 - Function with HederaTokenService.isFrozen(token, account) - using long zero address", async () => {
+            // freeze token
+            const freezeTx = await TokenManager.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
+            const responseCodeFreeze = (await freezeTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+            expect(responseCodeFreeze).to.equal(TX_SUCCESS_CODE);
+
+            const isFrozen = await htsImpl.callStatic.isTokenFrozen(tokenAddress, account1LongZero);
+            expect(isFrozen).to.eq(true);
+
+            // unfreeze token
+            const unfreezeTx = await TokenManager.unfreezeTokenPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
+            const responseCodeUnfreeze = (await unfreezeTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+            expect(responseCodeUnfreeze).to.equal(TX_SUCCESS_CODE);
+        });
+
+        it("ETHCALL-027 - Function with HederaTokenService.isKyc(token, account) - using evm account address", async () => {
             const isKyc1 = await htsImpl.callStatic.isKycGranted(tokenAddress, accounts[1].address);
             expect(isKyc1).to.eq(true);
+        });
 
+        it("ETHCALL-027 - Function with HederaTokenService.isKyc(token, account) - using long zero account address", async () => {
+            const isKyc1 = await htsImpl.callStatic.isKycGranted(tokenAddress, account1LongZero);
+            expect(isKyc1).to.eq(true);
         });
 
         it("ETHCALL-028 - Function with HederaTokenService.getTokenDefaultFreezeStatus(token)", async () => {
@@ -341,14 +405,17 @@ describe('@precompile Tests for eth_call with HTS', async function () {
             expect(defaultKyc).to.eq(true);
         });
 
-        describe.only("ETHCALL-030 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
+        describe("ETHCALL-030 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
             it("token with no custom fees", async () => {
                 const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressNoFees);
                 expect(customFees).to.exist;
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(0);
+                expect(customFees.fractionalFees).to.exist;
+                expect(customFees.fractionalFees.length).to.eq(0);
+                expect(customFees.royaltyFees).to.exist;
+                expect(customFees.royaltyFees.length).to.eq(0);
             });
-
 
             it("token with fixed hbar fees", async () => {
                 const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressFixedHbarFees);
@@ -356,9 +423,14 @@ describe('@precompile Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(1);
                 expect(customFees.fixedFees[0].amount).to.exist;
-                expect(customFees.fixedFees[0].amount.toString()).to.eq("1");
-                expect(customFees.fixedFees[0].tokenId).to.eq("0x0000000000000000000000000000000000000000");
-                expect(customFees.fixedFees[0].feeCollector).to.eq(adminAccountLongZero);
+                expect(customFees.fixedFees[0].amount.toString()).to.eq(Hbar.from(1).toTinybars().toString());
+                expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
+                expect(customFees.fixedFees[0].feeCollector).to.exist;
+                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+                expect(customFees.fractionalFees).to.exist;
+                expect(customFees.fractionalFees.length).to.eq(0);
+                expect(customFees.royaltyFees).to.exist;
+                expect(customFees.royaltyFees.length).to.eq(0);
             });
 
             it("token with fixed token fees", async () => {
@@ -368,112 +440,195 @@ describe('@precompile Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees.length).to.eq(1);
                 expect(customFees.fixedFees[0].amount).to.exist;
                 expect(customFees.fixedFees[0].amount.toString()).to.eq("1");
-                expect(customFees.fixedFees[0].tokenId).to.eq("0x0000000000000000000000000000000000000000");
-                expect(customFees.fixedFees[0].feeCollector).to.eq(adminAccountLongZero);
+                expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
+                expect(customFees.fixedFees[0].feeCollector).to.exist;
+                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+                expect(customFees.fractionalFees).to.exist;
+                expect(customFees.fractionalFees.length).to.eq(0);
+                expect(customFees.royaltyFees).to.exist;
+                expect(customFees.royaltyFees.length).to.eq(0);
             });
 
             it("token with fractional fees", async () => {
                 const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressFractionalFees);
                 expect(customFees).to.exist;
+                expect(customFees.fractionalFees).to.exist;
+                expect(customFees.fractionalFees.length).to.eq(1);
+                expect(customFees.fractionalFees[0].amount).to.exist;
+                expect(customFees.fractionalFees[0].amount.toString()).to.eq("1");
+                expect(customFees.fractionalFees[0].tokenId).to.eq(ZERO_HEX);
+                expect(customFees.fractionalFees[0].feeCollector).to.exist;
+                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
                 expect(customFees.fixedFees).to.exist;
-                expect(customFees.fixedFees.length).to.eq(1);
-                expect(customFees.fixedFees[0].amount).to.exist;
-                expect(customFees.fixedFees[0].amount.toString()).to.eq("1");
-                expect(customFees.fixedFees[0].tokenId).to.eq("0x0000000000000000000000000000000000000000");
-                expect(customFees.fixedFees[0].feeCollector).to.eq(adminAccountLongZero);
+                expect(customFees.fixedFees.length).to.eq(0);
+                expect(customFees.royaltyFees).to.exist;
+                expect(customFees.royaltyFees.length).to.eq(0);
             });
+
+            it("nft with no custom fees", async () => {
+                const customFees = await htsImpl.callStatic.getCustomFeesForToken(nftAddress);
+                expect(customFees).to.exist;
+                expect(customFees.fixedFees).to.exist;
+                expect(customFees.fixedFees.length).to.eq(0);
+                expect(customFees.fractionalFees).to.exist;
+                expect(customFees.fractionalFees.length).to.eq(0);
+                expect(customFees.royaltyFees).to.exist;
+                expect(customFees.royaltyFees.length).to.eq(0);
+            });
+
+            it("nft with royalty fees", async () => {
+                const customFees = await htsImpl.callStatic.getCustomFeesForToken(nftAddressRoyaltyFees);
+                expect(customFees).to.exist;
+                expect(customFees.fixedFees).to.exist;
+                expect(customFees.fixedFees.length).to.eq(0);
+                expect(customFees.fractionalFees).to.exist;
+                expect(customFees.fractionalFees.length).to.eq(0);
+                expect(customFees.royaltyFees).to.exist;
+                expect(customFees.royaltyFees.length).to.eq(1);
+                expect(customFees.royaltyFees[0].numerator).exist;
+                expect(customFees.royaltyFees[0].numerator.toString()).to.eq("1");
+                expect(customFees.royaltyFees[0].denominator).exist;
+                expect(customFees.royaltyFees[0].denominator.toString()).to.eq("10");
+                expect(customFees.royaltyFees[0].tokenId).to.eq(ZERO_HEX);
+                expect(customFees.royaltyFees[0].feeCollector).to.exist;
+                expect(customFees.royaltyFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+            });
+
         });
 
+        describe('Token Info', async () => {
+            const tokenTests = [
+                'token with no custom fees',
+                'token with no fixed hbar fee',
+                'token with no fixed token fee',
+                'token with no fractional fee',
+            ]
+            const nftTests = [
+                'nft with no custom fees',
+                'nft with a royalty fee',
+            ];
 
+            for (let i = 0; i < tokenTests.length; i++ ) {
+                it(`ETHCALL-033 - Function with HederaTokenService.getTokenInfo(token) for a ${tokenTests[i]}`, async () => {
+                    const info = await htsImpl.callStatic.getInformationForToken(tokenAddresses[i]);
+                    expect(info).to.exist;
+                    expect(info.token).to.exist;
+                    expect(info.token.name).to.eq(TOKEN_NAME);
+                    expect(info.token.symbol).to.eq(TOKEN_SYMBOL);
+                    expect(info.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
+                    expect(info.totalSupply).to.exist;
+                    expect(info.totalSupply.toString()).to.eq(INITIAL_SUPPLY.toString());
+                });
 
+                it(`ETHCALL-034 - Function with HederaTokenService.getFungibleTokenInfo(token) for a ${tokenTests[i]}`, async () => {
+                    const info = await htsImpl.callStatic.getInformationForFungibleToken(tokenAddresses[i]);
+                    expect(info).to.exist;
+                    expect(info.tokenInfo).to.exist;
+                    expect(info.tokenInfo.token).to.exist;
+                    expect(info.tokenInfo.token.name).to.eq(TOKEN_NAME);
+                    expect(info.tokenInfo.token.symbol).to.eq(TOKEN_SYMBOL);
+                    expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
+                    expect(info.tokenInfo.totalSupply).to.exist;
+                    expect(info.tokenInfo.totalSupply.toString()).to.eq(INITIAL_SUPPLY.toString());
+                });
 
-        xit("ETHCALL-031 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
+                it(`ETHCALL-036 - Function with HederaTokenService.getTokenExpiryInfo(token) for a ${tokenTests[i]}`, async () => {
+                    const expiryInfo = await htsImpl.callStatic.getExpiryInfoForToken(tokenAddresses[i]);
+                    expect(expiryInfo).to.exist;
+                    expect(expiryInfo.autoRenewAccount).to.eq('0x0000000000000000000000000000000000000000');
+                    expect(expiryInfo.autoRenewPeriod).to.exist;
+                    expect(expiryInfo.autoRenewPeriod.toString()).to.eq('0');
+                    expect(expiryInfo.second).to.exist;
+                });
+            }
+
+            for (let i = 0; i < nftTests.length; i++) {
+                it(`ETHCALL-035 - Function with HederaTokenService.getNonFungibleTokenInfo(token, serialNumber) for a ${nftTests[i]}`, async () => {
+                    const info = await htsImpl.callStatic.getInformationForNonFungibleToken(nftAddresses[i], nftSerial);
+                    expect(info).to.exist;
+                    expect(info.tokenInfo.token).to.exist;
+                    expect(info.tokenInfo.token.name).to.eq(NFT_NAME);
+                    expect(info.tokenInfo.token.symbol).to.eq(NFT_SYMBOL);
+                    expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
+                    expect(info.serialNumber.toString()).to.eq(nftSerial.toString());
+                });
+            }
         });
 
-        xit("ETHCALL-032 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
-        });
+        describe('ETHCALL-037 - Function with HederaTokenService.getTokenKey(token, keyType)', async () => {
+            const keyTypes = {
+                ADMIN: 1,
+                KYC: 2,
+                FREEZE: 4,
+                WIPE: 8,
+                SUPPLY: 16,
+                FEE: 32,
+                PAUSE: 64
+            };
 
-        xit("ETHCALL-033 - Function with HederaTokenService.getTokenInfo(token)", async () => {
-            const info = await htsImpl.callStatic.getInformationForToken(tokenAddress);
-            expect(info).to.exist;
-            expect(info.token).to.exist;
-            expect(info.token.name).to.eq(TOKEN_NAME);
-            expect(info.token.symbol).to.eq(TOKEN_SYMBOL);
-            expect(info.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
-            expect(info.totalSupply).to.exist;
-            expect(info.totalSupply.toString()).to.eq(INITIAL_SUPPLY.toString());
-        });
+            it(`keyType = ADMIN`, async () => {
+                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['ADMIN']);
+                expect(res).to.exist;
+                expect(res.inheritAccountKey).to.eq(false);
+                expect(res.contractId).to.eq(ZERO_HEX);
+                expect(res.ed25519).to.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
+                expect(res.delegatableContractId).to.eq(ZERO_HEX);
+            });
 
-        it("ETHCALL-034 - Function with HederaTokenService.getFungibleTokenInfo(token)", async () => {
-            const info = await htsImpl.callStatic.getInformationForFungibleToken(tokenAddress);
-            expect(info).to.exist;
-            expect(info.tokenInfo).to.exist;
-            expect(info.tokenInfo.token).to.exist;
-            expect(info.tokenInfo.token.name).to.eq(TOKEN_NAME);
-            expect(info.tokenInfo.token.symbol).to.eq(TOKEN_SYMBOL);
-            expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
-            expect(info.tokenInfo.totalSupply).to.exist;
-            expect(info.tokenInfo.totalSupply.toString()).to.eq(INITIAL_SUPPLY.toString());
-        });
+            it(`keyType = KYC`, async () => {
+                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['KYC']);
+                expect(res).to.exist;
+                expect(res.inheritAccountKey).to.eq(false);
+                expect(res.contractId).to.eq(ZERO_HEX);
+                expect(res.ed25519).to.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.not.eq(EMPTY_HEX);
+                expect(res.delegatableContractId).to.eq(ZERO_HEX);
+            });
 
-        it("ETHCALL-035 - Function with HederaTokenService.getNonFungibleTokenInfo(token, serialNumber)", async () => {
-            const info = await htsImpl.callStatic.getInformationForNonFungibleToken(nftAddress, nftSerial);
-            expect(info).to.exist;
-            expect(info.tokenInfo.token).to.exist;
-            expect(info.tokenInfo.token.name).to.eq(NFT_NAME);
-            expect(info.tokenInfo.token.symbol).to.eq(NFT_SYMBOL);
-            expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
-            expect(info.serialNumber.toString()).to.eq(nftSerial.toString());
-        });
+            it(`keyType = FREEZE`, async () => {
+                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['FREEZE']);
+                expect(res).to.exist;
+                expect(res.inheritAccountKey).to.eq(false);
+                expect(res.contractId).to.eq(ZERO_HEX);
+                expect(res.ed25519).to.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.not.eq(EMPTY_HEX);
+                expect(res.delegatableContractId).to.eq(ZERO_HEX);
+            });
 
-        it("ETHCALL-036 - Function with HederaTokenService.getTokenExpiryInfo(token)", async () => {
-            const expiryInfo = await htsImpl.callStatic.getExpiryInfoForToken(tokenAddress);
-            expect(expiryInfo).to.exist;
-            expect(expiryInfo.autoRenewAccount).to.eq('0x0000000000000000000000000000000000000000');
-            expect(expiryInfo.autoRenewPeriod).to.exist;
-            expect(expiryInfo.autoRenewPeriod.toString()).to.eq('0');
-            expect(expiryInfo.second).to.exist;
-        });
+            it(`keyType = SUPPLY`, async () => {
+                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['SUPPLY']);
+                expect(res).to.exist;
+                expect(res.inheritAccountKey).to.eq(false);
+                expect(res.contractId).to.eq(ZERO_HEX);
+                expect(res.ed25519).to.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
+                expect(res.delegatableContractId).to.eq(ZERO_HEX);
+            });
 
-        it("ETHCALL-037 - Function with HederaTokenService.getTokenKey(token, keyType)", async () => {
-            const key = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, 0x000);
-            expect(key).to.exist;
+            it(`keyType = FEE`, async () => {
+                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['FEE']);
+                expect(res).to.exist;
+                expect(res.inheritAccountKey).to.eq(false);
+                expect(res.contractId).to.eq(ZERO_HEX);
+                expect(res.ed25519).to.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
+                expect(res.delegatableContractId).to.eq(ZERO_HEX);
+            });
 
-            console.log("=========KEY====");
-            console.log(key);
-            console.log("=============");
-
+            it(`keyType = PAUSE`, async () => {
+                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['PAUSE']);
+                expect(res).to.exist;
+                expect(res.inheritAccountKey).to.eq(false);
+                expect(res.contractId).to.eq(ZERO_HEX);
+                expect(res.ed25519).to.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
+                expect(res.delegatableContractId).to.eq(ZERO_HEX);
+            });
         });
     });
 
     xdescribe("others", async () => {
-        it("ETHCALL-038 - Test allowance with evm address for spender", async () => {
-        });
-
-        it("ETHCALL-039 - Test allowance with evm address for owner", async () => {
-        });
-
-        it("ETHCALL-040 - Test allowance with evm address for owner and spender", async () => {
-        });
-
-        it("ETHCALL-041 - Test isApprovedForAll with evm address for owner", async () => {
-        });
-
-        it("ETHCALL-042 - Test isApprovedForAll with evm address for operator", async () => {
-        });
-
-        it("ETHCALL-043 - Test isApprovedForAll with evm address for owner and operator", async () => {
-        });
-
-        it("ETHCALL-044 - Test balanceOf with evm address for account", async () => {
-        });
-
-        it("ETHCALL-045 - Test isFrozen with evm address for account", async () => {
-        });
-
-        it("ETHCALL-046 - Test isKyc with evm address for account", async () => {
-        });
-
         it("ETHCALL-047 - Test getTokenCustomFees with fixed fee set", async () => {
         });
 

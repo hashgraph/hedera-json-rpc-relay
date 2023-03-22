@@ -380,7 +380,7 @@ export default class ServicesClient {
             transaction.setCustomFees(
                 [
                     new CustomFixedFee()
-                    .setHbarAmount(args.customHbarFees)
+                    .setHbarAmount(Hbar.from(args.customHbarFees))
                     .setFeeCollectorAccountId(AccountId.fromString(args.treasuryAccountId))
                 ],
             )
