@@ -50,6 +50,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const NON_EXISTING_ADDRESS = '0x5555555555555555555555555555555555555555';
     const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
     const BASIC_CONTRACT_PING_RESULT = '0x0000000000000000000000000000000000000000000000000000000000000001';
+    const RESULT_TRUE = '0x0000000000000000000000000000000000000000000000000000000000000001';
     const PURE_METHOD_CALL_DATA = '0xb2e0100c';
     const VIEW_METHOD_CALL_DATA = '0x90e9b875';
     const PAYABLE_METHOD_CALL_DATA = '0xd0efd7ef';
@@ -629,7 +630,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: IS_TOKEN_ADDRESS_SIGNATURE + tokenAddress.replace('0x', '')
             };
 
-            await relay.callFailing('eth_call', [callData, 'latest'], predefined.CONTRACT_REVERT());
+            relay.call('eth_call', [callData, 'latest'])
+            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+
+            expect(res).to.eq(RESULT_TRUE);
         });
     });
 });

@@ -27,7 +27,8 @@ export class MirrorNodeClientError extends Error {
 
     static ErrorCodes = {
       ECONNABORTED: 504,
-      CONTRACT_REVERT_EXECUTED : 400
+      CONTRACT_REVERT_EXECUTED : 400,
+      NOT_SUPPORTED: 501
     };
 
     static statusCodes = {
@@ -63,6 +64,6 @@ export class MirrorNodeClientError extends Error {
     }
 
     public isNotSupported(): boolean {
-        return this.statusCode === MirrorNodeClientError.ErrorCodes.CONTRACT_REVERT_EXECUTED && this.message === 'NOT_SUPPORTED';
+        return this.statusCode === MirrorNodeClientError.ErrorCodes.NOT_SUPPORTED && this.message === 'Precompile not supported';
     }
   }
