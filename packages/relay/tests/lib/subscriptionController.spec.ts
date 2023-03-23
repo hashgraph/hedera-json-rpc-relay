@@ -25,24 +25,13 @@ import {SubscriptionController} from "../../src/lib/subscriptionController";
 import {expect} from "chai";
 import {Poller} from "../../src/lib/poller";
 import {EthImpl} from "../../src/lib/eth";
-import {MirrorNodeClient, SDKClient} from "../../src/lib/clients";
-import MockAdapter from "axios-mock-adapter";
-import LRU from "lru-cache";
-import constants from "../../src/lib/constants";
 import sinon from 'sinon';
-import {Registry} from 'prom-client';
 import dotenv from "dotenv";
 import path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();
-const registry = new Registry();
-
-let restMock: MockAdapter;
-let mirrorNodeInstance: MirrorNodeClient;
-let sdkClientStub;
-let cache;
 let ethImpl: EthImpl;
 let poller: Poller;
 
@@ -67,30 +56,17 @@ describe("subscriptionController", async function() {
 
    this.beforeAll(() => {
        // @ts-ignore
-       mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry);
-       // @ts-ignore
-       restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: "throwException" });
-
-       sdkClientStub = sinon.createStubInstance(SDKClient);
-       cache = new LRU({
-           max: constants.CACHE_MAX,
-           ttl: constants.CACHE_TTL.ONE_HOUR
-       });
-       // @ts-ignore
-       ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+       ethImpl =  sinon.createStubInstance(EthImpl);
        poller = new Poller(ethImpl, logger);
 
        subscriptionController = new SubscriptionController(poller, logger);
    });
 
    this.beforeEach(()=> {
-       cache.clear();
-       restMock.reset();
        sandbox = sinon.createSandbox();
    });
 
     this.afterEach(() => {
-        restMock.resetHandlers();
         sandbox.restore();
     });
 
