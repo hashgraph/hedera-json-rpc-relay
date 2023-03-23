@@ -80,6 +80,9 @@ export class EthImpl implements Eth {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
+  static fewBlocksGreater = 3;
+
+
 
   /**
    * Configurable options used when initializing the cache.
@@ -1230,7 +1233,7 @@ export class EthImpl implements Eth {
 
   private static blockTagIsLatestOrPending = (tag) => {
     return tag == null || tag === EthImpl.blockLatest || tag === EthImpl.blockPending;
-  }
+  };
 
   /**
    * Translates a block tag into a number. 'latest', 'pending', and null are the
@@ -1259,7 +1262,7 @@ export class EthImpl implements Eth {
    * @param showDetails
    */
   private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: string ): Promise<Block | null> {
-    const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true);
+    const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true, requestId);
 
     if (blockResponse == null) return null;
 
@@ -1334,10 +1337,22 @@ export class EthImpl implements Eth {
       return null;
     }
 
+    // If blocknumber requested is more than a few blocks greater than the latest, fail fast. 
+    // const latestBlock = await this.mirrorNodeClient.getLatestBlock(requestId);
+    if(!returnLatest){
+      const response = await this.mirrorNodeClient.getLatestBlock(requestId);
+      blockResponse = response.blocks[0];
+      if(Number(blockNumberOrTag) > blockResponse.number + EthImpl.fewBlocksGreater){
+        return null;
+      }
+    }
+
     if (blockNumberOrTag == null || EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
-      const blockPromise = this.mirrorNodeClient.getLatestBlock(requestId);
-      const blockAnswer = await blockPromise;
-      blockResponse = blockAnswer.blocks[0];
+      if(!blockResponse) {
+        const response = await this.mirrorNodeClient.getLatestBlock(requestId);
+        blockResponse = response.blocks[0];
+      }
+
     } else if (blockNumberOrTag == EthImpl.blockEarliest) {
       blockResponse = await this.mirrorNodeClient.getBlock(0, requestId);
     } else if (blockNumberOrTag.length < 32) {
