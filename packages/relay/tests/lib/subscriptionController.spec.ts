@@ -221,4 +221,14 @@ describe("subscriptionController", async function() {
         expect(status).to.be.eq(true);
     });
 
+    it('Subscribing to the same event and filters should return the same subscription id', async function () {
+        const wsConnection = new MockWsConnection("7");
+        const tag1 = { event: "logs", filters:{"topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}};
+        const subId = subscriptionController.subscribe(wsConnection, tag1.event);
+        const subId2 = subscriptionController.subscribe(wsConnection, tag1.event);
+
+        expect(subId).to.be.eq(subId2);
+    });
+
+
 });
