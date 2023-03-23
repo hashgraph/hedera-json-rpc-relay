@@ -64,7 +64,7 @@ describe('@precompile Tests for eth_call with HTS', async function () {
     let nftSerial, tokenAddress, nftAddress, htsImplAddress, htsImpl, adminAccountLongZero, account1LongZero, account2LongZero;
 
     let tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressNoFees,
-        tokenAddressFractionalFees, nftAddressRoyaltyFees,
+        tokenAddressFractionalFees, tokenAddressAllFees, nftAddressRoyaltyFees,
         tokenAddresses, nftAddresses;
 
     before(async () => {
@@ -120,6 +120,14 @@ describe('@precompile Tests for eth_call with HTS', async function () {
             customFractionalFees: 1
         });
 
+        // HTS token with all custom fees
+        const htsResult4 = await servicesNode.createHTS({
+            ...defaultTokenOptions,
+            customFractionalFees: 1,
+            customTokenFees: 1,
+            customHbarFees: 1
+        });
+
         // NFT with no custom fees
         const nftResult0 = await servicesNode.createNFT(defaultNftOptions);
 
@@ -159,6 +167,7 @@ describe('@precompile Tests for eth_call with HTS', async function () {
         tokenAddressFixedTokenFees = Utils.idToEvmAddress(htsResult2.receipt.tokenId.toString());
         tokenAddressNoFees = Utils.idToEvmAddress(htsResult0.receipt.tokenId.toString());
         tokenAddressFractionalFees = Utils.idToEvmAddress(htsResult3.receipt.tokenId.toString());
+        tokenAddressAllFees = Utils.idToEvmAddress(htsResult4.receipt.tokenId.toString());
 
         nftAddress = Utils.idToEvmAddress(nftTokenId0);
         nftAddressRoyaltyFees = Utils.idToEvmAddress(nftTokenId1);
@@ -181,7 +190,7 @@ describe('@precompile Tests for eth_call with HTS', async function () {
         const rec1 = await IERC20.transfer(accounts[1].address, 100, { gasLimit: 1_000_000 });
         await rec1.wait();
         const rec2 = await IERC20.approve(accounts[2].address, 200, { gasLimit: 1_000_000 });
-        await rec2.wait();
+        const rrr =await rec2.wait();
 
         const rec3 = await IERC721.transferFrom(accounts[0].address, accounts[1].address, nftSerial, { gasLimit: 1_000_000 });
         await rec3.wait();
@@ -202,7 +211,7 @@ describe('@precompile Tests for eth_call with HTS', async function () {
         TokenManager = await TokenManagementContractFactory.deploy({gasLimit: 15000000});
         const rec7 = await htsImpl.deployTransaction.wait();
 
-        tokenAddresses = [tokenAddressNoFees, tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressFractionalFees];
+        tokenAddresses = [tokenAddressNoFees, tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressFractionalFees, tokenAddressAllFees];
         nftAddresses = [nftAddress, nftAddressRoyaltyFees];
     });
 
@@ -465,6 +474,36 @@ describe('@precompile Tests for eth_call with HTS', async function () {
                 expect(customFees.royaltyFees.length).to.eq(0);
             });
 
+            it("token with all custom fees", async () => {
+                const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressAllFees);
+                expect(customFees).to.exist;
+                expect(customFees.fractionalFees).to.exist;
+                expect(customFees.fractionalFees.length).to.eq(1);
+                expect(customFees.fractionalFees[0].amount).to.exist;
+                expect(customFees.fractionalFees[0].amount.toString()).to.eq("1");
+                expect(customFees.fractionalFees[0].tokenId).to.eq(ZERO_HEX);
+                expect(customFees.fractionalFees[0].feeCollector).to.exist;
+                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+
+                expect(customFees.fixedFees).to.exist;
+                expect(customFees.fixedFees.length).to.eq(2);
+
+                expect(customFees.fixedFees[0].amount).to.exist;
+                expect(customFees.fixedFees[0].amount.toString()).to.eq(Hbar.from(1).toTinybars().toString());
+                expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
+                expect(customFees.fixedFees[0].feeCollector).to.exist;
+                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+
+                expect(customFees.fixedFees[1].amount).to.exist;
+                expect(customFees.fixedFees[1].amount.toString()).to.eq("1");
+                expect(customFees.fixedFees[1].tokenId).to.eq(ZERO_HEX);
+                expect(customFees.fixedFees[1].feeCollector).to.exist;
+                expect(customFees.fixedFees[1].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+
+                expect(customFees.royaltyFees).to.exist;
+                expect(customFees.royaltyFees.length).to.eq(0);
+            });
+
             it("nft with no custom fees", async () => {
                 const customFees = await htsImpl.callStatic.getCustomFeesForToken(nftAddress);
                 expect(customFees).to.exist;
@@ -499,9 +538,10 @@ describe('@precompile Tests for eth_call with HTS', async function () {
         describe('Token Info', async () => {
             const tokenTests = [
                 'token with no custom fees',
-                'token with no fixed hbar fee',
-                'token with no fixed token fee',
-                'token with no fractional fee',
+                'token with a fixed hbar fee',
+                'token with a fixed token fee',
+                'token with a fractional fee',
+                'token with all custom fees',
             ]
             const nftTests = [
                 'nft with no custom fees',
@@ -629,18 +669,10 @@ describe('@precompile Tests for eth_call with HTS', async function () {
     });
 
     xdescribe("others", async () => {
-        it("ETHCALL-047 - Test getTokenCustomFees with fixed fee set", async () => {
-        });
-
-        it("ETHCALL-048 - Test getTokenCustomFees with fractional fee set", async () => {
-        });
-
-        it("ETHCALL-049 - Test getTokenCustomFees with royalty fee set", async () => {
-        });
-
         it("ETHCALL-050 - Test getTokenCustomFees with more than one fee set", async () => {
         });
 
+        // negative
         it("ETHCALL-051 - Test with non existing token from request body", async () => {
         });
 

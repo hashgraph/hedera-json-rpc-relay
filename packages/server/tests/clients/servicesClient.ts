@@ -376,35 +376,33 @@ export default class ServicesClient {
             transaction.setFreezeKey(args.adminPrivateKey);
         }
 
+        const customFees = [];
         if (args.customHbarFees) {
-            transaction.setCustomFees(
-                [
-                    new CustomFixedFee()
+            customFees.push(new CustomFixedFee()
                     .setHbarAmount(Hbar.from(args.customHbarFees))
                     .setFeeCollectorAccountId(AccountId.fromString(args.treasuryAccountId))
-                ],
             )
         }
 
         if (args.customTokenFees) {
-            transaction.setCustomFees(
-                [
-                    new CustomFixedFee()
+            customFees.push(
+                new CustomFixedFee()
                     .setAmount(args.customTokenFees)
                     .setFeeCollectorAccountId(AccountId.fromString(args.treasuryAccountId))
-                ],
             )
         }
 
         if (args.customFractionalFees) {
-            transaction.setCustomFees(
-                [
-                    new CustomFractionalFee()
+            customFees.push(
+                new CustomFractionalFee()
                     .setNumerator(args.customFractionalFees)
                     .setDenominator(args.customFractionalFees * 10)
                     .setFeeCollectorAccountId(AccountId.fromString(args.treasuryAccountId))
-                ]
             )
+        }
+
+        if (customFees.length) {
+            transaction.setCustomFees(customFees);
         }
 
         const tokenCreate = await (await transaction)

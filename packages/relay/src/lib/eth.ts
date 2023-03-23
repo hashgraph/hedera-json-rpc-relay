@@ -1014,8 +1014,6 @@ export class EthImpl implements Eth {
       // ETH_CALL_CONSENSUS = false enables the use of Mirror node
       if (process.env.ETH_CALL_CONSENSUS == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
-        const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
-        if (!(isHts?.type === constants.TYPE_TOKEN)) {
           const callData = {
             ...call,
             gas,
@@ -1027,7 +1025,6 @@ export class EthImpl implements Eth {
             return EthImpl.prepend0x(contractCallResponse.result);
           }
           return EthImpl.emptyHex;
-        }
       }
 
       let data = call.data;
