@@ -117,10 +117,10 @@ describe("subscriptionController", async function() {
 
 
     it('notifySubscribers should notify multiple subscribers with data', async function () {
-        const wsConnection1 = new MockWsConnection("2");
+        const wsConnection1 = new MockWsConnection("12");
         const subId1 = subscriptionController.subscribe(wsConnection1, 'logs');
         const spy1 = sandbox.spy(wsConnection1, 'send');
-        const wsConnection2 = new MockWsConnection("2");
+        const wsConnection2 = new MockWsConnection("13");
         const subId2 = subscriptionController.subscribe(wsConnection2, 'logs');
         const spy2 = sandbox.spy(wsConnection2, 'send');
         const testData = "test example data";
