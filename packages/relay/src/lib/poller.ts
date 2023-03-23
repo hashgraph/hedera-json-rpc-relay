@@ -119,6 +119,7 @@ export class Poller {
     }
 
     hasPoll(tag): boolean {
+        // Return boolean true if the polls array contains this tag
         return !!this.polls.filter(p => p.tag === tag).length;
     }
 
