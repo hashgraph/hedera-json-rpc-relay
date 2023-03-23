@@ -25,7 +25,7 @@ import WebSocket from 'ws';
 chai.use(solidity);
 
 import {Utils} from '../../helpers/utils';
-import {predefined} from "@hashgraph/json-rpc-relay";
+import {predefined} from '../../../../../packages/relay';
 const {ethers} = require('ethers');
 
 const FOUR_TWENTY_NINE_RESPONSE = 'Unexpected server response: 429';
