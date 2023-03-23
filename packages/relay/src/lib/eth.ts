@@ -82,8 +82,6 @@ export class EthImpl implements Eth {
   static blockPending = 'pending';
   static fewBlocksGreater = 3;
 
-
-
   /**
    * Configurable options used when initializing the cache.
    *
@@ -1352,7 +1350,6 @@ export class EthImpl implements Eth {
         const response = await this.mirrorNodeClient.getLatestBlock(requestId);
         blockResponse = response.blocks[0];
       }
-
     } else if (blockNumberOrTag == EthImpl.blockEarliest) {
       blockResponse = await this.mirrorNodeClient.getBlock(0, requestId);
     } else if (blockNumberOrTag.length < 32) {
