@@ -956,6 +956,7 @@ export class EthImpl implements Eth {
           }
           return EthImpl.emptyHex;
         }
+        return EthImpl.emptyHex;
       }
       
       return await this.callConsensusNode(call, gas, requestId);
