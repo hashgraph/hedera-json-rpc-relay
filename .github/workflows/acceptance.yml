@@ -56,6 +56,12 @@ jobs:
     with:
       testfilter: htsprecompilev1
 
+  precompilecalls:
+    name: Precompile
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: precompile-calls
+
   websocket:
     name: Websocket
     uses: ./.github/workflows/acceptance-workflow.yml

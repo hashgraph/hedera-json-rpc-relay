@@ -38,7 +38,7 @@ import TokenManagementContractJson from '../../contracts/TokenManagementContract
 
 import { Utils } from '../../helpers/utils';
 
-describe('@precompile Tests for eth_call with HTS', async function () {
+describe('@precompile-calls Tests for eth_call with HTS', async function () {
     this.timeout(240 * 1000); // 240 seconds
     const { servicesNode, mirrorNode, relay } = global;
 
