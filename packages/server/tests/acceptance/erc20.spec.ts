@@ -163,6 +163,8 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 it ('@release contract owner transfers tokens', async function () {
                                     tx = await contract.connect(tokenOwnerWallet).transfer(to, amount);
+                                    // alow mirror node a 5 full record stream write windows (5 sec) and a buffer to persist setup details
+                                    await new Promise(r => setTimeout(r, 5000));
                                     const ownerBalance = await contract.balanceOf(tokenOwner);
                                     const toBalance = await contract.balanceOf(to);
                                     expect(ownerBalance.toString()).to.be.equal('0');
@@ -179,6 +181,8 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 it ('other account transfers tokens back to owner', async function () {
                                     tx = await contract.connect(toWallet).transfer(tokenOwner, amount);
+                                    // alow mirror node a 5 full record stream write windows (5 sec) and a buffer to persist setup details
+                                    await new Promise(r => setTimeout(r, 5000));
                                     const ownerBalance = await contract.balanceOf(tokenOwner);
                                     const toBalance = await contract.balanceOf(to);
                                     expect(ownerBalance.toString()).to.be.equal(amount.toString());
@@ -191,6 +195,8 @@ describe('@erc20 Acceptance Tests', async function () {
                                 before(async function () {
                                     tx = await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, {gasLimit: 1_000_000});
                                     receipt = await tx.wait();
+                                    // alow mirror node a 5 full record stream write windows (5 sec) and a buffer to persist setup details
+                                    await new Promise(r => setTimeout(r, 5000));
                                 });
 
                                 it('emits an approval event', async function () {
@@ -214,6 +220,8 @@ describe('@erc20 Acceptance Tests', async function () {
                                     it('transfers the requested amount', async function () {
                                         tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply, {gasLimit: 1_000_000});
                                         const receipt = await tx.wait();
+                                        // alow mirror node a 5 full record stream write windows (5 sec) and a buffer to persist setup details
+                                        await new Promise(r => setTimeout(r, 5000));
                                         const ownerBalance = await contract.balanceOf(tokenOwner);
                                         const toBalance = await contract.balanceOf(to);
                                         expect(ownerBalance.toString()).to.be.equal('0');
@@ -297,6 +305,8 @@ describe('@erc20 Acceptance Tests', async function () {
                             describe('@release when the spender has unlimited allowance', function () {
                                 beforeEach(async function () {
                                     await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256, {gasLimit: 1_000_000});
+                                    // alow mirror node a 5 full record stream write windows (5 sec) and a buffer to persist setup details
+                                    await new Promise(r => setTimeout(r, 5000));
                                 });
 
                                 if (testTitles[i].testName !== HTS) {

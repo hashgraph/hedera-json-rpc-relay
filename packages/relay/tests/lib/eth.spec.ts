@@ -2677,11 +2677,11 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimit
       };
 
-      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(400, {
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(501, {
         '_status': {
           'messages': [
             {
-              'message': 'NOT_SUPPORTED'
+              'message': 'Precompile not supported'
             }
           ]
         }
