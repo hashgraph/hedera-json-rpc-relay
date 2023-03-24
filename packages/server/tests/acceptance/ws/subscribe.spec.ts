@@ -25,8 +25,7 @@ chai.use(solidity);
 
 import {Utils} from '../../helpers/utils';
 import {AliasAccount} from "../../clients/servicesClient";
-import { finished } from "stream";
-import bodyParser from "koa-bodyparser";
+import { utils } from "ethers";
 const {ethers} = require('ethers');
 const LogContractJson = require('../../contracts/Logs.json');
 
@@ -153,6 +152,47 @@ describe('@web-socket Acceptance Tests', async function() {
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             expect(eventReceived).to.be.eq(100);
+        });
+
+        it.only('Subscribes to all contract logs', async function () {
+            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
+            const filter = {
+                topics: []
+              };
+            let eventReceived;
+
+            loggerContractWS.on(filter, (event) => {
+                eventReceived = event;
+            });
+
+            await logContractSigner.log0(10);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            if((!eventReceived.hasOwnProperty('event')) && (!eventReceived.hasOwnProperty('args'))) {
+                expect(eventReceived.data).to.equal('0x000000000000000000000000000000000000000000000000000000000000000a');
+            }
+
+            await logContractSigner.log1(1);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived.args[0]).to.be.eq(1);
+
+            await logContractSigner.log2(1,2);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived.args[0]).to.be.eq(1);
+            expect(eventReceived.args[1]).to.be.eq(2);
+
+            await logContractSigner.log3(10,20,31);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived.args[0]).to.be.eq(10);
+            expect(eventReceived.args[1]).to.be.eq(20);
+            expect(eventReceived.args[2]).to.be.eq(31);
+
+            await logContractSigner.log4(11,22,33,44);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived.args[0]).to.be.eq(11);
+            expect(eventReceived.args[1]).to.be.eq(22);
+            expect(eventReceived.args[2]).to.be.eq(33);
+            expect(eventReceived.args[3]).to.be.eq(44);
+
         });
 
         it('Multiple ws connections and multiple subscriptions per connection', async function () {
