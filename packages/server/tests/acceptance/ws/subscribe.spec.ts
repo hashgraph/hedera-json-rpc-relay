@@ -21,11 +21,11 @@
 // external resources
 import { solidity } from "ethereum-waffle";
 import chai, {assert, expect} from "chai";
+import WebSocket from 'ws';
 chai.use(solidity);
 
 import {Utils} from '../../helpers/utils';
-import { finished } from "stream";
-import bodyParser from "koa-bodyparser";
+import {predefined} from '../../../../../packages/relay';
 const {ethers} = require('ethers');
 
 const FOUR_TWENTY_NINE_RESPONSE = 'Unexpected server response: 429';
@@ -117,6 +117,25 @@ describe('@web-socket Acceptance Tests', async function() {
             secondProvider.destroy();
         });
 
+        it('When JSON is invalid, expect INVALID_REQUEST Error message', async function() {
+
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = "";
+            webSocket.on('message', function incoming(data) {
+                response = data;
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1');
+            });
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            expect(JSON.parse(response).code).to.eq(predefined.INVALID_REQUEST.code);
+            expect(JSON.parse(response).name).to.eq(predefined.INVALID_REQUEST.name);
+            expect(JSON.parse(response).message).to.eq(predefined.INVALID_REQUEST.message);
+
+            webSocket.close();
+        });
+
         it('Does not allow more connections than the connection limit', async function() {
             // We already have one connection
             for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT); i++) {
@@ -128,7 +147,6 @@ describe('@web-socket Acceptance Tests', async function() {
             await expectedErrorAndConnections(server);
 
             await new Promise(resolve => setTimeout(resolve, 1000));
- 
         });
     });
 });

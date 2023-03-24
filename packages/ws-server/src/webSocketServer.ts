@@ -21,7 +21,7 @@
 import Koa from 'koa';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import websockify from 'koa-websocket';
-import { Relay, RelayImpl, predefined } from '@hashgraph/json-rpc-relay';
+import {Relay, RelayImpl, predefined, JsonRpcError} from '@hashgraph/json-rpc-relay';
 import { Registry } from 'prom-client';
 import pino from 'pino';
 import { Socket } from 'dgram';
@@ -66,7 +66,14 @@ app.ws.use((ctx) => {
 
     ctx.websocket.on('message', async (msg) => {
         ctx.websocket.id = relay.subs()?.generateId();
-        const request = JSON.parse(msg.toString('ascii'));
+        let request;
+        try {
+            request = JSON.parse(msg.toString('ascii'));
+        } catch (e) {
+            logger.error(`${LOGGER_PREFIX} ${ctx.websocket.id} ${e}`);
+            ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
+            return;
+        }
         const {method, params} = request;
         let response;
 
