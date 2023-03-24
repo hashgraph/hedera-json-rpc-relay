@@ -17,6 +17,8 @@
  * limitations under the License.
  *
  */
+// Override ENV variables before importing anything
+process.env.WS_MAX_CONNECTION_TTL = '10000';
 
 import dotenv from 'dotenv';
 import path from 'path';

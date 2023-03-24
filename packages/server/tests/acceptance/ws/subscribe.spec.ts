@@ -232,6 +232,11 @@ describe('@web-socket Acceptance Tests', async function() {
 
             await new Promise(resolve => setTimeout(resolve, 1000));
         });
+
+        it('Connection TTL is enforced, should close all connections', async function() {
+            await new Promise(resolve => setTimeout(resolve, parseInt(process.env.WS_MAX_CONNECTION_TTL) + 1000));
+            expect(server._connections).to.equal(0);
+        });
     });
 });
 

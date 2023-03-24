@@ -24,7 +24,6 @@ import websockify from 'koa-websocket';
 import {Relay, RelayImpl, predefined, JsonRpcError} from '@hashgraph/json-rpc-relay';
 import { Registry } from 'prom-client';
 import pino from 'pino';
-import { Socket } from 'dgram';
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -43,6 +42,8 @@ const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 let connectedClients = 0;
 const MAX_CONNECTIONS = parseInt(process.env.CONNECTION_LIMIT || '10');
+// 60 minutes in ms by default
+const MAX_CONNECTION_TTL = parseInt(process.env.WS_MAX_CONNECTION_TTL || '3600000'); // 60 minutes in ms by default
 
 const app = websockify(new Koa(), { 
         verifyClient: function(info, done) {
@@ -62,7 +63,13 @@ app.ws.use((ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
     logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
 
-    connectedClients = ctx.app.server._connections;
+    // Limit connection TTL and close connection if its reached
+    setTimeout(() => {
+        if (ctx.websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
+            logger.info(`${LOGGER_PREFIX} closing connection ${ctx.websocket.id} due to reaching TTL of ${MAX_CONNECTION_TTL}ms`);
+            ctx.websocket.close();
+        }
+    }, MAX_CONNECTION_TTL);
 
     ctx.websocket.on('message', async (msg) => {
         ctx.websocket.id = relay.subs()?.generateId();
