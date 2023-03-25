@@ -505,25 +505,18 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getStorageAt(address=${address}, slot=${slot}, blockNumberOrTag=${blockNumberOrTag})`);
 
-    if (EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) || !blockNumberOrTag){
-      return await this.getCurrentState(address, EthImpl.toHex32Byte(slot), requestId);
-    } else {
-      return await this.getStateFromBlock(address, EthImpl.toHex32Byte(slot), blockNumberOrTag, requestId);
-    }
-  }
-
-  /**
-   * Returns the current state value filtered by address and slot.
-   * @param address
-   * @param slot
-   * @param requestId
-   * @returns
-   */
-  private async getCurrentState(address: string, slot: string, requestId?: string) {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
 
-    await this.mirrorNodeClient.getContractCurrentStateByAddressAndSlot(address, slot, requestId)
+    const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false, requestId);
+    // To save a request to the mirror node for `latest` and `pending` blocks, we directly return null from `getHistoricalBlockResponse`
+    // But if a block number or `earliest` tag is passed and the mirror node returns `null`, we should throw an error.
+    if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
+      throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
+    }
+
+    const blockEndTimestamp = blockResponse?.timestamp?.to;
+
+    await this.mirrorNodeClient.getContractStateByAddressAndSlot(address, slot, blockEndTimestamp, requestId)
     .then(response => {
       if(response === null) {
         throw predefined.RESOURCE_NOT_FOUND(`Cannot find current state for contract address ${address} at slot=${slot}`);
@@ -535,54 +528,6 @@ export class EthImpl implements Eth {
     .catch((error: any) => {
       throw this.genericErrorHandler(error, `${requestIdPrefix} Failed to retrieve current contract state for address ${address} at slot=${slot}`);
     });
-
-    return result;
-  }
-
-  /**
-   * Returns the state value of contract filtered by address, slot and block number.
-   * @param address
-   * @param slot
-   * @param blockNumberOrTag
-   * @param requestId
-   * @returns
-   */
-  private async getStateFromBlock(address: string, slot: string, blockNumberOrTag?: string | null, requestId?: string) {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
-
-    const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false, requestId);
-    // To save a request to the mirror node for `latest` and `pending` blocks, we directly return null from `getHistoricalBlockResponse`
-    // But if a block number or `earliest` tag is passed and the mirror node returns `null`, we should throw an error.
-    if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
-      throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
-    }
-
-    const blockEndTimestamp = blockResponse?.timestamp?.to;
-    const contractResult = await this.mirrorNodeClient.getLatestContractResultsByAddress(address, blockEndTimestamp, 1, requestId);
-
-    if (contractResult?.results?.length > 0) {
-      // retrieve the contract result details
-      await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
-        .then(contractResultDetails => {
-          if(contractResultDetails === null) {
-            throw predefined.RESOURCE_NOT_FOUND(`Contract result details for contract address ${address} at slot ${slot} and timestamp=${contractResult.results[0].timestamp}`);
-          }
-          if (EthImpl.isArrayNonEmpty(contractResultDetails.state_changes)) {
-            // filter the state changes to match slot and return value
-            const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === slot);
-            if (stateChange) {
-              result = stateChange.value_written;
-            }
-          }
-        })
-        .catch((error: any) => {
-          throw this.genericErrorHandler(
-              error,
-              `${requestIdPrefix} Failed to retrieve contract result details for contract address ${address} at slot ${slot} and timestamp=${contractResult.results[0].timestamp}`
-          );
-        });
-    }
 
     return result;
   }

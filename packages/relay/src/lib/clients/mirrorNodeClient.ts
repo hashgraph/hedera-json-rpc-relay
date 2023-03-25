@@ -513,10 +513,13 @@ export class MirrorNodeClient {
         return this.getContractResultsByAddress(address, contractResultsParams, limitOrderParams, requestId);
     }
 
-    public async getContractCurrentStateByAddressAndSlot(address: string, slot: string, requestId?: string) {
+    public async getContractStateByAddressAndSlot(address: string, slot: string, blockEndTimestamp?: string, requestId?: string) {
         const limitOrderParams: ILimitOrderParams = this.getLimitOrderQueryParam(constants.MIRROR_NODE_QUERY_LIMIT, constants.ORDER.DESC);
         const queryParamObject = {};
-
+        
+        if (blockEndTimestamp) {
+            this.setQueryParam(queryParamObject, 'timestamp', blockEndTimestamp);
+        }
         this.setQueryParam(queryParamObject, 'slot', slot);
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);

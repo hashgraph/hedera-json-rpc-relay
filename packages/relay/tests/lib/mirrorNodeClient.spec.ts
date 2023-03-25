@@ -572,7 +572,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`getContractCurrentStateByAddressAndSlot`', async () => {
     mock.onGet(`contracts/${contractAddress}/state?slot=${defaultCurrentContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultCurrentContractState);
-    const result = await mirrorNodeInstance.getContractCurrentStateByAddressAndSlot(contractAddress, defaultCurrentContractState.state[0].slot);
+    const result = await mirrorNodeInstance.getContractStateByAddressAndSlot(contractAddress, defaultCurrentContractState.state[0].slot);
 
     expect(result).to.exist;
     expect(result.state).to.exist;
@@ -582,7 +582,7 @@ describe('MirrorNodeClient', async function () {
   it('`getContractCurrentStateByAddressAndSlot` - incorrect address', async () => {
     mock.onGet(`contracts/${contractAddress}/state?slot=${defaultCurrentContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultCurrentContractState);
     try {
-      expect(await mirrorNodeInstance.getContractCurrentStateByAddressAndSlot(contractAddress+'1', defaultCurrentContractState.state[0].slot)).to.throw();
+      expect(await mirrorNodeInstance.getContractStateByAddressAndSlot(contractAddress+'1', defaultCurrentContractState.state[0].slot)).to.throw();
     } catch (error) {
       expect(error).to.exist;
     }
@@ -591,7 +591,7 @@ describe('MirrorNodeClient', async function () {
   it('`getContractCurrentStateByAddressAndSlot` - incorrect slot', async () => {
     mock.onGet(`contracts/${contractAddress}/state?slot=${defaultCurrentContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultCurrentContractState);
     try {
-      expect(await mirrorNodeInstance.getContractCurrentStateByAddressAndSlot(contractAddress, defaultCurrentContractState.state[0].slot+'1')).to.throw();
+      expect(await mirrorNodeInstance.getContractStateByAddressAndSlot(contractAddress, defaultCurrentContractState.state[0].slot+'1')).to.throw();
     } catch (error) {
       expect(error).to.exist;
     }
