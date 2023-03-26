@@ -120,6 +120,8 @@ app.ws.use((ctx) => {
     ctx.websocket.on('close', function () {
         relay.subs()?.unsubscribe(ctx.websocket);
         console.log('stopping client interval');
+        connectedClients--;
+        ctx.websocket.terminate();
     });
 
 });
