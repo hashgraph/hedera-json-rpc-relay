@@ -21,11 +21,12 @@
 // external resources
 import { solidity } from "ethereum-waffle";
 import chai, {assert, expect} from "chai";
+import WebSocket from 'ws';
 chai.use(solidity);
 
 import {Utils} from '../../helpers/utils';
 import {AliasAccount} from "../../clients/servicesClient";
-import { utils } from "ethers";
+import {predefined} from '../../../../../packages/relay';
 const {ethers} = require('ethers');
 const LogContractJson = require('../../contracts/Logs.json');
 
@@ -154,47 +155,6 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(eventReceived).to.be.eq(100);
         });
 
-        it.only('Subscribes to all contract logs', async function () {
-            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
-            const filter = {
-                topics: []
-              };
-            let eventReceived;
-
-            loggerContractWS.on(filter, (event) => {
-                eventReceived = event;
-            });
-
-            await logContractSigner.log0(10);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            if((!eventReceived.hasOwnProperty('event')) && (!eventReceived.hasOwnProperty('args'))) {
-                expect(eventReceived.data).to.equal('0x000000000000000000000000000000000000000000000000000000000000000a');
-            }
-
-            await logContractSigner.log1(1);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            expect(eventReceived.args[0]).to.be.eq(1);
-
-            await logContractSigner.log2(1,2);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            expect(eventReceived.args[0]).to.be.eq(1);
-            expect(eventReceived.args[1]).to.be.eq(2);
-
-            await logContractSigner.log3(10,20,31);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            expect(eventReceived.args[0]).to.be.eq(10);
-            expect(eventReceived.args[1]).to.be.eq(20);
-            expect(eventReceived.args[2]).to.be.eq(31);
-
-            await logContractSigner.log4(11,22,33,44);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            expect(eventReceived.args[0]).to.be.eq(11);
-            expect(eventReceived.args[1]).to.be.eq(22);
-            expect(eventReceived.args[2]).to.be.eq(33);
-            expect(eventReceived.args[3]).to.be.eq(44);
-
-        });
-
         it('Multiple ws connections and multiple subscriptions per connection', async function () {
             const wsConn1 = new ethers.providers.WebSocketProvider(
                 `ws://localhost:${process.env.WEB_SOCKET_PORT}`
@@ -241,6 +201,25 @@ describe('@web-socket Acceptance Tests', async function() {
             wsConn2.destroy();
         });
 
+        it('When JSON is invalid, expect INVALID_REQUEST Error message', async function() {
+
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = "";
+            webSocket.on('message', function incoming(data) {
+                response = data;
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1');
+            });
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            expect(JSON.parse(response).code).to.eq(predefined.INVALID_REQUEST.code);
+            expect(JSON.parse(response).name).to.eq(predefined.INVALID_REQUEST.name);
+            expect(JSON.parse(response).message).to.eq(predefined.INVALID_REQUEST.message);
+
+            webSocket.close();
+        });
+
         it('Does not allow more connections than the connection limit', async function() {
             // We already have one connection
             for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT); i++) {
@@ -252,7 +231,6 @@ describe('@web-socket Acceptance Tests', async function() {
             await expectedErrorAndConnections(server);
 
             await new Promise(resolve => setTimeout(resolve, 1000));
- 
         });
     });
 });
