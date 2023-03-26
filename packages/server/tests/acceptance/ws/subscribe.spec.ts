@@ -27,7 +27,8 @@ chai.use(solidity);
 import {Utils} from '../../helpers/utils';
 import {AliasAccount} from "../../clients/servicesClient";
 import {predefined} from '../../../../../packages/relay';
-const {ethers} = require('ethers');
+import { ethers } from "ethers";
+// const {ethers} = require('ethers');
 const LogContractJson = require('../../contracts/Logs.json');
 
 const FOUR_TWENTY_NINE_RESPONSE = 'Unexpected server response: 429';
@@ -36,7 +37,14 @@ const WS_RELAY_URL = `ws://localhost:${process.env.WEB_SOCKET_PORT}`;
 const establishConnection = async () => {
         const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
         await provider.send('eth_chainId');
+        return provider;
 }; 
+
+const unsubscribeAndCloseConnections =async (provider: ethers.providers.WebSocketProvider, subId: string) => {
+    const result = await provider.send('eth_unsubscribe', [subId]);
+    provider.destroy();
+    return result;
+};
 
 async function expectedErrorAndConnections(server: any): Promise<void> {
     
@@ -66,7 +74,7 @@ async function expectedErrorAndConnections(server: any): Promise<void> {
             await establishConnection();
         });
     } catch (err) {
-        console.log('Caught!', err.message);
+        console.log('Caught error:', err.message);
     }
 };
 
@@ -222,8 +230,11 @@ describe('@web-socket Acceptance Tests', async function() {
 
         it('Does not allow more connections than the connection limit', async function() {
             // We already have one connection
+            expect(server._connections).to.equal(1);
+
+            let providers: ethers.providers.WebSocketProvider[] = []; 
             for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT); i++) {
-                await establishConnection();
+                providers.push(await establishConnection());
             }
 
             expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT));
@@ -231,6 +242,58 @@ describe('@web-socket Acceptance Tests', async function() {
             await expectedErrorAndConnections(server);
 
             await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Now let's close all of these connections
+            providers.forEach( async(provider:ethers.providers.WebSocketProvider) => {
+                const subId = await provider.send('eth_subscribe',["logs", {"address":logContractSigner.address}]);
+                await unsubscribeAndCloseConnections(provider, subId);
+            });            
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            expect(server._connections).to.equal(1);
+        });
+
+        it('Closes connections to the server on webSocket close', async function() {
+            // start with the one existing connection to the server.
+            expect(server._connections).to.equal(1);
+
+            let provider = await establishConnection();
+            await new Promise(resolve => setTimeout(resolve, 200));
+            expect(server._connections).to.equal(2);
+
+            // subscribe
+            let subId = await provider.send('eth_subscribe',["logs", {"address":logContractSigner.address}]);
+            // unsubscribe
+            let result = await unsubscribeAndCloseConnections(provider, subId);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            expect(server._connections).to.equal(1);
+            expect(result).to.be.true;
+
+            // Let's try with 3 connections
+            provider = await establishConnection();
+            await new Promise(resolve => setTimeout(resolve, 200));
+            // subscribe
+            subId = await provider.send('eth_subscribe',["logs", {"address":logContractSigner.address}]);
+            expect(server._connections).to.equal(2); 
+            
+            const provider2 = await establishConnection();
+            await new Promise(resolve => setTimeout(resolve, 200));
+            // subscribe
+            const subId2 = await provider.send('eth_subscribe',["logs", {"address":logContractSigner.address}]);
+            expect(server._connections).to.equal(3);
+            
+            // unsubscribe
+            result = await unsubscribeAndCloseConnections(provider2, subId2);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            expect(server._connections).to.equal(2);
+
+            // unsubscribe
+            result = await unsubscribeAndCloseConnections(provider, subId);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            expect(server._connections).to.equal(1);
+
         });
     });
 });
