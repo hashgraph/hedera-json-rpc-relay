@@ -28,7 +28,7 @@ import {Utils} from '../../helpers/utils';
 import {AliasAccount} from "../../clients/servicesClient";
 import {predefined} from '../../../../../packages/relay';
 import { ethers } from "ethers";
-// const {ethers} = require('ethers');
+
 const LogContractJson = require('../../contracts/Logs.json');
 
 const FOUR_TWENTY_NINE_RESPONSE = 'Unexpected server response: 429';
@@ -39,12 +39,6 @@ const establishConnection = async () => {
         await provider.send('eth_chainId');
         return provider;
 }; 
-
-const unsubscribeAndCloseConnections =async (provider: ethers.providers.WebSocketProvider, subId: string) => {
-    const result = await provider.send('eth_unsubscribe', [subId]);
-    provider.destroy();
-    return result;
-};
 
 async function expectedErrorAndConnections(server: any): Promise<void> {
     
@@ -76,6 +70,12 @@ async function expectedErrorAndConnections(server: any): Promise<void> {
     } catch (err) {
         console.log('Caught error:', err.message);
     }
+};
+
+const unsubscribeAndCloseConnections = async (provider: ethers.providers.WebSocketProvider, subId: string) => {
+    const result = await provider.send('eth_unsubscribe', [subId]);
+    provider.destroy();
+    return result;
 };
 
 describe('@web-socket Acceptance Tests', async function() {
@@ -158,7 +158,7 @@ describe('@web-socket Acceptance Tests', async function() {
             // perform an action on the SC that emits a Log1 event
             await logContractSigner.log1(100);
             // wait 1s to expect the message
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 4000));
 
             expect(eventReceived).to.be.eq(100);
         });
@@ -295,6 +295,113 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(server._connections).to.equal(1);
 
         });
+    });
+
+    describe('Subscribes to log events', async function() {
+
+        it.skip('Subscribes for all contract logs', async function () {
+            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
+
+            const filter = {
+                topics: []
+              };
+            // subscribe
+             const subId = await wsProvider.send('eth_subscribe',["logs"]);
+             let eventReceived;
+
+             wsProvider.on(filter, (event) => {
+                eventReceived = event;
+             });
+            const listener = async (data) => {
+                console.log(data);
+            };
+
+             wsProvider.on({
+                address: null,
+                topics: []
+              }, listener);
+
+             await logContractSigner.log0(10);
+             await new Promise(resolve => setTimeout(resolve, 4000));
+
+             // unsubscribe
+             const result = await wsProvider.send('eth_unsubscribe', [subId]);
+ 
+             expect(subId).to.be.length(34);
+             expect(subId.substring(0,2)).to.be.eq("0x");
+             expect(result).to.be.eq(true);
+   
+
+        });
+
+        it('Subscribes for contract logs for a specific contract address', async function () {
+            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
+            const filter = {
+                topics: []
+              };
+            let eventReceived;
+
+            loggerContractWS.on(filter, (event) => {
+                eventReceived = event;
+            });
+
+            await logContractSigner.log0(10);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+
+            if((!eventReceived.hasOwnProperty('event')) && (!eventReceived.hasOwnProperty('args'))) {
+                expect(eventReceived.data).to.equal('0x000000000000000000000000000000000000000000000000000000000000000a');
+            }
+
+            await logContractSigner.log1(1);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived.args[0]).to.be.eq(1);
+
+            await logContractSigner.log2(1,2);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived.args[0]).to.be.eq(1);
+            expect(eventReceived.args[1]).to.be.eq(2);
+
+            await logContractSigner.log3(10,20,31);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived.args[0]).to.be.eq(10);
+            expect(eventReceived.args[1]).to.be.eq(20);
+            expect(eventReceived.args[2]).to.be.eq(31);
+
+            await logContractSigner.log4(11,22,33,44);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived.args[0]).to.be.eq(11);
+            expect(eventReceived.args[1]).to.be.eq(22);
+            expect(eventReceived.args[2]).to.be.eq(33);
+            expect(eventReceived.args[3]).to.be.eq(44);
+
+        });
+
+        it('Subscribes for contract logs for a single topic', async function () {
+            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
+            const log1Topic = ethers.utils.id("Log1(uint256)");
+
+            const filter = {
+                topics: [
+                    log1Topic
+                ]
+            };
+            
+            let eventReceived;
+
+            loggerContractWS.on(filter, (val) => {
+                eventReceived = val;
+            });
+
+            await logContractSigner.log2(10, 20);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived).to.be.undefined;
+
+            await logContractSigner.log1(11);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived).to.be.eq(11);
+
+        });        
+
     });
 });
 
