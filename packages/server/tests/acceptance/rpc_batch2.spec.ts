@@ -627,8 +627,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
             const signedTx = await accounts[1].wallet.signTransaction(transaction);
             const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
-            const blockNumber = (await relay.call('eth_getTransactionReceipt', [transactionHash], requestId)).blockNumber;
-
+            const txReceipt = await relay.call('eth_getTransactionReceipt', [transactionHash], requestId);
+            const blockNumber = txReceipt.blockNumber;
+            
             // wait for the transaction to propogate to mirror node
             await new Promise(r => setTimeout(r, 4000));
 
