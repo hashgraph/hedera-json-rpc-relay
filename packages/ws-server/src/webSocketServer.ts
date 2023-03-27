@@ -42,8 +42,8 @@ const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 let connectedClients = 0;
 const MAX_CONNECTIONS = parseInt(process.env.CONNECTION_LIMIT || '10');
-// 60 minutes in ms by default
-const MAX_CONNECTION_TTL = parseInt(process.env.WS_MAX_CONNECTION_TTL || '3600000'); // 60 minutes in ms by default
+// 5 minutes in ms by default 5 * 60 * 1000 = 300000
+const MAX_CONNECTION_TTL = parseInt(process.env.WS_MAX_CONNECTION_TTL || '300000');
 
 const app = websockify(new Koa(), { 
         verifyClient: function(info, done) {
@@ -66,8 +66,12 @@ app.ws.use((ctx) => {
     // Limit connection TTL and close connection if its reached
     setTimeout(() => {
         if (ctx.websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
-            logger.info(`${LOGGER_PREFIX} closing connection ${ctx.websocket.id} due to reaching TTL of ${MAX_CONNECTION_TTL}ms`);
-            ctx.websocket.close();
+            logger.debug(`${LOGGER_PREFIX} closing connection ${ctx.websocket.id} due to reaching TTL of ${MAX_CONNECTION_TTL}ms`);
+            try {
+                ctx.websocket.close();
+            } catch (e) {
+                logger.error(`${LOGGER_PREFIX} ${ctx.websocket.id} ${e}`);
+            }
         }
     }, MAX_CONNECTION_TTL);
 
