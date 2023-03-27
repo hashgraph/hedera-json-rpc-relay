@@ -281,7 +281,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 //for the purpose of the test, we are settings limit to 2, and fetching all.
                 //setting mirror node limit to 2 for this test only
                 process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
-                const blocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 50;
+                const blocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 40;
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': EthImpl.numberTo0x(blocksBehindLatest),
                     'toBlock': 'latest'
