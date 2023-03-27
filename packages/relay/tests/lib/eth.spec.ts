@@ -111,6 +111,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.reset();
   });
 
+  const TINYBAR_TO_WEIBAR_COEF_BIGINT = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
   const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
   const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;
   const blockHash2 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6c`;
@@ -1234,7 +1235,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   describe('eth_getBalance', async function() {
     const defBalance = 99960581137;
-    const defHexBalance = EthImpl.numberTo0x(defBalance * constants.TINYBAR_TO_WEIBAR_COEF);
+    const defHexBalance = EthImpl.numberTo0x(BigInt(defBalance) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
     it('should return balance from mirror node', async () => {
       restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
         blocks: [{
@@ -1340,9 +1341,9 @@ describe('Eth calls using MirrorNode', async function () {
       const timestamp3 = 1651560386;
       const timestamp4 = 1651561386;
 
-      const hexBalance1 = EthImpl.numberTo0x(balance1 * constants.TINYBAR_TO_WEIBAR_COEF);
-      const hexBalance2 = EthImpl.numberTo0x(balance2 * constants.TINYBAR_TO_WEIBAR_COEF);
-      const hexBalance3 = EthImpl.numberTo0x(balance3 * constants.TINYBAR_TO_WEIBAR_COEF);
+      const hexBalance1 = EthImpl.numberTo0x(BigInt(balance1) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
+      const hexBalance2 = EthImpl.numberTo0x(BigInt(balance2) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
+      const hexBalance3 = EthImpl.numberTo0x(BigInt(balance3) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
 
       const latestBlock = Object.assign({}, defaultBlock, {
         number: 4,
@@ -1453,7 +1454,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x((balance3) * constants.TINYBAR_TO_WEIBAR_COEF);
+        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3) * TINYBAR_TO_WEIBAR_COEF_BIGINT)
         expect(resBalance).to.equal(historicalBalance);
       });
 
@@ -1472,7 +1473,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x((balance3 - 175) * constants.TINYBAR_TO_WEIBAR_COEF);
+        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 - 175) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
       });
 
@@ -1486,7 +1487,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x((balance3 + 175) * constants.TINYBAR_TO_WEIBAR_COEF);
+        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 + 175) * TINYBAR_TO_WEIBAR_COEF_BIGINT)
         expect(resBalance).to.equal(historicalBalance);
       });
 
@@ -1501,7 +1502,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF);
+        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 + 65) * TINYBAR_TO_WEIBAR_COEF_BIGINT)
         expect(resBalance).to.equal(historicalBalance);
       });
 
@@ -1527,7 +1528,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x((balance3 + 65) * constants.TINYBAR_TO_WEIBAR_COEF);
+        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 + 65) * TINYBAR_TO_WEIBAR_COEF_BIGINT)
         expect(resBalance).to.equal(historicalBalance);
       });
 
