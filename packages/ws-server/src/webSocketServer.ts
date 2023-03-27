@@ -62,7 +62,7 @@ const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
 app.ws.use((ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
     logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
-
+    connectedClients = ctx.app.server._connections;
     // Limit connection TTL and close connection if its reached
     setTimeout(() => {
         if (ctx.websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
