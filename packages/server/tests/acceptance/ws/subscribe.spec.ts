@@ -220,6 +220,19 @@ describe('@web-socket Acceptance Tests', async function() {
             webSocket.close();
         });
 
+        it('Connection TTL is enforced, should close all connections', async function() {
+            const wsConn2 = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
+
+            const wsConn3 = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
+            await new Promise(resolve => setTimeout(resolve, 300)); // Wait for the connections to be established
+
+            expect(server._connections).to.equal(3);
+
+
+            await new Promise(resolve => setTimeout(resolve, parseInt(process.env.WS_MAX_CONNECTION_TTL) + 1000));
+            expect(server._connections).to.equal(0);
+        });
+
         it('Does not allow more connections than the connection limit', async function() {
             // We already have one connection
             for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT); i++) {
@@ -231,11 +244,6 @@ describe('@web-socket Acceptance Tests', async function() {
             await expectedErrorAndConnections(server);
 
             await new Promise(resolve => setTimeout(resolve, 1000));
-        });
-
-        it('Connection TTL is enforced, should close all connections', async function() {
-            await new Promise(resolve => setTimeout(resolve, parseInt(process.env.WS_MAX_CONNECTION_TTL) + 1000));
-            expect(server._connections).to.equal(0);
         });
     });
 });
