@@ -915,50 +915,33 @@ export class EthImpl implements Eth {
    * @param call
    * @param blockParam
    */
-  async call(call: any, blockParam: string | null, requestId?: string, isFallback?: boolean): Promise<string | JsonRpcError> {
+  async call(call: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    // The "to" address must always be 42 chars.
-    if (!call.to || call.to.length != 42) {
-      throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
+    await this.performCallChecks(call, requestId);
+
+    // Get a reasonable value for "gas" if it is not specified.
+    let gas = Number(call.gas) || 400_000;
+
+    let value: string | null = null;
+    if (typeof call.value === 'string') {
+      value = (new BN(call.value)).toString();
     }
 
-    // If "From" is distinct from blank, we check is a valid account
-    if(call.from) {
-      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, requestId, [constants.TYPE_ACCOUNT]);
-      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
-        throw predefined.NON_EXISTING_ACCOUNT(call.from);
-      }
+    // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
+    // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
+    if (gas > constants.BLOCK_GAS_LIMIT) {
+      this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`);
+      gas = constants.BLOCK_GAS_LIMIT;
     }
-    // Check "To" is a valid Contract or HTS Address
-    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT]);
-    if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
-      throw predefined.NON_EXISTING_CONTRACT(call.to);
-    }
-
+    
     try {
-      // Get a reasonable value for "gas" if it is not specified.
-      let gas = Number(call.gas) || 400_000;
-
-      let value: string | null = null;
-      if (typeof call.value === 'string') {
-        value = (new BN(call.value)).toString();
-      }
-
-      // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
-      // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
-      if (gas > constants.BLOCK_GAS_LIMIT) {
-        this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`);
-        gas = constants.BLOCK_GAS_LIMIT;
-      }
-
       // Execute the call and get the response
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}"`, call.to, gas, call.data, call.from);
 
       // ETH_CALL_CONSENSUS = false enables the use of Mirror node
-      // isFallback=true forces the call to go through the Consensus network
-      if (process.env.ETH_CALL_CONSENSUS == 'false' && !isFallback) {
+      if (process.env.ETH_CALL_CONSENSUS == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
         if (!(isHts?.type === constants.TYPE_TOKEN)) {
@@ -975,7 +958,33 @@ export class EthImpl implements Eth {
           return EthImpl.emptyHex;
         }
       }
+      
+      return await this.callConsensusNode(call, gas, requestId);
+    } catch (e: any) {
+      // Temporary workaround until mirror node web3 module implements the support of precompiles
+      // If mirror node throws NOT_SUPPORTED rerun eth_call and force it to go through the Consensus network
+      if (e instanceof MirrorNodeClientError && e.isNotSupported()) {
+        return await this.callConsensusNode(call, gas, requestId);
+      }
 
+      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return predefined.INTERNAL_ERROR();
+    }
+  }
+
+  /**
+   * Execute a contract call query to the consensus node
+   *
+   * @param call
+   * @param gas
+   * @param requestId
+   */
+  async callConsensusNode(call: any, gas: number, requestId?: string): Promise<string | JsonRpcError> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    try {
       let data = call.data;
       if (data) {
         data = crypto.createHash('sha1').update(call.data).digest('hex'); // NOSONAR
@@ -994,19 +1003,38 @@ export class EthImpl implements Eth {
 
       this.cache.set(cacheKey, formattedCallReponse, { ttl: EthImpl.ethCallCacheTtl });
       return formattedCallReponse;
-
     } catch (e: any) {
-      // Temporary workaround until mirror node web3 module implements the support of precompiles
-      // If mirror node throws NOT_SUPPORTED rerun eth_call and force it to go through the Consensus network
-      if (e instanceof MirrorNodeClientError && e.isNotSupported()) {
-        return this.call(call, blockParam, requestId, true);
-      }
-
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
       if (e instanceof JsonRpcError) {
         return e;
       }
       return predefined.INTERNAL_ERROR();
+    }
+  }
+
+  /**
+   * Perform neccecery checks for the passed call object
+   *
+   * @param call
+   * @param requestId
+   */
+  async performCallChecks(call: any, requestId?: string) {
+    // The "to" address must always be 42 chars.
+    if (!call.to || call.to.length != 42) {
+      throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
+    }
+
+    // If "From" is distinct from blank, we check is a valid account
+    if(call.from) {
+      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, requestId, [constants.TYPE_ACCOUNT]);
+      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
+        throw predefined.NON_EXISTING_ACCOUNT(call.from);
+      }
+    }
+    // Check "To" is a valid Contract or HTS Address
+    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT]);
+    if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
+      throw predefined.NON_EXISTING_CONTRACT(call.to);
     }
   }
 

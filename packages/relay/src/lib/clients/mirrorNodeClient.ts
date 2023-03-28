@@ -149,7 +149,7 @@ export class MirrorNodeClient {
             this.web3Url = '';
 
             this.restClient = restClient;
-            this.web3Client = !!web3Client ? web3Client : restClient;
+            this.web3Client = web3Client ? web3Client : restClient;
         } else {
             this.restUrl = this.buildUrl(restUrl);
             this.web3Url = this.buildUrl(web3Url);

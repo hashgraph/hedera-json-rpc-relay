@@ -401,10 +401,13 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                                 value: '0x3e80000000'
                             };
 
-                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            try {
+                                await relay.call('eth_call', [callData, 'latest'], requestId);
+                                Assertions.expectedError();
+                            } catch (e) {
+                                Assertions.jsonRpcError(e, predefined.CONTRACT_REVERT());
+                            }
 
-                            // TODO assert correct message
-                            expect(res).to.eq('0x');
                         });
                     }
                 });
