@@ -36,6 +36,7 @@ export class MirrorNodeClientError extends Error {
     };
 
     constructor(error: any, statusCode: number) {
+        //web3 module sends errors in this format, this is why we need a check to distinguish
         if (error.response?.data?._status?.messages?.length) {
             const msg = error.response.data._status.messages[0];
             const {message, data} = msg;
@@ -64,6 +65,10 @@ export class MirrorNodeClientError extends Error {
     }
 
     public isNotSupported(): boolean {
-        return this.statusCode === MirrorNodeClientError.ErrorCodes.NOT_SUPPORTED && this.message === 'Precompile not supported';
+        return this.statusCode === MirrorNodeClientError.ErrorCodes.NOT_SUPPORTED;
+    }
+
+    public isNotSupportedSystemContractOperaton(): boolean {
+      return this.message === 'Precompile not supported';
     }
   }

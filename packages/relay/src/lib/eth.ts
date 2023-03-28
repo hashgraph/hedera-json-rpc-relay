@@ -937,14 +937,13 @@ export class EthImpl implements Eth {
     }
     
     try {
-      // Execute the call and get the response
-      this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}"`, call.to, gas, call.data, call.from);
-
       // ETH_CALL_CONSENSUS = false enables the use of Mirror node
       if (process.env.ETH_CALL_CONSENSUS == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
         if (!(isHts?.type === constants.TYPE_TOKEN)) {
+          // Execute the call and get the response
+          this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`, call.to, gas, call.data, call.from);
           const callData = {
             ...call,
             gas,
@@ -962,8 +961,8 @@ export class EthImpl implements Eth {
       return await this.callConsensusNode(call, gas, requestId);
     } catch (e: any) {
       // Temporary workaround until mirror node web3 module implements the support of precompiles
-      // If mirror node throws NOT_SUPPORTED rerun eth_call and force it to go through the Consensus network
-      if (e instanceof MirrorNodeClientError && e.isNotSupported()) {
+      // If mirror node throws NOT_SUPPORTED or precompile is not supported, rerun eth_call and force it to go through the Consensus network
+      if (e instanceof MirrorNodeClientError && (e.isNotSupported() || e.isNotSupportedSystemContractOperaton())) {
         return await this.callConsensusNode(call, gas, requestId);
       }
 
@@ -984,6 +983,9 @@ export class EthImpl implements Eth {
    */
   async callConsensusNode(call: any, gas: number, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
+    // Execute the call and get the response
+    this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using consensus-node.`, call.to, gas, call.data, call.from);
+    
     try {
       let data = call.data;
       if (data) {

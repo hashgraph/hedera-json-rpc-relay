@@ -25,7 +25,7 @@ import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
 import axiosRetry from 'axios-retry';
-import {predefined} from "../errors/JsonRpcError";
+import { predefined } from "../errors/JsonRpcError";
 const LRU = require('lru-cache');
 
 type REQUEST_METHODS = 'GET' | 'POST';
@@ -242,7 +242,8 @@ export class MirrorNodeClient {
 
         const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
 
-        if (mirrorError.isContractReverted() && !mirrorError.isNotSupported()) {
+        // we only need contract revert errors here as it's not the same as not supported
+        if (mirrorError.isContractReverted() && !mirrorError.isNotSupported() && !mirrorError.isNotSupportedSystemContractOperaton()) {
             throw predefined.CONTRACT_REVERT(mirrorError.errorMessage);
         }
 

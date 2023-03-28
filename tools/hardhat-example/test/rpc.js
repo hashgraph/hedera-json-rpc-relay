@@ -57,6 +57,8 @@ describe('RPC', function () {
   it('should be able to make a contract call', async function () {
     const msg = 'updated_msg';
     await hre.run('contract-call', { contractAddress, msg });
+    // 5 seconds sleep to propagate the changes to mirror node
+    await new Promise(r => setTimeout(r, 5000));
     const res = await hre.run('contract-view-call', { contractAddress });
     expect(res).to.be.equal(msg);
   });
