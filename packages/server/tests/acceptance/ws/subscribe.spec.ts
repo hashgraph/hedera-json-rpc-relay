@@ -28,7 +28,6 @@ import {Utils} from '../../helpers/utils';
 import {AliasAccount} from "../../clients/servicesClient";
 import {predefined} from '../../../../../packages/relay';
 import { ethers } from "ethers";
-// const {ethers} = require('ethers');
 const LogContractJson = require('../../contracts/Logs.json');
 
 const FOUR_TWENTY_NINE_RESPONSE = 'Unexpected server response: 429';
