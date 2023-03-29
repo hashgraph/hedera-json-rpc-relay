@@ -80,7 +80,7 @@ export class EthImpl implements Eth {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
-  static fewBlocksGreater = 3;
+  static fewBlocksGreater = 5;
 
   /**
    * Configurable options used when initializing the cache.
@@ -1335,8 +1335,6 @@ export class EthImpl implements Eth {
       return null;
     }
 
-    // If blocknumber requested is more than a few blocks greater than the latest, fail fast. 
-    // const latestBlock = await this.mirrorNodeClient.getLatestBlock(requestId);
     if(!returnLatest){
       const response = await this.mirrorNodeClient.getLatestBlock(requestId);
       blockResponse = response.blocks[0];
