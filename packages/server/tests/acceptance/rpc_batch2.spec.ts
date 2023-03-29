@@ -606,6 +606,41 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL);
         });
 
+        it('should execute "eth_getStorageAt" request to get old state with passing specific block', async function() {
+            const END_EXPECTED_STORAGE_VAL = "0x0000000000000000000000000000000000000000000000000000000000000008";
+
+            const beginStorageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'], requestId);
+
+            const gasPrice = await relay.gasPrice();
+            const transaction = {
+                value: 0,
+                gasLimit: 50000,
+                chainId: Number(CHAIN_ID),
+                to: evmAddress,
+                nonce: await relay.getAccountNonce('0x' + accounts[1].address),
+                gasPrice: gasPrice,
+                data: STORAGE_CONTRACT_UPDATE,
+                maxPriorityFeePerGas: gasPrice,
+                maxFeePerGas: gasPrice,
+                type: 2
+            };
+
+            const signedTx = await accounts[1].wallet.signTransaction(transaction);
+            const transactionHash = await relay.call('eth_sendRawTransaction', [signedTx], requestId);
+            const txReceipt = await relay.call('eth_getTransactionReceipt', [transactionHash], requestId);
+            const blockNumber = txReceipt.blockNumber;
+            
+            // wait for the transaction to propogate to mirror node
+            await new Promise(r => setTimeout(r, 4000));
+
+            const latestStorageVal = await relay.call('eth_getStorageAt', [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'], requestId);
+            const blockNumberBeforeChange = `0x${(blockNumber - 1).toString(16)}`;
+            const storageValBeforeChange = await relay.call('eth_getStorageAt', [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockNumberBeforeChange], requestId);
+
+            expect(latestStorageVal).to.eq(END_EXPECTED_STORAGE_VAL);
+            expect(storageValBeforeChange).to.eq(beginStorageVal);
+        });
+
         it('should execute "eth_getStorageAt" request to get current state changes without passing block', async function () {
             const BEGIN_EXPECTED_STORAGE_VAL = "0x000000000000000000000000000000000000000000000000000000000000000f";
             const END_EXPECTED_STORAGE_VAL = "0x0000000000000000000000000000000000000000000000000000000000000008";

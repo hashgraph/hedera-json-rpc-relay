@@ -133,6 +133,7 @@ describe('Eth calls using MirrorNode', async function () {
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
   const htsTokenAddress = '0x0000000000000000000000000000000002dca431';
   const contractTimestamp1 = `${firstTransactionTimestampSeconds}.983983199`;
+  const contractTimestamp4 = `${firstTransactionTimestampSeconds}.983983198`;
   const contractHash1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
   const contractHash2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
   const contractHash3 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394';
@@ -158,6 +159,22 @@ describe('Eth calls using MirrorNode', async function () {
     'size': null,
     'timestamp': {
       'from': `${blockTimestamp}.060890949`,
+      'to': '1651560389.060890949'
+    },
+    'gas_used': gasUsed1 + gasUsed2,
+    'logs_bloom': '0x'
+  };
+
+  const olderBlock = {
+    'count': blockTransactionCount,
+    'hapi_version': '0.28.1',
+    'hash': blockHash,
+    'name': '2022-05-03T06_46_26.060890949Z.rcd',
+    'number': blockNumber,
+    'previous_hash': '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b',
+    'size': null,
+    'timestamp': {
+      'from': `${contractTimestamp4}`,
       'to': '1651560389.060890949'
     },
     'gas_used': gasUsed1 + gasUsed2,
@@ -406,6 +423,18 @@ describe('Eth calls using MirrorNode', async function () {
     ]
   };
 
+  const defaultOlderContractState = {
+    "state": [
+      {
+        'address': contractAddress1,
+        'contract_id': contractId1,
+        'timestamp': contractTimestamp4,
+        'slot': '0x0000000000000000000000000000000000000000000000000000000000000101',
+        'value': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+      }
+    ]
+  };
+
   const defaultDetailedContractResults2 = {
     ...defaultDetailedContractResults, ...{
       'timestamp': contractTimestamp2,
@@ -438,6 +467,13 @@ describe('Eth calls using MirrorNode', async function () {
       'state_changes' : []
     }
   };
+
+  const defaultContractStateEmptyArray = {
+    "state": [],
+    "links": {
+      "next": null
+    }
+  }
 
   const detailedContractResultNotFound = { "_status": { "messages": [{ "message": "No correlating transaction" }] } };
   const timeoutError = { "type": "Error", "message": "timeout of 10000ms exceeded" };
@@ -2715,8 +2751,7 @@ describe('Eth calls using MirrorNode', async function () {
     it('eth_getStorageAt with match with block and slot less than 32 bytes and without leading zeroes', async function() {
       // mirror node request mocks
       restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
-      restMock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
-      restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      restMock.onGet(`contracts/${contractAddress1}/state?timestamp=${defaultBlock.timestamp.to}&slot=0x101&limit=100&order=desc`).reply(200, defaultCurrentContractState);
 
       const result = await ethImpl.getStorageAt(contractAddress1, '0x101', EthImpl.numberTo0x(blockNumber));
       expect(result).to.exist;
@@ -2724,13 +2759,13 @@ describe('Eth calls using MirrorNode', async function () {
 
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+      expect(result).equal(defaultCurrentContractState.state[0].value);
     });
 
     it('eth_getStorageAt with match with block and slot less than 32 bytes and leading zeroes', async function() {
       // mirror node request mocks
       restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
-      restMock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
-      restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      restMock.onGet(`contracts/${contractAddress1}/state?timestamp=${defaultBlock.timestamp.to}&slot=0x0000101&limit=100&order=desc`).reply(200, defaultCurrentContractState);
 
       const result = await ethImpl.getStorageAt(contractAddress1, '0x0000101', EthImpl.numberTo0x(blockNumber));
       expect(result).to.exist;
@@ -2738,13 +2773,13 @@ describe('Eth calls using MirrorNode', async function () {
 
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+      expect(result).equal(defaultCurrentContractState.state[0].value);
     });
 
     it('eth_getStorageAt with match with block', async function () {
       // mirror node request mocks
       restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
-      restMock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
-      restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      restMock.onGet(`contracts/${contractAddress1}/state?timestamp=${defaultBlock.timestamp.to}&slot=0x0000000000000000000000000000000000000000000000000000000000000101&limit=100&order=desc`).reply(200, defaultCurrentContractState);
 
       const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       expect(result).to.exist;
@@ -2752,6 +2787,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+      expect(result).equal(defaultCurrentContractState.state[0].value);
     });
 
     it('eth_getStorageAt with match with latest block', async function () {
@@ -2794,29 +2830,30 @@ describe('Eth calls using MirrorNode', async function () {
       expect(hasError).to.be.true;
     });
 
-    it('eth_getStorageAt should return EthImpl.zeroHex32Byte when state_changes is null', async function () {
+    it('eth_getStorageAt should return EthImpl.zeroHex32Byte when slot wrong', async function () {
+      const wrongSlot = "0x0000000000000000000000000000000000000000000000000000000000001101";
       defaultDetailedContractResultsNullStateChange;
       restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
-      restMock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
-      restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsNullStateChange);
-      const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
+      restMock.onGet(`contracts/${contractAddress1}/state?timestamp=${defaultBlock.timestamp.to}&slot=${wrongSlot}&limit=100&order=desc`).reply(200, defaultContractStateEmptyArray);
+
+      const result = await ethImpl.getStorageAt(contractAddress1, wrongSlot, EthImpl.numberTo0x(blockNumber));
       expect(result).to.equal(EthImpl.zeroHex32Byte);
     });
 
-    it('eth_getStorageAt should return EthImpl.zeroHex32Byte when state_changes is an empty array', async function () {
+    
+    it('eth_getStorageAt should return old state when passing older block number', async function () {
       defaultDetailedContractResultsNullStateChange;
-      restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
-      restMock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
-      restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsEmptyArrayStateChange);
-      const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
-      expect(result).to.equal(EthImpl.zeroHex32Byte);
+      restMock.onGet(`blocks/${blockNumber}`).reply(200, olderBlock);
+      restMock.onGet(`contracts/${contractAddress1}/state?timestamp=${olderBlock.timestamp.to}&slot=${defaultOlderContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultOlderContractState);
+
+      const result = await ethImpl.getStorageAt(contractAddress1, defaultOlderContractState.state[0].slot, EthImpl.numberTo0x(olderBlock.number));
+      expect(result).to.equal(defaultOlderContractState.state[0].value);
     });
 
     it('eth_getStorageAt should throw error when contract not found', async function () {
       // mirror node request mocks
       restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
-      restMock.onGet(`contracts/${contractAddress1}/results?timestamp=lte:${defaultBlock.timestamp.to}&limit=1&order=desc`).reply(200, defaultContractResults);
-      restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(404, detailedContractResultNotFound);
+      restMock.onGet(`contracts/${contractAddress1}/state?timestamp=${defaultBlock.timestamp.to}&slot=${defaultOlderContractState.state[0].slot}&limit=100&order=desc`).reply(404, detailedContractResultNotFound);
 
       let hasError = false;
       try {
