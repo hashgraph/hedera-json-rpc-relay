@@ -293,7 +293,6 @@ describe('@web-socket Acceptance Tests', async function() {
             result = await unsubscribeAndCloseConnections(provider, subId);
             await new Promise(resolve => setTimeout(resolve, 1000));
             expect(server._connections).to.equal(1);
-
         });
     });
 
@@ -329,9 +328,7 @@ describe('@web-socket Acceptance Tests', async function() {
  
              expect(subId).to.be.length(34);
              expect(subId.substring(0,2)).to.be.eq("0x");
-             expect(result).to.be.eq(true);
-   
-
+             expect(result).to.be.eq(true);  
         });
 
         it('Subscribes for contract logs for a specific contract address', async function () {
@@ -373,7 +370,6 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(eventReceived.args[1]).to.be.eq(22);
             expect(eventReceived.args[2]).to.be.eq(33);
             expect(eventReceived.args[3]).to.be.eq(44);
-
         });
 
         it('Subscribes for contract logs for a single topic', async function () {
@@ -392,15 +388,41 @@ describe('@web-socket Acceptance Tests', async function() {
                 eventReceived = val;
             });
 
-            await logContractSigner.log2(10, 20);
+            await logContractSigner.log2(10,20);
             await new Promise(resolve => setTimeout(resolve, 4000));
             expect(eventReceived).to.be.undefined;
 
             await logContractSigner.log1(11);
             await new Promise(resolve => setTimeout(resolve, 4000));
             expect(eventReceived).to.be.eq(11);
+        });   
+        
+        it.only('Subscribes for contract logs for multiple topics', async function () {
+            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
+            const log1Topic = ethers.utils.id("Log1(uint256)");
+            const log2Topic = ethers.utils.id("Log2(uint256,uint256)");
 
-        });        
+            const filter = {
+                topics: [
+                    // log1Topic,
+                    log2Topic
+                ]
+            };    
+            
+            let eventReceived;
+
+            loggerContractWS.on(filter, (event, event2) => {
+                eventReceived = event;
+            });            
+
+            await logContractSigner.log2(10,20);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived).to.be.undefined;
+
+            await logContractSigner.log1(11);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            expect(eventReceived).to.be.eq(11);
+        });
 
     });
 });
