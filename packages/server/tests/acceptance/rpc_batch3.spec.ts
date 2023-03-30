@@ -381,7 +381,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                     });
 
                     // value is processed only when eth_call goes through the mirror node
-                    if (process.env.ETH_CALL_CONSENSUS && process.env.ETH_CALL_CONSENSUS === 'false') {
+                    if (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE && process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'false') {
                         it("010 Should call msgValue", async function () {
                             const callData = {
                                 ...defaultCallData,

@@ -36,7 +36,7 @@ export class MirrorNodeClientError extends Error {
     };
 
     constructor(error: any, statusCode: number) {
-        //web3 module sends errors in this format, this is why we need a check to distinguish
+        // web3 module sends errors in this format, this is why we need a check to distinguish
         if (error.response?.data?._status?.messages?.length) {
             const msg = error.response.data._status.messages[0];
             const {message, data} = msg;

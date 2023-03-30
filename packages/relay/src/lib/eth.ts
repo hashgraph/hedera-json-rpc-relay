@@ -937,8 +937,8 @@ export class EthImpl implements Eth {
     }
     
     try {
-      // ETH_CALL_CONSENSUS = false enables the use of Mirror node
-      if (process.env.ETH_CALL_CONSENSUS == 'false') {
+      // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
+      if (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
         if (!(isHts?.type === constants.TYPE_TOKEN)) {
