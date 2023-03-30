@@ -2408,12 +2408,12 @@ describe('Eth calls using MirrorNode', async function () {
     let initialEthCallConesneusFF;
 
     before(() => {
-      initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
-      process.env.ETH_CALL_CONSENSUS = 'true';
+      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
     });
 
     after(() => {
-      process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
     it('eth_call with no gas', async function () {
@@ -2604,12 +2604,12 @@ describe('Eth calls using MirrorNode', async function () {
     let initialEthCallConesneusFF;
 
     before(() => {
-      initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
-      process.env.ETH_CALL_CONSENSUS = 'false';
+      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
     });
 
     after(() => {
-      process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
     //temporary workaround until precompiles are implemented in Mirror node evm module
