@@ -66,6 +66,13 @@ export class SubscriptionController {
             this.subscriptions[tag] = [];
         }
 
+        // Check if the connection is already subscribed to this event
+        const existingSub = this.subscriptions[tag].find(sub => sub.connection.id === connection.id);
+        if (existingSub) {
+            this.logger.debug(`${LOGGER_PREFIX} Connection ${connection.id} already subscribed to ${tag}`);
+            return existingSub.subscriptionId;
+        }
+
         const subId = this.generateId();
 
         this.logger.info(`${LOGGER_PREFIX} New subscription ${subId}, listening for ${tag}`);

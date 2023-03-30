@@ -25,24 +25,13 @@ import {SubscriptionController} from "../../src/lib/subscriptionController";
 import {expect} from "chai";
 import {Poller} from "../../src/lib/poller";
 import {EthImpl} from "../../src/lib/eth";
-import {MirrorNodeClient, SDKClient} from "../../src/lib/clients";
-import MockAdapter from "axios-mock-adapter";
-import LRU from "lru-cache";
-import constants from "../../src/lib/constants";
 import sinon from 'sinon';
-import {Registry} from 'prom-client';
 import dotenv from "dotenv";
 import path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();
-const registry = new Registry();
-
-let restMock: MockAdapter;
-let mirrorNodeInstance: MirrorNodeClient;
-let sdkClientStub;
-let cache;
 let ethImpl: EthImpl;
 let poller: Poller;
 
@@ -67,30 +56,17 @@ describe("subscriptionController", async function() {
 
    this.beforeAll(() => {
        // @ts-ignore
-       mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry);
-       // @ts-ignore
-       restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: "throwException" });
-
-       sdkClientStub = sinon.createStubInstance(SDKClient);
-       cache = new LRU({
-           max: constants.CACHE_MAX,
-           ttl: constants.CACHE_TTL.ONE_HOUR
-       });
-       // @ts-ignore
-       ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+       ethImpl =  sinon.createStubInstance(EthImpl);
        poller = new Poller(ethImpl, logger);
 
        subscriptionController = new SubscriptionController(poller, logger);
    });
 
    this.beforeEach(()=> {
-       cache.clear();
-       restMock.reset();
        sandbox = sinon.createSandbox();
    });
 
     this.afterEach(() => {
-        restMock.resetHandlers();
         sandbox.restore();
     });
 
@@ -119,7 +95,8 @@ describe("subscriptionController", async function() {
     });
 
     it('when subscribing should return subId and poller should add(tag)', async function () {
-        const wsConnection = new MockWsConnection("1");
+        const connectionId = "1";
+        const wsConnection = new MockWsConnection(connectionId);
         const spy = sandbox.spy(poller, 'add');
 
         const subId = subscriptionController.subscribe(wsConnection, 'logs');
@@ -129,7 +106,8 @@ describe("subscriptionController", async function() {
     });
 
     it('notifySubscribers should notify subscribers with data', async function () {
-        const wsConnection = new MockWsConnection("2");
+        const connectionId = "2";
+        const wsConnection = new MockWsConnection(connectionId);
         const subId = subscriptionController.subscribe(wsConnection, 'logs');
         const spy = sandbox.spy(wsConnection, 'send');
         const testData = "test example data";
@@ -141,10 +119,12 @@ describe("subscriptionController", async function() {
 
 
     it('notifySubscribers should notify multiple subscribers with data', async function () {
-        const wsConnection1 = new MockWsConnection("2");
+        const connectionId1 = "12";
+        const connectionId2 = "13";
+        const wsConnection1 = new MockWsConnection(connectionId1);
         const subId1 = subscriptionController.subscribe(wsConnection1, 'logs');
         const spy1 = sandbox.spy(wsConnection1, 'send');
-        const wsConnection2 = new MockWsConnection("2");
+        const wsConnection2 = new MockWsConnection(connectionId2);
         const subId2 = subscriptionController.subscribe(wsConnection2, 'logs');
         const spy2 = sandbox.spy(wsConnection2, 'send');
         const testData = "test example data";
@@ -157,7 +137,8 @@ describe("subscriptionController", async function() {
 
 
     it('notifySubscribers should use cache to not send the data again', async function () {
-        const wsConnection = new MockWsConnection("3");
+        const connectionId = "4";
+        const wsConnection = new MockWsConnection(connectionId);
         const subId = subscriptionController.subscribe(wsConnection, 'logs');
         const spy = sandbox.spy(wsConnection, 'send');
         const testData = "test example data cached";
@@ -171,7 +152,8 @@ describe("subscriptionController", async function() {
     });
 
     it('notifySubscribers using a Tag that has no subscribers should not send anything to connection', async function () {
-        const wsConnection = new MockWsConnection("3");
+        const connectionId = "5";
+        const wsConnection = new MockWsConnection(connectionId);
         subscriptionController.subscribe(wsConnection, 'logs');
         const spy = sandbox.spy(wsConnection, 'send');
         const testData = "test example data cached";
@@ -182,7 +164,8 @@ describe("subscriptionController", async function() {
     });
 
     it('Unsubscribing all subscriptions from same connection', async function () {
-        const wsConnection = new MockWsConnection("4");
+        const connectionId = "6";
+        const wsConnection = new MockWsConnection(connectionId);
         const tag1 = { event: "logs"};
         const tag2 = { event: "logs", filters:{"topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}};
         const subId = subscriptionController.subscribe(wsConnection, tag1.event);
@@ -198,7 +181,8 @@ describe("subscriptionController", async function() {
     });
 
     it('Unsubscribing single subscriptions from connection', async function () {
-        const wsConnection = new MockWsConnection("5");
+        const connectionId = "7";
+        const wsConnection = new MockWsConnection(connectionId);
         const tag1 = { event: "logs"};
         const tag2 = { event: "logs", filters:{"topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}};
         subscriptionController.subscribe(wsConnection, tag1.event);
@@ -213,12 +197,23 @@ describe("subscriptionController", async function() {
     });
 
     it('Unsubscribing without a valid subscription or ws conn should return true', async function () {
-        const wsConnection = new MockWsConnection("6");
+        const connectionId = "6";
+        const wsConnection = new MockWsConnection(connectionId);
         const notRealSubId = "0x123456";
 
         const status = subscriptionController.unsubscribe(wsConnection, notRealSubId);
 
         expect(status).to.be.eq(true);
+    });
+
+    it('Subscribing to the same event and filters should return the same subscription id', async function () {
+        const connectionId = "7";
+        const wsConnection = new MockWsConnection(connectionId);
+        const tag1 = { event: "logs", filters:{"topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}};
+        const subId = subscriptionController.subscribe(wsConnection, tag1.event);
+        const subId2 = subscriptionController.subscribe(wsConnection, tag1.event);
+
+        expect(subId).to.be.eq(subId2);
     });
 
 });
