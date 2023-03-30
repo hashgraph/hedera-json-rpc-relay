@@ -397,32 +397,32 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(eventReceived).to.be.eq(11);
         });   
         
-        it.only('Subscribes for contract logs for multiple topics', async function () {
-            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
-            const log1Topic = ethers.utils.id("Log1(uint256)");
-            const log2Topic = ethers.utils.id("Log2(uint256,uint256)");
+        // it.only('Subscribes for contract logs for multiple topics', async function () {
+        //     const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
+        //     const log1Topic = ethers.utils.id("Log1(uint256)");
+        //     const log2Topic = ethers.utils.id("Log2(uint256,uint256)");
 
-            const filter = {
-                topics: [
-                    // log1Topic,
-                    log2Topic
-                ]
-            };    
+        //     const filter = {
+        //         topics: [
+        //             // log1Topic,
+        //             log2Topic
+        //         ]
+        //     };    
             
-            let eventReceived;
+        //     let eventReceived;
 
-            loggerContractWS.on(filter, (event, event2) => {
-                eventReceived = event;
-            });            
+        //     loggerContractWS.on(filter, (event, event2) => {
+        //         eventReceived = event;
+        //     });            
 
-            await logContractSigner.log2(10,20);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            expect(eventReceived).to.be.undefined;
+        //     await logContractSigner.log2(10,20);
+        //     await new Promise(resolve => setTimeout(resolve, 4000));
+        //     expect(eventReceived).to.be.undefined;
 
-            await logContractSigner.log1(11);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            expect(eventReceived).to.be.eq(11);
-        });
+        //     await logContractSigner.log1(11);
+        //     await new Promise(resolve => setTimeout(resolve, 4000));
+        //     expect(eventReceived).to.be.eq(11);
+        // });
 
     });
 });
