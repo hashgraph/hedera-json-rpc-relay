@@ -179,8 +179,8 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_call" against mirror node', async function () {
-        let initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
-        process.env.ETH_CALL_CONSENSUS = 'false';
+        let initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
         mock.onGet(`contracts/${defaultCallData.from}`).reply(404);
         mock.onGet(`accounts/${defaultCallData.from}`).reply(200, {
             account: "0.0.1723",
@@ -190,12 +190,12 @@ describe("Open RPC Specification", function () {
 
         const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
         validateResponseSchema(methodsResponseSchema.eth_call, response);
-        process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
+        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
     it('should execute "eth_call" against consensus node', async function () {
-        let initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
-        process.env.ETH_CALL_CONSENSUS = 'true';
+        let initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
         mock.onGet(`contracts/${defaultCallData.from}`).reply(404);
         mock.onGet(`accounts/${defaultCallData.from}`).reply(200, {
             account: "0.0.1723",
@@ -205,7 +205,7 @@ describe("Open RPC Specification", function () {
 
         sdkClientStub.submitContractCallQuery.returns({ asBytes: () => Buffer.from('12') });
         const response = await ethImpl.call(defaultTransaction, 'latest');
-        process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
+        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
     it('should execute "eth_chainId"', function () {

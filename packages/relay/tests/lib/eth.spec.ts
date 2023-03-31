@@ -2371,12 +2371,12 @@ describe('Eth calls using MirrorNode', async function () {
     let initialEthCallConesneusFF;
 
     before(() => {
-      initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
-      process.env.ETH_CALL_CONSENSUS = 'true';
+      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
     });
 
     after(() => {
-      process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
     it('eth_call with no gas', async function () {
@@ -2567,12 +2567,12 @@ describe('Eth calls using MirrorNode', async function () {
     let initialEthCallConesneusFF;
 
     before(() => {
-      initialEthCallConesneusFF = process.env.ETH_CALL_CONSENSUS;
-      process.env.ETH_CALL_CONSENSUS = 'false';
+      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
     });
 
     after(() => {
-      process.env.ETH_CALL_CONSENSUS = initialEthCallConesneusFF;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
     //temporary workaround until precompiles are implemented in Mirror node evm module
@@ -2628,6 +2628,38 @@ describe('Eth calls using MirrorNode', async function () {
       };
       web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
       const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.equal("0x00");
+    });
+
+    it('eth_call with all fields, but mirror node throws NOT_SUPPORTED', async function () {
+      const callData = {
+        ...defaultCallData,
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimit
+      };
+
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(501, {
+        '_status': {
+          'messages': [
+            {
+              'message': 'Precompile not supported'
+            }
+          ]
+        }
+      });
+
+      sdkClientStub.submitContractCallQuery.returns({
+            asBytes: function () {
+              return Uint8Array.of(0);
+            }
+          }
+      );
+
+      const result = await ethImpl.call(callData, 'latest');
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 

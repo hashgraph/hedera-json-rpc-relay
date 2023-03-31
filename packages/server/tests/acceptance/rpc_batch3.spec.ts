@@ -31,6 +31,7 @@ import {predefined} from '../../../../packages/relay';
 import Assertions from "../helpers/assertions";
 import basicContractJson from '../contracts/Basic.json';
 import callerContractJson from '../contracts/Caller.json';
+import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 
 describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -49,6 +50,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const NON_EXISTING_ADDRESS = '0x5555555555555555555555555555555555555555';
     const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
     const BASIC_CONTRACT_PING_RESULT = '0x0000000000000000000000000000000000000000000000000000000000000001';
+    const RESULT_TRUE = '0x0000000000000000000000000000000000000000000000000000000000000001';
     const PURE_METHOD_CALL_DATA = '0xb2e0100c';
     const VIEW_METHOD_CALL_DATA = '0x90e9b875';
     const PAYABLE_METHOD_CALL_DATA = '0xd0efd7ef';
@@ -67,7 +69,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         requestId = Utils.generateRequestId();
 
         accounts[0] = await servicesNode.createAliasAccount(30, null, requestId);
-        accounts[1] = await servicesNode.createAliasAccount(10, relay.provider, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
 
         reverterContract = await servicesNode.deployContract(reverterContractJson);
         // Wait for creation to propagate
@@ -379,7 +381,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                     });
 
                     // value is processed only when eth_call goes through the mirror node
-                    if (process.env.ETH_CALL_CONSENSUS && process.env.ETH_CALL_CONSENSUS === 'false') {
+                    if (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE && process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'false') {
                         it("010 Should call msgValue", async function () {
                             const callData = {
                                 ...defaultCallData,
@@ -399,10 +401,13 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                                 value: '0x3e80000000'
                             };
 
-                            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+                            try {
+                                await relay.call('eth_call', [callData, 'latest'], requestId);
+                                Assertions.expectedError();
+                            } catch (e) {
+                                Assertions.jsonRpcError(e, predefined.CONTRACT_REVERT());
+                            }
 
-                            // TODO assert correct message
-                            expect(res).to.eq('0x');
                         });
                     }
                 });
@@ -593,6 +598,45 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                     }, requestId);
                 });
             }
+        });
+    });
+
+    describe('eth_call with contract that calls precompiles', async () => {
+        const TOKEN_NAME = Utils.randomString(10);
+        const TOKEN_SYMBOL = Utils.randomString(5);
+        const INITIAL_SUPPLY = 100000;
+        const IS_TOKEN_ADDRESS_SIGNATURE = '0xbff9834f000000000000000000000000';
+
+        let htsImpl, tokenAddress;
+
+        before(async () => {
+            const htsResult = await servicesNode.createHTS({
+                tokenName: TOKEN_NAME,
+                symbol: TOKEN_SYMBOL,
+                treasuryAccountId: accounts[1].accountId.toString(),
+                initialSupply: INITIAL_SUPPLY,
+                adminPrivateKey: accounts[1].privateKey
+            });
+
+            tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
+
+            // Deploy a contract implementing HederaTokenService
+            const HederaTokenServiceImplFactory = new ethers.ContractFactory(HederaTokenServiceImplJson.abi, HederaTokenServiceImplJson.bytecode, accounts[1].wallet);
+            htsImpl = await HederaTokenServiceImplFactory.deploy({gasLimit: 15000000});
+        });
+
+        it("Function calling HederaTokenService.isToken(token)", async () => {
+            const callData = {
+                from: '0x' + accounts[1].address,
+                to: htsImpl.address,
+                gas: EthImpl.numberTo0x(30000),
+                data: IS_TOKEN_ADDRESS_SIGNATURE + tokenAddress.replace('0x', '')
+            };
+
+            relay.call('eth_call', [callData, 'latest'])
+            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+
+            expect(res).to.eq(RESULT_TRUE);
         });
     });
 });

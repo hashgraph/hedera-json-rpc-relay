@@ -91,7 +91,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             await servicesNode.transferToken(tokenId, accounts[0].accountId, 10, requestId);
             await servicesNode.transferToken(tokenId, accounts[1].accountId, 10, requestId);
 
-            // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
+            // allow mirror node a 5 full record stream write windows (5 sec) and a buffer to persist setup details
             await new Promise(r => setTimeout(r, 5000));
 
             // get contract details

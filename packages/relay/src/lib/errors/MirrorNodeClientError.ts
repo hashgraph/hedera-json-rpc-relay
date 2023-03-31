@@ -21,30 +21,54 @@
 
 export class MirrorNodeClientError extends Error {
     public statusCode: number;
+    public errorMessage?: string;
 
     static retryErrorCodes: Array<number> = [400, 404, 408, 425, 500]
 
     static ErrorCodes = {
       ECONNABORTED: 504,
-      CONTRACT_REVERT_EXECUTED : 400
+      CONTRACT_REVERT_EXECUTED : 400,
+      NOT_SUPPORTED: 501
     };
 
     static statusCodes = {
       NOT_FOUND: 404
     };
 
-    constructor(message: string, statusCode: number) {
-      super(message);
-      this.statusCode = statusCode;
+    constructor(error: any, statusCode: number) {
+        // web3 module sends errors in this format, this is why we need a check to distinguish
+        if (error.response?.data?._status?.messages?.length) {
+            const msg = error.response.data._status.messages[0];
+            const {message, data} = msg;
+            super(message);
 
-      Object.setPrototypeOf(this, MirrorNodeClientError.prototype);
+            this.errorMessage = data;
+        }
+        else {
+            super(error.message);
+        }
+
+        this.statusCode = statusCode;
+        Object.setPrototypeOf(this, MirrorNodeClientError.prototype);
     }
 
     public isTimeout(): boolean {
       return this.statusCode === MirrorNodeClientError.ErrorCodes.ECONNABORTED;
     }
 
+    public isContractReverted(): boolean {
+        return this.statusCode === MirrorNodeClientError.ErrorCodes.CONTRACT_REVERT_EXECUTED;
+    }
+
     public isNotFound(): boolean {
       return this.statusCode === MirrorNodeClientError.statusCodes.NOT_FOUND;
+    }
+
+    public isNotSupported(): boolean {
+        return this.statusCode === MirrorNodeClientError.ErrorCodes.NOT_SUPPORTED;
+    }
+
+    public isNotSupportedSystemContractOperaton(): boolean {
+      return this.message === 'Precompile not supported';
     }
   }
