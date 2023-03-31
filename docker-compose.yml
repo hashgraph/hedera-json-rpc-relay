@@ -1,12 +1,12 @@
 version: "3.7"
 services:
   relay:
-    container_name:  hedera-jspn-rpc-relay
-    image: "ghcr.io/hashgraph/hedera-json-rpc-relay:0.20.0"
+    container_name: hedera-jspn-rpc-relay
+    image: "ghcr.io/hashgraph/hedera-json-rpc-relay:0.20.1"
     restart: "unless-stopped"
     ports:
       - 7546:7546
-    pull_policy: always    
+    pull_policy: always
     tty: true
     volumes:
       - ./.env.sample:/home/node/app/.env.sample
