@@ -1,6 +1,4 @@
 const replace = require("replace");
-const yaml = require('js-yaml');
-const fs = require('fs');
 const {execSync} = require('child_process')
 
 const versionRegex = /\d+\.\d+\.\d+(-\w+)?/i;
@@ -27,9 +25,12 @@ checkVersion(newVersion);
 
 console.log(`Bumping version to: ${newVersion}`);
 console.log(`is Snapshot: ${isSnapshot}`);
+
 // bumping version using replace for 'packages/relay/package.json', 'packages/server/package.json', 'docs/openrpc.json', 'packages/ws-server/package.json'
+// looking for: "version": "0.20.0-SNAPSHOT", "version": "0.20.0-rc1", "version": "0.20.0"
+const packageRegex = '\"version\": \"\\d+\\.\\d+\\.\\d+(-\\w+)?\"';
 replace({
-    regex: '\"version\": \"\\d+\\.\\d+\\.\\d+(-\\w+)?\"',
+    regex: packageRegex,
     replacement: `"version": "${newVersion}"`,
     paths: ['packages/relay/package.json', 'packages/server/package.json', 'docs/openrpc.json', 'packages/ws-server/package.json'],
     recursive: false,
@@ -38,18 +39,24 @@ replace({
 
 // bump only when is not snapshot
 if(!isSnapshot) {
-    // bump docker-compose.js version
-    const dockerComposePath = 'docker-compose.yml';
-    let dockerComposeYml = yaml.load(fs.readFileSync(dockerComposePath));
-    dockerComposeYml.services.relay.image = `ghcr.io/hashgraph/hedera-json-rpc-relay:${newVersion}`
-    fs.writeFileSync(dockerComposePath, yaml.dump(dockerComposeYml));
-    console.log(dockerComposePath);
+    // bump docker-compose.yml version
+    // looking for: image: "ghcr.io/hashgraph/hedera-json-rpc-relay:0.20.0-SNAPSHOT", image: "ghcr.io/hashgraph/hedera-json-rpc-relay:0.20.0-rc1", image: "ghcr.io/hashgraph/hedera-json-rpc-relay:0.20.0", image: "ghcr.io/hashgraph/hedera-json-rpc-relay:main"
+    const dockerComposeRegex = 'image: \"ghcr.io\\/hashgraph\\/hedera-json-rpc-relay:(main|\\d+\\.\\d+\\.\\d+(-\\w+)?)\"';
+    replace({
+        regex: dockerComposeRegex,
+        replacement: `image: "ghcr.io/hashgraph/hedera-json-rpc-relay:${newVersion}"`,
+        paths: ['docker-compose.yml'],
+        recursive: false,
+        silent: false,
+    });
 
     const majorMinorVersion = `${newVersion.split(".")[0]}.${newVersion.split(".")[1]}`;
 
     // also update README.md using replace
+    //looking for: "/hashgraph/hedera-json-rpc-relay/main/docs/openrpc.json", "/hashgraph/hedera-json-rpc-relay/release/0.20/docs/openrpc.json"
+    const readmeRegex = '(\\/hashgraph\\/hedera-json-rpc-relay\\/){1}(main|(release\\/\\d+.\\d+)){1}(\\/docs\\/openrpc.json){1}';
     replace({
-        regex: '(\\/hashgraph\\/hedera-json-rpc-relay\\/){1}(main|(release\\/\\d+.\\d+)){1}(\\/docs\\/openrpc.json){1}',
+        regex: readmeRegex,
         replacement: `/hashgraph/hedera-json-rpc-relay/release/${majorMinorVersion}/docs/openrpc.json`,
         paths: ['README.md'],
         recursive: false,
@@ -58,12 +65,24 @@ if(!isSnapshot) {
 }
 
 // bump helm chart versions
-const helmChartPath = 'helm-chart/Chart.yaml';
-let doc = yaml.load(fs.readFileSync(helmChartPath, 'utf-8'));
-doc.version = newVersion;
-doc.appVersion = `${newVersion}`;
-fs.writeFileSync(helmChartPath, yaml.dump(doc));
-console.log(helmChartPath);
+// looking for: "version: 0.20.0-SNAPSHOT", "version: 0.20.0-rc1", "version: 0.20.0"
+const helmChartRegex = 'version: \\d+\\.\\d+\\.\\d+(-\\w+)?';
+replace({
+    regex: helmChartRegex,
+    replacement: `version: ${newVersion}`,
+    paths: ['helm-chart/Chart.yaml'],
+    recursive: false,
+    silent: false,
+});
+// looking for: appVersion: "0.20.0-SNAPSHOT", appVersion: "0.20.0-rc1", appVersion: "0.20.0"
+const helmChartAppVersionRegex = 'appVersion: \"\\d+\\.\\d+\\.\\d+(-\\w+)?\"';
+replace({
+    regex: helmChartAppVersionRegex,
+    replacement: `appVersion: "${newVersion}"`,
+    paths: ['helm-chart/Chart.yaml'],
+    recursive: false,
+    silent: false,
+});
 
 // bump package-lock.json using npm itself, by running install it will update packages versions based on previous files
 execSync("npm install")
