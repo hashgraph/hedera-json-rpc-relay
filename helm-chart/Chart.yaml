@@ -2,6 +2,6 @@ apiVersion: v2
 name: hedera-json-rpc-relay
 description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
 type: application
-version: 0.20.0
-appVersion: "0.20.0"
+version: 0.20.1
+appVersion: "0.20.1"
 home: https://github.com/hashgraph/hedera-json-rpc-relay
