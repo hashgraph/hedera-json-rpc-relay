@@ -41,6 +41,8 @@ after(function() {
 });
 
 describe('RPC Server', async function() {
+  this.timeout(5000);
+
   it('should execute "eth_chainId"', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',

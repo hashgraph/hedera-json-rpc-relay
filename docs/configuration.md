@@ -48,7 +48,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `CONSENSUS_MAX_EXECUTION_TIME`    | "15000"       | Maximum time in ms the SDK will wait when submitting a transaction/query before throwing a TIMEOUT error.   |
 | `DEFAULT_RATE_LIMIT`              | "200"         | default fallback rate limit, if no other is configured.   |
 | `ETH_CALL_CACHE_TTL`              | "200"         | Maximum time in ms to cache an eth_call response.   |
-| `ETH_CALL_CONSENSUS`              | "false"       | Flag to set if eth_call logic should first query the mirror node.   |
+| `ETH_CALL_DEFAULT_TO_CONSENSUS_NODE `              | "false"       | Flag to set if eth_call logic should first query the mirror node.   |
 | `ETH_GET_LOGS_BLOCK_RANGE_LIMIT`  | "1000"        | The maximum block number range to consider during an eth_getLogs call.   |
 | `FEE_HISTORY_MAX_RESULTS`         | "10"          | The maximum number of results to returns as part of `eth_feeHistory`.   |
 | `GAS_PRICE_TINY_BAR_BUFFER`       | "10000000000" | The additional buffer range to allow during a relay precheck of gas price. This supports slight fluctuations in network gasprice calculations.   |
