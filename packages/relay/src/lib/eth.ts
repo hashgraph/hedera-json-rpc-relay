@@ -940,21 +940,17 @@ export class EthImpl implements Eth {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
       if (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
-        const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
-        if (!(isHts?.type === constants.TYPE_TOKEN)) {
-          // Execute the call and get the response
-          this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`, call.to, gas, call.data, call.from);
-          const callData = {
-            ...call,
-            gas,
-            value,
-            estimate: false
-          }
-          const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
-          if (contractCallResponse && contractCallResponse.result) {
-            return EthImpl.prepend0x(contractCallResponse.result);
-          }
-          return EthImpl.emptyHex;
+        // Execute the call and get the response
+        this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`, call.to, gas, call.data, call.from);
+        const callData = {
+          ...call,
+          gas,
+          value,
+          estimate: false
+        }
+        const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
+        if (contractCallResponse && contractCallResponse.result) {
+          return EthImpl.prepend0x(contractCallResponse.result);
         }
         return EthImpl.emptyHex;
       }
