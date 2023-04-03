@@ -111,6 +111,7 @@ export class MirrorNodeClient {
     protected createAxiosClient(
         baseUrl: string
     ): AxiosInstance {
+        const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
         const axiosClient: AxiosInstance = Axios.create({
             baseURL: baseUrl,
             responseType: 'json' as const,
@@ -121,12 +122,12 @@ export class MirrorNodeClient {
         });
         //@ts-ignore
         axiosRetry(axiosClient, {
-            retries: parseInt(process.env.MIRROR_NODE_RETRIES!) || 3,
+            retries: isDevMode ? 5 : parseInt(process.env.MIRROR_NODE_RETRIES!) || 3,
             retryDelay: (retryCount, error) => {
                 const request = error?.request?._header;
                 const requestId = request ? request.split('\n')[3].substring(11,47) : '';
                 const requestIdPrefix = formatRequestIdMessage(requestId);
-                const delay = (parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 250) * retryCount;
+                const delay = isDevMode ? 200 : (parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 250) * retryCount;
                 this.logger.trace(`${requestIdPrefix} Retry delay ${delay} ms`);
                 return delay;
             },
