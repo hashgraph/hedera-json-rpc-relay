@@ -20,18 +20,16 @@
 
 import { Account } from "./account";
 import { Balances } from "./balances";
-import { Block } from "./block";
+import { Block, IBlock, IBlocks } from "./block";
 import { Contract } from "./contract";
 import { ContractResult } from "./contractResult";
 import { ContractResults } from "./contractResults";
 import { ExchangeRate } from "./exchangeRate";
 import { Fees } from "./fees";
-import { IBlock, IBlocks } from "./block";
-import { ITransaction } from "./transaction";
+import { ITransaction, Transaction } from "./transaction";
 import { Log } from "./log";
 import { Receipt } from "./receipt";
 import { States } from "./state";
 import { TokenInfo } from "./tokenInfo";
-import { Transaction } from "./transaction";
 
 export { Account, Balances, Block, Contract, ContractResult, ContractResults, ExchangeRate, Fees, IBlock, IBlocks, ITransaction, Log, Receipt, States, TokenInfo, Transaction }

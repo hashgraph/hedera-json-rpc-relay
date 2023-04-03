@@ -566,7 +566,6 @@ export class EthImpl implements Eth {
       }
     }
 
-    let blockNumber: number | null;
     let balanceFound = false;
     let weibars: BigInt = BigInt(0);
     const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
@@ -575,8 +574,6 @@ export class EthImpl implements Eth {
       if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
         const block = await this.getHistoricalBlockResponse(blockNumberOrTag, true, requestId);
         if (block) {
-          blockNumber = block.number;
-
           // A blockNumberOrTag has been provided. If it is `latest` or `pending` retrieve the balance from /accounts/{account.id}
           if (mirrorAccount) {
             const latestBlock = await this.getHistoricalBlockResponse(EthImpl.blockLatest, true, requestId);
