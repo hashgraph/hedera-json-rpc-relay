@@ -23,7 +23,7 @@ import { Hbar, EthereumTransaction } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import {BigNumber as BN} from "bignumber.js";
 import { Logger } from 'pino';
-import { Block, Transaction, Log } from './model';
+import { Block, Transaction, Log, Fees, IBlock } from './models';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
@@ -32,6 +32,7 @@ import constants from './constants';
 import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
 import crypto from 'crypto';
+import { ILog } from './models/log';
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -258,10 +259,10 @@ export class EthImpl implements Eth {
   }
 
   private async getFeeWeibars(callerName: string, requestId?: string, timestamp?: string) {
-    let networkFees;
+    let networkFees: Fees | undefined;
     const requestIdPrefix = formatRequestIdMessage(requestId);
     try {
-      networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp,undefined, requestId);
+      networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp, undefined, requestId);
       if (_.isNil(networkFees)) {
         this.logger.debug(`${requestIdPrefix} Mirror Node returned no fees. Fallback to network`);
       }
@@ -274,9 +275,10 @@ export class EthImpl implements Eth {
         fees: [
           {
             gas: await this.sdkClient.getTinyBarGasFee(callerName, requestId),
-            'transaction_type': EthImpl.ethTxType
+            transaction_type: EthImpl.ethTxType
           }
-        ]
+        ],
+        timestamp: null
       };
     }
 
@@ -564,7 +566,7 @@ export class EthImpl implements Eth {
       }
     }
 
-    let blockNumber = null;
+    let blockNumber: number | null;
     let balanceFound = false;
     let weibars: BigInt = BigInt(0);
     const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
@@ -632,7 +634,7 @@ export class EthImpl implements Eth {
       }
 
       if (!balanceFound) {
-        this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
+        this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${blockNumberOrTag}, returning 0x0 balance`);
         return EthImpl.zeroHex;
       }
 
@@ -1309,8 +1311,8 @@ export class EthImpl implements Eth {
    * @param blockNumberOrTag
    * @param returnLatest
    */
-  private async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestId?: string | undefined): Promise<any | null> {
-    let blockResponse: any;
+  private async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestId?: string | undefined): Promise<IBlock | null> {
+    let blockResponse: IBlock | null;
     // Determine if the latest block should be returned and if not then just return null
     if (!returnLatest && EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
       return null;
@@ -1450,11 +1452,11 @@ export class EthImpl implements Eth {
       params.timestamp.push(`lte:${fromBlockResponse.timestamp.to}`);
     }
     else {
-      fromBlockNum = parseInt(fromBlockResponse.number);
+      fromBlockNum = fromBlockResponse.number;
       const toBlockResponse = await this.getHistoricalBlockResponse(toBlock, true, requestId);
       if (toBlockResponse != null) {
         params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
-        toBlockNum = parseInt(toBlockResponse.number);
+        toBlockNum = toBlockResponse.number;
       }
 
       if (fromBlockNum > toBlockNum) {
@@ -1477,7 +1479,7 @@ export class EthImpl implements Eth {
     }
   }
 
-  private async getLogsByAddress(address: string | [string], params: any, requestId) {
+  private async getLogsByAddress(address: string | [string], params: any, requestId): Promise<ILog[]> {
     const addresses = Array.isArray(address) ? address : [address];
     const logPromises = addresses.map(addr => this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestId));
 
@@ -1504,7 +1506,7 @@ export class EthImpl implements Eth {
 
     this.addTopicsToParams(params, topics);
 
-    let logResults;
+    let logResults: ILog[];
     if (address) {
       logResults = await this.getLogsByAddress(address, params, requestId);
     }

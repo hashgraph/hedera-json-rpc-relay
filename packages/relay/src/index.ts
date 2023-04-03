@@ -18,7 +18,7 @@
  *
  */
 
-import { Block, Log, Receipt, Transaction } from './lib/model';
+import { Block, Log, Receipt, Transaction } from './lib/models';
 import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
 import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
 
