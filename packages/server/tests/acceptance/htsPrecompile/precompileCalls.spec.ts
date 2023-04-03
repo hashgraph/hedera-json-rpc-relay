@@ -36,7 +36,9 @@ import IHederaTokenServiceJson from '../../contracts/IHederaTokenService.json';
 import HederaTokenServiceImplJson from '../../contracts/HederaTokenServiceImpl.json';
 import TokenManagementContractJson from '../../contracts/TokenManagementContract.json';
 
+import { predefined } from '../../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../../helpers/utils';
+import {EthImpl} from "@hashgraph/json-rpc-relay/dist/lib/eth";
 
 describe('@precompile-calls Tests for eth_call with HTS', async function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -190,7 +192,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         const rec1 = await IERC20.transfer(accounts[1].address, 100, { gasLimit: 1_000_000 });
         await rec1.wait();
         const rec2 = await IERC20.approve(accounts[2].address, 200, { gasLimit: 1_000_000 });
-        const rrr =await rec2.wait();
+        await rec2.wait();
 
         const rec3 = await IERC721.transferFrom(accounts[0].address, accounts[1].address, nftSerial, { gasLimit: 1_000_000 });
         await rec3.wait();
@@ -225,85 +227,85 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     }
 
     describe("Calling HTS token through IERC20Metadata", async () => {
-        it("ETHCALL-011 - Function with IERC20Metadata(token).name()", async () => {
+        it("Function with IERC20Metadata(token).name()", async () => {
             const name = await IERC20Metadata.name();
             expect(name).to.eq(TOKEN_NAME);
         });
 
-        it("ETHCALL-012 - Function with IERC20Metadata(token).symbol()", async () => {
+        it("Function with IERC20Metadata(token).symbol()", async () => {
             const symbol = await IERC20Metadata.symbol();
             expect(symbol).to.eq(TOKEN_SYMBOL);
         });
 
-        it("ETHCALL-013 - Function with IERC20Metadata(token).decimals()", async () => {
+        it("Function with IERC20Metadata(token).decimals()", async () => {
             const decimals = await IERC20Metadata.decimals();
             expect(decimals).to.eq(TOKEN_DECIMALS);
         });
     });
 
     describe("Calling HTS token through IERC20", async () => {
-        it("ETHCALL-014 - Function with IERC20(token).totalSupply()", async () => {
+        it("Function with IERC20(token).totalSupply()", async () => {
             const totalSupply = await IERC20Metadata.totalSupply();
             expect(totalSupply).to.eq(INITIAL_SUPPLY);
         });
 
-        it("ETHCALL-015 - Function with IERC20(token).balanceOf(account) - using long zero address", async () => {
+        it("Function with IERC20(token).balanceOf(account) - using long zero address", async () => {
             const balance = await IERC20.balanceOf(account1LongZero);
             expect(balance).to.eq(100);
         });
 
-        it("ETHCALL-044 - Function with IERC20(token).balanceOf(account) - using evm address", async () => {
+        it("Function with IERC20(token).balanceOf(account) - using evm address", async () => {
             const balance = await IERC20.balanceOf(accounts[1].address);
             expect(balance).to.eq(100);
         });
 
-        it("ETHCALL-016 - Function with IERC20(token).allowance(owner, spender) - using both evm addresses", async () => {
+        it("Function with IERC20(token).allowance(owner, spender) - using both evm addresses", async () => {
             const allowance = await IERC20.allowance(accounts[0].address, accounts[2].address);
             expect(allowance).to.eq(200);
         });
 
-        it("ETHCALL-016 - Function with IERC20(token).allowance(owner, spender) - using both long zero addresses", async () => {
+        it("Function with IERC20(token).allowance(owner, spender) - using both long zero addresses", async () => {
             const allowance = await IERC20.allowance(adminAccountLongZero, account2LongZero);
             expect(allowance).to.eq(200);
         });
 
-        it("ETHCALL-016 - Function with IERC20(token).allowance(owner, spender) - using evm address for owner", async () => {
+        it("Function with IERC20(token).allowance(owner, spender) - using evm address for owner", async () => {
             const allowance = await IERC20.allowance(accounts[0].address, account2LongZero);
             expect(allowance).to.eq(200);
         });
 
-        it("ETHCALL-016 - Function with IERC20(token).allowance(owner, spender) - using evm address for spender", async () => {
+        it("Function with IERC20(token).allowance(owner, spender) - using evm address for spender", async () => {
             const allowance = await IERC20.allowance(adminAccountLongZero, accounts[2].address);
             expect(allowance).to.eq(200);
         });
     });
 
     describe("Calling HTS token through IERC721Metadata", async () => {
-        it("ETHCALL-017 - Function with IERC721Metadata(token).name()", async () => {
+        it("Function with IERC721Metadata(token).name()", async () => {
             const name = await IERC721Metadata.name();
             expect(name).to.eq(NFT_NAME);
         });
 
-        it("ETHCALL-018 - Function with IERC721Metadata(token).symbol()", async () => {
+        it("Function with IERC721Metadata(token).symbol()", async () => {
             const symbol = await IERC721Metadata.symbol();
             expect(symbol).to.eq(NFT_SYMBOL);
         });
 
-        it("ETHCALL-024 - Function with IERC721Metadata(token).tokenURI(tokenId)", async () => {
+        it("Function with IERC721Metadata(token).tokenURI(tokenId)", async () => {
             const tokenURI = await IERC721Metadata.tokenURI(nftSerial);
             expect(tokenURI).to.eq(NFT_METADATA);
         });
     });
 
     describe("Calling HTS token through IERC721Enumerable", async () => {
-        it("ETHCALL-019 - Function with IERC721Enumerable(token).totalSupply()", async () => {
+        it("Function with IERC721Enumerable(token).totalSupply()", async () => {
             const supply = await IERC721Enumerable.totalSupply();
             expect(supply).to.eq(1);
         });
     });
 
     describe("Calling HTS token through IERC721", async () => {
-        it("ETHCALL-020 - Function with IERC721(token).balanceOf(owner)", async () => {
+        it("Function with IERC721(token).balanceOf(owner)", async () => {
             const balance0 = await IERC721.balanceOf(accounts[0].address);
             expect(balance0).to.eq(0);
 
@@ -315,44 +317,44 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
 
         });
 
-        it("ETHCALL-021 - Function with IERC721(token).getApproved(serialNo)", async () => {
+        it("Function with IERC721(token).getApproved(serialNo)", async () => {
             const approval = await IERC721.getApproved(nftSerial);
             expect(approval.toLowerCase()).to.eq(`0x${accounts[2].address}`);
         });
 
-        it("ETHCALL-022 - Function with IERC721(token).isApprovedForAll(owner, operator) - using both evm addresses", async () => {
+        it("Function with IERC721(token).isApprovedForAll(owner, operator) - using both evm addresses", async () => {
             const approvalForAll = await IERC721.isApprovedForAll(accounts[1].address, accounts[0].address);
             expect(approvalForAll).to.eq(true);
         });
 
-        it("ETHCALL-022 - Function with IERC721(token).isApprovedForAll(owner, operator) - using both long zero addresses addresses", async () => {
+        it("Function with IERC721(token).isApprovedForAll(owner, operator) - using both long zero addresses addresses", async () => {
             const approvalForAll = await IERC721.isApprovedForAll(account1LongZero, adminAccountLongZero);
             expect(approvalForAll).to.eq(true);
         });
 
-        it("ETHCALL-022 - Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for owner", async () => {
+        it("Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for owner", async () => {
             const approvalForAll = await IERC721.isApprovedForAll(accounts[1].address, adminAccountLongZero);
             expect(approvalForAll).to.eq(true);
         });
 
-        it("ETHCALL-022 - Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for operator", async () => {
+        it("Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for operator", async () => {
             const approvalForAll = await IERC721.isApprovedForAll(account1LongZero, accounts[0].address);
             expect(approvalForAll).to.eq(true);
         });
 
-        it("ETHCALL-023 - Function with IERC721(token).ownerOf(serialNo)", async () => {
+        it("Function with IERC721(token).ownerOf(serialNo)", async () => {
             const owner = await IERC721.ownerOf(nftSerial);
             expect(owner.toLowerCase()).to.eq(`0x${accounts[1].address}`);
         });
     });
 
     describe("Calling HTS token through HederaTokenService", async () => {
-        it("ETHCALL-025 - Function with HederaTokenService.isToken(token)", async () => {
+        it("Function with HederaTokenService.isToken(token)", async () => {
             const isToken = await htsImpl.callStatic.isTokenAddress(tokenAddress);
             expect(isToken).to.eq(true);
         });
 
-        it("ETHCALL-026 - Function with HederaTokenService.isFrozen(token, account) - using evm address", async () => {
+        it("Function with HederaTokenService.isFrozen(token, account) - using evm address", async () => {
             // freeze token
             const freezeTx = await TokenManager.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
             const responseCodeFreeze = (await freezeTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
@@ -367,7 +369,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             expect(responseCodeUnfreeze).to.equal(TX_SUCCESS_CODE);
         });
 
-        it("ETHCALL-026 - Function with HederaTokenService.isFrozen(token, account) - using long zero address", async () => {
+        it("Function with HederaTokenService.isFrozen(token, account) - using long zero address", async () => {
             // freeze token
             const freezeTx = await TokenManager.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
             const responseCodeFreeze = (await freezeTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
@@ -382,27 +384,27 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             expect(responseCodeUnfreeze).to.equal(TX_SUCCESS_CODE);
         });
 
-        it("ETHCALL-027 - Function with HederaTokenService.isKyc(token, account) - using evm account address", async () => {
+        it("Function with HederaTokenService.isKyc(token, account) - using evm account address", async () => {
             const isKyc1 = await htsImpl.callStatic.isKycGranted(tokenAddress, accounts[1].address);
             expect(isKyc1).to.eq(true);
         });
 
-        it("ETHCALL-027 - Function with HederaTokenService.isKyc(token, account) - using long zero account address", async () => {
+        it("Function with HederaTokenService.isKyc(token, account) - using long zero account address", async () => {
             const isKyc1 = await htsImpl.callStatic.isKycGranted(tokenAddress, account1LongZero);
             expect(isKyc1).to.eq(true);
         });
 
-        it("ETHCALL-028 - Function with HederaTokenService.getTokenDefaultFreezeStatus(token)", async () => {
+        it("Function with HederaTokenService.getTokenDefaultFreezeStatus(token)", async () => {
             const defaultFreeze = await htsImpl.callStatic.getTokenDefaultFreeze(tokenAddress);
             expect(defaultFreeze).to.eq(false);
         });
 
-        it("ETHCALL-029 - Function with HederaTokenService.getTokenDefaultKycStatus(token)", async () => {
+        it("Function with HederaTokenService.getTokenDefaultKycStatus(token)", async () => {
             const defaultKyc = await htsImpl.callStatic.getTokenDefaultKyc(tokenAddress);
             expect(defaultKyc).to.eq(true);
         });
 
-        describe("ETHCALL-030 - Function with HederaTokenService.getTokenCustomFees(token)", async () => {
+        describe("Function with HederaTokenService.getTokenCustomFees(token)", async () => {
             it("token with no custom fees", async () => {
                 const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressNoFees);
                 expect(customFees).to.exist;
@@ -423,7 +425,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees[0].amount.toString()).to.eq(Hbar.from(1).toTinybars().toString());
                 expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[0].feeCollector).to.exist;
-                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address.toLowerCase()}`);
                 expect(customFees.fractionalFees).to.exist;
                 expect(customFees.fractionalFees.length).to.eq(0);
                 expect(customFees.royaltyFees).to.exist;
@@ -439,7 +441,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees[0].amount.toString()).to.eq("1");
                 expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[0].feeCollector).to.exist;
-                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address.toLowerCase()}`);
                 expect(customFees.fractionalFees).to.exist;
                 expect(customFees.fractionalFees.length).to.eq(0);
                 expect(customFees.royaltyFees).to.exist;
@@ -518,7 +520,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.royaltyFees[0].denominator.toString()).to.eq("10");
                 expect(customFees.royaltyFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.royaltyFees[0].feeCollector).to.exist;
-                expect(customFees.royaltyFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+                expect(customFees.royaltyFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address.toLowerCase()}`);
             });
 
         });
@@ -537,30 +539,30 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             ];
 
             for (let i = 0; i < tokenTests.length; i++ ) {
-                it(`ETHCALL-033 - Function with HederaTokenService.getTokenInfo(token) for a ${tokenTests[i]}`, async () => {
+                it(`Function with HederaTokenService.getTokenInfo(token) for a ${tokenTests[i]}`, async () => {
                     const info = await htsImpl.callStatic.getInformationForToken(tokenAddresses[i]);
                     expect(info).to.exist;
                     expect(info.token).to.exist;
                     expect(info.token.name).to.eq(TOKEN_NAME);
                     expect(info.token.symbol).to.eq(TOKEN_SYMBOL);
-                    expect(info.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
+                    expect(info.token.treasury.toLowerCase()).to.eq(`0x${accounts[0].address.toLowerCase()}`);
                     expect(info.totalSupply).to.exist;
                     expect(info.totalSupply.toString()).to.eq(INITIAL_SUPPLY.toString());
                 });
 
-                it(`ETHCALL-034 - Function with HederaTokenService.getFungibleTokenInfo(token) for a ${tokenTests[i]}`, async () => {
+                it(`Function with HederaTokenService.getFungibleTokenInfo(token) for a ${tokenTests[i]}`, async () => {
                     const info = await htsImpl.callStatic.getInformationForFungibleToken(tokenAddresses[i]);
                     expect(info).to.exist;
                     expect(info.tokenInfo).to.exist;
                     expect(info.tokenInfo.token).to.exist;
                     expect(info.tokenInfo.token.name).to.eq(TOKEN_NAME);
                     expect(info.tokenInfo.token.symbol).to.eq(TOKEN_SYMBOL);
-                    expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
+                    expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(`0x${accounts[0].address.toLowerCase()}`);
                     expect(info.tokenInfo.totalSupply).to.exist;
                     expect(info.tokenInfo.totalSupply.toString()).to.eq(INITIAL_SUPPLY.toString());
                 });
 
-                it(`ETHCALL-036 - Function with HederaTokenService.getTokenExpiryInfo(token) for a ${tokenTests[i]}`, async () => {
+                it(`Function with HederaTokenService.getTokenExpiryInfo(token) for a ${tokenTests[i]}`, async () => {
                     const expiryInfo = await htsImpl.callStatic.getExpiryInfoForToken(tokenAddresses[i]);
                     expect(expiryInfo).to.exist;
                     expect(expiryInfo.autoRenewAccount).to.eq('0x0000000000000000000000000000000000000000');
@@ -571,19 +573,19 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             }
 
             for (let i = 0; i < nftTests.length; i++) {
-                it(`ETHCALL-035 - Function with HederaTokenService.getNonFungibleTokenInfo(token, serialNumber) for a ${nftTests[i]}`, async () => {
+                it(`Function with HederaTokenService.getNonFungibleTokenInfo(token, serialNumber) for a ${nftTests[i]}`, async () => {
                     const info = await htsImpl.callStatic.getInformationForNonFungibleToken(nftAddresses[i], nftSerial);
                     expect(info).to.exist;
                     expect(info.tokenInfo.token).to.exist;
                     expect(info.tokenInfo.token.name).to.eq(NFT_NAME);
                     expect(info.tokenInfo.token.symbol).to.eq(NFT_SYMBOL);
-                    expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(adminAccountLongZero.toLowerCase());
+                    expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(`0x${accounts[0].address.toLowerCase()}`);
                     expect(info.serialNumber.toString()).to.eq(nftSerial.toString());
                 });
             }
         });
 
-        describe('ETHCALL-037 - Function with HederaTokenService.getTokenKey(token, keyType)', async () => {
+        describe('Function with HederaTokenService.getTokenKey(token, keyType)', async () => {
             const keyTypes = {
                 ADMIN: 1,
                 KYC: 2,
@@ -656,15 +658,73 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         });
     });
 
-    xdescribe("others", async () => {
-        // negative
-        it("ETHCALL-051 - Test with non existing token from request body", async () => {
+    describe("Negative tests", async () => {
+        const CALLDATA_BALANCE_OF = '0x70a08231';
+        const CALLDATA_ALLOWANCE =  '0xdd62ed3e';
+        const NON_EXISTING_ACCOUNT = '123abc123abc123abc123abc123abc123abc123a';
+
+        it("Call to non-existing HTS token returns error", async () => {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: '0x' + NON_EXISTING_ACCOUNT,
+                gas: EthImpl.numberTo0x(30000),
+                data: CALLDATA_BALANCE_OF + accounts[0].address
+            };
+
+            await relay.callFailing(
+                'eth_call',
+                [callData, 'latest'],
+                predefined.NON_EXISTING_CONTRACT('0x' + NON_EXISTING_ACCOUNT),
+                requestId
+            );
         });
 
-        it("ETHCALL-052 - Test with non existing account from request body", async () => {
+        it("Call to HTS token from non-existing account returns error", async () => {
+            const callData = {
+                from: '0x' + NON_EXISTING_ACCOUNT,
+                to: htsImplAddress,
+                gas: EthImpl.numberTo0x(30000),
+                data: CALLDATA_BALANCE_OF + NON_EXISTING_ACCOUNT.padStart(64, '0')
+            };
+
+            await relay.callFailing(
+                'eth_call',
+                [callData, 'latest'],
+                predefined.NON_EXISTING_ACCOUNT('0x' + NON_EXISTING_ACCOUNT),
+                requestId
+            );
         });
 
-        it("ETHCALL-053 - Test allowance with non existing owner or spender", async () => {
+        it("Call to allowance method of an HTS token with non-existing owner account in call data returns error", async () => {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: htsImplAddress,
+                gas: EthImpl.numberTo0x(30000),
+                data: CALLDATA_ALLOWANCE + NON_EXISTING_ACCOUNT.padStart(64, '0') + account2LongZero.replace('0x', '').padStart(64, '0')
+            };
+
+            await relay.callFailing(
+                'eth_call',
+                [callData, 'latest'],
+                predefined.CONTRACT_REVERT(),
+                requestId
+            );
+        });
+
+        it("Call to allowance method of an HTS token with non-existing spender account in call data returns error", async () => {
+            const callData = {
+                from: '0x' + accounts[0].address,
+                to: htsImplAddress,
+                gas: EthImpl.numberTo0x(30000),
+                data: CALLDATA_ALLOWANCE + adminAccountLongZero.replace('0x', '').padStart(64, '0') + NON_EXISTING_ACCOUNT.padStart(64, '0')
+            };
+
+            await relay.callFailing(
+                'eth_call',
+                [callData, 'latest'],
+                predefined.CONTRACT_REVERT(),
+                requestId
+            );
         });
     });
 });

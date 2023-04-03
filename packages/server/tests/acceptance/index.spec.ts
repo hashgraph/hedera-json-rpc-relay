@@ -97,7 +97,7 @@ describe('RPC Server Acceptance Tests', function () {
         if (USE_LOCAL_NODE === 'true') {
             // stop local-node
             logger.info('Shutdown local node');
-            shell.exec('hedera stop');
+            // shell.exec('hedera stop');
         }
 
         // stop relay
@@ -142,7 +142,7 @@ describe('RPC Server Acceptance Tests', function () {
         shell.exec(`npm install @hashgraph/hedera-local -g`);
 
         console.log('Starting local node...');
-        shell.exec(`hedera start -d`);
+        // shell.exec(`hedera start -d`);
         console.log('Hedera Hashgraph local node env started');
     }
 
