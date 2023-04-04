@@ -307,6 +307,8 @@ describe('@web-socket Acceptance Tests', async function() {
             // post test clean-up
             webSocket.close();
             process.env.WS_MULTIPLE_ADDRESSES_ENABLED = originalWsMultipleAddressesEnabledValue;
+            // wait 500 ms for the connection to be closed
+            await new Promise(resolve => setTimeout(resolve, 500));
         });
 
 
