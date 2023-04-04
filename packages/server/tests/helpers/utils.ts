@@ -82,7 +82,17 @@ export class Utils {
         const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
         contract = new ethers.Contract(receipt.to, contractJson.abi, wallet);
         return contract;
-    }
+    };
+
+    // The main difference between this and deployContractWithEthers is that this does not re-init the contract with the deployed address
+    // and that results in the contract address coming in EVM Format instead of LongZero format
+    static deployContractWithEthersV2 = async (constructorArgs:any[] = [], contractJson, wallet) => {
+        const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
+        const contract = await factory.deploy(...constructorArgs);
+        await contract.deployed();
+        // no need to re-init the contract with the deployed address
+        return contract;
+    };
 
     static createHTS = async (tokenName, symbol, adminAccount, initialSupply, abi, associatedAccounts, owner, servicesNode, requestId) => {
         const htsResult = await servicesNode.createHTS({
