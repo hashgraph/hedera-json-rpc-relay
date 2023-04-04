@@ -259,19 +259,19 @@ describe('@web-socket Acceptance Tests', async function() {
 
             // create event on contract 1
             await logContractSigner.log1(100);
-            await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
+            await new Promise(resolve => setTimeout(resolve, 3000)); // wait for event to be received
             expect("1: " + latestEventFromSubscription.params.result.address).to.be.eq("1: " + logContractSigner.address.toLowerCase());
             expect("1: " + latestEventFromSubscription.params.subscription).to.be.eq("1: " + subscriptionId);
 
             // create event on contract 2
             await logContractSigner2.log1(200);
-            await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
+            await new Promise(resolve => setTimeout(resolve, 3000)); // wait for event to be received
             expect("2: " + latestEventFromSubscription.params.result.address).to.be.eq("2: " + logContractSigner2.address.toLowerCase());
             expect("2: " + latestEventFromSubscription.params.subscription).to.be.eq("2: " + subscriptionId);
 
             // create event on contract 3
             await logContractSigner3.log1(300);
-            await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
+            await new Promise(resolve => setTimeout(resolve, 3000)); // wait for event to be received
             expect("3: " + latestEventFromSubscription.params.result.address).to.be.eq("3: " + logContractSigner3.address.toLowerCase());
             expect("3: " + latestEventFromSubscription.params.subscription).to.be.eq("3: " + subscriptionId);
 
