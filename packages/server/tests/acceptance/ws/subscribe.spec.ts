@@ -234,6 +234,8 @@ describe('@web-socket Acceptance Tests', async function() {
         });
 
         it('Subscribe to multiple contracts on same subscription', async function () {
+            const originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED; // cache original value
+            process.env.WS_MULTIPLE_ADDRESSES_ENABLED = "true"; // disable feature flag
             await new Promise(resolve => setTimeout(resolve, 10000));
 
             const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
@@ -255,23 +257,23 @@ describe('@web-socket Acceptance Tests', async function() {
                 const request = `{"jsonrpc":"2.0","method":"eth_subscribe","params":["logs", {"address":${JSON.stringify(addressCollection)}}],"id":1}`;
                 webSocket.send(request);
             });
-            await new Promise(resolve => setTimeout(resolve, 1000)); // wait for subscription to be created
+            await new Promise(resolve => setTimeout(resolve, 500)); // wait for subscription to be created
 
             // create event on contract 1
             await logContractSigner.log1(100);
-            await new Promise(resolve => setTimeout(resolve, 3000)); // wait for event to be received
+            await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
             expect("1: " + latestEventFromSubscription.params.result.address).to.be.eq("1: " + logContractSigner.address.toLowerCase());
             expect("1: " + latestEventFromSubscription.params.subscription).to.be.eq("1: " + subscriptionId);
 
             // create event on contract 2
             await logContractSigner2.log1(200);
-            await new Promise(resolve => setTimeout(resolve, 3000)); // wait for event to be received
+            await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
             expect("2: " + latestEventFromSubscription.params.result.address).to.be.eq("2: " + logContractSigner2.address.toLowerCase());
             expect("2: " + latestEventFromSubscription.params.subscription).to.be.eq("2: " + subscriptionId);
 
             // create event on contract 3
             await logContractSigner3.log1(300);
-            await new Promise(resolve => setTimeout(resolve, 3000)); // wait for event to be received
+            await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
             expect("3: " + latestEventFromSubscription.params.result.address).to.be.eq("3: " + logContractSigner3.address.toLowerCase());
             expect("3: " + latestEventFromSubscription.params.subscription).to.be.eq("3: " + subscriptionId);
 
@@ -280,6 +282,7 @@ describe('@web-socket Acceptance Tests', async function() {
 
             // wait for the connections to be closed
             await new Promise(resolve => setTimeout(resolve, 500));
+            process.env.WS_MULTIPLE_ADDRESSES_ENABLED = originalWsMultipleAddressesEnabledValue; // restore original value
         });
 
 
