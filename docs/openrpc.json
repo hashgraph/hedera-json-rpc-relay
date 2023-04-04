@@ -366,6 +366,39 @@
             }
         },
         {
+            "name": "eth_getStorageAt",
+            "summary": "Returns the value from a storage position at a given addressd.",
+            "params": [
+                {
+                    "name": "Address",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/components/schemas/address"
+                    }
+                },
+                {
+                    "name": "Position",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/components/schemas/uint"
+                    }
+                },
+                {
+                    "name": "Block",
+                    "required": false,
+                    "schema": {
+                        "$ref": "#/components/schemas/BlockNumberOrTag"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Value from storage",
+                "schema": {
+                    "$ref": "#/components/schemas/hash32"
+                }
+            }
+        },
+        {
             "name": "eth_getTransactionByBlockHashAndIndex",
             "summary": "Returns information about a transaction by block hash and transaction index position.",
             "params": [
