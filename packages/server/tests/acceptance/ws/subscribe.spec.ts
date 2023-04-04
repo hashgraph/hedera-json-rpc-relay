@@ -82,12 +82,14 @@ describe('@web-socket Acceptance Tests', async function() {
     let wsProvider;
     const accounts: AliasAccount[] = [];
     let logContractSigner;
+    let originalWsMaxConnectionTtl;
 
     this.beforeAll(async () => {
         accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
         // Deploy Log Contract
         logContractSigner = await Utils.deployContractWithEthers([], LogContractJson, accounts[0].wallet, relay);
         // Override ENV variable for this test only
+        originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL; // cache original value
         process.env.WS_MAX_CONNECTION_TTL = '10000';
     });
 
@@ -107,8 +109,8 @@ describe('@web-socket Acceptance Tests', async function() {
     });
 
     this.afterAll(async () => {
-        // Return ENV variables to their original values
-        process.env.WS_MAX_CONNECTION_TTL = '300000';
+        // Return ENV variables to their original value
+        process.env.WS_MAX_CONNECTION_TTL = originalWsMaxConnectionTtl;
     });
 
 
