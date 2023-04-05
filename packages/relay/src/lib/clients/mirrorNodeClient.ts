@@ -25,6 +25,7 @@ import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
 import axiosRetry from 'axios-retry';
+import { predefined } from "../errors/JsonRpcError";
 const LRU = require('lru-cache');
 
 type REQUEST_METHODS = 'GET' | 'POST';
@@ -148,7 +149,7 @@ export class MirrorNodeClient {
             this.web3Url = '';
 
             this.restClient = restClient;
-            this.web3Client = !!web3Client ? web3Client : restClient;
+            this.web3Client = web3Client ? web3Client : restClient;
         } else {
             this.restUrl = this.buildUrl(restUrl);
             this.web3Url = this.buildUrl(web3Url);
@@ -238,7 +239,15 @@ export class MirrorNodeClient {
         }
 
         this.logger.error(new Error(error.message), `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
-        throw new MirrorNodeClientError(error.message, effectiveStatusCode);
+
+        const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
+
+        // we only need contract revert errors here as it's not the same as not supported
+        if (mirrorError.isContractReverted() && !mirrorError.isNotSupported() && !mirrorError.isNotSupportedSystemContractOperaton()) {
+            throw predefined.CONTRACT_REVERT(mirrorError.errorMessage);
+        }
+
+        throw mirrorError;
     }
 
     async getPaginatedResults(url: string, pathLabel: string, resultProperty: string, allowedErrorStatuses?: number[], requestId?: string, results = [], page = 1) {
@@ -513,10 +522,13 @@ export class MirrorNodeClient {
         return this.getContractResultsByAddress(address, contractResultsParams, limitOrderParams, requestId);
     }
 
-    public async getContractCurrentStateByAddressAndSlot(address: string, slot: string, requestId?: string) {
+    public async getContractStateByAddressAndSlot(address: string, slot: string, blockEndTimestamp?: string, requestId?: string) {
         const limitOrderParams: ILimitOrderParams = this.getLimitOrderQueryParam(constants.MIRROR_NODE_QUERY_LIMIT, constants.ORDER.DESC);
         const queryParamObject = {};
-
+        
+        if (blockEndTimestamp) {
+            this.setQueryParam(queryParamObject, 'timestamp', blockEndTimestamp);
+        }
         this.setQueryParam(queryParamObject, 'slot', slot);
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
@@ -528,7 +540,7 @@ export class MirrorNodeClient {
     }
 
     public async postContractCall(callData: string, requestId?: string) {
-        return this.post(MirrorNodeClient.CONTRACT_CALL_ENDPOINT, callData, MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [400], requestId);
+        return this.post(MirrorNodeClient.CONTRACT_CALL_ENDPOINT, callData, MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [], requestId);
     }
 
     getQueryParams(params: object) {

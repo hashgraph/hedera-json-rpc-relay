@@ -64,6 +64,8 @@ describe('RPC', function() {
     const contractCall = require('../scripts/contractCall');
 
     await contractCall(contractAddress, updatedMsg);
+    // 5 seconds sleep to propagate the changes to mirror node
+    await new Promise(r => setTimeout(r, 5000));
     const res = await contractViewCall(contractAddress);
 
     expect(res).to.be.equal(updatedMsg);

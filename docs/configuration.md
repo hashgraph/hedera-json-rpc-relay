@@ -48,7 +48,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `CONSENSUS_MAX_EXECUTION_TIME`    | "15000"       | Maximum time in ms the SDK will wait when submitting a transaction/query before throwing a TIMEOUT error.   |
 | `DEFAULT_RATE_LIMIT`              | "200"         | default fallback rate limit, if no other is configured.   |
 | `ETH_CALL_CACHE_TTL`              | "200"         | Maximum time in ms to cache an eth_call response.   |
-| `ETH_CALL_CONSENSUS`              | "false"       | Flag to set if eth_call logic should first query the mirror node.   |
+| `ETH_CALL_DEFAULT_TO_CONSENSUS_NODE `              | "false"       | Flag to set if eth_call logic should first query the mirror node.   |
 | `ETH_GET_LOGS_BLOCK_RANGE_LIMIT`  | "1000"        | The maximum block number range to consider during an eth_getLogs call.   |
 | `FEE_HISTORY_MAX_RESULTS`         | "10"          | The maximum number of results to returns as part of `eth_feeHistory`.   |
 | `GAS_PRICE_TINY_BAR_BUFFER`       | "10000000000" | The additional buffer range to allow during a relay precheck of gas price. This supports slight fluctuations in network gasprice calculations.   |
@@ -63,16 +63,31 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `TIER_3_RATE_LIMIT`               | "1600"        | Maximum relaxed request count limit used for static return endpoints.   |
 
 
+## WS-Server
+
+The following table lists the available properties along with their default values for the [Ws-server package](/packages/ws-server/).
+Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
+
+| Name                     | Default  | Description                                                                             |
+|--------------------------|----------|-----------------------------------------------------------------------------------------|
+| `SUBSCRIPTIONS_ENABLED`  | "false"  | If enabled eth_subscribe will be enabled using WebSockets.                              |
+| `WS_MAX_CONNECTION_TTL`  | "300000" | Time in ms that the web socket connection is allowed to stay open, currently 5 minutes. |
+| `CONNECTION_LIMIT`       | "10"     | Maximun amount of concurrent web socket connections allowed.                            |
+| `POLLING_INTERVAL`       | "500"    | Time in ms in between each poll to mirror node while there are subscriptions.           |
+| `WEB_SOCKET_PORT`        | "8546"   | Port for the web socket connections                                                     |
+
+
 ## Testing
 
 The following table lists the available properties along with their default values for the tests utilized in the [Server](/packages/server/) and [Relay](/packages/relay/) packages. 
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
-| Name                          | Default       | Description                                                   |
-|-------------------------------|---------------|---------------------------------------------------------|
-| `LOCAL_NODE`      | ""        | Flag if relay is hosted in the Hedera local node setup.   |
-| `E2E_RELAY_HOST`  | ""        | Remote relay url to point to.   |
-| `DEV_MODE`        | "false"   | Flag if relay should operate in developer optimization mode.   |
+| Name               | Default | Description                                                  |
+|--------------------|---------|--------------------------------------------------------------|
+| `LOCAL_NODE`       | ""      | Flag if relay is hosted in the Hedera local node setup.      |
+| `E2E_RELAY_HOST`   | ""      | Remote relay url to point to.                                |
+| `DEV_MODE`         | "false" | Flag if relay should operate in developer optimization mode. |
+| `TEST_WS_SERVER`   | "false" | Flag config for enable or disable the WS server tests.       |
 
 For test context additional fields need to be set. The following example showcases a `hedera-local-node` instance (where values match those noted on [Local Node Network Variables](https://github.com/hashgraph/hedera-local-node#network-variables)
 

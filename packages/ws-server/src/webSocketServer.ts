@@ -24,7 +24,6 @@ import websockify from 'koa-websocket';
 import {Relay, RelayImpl, predefined, JsonRpcError} from '@hashgraph/json-rpc-relay';
 import { Registry } from 'prom-client';
 import pino from 'pino';
-import { Socket } from 'dgram';
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -58,11 +57,28 @@ const LOGGER_PREFIX = 'WebSocket:';
 const CHAIN_ID = relay.eth().chainId();
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
 
+// function to get max connection TTL from ENV variable
+function getMaxConnectionTTL() {
+    // 5 minutes in ms by default 5 * 60 * 1000 = 300000
+    return parseInt(process.env.WS_MAX_CONNECTION_TTL || '300000');
+}
+
 app.ws.use((ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
     logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
-
     connectedClients = ctx.app.server._connections;
+    // Limit connection TTL and close connection if its reached
+    const maxConnectionTTL = getMaxConnectionTTL();
+    setTimeout(() => {
+        if (ctx.websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
+            logger.debug(`${LOGGER_PREFIX} closing connection ${ctx.websocket.id} due to reaching TTL of ${maxConnectionTTL}ms`);
+            try {
+                ctx.websocket.close();
+            } catch (e) {
+                logger.error(`${LOGGER_PREFIX} ${ctx.websocket.id} ${e}`);
+            }
+        }
+    }, maxConnectionTTL);
 
     ctx.websocket.on('message', async (msg) => {
         ctx.websocket.id = relay.subs()?.generateId();
