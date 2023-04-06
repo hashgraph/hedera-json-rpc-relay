@@ -62,6 +62,12 @@ const CHAIN_ID = relay.eth().chainId();
 const IP_LIMIT_ERROR = WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED;
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
 
+// function to get max connection TTL from ENV variable
+function getMaxConnectionTTL() {
+    // 5 minutes in ms by default 5 * 60 * 1000 = 300000
+    return parseInt(process.env.WS_MAX_CONNECTION_TTL || '300000');
+}
+
 async function handleConnectionClose(ctx) {
     const {ip} = ctx.request;
     clientIps[ip]--;
@@ -83,6 +89,7 @@ app.ws.use(async (ctx) => {
     const {ip} = ctx.request;
 
     connectedClients = ctx.app.server._connections;
+
     if (clientIps[ip] && clientIps[ip] >= parseInt(process.env.CONNECTION_LIMIT_PER_IP || '10')) {
         logger.info(`Maximum allowed connections from a single IP (${clientIps[ip]}) exceeded for address ${ip}`);
         ctx.websocket.close(IP_LIMIT_ERROR.code, IP_LIMIT_ERROR.message);
@@ -95,6 +102,19 @@ app.ws.use(async (ctx) => {
     else {
         clientIps[ip]++;
     }
+
+    // Limit connection TTL and close connection if its reached
+    const maxConnectionTTL = getMaxConnectionTTL();
+    setTimeout(() => {
+        if (ctx.websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
+            logger.debug(`${LOGGER_PREFIX} closing connection ${ctx.websocket.id} due to reaching TTL of ${maxConnectionTTL}ms`);
+            try {
+                ctx.websocket.close();
+            } catch (e) {
+                logger.error(`${LOGGER_PREFIX} ${ctx.websocket.id} ${e}`);
+            }
+        }
+    }, maxConnectionTTL);
 
     ctx.websocket.on('message', async (msg) => {
         ctx.websocket.id = relay.subs()?.generateId();

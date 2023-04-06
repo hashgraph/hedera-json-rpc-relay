@@ -354,7 +354,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                     it("007 'data' from request body with wrong encoded parameter", async function () {
                         const callData = {
                             ...defaultCallData,
-                            data: '0x3ec4de350000000000000000000000000000000000000000000000000000000000000005'
+                            data: '0x3ec4de350000000000000000000000000000000000000000000000000000000000000000'
                         };
 
                         const res = await relay.call('eth_call', [callData, 'latest'], requestId);
