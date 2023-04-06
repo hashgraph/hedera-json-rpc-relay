@@ -17,14 +17,16 @@
  * limitations under the License.
  *
  */
-
+import dotenv from 'dotenv';
+import path from 'path';
 import Koa from 'koa';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import websockify from 'koa-websocket';
-import {Relay, RelayImpl, predefined, JsonRpcError} from '@hashgraph/json-rpc-relay';
+import {Relay, RelayImpl, predefined, JsonRpcError, WebSocketError} from '@hashgraph/json-rpc-relay';
 import { Registry } from 'prom-client';
 import pino from 'pino';
 import { Socket } from 'dgram';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -42,27 +44,57 @@ const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 let connectedClients = 0;
+let clientIps = {};
 const MAX_CONNECTIONS = parseInt(process.env.CONNECTION_LIMIT || '10');
 
-const app = websockify(new Koa(), { 
-        verifyClient: function(info, done) {
-            if (connectedClients >= MAX_CONNECTIONS) {
-                return done(false, 429, 'Connection limit exceeded');
-            }
-            done(true);
+const app = websockify(new Koa(), {
+    verifyClient: function(info, done) {
+        if (connectedClients >= MAX_CONNECTIONS) {
+            return done(false, 429, 'Connection limit exceeded');
         }
+        done(true);
+    }
 });
 
 const LOGGER_PREFIX = 'WebSocket:';
 
 const CHAIN_ID = relay.eth().chainId();
+const IP_LIMIT_ERROR = WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED;
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
 
-app.ws.use((ctx) => {
+async function handleConnectionClose(ctx) {
+    const {ip} = ctx.request;
+    clientIps[ip]--;
+    connectedClients--;
+    if (clientIps[ip] === 0) delete clientIps[ip];
+    relay.subs()?.unsubscribe(ctx.websocket);
+    ctx.websocket.terminate();
+}
+
+app.ws.use(async (ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
     logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
 
+    ctx.websocket.on('close', async (code, message) => {
+        logger.info(`Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`);
+        await handleConnectionClose(ctx);
+    });
+
+    const {ip} = ctx.request;
+
     connectedClients = ctx.app.server._connections;
+    if (clientIps[ip] && clientIps[ip] >= parseInt(process.env.CONNECTION_LIMIT_PER_IP || '10')) {
+        logger.info(`Maximum allowed connections from a single IP (${clientIps[ip]}) exceeded for address ${ip}`);
+        ctx.websocket.close(IP_LIMIT_ERROR.code, IP_LIMIT_ERROR.message);
+        return;
+    }
+
+    if (!clientIps[ip]) {
+        clientIps[ip] = 1;
+    }
+    else {
+        clientIps[ip]++;
+    }
 
     ctx.websocket.on('message', async (msg) => {
         ctx.websocket.id = relay.subs()?.generateId();
@@ -113,13 +145,6 @@ app.ws.use((ctx) => {
         }
 
         ctx.websocket.send(JSON.stringify(response));
-    });
-
-    ctx.websocket.on('error', console.error);
-
-    ctx.websocket.on('close', function () {
-        relay.subs()?.unsubscribe(ctx.websocket);
-        console.log('stopping client interval');
     });
 
 });
