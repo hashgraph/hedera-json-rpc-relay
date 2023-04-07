@@ -68,11 +68,18 @@ function getMaxConnectionTTL() {
     return parseInt(process.env.WS_MAX_CONNECTION_TTL || '300000');
 }
 
+// function to get maximum allowed connections from a single IP
+function getLimitPerIp() {
+    return parseInt(process.env.CONNECTION_LIMIT_PER_IP || '10');
+}
+
 async function handleConnectionClose(ctx) {
-    const {ip} = ctx.request;
-    clientIps[ip]--;
+    if (ctx.websocket.ipCounted) {
+        const {ip} = ctx.request;
+        clientIps[ip]--;
+        if (clientIps[ip] === 0) delete clientIps[ip];
+    }
     connectedClients--;
-    if (clientIps[ip] === 0) delete clientIps[ip];
     relay.subs()?.unsubscribe(ctx.websocket);
     ctx.websocket.terminate();
 }
@@ -81,26 +88,31 @@ app.ws.use(async (ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
     logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
 
+    // Close event handle
     ctx.websocket.on('close', async (code, message) => {
         logger.info(`Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`);
         await handleConnectionClose(ctx);
     });
-
     const {ip} = ctx.request;
 
+    // Increment limit counters
     connectedClients = ctx.app.server._connections;
-
-    if (clientIps[ip] && clientIps[ip] >= parseInt(process.env.CONNECTION_LIMIT_PER_IP || '10')) {
-        logger.info(`Maximum allowed connections from a single IP (${clientIps[ip]}) exceeded for address ${ip}`);
-        ctx.websocket.close(IP_LIMIT_ERROR.code, IP_LIMIT_ERROR.message);
-        return;
-    }
 
     if (!clientIps[ip]) {
         clientIps[ip] = 1;
     }
     else {
         clientIps[ip]++;
+    }
+    ctx.websocket.ipCounted = true;
+
+    // Limit checks
+
+    // Limit connections from a single IP address
+    if (clientIps[ip] && clientIps[ip] > getLimitPerIp()) {
+        logger.info(`Maximum allowed connections from a single IP (${clientIps[ip]}) exceeded for address ${ip}`);
+        ctx.websocket.close(IP_LIMIT_ERROR.code, IP_LIMIT_ERROR.message);
+        return;
     }
 
     // Limit connection TTL and close connection if its reached

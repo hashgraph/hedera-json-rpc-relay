@@ -288,22 +288,30 @@ describe('@web-socket Acceptance Tests', async function() {
 
                 // Creates the maximum allowed connections
                 for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT_PER_IP); i++) {
-                    providers.push(await establishConnection());
+                    providers.push(await new ethers.providers.WebSocketProvider(WS_RELAY_URL));
                 }
 
-                expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT_PER_IP));
-
-                // The next connection should be closed by the server
-                const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
-                provider._websocket.on('close', (code, message) => {
-                    closeEventHandled = true;
-                    expect(code).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.code);
-                    expect(message).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.message);
-                })
-
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT_PER_IP));
-                expect(closeEventHandled).to.eq(true);
+
+                // Repeat the following several times to make sure the internal counters are consistently correct
+                for (let i = 0; i < 3; i++) {
+                    expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT_PER_IP));
+
+                    // The next connection should be closed by the server
+                    const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
+
+                    provider._websocket.on('close', (code, message) => {
+                        closeEventHandled = true;
+                        expect(code).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.code);
+                        expect(message).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.message);
+                    })
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT_PER_IP));
+                    expect(closeEventHandled).to.eq(true);
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
 
                 for (const p of providers) {
                     await p.destroy();
