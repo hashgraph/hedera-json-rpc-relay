@@ -453,11 +453,22 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees).to.exist;
                 expect(customFees.fractionalFees).to.exist;
                 expect(customFees.fractionalFees.length).to.eq(1);
-                expect(customFees.fractionalFees[0].amount).to.exist;
-                expect(customFees.fractionalFees[0].amount.toString()).to.eq("1");
-                expect(customFees.fractionalFees[0].tokenId).to.eq(ZERO_HEX);
+                expect(customFees.fractionalFees[0].numerator).to.exist;
+                expect(customFees.fractionalFees[0].numerator.toString()).to.eq("1");
+
+                expect(customFees.fractionalFees[0].denominator).to.exist;
+                expect(customFees.fractionalFees[0].denominator.toString()).to.eq("10");
+
+                expect(customFees.fractionalFees[0].minimumAmount).to.exist;
+                expect(customFees.fractionalFees[0].minimumAmount.toString()).to.eq("0");
+
+                expect(customFees.fractionalFees[0].maximumAmount).to.exist;
+                expect(customFees.fractionalFees[0].maximumAmount.toString()).to.eq("0");
+
+                expect(customFees.fractionalFees[0].netOfTransfers).to.eq(false);
+
                 expect(customFees.fractionalFees[0].feeCollector).to.exist;
-                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address}`);
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(0);
                 expect(customFees.royaltyFees).to.exist;
@@ -469,11 +480,23 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees).to.exist;
                 expect(customFees.fractionalFees).to.exist;
                 expect(customFees.fractionalFees.length).to.eq(1);
-                expect(customFees.fractionalFees[0].amount).to.exist;
-                expect(customFees.fractionalFees[0].amount.toString()).to.eq("1");
-                expect(customFees.fractionalFees[0].tokenId).to.eq(ZERO_HEX);
+
+                expect(customFees.fractionalFees[0].numerator).to.exist;
+                expect(customFees.fractionalFees[0].numerator.toString()).to.eq("1");
+
+                expect(customFees.fractionalFees[0].denominator).to.exist;
+                expect(customFees.fractionalFees[0].denominator.toString()).to.eq("10");
+
+                expect(customFees.fractionalFees[0].minimumAmount).to.exist;
+                expect(customFees.fractionalFees[0].minimumAmount.toString()).to.eq("0");
+
+                expect(customFees.fractionalFees[0].maximumAmount).to.exist;
+                expect(customFees.fractionalFees[0].maximumAmount.toString()).to.eq("0");
+
+                expect(customFees.fractionalFees[0].netOfTransfers).to.eq(false);
+
                 expect(customFees.fractionalFees[0].feeCollector).to.exist;
-                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address}`);
 
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(2);
@@ -482,13 +505,13 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees[0].amount.toString()).to.eq(Hbar.from(1).toTinybars().toString());
                 expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[0].feeCollector).to.exist;
-                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address}`);
 
                 expect(customFees.fixedFees[1].amount).to.exist;
                 expect(customFees.fixedFees[1].amount.toString()).to.eq("1");
                 expect(customFees.fixedFees[1].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[1].feeCollector).to.exist;
-                expect(customFees.fixedFees[1].feeCollector.toLowerCase()).to.eq(adminAccountLongZero);
+                expect(customFees.fixedFees[1].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address}`);
 
                 expect(customFees.royaltyFees).to.exist;
                 expect(customFees.royaltyFees.length).to.eq(0);
