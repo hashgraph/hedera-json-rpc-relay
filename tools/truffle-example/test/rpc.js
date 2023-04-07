@@ -45,6 +45,8 @@ describe('RPC', async function() {
   it('should be able to call a contract method that changes the state', async function() {
     const msgBefore = await contractInstance.greet();
     await contractInstance.setGreeting(updatedMsg);
+    // 5 seconds sleep to propagate the changes to mirror node
+    await new Promise(r => setTimeout(r, 5000));
     const msgAfter = await contractInstance.greet();
 
     expect(msgBefore).to.not.equal(msgAfter);
