@@ -82,11 +82,15 @@ describe('@web-socket Acceptance Tests', async function() {
     let wsProvider;
     const accounts: AliasAccount[] = [];
     let logContractSigner;
+    let originalWsMaxConnectionTtl;
 
     this.beforeAll(async () => {
         accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
         // Deploy Log Contract
         logContractSigner = await Utils.deployContractWithEthers([], LogContractJson, accounts[0].wallet, relay);
+        // Override ENV variable for this test only
+        originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL; // cache original value
+        process.env.WS_MAX_CONNECTION_TTL = '10000';
     });
 
     this.beforeEach(async () => {
@@ -102,6 +106,11 @@ describe('@web-socket Acceptance Tests', async function() {
 
     this.afterEach(async () => {
         wsProvider.destroy();
+    });
+
+    this.afterAll(async () => {
+        // Return ENV variables to their original value
+        process.env.WS_MAX_CONNECTION_TTL = originalWsMaxConnectionTtl;
     });
 
 
@@ -218,6 +227,19 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(JSON.parse(response).message).to.eq(predefined.INVALID_REQUEST.message);
 
             webSocket.close();
+        });
+
+        it('Connection TTL is enforced, should close all connections', async function() {
+            const wsConn2 = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
+            const wsConn3 = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
+            await new Promise(resolve => setTimeout(resolve, 300)); // Wait for the connections to be established
+
+            // we verify that we have 3 connections, since we already have one from the beforeEach hook (wsProvider)
+            expect(server._connections).to.equal(3);
+
+
+            await new Promise(resolve => setTimeout(resolve, parseInt(process.env.WS_MAX_CONNECTION_TTL) + 1000));
+            expect(server._connections).to.equal(0);
         });
 
         it('Does not allow more connections than the connection limit', async function() {
