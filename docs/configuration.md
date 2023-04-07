@@ -55,7 +55,9 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `LIMIT_DURATION`                  | "60000"       | The maximum duration in ms applied to IP-method based rate limits.   |
 | `MIRROR_NODE_LIMIT_PARAM`         | "100"         | The mirror node custom limit value to be set on GET requests. This optimizes the flow to reduce the number of calls made to the mirror node by setting a limit larger than it's default limit.   |
 | `MIRROR_NODE_RETRIES`             | "3"           | The maximum number of retries on a GET request to the mirror node when an acceptable error code is returned.   |
-| `MIRROR_NODE_RETRY_DELAY`         | "250"         | The dealy in ms between retry requests.   |
+| `MIRROR_NODE_RETRY_DELAY`         | "250"         | The delay in ms between retry requests.   |
+| `MIRROR_NODE_RETRIES_DEVMODE`     | "5"           | The maximum number of retries on a GET request to the mirror node when an acceptable error code is returned in dev mode.   |
+| `MIRROR_NODE_RETRY_DELAY_DEVMODE` | "200"         | The delay in ms between retry requests in dev mode.   |
 | `MIRROR_NODE_URL`                 | ""            | The Mirror Node API endpoint. Official endpoints are Previewnet (https://previewnet.mirrornode.hedera.com), Testnet (https://testnet.mirrornode.hedera.com), Mainnet (https://mainnet-public.mirrornode.hedera.com). See [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api)   |
 | `SDK_REQUEST_TIMEOUT`             | "10000"       | The complete timeout for running the SDK `execute()` method. This controls the GRPC channel timeout config when querying with network nodes.   |
 | `TIER_1_RATE_LIMIT`               | "100"         | Maximum restrictive request count limit used for expensive endpoints rate limiting.   |
@@ -112,6 +114,8 @@ DEV_MODE = false
 GAS_PRICE_TINY_BAR_BUFFER = 10000000000
 MIRROR_NODE_RETRIES = 3
 MIRROR_NODE_RETRY_DELAY = 250
+MIRROR_NODE_RETRIES_DEVMODE = 5
+MIRROR_NODE_RETRY_DELAY_DEVMODE = 200
 MIRROR_NODE_LIMIT_PARAM = 100
 INPUT_SIZE_LIMIT = 1
 ETH_CALL_CACHE_TTL = 200
