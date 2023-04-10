@@ -83,18 +83,25 @@ describe('@web-socket Acceptance Tests', async function() {
     let wsProvider;
     const accounts: AliasAccount[] = [];
     let logContractSigner;
+    // Cached original ENV variables
     let originalWsMaxConnectionTtl;
+    let originalWsMultipleAddressesEnabledValue;
 
     this.beforeAll(async () => {
         accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
         // Deploy Log Contract
         logContractSigner = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
-        // Override ENV variable for this test only
-        originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL; // cache original value
+        // cache original ENV values
+        originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL;
+        originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED;
+
         process.env.WS_MAX_CONNECTION_TTL = '10000';
     });
 
     this.beforeEach(async () => {
+        // restore original ENV value
+        process.env.WS_MULTIPLE_ADDRESSES_ENABLED = originalWsMultipleAddressesEnabledValue;
+
         const { socketServer } = global;
         server = socketServer;
 
@@ -234,8 +241,7 @@ describe('@web-socket Acceptance Tests', async function() {
         });
 
         it('Subscribe to multiple contracts on same subscription', async function () {
-            const originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED; // cache original value
-            process.env.WS_MULTIPLE_ADDRESSES_ENABLED = "true"; // disable feature flag
+            process.env.WS_MULTIPLE_ADDRESSES_ENABLED = "true"; // enable feature flag for this test
             await new Promise(resolve => setTimeout(resolve, 10000));
 
             const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
@@ -292,8 +298,9 @@ describe('@web-socket Acceptance Tests', async function() {
             const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
             const addressCollection = [logContractSigner.address, logContractSigner2.address];
             const webSocket = new WebSocket(WS_RELAY_URL);
+            const requestId = 3;
             webSocket.on('open', function open() {
-                const request = `{"jsonrpc":"2.0","method":"eth_subscribe","params":["logs", {"address":${JSON.stringify(addressCollection)}}],"id":1}`;
+                const request = `{"jsonrpc":"2.0","method":"eth_subscribe","params":["logs", {"address":${JSON.stringify(addressCollection)}}],"id":${requestId}}`;
                 webSocket.send(request);
             });
             let response;
@@ -303,13 +310,14 @@ describe('@web-socket Acceptance Tests', async function() {
 
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            expect(response.code).to.eq(-32602);
-            expect(response.name).to.eq('Invalid parameter');
-            expect(response.message).to.eq(`Invalid parameter 4: Only one address is allowed`);
+            expect(response.id).to.be.eq(requestId);
+            expect(response.error.code).to.be.eq(-32602);
+            expect(response.error.name).to.be.eq('Invalid parameter');
+            expect(response.error.message).to.be.eq(`Invalid parameter params[1].address: Only one contract address is allowed`);
 
             // post test clean-up
             webSocket.close();
-            process.env.WS_MULTIPLE_ADDRESSES_ENABLED = originalWsMultipleAddressesEnabledValue;
+
             // wait 500 ms for the connection to be closed
             await new Promise(resolve => setTimeout(resolve, 500));
         });
