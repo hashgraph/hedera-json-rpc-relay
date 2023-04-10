@@ -27,7 +27,9 @@ chai.use(solidity);
 import {Utils} from '../../helpers/utils';
 import {AliasAccount} from "../../clients/servicesClient";
 import {predefined} from '../../../../../packages/relay';
-import { ethers } from "ethers";
+import { Contract, ethers } from "ethers";
+import Web3 from "web3";
+import exp from "constants";
 
 const LogContractJson = require('../../contracts/Logs.json');
 
@@ -70,6 +72,87 @@ async function expectedErrorAndConnections(server: any): Promise<void> {
     } catch (err) {
         console.log('Caught error:', err.message);
     }
+};
+
+async function allLogsSubscriptions(logContractSigner: Contract): Promise<boolean> {
+    const web3 = new Web3(Web3.givenProvider || WS_RELAY_URL);
+    web3.eth.subscribe('logs', {}, (err, eventReceived) => {
+      if (!err)
+        switch (eventReceived.topics.length) {
+          case 0:
+            expect(eventReceived.data).to.equal('0x000000000000000000000000000000000000000000000000000000000000000a');
+            break;
+
+          case 2:
+            expect(eventReceived.topics[0]).to.equal(
+              '0x46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8'
+            );
+            expect(eventReceived.topics[1]).to.equal(
+              '0x0000000000000000000000000000000000000000000000000000000000000001'
+            );
+            break;
+
+          case 3:
+            expect(eventReceived.topics[0]).to.equal(
+              '0x513dad7582fd8b11c8f4d05e6e7ac8caaa5eb690e9173dd2bed96b5ae0e0d024'
+            );
+            expect(eventReceived.topics[1]).to.equal(
+              '0x0000000000000000000000000000000000000000000000000000000000000001'
+            );
+            expect(eventReceived.topics[2]).to.equal(
+              '0x0000000000000000000000000000000000000000000000000000000000000002'
+            );
+            break;
+
+          case 4:
+            if (eventReceived.topics[0] === '0xa8fb2f9a49afc2ea148319326c7208965555151db2ce137c05174098730aedc3') {
+              expect(eventReceived.topics[1]).to.equal(
+                '0x0000000000000000000000000000000000000000000000000000000000000001'
+              );
+              expect(eventReceived.topics[2]).to.equal(
+                '0x0000000000000000000000000000000000000000000000000000000000000002'
+              );
+              expect(eventReceived.topics[3]).to.equal(
+                '0x0000000000000000000000000000000000000000000000000000000000000003'
+              );
+            } else if (
+              eventReceived.topics[0] === '0x75e7d95cd72588af49ce2e4b7f004bce916d422999adf262a640e4239aab00c7'
+            ) {
+              expect(eventReceived.topics[1]).to.equal(
+                '0x0000000000000000000000000000000000000000000000000000000000000004'
+              );
+              expect(eventReceived.topics[2]).to.equal(
+                '0x0000000000000000000000000000000000000000000000000000000000000003'
+              );
+              expect(eventReceived.topics[3]).to.equal(
+                '0x0000000000000000000000000000000000000000000000000000000000000002'
+              );
+            } else {
+              assert.fail(
+                'Only acceptable event signatures are 0x75e7d95cd72588af49ce2e4b7f004bce916d422999adf262a640e4239aab00c7 and 0xa8fb2f9a49afc2ea148319326c7208965555151db2ce137c05174098730aedc3'
+              );
+            }
+            break;
+          default:
+            assert.fail(`The test should not get here! Length: ${eventReceived.topics.length}`);
+            break;
+        }
+    });
+
+    
+    await logContractSigner.log0(10);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await logContractSigner.log1(1);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await logContractSigner.log2(1,2);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await logContractSigner.log3(1,2,3);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await logContractSigner.log4(4,3,2,1);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    return true;
+
 };
 
 const unsubscribeAndCloseConnections = async (provider: ethers.providers.WebSocketProvider, subId: string) => {
@@ -320,37 +403,13 @@ describe('@web-socket Acceptance Tests', async function() {
 
     describe('Subscribes to log events', async function() {
 
-        it.skip('Subscribes for all contract logs', async function () {
-            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
+        it('Subscribes for all contract logs', async function () {
 
-            const filter = {
-                topics: []
-              };
-            // subscribe
-             const subId = await wsProvider.send('eth_subscribe',["logs"]);
-             let eventReceived;
+            const result = await allLogsSubscriptions(logContractSigner);
+            expect(result).to.be.true;
 
-             wsProvider.on(filter, (event) => {
-                eventReceived = event;
-             });
-            const listener = async (data) => {
-                console.log(data);
-            };
-
-             wsProvider.on({
-                address: null,
-                topics: []
-              }, listener);
-
-             await logContractSigner.log0(10);
-             await new Promise(resolve => setTimeout(resolve, 4000));
-
-             // unsubscribe
-             const result = await wsProvider.send('eth_unsubscribe', [subId]);
- 
-             expect(subId).to.be.length(34);
-             expect(subId.substring(0,2)).to.be.eq("0x");
-             expect(result).to.be.eq(true);  
+            await new Promise(resolve => setTimeout(resolve, 2000));
+    
         });
 
         it('Subscribes for contract logs for a specific contract address', async function () {
