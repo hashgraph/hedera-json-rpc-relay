@@ -102,16 +102,18 @@ app.ws.use((ctx) => {
                 subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
             }
             else if (event === 'newHeads') {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
             }
             else if (event === 'newPendingTransactions') {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
             }
             else {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
             }
 
-            response = jsonResp(request.id, null, subscriptionId);
+            if(subscriptionId) {
+                response = jsonResp(request.id, null, subscriptionId);
+            }
         }
         else if (method === 'eth_unsubscribe') {
             const subId = params[0];
