@@ -19,13 +19,16 @@
  */
 import dotenv from 'dotenv';
 import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
 import Koa from 'koa';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import websockify from 'koa-websocket';
-import {Relay, RelayImpl, predefined, JsonRpcError, WebSocketError} from '@hashgraph/json-rpc-relay';
+import {Relay, RelayImpl, predefined, JsonRpcError} from '@hashgraph/json-rpc-relay';
 import { Registry } from 'prom-client';
 import pino from 'pino';
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
+import ConnectionLimiter from "./ConnectionLimiter";
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -42,92 +45,38 @@ const mainLogger = pino({
 const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
-let connectedClients = 0;
-let clientIps = {};
-const MAX_CONNECTIONS = parseInt(process.env.CONNECTION_LIMIT || '10');
+const limiter = new ConnectionLimiter(logger);
 
 const app = websockify(new Koa(), {
-    verifyClient: function(info, done) {
-        if (connectedClients >= MAX_CONNECTIONS) {
-            return done(false, 429, 'Connection limit exceeded');
-        }
-        done(true);
-    }
+    verifyClient: limiter.verifyClient
 });
 
-const LOGGER_PREFIX = 'WebSocket:';
-
 const CHAIN_ID = relay.eth().chainId();
-const IP_LIMIT_ERROR = WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED;
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
-
-// function to get max connection TTL from ENV variable
-function getMaxConnectionTTL() {
-    // 5 minutes in ms by default 5 * 60 * 1000 = 300000
-    return parseInt(process.env.WS_MAX_CONNECTION_TTL || '300000');
-}
-
-// function to get maximum allowed connections from a single IP
-function getLimitPerIp() {
-    return parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP || '10');
-}
 
 async function handleConnectionClose(ctx) {
     relay.subs()?.unsubscribe(ctx.websocket);
 
-    if (ctx.websocket.ipCounted) {
-        const {ip} = ctx.request;
-        clientIps[ip]--;
-        if (clientIps[ip] === 0) delete clientIps[ip];
-    }
-    connectedClients--;
+    limiter.decrementCounters(ctx);
 
     ctx.websocket.terminate();
 }
 
 app.ws.use(async (ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
-    logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
+    logger.info(`New connection ${ctx.websocket.id}`);
 
     // Close event handle
     ctx.websocket.on('close', async (code, message) => {
         logger.info(`Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`);
         await handleConnectionClose(ctx);
     });
-    const {ip} = ctx.request;
 
     // Increment limit counters
-    connectedClients = ctx.app.server._connections;
-
-    if (!clientIps[ip]) {
-        clientIps[ip] = 1;
-    }
-    else {
-        clientIps[ip]++;
-    }
-    ctx.websocket.ipCounted = true;
+    limiter.incrementCounters(ctx);
 
     // Limit checks
-
-    // Limit connections from a single IP address
-    if (clientIps[ip] && clientIps[ip] > getLimitPerIp()) {
-        logger.info(`Maximum allowed connections from a single IP (${clientIps[ip]}) exceeded for address ${ip}`);
-        ctx.websocket.close(IP_LIMIT_ERROR.code, IP_LIMIT_ERROR.message);
-        return;
-    }
-
-    // Limit connection TTL and close connection if its reached
-    const maxConnectionTTL = getMaxConnectionTTL();
-    setTimeout(() => {
-        if (ctx.websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
-            logger.debug(`${LOGGER_PREFIX} closing connection ${ctx.websocket.id} due to reaching TTL of ${maxConnectionTTL}ms`);
-            try {
-                ctx.websocket.close();
-            } catch (e) {
-                logger.error(`${LOGGER_PREFIX} ${ctx.websocket.id} ${e}`);
-            }
-        }
-    }, maxConnectionTTL);
+    limiter.applyLimits(ctx);
 
     ctx.websocket.on('message', async (msg) => {
         ctx.websocket.id = relay.subs()?.generateId();
@@ -135,7 +84,7 @@ app.ws.use(async (ctx) => {
         try {
             request = JSON.parse(msg.toString('ascii'));
         } catch (e) {
-            logger.error(`${LOGGER_PREFIX} ${ctx.websocket.id} ${e}`);
+            logger.error(`${ctx.websocket.id}: ${e}`);
             ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
             return;
         }
@@ -164,7 +113,7 @@ app.ws.use(async (ctx) => {
         }
         else if (method === 'eth_unsubscribe') {
             const subId = params[0];
-            logger.info(`${LOGGER_PREFIX} eth_unsubscribe ${subId} ${ctx.websocket.id}`);
+            logger.info(`eth_unsubscribe: ${subId} ${ctx.websocket.id}`);
             const result = relay.subs()?.unsubscribe(ctx.websocket, subId);
             response = jsonResp(request.id, null, result);
         }
