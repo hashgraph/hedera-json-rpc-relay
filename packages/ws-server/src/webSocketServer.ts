@@ -25,7 +25,6 @@ import websockify from 'koa-websocket';
 import {Relay, RelayImpl, predefined, JsonRpcError, WebSocketError} from '@hashgraph/json-rpc-relay';
 import { Registry } from 'prom-client';
 import pino from 'pino';
-import { Socket } from 'dgram';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const mainLogger = pino({
@@ -70,17 +69,19 @@ function getMaxConnectionTTL() {
 
 // function to get maximum allowed connections from a single IP
 function getLimitPerIp() {
-    return parseInt(process.env.CONNECTION_LIMIT_PER_IP || '10');
+    return parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP || '10');
 }
 
 async function handleConnectionClose(ctx) {
+    relay.subs()?.unsubscribe(ctx.websocket);
+
     if (ctx.websocket.ipCounted) {
         const {ip} = ctx.request;
         clientIps[ip]--;
         if (clientIps[ip] === 0) delete clientIps[ip];
     }
     connectedClients--;
-    relay.subs()?.unsubscribe(ctx.websocket);
+
     ctx.websocket.terminate();
 }
 

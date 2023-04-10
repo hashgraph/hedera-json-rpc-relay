@@ -274,20 +274,19 @@ describe('@web-socket Acceptance Tests', async function() {
             let originalConnectionLimitPerIp;
 
             before(() => {
-                originalConnectionLimitPerIp = process.env.CONNECTION_LIMIT_PER_IP;
-                process.env.CONNECTION_LIMIT_PER_IP = 3;
+                originalConnectionLimitPerIp = process.env.WS_CONNECTION_LIMIT_PER_IP;
+                process.env.WS_CONNECTION_LIMIT_PER_IP = 3;
             });
 
             after(() => {
-                process.env.CONNECTION_LIMIT_PER_IP = originalConnectionLimitPerIp;
+                process.env.WS_CONNECTION_LIMIT_PER_IP = originalConnectionLimitPerIp;
             });
 
             it('Does not allow more connections from the same IP than the specified limit', async function() {
                 const providers = [];
-                let closeEventHandled = false;
 
                 // Creates the maximum allowed connections
-                for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT_PER_IP); i++) {
+                for (let i = 1; i < parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP); i++) {
                     providers.push(await new ethers.providers.WebSocketProvider(WS_RELAY_URL));
                 }
 
@@ -295,11 +294,12 @@ describe('@web-socket Acceptance Tests', async function() {
 
                 // Repeat the following several times to make sure the internal counters are consistently correct
                 for (let i = 0; i < 3; i++) {
-                    expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT_PER_IP));
+                    expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP));
 
                     // The next connection should be closed by the server
                     const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
 
+                    let closeEventHandled = false;
                     provider._websocket.on('close', (code, message) => {
                         closeEventHandled = true;
                         expect(code).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.code);
@@ -307,7 +307,7 @@ describe('@web-socket Acceptance Tests', async function() {
                     })
 
                     await new Promise(resolve => setTimeout(resolve, 1000));
-                    expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT_PER_IP));
+                    expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP));
                     expect(closeEventHandled).to.eq(true);
 
                     await new Promise(resolve => setTimeout(resolve, 1000));
