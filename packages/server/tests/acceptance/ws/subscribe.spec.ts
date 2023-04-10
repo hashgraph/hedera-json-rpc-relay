@@ -313,7 +313,7 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(response.id).to.be.eq(requestId);
             expect(response.error.code).to.be.eq(-32602);
             expect(response.error.name).to.be.eq('Invalid parameter');
-            expect(response.error.message).to.be.eq(`Invalid parameter params[1].address: Only one contract address is allowed`);
+            expect(response.error.message).to.be.eq(`Invalid parameter filters.address: Only one contract address is allowed`);
 
             // post test clean-up
             webSocket.close();
