@@ -241,8 +241,24 @@ describe('@web-socket Acceptance Tests', async function() {
             // we verify that we have 3 connections, since we already have one from the beforeEach hook (wsProvider)
             expect(server._connections).to.equal(3);
 
+            let closeEventHandled2 = false;
+            wsConn2._websocket.on('close', (code, message) => {
+                closeEventHandled2 = true;
+                expect(code).to.equal(WebSocketError.TTL_EXPIRED.code);
+                expect(message).to.equal(WebSocketError.TTL_EXPIRED.message);
+            })
+
+            let closeEventHandled3 = false;
+            wsConn2._websocket.on('close', (code, message) => {
+                closeEventHandled3 = true;
+                expect(code).to.equal(WebSocketError.TTL_EXPIRED.code);
+                expect(message).to.equal(WebSocketError.TTL_EXPIRED.message);
+            })
 
             await new Promise(resolve => setTimeout(resolve, parseInt(process.env.WS_MAX_CONNECTION_TTL) + 1000));
+
+            expect(closeEventHandled2).to.eq(true);
+            expect(closeEventHandled3).to.eq(true);
             expect(server._connections).to.equal(0);
         });
 

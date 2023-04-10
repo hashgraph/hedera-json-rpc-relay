@@ -26,6 +26,7 @@ type IpCounter = {
 };
 
 const IP_LIMIT_ERROR = WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED;
+const TTL_EXPIRED = WebSocketError.TTL_EXPIRED;
 
 export default class ConnectionLimiter {
     private connectedClients: number;
@@ -79,7 +80,7 @@ export default class ConnectionLimiter {
             if (ctx.websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
                 this.logger.debug(`Closing connection ${ctx.websocket.id} due to reaching TTL of ${maxConnectionTTL}ms`);
                 try {
-                    ctx.websocket.close();
+                    ctx.websocket.close(TTL_EXPIRED.code, TTL_EXPIRED.message);
                 } catch (e) {
                     this.logger.error(`${ctx.websocket.id}: ${e}`);
                 }

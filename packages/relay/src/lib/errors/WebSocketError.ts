@@ -33,4 +33,8 @@ export default {
         code: 4001,
         message: `Exceeded maximum connections from a single IP address`
     }),
+    'TTL_EXPIRED': new WebSocketError({
+        code: 4002,
+        message: `Connection timeout expired`
+    }),
 };
