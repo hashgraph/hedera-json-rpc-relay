@@ -206,5 +206,10 @@ export const predefined = {
     name: 'Could not retrieve latest block',
     code: -32607,
     message: 'Error encountered retrieving latest block'
+  }),
+  'MAX_SUBSCRIPTIONS': new JsonRpcError({
+    name: 'Exceeding maximum allowed subscriptions',
+    code: -32608,
+    message: 'Exceeding maximum allowed subscriptions'
   })
 };

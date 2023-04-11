@@ -172,9 +172,9 @@ describe("subscriptionController", async function() {
         const subId2 = subscriptionController.subscribe(wsConnection, tag2.event, tag2.filters);
         const loggerSpy = sandbox.spy(logger, 'info');
 
-        const status = subscriptionController.unsubscribe(wsConnection);
+        const count = subscriptionController.unsubscribe(wsConnection);
 
-        expect(status).to.be.eq(true);
+        expect(count).to.be.eq(2);
         expect(loggerSpy.getCall(0).args[0]).to.be.eq(`Subscriptions: Unsubscribing all instances of connection ${wsConnection.id}`);
         expect(loggerSpy.getCall(1).args[0]).to.be.eq(`Subscriptions: Unsubscribing ${subId}, from ${JSON.stringify(tag1)}`);
         expect(loggerSpy.getCall(2).args[0]).to.be.eq(`Subscriptions: Unsubscribing ${subId2}, from ${JSON.stringify(tag2)}`);
@@ -189,9 +189,9 @@ describe("subscriptionController", async function() {
         const subId2 = subscriptionController.subscribe(wsConnection, tag2.event, tag2.filters);
         const loggerSpy = sandbox.spy(logger, 'info');
 
-        const status = subscriptionController.unsubscribe(wsConnection, subId2);
+        const count = subscriptionController.unsubscribe(wsConnection, subId2);
 
-        expect(status).to.be.eq(true);
+        expect(count).to.be.eq(1);
         expect(loggerSpy.getCall(0).args[0]).to.be.eq(`Subscriptions: Unsubscribing connection ${wsConnection.id} from subscription ${subId2}`);
         expect(loggerSpy.getCall(1).args[0]).to.be.eq(`Subscriptions: Unsubscribing ${subId2}, from ${JSON.stringify(tag2)}`);
     });
@@ -201,9 +201,9 @@ describe("subscriptionController", async function() {
         const wsConnection = new MockWsConnection(connectionId);
         const notRealSubId = "0x123456";
 
-        const status = subscriptionController.unsubscribe(wsConnection, notRealSubId);
+        const count = subscriptionController.unsubscribe(wsConnection, notRealSubId);
 
-        expect(status).to.be.eq(true);
+        expect(count).to.be.eq(0);
     });
 
     it('Subscribing to the same event and filters should return the same subscription id', async function () {
