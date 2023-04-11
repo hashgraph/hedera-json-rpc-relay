@@ -26,7 +26,7 @@ chai.use(solidity);
 
 import {Utils} from '../../helpers/utils';
 import {AliasAccount} from "../../clients/servicesClient";
-import {predefined} from '../../../../../packages/relay';
+import {predefined, WebSocketError} from '../../../../../packages/relay';
 const {ethers} = require('ethers');
 const LogContractJson = require('../../contracts/Logs.json');
 
@@ -36,10 +36,11 @@ const WS_RELAY_URL = `ws://localhost:${process.env.WEB_SOCKET_PORT}`;
 const establishConnection = async () => {
         const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
         await provider.send('eth_chainId');
-}; 
+        return provider;
+};
 
 async function expectedErrorAndConnections(server: any): Promise<void> {
-    
+
     let expectedErrorMessageResult = false;
     let expectedNumberOfOpenConnections = false;
 
@@ -96,16 +97,19 @@ describe('@web-socket Acceptance Tests', async function() {
     this.beforeEach(async () => {
         const { socketServer } = global;
         server = socketServer;
-        
+
         wsProvider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
 
         requestId = Utils.generateRequestId();
         // Stabilizes the initial connection test.
         await new Promise(resolve => setTimeout(resolve, 1000));
+        expect(server._connections).to.equal(1);
     });
 
     this.afterEach(async () => {
-        wsProvider.destroy();
+        await wsProvider.destroy();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        expect(server._connections).to.equal(0);
     });
 
     this.afterAll(async () => {
@@ -237,15 +241,34 @@ describe('@web-socket Acceptance Tests', async function() {
             // we verify that we have 3 connections, since we already have one from the beforeEach hook (wsProvider)
             expect(server._connections).to.equal(3);
 
+            let closeEventHandled2 = false;
+            wsConn2._websocket.on('close', (code, message) => {
+                closeEventHandled2 = true;
+                expect(code).to.equal(WebSocketError.TTL_EXPIRED.code);
+                expect(message).to.equal(WebSocketError.TTL_EXPIRED.message);
+            })
+
+            let closeEventHandled3 = false;
+            wsConn2._websocket.on('close', (code, message) => {
+                closeEventHandled3 = true;
+                expect(code).to.equal(WebSocketError.TTL_EXPIRED.code);
+                expect(message).to.equal(WebSocketError.TTL_EXPIRED.message);
+            })
 
             await new Promise(resolve => setTimeout(resolve, parseInt(process.env.WS_MAX_CONNECTION_TTL) + 1000));
+
+            expect(closeEventHandled2).to.eq(true);
+            expect(closeEventHandled3).to.eq(true);
             expect(server._connections).to.equal(0);
         });
 
         it('Does not allow more connections than the connection limit', async function() {
             // We already have one connection
+            expect(server._connections).to.equal(1);
+
+            let providers: ethers.providers.WebSocketProvider[] = [];
             for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT); i++) {
-                await establishConnection();
+                providers.push(await establishConnection());
             }
 
             expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT));
@@ -253,6 +276,64 @@ describe('@web-socket Acceptance Tests', async function() {
             await expectedErrorAndConnections(server);
 
             await new Promise(resolve => setTimeout(resolve, 1000));
+
+            for (const p of providers) {
+                await p.destroy();
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            expect(server._connections).to.equal(1);
+        });
+
+        describe('IP connection limits', async function() {
+            let originalConnectionLimitPerIp;
+
+            before(() => {
+                originalConnectionLimitPerIp = process.env.WS_CONNECTION_LIMIT_PER_IP;
+                process.env.WS_CONNECTION_LIMIT_PER_IP = 3;
+            });
+
+            after(() => {
+                process.env.WS_CONNECTION_LIMIT_PER_IP = originalConnectionLimitPerIp;
+            });
+
+            it('Does not allow more connections from the same IP than the specified limit', async function() {
+                const providers = [];
+
+                // Creates the maximum allowed connections
+                for (let i = 1; i < parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP); i++) {
+                    providers.push(await new ethers.providers.WebSocketProvider(WS_RELAY_URL));
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Repeat the following several times to make sure the internal counters are consistently correct
+                for (let i = 0; i < 3; i++) {
+                    expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP));
+
+                    // The next connection should be closed by the server
+                    const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
+
+                    let closeEventHandled = false;
+                    provider._websocket.on('close', (code, message) => {
+                        closeEventHandled = true;
+                        expect(code).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.code);
+                        expect(message).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.message);
+                    })
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP));
+                    expect(closeEventHandled).to.eq(true);
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                for (const p of providers) {
+                    await p.destroy();
+                }
+
+            });
         });
     });
 });

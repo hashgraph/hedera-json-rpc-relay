@@ -89,14 +89,14 @@ describe('Polling', async function() {
 
         it('should poll single line of log data', async () => {
             const notifySubscriber = (tag, logs) =>{
-                logger.info(SINGLE_LINE);
+                logger.debug(SINGLE_LINE);
                 return;
             };
 
             ethImplStub.getLogs.returns(logs);
         
             poller.add(tag, notifySubscriber);   
-            const loggerSpy = sandbox.spy(logger, 'info');
+            const loggerSpy = sandbox.spy(logger, 'debug');
             const poll = async() => {
                 poller.poll();
             
@@ -112,14 +112,14 @@ describe('Polling', async function() {
         it('should poll an array of log data', async () => {
 
             const notifySubscriber = (tag, logsArray) =>{
-                logger.info(ARRAY_OF_LOGS);
+                logger.debug(ARRAY_OF_LOGS);
                 return;
             };
 
             ethImplStub.getLogs.returns(logsArray);
         
             poller.add(tag, notifySubscriber);   
-            const loggerSpy = sandbox.spy(logger, 'info');
+            const loggerSpy = sandbox.spy(logger, 'debug');
             const poll = async() => {
                 poller.poll();
             
