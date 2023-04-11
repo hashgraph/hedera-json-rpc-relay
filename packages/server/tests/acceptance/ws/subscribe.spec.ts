@@ -262,6 +262,70 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(server._connections).to.equal(0);
         });
 
+        it('Expect Unsupported Method Error message when subscribing for newHeads method', async function() {
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = {};
+            webSocket.on('message', function incoming(data) {
+                response = JSON.parse(data);
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["newHeads"],"id":1}');
+            });
+
+            // wait 500ms to expect the message
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
+            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
+            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+
+            // close the connection
+            webSocket.close();
+        });
+
+        it('Expect Unsupported Method Error message when subscribing for newPendingTransactions method', async function() {
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = {};
+            webSocket.on('message', function incoming(data) {
+                response = JSON.parse(data);
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["newPendingTransactions"],"id":1}');
+            });
+
+            // wait 500ms to expect the message
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
+            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
+            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+
+            // close the connection
+            webSocket.close();
+        });
+
+        it('Expect Unsupported Method Error message when subscribing for "other" method', async function() {
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = {};
+            webSocket.on('message', function incoming(data) {
+                response = JSON.parse(data);
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["other"],"id":1}');
+            });
+
+            // wait 500ms to expect the message
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
+            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
+            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+
+            // close the connection
+            webSocket.close();
+            await new Promise(resolve => setTimeout(resolve, 500)); // Wait for the connection to be closed
+        });
+
         it('Does not allow more connections than the connection limit', async function() {
             // We already have one connection
             expect(server._connections).to.equal(1);
