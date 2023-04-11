@@ -97,11 +97,13 @@ export class SubscriptionController {
             this.logger.info(`${LOGGER_PREFIX} Unsubscribing all instances of connection ${id}`);
         }
 
+        let subCount = 0;
         for (const [tag, subs] of Object.entries(this.subscriptions)) {
             this.subscriptions[tag] = subs.filter(sub => {
                 const match = sub.connection.id === id && (!subId || subId === sub.subscriptionId);
                 if (match) {
                     this.logger.info(`${LOGGER_PREFIX} Unsubscribing ${sub.subscriptionId}, from ${tag}`);
+                    subCount++;
                 }
 
                 return !match;
@@ -114,7 +116,7 @@ export class SubscriptionController {
             }
         }
 
-        return true;
+        return subCount;
     }
 
     notifySubscribers(tag, data) {

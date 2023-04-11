@@ -42,7 +42,7 @@ export interface Subs {
 
   subscribe(connection, event: string, filters?: {}): string;
 
-  unsubscribe(connection, subscriptionId?: string): boolean;
+  unsubscribe(connection, subscriptionId?: string): number;
 }
 
 export interface Web3 {

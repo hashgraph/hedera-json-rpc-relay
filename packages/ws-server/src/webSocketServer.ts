@@ -92,30 +92,42 @@ app.ws.use(async (ctx) => {
         let response;
 
         if (method === 'eth_subscribe') {
-            const event = params[0];
-            const filters = params[1];
-            let subscriptionId;
+            if (limiter.validateSubscriptionLimit(ctx)) {
+                const event = params[0];
+                const filters = params[1];
+                let subscriptionId;
 
-            if (event === 'logs') {
-                subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
-            }
-            else if (event === 'newHeads') {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
-            }
-            else if (event === 'newPendingTransactions') {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                if (event === 'logs') {
+                    subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+                }
+                else if (event === 'newHeads') {
+                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                }
+                else if (event === 'newPendingTransactions') {
+                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                }
+                else {
+                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                }
+
+                limiter.incrementSubs(ctx);
+
+                response = jsonResp(request.id, null, subscriptionId);
             }
             else {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
             }
-
-            response = jsonResp(request.id, null, subscriptionId);
         }
         else if (method === 'eth_unsubscribe') {
             const subId = params[0];
             logger.info(`eth_unsubscribe: ${subId} ${ctx.websocket.id}`);
-            const result = relay.subs()?.unsubscribe(ctx.websocket, subId);
-            response = jsonResp(request.id, null, result);
+            const unsubbedCount = relay.subs()?.unsubscribe(ctx.websocket, subId);
+            const success = unsubbedCount !== 0;
+            if (success) {
+                limiter.decrementSubs(ctx, unsubbedCount);
+            }
+
+            response = jsonResp(request.id, null, success);
         }
 
         // Clients want to know the chainId after connecting
