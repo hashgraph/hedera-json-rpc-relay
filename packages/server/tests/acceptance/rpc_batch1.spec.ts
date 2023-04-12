@@ -286,7 +286,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const currentBlock = Number(await relay.call('eth_blockNumber', [], requestId));
                 let blocksBehindLatest = 0;
                 if(currentBlock > 10) {
-                    blocksBehindLatest = Number(await relay.call('eth_blockNumber', [], requestId)) - 10;
+                    blocksBehindLatest = currentBlock - 10;
                 }
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': EthImpl.numberTo0x(blocksBehindLatest),
