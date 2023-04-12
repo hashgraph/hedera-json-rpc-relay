@@ -91,10 +91,10 @@ export class SubscriptionController {
         const {id} = connection;
 
         if (subId) {
-            this.logger.info(`${LOGGER_PREFIX} Unsubscribing connection ${id} from subscription ${subId}`);
+            this.logger.debug(`${LOGGER_PREFIX} Unsubscribing connection ${id} from subscription ${subId}`);
         }
         else {
-            this.logger.info(`${LOGGER_PREFIX} Unsubscribing all instances of connection ${id}`);
+            this.logger.debug(`${LOGGER_PREFIX} Unsubscribing all instances of connection ${id}`);
         }
 
         let subCount = 0;
