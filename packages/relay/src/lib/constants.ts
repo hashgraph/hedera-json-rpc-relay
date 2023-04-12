@@ -22,8 +22,6 @@ enum CACHE_KEY {
     GAS_PRICE = 'gas_price',
     FEE_HISTORY = 'fee_history',
     GET_CONTRACT_RESULT = 'getContractResult'
-
-
 }
 
 enum CACHE_TTL {
@@ -67,5 +65,7 @@ export default {
     MAX_MIRROR_NODE_PAGINATION: 20,
     MIRROR_NODE_QUERY_LIMIT: 100,
     NEXT_LINK_PREFIX: '/api/v1/',
-    QUERY_COST_INCREMENTATION_STEP: 1.1
+    QUERY_COST_INCREMENTATION_STEP: 1.1,
+
+    TRANSACTION_ID_REGEX: /\d{1}\.\d{1}\.\d{1,10}\@\d{1,10}\.\d{1,9}/
 };
