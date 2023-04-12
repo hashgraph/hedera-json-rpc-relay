@@ -47,7 +47,7 @@ export class Poller {
     public poll() {
         this.polls.forEach(async (poll) => {
             try {
-                this.logger.info(`${LOGGER_PREFIX} Fetching data for ${poll.tag}`);
+                this.logger.debug(`${LOGGER_PREFIX} Fetching data for ${poll.tag}`);
 
                 const {event, filters} = JSON.parse(poll.tag);
                 let data;

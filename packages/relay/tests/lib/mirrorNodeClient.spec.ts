@@ -572,7 +572,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`getContractCurrentStateByAddressAndSlot`', async () => {
     mock.onGet(`contracts/${contractAddress}/state?slot=${defaultCurrentContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultCurrentContractState);
-    const result = await mirrorNodeInstance.getContractCurrentStateByAddressAndSlot(contractAddress, defaultCurrentContractState.state[0].slot);
+    const result = await mirrorNodeInstance.getContractStateByAddressAndSlot(contractAddress, defaultCurrentContractState.state[0].slot);
 
     expect(result).to.exist;
     expect(result.state).to.exist;
@@ -582,7 +582,7 @@ describe('MirrorNodeClient', async function () {
   it('`getContractCurrentStateByAddressAndSlot` - incorrect address', async () => {
     mock.onGet(`contracts/${contractAddress}/state?slot=${defaultCurrentContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultCurrentContractState);
     try {
-      expect(await mirrorNodeInstance.getContractCurrentStateByAddressAndSlot(contractAddress+'1', defaultCurrentContractState.state[0].slot)).to.throw();
+      expect(await mirrorNodeInstance.getContractStateByAddressAndSlot(contractAddress+'1', defaultCurrentContractState.state[0].slot)).to.throw();
     } catch (error) {
       expect(error).to.exist;
     }
@@ -591,7 +591,7 @@ describe('MirrorNodeClient', async function () {
   it('`getContractCurrentStateByAddressAndSlot` - incorrect slot', async () => {
     mock.onGet(`contracts/${contractAddress}/state?slot=${defaultCurrentContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultCurrentContractState);
     try {
-      expect(await mirrorNodeInstance.getContractCurrentStateByAddressAndSlot(contractAddress, defaultCurrentContractState.state[0].slot+'1')).to.throw();
+      expect(await mirrorNodeInstance.getContractStateByAddressAndSlot(contractAddress, defaultCurrentContractState.state[0].slot+'1')).to.throw();
     } catch (error) {
       expect(error).to.exist;
     }
@@ -697,6 +697,77 @@ describe('MirrorNodeClient', async function () {
       expect(entityType).to.be.null;
     });
   });
+
+  describe('getTransactionById', async() => {
+    const defaultTransactionId = '0.0.2@1681130064.409933500';
+    const defaultTransactionIdFormatted = '0.0.2-1681130064-409933500';
+    const invalidTransactionId = '0.0.2@168113222220.409933500';
+    const defaultTransaction = {
+      transactions: [
+        {
+          bytes: null,
+          charged_tx_fee: 56800000,
+          consensus_timestamp: '1681130077.127938923',
+          entity_id: null,
+          max_fee: '1080000000',
+          memo_base64: '',
+          name: 'ETHEREUMTRANSACTION',
+          node: '0.0.3',
+          nonce: 0,
+          parent_consensus_timestamp: null,
+          result: 'CONTRACT_REVERT_EXECUTED',
+          scheduled: false,
+          staking_reward_transfers: [],
+          transaction_hash: 'uUHtwzFBlpHzp20OCJtjk4m6yFi93TZem7pKYrjgaF0v383um84g/Jo+uP2IrRd7',
+          transaction_id: '0.0.2-1681130064-409933500',
+          transfers: [],
+          valid_duration_seconds: '120',
+          valid_start_timestamp: '1681130064.409933500'
+        },
+        {
+          bytes: null,
+          charged_tx_fee: 0,
+          consensus_timestamp: '1681130077.127938924',
+          entity_id: null,
+          max_fee: '0',
+          memo_base64: '',
+          name: 'TOKENCREATION',
+          node: null,
+          nonce: 1,
+          parent_consensus_timestamp: '1681130077.127938923',
+          result: 'INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE',
+          scheduled: false,
+          staking_reward_transfers: [],
+          transaction_hash: 'EkQUvik9b4QUvymTNX90ybTz1SNobpQ5huQmMCKkP3fjOxirLT0nRel+w4bweXyX',
+          transaction_id: '0.0.2-1681130064-409933500',
+          transfers: [],
+          valid_duration_seconds: null,
+          valid_start_timestamp: '1681130064.409933500'
+        }
+      ]
+    };
+
+    it('should be able to fetch transaction by transaction id', async() => {
+      mock.onGet(`transactions/${defaultTransactionIdFormatted}`).reply(200, defaultTransaction);
+      const transaction = await mirrorNodeInstance.getTransactionById(defaultTransactionId);
+      expect(transaction).to.exist;
+      expect(transaction.transactions.length).to.equal(defaultTransaction.transactions.length);
+    });
+
+    it('should be able to fetch transaction by transaction id and nonce', async() => {
+      mock.onGet(`transactions/${defaultTransactionIdFormatted}?nonce=1`).reply(200, defaultTransaction.transactions[1]);
+      const transaction = await mirrorNodeInstance.getTransactionById(defaultTransactionId, 1);
+      expect(transaction).to.exist;
+      expect(transaction.transaction_id).to.equal(defaultTransaction.transactions[1].transaction_id);
+      expect(transaction.result).to.equal(defaultTransaction.transactions[1].result);
+    });
+
+    it('should fail to fetch transaction by wrong transaction id', async() => {
+      mock.onGet(`transactions/${invalidTransactionId}`).reply(404, mockData.notFound);
+      const transaction = await mirrorNodeInstance.getTransactionById(invalidTransactionId);
+      expect(transaction).to.be.null;
+    });
+  })
 
   describe('getPaginatedResults', async() => {
 

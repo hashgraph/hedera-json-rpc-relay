@@ -17,6 +17,9 @@
  * limitations under the License.
  *
  */
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import Koa from 'koa';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
@@ -24,7 +27,8 @@ import websockify from 'koa-websocket';
 import {Relay, RelayImpl, predefined, JsonRpcError} from '@hashgraph/json-rpc-relay';
 import { Registry } from 'prom-client';
 import pino from 'pino';
-import { Socket } from 'dgram';
+
+import ConnectionLimiter from "./ConnectionLimiter";
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -41,28 +45,38 @@ const mainLogger = pino({
 const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
-let connectedClients = 0;
-const MAX_CONNECTIONS = parseInt(process.env.CONNECTION_LIMIT || '10');
+const limiter = new ConnectionLimiter(logger);
 
-const app = websockify(new Koa(), { 
-        verifyClient: function(info, done) {
-            if (connectedClients >= MAX_CONNECTIONS) {
-                return done(false, 429, 'Connection limit exceeded');
-            }
-            done(true);
-        }
+const app = websockify(new Koa(), {
+    verifyClient: limiter.verifyClient
 });
-
-const LOGGER_PREFIX = 'WebSocket:';
 
 const CHAIN_ID = relay.eth().chainId();
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
 
-app.ws.use((ctx) => {
-    ctx.websocket.id = relay.subs()?.generateId();
-    logger.info(`${LOGGER_PREFIX} new connection ${ctx.websocket.id}`);
+async function handleConnectionClose(ctx) {
+    relay.subs()?.unsubscribe(ctx.websocket);
 
-    connectedClients = ctx.app.server._connections;
+    limiter.decrementCounters(ctx);
+
+    ctx.websocket.terminate();
+}
+
+app.ws.use(async (ctx) => {
+    ctx.websocket.id = relay.subs()?.generateId();
+    logger.info(`New connection ${ctx.websocket.id}`);
+
+    // Close event handle
+    ctx.websocket.on('close', async (code, message) => {
+        logger.info(`Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`);
+        await handleConnectionClose(ctx);
+    });
+
+    // Increment limit counters
+    limiter.incrementCounters(ctx);
+
+    // Limit checks
+    limiter.applyLimits(ctx);
 
     ctx.websocket.on('message', async (msg) => {
         ctx.websocket.id = relay.subs()?.generateId();
@@ -70,7 +84,7 @@ app.ws.use((ctx) => {
         try {
             request = JSON.parse(msg.toString('ascii'));
         } catch (e) {
-            logger.error(`${LOGGER_PREFIX} ${ctx.websocket.id} ${e}`);
+            logger.error(`${ctx.websocket.id}: ${e}`);
             ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
             return;
         }
@@ -86,20 +100,22 @@ app.ws.use((ctx) => {
                 subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
             }
             else if (event === 'newHeads') {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
             }
             else if (event === 'newPendingTransactions') {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
             }
             else {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
             }
 
-            response = jsonResp(request.id, null, subscriptionId);
+            if(subscriptionId) {
+                response = jsonResp(request.id, null, subscriptionId);
+            }
         }
         else if (method === 'eth_unsubscribe') {
             const subId = params[0];
-            logger.info(`${LOGGER_PREFIX} eth_unsubscribe ${subId} ${ctx.websocket.id}`);
+            logger.info(`eth_unsubscribe: ${subId} ${ctx.websocket.id}`);
             const result = relay.subs()?.unsubscribe(ctx.websocket, subId);
             response = jsonResp(request.id, null, result);
         }
@@ -114,16 +130,6 @@ app.ws.use((ctx) => {
 
         ctx.websocket.send(JSON.stringify(response));
     });
-
-    ctx.websocket.on('error', console.error);
-
-    ctx.websocket.on('close', function () {
-        relay.subs()?.unsubscribe(ctx.websocket);
-        console.log('stopping client interval');
-        connectedClients--;
-        ctx.websocket.terminate();
-    });
-
 });
 
 export default app;

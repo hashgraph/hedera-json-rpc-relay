@@ -125,6 +125,7 @@ config:
   CONSENSUS_MAX_EXECUTION_TIME: 15000
   SDK_REQUEST_TIMEOUT: 10000
   SUBSCRIPTIONS_ENABLED: false
+  ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: true
 
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:

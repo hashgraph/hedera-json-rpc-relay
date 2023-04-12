@@ -505,25 +505,18 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getStorageAt(address=${address}, slot=${slot}, blockNumberOrTag=${blockNumberOrTag})`);
 
-    if (EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) || !blockNumberOrTag){
-      return await this.getCurrentState(address, EthImpl.toHex32Byte(slot), requestId);
-    } else {
-      return await this.getStateFromBlock(address, EthImpl.toHex32Byte(slot), blockNumberOrTag, requestId);
-    }
-  }
-
-  /**
-   * Returns the current state value filtered by address and slot.
-   * @param address
-   * @param slot
-   * @param requestId
-   * @returns
-   */
-  private async getCurrentState(address: string, slot: string, requestId?: string) {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
 
-    await this.mirrorNodeClient.getContractCurrentStateByAddressAndSlot(address, slot, requestId)
+    const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false, requestId);
+    // To save a request to the mirror node for `latest` and `pending` blocks, we directly return null from `getHistoricalBlockResponse`
+    // But if a block number or `earliest` tag is passed and the mirror node returns `null`, we should throw an error.
+    if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
+      throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
+    }
+
+    const blockEndTimestamp = blockResponse?.timestamp?.to;
+
+    await this.mirrorNodeClient.getContractStateByAddressAndSlot(address, slot, blockEndTimestamp, requestId)
     .then(response => {
       if(response === null) {
         throw predefined.RESOURCE_NOT_FOUND(`Cannot find current state for contract address ${address} at slot=${slot}`);
@@ -535,54 +528,6 @@ export class EthImpl implements Eth {
     .catch((error: any) => {
       throw this.genericErrorHandler(error, `${requestIdPrefix} Failed to retrieve current contract state for address ${address} at slot=${slot}`);
     });
-
-    return result;
-  }
-
-  /**
-   * Returns the state value of contract filtered by address, slot and block number.
-   * @param address
-   * @param slot
-   * @param blockNumberOrTag
-   * @param requestId
-   * @returns
-   */
-  private async getStateFromBlock(address: string, slot: string, blockNumberOrTag?: string | null, requestId?: string) {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
-
-    const blockResponse  = await this.getHistoricalBlockResponse(blockNumberOrTag, false, requestId);
-    // To save a request to the mirror node for `latest` and `pending` blocks, we directly return null from `getHistoricalBlockResponse`
-    // But if a block number or `earliest` tag is passed and the mirror node returns `null`, we should throw an error.
-    if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
-      throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
-    }
-
-    const blockEndTimestamp = blockResponse?.timestamp?.to;
-    const contractResult = await this.mirrorNodeClient.getLatestContractResultsByAddress(address, blockEndTimestamp, 1, requestId);
-
-    if (contractResult?.results?.length > 0) {
-      // retrieve the contract result details
-      await this.mirrorNodeClient.getContractResultsDetails(address, contractResult.results[0].timestamp)
-        .then(contractResultDetails => {
-          if(contractResultDetails === null) {
-            throw predefined.RESOURCE_NOT_FOUND(`Contract result details for contract address ${address} at slot ${slot} and timestamp=${contractResult.results[0].timestamp}`);
-          }
-          if (EthImpl.isArrayNonEmpty(contractResultDetails.state_changes)) {
-            // filter the state changes to match slot and return value
-            const stateChange = contractResultDetails.state_changes.find(stateChange => stateChange.slot === slot);
-            if (stateChange) {
-              result = stateChange.value_written;
-            }
-          }
-        })
-        .catch((error: any) => {
-          throw this.genericErrorHandler(
-              error,
-              `${requestIdPrefix} Failed to retrieve contract result details for contract address ${address} at slot ${slot} and timestamp=${contractResult.results[0].timestamp}`
-          );
-        });
-    }
 
     return result;
   }
@@ -621,7 +566,7 @@ export class EthImpl implements Eth {
 
     let blockNumber = null;
     let balanceFound = false;
-    let weibars: BigNumber | number = 0;
+    let weibars: BigInt = BigInt(0);
     const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
 
     try {
@@ -665,7 +610,7 @@ export class EthImpl implements Eth {
                 }
 
                 balanceFound = true;
-                weibars = (currentBalance - balanceFromTxs) * constants.TINYBAR_TO_WEIBAR_COEF;
+                weibars = BigInt(currentBalance - balanceFromTxs) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
               }
 
               // The block is NOT from the last 15 minutes, use /balances rest API
@@ -673,7 +618,7 @@ export class EthImpl implements Eth {
                 const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(mirrorAccount.account, block.timestamp.from, requestId);
                 balanceFound = true;
                 if (balance.balances?.length) {
-                  weibars = balance.balances[0].balance * constants.TINYBAR_TO_WEIBAR_COEF;
+                  weibars = BigInt(balance.balances[0].balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
                 }
               }
             }
@@ -683,7 +628,7 @@ export class EthImpl implements Eth {
 
       if (!balanceFound && mirrorAccount?.balance) {
         balanceFound = true;
-        weibars = mirrorAccount.balance.balance * constants.TINYBAR_TO_WEIBAR_COEF;
+        weibars = BigInt(mirrorAccount.balance.balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
       }
 
       if (!balanceFound) {
@@ -949,6 +894,9 @@ export class EthImpl implements Eth {
 
         return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
       } catch (e) {
+
+        await this.extractContractRevertReason(e, requestId, requestIdPrefix);
+
         this.logger.error(e,
           `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
         //Return computed hash if unable to retrieve EthereumHash from record due to error
@@ -965,6 +913,26 @@ export class EthImpl implements Eth {
   }
 
   /**
+   * Check if transaction fail is because of contract revert and try to fetch and log the reason.
+   *
+   * @param e
+   * @param requestId
+   * @param requestIdPrefix
+   */
+  private async extractContractRevertReason(e: any, requestId: string | undefined, requestIdPrefix: string) {
+    if (e instanceof SDKClientError && e.isContractRevertExecuted()) {
+      const transactionId = e.message.match(constants.TRANSACTION_ID_REGEX);
+      if (transactionId) {
+        const tx = await this.mirrorNodeClient.getTransactionById(transactionId[0], undefined, requestId);
+        if (tx.transactions.length > 1) {
+          const result = tx.transactions[1].result;
+          this.logger.error(`${requestIdPrefix} Transaction failed with result: ${result}`);
+        }
+      }
+    }
+  }
+
+  /**
    * Execute a free contract call query.
    *
    * @param call
@@ -974,48 +942,31 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    // The "to" address must always be 42 chars.
-    if (!call.to || call.to.length != 42) {
-      throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
+    await this.performCallChecks(call, requestId);
+
+    // Get a reasonable value for "gas" if it is not specified.
+    let gas = Number(call.gas) || 400_000;
+
+    let value: string | null = null;
+    if (typeof call.value === 'string') {
+      value = (new BN(call.value)).toString();
     }
 
-    // If "From" is distinct from blank, we check is a valid account
-    if(call.from) {
-      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, requestId, [constants.TYPE_ACCOUNT]);
-      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
-        throw predefined.NON_EXISTING_ACCOUNT(call.from);
-      }
+    // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
+    // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
+    if (gas > constants.BLOCK_GAS_LIMIT) {
+      this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`);
+      gas = constants.BLOCK_GAS_LIMIT;
     }
-    // Check "To" is a valid Contract or HTS Address
-    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT]);
-    if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
-      throw predefined.NON_EXISTING_CONTRACT(call.to);
-    }
-
+    
     try {
-      // Get a reasonable value for "gas" if it is not specified.
-      let gas = Number(call.gas) || 400_000;
-
-      let value: string | null = null;
-      if (typeof call.value === 'string') {
-        value = (new BN(call.value)).toString();
-      }
-
-      // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
-      // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
-      if (gas > constants.BLOCK_GAS_LIMIT) {
-        this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`);
-        gas = constants.BLOCK_GAS_LIMIT;
-      }
-
-      // Execute the call and get the response
-      this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}"`, call.to, gas, call.data, call.from);
-
-      // ETH_CALL_CONSENSUS = false enables the use of Mirror node
-      if (process.env.ETH_CALL_CONSENSUS == 'false') {
+      // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
+      if (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         const isHts = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN]);
         if (!(isHts?.type === constants.TYPE_TOKEN)) {
+          // Execute the call and get the response
+          this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`, call.to, gas, call.data, call.from);
           const callData = {
             ...call,
             gas,
@@ -1029,7 +980,36 @@ export class EthImpl implements Eth {
           return EthImpl.emptyHex;
         }
       }
+      
+      return await this.callConsensusNode(call, gas, requestId);
+    } catch (e: any) {
+      // Temporary workaround until mirror node web3 module implements the support of precompiles
+      // If mirror node throws NOT_SUPPORTED or precompile is not supported, rerun eth_call and force it to go through the Consensus network
+      if (e instanceof MirrorNodeClientError && (e.isNotSupported() || e.isNotSupportedSystemContractOperaton())) {
+        return await this.callConsensusNode(call, gas, requestId);
+      }
 
+      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return predefined.INTERNAL_ERROR();
+    }
+  }
+
+  /**
+   * Execute a contract call query to the consensus node
+   *
+   * @param call
+   * @param gas
+   * @param requestId
+   */
+  async callConsensusNode(call: any, gas: number, requestId?: string): Promise<string | JsonRpcError> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    // Execute the call and get the response
+    this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using consensus-node.`, call.to, gas, call.data, call.from);
+    
+    try {
       let data = call.data;
       if (data) {
         data = crypto.createHash('sha1').update(call.data).digest('hex'); // NOSONAR
@@ -1048,13 +1028,38 @@ export class EthImpl implements Eth {
 
       this.cache.set(cacheKey, formattedCallReponse, { ttl: EthImpl.ethCallCacheTtl });
       return formattedCallReponse;
-
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
       if (e instanceof JsonRpcError) {
         return e;
       }
       return predefined.INTERNAL_ERROR();
+    }
+  }
+
+  /**
+   * Perform neccecery checks for the passed call object
+   *
+   * @param call
+   * @param requestId
+   */
+  async performCallChecks(call: any, requestId?: string) {
+    // The "to" address must always be 42 chars.
+    if (!call.to || call.to.length != 42) {
+      throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
+    }
+
+    // If "From" is distinct from blank, we check is a valid account
+    if(call.from) {
+      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, requestId, [constants.TYPE_ACCOUNT]);
+      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
+        throw predefined.NON_EXISTING_ACCOUNT(call.from);
+      }
+    }
+    // Check "To" is a valid Contract or HTS Address
+    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT]);
+    if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
+      throw predefined.NON_EXISTING_CONTRACT(call.to);
     }
   }
 
@@ -1192,7 +1197,7 @@ export class EthImpl implements Eth {
     return input.startsWith(EthImpl.emptyHex) ? input : EthImpl.emptyHex + input;
   }
 
-  static numberTo0x(input: number | BigNumber): string {
+  static numberTo0x(input: number | BigNumber | BigInt): string {
     return EthImpl.emptyHex + input.toString(16);
   }
 
