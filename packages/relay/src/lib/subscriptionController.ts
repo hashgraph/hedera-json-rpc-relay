@@ -91,10 +91,10 @@ export class SubscriptionController {
         const {id} = connection;
 
         if (subId) {
-            this.logger.debug(`${LOGGER_PREFIX} Unsubscribing connection ${id} from subscription ${subId}`);
+            this.logger.info(`${LOGGER_PREFIX} Unsubscribing connection ${id} from subscription ${subId}`);
         }
         else {
-            this.logger.debug(`${LOGGER_PREFIX} Unsubscribing all instances of connection ${id}`);
+            this.logger.info(`${LOGGER_PREFIX} Unsubscribing all instances of connection ${id}`);
         }
 
         let subCount = 0;
@@ -102,7 +102,7 @@ export class SubscriptionController {
             this.subscriptions[tag] = subs.filter(sub => {
                 const match = sub.connection.id === id && (!subId || subId === sub.subscriptionId);
                 if (match) {
-                    this.logger.info(`${LOGGER_PREFIX} Unsubscribing ${sub.subscriptionId}, from ${tag}`);
+                    this.logger.debug(`${LOGGER_PREFIX} Unsubscribing ${sub.subscriptionId}, from ${tag}`);
                     subCount++;
                 }
 
@@ -110,7 +110,7 @@ export class SubscriptionController {
             });
 
             if (!this.subscriptions[tag].length) {
-                this.logger.info(`${LOGGER_PREFIX} No subscribers for ${tag}`);
+                this.logger.debug(`${LOGGER_PREFIX} No subscribers for ${tag}`);
                 delete this.subscriptions[tag];
                 this.poller.remove(tag);
             }
