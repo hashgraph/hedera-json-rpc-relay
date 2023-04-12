@@ -101,18 +101,20 @@ app.ws.use(async (ctx) => {
                     subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
                 }
                 else if (event === 'newHeads') {
-                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
                 }
                 else if (event === 'newPendingTransactions') {
-                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
                 }
                 else {
-                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, null);
+                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
                 }
 
                 limiter.incrementSubs(ctx);
 
-                response = jsonResp(request.id, null, subscriptionId);
+                if(subscriptionId) {
+                    response = jsonResp(request.id, null, subscriptionId);
+                }
             }
             else {
                 response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
