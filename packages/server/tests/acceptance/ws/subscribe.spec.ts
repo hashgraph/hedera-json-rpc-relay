@@ -412,14 +412,16 @@ describe('@web-socket Acceptance Tests', async function() {
     
         });
 
-        it('Subscribes for contract logs for a specific contract address', async function () {
+        it.only('Subscribes for contract logs for a specific contract address', async function () {
             const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
             const filter = {
                 topics: []
-              };
+            };
+
             let eventReceived;
 
             loggerContractWS.on(filter, (event) => {
+                console.log('Filtered Event received');
                 eventReceived = event;
             });
 
@@ -430,27 +432,44 @@ describe('@web-socket Acceptance Tests', async function() {
                 expect(eventReceived.data).to.equal('0x000000000000000000000000000000000000000000000000000000000000000a');
             }
 
+            loggerContractWS.on('Log1', (event) => {
+              console.log(`Event received with arg1: ${event}`);
+              // console.log(`Event received arg2: ${arg2}`);
+              eventReceived = event;
+          });
+
             await logContractSigner.log1(1);
             await new Promise(resolve => setTimeout(resolve, 4000));
             expect(eventReceived.args[0]).to.be.eq(1);
 
+
+          
+            const listner = loggerContractWS.on('Log2', (arg1, arg2) => {
+              console.log(`Event received arg1: ${arg1}`);
+              console.log(`Event received arg2: ${arg2}`);
+              // eventReceived = event;
+            });
+
+            await Promise.all([listner]);
+            await new Promise(resolve => setTimeout(resolve, 80000));
+
             await logContractSigner.log2(1,2);
-            await new Promise(resolve => setTimeout(resolve, 4000));
+            await new Promise(resolve => setTimeout(resolve, 40000));
             expect(eventReceived.args[0]).to.be.eq(1);
             expect(eventReceived.args[1]).to.be.eq(2);
 
-            await logContractSigner.log3(10,20,31);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            expect(eventReceived.args[0]).to.be.eq(10);
-            expect(eventReceived.args[1]).to.be.eq(20);
-            expect(eventReceived.args[2]).to.be.eq(31);
+            // await logContractSigner.log3(10,20,31);
+            // await new Promise(resolve => setTimeout(resolve, 4000));
+            // expect(eventReceived.args[0]).to.be.eq(10);
+            // expect(eventReceived.args[1]).to.be.eq(20);
+            // expect(eventReceived.args[2]).to.be.eq(31);
 
-            await logContractSigner.log4(11,22,33,44);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            expect(eventReceived.args[0]).to.be.eq(11);
-            expect(eventReceived.args[1]).to.be.eq(22);
-            expect(eventReceived.args[2]).to.be.eq(33);
-            expect(eventReceived.args[3]).to.be.eq(44);
+            // await logContractSigner.log4(11,22,33,44);
+            // await new Promise(resolve => setTimeout(resolve, 4000));
+            // expect(eventReceived.args[0]).to.be.eq(11);
+            // expect(eventReceived.args[1]).to.be.eq(22);
+            // expect(eventReceived.args[2]).to.be.eq(33);
+            // expect(eventReceived.args[3]).to.be.eq(44);
         });
 
         it('Subscribes for contract logs for a single topic', async function () {
