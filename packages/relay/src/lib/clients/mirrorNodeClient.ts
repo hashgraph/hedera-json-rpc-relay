@@ -23,7 +23,7 @@ import { MirrorNodeClientError } from './../errors/MirrorNodeClientError';
 import { Logger } from "pino";
 import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
-import { formatRequestIdMessage } from '../../formatters';
+import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
 const LRU = require('lru-cache');
@@ -541,6 +541,20 @@ export class MirrorNodeClient {
 
     public async postContractCall(callData: string, requestId?: string) {
         return this.post(MirrorNodeClient.CONTRACT_CALL_ENDPOINT, callData, MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [], requestId);
+    }
+
+    public async getTransactionById(transactionId: string, nonce: number | undefined, requestId?: string) {
+        const formattedId = formatTransactionId(transactionId);
+        if (formattedId == null) {
+            return formattedId;
+        }
+        const queryParamObject = {};
+        this.setQueryParam(queryParamObject, 'nonce', nonce);
+        const queryParams = this.getQueryParams(queryParamObject);
+        return this.get(`${MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT}/${formattedId}${queryParams}`,
+        MirrorNodeClient.GET_STATE_ENDPOINT,
+        [400, 404],
+        requestId);
     }
 
     getQueryParams(params: object) {
