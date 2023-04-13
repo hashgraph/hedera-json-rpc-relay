@@ -78,6 +78,25 @@ const unsubscribeAndCloseConnections = async (provider: ethers.providers.WebSock
     return result;
 };
 
+const createLogs = async (contract: ethers.Contract) => {
+    const tx1 = await contract.log0(10);
+    const rec1 = await tx1.wait();
+
+    const tx2 = await contract.log1(1);
+    const rec2 = await tx2.wait();
+
+    const tx3 = await contract.log2(1, 2);
+    const rec3 = await tx3.wait();
+
+    const tx4 = await contract.log3(10, 20, 31);
+    const rec4 = await tx4.wait();
+
+    const tx5 = await contract.log4(11, 22, 33, 44);
+    const rec5 = await tx5.wait();
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
+};
+
 describe('@web-socket Acceptance Tests', async function() {
     this.timeout(240 * 1000); // 240 seconds
     const CHAIN_ID = process.env.CHAIN_ID || 0;
@@ -402,6 +421,20 @@ describe('@web-socket Acceptance Tests', async function() {
     });
 
     describe.only('Subscribes to log events', async function () {
+        let logContractSigner2, logContractSigner3;
+        let loggerContractWS1, loggerContractWS2, loggerContractWS3;
+
+        // Deploy several contracts
+        before(async function() {
+            logContractSigner2 = await Utils.deployContractWithEthers([], LogContractJson, accounts[0].wallet, relay);
+            logContractSigner3 = await Utils.deployContractWithEthers([], LogContractJson, accounts[0].wallet, relay);
+        });
+
+        beforeEach(async function() {
+            loggerContractWS1 = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
+            loggerContractWS2 = new ethers.Contract(logContractSigner2.address, LogContractJson.abi, wsProvider);
+            loggerContractWS3 = new ethers.Contract(logContractSigner3.address, LogContractJson.abi, wsProvider);
+        });
 
         xit('Subscribes for all contract logs', async function () {
             const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
@@ -437,52 +470,23 @@ describe('@web-socket Acceptance Tests', async function() {
         });
 
         it.only('Subscribes for contract logs for a specific contract address', async function () {
-            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
-            const filter = {};
+            const filter = {
+                topics: []
+            };
+
             let eventsReceived = [];
 
-            loggerContractWS.on(filter, (event) => {
-                console.log("=================================== EVENT");
+            loggerContractWS1.on(filter, (event) => {
                 eventsReceived.push(event);
             });
 
-            {
-                const tx1 = await logContractSigner.log0(10);
-                const rec1 = await tx1.wait();
+            // Create logs from all deployed contracts
+            await createLogs(logContractSigner);
+            await createLogs(logContractSigner2);
+            await createLogs(logContractSigner3);
 
-                const tx2 = await logContractSigner.log1(1);
-                const rec2 = await tx2.wait();
-
-                const tx3 = await logContractSigner.log2(1, 2);
-                const rec3 = await tx3.wait();
-
-                const tx4 = await logContractSigner.log3(10, 20, 31);
-                const rec4 = await tx4.wait();
-
-                const tx5 = await logContractSigner.log4(11, 22, 33, 44);
-                const rec5 = await tx5.wait();
-            }
-
-            {
-                const tx1 = await logContractSigner.log0(10);
-                const rec1 = await tx1.wait();
-
-                const tx2 = await logContractSigner.log1(1);
-                const rec2 = await tx2.wait();
-
-                const tx3 = await logContractSigner.log2(1, 2);
-                const rec3 = await tx3.wait();
-
-                const tx4 = await logContractSigner.log3(10, 20, 31);
-                const rec4 = await tx4.wait();
-
-                const tx5 = await logContractSigner.log4(11, 22, 33, 44);
-                const rec5 = await tx5.wait();
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            expect(eventsReceived.length).to.eq(10);
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(5);
 
             if ((!eventsReceived[0].hasOwnProperty('event')) && (!eventsReceived[0].hasOwnProperty('args'))) {
                 expect(eventsReceived[0].data).to.equal('0x000000000000000000000000000000000000000000000000000000000000000a');
