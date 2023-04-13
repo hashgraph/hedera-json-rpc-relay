@@ -198,7 +198,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         await rec3.wait();
         const rec4 = await IERC721.connect(accounts[1].wallet).approve(accounts[2].address, nftSerial, { gasLimit: 1_000_000 });
         await rec4.wait();
-        const rec5 = await IERC721.connect(accounts[1].wallet).setApprovalForAll(accounts[0].address, nftSerial, { gasLimit: 1_000_000 });
+        const rec5 = await IERC721.connect(accounts[1].wallet).setApprovalForAll(accounts[0].address, true, { gasLimit: 1_000_000 });
         await rec5.wait();
 
         // Deploy a contract implementing HederaTokenService
@@ -264,17 +264,23 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             expect(allowance).to.eq(200);
         });
 
-        it("Function with IERC20(token).allowance(owner, spender) - using both long zero addresses", async () => {
+        /**
+         * The following tests are temporarily disabled until `allowance` is fixed in the mirror node
+         *
+         * Currently, the mirror node returns `501: Not Supported` and the fallback to Consensus is triggered
+         * Consensus does not support CallData with long-zero addresses
+         */
+        xit("Function with IERC20(token).allowance(owner, spender) - using both long zero addresses", async () => {
             const allowance = await IERC20.allowance(adminAccountLongZero, account2LongZero);
             expect(allowance).to.eq(200);
         });
 
-        it("Function with IERC20(token).allowance(owner, spender) - using evm address for owner", async () => {
+        xit("Function with IERC20(token).allowance(owner, spender) - using evm address for owner", async () => {
             const allowance = await IERC20.allowance(accounts[0].address, account2LongZero);
             expect(allowance).to.eq(200);
         });
 
-        it("Function with IERC20(token).allowance(owner, spender) - using evm address for spender", async () => {
+        xit("Function with IERC20(token).allowance(owner, spender) - using evm address for spender", async () => {
             const allowance = await IERC20.allowance(adminAccountLongZero, accounts[2].address);
             expect(allowance).to.eq(200);
         });
@@ -327,17 +333,23 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             expect(approvalForAll).to.eq(true);
         });
 
-        it("Function with IERC721(token).isApprovedForAll(owner, operator) - using both long zero addresses addresses", async () => {
+        /**
+         * The following tests are temporarily disabled until isApprovedForAll is fixed in the mirror node
+         *
+         * Currently, the mirror node returns `501: Not Supported` and the fallback to Consensus is triggered
+         * Consensus does not support CallData with long-zero addresses
+         */
+        xit("Function with IERC721(token).isApprovedForAll(owner, operator) - using both long zero addresses addresses", async () => {
             const approvalForAll = await IERC721.isApprovedForAll(account1LongZero, adminAccountLongZero);
             expect(approvalForAll).to.eq(true);
         });
 
-        it("Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for owner", async () => {
+        xit("Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for owner", async () => {
             const approvalForAll = await IERC721.isApprovedForAll(accounts[1].address, adminAccountLongZero);
             expect(approvalForAll).to.eq(true);
         });
 
-        it("Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for operator", async () => {
+        xit("Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for operator", async () => {
             const approvalForAll = await IERC721.isApprovedForAll(account1LongZero, accounts[0].address);
             expect(approvalForAll).to.eq(true);
         });
