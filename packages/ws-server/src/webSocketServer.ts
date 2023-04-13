@@ -96,36 +96,48 @@ app.ws.use(async (ctx) => {
         let response;
 
         if (method === 'eth_subscribe') {
-            const event = params[0];
-            const filters = params[1];
-            let subscriptionId;
+            if (limiter.validateSubscriptionLimit(ctx)) {
+                const event = params[0];
+                const filters = params[1];
+                let subscriptionId;
 
-            if (event === 'logs') {
-                if(!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
-                    response = jsonResp(request.id, predefined.INVALID_PARAMETER("filters.address", 'Only one contract address is allowed'), undefined);
-                } else {
-                    subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+                if (event === 'logs') {
+                    if(!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
+                        response = jsonResp(request.id, predefined.INVALID_PARAMETER("filters.address", 'Only one contract address is allowed'), undefined);
+                    } else {
+                        subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+                    }
+                }
+                else if (event === 'newHeads') {
+                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
+                }
+                else if (event === 'newPendingTransactions') {
+                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
+                }
+                else {
+                    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
+                }
+
+                limiter.incrementSubs(ctx);
+
+                if(subscriptionId) {
+                    response = jsonResp(request.id, null, subscriptionId);
                 }
             }
-            else if (event === 'newHeads') {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-            }
-            else if (event === 'newPendingTransactions') {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-            }
             else {
-                response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-            }
-
-            if(subscriptionId) {
-                response = jsonResp(request.id, null, subscriptionId);
+                response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
             }
         }
         else if (method === 'eth_unsubscribe') {
             const subId = params[0];
             logger.info(`eth_unsubscribe: ${subId} ${ctx.websocket.id}`);
-            const result = relay.subs()?.unsubscribe(ctx.websocket, subId);
-            response = jsonResp(request.id, null, result);
+            const unsubbedCount = relay.subs()?.unsubscribe(ctx.websocket, subId);
+            const success = unsubbedCount !== 0;
+            if (success) {
+                limiter.decrementSubs(ctx, unsubbedCount);
+            }
+
+            response = jsonResp(request.id, null, success);
         }
 
         // Clients want to know the chainId after connecting

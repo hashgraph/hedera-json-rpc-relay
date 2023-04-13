@@ -34,9 +34,9 @@ const FOUR_TWENTY_NINE_RESPONSE = 'Unexpected server response: 429';
 const WS_RELAY_URL = `ws://localhost:${process.env.WEB_SOCKET_PORT}`;
 
 const establishConnection = async () => {
-        const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
-        await provider.send('eth_chainId');
-        return provider;
+    const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
+    await provider.send('eth_chainId');
+    return provider;
 };
 
 async function expectedErrorAndConnections(server: any): Promise<void> {
@@ -86,6 +86,13 @@ describe('@web-socket Acceptance Tests', async function() {
     // Cached original ENV variables
     let originalWsMaxConnectionTtl;
     let originalWsMultipleAddressesEnabledValue;
+
+    const topics = [
+        "0xa8fb2f9a49afc2ea148319326c7208965555151db2ce137c05174098730aedc3",
+        "0x0000000000000000000000000000000000000000000000000000000000000004",
+        "0x0000000000000000000000000000000000000000000000000000000000000006",
+        "0x0000000000000000000000000000000000000000000000000000000000000007"
+    ]
 
     this.beforeAll(async () => {
         accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
@@ -139,7 +146,7 @@ describe('@web-socket Acceptance Tests', async function() {
         it('Establishes multiple connections', async function() {
 
             const secondProvider = new ethers.providers.WebSocketProvider(
-                   WS_RELAY_URL
+                WS_RELAY_URL
             );
 
             const response = await secondProvider.send('eth_chainId');
@@ -489,7 +496,63 @@ describe('@web-socket Acceptance Tests', async function() {
 
             });
         });
+
+        describe('Connection subscription limits', async function() {
+            let originalSubsPerConnection;
+
+            before(() => {
+                originalSubsPerConnection = process.env.WS_SUBSCRIPTION_LIMIT;
+                process.env.WS_SUBSCRIPTION_LIMIT = 2;
+            });
+
+            after(() => {
+                process.env.WS_SUBSCRIPTION_LIMIT = originalSubsPerConnection;
+            });
+
+            it('Does not allow more subscriptions per connection than the specified limit', async function() {
+                let errorsHandled = 0;
+
+                // Create different subscriptions
+                for (let i = 0; i < 3; i++) {
+                    try {
+                        const subId = await wsProvider.send('eth_subscribe',["logs", {
+                            address: logContractSigner.address,
+                            topics: [topics[i]]
+                        }]);
+                    }
+                    catch(e: any) {
+                        expect(e.code).to.eq(predefined.MAX_SUBSCRIPTIONS.code);
+                        expect(e.message).to.eq(predefined.MAX_SUBSCRIPTIONS.message);
+                        errorsHandled++;
+                    }
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+                expect(errorsHandled).to.eq(1);
+            });
+
+            it('Calling eth_unsubscribe decrements the internal counters', async function() {
+                let errorsHandled = 0;
+
+                // Create different subscriptions
+                for (let i = 0; i < 3; i++) {
+                    try {
+                        const subId = await wsProvider.send('eth_subscribe',["logs", {
+                            address: logContractSigner.address,
+                            topics: [topics[i]]
+                        }]);
+
+                        const result = await wsProvider.send('eth_unsubscribe', [subId]);
+                    }
+                    catch(e: any) {
+                        errorsHandled++;
+                    }
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+                expect(errorsHandled).to.eq(0);
+            });
+        });
     });
 });
-
 
