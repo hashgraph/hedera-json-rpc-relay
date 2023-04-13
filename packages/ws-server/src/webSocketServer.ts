@@ -62,6 +62,10 @@ async function handleConnectionClose(ctx) {
     ctx.websocket.terminate();
 }
 
+function getMultipleAddressesEnabled() {
+    return process.env.WS_MULTIPLE_ADDRESSES_ENABLED === 'true';
+}
+
 app.ws.use(async (ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
     logger.info(`New connection ${ctx.websocket.id}`);
@@ -98,7 +102,11 @@ app.ws.use(async (ctx) => {
                 let subscriptionId;
 
                 if (event === 'logs') {
-                    subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+                    if(!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
+                        response = jsonResp(request.id, predefined.INVALID_PARAMETER("filters.address", 'Only one contract address is allowed'), undefined);
+                    } else {
+                        subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+                    }
                 }
                 else if (event === 'newHeads') {
                     response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);

@@ -70,15 +70,16 @@ Unless you need to set a non-default value, it is recommended to only populate o
 The following table lists the available properties along with their default values for the [Ws-server package](/packages/ws-server/).
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
-| Name                         | Default  | Description                                                                             |
-|------------------------------|----------|-----------------------------------------------------------------------------------------|
-| `SUBSCRIPTIONS_ENABLED`      | "false"  | If enabled eth_subscribe will be enabled using WebSockets.                              |
-| `WS_MAX_CONNECTION_TTL`      | "300000" | Time in ms that the web socket connection is allowed to stay open, currently 5 minutes. |
-| `CONNECTION_LIMIT`           | "10"     | Maximum amount of concurrent web socket connections allowed.                            |
-| `POLLING_INTERVAL`           | "500"    | Time in ms in between each poll to mirror node while there are subscriptions.           |
-| `WEB_SOCKET_PORT`            | "8546"   | Port for the web socket connections                                                     |
-| `WS_SUBSCRIPTION_LIMIT`      | "10"     | Maximum amount of subscriptions per single connection                                   |
-| `WS_CONNECTION_LIMIT_PER_IP` | "10"     | Maximum amount of connections from a single IP address                                  |
+| Name                            | Default  | Description                                                                             |
+|---------------------------------|----------|-----------------------------------------------------------------------------------------|
+| `SUBSCRIPTIONS_ENABLED`         | "false"  | If enabled eth_subscribe will be enabled using WebSockets.                              |
+| `WS_MAX_CONNECTION_TTL`         | "300000" | Time in ms that the web socket connection is allowed to stay open, currently 5 minutes. |
+| `CONNECTION_LIMIT`              | "10"     | Maximum amount of concurrent web socket connections allowed.                            |
+| `POLLING_INTERVAL`              | "500"    | Time in ms in between each poll to mirror node while there are subscriptions.           |
+| `WEB_SOCKET_PORT`               | "8546"   | Port for the web socket connections                                                     |
+| `WS_SUBSCRIPTION_LIMIT`         | "10"     | Maximum amount of subscriptions per single connection                                   |
+| `WS_CONNECTION_LIMIT_PER_IP`    | "10"     | Maximum amount of connections from a single IP address                                  |
+| `WS_MULTIPLE_ADDRESSES_ENABLED` | "false"  | If enabled eth_subscribe will allow subscription to multiple contract address.          |
 
 ## Testing
 
