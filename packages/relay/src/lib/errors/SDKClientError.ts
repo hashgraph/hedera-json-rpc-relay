@@ -56,6 +56,10 @@ export class SDKClientError extends Error {
     return this.statusCode === Status.InsufficientTxFee._code;
   }
 
+  public isContractRevertExecuted(): boolean {
+    return this.statusCode == Status.ContractRevertExecuted._code;
+  }
+
   public isGrpcTimeout(): boolean {
     // The SDK uses the same code for Grpc Timeout as INVALID_TRANSACTION_ID
     return this.statusCode === Status.InvalidTransactionId._code;

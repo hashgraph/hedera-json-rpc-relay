@@ -26,7 +26,7 @@ chai.use(solidity);
 
 import {Utils} from '../../helpers/utils';
 import {AliasAccount} from "../../clients/servicesClient";
-import {predefined} from '../../../../../packages/relay';
+import {predefined, WebSocketError} from '../../../../../packages/relay';
 const {ethers} = require('ethers');
 const LogContractJson = require('../../contracts/Logs.json');
 
@@ -36,10 +36,11 @@ const WS_RELAY_URL = `ws://localhost:${process.env.WEB_SOCKET_PORT}`;
 const establishConnection = async () => {
         const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
         await provider.send('eth_chainId');
-}; 
+        return provider;
+};
 
 async function expectedErrorAndConnections(server: any): Promise<void> {
-    
+
     let expectedErrorMessageResult = false;
     let expectedNumberOfOpenConnections = false;
 
@@ -82,30 +83,40 @@ describe('@web-socket Acceptance Tests', async function() {
     let wsProvider;
     const accounts: AliasAccount[] = [];
     let logContractSigner;
+    // Cached original ENV variables
     let originalWsMaxConnectionTtl;
+    let originalWsMultipleAddressesEnabledValue;
 
     this.beforeAll(async () => {
         accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
         // Deploy Log Contract
-        logContractSigner = await Utils.deployContractWithEthers([], LogContractJson, accounts[0].wallet, relay);
-        // Override ENV variable for this test only
-        originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL; // cache original value
+        logContractSigner = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
+        // cache original ENV values
+        originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL;
+        originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED;
+
         process.env.WS_MAX_CONNECTION_TTL = '10000';
     });
 
     this.beforeEach(async () => {
+        // restore original ENV value
+        process.env.WS_MULTIPLE_ADDRESSES_ENABLED = originalWsMultipleAddressesEnabledValue;
+
         const { socketServer } = global;
         server = socketServer;
-        
+
         wsProvider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
 
         requestId = Utils.generateRequestId();
         // Stabilizes the initial connection test.
         await new Promise(resolve => setTimeout(resolve, 1000));
+        expect(server._connections).to.equal(1);
     });
 
     this.afterEach(async () => {
-        wsProvider.destroy();
+        await wsProvider.destroy();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        expect(server._connections).to.equal(0);
     });
 
     this.afterAll(async () => {
@@ -229,6 +240,89 @@ describe('@web-socket Acceptance Tests', async function() {
             webSocket.close();
         });
 
+        it('Subscribe to multiple contracts on same subscription', async function () {
+            process.env.WS_MULTIPLE_ADDRESSES_ENABLED = "true"; // enable feature flag for this test
+            await new Promise(resolve => setTimeout(resolve, 10000));
+
+            const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
+            const logContractSigner3 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
+            const addressCollection = [logContractSigner.address, logContractSigner2.address, logContractSigner3.address];
+            let subscriptionId = "";
+            const webSocket = new WebSocket(WS_RELAY_URL);
+
+            let latestEventFromSubscription;
+            webSocket.on('message', function incoming(data) {
+                if(subscriptionId == ""){
+                    subscriptionId = JSON.parse(data).result;
+                } else {
+                    latestEventFromSubscription = JSON.parse(data);
+                }
+            });
+
+            webSocket.on('open', function open() {
+                const request = `{"jsonrpc":"2.0","method":"eth_subscribe","params":["logs", {"address":${JSON.stringify(addressCollection)}}],"id":1}`;
+                webSocket.send(request);
+            });
+            await new Promise(resolve => setTimeout(resolve, 500)); // wait for subscription to be created
+
+            // create event on contract 1
+            await logContractSigner.log1(100);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
+            expect("1: " + latestEventFromSubscription.params.result.address).to.be.eq("1: " + logContractSigner.address.toLowerCase());
+            expect("1: " + latestEventFromSubscription.params.subscription).to.be.eq("1: " + subscriptionId);
+
+            // create event on contract 2
+            await logContractSigner2.log1(200);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
+            expect("2: " + latestEventFromSubscription.params.result.address).to.be.eq("2: " + logContractSigner2.address.toLowerCase());
+            expect("2: " + latestEventFromSubscription.params.subscription).to.be.eq("2: " + subscriptionId);
+
+            // create event on contract 3
+            await logContractSigner3.log1(300);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
+            expect("3: " + latestEventFromSubscription.params.result.address).to.be.eq("3: " + logContractSigner3.address.toLowerCase());
+            expect("3: " + latestEventFromSubscription.params.subscription).to.be.eq("3: " + subscriptionId);
+
+            // close the connection
+            webSocket.close();
+
+            // wait for the connections to be closed
+            await new Promise(resolve => setTimeout(resolve, 500));
+            process.env.WS_MULTIPLE_ADDRESSES_ENABLED = originalWsMultipleAddressesEnabledValue; // restore original value
+        });
+
+
+        it('Subscribe to multiple contracts on same subscription Should fail with INVALID_PARAMETER due to feature flag disabled', async function () {
+            const originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED; // cache original value
+            process.env.WS_MULTIPLE_ADDRESSES_ENABLED = "false"; // disable feature flag
+            const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
+            const addressCollection = [logContractSigner.address, logContractSigner2.address];
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            const requestId = 3;
+            webSocket.on('open', function open() {
+                const request = `{"jsonrpc":"2.0","method":"eth_subscribe","params":["logs", {"address":${JSON.stringify(addressCollection)}}],"id":${requestId}}`;
+                webSocket.send(request);
+            });
+            let response;
+            webSocket.on('message', function incoming(data) {
+                response = JSON.parse(data);
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            expect(response.id).to.be.eq(requestId);
+            expect(response.error.code).to.be.eq(-32602);
+            expect(response.error.name).to.be.eq('Invalid parameter');
+            expect(response.error.message).to.be.eq(`Invalid parameter filters.address: Only one contract address is allowed`);
+
+            // post test clean-up
+            webSocket.close();
+
+            // wait 500 ms for the connection to be closed
+            await new Promise(resolve => setTimeout(resolve, 500));
+        });
+
+
         it('Connection TTL is enforced, should close all connections', async function() {
             const wsConn2 = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
             const wsConn3 = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
@@ -237,15 +331,98 @@ describe('@web-socket Acceptance Tests', async function() {
             // we verify that we have 3 connections, since we already have one from the beforeEach hook (wsProvider)
             expect(server._connections).to.equal(3);
 
+            let closeEventHandled2 = false;
+            wsConn2._websocket.on('close', (code, message) => {
+                closeEventHandled2 = true;
+                expect(code).to.equal(WebSocketError.TTL_EXPIRED.code);
+                expect(message).to.equal(WebSocketError.TTL_EXPIRED.message);
+            })
+
+            let closeEventHandled3 = false;
+            wsConn2._websocket.on('close', (code, message) => {
+                closeEventHandled3 = true;
+                expect(code).to.equal(WebSocketError.TTL_EXPIRED.code);
+                expect(message).to.equal(WebSocketError.TTL_EXPIRED.message);
+            })
 
             await new Promise(resolve => setTimeout(resolve, parseInt(process.env.WS_MAX_CONNECTION_TTL) + 1000));
+
+            expect(closeEventHandled2).to.eq(true);
+            expect(closeEventHandled3).to.eq(true);
             expect(server._connections).to.equal(0);
+        });
+
+        it('Expect Unsupported Method Error message when subscribing for newHeads method', async function() {
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = {};
+            webSocket.on('message', function incoming(data) {
+                response = JSON.parse(data);
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["newHeads"],"id":1}');
+            });
+
+            // wait 500ms to expect the message
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
+            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
+            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+
+            // close the connection
+            webSocket.close();
+        });
+
+        it('Expect Unsupported Method Error message when subscribing for newPendingTransactions method', async function() {
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = {};
+            webSocket.on('message', function incoming(data) {
+                response = JSON.parse(data);
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["newPendingTransactions"],"id":1}');
+            });
+
+            // wait 500ms to expect the message
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
+            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
+            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+
+            // close the connection
+            webSocket.close();
+        });
+
+        it('Expect Unsupported Method Error message when subscribing for "other" method', async function() {
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = {};
+            webSocket.on('message', function incoming(data) {
+                response = JSON.parse(data);
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["other"],"id":1}');
+            });
+
+            // wait 500ms to expect the message
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
+            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
+            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+
+            // close the connection
+            webSocket.close();
+            await new Promise(resolve => setTimeout(resolve, 500)); // Wait for the connection to be closed
         });
 
         it('Does not allow more connections than the connection limit', async function() {
             // We already have one connection
+            expect(server._connections).to.equal(1);
+
+            let providers: ethers.providers.WebSocketProvider[] = [];
             for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT); i++) {
-                await establishConnection();
+                providers.push(await establishConnection());
             }
 
             expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT));
@@ -253,6 +430,64 @@ describe('@web-socket Acceptance Tests', async function() {
             await expectedErrorAndConnections(server);
 
             await new Promise(resolve => setTimeout(resolve, 1000));
+
+            for (const p of providers) {
+                await p.destroy();
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            expect(server._connections).to.equal(1);
+        });
+
+        describe('IP connection limits', async function() {
+            let originalConnectionLimitPerIp;
+
+            before(() => {
+                originalConnectionLimitPerIp = process.env.WS_CONNECTION_LIMIT_PER_IP;
+                process.env.WS_CONNECTION_LIMIT_PER_IP = 3;
+            });
+
+            after(() => {
+                process.env.WS_CONNECTION_LIMIT_PER_IP = originalConnectionLimitPerIp;
+            });
+
+            it('Does not allow more connections from the same IP than the specified limit', async function() {
+                const providers = [];
+
+                // Creates the maximum allowed connections
+                for (let i = 1; i < parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP); i++) {
+                    providers.push(await new ethers.providers.WebSocketProvider(WS_RELAY_URL));
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Repeat the following several times to make sure the internal counters are consistently correct
+                for (let i = 0; i < 3; i++) {
+                    expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP));
+
+                    // The next connection should be closed by the server
+                    const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
+
+                    let closeEventHandled = false;
+                    provider._websocket.on('close', (code, message) => {
+                        closeEventHandled = true;
+                        expect(code).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.code);
+                        expect(message).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.message);
+                    })
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP));
+                    expect(closeEventHandled).to.eq(true);
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                for (const p of providers) {
+                    await p.destroy();
+                }
+
+            });
         });
     });
 });
