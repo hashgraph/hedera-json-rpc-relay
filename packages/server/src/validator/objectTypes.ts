@@ -89,6 +89,17 @@ export const OBJECTS_VALIDATIONS = {
       type: "array",
       nullable: false
     }
+  },
+  "ethSubscribeLogsParams": {
+    "address" : {
+      type: "addressFilter",
+      nullable: false,
+      required: true
+    },
+    "topics" : {
+        type: "topics",
+        nullable: false
+    }
   }
 };
 
@@ -186,3 +197,27 @@ export class BlockNumberObject {
   }
 };
 
+export class EthSubscribeLogsParamsObject {
+    address?: string | string[];
+    topics?: string[] | string[][];
+
+    constructor (param: any) {
+        Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.ethSubscribeLogsParams, this.name());
+        this.address = param.address;
+        this.topics = param.topics;
+    }
+
+    validate() {
+        const valid = Validator.validateObject(this, OBJECTS_VALIDATIONS.ethSubscribeLogsParams);
+        // address and is not an empty array
+        if(valid && Array.isArray(this.address) && this.address.length === 0 && OBJECTS_VALIDATIONS.ethSubscribeLogsParams.address.required){
+          throw predefined.MISSING_REQUIRED_PARAMETER(`'address' for ${this.name()}`);
+        }
+
+        return valid;
+    }
+
+    name() {
+        return this.constructor.name;
+    }
+}

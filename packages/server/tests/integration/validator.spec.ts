@@ -573,4 +573,129 @@ describe('Validator', async () => {
       expect(Validator.isValidAndNonNullableParam('0x', true)).to.be.true;
     });
   });
+
+  describe('validates ethSubscribeLogsParams Object type correctly', async () => {
+    it("throws an error if 'address' is null", async () => {
+      expect(() => {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: null});
+        validatorObject.validate();
+      }).to.throw(
+          `Invalid parameter 'address' for EthSubscribeLogsParamsObject: Expected 0x prefixed string representing the address (20 bytes) or an array of addresses, value: null`
+      );
+    });
+
+    it("throws an error if 'address' is undefined", async () => {
+      expect(() => {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: undefined});
+        validatorObject.validate();
+      }).to.throw(
+          `Missing value for required parameter 'address' for EthSubscribeLogsParamsObject`
+      );
+    });
+
+    it("throws an error if 'address' is empty array", async () => {
+      expect(() => {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: []});
+        validatorObject.validate();
+      }).to.throw(
+          `Missing value for required parameter 'address' for EthSubscribeLogsParamsObject`
+      );
+    });
+
+    it("throws an error if 'topics' values are not 0x prefixed", async () => {
+      expect(() => {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: "0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816", topics: ["NotHEX"]});
+        validatorObject.validate();
+      }).to.throw(
+          `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: NotHEX`
+      );
+    });
+
+    it("throws an error if 'topics' values are null", async () => {
+      expect(() => {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: "0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816", topics: null});
+        validatorObject.validate();
+      }).to.throw(
+          `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: null`
+      );
+    });
+
+    it("does not throw an error if 'topics' values are 0x prefixed and 32 bytes", async () => {
+      let errorOccurred = false;
+      try {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: "0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816", topics: ["0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902", "0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902"]});
+        validatorObject.validate();
+      } catch (error){
+        errorOccurred = true;
+      }
+
+      expect(errorOccurred).to.be.eq(false);
+    });
+
+    it("does not throw an error if 'topics' value is empty array", async () => {
+      let errorOccurred = false;
+      try {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: "0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816", topics: []});
+        validatorObject.validate();
+      } catch (error){
+        errorOccurred = true;
+      }
+
+      expect(errorOccurred).to.be.eq(false);
+    });
+
+    it("does not throw an error if 'address' is valid and topics is undefined", async () => {
+      let errorOccurred = false;
+      try {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: "0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816", topics: undefined});
+        validatorObject.validate();
+      } catch (error){
+        errorOccurred = true;
+      }
+
+      expect(errorOccurred).to.be.eq(false);
+    });
+
+    it("does not throw an error if 'address' is valid and topics is missing", async () => {
+      let errorOccurred = false;
+      try {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: "0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816"});
+        validatorObject.validate();
+      } catch (error){
+        errorOccurred = true;
+      }
+
+      expect(errorOccurred).to.be.eq(false);
+    });
+
+    it("does not throw an error if 'address' is valid array and topics is missing", async () => {
+      let errorOccurred = false;
+      try {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: ["0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816", "0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816"]});
+        validatorObject.validate();
+      } catch (error){
+        errorOccurred = true;
+      }
+
+      expect(errorOccurred).to.be.eq(false);
+    });
+
+    it("does not throw an error if 'address' is valid array and topics is valid array", async () => {
+      let errorOccurred = false;
+      try {
+        const validatorObject = new Validator.EthSubscribeLogsParamsObject({
+          address: ["0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816", "0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816"],
+          "topics": [
+            "0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902",
+            "0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902",
+            "0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902"
+          ]});
+        validatorObject.validate();
+      } catch (error){
+        errorOccurred = true;
+      }
+
+      expect(errorOccurred).to.be.eq(false);
+    });
+  });
 });
