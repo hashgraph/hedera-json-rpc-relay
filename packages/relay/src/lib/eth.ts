@@ -67,6 +67,7 @@ export class EthImpl implements Eth {
   static invalidEVMInstruction = '0xfe';
   static ethCallCacheTtl = process.env.ETH_CALL_CACHE_TTL || 200;
   static ethBlockNumberCacheTtlMs = process.env.ETH_BLOCK_NUMBER_CACHE_TTL_MS || 1000;
+  static ethGetBalanceCacheTtlMs = process.env.ETH_GET_BALANCE_CACHE_TTL_MS || 1000;
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -577,6 +578,14 @@ export class EthImpl implements Eth {
       }
     }
 
+    // check cache first
+    // create a key for the cache
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTag}`;
+    const cachedBalance = this.cache.get(cacheKey);
+    if (cachedBalance) {
+        return cachedBalance;
+    }
+
     let blockNumber = null;
     let balanceFound = false;
     let weibars: BigInt = BigInt(0);
@@ -648,6 +657,9 @@ export class EthImpl implements Eth {
         this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
         return EthImpl.zeroHex;
       }
+
+      // save in cache the current balance for the account and blockNumberOrTag
+      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), {ttl: EthImpl.ethGetBalanceCacheTtlMs});
 
       return EthImpl.numberTo0x(weibars);
     } catch (error: any) {
