@@ -66,6 +66,8 @@ export class EthImpl implements Eth {
   static iHTSAddress = '0x0000000000000000000000000000000000000167';
   static invalidEVMInstruction = '0xfe';
   static ethCallCacheTtl = process.env.ETH_CALL_CACHE_TTL || 200;
+  static ethBlockNumberCacheTtlMs = process.env.ETH_BLOCK_NUMBER_CACHE_TTL_MS || 1000;
+  static ethGetBalanceCacheTtlMs = process.env.ETH_GET_BALANCE_CACHE_TTL_MS || 1000;
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -303,10 +305,24 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} blockNumber()`);
 
+    // check for cached value
+    const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
+    const blockNumberCached = this.cache.get(cacheKey);
+
+    if(blockNumberCached) {
+      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
+      return blockNumberCached;
+    }
+
     const blocksResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
     const blocks = blocksResponse !== null ? blocksResponse.blocks : null;
     if (Array.isArray(blocks) && blocks.length > 0) {
-      return EthImpl.numberTo0x(blocks[0].number);
+      const currentBlock = EthImpl.numberTo0x(blocks[0].number);
+      // save the latest block number in cache
+      this.cache.set(cacheKey, currentBlock, { ttl: EthImpl.ethBlockNumberCacheTtlMs });
+      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(currentBlock)} for ${EthImpl.ethBlockNumberCacheTtlMs} ms`);
+
+      return currentBlock;
     }
 
     throw predefined.COULD_NOT_RETRIEVE_LATEST_BLOCK;
@@ -564,6 +580,15 @@ export class EthImpl implements Eth {
       }
     }
 
+    // check cache first
+    // create a key for the cache
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTag}`;
+    const cachedBalance = this.cache.get(cacheKey);
+    if (cachedBalance) {
+      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
+      return cachedBalance;
+    }
+
     let blockNumber = null;
     let balanceFound = false;
     let weibars: BigInt = BigInt(0);
@@ -635,6 +660,10 @@ export class EthImpl implements Eth {
         this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
         return EthImpl.zeroHex;
       }
+
+      // save in cache the current balance for the account and blockNumberOrTag
+      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), {ttl: EthImpl.ethGetBalanceCacheTtlMs});
+      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(cachedBalance)} for ${EthImpl.ethGetBalanceCacheTtlMs} ms`);
 
       return EthImpl.numberTo0x(weibars);
     } catch (error: any) {
@@ -894,6 +923,9 @@ export class EthImpl implements Eth {
 
         return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
       } catch (e) {
+
+        await this.extractContractRevertReason(e, requestId, requestIdPrefix);
+
         this.logger.error(e,
           `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
         //Return computed hash if unable to retrieve EthereumHash from record due to error
@@ -906,6 +938,26 @@ export class EthImpl implements Eth {
         return e;
       }
       return predefined.INTERNAL_ERROR();
+    }
+  }
+
+  /**
+   * Check if transaction fail is because of contract revert and try to fetch and log the reason.
+   *
+   * @param e
+   * @param requestId
+   * @param requestIdPrefix
+   */
+  private async extractContractRevertReason(e: any, requestId: string | undefined, requestIdPrefix: string) {
+    if (e instanceof SDKClientError && e.isContractRevertExecuted()) {
+      const transactionId = e.message.match(constants.TRANSACTION_ID_REGEX);
+      if (transactionId) {
+        const tx = await this.mirrorNodeClient.getTransactionById(transactionId[0], undefined, requestId);
+        if (tx.transactions.length > 1) {
+          const result = tx.transactions[1].result;
+          this.logger.error(`${requestIdPrefix} Transaction failed with result: ${result}`);
+        }
+      }
     }
   }
 
