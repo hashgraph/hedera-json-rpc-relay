@@ -66,6 +66,7 @@ export class EthImpl implements Eth {
   static iHTSAddress = '0x0000000000000000000000000000000000000167';
   static invalidEVMInstruction = '0xfe';
   static ethCallCacheTtl = process.env.ETH_CALL_CACHE_TTL || 200;
+  static ethBlockNumberCacheTtlMs = process.env.ETH_BLOCK_NUMBER_CACHE_TTL_MS || 1000;
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -303,10 +304,22 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} blockNumber()`);
 
+    // check for cached value
+    const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
+    const blockNumberCached = this.cache.get(cacheKey);
+
+    if(blockNumberCached) {
+      return blockNumberCached;
+    }
+
     const blocksResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
     const blocks = blocksResponse !== null ? blocksResponse.blocks : null;
     if (Array.isArray(blocks) && blocks.length > 0) {
-      return EthImpl.numberTo0x(blocks[0].number);
+      const currentBlock = EthImpl.numberTo0x(blocks[0].number);
+      // save the latest block number in cache
+      this.cache.set(cacheKey, currentBlock, { ttl: EthImpl.ethBlockNumberCacheTtlMs });
+
+      return currentBlock;
     }
 
     throw predefined.COULD_NOT_RETRIEVE_LATEST_BLOCK;

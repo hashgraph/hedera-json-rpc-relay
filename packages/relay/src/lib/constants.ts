@@ -21,7 +21,8 @@
 enum CACHE_KEY {
     GAS_PRICE = 'gas_price',
     FEE_HISTORY = 'fee_history',
-    GET_CONTRACT_RESULT = 'getContractResult'
+    GET_CONTRACT_RESULT = 'getContractResult',
+    ETH_BLOCK_NUMBER = 'eth_block_number',
 }
 
 enum CACHE_TTL {
