@@ -67,6 +67,7 @@ export class EthImpl implements Eth {
   static invalidEVMInstruction = '0xfe';
   static ethCallCacheTtl = process.env.ETH_CALL_CACHE_TTL || 200;
   static ethBlockNumberCacheTtlMs = process.env.ETH_BLOCK_NUMBER_CACHE_TTL_MS || 1000;
+  static ethGetBalanceCacheTtlMs = process.env.ETH_GET_BALANCE_CACHE_TTL_MS || 1000;
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -309,6 +310,7 @@ export class EthImpl implements Eth {
     const blockNumberCached = this.cache.get(cacheKey);
 
     if(blockNumberCached) {
+      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
       return blockNumberCached;
     }
 
@@ -318,6 +320,7 @@ export class EthImpl implements Eth {
       const currentBlock = EthImpl.numberTo0x(blocks[0].number);
       // save the latest block number in cache
       this.cache.set(cacheKey, currentBlock, { ttl: EthImpl.ethBlockNumberCacheTtlMs });
+      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(currentBlock)} for ${EthImpl.ethBlockNumberCacheTtlMs} ms`);
 
       return currentBlock;
     }
@@ -577,6 +580,15 @@ export class EthImpl implements Eth {
       }
     }
 
+    // check cache first
+    // create a key for the cache
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTag}`;
+    const cachedBalance = this.cache.get(cacheKey);
+    if (cachedBalance) {
+      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
+      return cachedBalance;
+    }
+
     let blockNumber = null;
     let balanceFound = false;
     let weibars: BigInt = BigInt(0);
@@ -648,6 +660,10 @@ export class EthImpl implements Eth {
         this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
         return EthImpl.zeroHex;
       }
+
+      // save in cache the current balance for the account and blockNumberOrTag
+      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), {ttl: EthImpl.ethGetBalanceCacheTtlMs});
+      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(cachedBalance)} for ${EthImpl.ethGetBalanceCacheTtlMs} ms`);
 
       return EthImpl.numberTo0x(weibars);
     } catch (error: any) {
