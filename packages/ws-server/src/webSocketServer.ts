@@ -47,6 +47,7 @@ const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 const limiter = new ConnectionLimiter(logger);
 
+
 const app = websockify(new Koa(), {
     verifyClient: limiter.verifyClient
 });
