@@ -553,6 +553,66 @@ describe('@web-socket Acceptance Tests', async function() {
                 expect(errorsHandled).to.eq(0);
             });
         });
+
+        describe('ethSubscribe Logs Params Validations', async function() {
+            it('Calling eth_subscribe Logs with a non existent address should fail', async function() {
+                const missingContract = "0xea4168c4cbb744ec22dea4a4bfc5f74b6fe27816";
+                let actualError: any = null;
+                try {
+                    await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
+                } catch (e: any) {
+                    actualError = JSON.parse(e.response);
+                }
+
+                const expectedError = predefined.INVALID_PARAMETER(`filters.address`, `${missingContract} is not a valid contract type or does not exists`);
+                expect(actualError.error.code).to.be.eq(expectedError.code);
+                expect(actualError.error.name).to.be.eq(expectedError.name);
+                expect(actualError.error.message).to.contains(expectedError.message);
+            });
+
+            it('Calling eth_subscribe Logs with an empty address should fail', async function() {
+                const missingContract = "";
+                let actualError: any = null;
+                try {
+                    await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
+                } catch (e: any) {
+                    actualError = JSON.parse(e.response);
+                }
+
+                const expectedError = predefined.INVALID_PARAMETER(`'address' for EthSubscribeLogsParamsObject`, `Expected 0x prefixed string representing the address (20 bytes) or an array of addresses, value: `);
+                expect(actualError.error.code).to.be.eq(expectedError.code);
+                expect(actualError.error.name).to.be.eq(expectedError.name);
+                expect(actualError.error.message).to.contains(expectedError.message);
+            });
+
+            it('Calling eth_subscribe Logs with params without address should fail', async function() {
+                let actualError: any = null;
+                try {
+                    await wsProvider.send('eth_subscribe', ["logs", {}]);
+                } catch (e: any) {
+                    actualError = JSON.parse(e.response);
+                }
+
+                const expectedError = predefined.MISSING_REQUIRED_PARAMETER(`'address' for EthSubscribeLogsParamsObject`);
+                expect(actualError.error.code).to.be.eq(expectedError.code);
+                expect(actualError.error.name).to.be.eq(expectedError.name);
+                expect(actualError.error.message).to.contains(expectedError.message);
+            });
+
+            it('Calling eth_subscribe Logs with an invalid topics should fail', async function() {
+                let actualError: any = null;
+                try {
+                    await wsProvider.send('eth_subscribe', ["logs", {"address": logContractSigner.address, "topics": ["0x000"]}]);
+                } catch (e: any) {
+                    actualError = JSON.parse(e.response);
+                }
+
+                const expectedError = predefined.INVALID_PARAMETER(`'topics' for EthSubscribeLogsParamsObject`, `Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: 0x000`);
+                expect(actualError.error.code).to.be.eq(expectedError.code);
+                expect(actualError.error.name).to.be.eq(expectedError.name);
+                expect(actualError.error.message).to.contains(expectedError.message);
+            });
+        });
     });
 });
 
