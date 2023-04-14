@@ -310,6 +310,7 @@ export class EthImpl implements Eth {
     const blockNumberCached = this.cache.get(cacheKey);
 
     if(blockNumberCached) {
+      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
       return blockNumberCached;
     }
 
@@ -319,6 +320,7 @@ export class EthImpl implements Eth {
       const currentBlock = EthImpl.numberTo0x(blocks[0].number);
       // save the latest block number in cache
       this.cache.set(cacheKey, currentBlock, { ttl: EthImpl.ethBlockNumberCacheTtlMs });
+      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(currentBlock)} for ${EthImpl.ethBlockNumberCacheTtlMs} ms`);
 
       return currentBlock;
     }
