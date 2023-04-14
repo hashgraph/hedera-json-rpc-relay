@@ -27,6 +27,7 @@ import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
 const LRU = require('lru-cache');
+const controller = new AbortController();
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
@@ -79,6 +80,8 @@ export class MirrorNodeClient {
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
     private static CONTRACT_STATE_PROPERTY = 'state';
 
+
+
     private static ORDER = {
         ASC: 'asc',
         DESC: 'desc'
@@ -118,7 +121,8 @@ export class MirrorNodeClient {
             headers: {
                 'Content-Type': 'application/json'
             },
-            timeout: 10 * 1000
+            signal: controller.signal,
+            timeout: parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000')
         });
         //@ts-ignore
         axiosRetry(axiosClient, {
@@ -233,6 +237,10 @@ export class MirrorNodeClient {
     handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, allowedErrorStatuses?: number[], requestId?: string) {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
+            if (error.message === `timeout of ${parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000')}ms exceeded`) {
+                controller.abort();
+                return null;
+            }
             if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
                 this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
                 return null;
