@@ -583,7 +583,8 @@ export class EthImpl implements Eth {
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTag}`;
     const cachedBalance = this.cache.get(cacheKey);
     if (cachedBalance) {
-        return cachedBalance;
+      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
+      return cachedBalance;
     }
 
     let blockNumber = null;
@@ -660,6 +661,7 @@ export class EthImpl implements Eth {
 
       // save in cache the current balance for the account and blockNumberOrTag
       this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), {ttl: EthImpl.ethGetBalanceCacheTtlMs});
+      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(cachedBalance)} for ${EthImpl.ethGetBalanceCacheTtlMs} ms`);
 
       return EthImpl.numberTo0x(weibars);
     } catch (error: any) {
