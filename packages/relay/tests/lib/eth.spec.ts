@@ -1318,6 +1318,44 @@ describe('Eth calls using MirrorNode', async function () {
       expect(resBalance).to.equal(defHexBalance);
     });
 
+    it('should return balance for latest block from cache', async () => {
+      restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000
+        }]
+      });
+      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
+        }
+      });
+
+      const resBalance = await ethImpl.getBalance(contractAddress1, null);
+      expect(resBalance).to.equal(defHexBalance);
+
+      // next call should use cache
+      restMock.onGet(`accounts/${contractAddress1}`).reply(404, {});
+
+      const resBalanceCached = await ethImpl.getBalance(contractAddress1, null);
+      expect(resBalanceCached).to.equal(resBalance);
+
+      // Third call should return new number using mirror node
+      const newBalance = 55555;
+      const newBalanceHex = EthImpl.numberTo0x(BigInt(newBalance) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
+      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: newBalance
+        }
+      });
+      // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
+      cache.clear();
+
+      const resBalanceNew = await ethImpl.getBalance(contractAddress1, null);
+      expect(newBalanceHex).to.equal(resBalanceNew);
+    });
+
     it('should return balance from mirror node with block number passed as param the same as latest', async () => {
       const blockNumber = "0x2710";
       restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
@@ -1394,7 +1432,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const resCached = await ethImpl.getBalance(contractAddress1, null);
       expect(resNoCache).to.equal(defHexBalance);
-      expect(resCached).to.equal(EthImpl.zeroHex);
+      expect(resCached).to.equal(defHexBalance);
     });
 
     describe('with blockNumberOrTag filter', async function() {
