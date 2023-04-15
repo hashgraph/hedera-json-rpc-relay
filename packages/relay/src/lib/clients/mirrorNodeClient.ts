@@ -235,12 +235,18 @@ export class MirrorNodeClient {
     }
 
     handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, allowedErrorStatuses?: number[], requestId?: string) {
+        const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
+        if(mirrorError.isTimeout()){
+            controller.abort();
+            return null;
+        }
+
         const requestIdPrefix = formatRequestIdMessage(requestId);
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
-            if (error.message === `timeout of ${parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000')}ms exceeded`) {
-                controller.abort();
-                return null;
-            }
+            // if (error.message === `timeout of ${parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000')}ms exceeded`) {
+            //     controller.abort();
+            //     return null;
+            // }
             if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
                 this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
                 return null;
@@ -248,8 +254,6 @@ export class MirrorNodeClient {
         }
 
         this.logger.error(new Error(error.message), `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
-
-        const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
 
         // we only need contract revert errors here as it's not the same as not supported
         if (mirrorError.isContractReverted() && !mirrorError.isNotSupported() && !mirrorError.isNotSupportedSystemContractOperaton()) {
