@@ -614,6 +614,35 @@ describe('Eth calls using MirrorNode', async function () {
     expect(blockNumber).to.be.eq(blockNumber);
   });
 
+
+  it('"eth_blockNumber" should return the latest block number using cache', async function () {
+    restMock.onGet('blocks?limit=1&order=desc').replyOnce(200, {
+      blocks: [defaultBlock]
+    });
+    const blockNumber = await ethImpl.blockNumber();
+    expect(EthImpl.numberTo0x(defaultBlock.number)).to.be.eq(blockNumber);
+
+    // Second call should return the same block number using cache
+    restMock.onGet('blocks?limit=1&order=desc').reply(400, {
+      blocks: [defaultBlock]
+    });
+
+    const blockNumber2 = await ethImpl.blockNumber();
+    expect(blockNumber2).to.be.eq(blockNumber);
+
+    // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
+    cache.clear();
+    // Third call should return new number using mirror node
+    const newBlockNumber = 7;
+    restMock.onGet('blocks?limit=1&order=desc').reply(200, {
+      blocks: [{...defaultBlock, number : newBlockNumber}]
+    });
+    const blockNumber3 = await ethImpl.blockNumber();
+    expect(EthImpl.numberTo0x(newBlockNumber)).to.be.eq(blockNumber3);
+
+  });
+
+
   it('"eth_blockNumber" should throw an error if no blocks are found', async function () {
     restMock.onGet('blocks?limit=1&order=desc').reply(404, {
       '_status': {
