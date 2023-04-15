@@ -27,7 +27,6 @@ import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
 const LRU = require('lru-cache');
-let controller;
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
@@ -196,10 +195,10 @@ export class MirrorNodeClient {
         const start = Date.now();
         const requestIdPrefix = formatRequestIdMessage(requestId);
         let ms;
+        const controller = new AbortController();
         try {
             let response;
 
-            controller = new AbortController();
             const axiosRequestConfig = {
                 headers:{
                     'requestId': requestId || ''
@@ -222,7 +221,7 @@ export class MirrorNodeClient {
             ms = Date.now() - start;
             const effectiveStatusCode = error.response?.status || MirrorNodeClientError.ErrorCodes[error.code] || MirrorNodeClient.unknownServerErrorHttpStatusCode;
             this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
-            this.handleError(error, path, effectiveStatusCode, method, allowedErrorStatuses, requestId);
+            this.handleError(error, path, effectiveStatusCode, method, controller, allowedErrorStatuses, requestId);
         }
         return null;
     }
@@ -236,7 +235,7 @@ export class MirrorNodeClient {
         return this.request(path, pathLabel, 'POST', data, allowedErrorStatuses, requestId);
     }
 
-    handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, allowedErrorStatuses?: number[], requestId?: string) {
+    handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, controller: AbortController, allowedErrorStatuses?: number[], requestId?: string) {
         const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
         if(mirrorError.isTimeout()){
             controller.abort();
