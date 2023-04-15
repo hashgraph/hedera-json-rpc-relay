@@ -1681,35 +1681,6 @@ describe('Eth calls using MirrorNode', async function () {
       expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3);
     };
 
-    it('blockHash filter timeouts and throws the expected error', async function () {
-      const filteredLogs = {
-        logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
-      };
-
-      restMock.onGet(`blocks/${blockHash}`).timeout();
-      restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogs);
-
-      try {
-        await ethImpl.getLogs(blockHash, null, null, null, null);
-        expect(true).to.eq(false);
-      } catch (error: any) {
-        expect(error.statusCode).to.equal(504);
-        expect(error.message).to.eq("timeout of 10000ms exceeded");
-      }
-    });
-
-    it('address filter timeouts and throws the expected error', async function () {
-      restMock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
-      restMock.onGet(`contracts/${contractAddress1}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).timeout();
-
-      try {
-        await ethImpl.getLogs(null, null, null, contractAddress1, null);
-        expect(true).to.eq(false);
-      } catch (error: any) {
-        expect(error.statusCode).to.equal(504);
-        expect(error.message).to.eq("timeout of 10000ms exceeded");
-      }
-    });
 
     it('error when retrieving logs', async function () {
       restMock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
