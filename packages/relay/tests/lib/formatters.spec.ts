@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { hexToASCII, decodeErrorMessage } from '../../src/formatters';
+import { hexToASCII, decodeErrorMessage, formatTransactionId } from '../../src/formatters';
 
 describe('Formatters', () => {
     describe('hexToASCII', () => {
@@ -43,4 +43,18 @@ describe('Formatters', () => {
             }
         });
     });
+
+    describe('formatTransactionId', () => {
+        const validInputTimestamp = '0.0.2@1234567890.123456789';
+        const validOutputTimestamp = '0.0.2-1234567890-123456789';
+        const invalidInputTimestamp = '0.0.2@12345678222.123456789';
+
+        it('should return correct formated transaction id', () => {
+            expect(formatTransactionId(validInputTimestamp)).to.eq(validOutputTimestamp);
+        });
+
+        it('should return null', () => {
+            expect(formatTransactionId(invalidInputTimestamp)).to.eq(null);
+        })
+    })
 });

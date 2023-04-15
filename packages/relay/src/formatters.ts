@@ -54,4 +54,15 @@ const decodeErrorMessage = (message?: string): string => {
     return hexToASCII(resultCodeHex);
 };
 
-export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage };
+const formatTransactionId = (transactionId: string): string | null => {
+    if (!constants.TRANSACTION_ID_REGEX.test(transactionId)) {
+        return null;
+    }
+    
+    var transactionSplit = transactionId.split("@");
+    const payer = transactionSplit[0];
+    const timestamp = transactionSplit[1].replace(".","-");
+    return `${payer}-${timestamp}`;
+}
+
+export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId };
