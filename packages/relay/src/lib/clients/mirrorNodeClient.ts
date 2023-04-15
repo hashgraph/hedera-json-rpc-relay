@@ -27,7 +27,7 @@ import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
 const LRU = require('lru-cache');
-const controller = new AbortController();
+let controller;
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
@@ -121,7 +121,6 @@ export class MirrorNodeClient {
             headers: {
                 'Content-Type': 'application/json'
             },
-            signal: controller.signal,
             timeout: parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000')
         });
         //@ts-ignore
@@ -199,17 +198,20 @@ export class MirrorNodeClient {
         let ms;
         try {
             let response;
-            const headers = {
+
+            controller = new AbortController();
+            const axiosRequestConfig = {
                 headers:{
                     'requestId': requestId || ''
-                }
+                },
+                signal: controller.signal
             };
 
             if (method === 'GET') {
-                response = await this.restClient.get(path, headers);
+                response = await this.restClient.get(path, axiosRequestConfig);
             }
             else {
-                response = await this.web3Client.post(path, data, headers);
+                response = await this.web3Client.post(path, data, axiosRequestConfig);
             }
 
             const ms = Date.now() - start;
@@ -238,15 +240,10 @@ export class MirrorNodeClient {
         const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
         if(mirrorError.isTimeout()){
             controller.abort();
-            return null;
         }
 
         const requestIdPrefix = formatRequestIdMessage(requestId);
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
-            // if (error.message === `timeout of ${parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000')}ms exceeded`) {
-            //     controller.abort();
-            //     return null;
-            // }
             if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
                 this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
                 return null;
