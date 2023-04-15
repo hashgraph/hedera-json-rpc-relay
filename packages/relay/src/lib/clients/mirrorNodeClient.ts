@@ -79,6 +79,8 @@ export class MirrorNodeClient {
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
     private static CONTRACT_STATE_PROPERTY = 'state';
 
+
+
     private static ORDER = {
         ASC: 'asc',
         DESC: 'desc'
@@ -117,7 +119,7 @@ export class MirrorNodeClient {
             headers: {
                 'Content-Type': 'application/json'
             },
-            timeout: 10 * 1000
+            timeout: parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000')
         });
         //@ts-ignore
         axiosRetry(axiosClient, {
@@ -192,19 +194,22 @@ export class MirrorNodeClient {
         const start = Date.now();
         const requestIdPrefix = formatRequestIdMessage(requestId);
         let ms;
+        const controller = new AbortController();
         try {
             let response;
-            const headers = {
+
+            const axiosRequestConfig = {
                 headers:{
                     'requestId': requestId || ''
-                }
+                },
+                signal: controller.signal
             };
 
             if (method === 'GET') {
-                response = await this.restClient.get(path, headers);
+                response = await this.restClient.get(path, axiosRequestConfig);
             }
             else {
-                response = await this.web3Client.post(path, data, headers);
+                response = await this.web3Client.post(path, data, axiosRequestConfig);
             }
 
             const ms = Date.now() - start;
@@ -215,7 +220,7 @@ export class MirrorNodeClient {
             ms = Date.now() - start;
             const effectiveStatusCode = error.response?.status || MirrorNodeClientError.ErrorCodes[error.code] || MirrorNodeClient.unknownServerErrorHttpStatusCode;
             this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
-            this.handleError(error, path, effectiveStatusCode, method, allowedErrorStatuses, requestId);
+            this.handleError(error, path, effectiveStatusCode, method, controller, allowedErrorStatuses, requestId);
         }
         return null;
     }
@@ -229,7 +234,12 @@ export class MirrorNodeClient {
         return this.request(path, pathLabel, 'POST', data, allowedErrorStatuses, requestId);
     }
 
-    handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, allowedErrorStatuses?: number[], requestId?: string) {
+    handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, controller: AbortController, allowedErrorStatuses?: number[], requestId?: string) {
+        const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
+        if(mirrorError.isTimeout()){
+            controller.abort();
+        }
+
         const requestIdPrefix = formatRequestIdMessage(requestId);
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
             if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
@@ -239,8 +249,6 @@ export class MirrorNodeClient {
         }
 
         this.logger.error(new Error(error.message), `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
-
-        const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
 
         // we only need contract revert errors here as it's not the same as not supported
         if (mirrorError.isContractReverted() && !mirrorError.isNotSupported() && !mirrorError.isNotSupportedSystemContractOperaton()) {
