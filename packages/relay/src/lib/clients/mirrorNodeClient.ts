@@ -18,7 +18,7 @@
  *
  */
 
-import Axios, { AxiosInstance } from 'axios';
+import Axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { MirrorNodeClientError } from './../errors/MirrorNodeClientError';
 import { Logger } from "pino";
 import constants from './../constants';
@@ -26,6 +26,8 @@ import { Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
+const http = require('http');
+const https = require('https');
 const LRU = require('lru-cache');
 
 type REQUEST_METHODS = 'GET' | 'POST';
@@ -113,23 +115,53 @@ export class MirrorNodeClient {
     protected createAxiosClient(
         baseUrl: string
     ): AxiosInstance {
+        // defualt values for axios clients to mirror node
+        const mirrorNodeTimeout = parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000');
+        const mirrorNodeMaxRedirects = parseInt(process.env.MIRROR_NODE_MAX_REDIRECTS || '5');
+        const mirrorNodeHttpKeepAlive = process.env.MIRROR_NODE_HTTP_KEEP_ALIVE === 'true' ? true : false;
+        const mirrorNodeHttpKeepAliveMsecs = parseInt(process.env.MIRROR_NODE_HTTP_KEEP_ALIVE_MSECS || '1000');
+        const mirrorNodeHttpMaxSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_SOCKETS || '100');
+        const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '100');
+        const mirrorNodeHttpSocketTimeout = parseInt(process.env.MIRROR_NODE_HTTP_SOCKET_TIMEOUT || '60000');
+        const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
+        const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES!) || 3;
+        const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE!) || 5;
+        const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 250;
+        const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE!) || 200;
+
         const axiosClient: AxiosInstance = Axios.create({
             baseURL: baseUrl,
             responseType: 'json' as const,
             headers: {
                 'Content-Type': 'application/json'
             },
-            timeout: parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000')
+            timeout: mirrorNodeTimeout,
+            maxRedirects: mirrorNodeMaxRedirects,
+            // set http agent options to optimize performance - https://nodejs.org/api/http.html#new-agentoptions
+            httpAgent: new http.Agent({ 
+                keepAlive: mirrorNodeHttpKeepAlive,
+                keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
+                maxSockets: mirrorNodeHttpMaxSockets,
+                maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
+                timeout: mirrorNodeHttpSocketTimeout,
+            }),
+            httpsAgent: new https.Agent({ 
+                keepAlive: mirrorNodeHttpKeepAlive,
+                keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
+                maxSockets: mirrorNodeHttpMaxSockets,
+                maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
+                timeout: mirrorNodeHttpSocketTimeout,
+            }),
         });
         //@ts-ignore
         axiosRetry(axiosClient, {
-            retries: parseInt(process.env.MIRROR_NODE_RETRIES!) || 3,
+            retries: isDevMode ? mirrorNodeRetriesDevMode : mirrorNodeRetries,
             retryDelay: (retryCount, error) => {
                 const request = error?.request?._header;
                 const requestId = request ? request.split('\n')[3].substring(11,47) : '';
                 const requestIdPrefix = formatRequestIdMessage(requestId);
-                const delay = (parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 250) * retryCount;
-                this.logger.trace(`${requestIdPrefix} Retry delay ${delay} ms`);
+                const delay = isDevMode ? mirrorNodeRetryDelayDevMode : mirrorNodeRetryDelay * retryCount;
+                this.logger.trace(`${requestIdPrefix} Retry delay ${delay} ms`);                
                 return delay;
             },
             retryCondition: (error) => {
@@ -198,7 +230,7 @@ export class MirrorNodeClient {
         try {
             let response;
 
-            const axiosRequestConfig = {
+            const axiosRequestConfig: AxiosRequestConfig = {
                 headers:{
                     'requestId': requestId || ''
                 },
@@ -220,8 +252,13 @@ export class MirrorNodeClient {
             ms = Date.now() - start;
             const effectiveStatusCode = error.response?.status || MirrorNodeClientError.ErrorCodes[error.code] || MirrorNodeClient.unknownServerErrorHttpStatusCode;
             this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
-            this.handleError(error, path, effectiveStatusCode, method, controller, allowedErrorStatuses, requestId);
+
+            // always abort the request on failure as the axios call can hang until the parent code/stack times out (might be a few minutes in a server-side applications)
+            controller.abort();
+
+            this.handleError(error, path, effectiveStatusCode, method, allowedErrorStatuses, requestId);
         }
+
         return null;
     }
 
@@ -234,12 +271,8 @@ export class MirrorNodeClient {
         return this.request(path, pathLabel, 'POST', data, allowedErrorStatuses, requestId);
     }
 
-    handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, controller: AbortController, allowedErrorStatuses?: number[], requestId?: string) {
-        const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
-        if(mirrorError.isTimeout()){
-            controller.abort();
-        }
-
+    handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, allowedErrorStatuses?: number[], requestId?: string) {     
+        const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);   
         const requestIdPrefix = formatRequestIdMessage(requestId);
         if (allowedErrorStatuses && allowedErrorStatuses.length) {
             if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
