@@ -18,6 +18,8 @@
  *
  */
 
+import AccountId from "@hashgraph/sdk/lib/account/AccountId";
+import ContractId from "@hashgraph/sdk/lib/contract/ContractId";
 import constants from "./lib/constants";
 
 const hashNumber = (num) => {
@@ -65,4 +67,12 @@ const formatTransactionId = (transactionId: string): string | null => {
     return `${payer}-${timestamp}`;
 }
 
-export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId };
+const convertLongZeroAddressToHederaAccountId = (evmAddress: string): string | null => {
+    if (!evmAddress.startsWith("0x00000000000")) {
+        return null;
+    }
+
+    return AccountId.fromSolidityAddress(evmAddress).toString();
+}
+
+export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId, convertLongZeroAddressToHederaAccountId };

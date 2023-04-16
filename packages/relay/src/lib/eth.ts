@@ -30,7 +30,7 @@ import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
-import { formatRequestIdMessage } from '../formatters';
+import { convertLongZeroAddressToHederaAccountId, formatRequestIdMessage } from '../formatters';
 import crypto from 'crypto';
 const LRU = require('lru-cache');
 const _ = require('lodash');
@@ -559,113 +559,61 @@ export class EthImpl implements Eth {
 
   /**
    * Gets the balance of an account as of the given block from the mirror node.
-   * Current implementation does not yet utilize blockNumber
    *
    * @param account
    * @param blockNumberOrTag
    */
   async getBalance(account: string, blockNumberOrTag: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const latestBlockTolerance = 1;
-    this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
+    // const latestBlockTolerance = 1;
 
-    // this check is required, because some tools like Metamask pass for parameter latest block, with a number (ex 0x30ea)
-    // tolerance is needed, because there is a small delay between requesting latest block from blockNumber and passing it here
-    if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
-      const latestBlock = await this.blockNumber(requestId);
-      const blockDiff = Number(latestBlock) - Number(blockNumberOrTag);
-
-      if (blockDiff <= latestBlockTolerance) {
-        blockNumberOrTag = EthImpl.blockLatest;
-      }
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
     }
-
-    // check cache first
-    // create a key for the cache
-    const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTag}`;
-    const cachedBalance = this.cache.get(cacheKey);
-    if (cachedBalance) {
-      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
-      return cachedBalance;
-    }
-
-    let blockNumber = null;
-    let balanceFound = false;
-    let weibars: BigInt = BigInt(0);
-    const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
 
     try {
-      if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
+      // check balance cache first for high load scenarios
+      const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTag}`;
+      const cachedBalance = this.cache.get(cacheKey);
+      if (cachedBalance) {
+        this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
+        return cachedBalance;
+      }
+
+      let hexWeibars;
+      if (blockNumberOrTag) {
+        // get block details to find timestamp range for account balance query
         const block = await this.getHistoricalBlockResponse(blockNumberOrTag, true, requestId);
-        if (block) {
-          blockNumber = block.number;
 
-          // A blockNumberOrTag has been provided. If it is `latest` or `pending` retrieve the balance from /accounts/{account.id}
-          if (mirrorAccount) {
-            const latestBlock = await this.getHistoricalBlockResponse(EthImpl.blockLatest, true, requestId);
-
-            // If the parsed blockNumber is the same as the one from the latest block retrieve the balance from /accounts/{account.id}
-            if (latestBlock && block.number !== latestBlock.number) {
-              const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
-              const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
-              const timeDiff = latestTimestamp - blockTimestamp;
-              // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
-              if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
-                let currentBalance = 0;
-                let currentTimestamp;
-                let balanceFromTxs = 0;
-                if (mirrorAccount.balance) {
-                  currentBalance = mirrorAccount.balance.balance;
-                  currentTimestamp = mirrorAccount.balance.timestamp;
-                }
-
-                let transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
-                  mirrorAccount.account,
-                  block.timestamp.to,
-                  currentTimestamp,
-                  requestId
-                );
-
-                for(const tx of transactionsInTimeWindow) {
-                  for (const transfer of tx.transfers) {
-                    if (transfer.account === mirrorAccount.account && !transfer.is_approval) {
-                      balanceFromTxs += transfer.amount;
-                    }
-                  }
-                }
-
-                balanceFound = true;
-                weibars = BigInt(currentBalance - balanceFromTxs) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
-              }
-
-              // The block is NOT from the last 15 minutes, use /balances rest API
-              else {
-                const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(mirrorAccount.account, block.timestamp.from, requestId);
-                balanceFound = true;
-                if (balance.balances?.length) {
-                  weibars = BigInt(balance.balances[0].balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
-                }
-              }
-            }
-          }
+        // get Hedera AccountId format until the mirror node balance API supports evm address
+        let accountId = await this.getAccountIdFromAddress(account, requestIdPrefix);
+        if (!accountId) {
+          this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${blockNumberOrTag}, returning 0x0 balance`);
+          return EthImpl.zeroHex;
         }
-      }
 
-      if (!balanceFound && mirrorAccount?.balance) {
-        balanceFound = true;
-        weibars = BigInt(mirrorAccount.balance.balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
-      }
-
-      if (!balanceFound) {
-        this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(blockNumber)}(${blockNumberOrTag}), returning 0x0 balance`);
-        return EthImpl.zeroHex;
-      }
+        const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(accountId!, block.timestamp.from, requestId);
+        if (balance.balances?.length) {
+          hexWeibars = EthImpl.numberTo0x(BigInt(balance.balances[0].balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF));
+        } else {
+          // Mirror Node returns an empty array if there is no balance for the account at the given timestamp
+          hexWeibars = EthImpl.zeroHex;
+        }        
+      } else {
+        // if blockNumberOrTag is null, then get latest account balance from mirror node account endpoint
+        const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
+        if (mirrorAccount?.balance) {
+          hexWeibars = EthImpl.numberTo0x(BigInt(mirrorAccount.balance.balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF));
+        } else {
+          hexWeibars = EthImpl.zeroHex;
+        } 
+      } 
 
       // save in cache the current balance for the account and blockNumberOrTag
-      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), {ttl: EthImpl.ethGetBalanceCacheTtlMs});
-      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(cachedBalance)} for ${EthImpl.ethGetBalanceCacheTtlMs} ms`);
+      this.cache.set(cacheKey, hexWeibars, {ttl: EthImpl.ethGetBalanceCacheTtlMs});
+      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${hexWeibars} for ${EthImpl.ethGetBalanceCacheTtlMs} ms`);
 
-      return EthImpl.numberTo0x(weibars);
+      return hexWeibars;
     } catch (error: any) {
       throw this.genericErrorHandler(error, `${requestIdPrefix} Error raised during getBalance for account ${account}`);
     }
@@ -1540,6 +1488,30 @@ export class EthImpl implements Eth {
     })
 
     return logs;
+  }
+
+  private async getAccountIdFromAddress(address: string, requestIdPrefix?: string): Promise<string | null> { 
+    const accountIdCacheKey = `${address}`;
+    // check cache first
+    const cachedAccountId = this.cache.get(accountIdCacheKey);
+    let accountId = cachedAccountId ? cachedAccountId : convertLongZeroAddressToHederaAccountId(address); // if long zero we can calculate the id
+
+    // for evm address of non long zero type the above conversion is null, so we need to check with mirror node
+    if (!accountId) {
+      // this should be optimal as entities are cached. Actually we should only use cache for valid accounts, if not we could miss a creation
+      const result = await this.mirrorNodeClient.resolveEntityType(address, requestIdPrefix, [constants.TYPE_ACCOUNT]);
+      if (result) {
+        accountId = result.entity.account;
+      }
+      else {
+        return null;
+      }
+    }   
+
+    // cache the conversion or lookup for future use
+    this.cache.set(accountIdCacheKey, accountId);
+    this.logger.trace(`${requestIdPrefix} caching ${accountIdCacheKey}:${accountId}`);
+    return accountId;
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
