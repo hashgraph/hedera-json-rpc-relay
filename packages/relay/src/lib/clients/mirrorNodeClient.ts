@@ -512,6 +512,14 @@ export class MirrorNodeClient {
         return this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.DESC), requestId);
     }
 
+    public async getEarliestBlock(requestId?: string) {
+        return this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.ASC), requestId);
+    }
+
+    public async getEarliestBlockAfter(timestamp?: string, requestId?: string) {
+        return this.getBlocks(undefined, `gte:${timestamp}`, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.ASC), requestId);
+    }
+
     public getLimitOrderQueryParam(limit: number, order: string): ILimitOrderParams {
         return { limit: limit, order: order };
     }

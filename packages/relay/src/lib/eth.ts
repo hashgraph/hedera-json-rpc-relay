@@ -632,8 +632,22 @@ export class EthImpl implements Eth {
 
       let hexWeibars;
       if (blockNumberOrTag) {
-        // get block details to find timestamp range for account balance query
-        const block = await this.getHistoricalBlockResponse(blockNumberOrTag, true, requestId);
+        // note if blockNumberOrTag is 'earliest' we should get the account creation time or else account may not be found
+        let block;
+        if (blockNumberOrTag === EthImpl.blockEarliest) {
+          // get account creation time from mirror node, use timestamp in block call
+          const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
+          if (mirrorAccount) {
+            // get the earlist block since the time of account creation
+            block = await this.mirrorNodeClient.getEarliestBlockAfter(mirrorAccount.created_timestamp, requestId);
+          } else {
+            this.logger.debug(`${requestIdPrefix} Unable to find account ${account} in block ${blockNumberOrTag}, returning 0x0 balance`);
+            return EthImpl.zeroHex; 
+          } 
+        } else {
+          // get block details to find timestamp range for account balance query
+          block = await this.getHistoricalBlockResponse(blockNumberOrTag, true, requestId);
+        }
 
         // get Hedera AccountId format until the mirror node balance API supports evm address
         let accountId = await this.getAccountIdFromAddress(account, requestIdPrefix);
@@ -1368,7 +1382,8 @@ export class EthImpl implements Eth {
       const blockAnswer = await blockPromise;
       blockResponse = blockAnswer.blocks[0];
     } else if (blockNumberOrTag == EthImpl.blockEarliest) {
-      blockResponse = await this.mirrorNodeClient.getBlock(0, requestId);
+      // earliest block may not be block 0 like on Ethereum. Need a get earliest block api to support all envs
+      blockResponse = await this.mirrorNodeClient.getEarliestBlock(requestId);
     } else if (blockNumberOrTag.length < 32) {
       // anything less than 32 characters is treated as a number
       blockResponse = await this.mirrorNodeClient.getBlock(Number(blockNumberOrTag), requestId);
