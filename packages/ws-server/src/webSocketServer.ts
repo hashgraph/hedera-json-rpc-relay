@@ -29,6 +29,9 @@ import { Registry } from 'prom-client';
 import pino from 'pino';
 
 import ConnectionLimiter from "./ConnectionLimiter";
+import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
+import {MirrorNodeClient} from "@hashgraph/json-rpc-relay/dist/lib/clients";
+import {EthSubscribeLogsParamsObject} from "@hashgraph/json-rpc-server/dist/validator";
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -46,6 +49,13 @@ const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 const limiter = new ConnectionLimiter(logger);
+const mirrorNodeClient = new MirrorNodeClient(
+    process.env.MIRROR_NODE_URL || '',
+    logger.child({ name: `mirror-node` }),
+    register,
+    undefined,
+    process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
+);
 
 const app = websockify(new Koa(), {
     verifyClient: limiter.verifyClient
@@ -64,6 +74,30 @@ async function handleConnectionClose(ctx) {
 
 function getMultipleAddressesEnabled() {
     return process.env.WS_MULTIPLE_ADDRESSES_ENABLED === 'true';
+}
+
+async function validateIsContractAddress(address, requestId) {
+    const isContract = await mirrorNodeClient.resolveEntityType(address, requestId, [constants.TYPE_CONTRACT]);
+    if (!isContract) {
+        throw new JsonRpcError(predefined.INVALID_PARAMETER(`filters.address`, `${address} is not a valid contract type or does not exists`), requestId);
+    }
+}
+
+async function validateSubscribeEthLogsParams(filters: any, requestId: string) {
+
+    // validate address exists and is correct lengh and type
+    // validate topics if exists and is array and each one is correct lengh and type
+    const paramsObject = new EthSubscribeLogsParamsObject(filters);
+    paramsObject.validate();
+
+    // validate address or addresses are an existing smart contract
+    if(Array.isArray(paramsObject.address)) {
+        for (const address of paramsObject.address) {
+            await validateIsContractAddress(address, requestId);
+        }
+    } else {
+        await validateIsContractAddress(paramsObject.address, requestId);
+    }
 }
 
 app.ws.use(async (ctx) => {
@@ -102,6 +136,14 @@ app.ws.use(async (ctx) => {
                 let subscriptionId;
 
                 if (event === 'logs') {
+                    try {
+                        await validateSubscribeEthLogsParams(filters, request.id);
+                    } catch (error) {
+                        response = jsonResp(request.id, error, undefined);
+                        ctx.websocket.send(JSON.stringify(response));
+                        return;
+                    }
+
                     if(!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
                         response = jsonResp(request.id, predefined.INVALID_PARAMETER("filters.address", 'Only one contract address is allowed'), undefined);
                     } else {
