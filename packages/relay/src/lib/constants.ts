@@ -24,10 +24,12 @@ enum CACHE_KEY {
     GET_CONTRACT_RESULT = 'getContractResult',
     ETH_BLOCK_NUMBER = 'eth_block_number',
     ETH_GET_BALANCE = 'eth_get_balance',
+    NETWORK_FEE_WEI_BARS = 'network_fee_wei_bars',
 }
 
 enum CACHE_TTL {
-    ONE_HOUR = 3_600_000
+    ONE_HOUR = 3_600_000,
+    ONE_DAY = 86_400_000,
 }
 
 enum ORDER {

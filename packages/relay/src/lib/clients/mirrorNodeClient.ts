@@ -83,7 +83,7 @@ export class MirrorNodeClient {
 
 
 
-    private static ORDER = {
+    public static ORDER = {
         ASC: 'asc',
         DESC: 'desc'
     };
@@ -361,6 +361,18 @@ export class MirrorNodeClient {
         this.setQueryParam(queryParamObject, 'block.number', blockNumber);
         this.setQueryParam(queryParamObject, 'timestamp', timestamp);
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
+        const queryParams = this.getQueryParams(queryParamObject);
+        return this.get(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`,
+            MirrorNodeClient.GET_BLOCKS_ENDPOINT,
+            [400, 404],
+            requestId);
+    }
+
+    public async getBlocksInTimestampRange(startTimestamp: string, endTimestamp: string, limit: number, requestId?: string) {
+        const queryParamObject = {};
+        this.setQueryParam(queryParamObject, 'timestamp', startTimestamp);
+        this.setQueryParam(queryParamObject, 'timestamp', endTimestamp);
+        this.setLimitOrderParams(queryParamObject, this.getLimitOrderQueryParam(limit, MirrorNodeClient.ORDER.ASC));
         const queryParams = this.getQueryParams(queryParamObject);
         return this.get(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_BLOCKS_ENDPOINT,

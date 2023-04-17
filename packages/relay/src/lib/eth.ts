@@ -177,29 +177,58 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
 
     try {
-      const latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestId);
-      const newestBlockNumber = (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending)
-        ? latestBlockNumber
-        : await this.translateBlockTag(newestBlock, requestId);
-
-      if (newestBlockNumber > latestBlockNumber) {
-        return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
-      }
-
-      blockCount = blockCount > maxResults ? maxResults : blockCount;
-
-      if (blockCount <= 0) {
+      const resolvedBlockCount = blockCount > maxResults ? maxResults : blockCount;
+      if (resolvedBlockCount <= 0) {
         return EthImpl.feeHistoryZeroBlockCountResponse;
       }
 
       const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join('')}`;
       let feeHistory: object | undefined = this.cache.get(cacheKey);
-      if (!feeHistory) {
-        feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
-        if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
-          this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(feeHistory)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-          this.cache.set(cacheKey, feeHistory);
+      if(feeHistory) {
+        this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(feeHistory)}`);
+        return feeHistory;
+      }
+
+      // check for latest network fees. Ensure cache is populated
+      const lastFeeChangeBlockCacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${constants.CACHE_KEY.ETH_BLOCK_NUMBER}}`;
+      let lastFeeChangeBlock = this.cache.get(lastFeeChangeBlockCacheKey);
+      if (!lastFeeChangeBlock) {
+        lastFeeChangeBlock = await this.getAndCacheLatestNetworkFeeChangeBlock(requestId);
+      }
+
+      // check if block range is after last network fee price change, if so we can use the cached gas price and skip extra block and fee API calls
+      const resolvedNewestBlockNum = Number(newestBlock);
+      if (!isNaN(resolvedNewestBlockNum) && resolvedNewestBlockNum - resolvedBlockCount > lastFeeChangeBlock.number) {
+        const feeWeiBars = this.cache.get(constants.CACHE_KEY.GAS_PRICE);
+        if (feeWeiBars) {
+          this.logger.trace(`${requestIdPrefix} returning feeHistory using cached value ${constants.CACHE_KEY.GAS_PRICE}:${JSON.stringify(feeWeiBars)}`);
+          return this.getRepeatedFeeHistory(resolvedBlockCount, resolvedNewestBlockNum - resolvedBlockCount, rewardPercentiles, feeWeiBars);
         }
+      }
+
+      const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
+      const newestBlockNumber = Number(newestBlock);
+      if (newestBlockNumber > latestBlockResponse.number) {
+        return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockResponse.number);
+      }
+
+      // in some cases newestBlock will be less than latestBlock
+      let newestBlockResponse;
+      if (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending || newestBlockNumber === latestBlockResponse.number) {
+        newestBlockResponse = latestBlockResponse;
+      } else {
+        newestBlockResponse = await this.mirrorNodeClient.getBlock(newestBlockNumber, requestId);
+      }
+
+      // make sure mirrorNodeClient.getBlock has caching
+      const oldestBlockResponse = await this.mirrorNodeClient.getBlock(newestBlockResponse.number - blockCount, requestId);
+      if (!feeHistory) {
+        feeHistory = await this.getFeeHistoryForBlockRange(blockCount, oldestBlockResponse, newestBlockResponse, latestBlockResponse, rewardPercentiles, requestId);
+      }
+
+      if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
+        this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(feeHistory)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+        this.cache.set(cacheKey, feeHistory);
       }
 
       return feeHistory;
@@ -209,33 +238,53 @@ export class EthImpl implements Eth {
     }
   }
 
+  private async getAndCacheLatestNetworkFeeChangeBlock(requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const latestNetworkFees = await this.mirrorNodeClient.getNetworkFees(undefined, undefined, requestId);
+    const blocksResponse = await this.mirrorNodeClient.getBlocks(undefined, latestNetworkFees.timestamp, this.mirrorNodeClient.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.DESC), requestId);
+    const lastFeeChangeBlock = blocksResponse[0];
+
+    // cache block number for 1 day
+      const lastFeeChangeBlockCacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${constants.CACHE_KEY.ETH_BLOCK_NUMBER}}`;
+    this.logger.trace(`${requestIdPrefix} caching ${lastFeeChangeBlockCacheKey}:${JSON.stringify(lastFeeChangeBlock)} for ${constants.CACHE_TTL.ONE_DAY} ms`);
+    this.cache.set(lastFeeChangeBlockCacheKey, lastFeeChangeBlock);
+
+    // cache network fees for 1 day
+    const feeWeiBars = this.extractFeeWeibarsFromFeeHistory(latestNetworkFees);
+    this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE}:${feeWeiBars} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+    this.cache.set(constants.CACHE_KEY.GAS_PRICE, feeWeiBars);
+
+    return lastFeeChangeBlock;
+  }
+
   private async getFeeByBlockNumber(blockNumber: number, requestId?: string): Promise<string> {
+    const block = await this.mirrorNodeClient.getBlock(blockNumber, requestId);
+    return this.getFeeByTimestamp(block.timestamp.to, requestId);
+  }
+
+  private async getFeeByTimestamp(timestamp: string, requestId?: string): Promise<string> {
     let fee = 0;
     const requestIdPrefix = formatRequestIdMessage(requestId);
     try {
-      const block = await this.mirrorNodeClient.getBlock(blockNumber, requestId);
-      fee = await this.getFeeWeibars(EthImpl.ethFeeHistory, requestId, `lte:${block.timestamp.to}`);
+      fee = await this.getFeeWeibars(EthImpl.ethFeeHistory, requestId, `lte:${timestamp}`);
     } catch (error) {
-      this.logger.warn(error, `${requestIdPrefix} Fee history cannot retrieve block or fee. Returning ${fee} fee for block ${blockNumber}`);
+      this.logger.warn(error, `${requestIdPrefix} Fee history cannot retrieve fee. Returning ${fee} fee for timestamp ${timestamp}`);
     }
 
     return EthImpl.numberTo0x(fee);
   }
 
-  private async getFeeHistory(blockCount: number, newestBlockNumber: number, latestBlockNumber: number, rewardPercentiles: Array<number> | null, requestId?: string) {
-    // include newest block number in the total block count
-    const oldestBlockNumber = Math.max(0, newestBlockNumber - blockCount + 1);
+  private async getFeeHistoryForBlockRange(blockCount: number, startBlock, endBlock, latestBlock, rewardPercentiles: Array<number> | null, requestId?: string) {
     const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;
     const feeHistory = {
       baseFeePerGas: [] as string[],
       gasUsedRatio: [] as number[],
-      oldestBlock: EthImpl.numberTo0x(oldestBlockNumber),
+      oldestBlock: EthImpl.numberTo0x(startBlock.number),
     };
 
-    // get fees from oldest to newest blocks
-    for (let blockNumber = oldestBlockNumber; blockNumber <= newestBlockNumber; blockNumber++) {
-      const fee = await this.getFeeByBlockNumber(blockNumber, requestId);
-
+    const mirrorBlocks = await this.mirrorNodeClient.getBlocksInTimestampRange(`gte:${startBlock.timestamp.from}`, `lte:${endBlock.timestamp.to}`, blockCount, requestId);
+    for (const block of mirrorBlocks.blocks) {
+      const fee = await this.getFeeByTimestamp(block.timestamp.to, requestId);
       feeHistory.baseFeePerGas.push(fee);
       feeHistory.gasUsedRatio.push(EthImpl.defaultGasUsedRatio);
     }
@@ -243,14 +292,30 @@ export class EthImpl implements Eth {
     // get latest block fee
     let nextBaseFeePerGas = _.last(feeHistory.baseFeePerGas);
 
-    if (latestBlockNumber > newestBlockNumber) {
+    if (latestBlock.number > endBlock.number) {
       // get next block fee if the newest block is not the latest
-      nextBaseFeePerGas = await this.getFeeByBlockNumber(newestBlockNumber + 1, requestId);
+      nextBaseFeePerGas = await this.getFeeByBlockNumber(endBlock.number + 1, requestId);
     }
 
     if (nextBaseFeePerGas) {
       feeHistory.baseFeePerGas.push(nextBaseFeePerGas);
     }
+
+    if (shouldIncludeRewards) {
+      feeHistory['reward'] = Array(blockCount).fill(Array(rewardPercentiles.length).fill(EthImpl.zeroHex));
+    }
+
+    return feeHistory;
+
+  }
+
+  private getRepeatedFeeHistory(blockCount: number, oldestBlockNumber: number, rewardPercentiles: Array<number> | null, fee: string) {
+    const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;
+    const feeHistory = {
+      baseFeePerGas: Array(blockCount).fill(fee),
+      gasUsedRatio: Array(blockCount).fill(EthImpl.defaultGasUsedRatio),
+      oldestBlock: EthImpl.numberTo0x(oldestBlockNumber),
+    };
 
     if (shouldIncludeRewards) {
       feeHistory['reward'] = Array(blockCount).fill(Array(rewardPercentiles.length).fill(EthImpl.zeroHex));
@@ -282,11 +347,20 @@ export class EthImpl implements Eth {
       };
     }
 
+    const gasPrice = this.extractFeeWeibarsFromFeeHistory(networkFees);
+    if (gasPrice) {
+      return gasPrice;
+    }
+
+    throw predefined.COULD_NOT_ESTIMATE_GAS_PRICE;
+  }
+
+  private extractFeeWeibarsFromFeeHistory(networkFees): number | null {
     if (networkFees && Array.isArray(networkFees.fees)) {
-      const txFee = networkFees.fees.find(({ transaction_type }) => transaction_type === EthImpl.ethTxType);
-      if (txFee && txFee.gas) {
-        // convert tinyBars into weiBars
-        const weibars = Hbar
+    const txFee = networkFees.fees.find(({ transaction_type }) => transaction_type === EthImpl.ethTxType);
+    if (txFee && txFee.gas) {
+      // convert tinyBars into weiBars
+      const weibars = Hbar
           .fromTinybars(txFee.gas)
           .toTinybars()
           .multiply(constants.TINYBAR_TO_WEIBAR_COEF);
@@ -295,7 +369,7 @@ export class EthImpl implements Eth {
       }
     }
 
-    throw predefined.COULD_NOT_ESTIMATE_GAS_PRICE;
+    return null;
   }
 
   /**
