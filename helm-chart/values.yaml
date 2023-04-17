@@ -137,3 +137,20 @@ test:
   enabled: false
   schedule: '@daily'
   baseUrl: "http://127.0.0.1:7546"
+
+livenessProbe:
+  httpGet:
+    path: /health/liveness
+    port: jsonrpcrelay
+  initialDelaySeconds: 50
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+
+readinessProbe:
+  httpGet:
+    path: /health/readiness
+    port: jsonrpcrelay
+  initialDelaySeconds: 40
+  timeoutSeconds: 5
+  failureThreshold: 5
