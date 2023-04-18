@@ -201,12 +201,14 @@ export class EthImpl implements Eth {
       }
       let feeHistory: object | undefined;
       if(this.getEthFeeHistoryFixedFee()) {
-        if(newestBlockNumber <= 0){
+
+        let oldestBlock = newestBlockNumber - blockCount + 1;
+        if(oldestBlock <= 0) {
           blockCount = 1;
-          newestBlockNumber = 1;
+          oldestBlock = 1;
         }
-        const fixedFee = await this.getLatestFixedFee(newestBlockNumber, requestId);
-        feeHistory = this.getRepeatedFeeHistory(blockCount, newestBlockNumber - blockCount + 1, rewardPercentiles, fixedFee);
+        const gasPriceFee = await this.gasPrice(requestId);
+        feeHistory = this.getRepeatedFeeHistory(blockCount, oldestBlock, rewardPercentiles, gasPriceFee);
 
       } else { // once we finish testing and refining Fixed Fee method, we can remove this else block to clean up code
 
@@ -228,19 +230,6 @@ export class EthImpl implements Eth {
     }
   }
 
-  private async getLatestFixedFee(blockNumber, requestId): Promise<string> {
-    // Get the latest fee cached to 1 day
-    const cacheKey = constants.CACHE_KEY.ETH_FEE_HISTORY_FIXED;
-    let fee = this.cache.get(cacheKey);
-    if (!fee) {
-      const block = await this.mirrorNodeClient.getBlock(blockNumber, requestId);
-      fee = await this.getFeeWeibars(EthImpl.ethFeeHistory, requestId, `lte:${block.timestamp.to}`);
-      this.logger.trace(`caching ${cacheKey}:${fee} for ${constants.CACHE_TTL.ONE_DAY} ms`);
-      this.cache.set(cacheKey, fee);
-    }
-    return fee;
-  }
-
   private async getFeeByBlockNumber(blockNumber: number, requestId?: string): Promise<string> {
     let fee = 0;
     const requestIdPrefix = formatRequestIdMessage(requestId);
@@ -256,15 +245,15 @@ export class EthImpl implements Eth {
 
   private getRepeatedFeeHistory(blockCount: number, oldestBlockNumber: number, rewardPercentiles: Array<number> | null, fee: string) {
     const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;
-    const hexFee = EthImpl.numberTo0x(Number.parseInt(fee));
+
     const feeHistory = {
-      baseFeePerGas: Array(blockCount).fill(hexFee),
+      baseFeePerGas: Array(blockCount).fill(fee),
       gasUsedRatio: Array(blockCount).fill(EthImpl.defaultGasUsedRatio),
       oldestBlock: EthImpl.numberTo0x(oldestBlockNumber),
     };
 
     // next fee
-    feeHistory.baseFeePerGas.push(hexFee);
+    feeHistory.baseFeePerGas.push(fee);
 
     if (shouldIncludeRewards) {
       feeHistory['reward'] = Array(blockCount).fill(Array(rewardPercentiles.length).fill(EthImpl.zeroHex));
@@ -430,9 +419,9 @@ export class EthImpl implements Eth {
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestId);
-
-        this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE}:${gasPrice} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-        this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice);
+        // fees should not change so often we are safe with 1 day instead of 1 hour
+        this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE}:${gasPrice} for ${constants.CACHE_TTL.ONE_DAY} ms`);
+        this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, {ttl: constants.CACHE_TTL.ONE_DAY});
       }
 
       return EthImpl.numberTo0x(gasPrice);
