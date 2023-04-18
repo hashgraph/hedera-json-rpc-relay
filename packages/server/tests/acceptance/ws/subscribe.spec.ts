@@ -518,7 +518,7 @@ describe('@web-socket Acceptance Tests', async function() {
         });
     });
 
-    describe('Subscribes to log events', async function () {
+    describe.only('Subscribes to log events', async function () {
         let logContractSigner2, logContractSigner3;
         let loggerContractWS1, loggerContractWS2, loggerContractWS3;
         const ANONYMOUS_LOG_DATA = '0x000000000000000000000000000000000000000000000000000000000000000a';
@@ -718,7 +718,7 @@ describe('@web-socket Acceptance Tests', async function() {
 
         it('Subscribes for contract logs for multiple addresses and multiple topics', async function () {
             const filter = {
-                address: [logContractSigner2.address, logContractSigner3.address],
+                address: [logContractSigner3.address, logContractSigner2.address],
                 topics: [
                     '0x46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8', // emitted only by Log1 method
                     '0x0000000000000000000000000000000000000000000000000000000000000001'  // emitted by Log1 and Log2 methods
@@ -746,74 +746,74 @@ describe('@web-socket Acceptance Tests', async function() {
         });
     });
 
-        describe('ethSubscribe Logs Params Validations', async function() {
+    describe('ethSubscribe Logs Params Validations', async function() {
 
-            after(() => {
-                // wait 500ms to let the server close the connections
-                return new Promise(resolve => setTimeout(resolve, 500));
-            });
-
-            it('Calling eth_subscribe Logs with a non existent address should fail', async function() {
-                const missingContract = "0xea4168c4cbb744ec22dea4a4bfc5f74b6fe27816";
-                let actualError: any = null;
-                try {
-                    await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
-                } catch (e: any) {
-                    actualError = JSON.parse(e.response);
-                }
-
-                const expectedError = predefined.INVALID_PARAMETER(`filters.address`, `${missingContract} is not a valid contract type or does not exists`);
-                expect(actualError.error.code).to.be.eq(expectedError.code);
-                expect(actualError.error.name).to.be.eq(expectedError.name);
-                expect(actualError.error.message).to.contains(expectedError.message);
-            });
-
-            it('Calling eth_subscribe Logs with an empty address should fail', async function() {
-                const missingContract = "";
-                let actualError: any = null;
-                try {
-                    await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
-                } catch (e: any) {
-                    actualError = JSON.parse(e.response);
-                }
-
-                const expectedError = predefined.INVALID_PARAMETER(`'address' for EthSubscribeLogsParamsObject`, `Expected 0x prefixed string representing the address (20 bytes) or an array of addresses, value: `);
-                expect(actualError.error.code).to.be.eq(expectedError.code);
-                expect(actualError.error.name).to.be.eq(expectedError.name);
-                expect(actualError.error.message).to.contains(expectedError.message);
-            });
-
-            it('Calling eth_subscribe Logs with params without address should fail', async function() {
-                let actualError: any = null;
-                try {
-                    await wsProvider.send('eth_subscribe', ["logs", {}]);
-                } catch (e: any) {
-                    actualError = JSON.parse(e.response);
-                }
-
-                const expectedError = predefined.MISSING_REQUIRED_PARAMETER(`'address' for EthSubscribeLogsParamsObject`);
-                expect(actualError.error.code).to.be.eq(expectedError.code);
-                expect(actualError.error.name).to.be.eq(expectedError.name);
-                expect(actualError.error.message).to.contains(expectedError.message);
-            });
-
-            it('Calling eth_subscribe Logs with an invalid topics should fail', async function() {
-                let actualError: any = null;
-                try {
-                    await wsProvider.send('eth_subscribe', ["logs", {"address": logContractSigner.address, "topics": ["0x000"]}]);
-                } catch (e: any) {
-                    actualError = JSON.parse(e.response);
-                }
-
-                const expectedError = predefined.INVALID_PARAMETER(`'topics' for EthSubscribeLogsParamsObject`, `Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: 0x000`);
-                expect(actualError.error.code).to.be.eq(expectedError.code);
-                expect(actualError.error.name).to.be.eq(expectedError.name);
-                expect(actualError.error.message).to.contains(expectedError.message);
-            });
+        after(() => {
+            // wait 500ms to let the server close the connections
+            return new Promise(resolve => setTimeout(resolve, 500));
         });
 
-        describe('IP connection limits', async function () {
-            let originalConnectionLimitPerIp;
+        it('Calling eth_subscribe Logs with a non existent address should fail', async function() {
+            const missingContract = "0xea4168c4cbb744ec22dea4a4bfc5f74b6fe27816";
+            let actualError: any = null;
+            try {
+                await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
+            } catch (e: any) {
+                actualError = JSON.parse(e.response);
+            }
+
+            const expectedError = predefined.INVALID_PARAMETER(`filters.address`, `${missingContract} is not a valid contract type or does not exists`);
+            expect(actualError.error.code).to.be.eq(expectedError.code);
+            expect(actualError.error.name).to.be.eq(expectedError.name);
+            expect(actualError.error.message).to.contains(expectedError.message);
+        });
+
+        it('Calling eth_subscribe Logs with an empty address should fail', async function() {
+            const missingContract = "";
+            let actualError: any = null;
+            try {
+                await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
+            } catch (e: any) {
+                actualError = JSON.parse(e.response);
+            }
+
+            const expectedError = predefined.INVALID_PARAMETER(`'address' for EthSubscribeLogsParamsObject`, `Expected 0x prefixed string representing the address (20 bytes) or an array of addresses, value: `);
+            expect(actualError.error.code).to.be.eq(expectedError.code);
+            expect(actualError.error.name).to.be.eq(expectedError.name);
+            expect(actualError.error.message).to.contains(expectedError.message);
+        });
+
+        it('Calling eth_subscribe Logs with params without address should fail', async function() {
+            let actualError: any = null;
+            try {
+                await wsProvider.send('eth_subscribe', ["logs", {}]);
+            } catch (e: any) {
+                actualError = JSON.parse(e.response);
+            }
+
+            const expectedError = predefined.MISSING_REQUIRED_PARAMETER(`'address' for EthSubscribeLogsParamsObject`);
+            expect(actualError.error.code).to.be.eq(expectedError.code);
+            expect(actualError.error.name).to.be.eq(expectedError.name);
+            expect(actualError.error.message).to.contains(expectedError.message);
+        });
+
+        it('Calling eth_subscribe Logs with an invalid topics should fail', async function() {
+            let actualError: any = null;
+            try {
+                await wsProvider.send('eth_subscribe', ["logs", {"address": logContractSigner.address, "topics": ["0x000"]}]);
+            } catch (e: any) {
+                actualError = JSON.parse(e.response);
+            }
+
+            const expectedError = predefined.INVALID_PARAMETER(`'topics' for EthSubscribeLogsParamsObject`, `Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: 0x000`);
+            expect(actualError.error.code).to.be.eq(expectedError.code);
+            expect(actualError.error.name).to.be.eq(expectedError.name);
+            expect(actualError.error.message).to.contains(expectedError.message);
+        });
+    });
+
+    describe('IP connection limits', async function () {
+        let originalConnectionLimitPerIp;
 
         before(() => {
             originalConnectionLimitPerIp = process.env.WS_CONNECTION_LIMIT_PER_IP;
@@ -860,62 +860,62 @@ describe('@web-socket Acceptance Tests', async function() {
             }
 
         });
+    });
 
-        describe('Connection subscription limits', async function() {
-            let originalSubsPerConnection;
+    describe('Connection subscription limits', async function() {
+        let originalSubsPerConnection;
 
-            before(() => {
-                originalSubsPerConnection = process.env.WS_SUBSCRIPTION_LIMIT;
-                process.env.WS_SUBSCRIPTION_LIMIT = 2;
-            });
+        before(() => {
+            originalSubsPerConnection = process.env.WS_SUBSCRIPTION_LIMIT;
+            process.env.WS_SUBSCRIPTION_LIMIT = 2;
+        });
 
-            after(() => {
-                process.env.WS_SUBSCRIPTION_LIMIT = originalSubsPerConnection;
-            });
+        after(() => {
+            process.env.WS_SUBSCRIPTION_LIMIT = originalSubsPerConnection;
+        });
 
-            it('Does not allow more subscriptions per connection than the specified limit', async function() {
-                let errorsHandled = 0;
+        it('Does not allow more subscriptions per connection than the specified limit', async function() {
+            let errorsHandled = 0;
 
-                // Create different subscriptions
-                for (let i = 0; i < 3; i++) {
-                    try {
-                        const subId = await wsProvider.send('eth_subscribe',["logs", {
-                            address: logContractSigner.address,
-                            topics: [topics[i]]
-                        }]);
-                    }
-                    catch(e: any) {
-                        expect(e.code).to.eq(predefined.MAX_SUBSCRIPTIONS.code);
-                        expect(e.message).to.eq(predefined.MAX_SUBSCRIPTIONS.message);
-                        errorsHandled++;
-                    }
+            // Create different subscriptions
+            for (let i = 0; i < 3; i++) {
+                try {
+                    const subId = await wsProvider.send('eth_subscribe',["logs", {
+                        address: logContractSigner.address,
+                        topics: [topics[i]]
+                    }]);
                 }
-
-                await new Promise(resolve => setTimeout(resolve, 500));
-                expect(errorsHandled).to.eq(1);
-            });
-
-            it('Calling eth_unsubscribe decrements the internal counters', async function() {
-                let errorsHandled = 0;
-
-                // Create different subscriptions
-                for (let i = 0; i < 3; i++) {
-                    try {
-                        const subId = await wsProvider.send('eth_subscribe',["logs", {
-                            address: logContractSigner.address,
-                            topics: [topics[i]]
-                        }]);
-
-                        const result = await wsProvider.send('eth_unsubscribe', [subId]);
-                    }
-                    catch(e: any) {
-                        errorsHandled++;
-                    }
+                catch(e: any) {
+                    expect(e.code).to.eq(predefined.MAX_SUBSCRIPTIONS.code);
+                    expect(e.message).to.eq(predefined.MAX_SUBSCRIPTIONS.message);
+                    errorsHandled++;
                 }
+            }
 
-                await new Promise(resolve => setTimeout(resolve, 500));
-                expect(errorsHandled).to.eq(0);
-            });
+            await new Promise(resolve => setTimeout(resolve, 500));
+            expect(errorsHandled).to.eq(1);
+        });
+
+        it('Calling eth_unsubscribe decrements the internal counters', async function() {
+            let errorsHandled = 0;
+
+            // Create different subscriptions
+            for (let i = 0; i < 3; i++) {
+                try {
+                    const subId = await wsProvider.send('eth_subscribe',["logs", {
+                        address: logContractSigner.address,
+                        topics: [topics[i]]
+                    }]);
+
+                    const result = await wsProvider.send('eth_unsubscribe', [subId]);
+                }
+                catch(e: any) {
+                    errorsHandled++;
+                }
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+            expect(errorsHandled).to.eq(0);
         });
     });
 });
