@@ -221,4 +221,19 @@ export default class Assertions {
         }
     };
 
+    static expectLogArgs = (log, contract, args: any[] = []) => {
+        expect(log.address.toLowerCase()).to.equal(contract.evmAddress.toLowerCase());
+        const decodedLog1 = contract.interface.parseLog(log);
+        expect(decodedLog1.args).to.exist;
+        expect(decodedLog1.args.length).to.eq(args.length);
+        for(let i = 0; i < args.length; i++) {
+            expect(decodedLog1.args[i]).to.be.eq(args[i]);
+        }
+    }
+
+    static expectAnonymousLog = (log, contract, data) => {
+        expect(log.data).to.equal(data);
+        expect(log.address.toLowerCase()).to.equal(contract.evmAddress.toLowerCase());
+    }
+
 }

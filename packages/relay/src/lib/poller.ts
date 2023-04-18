@@ -57,8 +57,8 @@ export class Poller {
                         null,
                         poll.lastPolled || this.latestBlock || 'latest',
                         'latest',
-                        filters.address || null,
-                        filters.topics || null
+                        filters?.address || null,
+                        filters?.topics || null
                     );
 
                     poll.lastPolled = this.latestBlock;

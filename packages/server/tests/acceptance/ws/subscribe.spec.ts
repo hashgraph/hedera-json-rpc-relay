@@ -25,6 +25,7 @@ import WebSocket from 'ws';
 chai.use(solidity);
 
 import {Utils} from '../../helpers/utils';
+import assertions from '../../helpers/assertions';
 import {AliasAccount} from "../../clients/servicesClient";
 import {predefined, WebSocketError} from '../../../../../packages/relay';
 import { ethers } from "ethers";
@@ -420,9 +421,10 @@ describe('@web-socket Acceptance Tests', async function() {
         });
     });
 
-    describe.only('Subscribes to log events', async function () {
+    describe('Subscribes to log events', async function () {
         let logContractSigner2, logContractSigner3;
         let loggerContractWS1, loggerContractWS2, loggerContractWS3;
+        const ANONYMOUS_LOG_DATA = '0x000000000000000000000000000000000000000000000000000000000000000a';
 
         // Deploy several contracts
         before(async function() {
@@ -436,129 +438,215 @@ describe('@web-socket Acceptance Tests', async function() {
             loggerContractWS3 = new ethers.Contract(logContractSigner3.address, LogContractJson.abi, wsProvider);
         });
 
-        xit('Subscribes for all contract logs', async function () {
-            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
+        it('Subscribes for all contract logs', async function () {
+            const filter = {};
 
-            const filter = {
-                topics: []
-            };
-            // subscribe
-            const subId = await wsProvider.send('eth_subscribe', ["logs"]);
-            let eventReceived;
+            let eventsReceived = [];
 
             wsProvider.on(filter, (event) => {
-                eventReceived = event;
+                eventsReceived.push(event);
             });
-            const listener = async (data) => {
-                console.log(data);
-            };
 
-            wsProvider.on({
-                address: null,
-                topics: []
-            }, listener);
+            const contracts = [logContractSigner, logContractSigner2, logContractSigner3];
+            const cLen = contracts.length;
 
-            await logContractSigner.log0(10);
-            await new Promise(resolve => setTimeout(resolve, 4000));
+            // Create logs from all deployed contracts
+            for(let i = 0; i < cLen; i++) {
+                await createLogs(contracts[i]);
+            }
 
-            // unsubscribe
-            const result = await wsProvider.send('eth_unsubscribe', [subId]);
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(15);
 
-            expect(subId).to.be.length(34);
-            expect(subId.substring(0, 2)).to.be.eq("0x");
-            expect(result).to.be.eq(true);
+            for (let i = 0; i < cLen; i++) {
+                const iter = i * 5;
+
+                // event Log0(uint256 num1) anonymous;
+                assertions.expectAnonymousLog(eventsReceived[iter], contracts[i], ANONYMOUS_LOG_DATA);
+
+                // event Log1(uint256 indexed num0);
+                assertions.expectLogArgs(eventsReceived[iter + 1], contracts[i], [1]);
+
+                // event Log2(uint256 indexed num0, uint256 indexed num1);
+                assertions.expectLogArgs(eventsReceived[iter + 2], contracts[i], [1, 2]);
+
+                // event Log3(uint256 indexed num0, uint256 indexed num1, uint256 indexed num2);
+                assertions.expectLogArgs(eventsReceived[iter + 3], contracts[i], [10, 20, 31]);
+
+                // event Log4(uint256 indexed num0, uint256 indexed num1, uint256 indexed num2, uint256 num3);
+                assertions.expectLogArgs(eventsReceived[iter + 4], contracts[i], [11, 22, 33, 44]);
+            }
         });
 
-        it.only('Subscribes for contract logs for a specific contract address', async function () {
+        it('Subscribes for contract logs for a specific contract address (using evmAddress)', async function () {
             const filter = {
+                address: logContractSigner.evmAddress,
                 topics: []
             };
 
             let eventsReceived = [];
 
-            loggerContractWS1.on(filter, (event) => {
+            wsProvider.on(filter, (event) => {
                 eventsReceived.push(event);
             });
 
+            const contracts = [logContractSigner, logContractSigner2, logContractSigner3];
+
             // Create logs from all deployed contracts
-            await createLogs(logContractSigner);
-            await createLogs(logContractSigner2);
-            await createLogs(logContractSigner3);
+            for(let i = 0; i < contracts.length; i++) {
+                await createLogs(contracts[i]);
+            }
 
             // Only the logs from logContractSigner.address are captured
             expect(eventsReceived.length).to.eq(5);
 
-            if ((!eventsReceived[0].hasOwnProperty('event')) && (!eventsReceived[0].hasOwnProperty('args'))) {
-                expect(eventsReceived[0].data).to.equal('0x000000000000000000000000000000000000000000000000000000000000000a');
+            assertions.expectAnonymousLog(eventsReceived[0], logContractSigner, ANONYMOUS_LOG_DATA);
+            assertions.expectLogArgs(eventsReceived[1], logContractSigner, [1]);
+            assertions.expectLogArgs(eventsReceived[2], logContractSigner, [1, 2]);
+            assertions.expectLogArgs(eventsReceived[3], logContractSigner, [10, 20, 31]);
+            assertions.expectLogArgs(eventsReceived[4], logContractSigner, [11, 22, 33, 44]);
+        });
+
+        it('Subscribes for contract logs for a specific contract address (using long zero address)', async function () {
+            const filter = {
+                address: logContractSigner.address,
+                topics: []
+            };
+
+            let eventsReceived = [];
+
+            wsProvider.on(filter, (event) => {
+                eventsReceived.push(event);
+            });
+
+            const contracts = [logContractSigner, logContractSigner2, logContractSigner3];
+
+            // Create logs from all deployed contracts
+            for(let i = 0; i < contracts.length; i++) {
+                await createLogs(contracts[i]);
             }
 
-            expect(eventsReceived[1].args[0]).to.be.eq(1);
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(5);
 
-            expect(eventsReceived[2].args[0]).to.be.eq(1);
-            expect(eventsReceived[2].args[1]).to.be.eq(2);
-
-            expect(eventsReceived[3].args[0]).to.be.eq(10);
-            expect(eventsReceived[3].args[1]).to.be.eq(20);
-            expect(eventsReceived[3].args[2]).to.be.eq(31);
-
-            expect(eventsReceived[4].args[0]).to.be.eq(11);
-            expect(eventsReceived[4].args[1]).to.be.eq(22);
-            expect(eventsReceived[4].args[2]).to.be.eq(33);
-            expect(eventsReceived[4].args[3]).to.be.eq(44);
+            assertions.expectAnonymousLog(eventsReceived[0], logContractSigner, ANONYMOUS_LOG_DATA);
+            assertions.expectLogArgs(eventsReceived[1], logContractSigner, [1]);
+            assertions.expectLogArgs(eventsReceived[2], logContractSigner, [1, 2]);
+            assertions.expectLogArgs(eventsReceived[3], logContractSigner, [10, 20, 31]);
+            assertions.expectLogArgs(eventsReceived[4], logContractSigner, [11, 22, 33, 44]);
         });
 
         it('Subscribes for contract logs for a single topic', async function () {
-            const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
-            const log1Topic = ethers.utils.id("Log1(uint256)");
+            const filter = {
+                topics: ['0x46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8']  // emitted by Log1 method
+            };
 
+            let eventsReceived = [];
+
+            wsProvider.on(filter, (event) => {
+                eventsReceived.push(event);
+            });
+
+            const contracts = [logContractSigner, logContractSigner2, logContractSigner3];
+
+            // Create logs from all deployed contracts
+            for(let i = 0; i < contracts.length; i++) {
+                await createLogs(contracts[i]);
+            }
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(3);
+
+            assertions.expectLogArgs(eventsReceived[0], contracts[0], [1]);
+            assertions.expectLogArgs(eventsReceived[1], contracts[1], [1]);
+            assertions.expectLogArgs(eventsReceived[2], contracts[2], [1]);
+        });
+
+        it('Subscribes for contract logs for multiple topics', async function () {
             const filter = {
                 topics: [
-                    log1Topic
+                    '0x46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8', // emitted only by Log1 method
+                    '0x0000000000000000000000000000000000000000000000000000000000000001'  // emitted by Log1 and Log2 methods
                 ]
             };
 
-            let eventReceived;
+            let eventsReceived = [];
 
-            loggerContractWS.on(filter, (val) => {
-                eventReceived = val;
+            wsProvider.on(filter, (event) => {
+                eventsReceived.push(event);
             });
 
-            await logContractSigner.log2(10, 20);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            expect(eventReceived).to.be.undefined;
+            const contracts = [logContractSigner, logContractSigner2, logContractSigner3];
 
-            await logContractSigner.log1(11);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            expect(eventReceived).to.be.eq(11);
+            // Create logs from all deployed contracts
+            for(let i = 0; i < contracts.length; i++) {
+                await createLogs(contracts[i]);
+            }
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(3);
+
+            assertions.expectLogArgs(eventsReceived[0], contracts[0], [1]);
+            assertions.expectLogArgs(eventsReceived[1], contracts[1], [1]);
+            assertions.expectLogArgs(eventsReceived[2], contracts[2], [1]);
         });
 
-        // it.only('Subscribes for contract logs for multiple topics', async function () {
-        //     const loggerContractWS = new ethers.Contract(logContractSigner.address, LogContractJson.abi, wsProvider);
-        //     const log1Topic = ethers.utils.id("Log1(uint256)");
-        //     const log2Topic = ethers.utils.id("Log2(uint256,uint256)");
+        it('Subscribes for contract logs for address and multiple topics', async function () {
+            const filter = {
+                address: logContractSigner2.address,
+                topics: [
+                    '0x46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8', // emitted only by Log1 method
+                    '0x0000000000000000000000000000000000000000000000000000000000000001'  // emitted by Log1 and Log2 methods
+                ]
+            };
 
-        //     const filter = {
-        //         topics: [
-        //             // log1Topic,
-        //             log2Topic
-        //         ]
-        //     };
+            let eventsReceived = [];
 
-        //     let eventReceived;
+            wsProvider.on(filter, (event) => {
+                eventsReceived.push(event);
+            });
 
-        //     loggerContractWS.on(filter, (event, event2) => {
-        //         eventReceived = event;
-        //     });
+            const contracts = [logContractSigner, logContractSigner2, logContractSigner3];
 
-        //     await logContractSigner.log2(10,20);
-        //     await new Promise(resolve => setTimeout(resolve, 4000));
-        //     expect(eventReceived).to.be.undefined;
+            // Create logs from all deployed contracts
+            for(let i = 0; i < contracts.length; i++) {
+                await createLogs(contracts[i]);
+            }
 
-        //     await logContractSigner.log1(11);
-        //     await new Promise(resolve => setTimeout(resolve, 4000));
-        //     expect(eventReceived).to.be.eq(11);
-        // });
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(1);
 
+            assertions.expectLogArgs(eventsReceived[0], contracts[1], [1]);
+        });
+
+        it('Subscribes for contract logs for multiple addresses and multiple topics', async function () {
+            const filter = {
+                address: [logContractSigner2.address, logContractSigner3.address],
+                topics: [
+                    '0x46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8', // emitted only by Log1 method
+                    '0x0000000000000000000000000000000000000000000000000000000000000001'  // emitted by Log1 and Log2 methods
+                ]
+            };
+
+            let eventsReceived = [];
+
+            wsProvider.on(filter, (event) => {
+                eventsReceived.push(event);
+            });
+
+            const contracts = [logContractSigner, logContractSigner2, logContractSigner3];
+
+            // Create logs from all deployed contracts
+            for(let i = 0; i < contracts.length; i++) {
+                await createLogs(contracts[i]);
+            }
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(2);
+
+            assertions.expectLogArgs(eventsReceived[0], contracts[1], [1]);
+            assertions.expectLogArgs(eventsReceived[0], contracts[2], [1]);
+        });
     });
 
     describe('IP connection limits', async function () {
