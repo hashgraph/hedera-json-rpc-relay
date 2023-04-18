@@ -166,6 +166,14 @@ export class EthImpl implements Eth {
     return [];
   }
 
+
+  private getEthFeeHistoryFixedFee() {
+    if(process.env.ETH_FEE_HISTORY_FIXED === undefined) {
+        return true;
+    }
+    return process.env.ETH_FEE_HISTORY_FIXED === "true";
+  }
+
   /**
    * Gets the fee history.
    */
@@ -178,7 +186,7 @@ export class EthImpl implements Eth {
 
     try {
       const latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestId);
-      const newestBlockNumber = (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending)
+      let newestBlockNumber = (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending)
         ? latestBlockNumber
         : await this.translateBlockTag(newestBlock, requestId);
 
@@ -191,14 +199,25 @@ export class EthImpl implements Eth {
       if (blockCount <= 0) {
         return EthImpl.feeHistoryZeroBlockCountResponse;
       }
+      let feeHistory: object | undefined;
+      if(this.getEthFeeHistoryFixedFee()) {
+        if(newestBlockNumber <= 0){
+          blockCount = 1;
+          newestBlockNumber = 1;
+        }
+        const fixedFee = await this.getLatestFixedFee(newestBlockNumber, requestId);
+        feeHistory = this.getRepeatedFeeHistory(blockCount, newestBlockNumber-blockCount, rewardPercentiles, fixedFee);
 
-      const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join('')}`;
-      let feeHistory: object | undefined = this.cache.get(cacheKey);
-      if (!feeHistory) {
-        feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
-        if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
-          this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(feeHistory)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-          this.cache.set(cacheKey, feeHistory);
+      } else { // once we finish testing and refining Fixed Fee method, we can remove this else block to clean up code
+
+        const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join('')}`;
+        feeHistory = this.cache.get(cacheKey);
+        if (!feeHistory) {
+          feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
+          if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
+            this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(feeHistory)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+            this.cache.set(cacheKey, feeHistory);
+          }
         }
       }
 
@@ -207,6 +226,19 @@ export class EthImpl implements Eth {
       this.logger.error(e, `${requestIdPrefix} Error constructing default feeHistory`);
       return EthImpl.feeHistoryEmptyResponse;
     }
+  }
+
+  private async getLatestFixedFee(blockNumber, requestId): Promise<string> {
+    // Get the latest fee cached to 1 day
+    const cacheKey = constants.CACHE_KEY.ETH_FEE_HISTORY_FIXED;
+    let fee = this.cache.get(cacheKey);
+    if (!fee) {
+      const block = await this.mirrorNodeClient.getBlock(blockNumber, requestId);
+      fee = await this.getFeeWeibars(EthImpl.ethFeeHistory, requestId, `lte:${block.timestamp.to}`);
+      this.logger.trace(`caching ${cacheKey}:${fee} for ${constants.CACHE_TTL.ONE_DAY} ms`);
+      this.cache.set(cacheKey, fee);
+    }
+    return fee;
   }
 
   private async getFeeByBlockNumber(blockNumber: number, requestId?: string): Promise<string> {
@@ -220,6 +252,25 @@ export class EthImpl implements Eth {
     }
 
     return EthImpl.numberTo0x(fee);
+  }
+
+  private getRepeatedFeeHistory(blockCount: number, oldestBlockNumber: number, rewardPercentiles: Array<number> | null, fee: string) {
+    const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;
+    const hexFee = EthImpl.numberTo0x(Number.parseInt(fee));
+    const feeHistory = {
+      baseFeePerGas: Array(blockCount).fill(hexFee),
+      gasUsedRatio: Array(blockCount).fill(EthImpl.defaultGasUsedRatio),
+      oldestBlock: EthImpl.numberTo0x(oldestBlockNumber),
+    };
+
+    // next fee
+    feeHistory.baseFeePerGas.push(hexFee);
+
+    if (shouldIncludeRewards) {
+      feeHistory['reward'] = Array(blockCount).fill(Array(rewardPercentiles.length).fill(EthImpl.zeroHex));
+    }
+
+    return feeHistory;
   }
 
   private async getFeeHistory(blockCount: number, newestBlockNumber: number, latestBlockNumber: number, rewardPercentiles: Array<number> | null, requestId?: string) {
