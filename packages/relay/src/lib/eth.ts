@@ -261,7 +261,8 @@ export class EthImpl implements Eth {
       oldestBlock: EthImpl.numberTo0x(oldestBlockNumber),
     };
 
-    // next fee
+    // next fee. Due to high block production rate and low fee change rate we add the next fee
+    // since by the time a user utilizes the response there will be a next block likely with the same fee
     feeHistory.baseFeePerGas.push(fee);
 
     if (shouldIncludeRewards) {
