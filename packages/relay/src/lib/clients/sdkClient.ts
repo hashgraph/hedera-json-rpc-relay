@@ -290,7 +290,7 @@ export class SDKClient {
             return {resp, cost};
         }
         catch(e: any) {
-            const sdkClientError = new SDKClientError(e);
+            const sdkClientError = new SDKClientError(e, e.message);
             if (maxRetries > currentRetry && sdkClientError.isInsufficientTxFee()) {
                 const newRetry = currentRetry + 1;
                 this.logger.info(`${requestId} Retrying query execution with increased cost, retry number: ${newRetry}`);
@@ -348,7 +348,7 @@ export class SDKClient {
         }
         catch (e: any) {
             const cost = query._queryPayment?.toTinybars().toNumber();
-            const sdkClientError = new SDKClientError(e);
+            const sdkClientError = new SDKClientError(e, e.message);
             this.captureMetrics(
                 SDKClient.queryMode,
                 query.constructor.name,
@@ -394,7 +394,7 @@ export class SDKClient {
             return resp;
         }
         catch (e: any) {
-            const sdkClientError = new SDKClientError(e);
+            const sdkClientError = new SDKClientError(e, e.message);
             let transactionFee: number | Hbar = 0;
 
             // if valid network error utilize transaction id
@@ -419,7 +419,7 @@ export class SDKClient {
 
                     this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
                 } catch (err: any) {
-                    const recordQueryError = new SDKClientError(e);
+                    const recordQueryError = new SDKClientError(err, err.message);
                     this.logger.error(recordQueryError, `${requestIdPrefix} Error raised during TransactionRecordQuery for ${transaction.transactionId}`);
                 }
             }
@@ -463,7 +463,7 @@ export class SDKClient {
         }
         catch (e: any) {
             // capture sdk record retrieval errors and shorten familiar stack trace
-            const sdkClientError = new SDKClientError(e);
+            const sdkClientError = new SDKClientError(e, e.message);
             let transactionFee: number | Hbar = 0;
             if (sdkClientError.isValidNetworkError()) {
                 try {
@@ -486,7 +486,7 @@ export class SDKClient {
 
                     this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
                 } catch (err: any) {
-                    const recordQueryError = new SDKClientError(e);
+                    const recordQueryError = new SDKClientError(err, err.message);
                     this.logger.error(recordQueryError, `${requestIdPrefix} Error raised during TransactionRecordQuery for ${resp.transactionId}`);
                 }
             }
