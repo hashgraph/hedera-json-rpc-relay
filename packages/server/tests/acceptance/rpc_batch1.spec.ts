@@ -33,6 +33,40 @@ import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import constants from '../../../../packages/relay/src/lib/constants';
 
+async function logsTestSetup(servicesNode: any, mirrorNode: any, requestId: any, contractAddress: any, contractAddress2: any, log0: any, accounts: AliasAccount[], log4: any, log5: any, latestBlock: any, relay: any, tenBlocksBehindLatest: any) {
+    const logsContract = await servicesNode.deployContract(logsContractJson);
+
+    const mirrorNodeResp = await mirrorNode.get(`/contracts/${logsContract.contractId}`, requestId);
+    expect(mirrorNodeResp).to.have.property('evm_address');
+    expect(mirrorNodeResp.env_address).to.not.be.null;
+    contractAddress = mirrorNodeResp.evm_address;
+
+    const logsContract2 = await servicesNode.deployContract(logsContractJson);
+    const mirrorNodeResp2 = await mirrorNode.get(`/contracts/${logsContract2.contractId}`, requestId);
+    expect(mirrorNodeResp2).to.have.property('evm_address');
+    expect(mirrorNodeResp2.env_address).to.not.be.null;
+    contractAddress2 = mirrorNodeResp2.evm_address;
+
+    const params = new ContractFunctionParameters().addUint256(1);
+    log0 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params, 75000, requestId);
+    await accounts[1].client.executeContractCall(logsContract.contractId, 'log1', params, 75000, requestId);
+
+    params.addUint256(1);
+    await accounts[1].client.executeContractCall(logsContract.contractId, 'log2', params, 75000, requestId);
+
+    params.addUint256(1);
+    await accounts[1].client.executeContractCall(logsContract.contractId, 'log3', params, 75000, requestId);
+
+    params.addUint256(1);
+    log4 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params, 75000, requestId);
+    log5 = await accounts[1].client.executeContractCall(logsContract2.contractId, 'log4', params, 75000, requestId);
+
+    await new Promise(r => setTimeout(r, 5000));
+    latestBlock = Number(await relay.call('eth_blockNumber', [], requestId));
+    tenBlocksBehindLatest = latestBlock - 10;
+    return { contractAddress, contractAddress2, log0, log4, log5, latestBlock, tenBlocksBehindLatest };
+}
+
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
@@ -112,36 +146,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             let log0Block, log4Block, contractAddress, contractAddress2, latestBlock, tenBlocksBehindLatest, log0, log4, log5;
 
             before(async () => {
-                const logsContract = await servicesNode.deployContract(logsContractJson);
-
-                const mirrorNodeResp = await mirrorNode.get(`/contracts/${logsContract.contractId}`, requestId);
-                expect(mirrorNodeResp).to.have.property('evm_address');
-                expect(mirrorNodeResp.env_address).to.not.be.null;
-                contractAddress = mirrorNodeResp.evm_address;
-
-                const logsContract2 = await servicesNode.deployContract(logsContractJson);
-                const mirrorNodeResp2 = await mirrorNode.get(`/contracts/${logsContract2.contractId}`, requestId);
-                expect(mirrorNodeResp2).to.have.property('evm_address');
-                expect(mirrorNodeResp2.env_address).to.not.be.null;
-                contractAddress2 = mirrorNodeResp2.evm_address;
-
-                const params = new ContractFunctionParameters().addUint256(1);
-                log0 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params, 75000, requestId);
-                await accounts[1].client.executeContractCall(logsContract.contractId, 'log1', params, 75000, requestId);
-
-                params.addUint256(1);
-                await accounts[1].client.executeContractCall(logsContract.contractId, 'log2', params, 75000, requestId);
-
-                params.addUint256(1);
-                await accounts[1].client.executeContractCall(logsContract.contractId, 'log3', params, 75000, requestId);
-
-                params.addUint256(1);
-                log4 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params, 75000, requestId);
-                log5 = await accounts[1].client.executeContractCall(logsContract2.contractId, 'log4', params, 75000, requestId);
-
-                await new Promise(r => setTimeout(r, 5000));
-                latestBlock = Number(await relay.call('eth_blockNumber', [], requestId));
-                tenBlocksBehindLatest = latestBlock - 10;
+                ({ contractAddress, contractAddress2, log0, log4, log5, latestBlock, tenBlocksBehindLatest } = await logsTestSetup(servicesNode, mirrorNode, requestId, contractAddress, contractAddress2, log0, accounts, log4, log5, latestBlock, relay, tenBlocksBehindLatest));
             });
 
             it('@release should deploy a contract', async () => {
@@ -276,6 +281,17 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     expect(logsWithTopic[i].topics[0]).to.be.equal(topic);
                 }
             });
+        });
+        
+        describe('Multiple logs returned calls', async () => {
+
+            let contractAddress, contractAddress2, latestBlock, tenBlocksBehindLatest, log0, log4, log5;
+
+
+            before(async () => {
+                ({ contractAddress, contractAddress2, log0, log4, log5, latestBlock, tenBlocksBehindLatest } = await logsTestSetup(servicesNode, mirrorNode, requestId, contractAddress, contractAddress2, log0, accounts, log4, log5, latestBlock, relay, tenBlocksBehindLatest));
+            });
+
 
             it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
                 //for the purpose of the test, we are settings limit to 2, and fetching all.
@@ -288,12 +304,18 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 if(currentBlock > 10) {
                     blocksBehindLatest = currentBlock - 10;
                 }
+                
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': EthImpl.numberTo0x(blocksBehindLatest),
                     'toBlock': 'latest'
-                }], requestId);
-                expect(logs.length).to.be.greaterThan(2);
-            })
+                }], requestId)
+                .then((logs) => {
+                    Promise.resolve(logs);
+                    expect(logs.length).to.be.greaterThan(2);
+                });
+
+
+            });
         });
 
         describe('Block related RPC calls', () => {
@@ -656,9 +678,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 // Since the transactionId is not available in this context
                 // Wait for the transaction to be processed and imported in the mirror node with axios-retry
                 await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
-                const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
-                const balanceChange = receiverEndBalance.sub(receiverInitialBalance);
-                expect(balanceChange.toString()).to.eq(Number(ONE_TINYBAR).toString());
+                await relay.getBalance(mirrorContract.evm_address, 'latest', requestId).then(receiverEndBalance => {
+                    const balanceChange = receiverEndBalance.sub(receiverInitialBalance);
+                    expect(balanceChange.toString()).to.eq(Number(ONE_TINYBAR).toString());    
+                });
             });
 
             it('should execute "eth_sendRawTransaction" and deploy a large contract', async function () {
@@ -932,3 +955,4 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         });
     });
 });
+
