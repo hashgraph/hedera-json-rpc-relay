@@ -752,7 +752,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                     checkReward: true
                 });
                 // We expect all values in the array to be from the mirror node. If there is discrepancy in the blocks, the first value is from the consensus node and it's different from expected.
-                expect(res.baseFeePerGas[1]).to.equal(datedGasPriceHex);
+                expect(res.baseFeePerGas[1]).to.equal(updatedGasPriceHex); // should return updated due to cache
                 expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
                 expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
             });

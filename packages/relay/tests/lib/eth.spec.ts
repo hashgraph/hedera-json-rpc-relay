@@ -2371,7 +2371,7 @@ describe('Eth calls using MirrorNode', async function () {
       const feeHistory = await ethImpl.feeHistory(countBlocks, 'latest', [25, 75]);
 
       expect(feeHistory).to.exist;
-      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks));
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
       expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
       expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
       expect(feeHistory['baseFeePerGas'][1]).to.eq("0x13e52b9abe000");
@@ -2389,7 +2389,7 @@ describe('Eth calls using MirrorNode', async function () {
       const feeHistory = await ethImpl.feeHistory(countBlocks, 'latest', []);
 
       expect(feeHistory).to.exist;
-      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks));
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
       expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
       expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
       expect(feeHistory['baseFeePerGas'][1]).to.eq("0x13e52b9abe000");
@@ -2408,7 +2408,7 @@ describe('Eth calls using MirrorNode', async function () {
       const feeHistory = await ethImpl.feeHistory(countBlocks, 'latest', []);
 
       expect(feeHistory).to.exist;
-      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks));
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
       expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
       expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
       expect(feeHistory['baseFeePerGas'][1]).to.eq("0x13e52b9abe000");
@@ -2426,7 +2426,7 @@ describe('Eth calls using MirrorNode', async function () {
       const feeHistory = await ethImpl.feeHistory(countBlocks, 'pending', []);
 
       expect(feeHistory).to.exist;
-      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks));
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
       expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
       expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
     });
@@ -2441,7 +2441,7 @@ describe('Eth calls using MirrorNode', async function () {
       const feeHistory = await ethImpl.feeHistory(countBlocks, 'earliest', []);
 
       expect(feeHistory).to.exist;
-      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(0));
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(1));
       expect(feeHistory['baseFeePerGas'].length).to.eq(2);
       expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
     });
@@ -2457,7 +2457,7 @@ describe('Eth calls using MirrorNode', async function () {
       const feeHistory = await ethImpl.feeHistory(countBlocks, 'latest', []);
 
       expect(feeHistory).to.exist;
-      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks));
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
       expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
       expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
       expect(feeHistory['baseFeePerGas'][1]).to.eq("0x13e52b9abe000");
@@ -2468,7 +2468,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const feeHistoryUsingCache = await ethImpl.feeHistory(countBlocks, 'latest', []);
       expect(feeHistoryUsingCache).to.exist;
-      expect(feeHistoryUsingCache['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks));
+      expect(feeHistoryUsingCache['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
       expect(feeHistoryUsingCache['baseFeePerGas'].length).to.eq(countBlocks + 1);
       expect(feeHistoryUsingCache['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
       expect(feeHistoryUsingCache['baseFeePerGas'][1]).to.eq("0x13e52b9abe000");

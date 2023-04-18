@@ -206,7 +206,7 @@ export class EthImpl implements Eth {
           newestBlockNumber = 1;
         }
         const fixedFee = await this.getLatestFixedFee(newestBlockNumber, requestId);
-        feeHistory = this.getRepeatedFeeHistory(blockCount, newestBlockNumber-blockCount, rewardPercentiles, fixedFee);
+        feeHistory = this.getRepeatedFeeHistory(blockCount, newestBlockNumber - blockCount + 1, rewardPercentiles, fixedFee);
 
       } else { // once we finish testing and refining Fixed Fee method, we can remove this else block to clean up code
 
