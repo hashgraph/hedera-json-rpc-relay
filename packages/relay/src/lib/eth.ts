@@ -185,13 +185,21 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
 
     try {
-      const latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestId);
-      let newestBlockNumber = (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending)
-        ? latestBlockNumber
-        : await this.translateBlockTag(newestBlock, requestId);
+      let newestBlockNumber;
+      let latestBlockNumber;
+      if(this.getEthFeeHistoryFixedFee()) {
+        newestBlockNumber = (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending)
+            ? await this.translateBlockTag(EthImpl.blockLatest, requestId)
+            : await this.translateBlockTag(newestBlock, requestId);
+      } else { // once we finish testing and refining Fixed Fee method, we can remove this else block to clean up code
+        latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestId);
+        newestBlockNumber = (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending)
+            ? latestBlockNumber
+            : await this.translateBlockTag(newestBlock, requestId);
 
-      if (newestBlockNumber > latestBlockNumber) {
-        return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
+        if (newestBlockNumber > latestBlockNumber) {
+          return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
+        }
       }
 
       blockCount = blockCount > maxResults ? maxResults : blockCount;
@@ -200,6 +208,7 @@ export class EthImpl implements Eth {
         return EthImpl.feeHistoryZeroBlockCountResponse;
       }
       let feeHistory: object | undefined;
+
       if(this.getEthFeeHistoryFixedFee()) {
 
         let oldestBlock = newestBlockNumber - blockCount + 1;
