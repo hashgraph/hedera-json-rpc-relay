@@ -1,0 +1,20 @@
+###################################
+##### Global Protection Rule ######
+###################################
+# NOTE: This rule is overriden by the more specific rules below. This is the catch-all rule for all files not covered by the more specific rules below
+*                                               @hashgraph/hedera-smart-contracts
+
+#########################
+##### Hedera Relay ######
+#########################
+/packages/relay/                                @AlfredoG87 @ebadiere @lukelee-sl @hashgraph/hedera-smart-contracts
+/packages/server/                               @AlfredoG87 @ebadiere @Nana-EC @hashgraph/hedera-smart-contracts
+/packages/ws-server/                            @AlfredoG87 @ebadiere @georgi-l95 @Ivo-Yankov @hashgraph/hedera-smart-contracts
+
+###############################
+##### Tools and Examples ######
+###############################
+/dapp-example/                                  @georgi-l95 @Ivo-Yankov @hashgraph/hedera-smart-contracts
+/k6/                                            @AlfredoG87 @hashgraph/hedera-smart-contracts
+/tools/                                         @georgi-l95 @Ivo-Yankov @hashgraph/hedera-smart-contracts
+

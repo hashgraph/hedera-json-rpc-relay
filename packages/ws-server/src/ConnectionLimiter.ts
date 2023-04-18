@@ -52,6 +52,8 @@ export default class ConnectionLimiter {
             this.clientIps[ip]++;
         }
         ctx.websocket.ipCounted = true;
+
+        ctx.websocket.subscriptions = 0;
     }
 
     public decrementCounters(ctx) {
@@ -93,5 +95,17 @@ export default class ConnectionLimiter {
             return done(false, 429, 'Connection limit exceeded');
         }
         done(true);
+    }
+
+    public incrementSubs(ctx) {
+        ctx.websocket.subscriptions++;
+    }
+
+    public decrementSubs(ctx, amount = 1) {
+        ctx.websocket.subscriptions -= amount;
+    }
+
+    public validateSubscriptionLimit(ctx) {
+        return ctx.websocket.subscriptions < parseInt(process.env.WS_SUBSCRIPTION_LIMIT || '10');
     }
 }
