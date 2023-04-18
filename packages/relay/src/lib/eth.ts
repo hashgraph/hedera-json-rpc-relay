@@ -166,6 +166,14 @@ export class EthImpl implements Eth {
     return [];
   }
 
+
+  private getEthFeeHistoryFixedFee() {
+    if(process.env.ETH_FEE_HISTORY_FIXED === undefined) {
+        return true;
+    }
+    return process.env.ETH_FEE_HISTORY_FIXED === "true";
+  }
+
   /**
    * Gets the fee history.
    */
@@ -177,13 +185,21 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`);
 
     try {
-      const latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestId);
-      const newestBlockNumber = (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending)
-        ? latestBlockNumber
-        : await this.translateBlockTag(newestBlock, requestId);
+      let newestBlockNumber;
+      let latestBlockNumber;
+      if(this.getEthFeeHistoryFixedFee()) {
+        newestBlockNumber = (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending)
+            ? await this.translateBlockTag(EthImpl.blockLatest, requestId)
+            : await this.translateBlockTag(newestBlock, requestId);
+      } else { // once we finish testing and refining Fixed Fee method, we can remove this else block to clean up code
+        latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestId);
+        newestBlockNumber = (newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending)
+            ? latestBlockNumber
+            : await this.translateBlockTag(newestBlock, requestId);
 
-      if (newestBlockNumber > latestBlockNumber) {
-        return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
+        if (newestBlockNumber > latestBlockNumber) {
+          return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
+        }
       }
 
       blockCount = blockCount > maxResults ? maxResults : blockCount;
@@ -191,14 +207,28 @@ export class EthImpl implements Eth {
       if (blockCount <= 0) {
         return EthImpl.feeHistoryZeroBlockCountResponse;
       }
+      let feeHistory: object | undefined;
 
-      const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join('')}`;
-      let feeHistory: object | undefined = this.cache.get(cacheKey);
-      if (!feeHistory) {
-        feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
-        if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
-          this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(feeHistory)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-          this.cache.set(cacheKey, feeHistory);
+      if(this.getEthFeeHistoryFixedFee()) {
+
+        let oldestBlock = newestBlockNumber - blockCount + 1;
+        if(oldestBlock <= 0) {
+          blockCount = 1;
+          oldestBlock = 1;
+        }
+        const gasPriceFee = await this.gasPrice(requestId);
+        feeHistory = this.getRepeatedFeeHistory(blockCount, oldestBlock, rewardPercentiles, gasPriceFee);
+
+      } else { // once we finish testing and refining Fixed Fee method, we can remove this else block to clean up code
+
+        const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join('')}`;
+        feeHistory = this.cache.get(cacheKey);
+        if (!feeHistory) {
+          feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
+          if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
+            this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(feeHistory)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+            this.cache.set(cacheKey, feeHistory);
+          }
         }
       }
 
@@ -220,6 +250,26 @@ export class EthImpl implements Eth {
     }
 
     return EthImpl.numberTo0x(fee);
+  }
+
+  private getRepeatedFeeHistory(blockCount: number, oldestBlockNumber: number, rewardPercentiles: Array<number> | null, fee: string) {
+    const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;
+
+    const feeHistory = {
+      baseFeePerGas: Array(blockCount).fill(fee),
+      gasUsedRatio: Array(blockCount).fill(EthImpl.defaultGasUsedRatio),
+      oldestBlock: EthImpl.numberTo0x(oldestBlockNumber),
+    };
+
+    // next fee. Due to high block production rate and low fee change rate we add the next fee
+    // since by the time a user utilizes the response there will be a next block likely with the same fee
+    feeHistory.baseFeePerGas.push(fee);
+
+    if (shouldIncludeRewards) {
+      feeHistory['reward'] = Array(blockCount).fill(Array(rewardPercentiles.length).fill(EthImpl.zeroHex));
+    }
+
+    return feeHistory;
   }
 
   private async getFeeHistory(blockCount: number, newestBlockNumber: number, latestBlockNumber: number, rewardPercentiles: Array<number> | null, requestId?: string) {
@@ -379,9 +429,9 @@ export class EthImpl implements Eth {
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestId);
-
-        this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE}:${gasPrice} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-        this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice);
+        // fees should not change so often we are safe with 1 day instead of 1 hour
+        this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE}:${gasPrice} for ${constants.CACHE_TTL.ONE_DAY} ms`);
+        this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, {ttl: constants.CACHE_TTL.ONE_DAY});
       }
 
       return EthImpl.numberTo0x(gasPrice);
