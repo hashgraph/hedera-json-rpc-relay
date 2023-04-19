@@ -2756,10 +2756,6 @@ describe('Eth calls using MirrorNode', async function () {
       });
     });
 
-    it('SDK returns a timeout exceeded', async function () {
-
-    });
-
     it('SDK returns a precheck error', async function () {
       sdkClientStub.submitContractCallQueryWithRetry.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
 
