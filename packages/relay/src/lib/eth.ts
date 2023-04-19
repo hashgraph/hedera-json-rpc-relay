@@ -1099,7 +1099,7 @@ export class EthImpl implements Eth {
         return cachedResponse;
       }
 
-      const contractCallResponse = await this.sdkClient.submitContractCallQuery(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
+      const contractCallResponse = await this.sdkClient.submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
       const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
       this.cache.set(cacheKey, formattedCallReponse, { ttl: EthImpl.ethCallCacheTtl });
