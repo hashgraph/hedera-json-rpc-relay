@@ -19,7 +19,6 @@
  */
 
 import { AccountId } from '@hashgraph/sdk';
-// import ContractId from "@hashgraph/sdk/lib/contract/ContractId";
 import constants from "./lib/constants";
 
 const hashNumber = (num) => {
