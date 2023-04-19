@@ -60,6 +60,10 @@ export class SDKClientError extends Error {
     return this.statusCode == Status.ContractRevertExecuted._code;
   }
 
+  public isTimeoutExceeded(): boolean {
+    return this.statusCode === Status.Unknown._code && this.message?.includes("timeout exceeded");
+  }
+
   public isGrpcTimeout(): boolean {
     // The SDK uses the same code for Grpc Timeout as INVALID_TRANSACTION_ID
     return this.statusCode === Status.InvalidTransactionId._code;
