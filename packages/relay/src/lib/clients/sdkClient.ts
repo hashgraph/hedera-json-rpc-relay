@@ -277,6 +277,30 @@ export class SDKClient {
         return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestId);
     }
 
+    async submitContractCallQueryWithRetry(to: string, data: string, gas: number, from: string, callerName: string, requestId?: string): Promise<ContractFunctionResult> {
+        const requestIdPrefix = formatRequestIdMessage(requestId);
+        let retries = 0;
+        let resp;
+        while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || '1') > retries) {
+            console.log(retries)
+            try {
+                resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestId);
+                return resp;
+            } catch (e: any) {
+                const sdkClientError = new SDKClientError(e, e.message);
+                if (sdkClientError.isTimeoutExceeded()) {
+                    const delay = retries * 1000;
+                    this.logger.trace(`${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay}ms ...`);
+                    retries++;
+                    await new Promise(r => setTimeout(r, delay));
+                    continue;
+                }
+                throw sdkClientError;
+            }
+        }
+        return resp;
+    }
+
     async increaseCostAndRetryExecution(query: Query<any>, baseCost: Hbar, client: Client, maxRetries: number, currentRetry: number, requestId?: string) {
         const baseMultiplier = constants.QUERY_COST_INCREMENTATION_STEP;
         const multiplier = Math.pow(baseMultiplier, currentRetry);
