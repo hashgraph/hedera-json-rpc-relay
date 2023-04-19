@@ -2627,7 +2627,7 @@ describe('Eth calls using MirrorNode', async function () {
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
               return Uint8Array.of(0);
             }
@@ -2640,12 +2640,12 @@ describe('Eth calls using MirrorNode', async function () {
         "data": contractCallData,
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 400_000, accountAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, 400_000, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
     it('eth_call with no data', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
               return Uint8Array.of(0);
             }
@@ -2658,12 +2658,12 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimitHex
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, undefined, maxGasLimit, accountAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, undefined, maxGasLimit, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
     it('eth_call with no from address', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
               return Uint8Array.of(0);
             }
@@ -2676,12 +2676,12 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimitHex
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, undefined, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, undefined, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
     it('eth_call with all fields', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
               return Uint8Array.of(0);
             }
@@ -2695,13 +2695,13 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimitHex
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
     //Return once the value, then it's being fetched from cache. After the loop we reset the sdkClientStub, so that it returns nothing, if we get an error in the next request that means that the cache was cleared.
     it('eth_call should cache the response for 200ms', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
         asBytes: function () {
           return Uint8Array.of(0);
             }
@@ -2737,7 +2737,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     describe('with gas > 15_000_000', async function() {
       it('caps gas at 15_000_000', async function () {
-        sdkClientStub.submitContractCallQuery.returns({
+        sdkClientStub.submitContractCallQueryWithRetry.returns({
               asBytes: function () {
                 return Uint8Array.of(0);
               }
@@ -2751,13 +2751,13 @@ describe('Eth calls using MirrorNode', async function () {
           "gas": 50_000_000
         }, 'latest');
 
-        sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
+        sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
         expect(result).to.equal("0x00");
       });
     });
 
     it('SDK returns a precheck error', async function () {
-      sdkClientStub.submitContractCallQuery.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
+      sdkClientStub.submitContractCallQueryWithRetry.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
 
       const result = await ethImpl.call({
         "from": accountAddress1,
@@ -2890,7 +2890,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
               return Uint8Array.of(0);
             }
@@ -2899,7 +2899,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const result = await ethImpl.call(callData, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
