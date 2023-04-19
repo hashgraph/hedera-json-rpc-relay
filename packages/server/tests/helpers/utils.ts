@@ -82,12 +82,6 @@ export class Utils {
         const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
         contract = new ethers.Contract(receipt.to, contractJson.abi, wallet);
 
-        const { mirrorNode } = global;
-        if ( mirrorNode ) {
-            const mnContract = await mirrorNode.get(`/contracts/${contract.address}`);
-            contract.evmAddress = mnContract.evm_address;
-        }
-
         return contract;
     };
 
