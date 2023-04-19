@@ -1359,25 +1359,19 @@ describe('Eth calls using MirrorNode', async function () {
     it('should return balance from mirror node with block number passed as param the same as latest', async () => {
       const blockNumber = "0x2710";
      
-      restMock.onGet(`blocks/10000`).reply(200, {
+      restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
           number: 10000,
           'timestamp': {
             'from': `1651560393.060890949`,
             'to': '1651560395.060890949'
           }
-      });     
-      
-      restMock.onGet('balances?account.id=0.0.1375&timestamp=1651560393.060890949').reply(200, {
-        "timestamp": `1651560400.060890949`,
-        "balances": [
-          {
-            "account": contractAddress1,
-            "balance": defBalance,
-            "tokens": []
-          }
-        ],
-        "links": {
-          "next": null
+        }]
+      });
+      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
         }
       });
 
