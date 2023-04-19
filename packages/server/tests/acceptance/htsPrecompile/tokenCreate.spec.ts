@@ -229,6 +229,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
       //Transfer some hbars to the contract address
       await mainContract.cryptoTransferTokenPublic(mainContract.address, HTSTokenContractAddress, amount);
+      await new Promise(r => setTimeout(r, 2000));
       expect(await HTSTokenContract.balanceOf(mainContract.address)).to.equal(amount);
       expect(await HTSTokenContract.balanceOf(accounts[2].wallet.address)).to.be.equal(0);
 
@@ -243,7 +244,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
       //transfer token which are owned by mainContract using signer account[2] with transferFrom to account[1]
       await HTSTokenContract.connect(accounts[2].wallet).transferFrom(mainContract.address, accounts[1].wallet.address, amount, { gasLimit: 1_000_000 });
-
+      await new Promise(r => setTimeout(r, 2000));
       expect(await HTSTokenContract.balanceOf(accounts[1].wallet.address)).to.be.equal(amount);
 
       {
@@ -326,11 +327,12 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
       //approval for accounts[2] to use this NFT
       await mainContract.approveNFTPublic(NftHTSTokenContractAddress, accounts[2].address, NftSerialNumber, { gasLimit: 1_000_000 });
+      await new Promise(r => setTimeout(r, 2000));
       expect(await NFTokenContract.getApproved(NftSerialNumber)).to.equal(accounts[2].wallet.address);
 
       //transfer NFT to accounts[1] with accounts[2] as signer
       await NFTokenContract.connect(accounts[2].wallet).transferFrom(mainContract.address, accounts[1].wallet.address, NftSerialNumber, { gasLimit: 1_000_000 });
-
+      await new Promise(r => setTimeout(r, 2000));
       expect(await NFTokenContract.balanceOf(mainContract.address)).to.equal(0);
       expect(await NFTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(1);
 
@@ -433,6 +435,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       const amount = 10;
       const balanceBefore = await HTSTokenContract.balanceOf(accounts[2].wallet.address);
       await mainContract.connect(accounts[0].wallet).cryptoTransferTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, amount);
+      await new Promise(r => setTimeout(r, 2000));
       const balanceAfter = await HTSTokenContract.balanceOf(accounts[2].wallet.address);
   
       expect(balanceBefore + amount).to.equal(balanceAfter);
