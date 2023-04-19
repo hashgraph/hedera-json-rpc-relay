@@ -1338,6 +1338,7 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`accounts/${contractAddress1}`).reply(404, {});
 
       const resBalanceCached = await ethImpl.getBalance(contractAddress1, null);
+      // await new Promise(resolve => setTimeout(resolve, 10000));
       expect(resBalanceCached).to.equal(resBalance);
 
       // Third call should return new number using mirror node
@@ -1381,6 +1382,24 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should return balance from mirror node with block number passed as param, one behind latest', async () => {
       const blockNumber = "0x270F";
+
+      restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000,
+          'timestamp': {
+            'from': `1651560383.060890949`,
+            'to': '1651560385.060890949'
+          }
+        }]
+      });
+
+      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
+        }
+      });
+
       restMock.onGet(`blocks/9999`).reply(200, {
           number: 9999,
           'timestamp': {
