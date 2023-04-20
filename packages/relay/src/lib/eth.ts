@@ -615,7 +615,6 @@ export class EthImpl implements Eth {
    */
   async getBalance(account: string, blockNumberOrTag: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    // const latestBlockTolerance = 1;
 
     if (this.logger.isLevelEnabled('trace')) {
       this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
@@ -656,9 +655,28 @@ export class EthImpl implements Eth {
           return EthImpl.zeroHex;
         }
 
-        const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(accountId!, block.timestamp.from, requestId);
+        // The balance API does not support accurate balances with timestamp filter.
+        // To manage this get balance from latest baalnce file and aggreate crypto transfers from its timestamp up to the given block
+        const balance = await this.mirrorNodeClient.getLatestBalanceBeforeTimestamp(accountId!, block.timestamp.from, requestId);
         if (balance.balances?.length) {
-          hexWeibars = EthImpl.numberTo0x(BigInt(balance.balances[0].balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF));
+          // The balance API does not support raccurate balances with timestamp filter. Need to readd crypto transafer aggregation
+          let balanceFromTxs = 0;
+          let transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
+            accountId,
+            balance.timestamp,
+            block.timestamp.to,
+            requestId
+          );
+
+          for(const tx of transactionsInTimeWindow) {
+            for (const transfer of tx.transfers) {
+              if (transfer.account === accountId && !transfer.is_approval) {
+                balanceFromTxs += transfer.amount;
+              }
+            }
+          }
+
+          hexWeibars = EthImpl.numberTo0x(BigInt(balance.balances[0].balance + balanceFromTxs) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF));
         } else {
           // Mirror Node returns an empty array if there is no balance for the account at the given timestamp
           hexWeibars = EthImpl.zeroHex;

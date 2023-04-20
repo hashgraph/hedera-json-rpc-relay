@@ -338,6 +338,10 @@ export class MirrorNodeClient {
         );
     }
 
+    public async getLatestBalanceBeforeTimestamp(accountId: string, timestamp?: string, requestId?: string) {
+        return this.getBalanceAtTimestamp(accountId, `lt:${timestamp}`, requestId);
+    }
+
     public async getBalanceAtTimestamp(accountId: string, timestamp?: string, requestId?: string) {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'account.id', accountId);
