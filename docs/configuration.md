@@ -83,23 +83,40 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `WS_CONNECTION_LIMIT_PER_IP`    | "10"     | Maximum amount of connections from a single IP address                                  |
 | `WS_MULTIPLE_ADDRESSES_ENABLED` | "false"  | If enabled eth_subscribe will allow subscription to multiple contract address.          |
 
-## Sample for connecting to Hedera Testnet
+## Sample for connecting to Hedera Environments
+
+Hedera Mainnet
+
+```.env
+HEDERA_NETWORK=mainnet
+OPERATOR_ID_MAIN=<...redacted...>
+OPERATOR_KEY_MAIN=<...redacted...>
+CHAIN_ID=0x127
+MIRROR_NODE_URL=https://mainnet-public.mirrornode.hedera.com/
+```
+
+Hedera Testnet
 
 ```.env
 HEDERA_NETWORK=testnet
 OPERATOR_ID_MAIN=<...redacted...>
 OPERATOR_KEY_MAIN=<...redacted...>
-OPERATOR_ID_ETH_SENDRAWTRANSACTION=
-OPERATOR_KEY_ETH_SENDRAWTRANSACTION=
 CHAIN_ID=0x128
 MIRROR_NODE_URL=https://testnet.mirrornode.hedera.com/
-E2E_RELAY_HOST=https://testnet.hashio.io/api
-LOCAL_NODE=false
 ```
 
-- **_NOTE:_** Replace the operator ID and keys that have been redacted with your own.
-- **_NOTE 2:_** `E2E_RELAY_HOST` and `LOCAL_NODE` are optional.
-- **_NOTE 3:_** Default values for all other keys are sufficient, no need to set them.
+Hedera Previewnet
+
+```.env
+HEDERA_NETWORK=previewnet
+OPERATOR_ID_MAIN=<...redacted...>
+OPERATOR_KEY_MAIN=<...redacted...>
+CHAIN_ID=0x129
+MIRROR_NODE_URL=https://previewnet.mirrornode.hedera.com/
+```
+
+- **_NOTE:_** Replace the redacted operator ID and keys with your own.
+- **_NOTE 2:_** Default values for all other keys are sufficient, no need to set them.
 
 ## Testing
 
