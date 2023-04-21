@@ -669,12 +669,9 @@ export class EthImpl implements Eth {
                   currentTimestamp = mirrorAccount.balance.timestamp;
                 }
 
-                let transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
-                  mirrorAccount.account,
-                  block.timestamp.to,
-                  currentTimestamp,
-                  requestId
-                );
+                const transactionsInTimeWindow: any = mirrorAccount.transactions.filter((tx: any) => {
+                  return tx.consensus_timestamp >= block.timestamp.to && tx.consensus_timestamp <= currentTimestamp;
+                });
 
                 for(const tx of transactionsInTimeWindow) {
                   for (const transfer of tx.transfers) {
@@ -1584,7 +1581,7 @@ export class EthImpl implements Eth {
     const logs = logResults.flatMap(logResult => logResult ? logResult : [] );
     logs.sort((a: any, b: any) => {
       return a.timestamp >= b.timestamp ? 1 : -1;
-    })
+    });
 
     return logs;
   }
