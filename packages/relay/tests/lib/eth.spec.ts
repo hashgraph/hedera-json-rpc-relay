@@ -1315,7 +1315,7 @@ describe('Eth calls using MirrorNode', async function () {
           number: 10000
         }]
       });
-      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
         account: contractAddress1,
         balance: {
           balance: defBalance
@@ -1332,7 +1332,7 @@ describe('Eth calls using MirrorNode', async function () {
           number: 10000
         }]
       });
-      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
         account: contractAddress1,
         balance: {
           balance: defBalance
@@ -1343,7 +1343,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(resBalance).to.equal(defHexBalance);
 
       // next call should use cache
-      restMock.onGet(`accounts/${contractAddress1}`).reply(404, {});
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, {});
 
       const resBalanceCached = await ethImpl.getBalance(contractAddress1, null);
       expect(resBalanceCached).to.equal(resBalance);
@@ -1351,7 +1351,7 @@ describe('Eth calls using MirrorNode', async function () {
       // Third call should return new number using mirror node
       const newBalance = 55555;
       const newBalanceHex = EthImpl.numberTo0x(BigInt(newBalance) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
-      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
         account: contractAddress1,
         balance: {
           balance: newBalance
@@ -1371,7 +1371,7 @@ describe('Eth calls using MirrorNode', async function () {
           number: 10000
         }]
       });
-      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
         account: contractAddress1,
         balance: {
           balance: defBalance
@@ -1389,7 +1389,7 @@ describe('Eth calls using MirrorNode', async function () {
           number: 10000
         }]
       });
-      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
         account: contractAddress1,
         balance: {
           balance: defBalance
@@ -1407,7 +1407,7 @@ describe('Eth calls using MirrorNode', async function () {
         }]
       });
       restMock.onGet(`contracts/${contractAddress1}`).reply(200, null);
-      restMock.onGet(`accounts/${contractAddress1}`).reply(404, {
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, {
         _status: {
           messages: [{ message: 'Not found' }]
         }
@@ -1423,7 +1423,7 @@ describe('Eth calls using MirrorNode', async function () {
           number: 10000
         }]
       });
-      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
         account: contractAddress1,
         balance: {
           balance: defBalance
@@ -1432,7 +1432,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const resNoCache = await ethImpl.getBalance(contractAddress1, null);
 
-      restMock.onGet(`accounts/${contractAddress1}`).reply(404, {
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, {
         _status: {
           messages: [{ message: 'Not found' }]
         }
@@ -1485,12 +1485,13 @@ describe('Eth calls using MirrorNode', async function () {
         restMock.onGet(`blocks/2`).reply(200, recentBlock);
         restMock.onGet(`blocks/1`).reply(200, earlierBlock);
 
-        restMock.onGet(`accounts/${contractId1}`).reply(200, {
+        restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
           account: contractId1,
           balance: {
             balance: balance3,
             timestamp: `${timestamp4}.060890949`
-          }
+          },
+          transactions: []
         });
 
         restMock.onGet(`balances?account.id=${contractId1}&timestamp=${earlierBlock.timestamp.from}`).reply(200, {
@@ -1560,27 +1561,63 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       it('blockNumber is in the latest 15 minutes', async () => {
-        restMock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
-          transactions: []
+        restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
+          account: contractId1,
+          balance: {
+            balance: balance3,
+            timestamp: `${blockTimestamp}.060890960`
+          },
+          transactions: [
+            buildCryptoTransferTransaction("0.0.98", contractId1, 100, {"timestamp":`${blockTimestamp}.060890941`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":`${blockTimestamp}.060890940`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 25, {"timestamp":`${blockTimestamp}.060890939`}),
+          ],
+          links: {
+            next: null
+          }          
         });
-
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3) * TINYBAR_TO_WEIBAR_COEF_BIGINT)
+        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
       });
 
       it('blockNumber is not in the latest 15 minutes', async () => {
+        restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
+          account: contractId1,
+          balance: {
+            balance: balance3,
+            timestamp: `${timestamp4}.060890949`
+          },
+          transactions: []
+        });
+
         const resBalance = await ethImpl.getBalance(contractId1, '1');
         expect(resBalance).to.equal(hexBalance1);
       });
 
       it('blockNumber is in the latest 15 minutes and there have been several debit transactions', async () => {
-        restMock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+        const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
+          number: 2,
+          'timestamp': {
+            'from': `${blockTimestamp}.060890921`,
+            'to': `${blockTimestamp}.060890941`
+          },
+        });
+        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
+        restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
+          account: contractId1,
+          balance: {
+            balance: balance3,
+            timestamp: `${blockTimestamp}.060890960`
+          },
           transactions: [
-            buildCryptoTransferTransaction("0.0.98", contractId1, 100),
-            buildCryptoTransferTransaction("0.0.98", contractId1, 50),
-            buildCryptoTransferTransaction("0.0.98", contractId1, 25),
-          ]
+            buildCryptoTransferTransaction("0.0.98", contractId1, 100, {"timestamp":`${blockTimestamp}.060890954`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":`${blockTimestamp}.060890953`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 25, {"timestamp":`${blockTimestamp}.060890952`}),
+          ],
+          links: {
+            next: null
+          }         
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
@@ -1589,27 +1626,59 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       it('blockNumber is in the latest 15 minutes and there have been several credit transactions', async () => {
-        restMock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
-          transactions: [
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 50),
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 25),
-          ]
+        const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
+          number: 2,
+          'timestamp': {
+            'from': `${blockTimestamp}.060890921`,
+            'to': `${blockTimestamp}.060890941`
+          },
         });
-
+        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
+        restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
+          account: contractId1,
+          balance: {
+            balance: balance3,
+            timestamp: `${timestamp4}.060890960`
+          },
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":`${timestamp4}.060890954`}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":`${timestamp4}.060890953`}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25, {"timestamp":`${timestamp4}.060890952`}),
+          ],
+          links: {
+            next: null
+          }            
+        });
+ 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
-        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 + 175) * TINYBAR_TO_WEIBAR_COEF_BIGINT)
+        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 + 175) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
       });
 
       it('blockNumber is in the latest 15 minutes and there have been mixed credit and debit transactions', async () => {
-        restMock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+        const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
+          number: 2,
+          'timestamp': {
+            'from': `${blockTimestamp}.060890921`,
+            'to': `${blockTimestamp}.060890941`
+          },
+        });
+        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);        
+        restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
+          account: contractId1,
+          balance: {
+            balance: balance3,
+            timestamp: `${timestamp4}.060890960`
+          },
           transactions: [
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
-            buildCryptoTransferTransaction("0.0.98", contractId1, 50),
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 25),
-            buildCryptoTransferTransaction("0.0.98", contractId1, 10),
-          ]
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":`${timestamp4}.060890954`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":`${timestamp4}.060890953`}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25, {"timestamp":`${timestamp4}.060890952`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 10, {"timestamp":`${timestamp4}.060890951`}),
+          ],
+          links: {
+            next: null
+          }              
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
@@ -1618,20 +1687,35 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       it('blockNumber is in the latest 15 minutes and there have been mixed credit and debit transactions and transactions are paginated', async () => {
-        restMock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}`).reply(200, {
+        restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
+          account: contractId1,
+          balance: {
+            balance: balance3,
+            timestamp: `${timestamp4}.060890960`
+          },
           transactions: [
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 100),
-            buildCryptoTransferTransaction("0.0.98", contractId1, 50)
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":`${timestamp4}.060890955`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":`${timestamp4}.060890954`}),
           ],
           links: {
-            next: `transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}&page=2`
+            next: `transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${timestamp4}.060890940&page=2`
+          }
+        });        
+
+        restMock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${timestamp4}.060890960`).reply(200, {
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":`${timestamp4}.060890955`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":`${timestamp4}.060890954`})
+          ],
+          links: {
+            next: `transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${timestamp4}.060890940&page=2`
           }
         });
 
-        restMock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${latestBlock.timestamp.to}&page=2`).reply(200, {
+        restMock.onGet(`transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${timestamp4}.060890940&page=2`).reply(200, {
           transactions: [
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 25),
-            buildCryptoTransferTransaction("0.0.98", contractId1, 10),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25, {"timestamp":`${timestamp4}.060890952`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 10, {"timestamp":`${timestamp4}.060890951`}),
           ],
           links: {
             next: null
@@ -1653,7 +1737,7 @@ describe('Eth calls using MirrorNode', async function () {
   describe('eth_getCode', async function() {
     it('should return cached value', async () => {
       restMock.onGet(`contracts/${contractAddress1}`).reply(404, defaultContract);
-      restMock.onGet(`accounts/${contractAddress1}`).reply(404, null);
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, null);
       restMock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.throws(new SDKClientError({status: {
         _code: 16
@@ -1668,7 +1752,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should return the runtime_bytecode from the mirror node', async () => {
       restMock.onGet(`contracts/${contractAddress1}`).reply(200, defaultContract);
-      restMock.onGet(`accounts/${contractAddress1}`).reply(404, null);
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, null);
       restMock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
 
@@ -1678,7 +1762,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should return the bytecode from SDK if Mirror Node returns 404', async () => {
       restMock.onGet(`contracts/${contractAddress2}`).reply(404, defaultContract);
-      restMock.onGet(`accounts/${contractAddress2}`).reply(404, null);
+      restMock.onGet(`accounts/${contractAddress2}?limit=100`).reply(404, null);
       restMock.onGet(`tokens/0.0.${parseInt(contractAddress2, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
       const res = await ethImpl.getCode(contractAddress2, null);
@@ -1690,7 +1774,7 @@ describe('Eth calls using MirrorNode', async function () {
         ...defaultContract,
         runtime_bytecode: EthImpl.emptyHex
       });
-      restMock.onGet(`accounts/${contractAddress3}`).reply(404, null);
+      restMock.onGet(`accounts/${contractAddress3}?limit=100`).reply(404, null);
       restMock.onGet(`tokens/0.0.${parseInt(contractAddress3, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.returns(Buffer.from(deployedBytecode.replace('0x', ''), 'hex'));
       const res = await ethImpl.getCode(contractAddress3, null);
@@ -1699,7 +1783,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should return redirect bytecode for HTS token', async () => {
       restMock.onGet(`contracts/${htsTokenAddress}`).reply(404, null);
-      restMock.onGet(`accounts/${htsTokenAddress}`).reply(404, null);
+      restMock.onGet(`accounts/${htsTokenAddress}?limit=100`).reply(404, null);
       restMock.onGet(`tokens/0.0.${parseInt(htsTokenAddress, 16)}`).reply(200, defaultHTSToken);
       const redirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${htsTokenAddress.slice(2)}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`;
       const res = await ethImpl.getCode(htsTokenAddress, null);

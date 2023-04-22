@@ -129,9 +129,9 @@ describe("Open RPC Specification", function () {
         mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
         mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, defaultDetailedContractResults3);
         mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, null);
-        mock.onGet(`accounts/${contractAddress1}`).reply(200, { account: contractAddress1 });
+        mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, { account: contractAddress1 });
         mock.onGet(`accounts/${contractAddress3}`).reply(200, { account: contractAddress3 });
-        mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
+        mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
         mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
             from: `${defaultEvmAddress}`
           });
@@ -182,7 +182,7 @@ describe("Open RPC Specification", function () {
         let initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
         process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
         mock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-        mock.onGet(`accounts/${defaultCallData.from}`).reply(200, {
+        mock.onGet(`accounts/${defaultCallData.from}?limit=100`).reply(200, {
             account: "0.0.1723",
             evm_address: defaultCallData.from
         });
@@ -197,7 +197,7 @@ describe("Open RPC Specification", function () {
         let initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
         process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
         mock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-        mock.onGet(`accounts/${defaultCallData.from}`).reply(200, {
+        mock.onGet(`accounts/${defaultCallData.from}?limit=100`).reply(200, {
             account: "0.0.1723",
             evm_address: defaultCallData.from
         });
@@ -349,6 +349,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionCount"', async function () {
+        mock.onGet(`accounts/${contractAddress1}`).reply(200, { account: contractAddress1 });
         const response = await ethImpl.getTransactionCount(contractAddress1, 'latest');
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);

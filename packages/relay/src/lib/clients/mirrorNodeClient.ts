@@ -80,6 +80,7 @@ export class MirrorNodeClient {
 
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
     private static CONTRACT_STATE_PROPERTY = 'state';
+    private static PAGE_LIMIT = 100;
 
 
 
@@ -317,6 +318,13 @@ export class MirrorNodeClient {
 
     public async getAccount(idOrAliasOrEvmAddress: string, requestId?: string) {
         return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}`,
+            MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
+            [400, 404],
+            requestId);
+    }
+
+    public async getAccountPageLimit(idOrAliasOrEvmAddress: string, requestId?: string) {
+        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?limit=${MirrorNodeClient.PAGE_LIMIT}`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
             [400, 404],
             requestId);

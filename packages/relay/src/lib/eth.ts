@@ -642,7 +642,7 @@ export class EthImpl implements Eth {
     let blockNumber = null;
     let balanceFound = false;
     let weibars: BigInt = BigInt(0);
-    const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
+    const mirrorAccount = await this.mirrorNodeClient.getAccountPageLimit(account, requestId);
 
     try {
       if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
@@ -669,9 +669,26 @@ export class EthImpl implements Eth {
                   currentTimestamp = mirrorAccount.balance.timestamp;
                 }
 
-                const transactionsInTimeWindow: any = mirrorAccount.transactions.filter((tx: any) => {
-                  return tx.consensus_timestamp >= block.timestamp.to && tx.consensus_timestamp <= currentTimestamp;
-                });
+                // Need to check if there are any transactions before the block.timestamp.to in the current account set returned from the inital
+                // call to getAccountPageLimit.  If there are we may need to paginate.
+                let lastTransactionOnPageTimestamp;
+                if(mirrorAccount.links.next !== null) {
+                  // Get the end of the page of transactions timestamp
+                  lastTransactionOnPageTimestamp = mirrorAccount.links.next.substring(mirrorAccount.links.next.indexOf("gte:") + 4, mirrorAccount.links.next.indexOf("&timestamp"));
+                }
+                let transactionsInTimeWindow: any = [];
+                if((typeof lastTransactionOnPageTimestamp !== "undefined") && (mirrorAccount.transactions[mirrorAccount.transactions.length -1].consensus_timestamp >= lastTransactionOnPageTimestamp)) {
+                  transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
+                    mirrorAccount.account,
+                    block.timestamp.to,
+                    currentTimestamp,
+                    requestId
+                  );
+                } else {
+                    transactionsInTimeWindow = mirrorAccount.transactions.filter((tx: any) => {
+                    return tx.consensus_timestamp >= block.timestamp.to && tx.consensus_timestamp <= currentTimestamp;
+                  });
+                }
 
                 for(const tx of transactionsInTimeWindow) {
                   for (const transfer of tx.transfers) {
