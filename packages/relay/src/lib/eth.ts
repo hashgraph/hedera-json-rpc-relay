@@ -1051,11 +1051,9 @@ export class EthImpl implements Eth {
           value,
           estimate: false
         }
+
         const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
-        if (contractCallResponse && contractCallResponse.result) {
-          return EthImpl.prepend0x(contractCallResponse.result);
-        }
-        return EthImpl.emptyHex;
+        return contractCallResponse && contractCallResponse.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
       }
       
       callConsensusNode = true; // flag consesnsus node retry intent
@@ -1064,20 +1062,14 @@ export class EthImpl implements Eth {
       // Temporary workaround until mirror node web3 module implements the support of precompiles
       // If mirror node throws, rerun eth_call and force it to go through the Consensus network
       if (e && !callConsensusNode) {
-        if (e instanceof MirrorNodeClientError && (e.isNotSupported() || e.isNotSupportedSystemContractOperaton())) {
-          this.logger.trace(`${requestIdPrefix} Unsupported eth_call request, retrying with consensus node`);
-        } else {
-          this.logger.warn(`${requestIdPrefix} Unhandled mirror node eth_call request, retrying with consensus node`);
-        }
+        const errorTypeMessage = e instanceof MirrorNodeClientError && (e.isNotSupported() || e.isNotSupportedSystemContractOperaton()) ? 'Unsupported' : 'Unhandled';
+        this.logger.trace(`${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node`);
 
         return await this.callConsensusNode(call, gas, requestId);
       } 
 
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
-      if (e instanceof JsonRpcError) {
-        return e;
-      }
-      return predefined.INTERNAL_ERROR();
+      return e instanceof JsonRpcError ? e : predefined.INTERNAL_ERROR();
     }
   }
 
