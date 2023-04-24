@@ -29,7 +29,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `CHAIN_ID`                 | ""             | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively.                                   |
 | `HBAR_RATE_LIMIT_DURATION` | "60000"        | hbar budget limit duration. This creates a timestamp, which resets all limits, when it's reached. Default is to 60000 (1 minute).                                                                                   |
 | `HBAR_RATE_LIMIT_TINYBAR`  | "5000_000_000" | total hbar budget in tinybars.                                                                                                                                                                                      |
-| `HEDERA_NETWORK`           | ""             | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `MAINNET`, `PREVIEWNET`, `TESTNET` or a map of network IPs -> node accountIds e.g. `{"127.0.0.1:50211":"0.0.3"}` |
+| `HEDERA_NETWORK`           | ""             | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `previewnet`, `testnet`, `mainnet` or a map of network IPs -> node accountIds e.g. `{"127.0.0.1:50211":"0.0.3"}` |
 | `INPUT_SIZE_LIMIT`         | "1mb"          | The [koa-jsonrpc](https://github.com/Bitclimb/koa-jsonrpc) maximum size allowed for requests                                                                                                                        |
 | `OPERATOR_ID_MAIN`         | ""             | Operator account ID used to pay for transactions.                                                                                                                                                                   |
 | `OPERATOR_KEY_MAIN`        | ""             | Operator private key used to sign transactions in hex encoded DER format.                                                                                                                                           |
@@ -82,6 +82,41 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `WS_SUBSCRIPTION_LIMIT`         | "10"     | Maximum amount of subscriptions per single connection                                   |
 | `WS_CONNECTION_LIMIT_PER_IP`    | "10"     | Maximum amount of connections from a single IP address                                  |
 | `WS_MULTIPLE_ADDRESSES_ENABLED` | "false"  | If enabled eth_subscribe will allow subscription to multiple contract address.          |
+
+## Sample for connecting to Hedera Environments
+
+Hedera Mainnet
+
+```.env
+HEDERA_NETWORK=mainnet
+OPERATOR_ID_MAIN=<...redacted...>
+OPERATOR_KEY_MAIN=<...redacted...>
+CHAIN_ID=0x127
+MIRROR_NODE_URL=https://mainnet-public.mirrornode.hedera.com/
+```
+
+Hedera Testnet
+
+```.env
+HEDERA_NETWORK=testnet
+OPERATOR_ID_MAIN=<...redacted...>
+OPERATOR_KEY_MAIN=<...redacted...>
+CHAIN_ID=0x128
+MIRROR_NODE_URL=https://testnet.mirrornode.hedera.com/
+```
+
+Hedera Previewnet
+
+```.env
+HEDERA_NETWORK=previewnet
+OPERATOR_ID_MAIN=<...redacted...>
+OPERATOR_KEY_MAIN=<...redacted...>
+CHAIN_ID=0x129
+MIRROR_NODE_URL=https://previewnet.mirrornode.hedera.com/
+```
+
+- **_NOTE:_** Replace the redacted operator ID and keys with your own.
+- **_NOTE 2:_** Default values for all other keys are sufficient, no need to set them.
 
 ## Testing
 
