@@ -1024,50 +1024,46 @@ export class EthImpl implements Eth {
     await this.performCallChecks(call, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
-    let gas = Number(call.gas) || 400_000;
-
-    let value: string | null = null;
-    if (typeof call.value === 'string') {
-      value = (new BN(call.value)).toString();
-    }
-
-    // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
-    // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
-    if (gas > constants.BLOCK_GAS_LIMIT) {
-      this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`);
-      gas = constants.BLOCK_GAS_LIMIT;
-    }
+    let gas = this.getCappedBlockGasLimit(call.gas);
+    let value: string | null = EthImpl.toNullableBigNumber(call.value);
     
-    let callConsensusNode = false;
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
       if (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
-        this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`, call.to, gas, call.data, call.from);
-        const callData = {
-          ...call,
-          gas,
-          value,
-          estimate: false
-        }
-
-        const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
-        return contractCallResponse && contractCallResponse.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
+        return await this.callMirrorNode(call, gas, value, requestId);
       }
       
-      callConsensusNode = true; // flag consesnsus node retry intent
       return await this.callConsensusNode(call, gas, requestId);
+    } catch (e: any) {
+      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
+      return e instanceof JsonRpcError ? e : predefined.INTERNAL_ERROR();
+    }
+  }
+
+  async callMirrorNode(call: any, gas: number, value: string | null, requestId?: string): Promise<string | JsonRpcError> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    try {
+      this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`, call.to, gas, call.data, call.from);
+      const callData = {
+        ...call,
+        gas,
+        value,
+        estimate: false
+      }
+
+      const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
+      return contractCallResponse && contractCallResponse.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
     } catch (e: any) {
       // Temporary workaround until mirror node web3 module implements the support of precompiles
       // If mirror node throws, rerun eth_call and force it to go through the Consensus network
-      if (e && !callConsensusNode) {
+      if (e) {
         const errorTypeMessage = e instanceof MirrorNodeClientError && (e.isNotSupported() || e.isNotSupportedSystemContractOperaton()) ? 'Unsupported' : 'Unhandled';
         this.logger.trace(`${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node`);
 
         return await this.callConsensusNode(call, gas, requestId);
       } 
-
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
       return e instanceof JsonRpcError ? e : predefined.INTERNAL_ERROR();
     }
@@ -1292,6 +1288,14 @@ export class EthImpl implements Eth {
     return value.substring(0, 66);
   }
 
+  static toNullableBigNumber(value: string): string | null {
+    if (typeof value === 'string') {
+      return (new BN(value)).toString();
+    }
+
+    return null;
+  }
+
   private static toNullIfEmptyHex(value: string): string | null {
     return value === EthImpl.emptyHex ? null : value;
   }
@@ -1328,6 +1332,22 @@ export class EthImpl implements Eth {
     } else {
       return Number(tag);
     }
+  }
+
+  private getCappedBlockGasLimit(gasString: string, requestIdPrefix?: string): number {
+    if (!gasString) {
+      return 400_000;
+    }
+
+    // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
+    // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
+    let gas = Number.parseInt(gasString);
+    if (gas > constants.BLOCK_GAS_LIMIT) {
+      this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`);
+      return constants.BLOCK_GAS_LIMIT;
+    }
+
+    return gas;
   }
 
   /**
