@@ -1060,12 +1060,18 @@ export class EthImpl implements Eth {
       return await this.callConsensusNode(call, gas, requestId);
     } catch (e: any) {
       // Temporary workaround until mirror node web3 module implements the support of precompiles
-      // If mirror node throws NOT_SUPPORTED or precompile is not supported, rerun eth_call and force it to go through the Consensus network
-      if (e instanceof MirrorNodeClientError && (e.isNotSupported() || e.isNotSupportedSystemContractOperaton())) {
-        return await this.callConsensusNode(call, gas, requestId);
-      }
+      // If mirror node throws, rerun eth_call and force it to go through the Consensus network
+      if (e) {
+        if (e instanceof MirrorNodeClientError && (e.isNotSupported() || e.isNotSupportedSystemContractOperaton())) {
+          this.logger.trace(`${requestIdPrefix} Unsupported eth_call request, retrying with consensus node`);
+        } else {
+          this.logger.warn(`${requestIdPrefix} Unhandled mirror node eth_call request, retrying with consensus node`);
+        }
 
-      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
+        return await this.callConsensusNode(call, gas, requestId);
+      } 
+
+      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
       if (e instanceof JsonRpcError) {
         return e;
       }
