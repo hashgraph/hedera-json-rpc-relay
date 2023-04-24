@@ -739,8 +739,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             it('should call eth_feeHistory with updated fees', async function () {
                 const blockCountNumber = lastBlockAfterUpdate.number - lastBlockBeforeUpdate.number;
                 const blockCountHex = ethers.utils.hexValue(blockCountNumber);
-                const datedGasPriceHex = ethers.utils.hexValue(Assertions.datedGasPrice);
-                const updatedGasPriceHex = ethers.utils.hexValue(Assertions.updatedGasPrice);
+                const defaultGasPriceHex = ethers.utils.hexValue(Assertions.defaultGasPrice);
                 const newestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number);
                 const oldestBlockNumberHex = ethers.utils.hexValue(lastBlockAfterUpdate.number - blockCountNumber + 1);
 
@@ -752,9 +751,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                     checkReward: true
                 });
                 // We expect all values in the array to be from the mirror node. If there is discrepancy in the blocks, the first value is from the consensus node and it's different from expected.
-                expect(res.baseFeePerGas[1]).to.equal(datedGasPriceHex);
-                expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(updatedGasPriceHex);
-                expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(updatedGasPriceHex);
+                expect(res.baseFeePerGas[1]).to.equal(defaultGasPriceHex); // should return defaultGasPriceHex
+                expect(res.baseFeePerGas[res.baseFeePerGas.length - 2]).to.equal(defaultGasPriceHex);
+                expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(defaultGasPriceHex);
             });
 
             it('should call eth_feeHistory with newest block > latest', async function () {

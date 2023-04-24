@@ -124,6 +124,7 @@ config:
   ETH_CALL_CACHE_TTL: 200
   CONSENSUS_MAX_EXECUTION_TIME: 15000
   SDK_REQUEST_TIMEOUT: 10000
+  CONTRACT_QUERY_TIMEOUT_RETRIES: 3
   SUBSCRIPTIONS_ENABLED: false
   ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: true
 
@@ -137,3 +138,20 @@ test:
   enabled: false
   schedule: '@daily'
   baseUrl: "http://127.0.0.1:7546"
+
+livenessProbe:
+  failureThreshold: 5
+  httpGet:
+    path: /health/liveness
+    port: jsonrpcrelay
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 5
+
+readinessProbe:
+  failureThreshold: 5
+  httpGet:
+    path: /health/readiness
+    port: jsonrpcrelay
+  initialDelaySeconds: 20
+  timeoutSeconds: 5

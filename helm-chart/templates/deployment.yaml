@@ -41,14 +41,8 @@ spec:
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
-        livenessProbe:
-          httpGet:
-            path: /health/liveness
-            port: jsonrpcrelay
-        readinessProbe:
-          httpGet:
-            path: /health/readiness
-            port: jsonrpcrelay
+        livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
+        readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
         resources:
           {{- toYaml .Values.resources | indent 12 }}
       {{- with .Values.nodeSelector }}

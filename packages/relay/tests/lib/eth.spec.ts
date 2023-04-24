@@ -85,6 +85,7 @@ describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
 
   let ethImpl: EthImpl;
+  const ethFeeHistoryValue = process.env.ETH_FEE_HISTORY_FIXED || 'true';
 
   this.beforeAll(() => {
     // @ts-ignore
@@ -101,8 +102,15 @@ describe('Eth calls using MirrorNode', async function () {
       max: constants.CACHE_MAX,
       ttl: constants.CACHE_TTL.ONE_HOUR
     });
+
+    process.env.ETH_FEE_HISTORY_FIXED = 'false';
+
     // @ts-ignore
     ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+  });
+
+  this.afterAll(() => {
+    process.env.ETH_FEE_HISTORY_FIXED = ethFeeHistoryValue;
   });
 
   this.beforeEach(() => {
@@ -2342,6 +2350,134 @@ describe('Eth calls using MirrorNode', async function () {
     expect(feeHistory['oldestBlock']).to.equal(`0x${latestBlock.number.toString(16)}`);
   });
 
+  describe('eth_feeHistory using fixed fees', function () {
+
+    this.beforeAll(function () {
+      process.env.ETH_FEE_HISTORY_FIXED = 'true';
+    });
+
+    this.afterAll(function () {
+      process.env.ETH_FEE_HISTORY_FIXED = 'false';
+    });
+
+    it('eth_feeHistory with fixed fees', async function () {
+      const latestBlockNumber = 20;
+      const latestBlock = {...defaultBlock, number: latestBlockNumber};
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+
+      const countBlocks = 2;
+
+      const feeHistory = await ethImpl.feeHistory(countBlocks, 'latest', [25, 75]);
+
+      expect(feeHistory).to.exist;
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
+      expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
+      expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
+      expect(feeHistory['baseFeePerGas'][1]).to.eq("0x13e52b9abe000");
+      expect(feeHistory['baseFeePerGas'][2]).to.eq("0x13e52b9abe000");
+    });
+
+    it('eth_feeHistory 5 blocks with latest with fixed fees', async function () {
+      const latestBlockNumber = 20;
+      const latestBlock = {...defaultBlock, number: latestBlockNumber};
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+
+      const countBlocks = 5;
+
+      const feeHistory = await ethImpl.feeHistory(countBlocks, 'latest', []);
+
+      expect(feeHistory).to.exist;
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
+      expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
+      expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
+      expect(feeHistory['baseFeePerGas'][1]).to.eq("0x13e52b9abe000");
+      expect(feeHistory['baseFeePerGas'][2]).to.eq("0x13e52b9abe000");
+    });
+
+    it('eth_feeHistory 5 blocks with custom newest with fixed fees', async function () {
+
+      const latestBlockNumber = 10;
+      const latestBlock = {...defaultBlock, number: latestBlockNumber};
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+
+      const countBlocks = 5;
+
+      const feeHistory = await ethImpl.feeHistory(countBlocks, 'latest', []);
+
+      expect(feeHistory).to.exist;
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
+      expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
+      expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
+      expect(feeHistory['baseFeePerGas'][1]).to.eq("0x13e52b9abe000");
+      expect(feeHistory['baseFeePerGas'][2]).to.eq("0x13e52b9abe000");
+    });
+
+    it('eth_feeHistory with pending param', async function () {
+      const latestBlockNumber = 20;
+      const latestBlock = {...defaultBlock, number: latestBlockNumber};
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+
+      const countBlocks = 5;
+
+      const feeHistory = await ethImpl.feeHistory(countBlocks, 'pending', []);
+
+      expect(feeHistory).to.exist;
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
+      expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
+      expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
+    });
+
+    it('eth_feeHistory with earliest param', async function () {
+      const latestBlockNumber = 10;
+      const latestBlock = {...defaultBlock, number: latestBlockNumber};
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
+      restMock.onGet(`blocks/1`).reply(200, latestBlock);
+      const countBlocks = 1;
+
+      const feeHistory = await ethImpl.feeHistory(countBlocks, 'earliest', []);
+
+      expect(feeHistory).to.exist;
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(1));
+      expect(feeHistory['baseFeePerGas'].length).to.eq(2);
+      expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
+    });
+
+    it('eth_feeHistory with fixed fees using cache', async function () {
+      const latestBlockNumber = 20;
+      const latestBlock = {...defaultBlock, number: latestBlockNumber};
+      restMock.onGet('blocks?limit=1&order=desc').replyOnce(200, {blocks: [latestBlock]});
+      restMock.onGet(`blocks/${latestBlock.number}`).replyOnce(200, latestBlock);
+
+      const countBlocks = 2;
+
+      const feeHistory = await ethImpl.feeHistory(countBlocks, 'latest', []);
+
+      expect(feeHistory).to.exist;
+      expect(feeHistory['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
+      expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
+      expect(feeHistory['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
+      expect(feeHistory['baseFeePerGas'][1]).to.eq("0x13e52b9abe000");
+      expect(feeHistory['baseFeePerGas'][2]).to.eq("0x13e52b9abe000");
+
+      restMock.onGet('blocks?limit=1&order=desc').reply(404, {});
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(404, {});
+
+      const feeHistoryUsingCache = await ethImpl.feeHistory(countBlocks, 'latest', []);
+      expect(feeHistoryUsingCache).to.exist;
+      expect(feeHistoryUsingCache['oldestBlock']).to.eq(EthImpl.numberTo0x(latestBlockNumber - countBlocks + 1));
+      expect(feeHistoryUsingCache['baseFeePerGas'].length).to.eq(countBlocks + 1);
+      expect(feeHistoryUsingCache['baseFeePerGas'][0]).to.eq("0x13e52b9abe000");
+      expect(feeHistoryUsingCache['baseFeePerGas'][1]).to.eq("0x13e52b9abe000");
+      expect(feeHistoryUsingCache['baseFeePerGas'][2]).to.eq("0x13e52b9abe000");
+
+    });
+
+  });
+
   it('eth_estimateGas contract call returns default', async function () {
     const gas = await ethImpl.estimateGas({ data: "0x01" }, null);
     expect(gas).to.equal(EthImpl.defaultGas);
@@ -2491,7 +2627,7 @@ describe('Eth calls using MirrorNode', async function () {
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
               return Uint8Array.of(0);
             }
@@ -2504,12 +2640,12 @@ describe('Eth calls using MirrorNode', async function () {
         "data": contractCallData,
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 400_000, accountAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, 400_000, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
     it('eth_call with no data', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
               return Uint8Array.of(0);
             }
@@ -2522,12 +2658,12 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimitHex
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, undefined, maxGasLimit, accountAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, undefined, maxGasLimit, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
     it('eth_call with no from address', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
               return Uint8Array.of(0);
             }
@@ -2540,12 +2676,12 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimitHex
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, undefined, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, undefined, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
     it('eth_call with all fields', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
               return Uint8Array.of(0);
             }
@@ -2559,13 +2695,13 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimitHex
       }, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
     //Return once the value, then it's being fetched from cache. After the loop we reset the sdkClientStub, so that it returns nothing, if we get an error in the next request that means that the cache was cleared.
     it('eth_call should cache the response for 200ms', async function () {
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
         asBytes: function () {
           return Uint8Array.of(0);
             }
@@ -2601,7 +2737,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     describe('with gas > 15_000_000', async function() {
       it('caps gas at 15_000_000', async function () {
-        sdkClientStub.submitContractCallQuery.returns({
+        sdkClientStub.submitContractCallQueryWithRetry.returns({
               asBytes: function () {
                 return Uint8Array.of(0);
               }
@@ -2615,13 +2751,13 @@ describe('Eth calls using MirrorNode', async function () {
           "gas": 50_000_000
         }, 'latest');
 
-        sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
+        sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
         expect(result).to.equal("0x00");
       });
     });
 
     it('SDK returns a precheck error', async function () {
-      sdkClientStub.submitContractCallQuery.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
+      sdkClientStub.submitContractCallQueryWithRetry.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
 
       const result = await ethImpl.call({
         "from": accountAddress1,
@@ -2754,7 +2890,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      sdkClientStub.submitContractCallQuery.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
               return Uint8Array.of(0);
             }
@@ -2763,7 +2899,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const result = await ethImpl.call(callData, 'latest');
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQuery, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
       expect(result).to.equal("0x00");
     });
 
