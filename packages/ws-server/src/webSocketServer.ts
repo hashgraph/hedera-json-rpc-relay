@@ -77,7 +77,6 @@ function getMultipleAddressesEnabled() {
 }
 
 async function validateIsContractAddress(address, requestId) {
-    // FIXME at some point this should also check for HTS addresses
     const isContract = await mirrorNodeClient.resolveEntityType(address, requestId, [constants.TYPE_CONTRACT]);
     if (!isContract) {
         throw new JsonRpcError(predefined.INVALID_PARAMETER(`filters.address`, `${address} is not a valid contract type or does not exists`), requestId);

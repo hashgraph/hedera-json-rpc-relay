@@ -524,7 +524,7 @@ describe('@web-socket Acceptance Tests', async function() {
 
     describe('Subscribes to log events', async function () {
         let logContractSigner2, logContractSigner3, wsLogsProvider, contracts, cLen;
-        const ANONYMOUS_LOG_DATA = '0x000000000000000000000000000000000000000000000000000000000000000a';
+        let ANONYMOUS_LOG_DATA, topic1, topic2;
         let eventsReceivedGlobal: any[] = [];
 
         // Deploy several contracts
@@ -537,6 +537,19 @@ describe('@web-socket Acceptance Tests', async function() {
             logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet, relay);
             logContractSigner3 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet, relay);
 
+            await createLogs(logContractSigner2);
+            const mirrorLogs = await mirrorNode.get(`/contracts/${logContractSigner2.address}/results/logs`, requestId);
+
+            expect(mirrorLogs).to.exist;
+            expect(mirrorLogs.logs).to.exist;
+            expect(mirrorLogs.logs.length).to.eq(5);
+
+            ANONYMOUS_LOG_DATA = mirrorLogs.logs[4].data;
+            topic1 = mirrorLogs.logs[3].topics[0];
+            topic2 = mirrorLogs.logs[3].topics[1];
+
+            const invalidTopic = '0x9999999999999999999999999999999999999999999999999999999999999999';
+
             const testFilters = [
                 {}, // all contract logs
                 {
@@ -546,21 +559,27 @@ describe('@web-socket Acceptance Tests', async function() {
                     address: logContractLongZeroAddress
                 },  // logs from single contract with long zero address
                 {
-                    topics: ['0x46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8']
+                    topics: [topic1]
                 },  // logs for topic emitted by several contracts
                 {
                     topics: [
-                        '0x46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8', // emitted only by Log1 method
-                        '0x0000000000000000000000000000000000000000000000000000000000000001'  // emitted by Log1 and Log2 methods
+                        topic1, // emitted only by Log1 method
+                        topic2  // emitted by Log1 and Log2 methods
                     ]
                 },  // logs for multiple topics
                 {
                     address: logContractSigner2.address,
                     topics: [
-                        '0x46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8', // emitted only by Log1 method
-                        '0x0000000000000000000000000000000000000000000000000000000000000001'  // emitted by Log1 and Log2 methods
+                        topic1, // emitted only by Log1 method
+                        topic2  // emitted by Log1 and Log2 methods
                     ]
                 }, // logs filtered by multiple topics and single address
+                {
+                    address: logContractSigner2.address,
+                    topics: [
+                        invalidTopic
+                    ]
+                } // subscribing to valid address and invalid topic
             ];
 
             for (let i = 0; i < testFilters.length; i++) {
@@ -664,6 +683,13 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(eventsReceived.length).to.eq(1);
 
             assertions.expectLogArgs(eventsReceived[0], contracts[1], [1]);
+        });
+
+        it('Subscribing for contract logs for a speciffic contract address and a wrong topic.', async function () {
+            let eventsReceived = eventsReceivedGlobal[6];
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(0);
         });
     });
 
