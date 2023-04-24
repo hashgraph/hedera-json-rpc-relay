@@ -103,7 +103,7 @@ describe('@web-socket Acceptance Tests', async function() {
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     let server;
     // @ts-ignore
-    const {servicesNode, relay} = global;
+    const {servicesNode, relay, mirrorNode} = global;
 
     // cached entities
     let requestId;
@@ -531,6 +531,9 @@ describe('@web-socket Acceptance Tests', async function() {
         before(async function() {
             wsLogsProvider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
 
+            const logContractMirror = await mirrorNode.get(`/contracts/${logContractSigner.address}`, requestId);
+            const logContractLongZeroAddress = Utils.idToEvmAddress(logContractMirror.contract_id);
+
             logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet, relay);
             logContractSigner3 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet, relay);
 
@@ -540,7 +543,7 @@ describe('@web-socket Acceptance Tests', async function() {
                     address: logContractSigner.address
                 },  // logs from single contract with evm address
                 {
-                    address: logContractSigner.address
+                    address: logContractLongZeroAddress
                 },  // logs from single contract with long zero address
                 {
                     topics: ['0x46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8']
