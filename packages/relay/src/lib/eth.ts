@@ -1038,6 +1038,7 @@ export class EthImpl implements Eth {
       gas = constants.BLOCK_GAS_LIMIT;
     }
     
+    let callConsensusNode = false;
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
       if (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false') {
@@ -1057,11 +1058,12 @@ export class EthImpl implements Eth {
         return EthImpl.emptyHex;
       }
       
+      callConsensusNode = true; // flag consesnsus node retry intent
       return await this.callConsensusNode(call, gas, requestId);
     } catch (e: any) {
       // Temporary workaround until mirror node web3 module implements the support of precompiles
       // If mirror node throws, rerun eth_call and force it to go through the Consensus network
-      if (e) {
+      if (e && !callConsensusNode) {
         if (e instanceof MirrorNodeClientError && (e.isNotSupported() || e.isNotSupportedSystemContractOperaton())) {
           this.logger.trace(`${requestIdPrefix} Unsupported eth_call request, retrying with consensus node`);
         } else {
