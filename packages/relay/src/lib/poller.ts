@@ -41,7 +41,7 @@ export class Poller {
         this.eth = eth;
         this.logger = logger;
         this.polls = [];
-        this.pollingInterval = Number(process.env.POLLING_INTERVAL) || 500;
+        this.pollingInterval = Number(process.env.WS_POLLING_INTERVAL) || 500;
     }
 
     public poll() {

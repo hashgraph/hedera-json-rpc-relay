@@ -222,7 +222,7 @@ export default class Assertions {
     };
 
     static expectLogArgs = (log, contract, args: any[] = []) => {
-        expect(log.address.toLowerCase()).to.equal(contract.evmAddress.toLowerCase());
+        expect(log.address.toLowerCase()).to.equal(contract.address.toLowerCase());
         const decodedLog1 = contract.interface.parseLog(log);
         expect(decodedLog1.args).to.exist;
         expect(decodedLog1.args.length).to.eq(args.length);
@@ -233,7 +233,7 @@ export default class Assertions {
 
     static expectAnonymousLog = (log, contract, data) => {
         expect(log.data).to.equal(data);
-        expect(log.address.toLowerCase()).to.equal(contract.evmAddress.toLowerCase());
+        expect(log.address.toLowerCase()).to.equal(contract.address.toLowerCase());
     }
 
 }
