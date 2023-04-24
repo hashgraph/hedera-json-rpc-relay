@@ -674,8 +674,20 @@ export class EthImpl implements Eth {
                 let lastTransactionOnPageTimestamp;
                 if(mirrorAccount.links.next !== null) {
                   // Get the end of the page of transactions timestamp
-                  lastTransactionOnPageTimestamp = mirrorAccount.links.next.substring(mirrorAccount.links.next.indexOf("gte:") + 4, mirrorAccount.links.next.indexOf("&timestamp"));
+                  const params = new URLSearchParams(mirrorAccount.links.next.split('?')[1]);
+                  if((params === null) || (params === undefined)) {
+                    this.logger.debug(`${requestIdPrefix} Unable to find expected search parameters in account next page link ${mirrorAccount.links.next}), returning 0x0 balance`);
+                    return EthImpl.zeroHex;
+                  }
+
+                  const timestampParameters = params.getAll('timestamp'); 
+                  lastTransactionOnPageTimestamp = timestampParameters[0].split(':')[1];
+                  if((lastTransactionOnPageTimestamp === null) || (lastTransactionOnPageTimestamp === undefined)) {
+                    this.logger.debug(`${requestIdPrefix} Unable to find expected beginning (gte:) timestamp in account next page link ${mirrorAccount.links.next}), returning 0x0 balance`);
+                    return EthImpl.zeroHex;
+                  }
                 }
+
                 let transactionsInTimeWindow: any = [];
                 if((typeof lastTransactionOnPageTimestamp !== "undefined") && (mirrorAccount.transactions[mirrorAccount.transactions.length -1].consensus_timestamp >= lastTransactionOnPageTimestamp)) {
                   transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
