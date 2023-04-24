@@ -282,7 +282,6 @@ export class SDKClient {
         let retries = 0;
         let resp;
         while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || '1') > retries) {
-            console.log(retries)
             try {
                 resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestId);
                 return resp;
@@ -294,6 +293,9 @@ export class SDKClient {
                     retries++;
                     await new Promise(r => setTimeout(r, delay));
                     continue;
+                }
+                if (e instanceof JsonRpcError) {
+                    throw e;
                 }
                 throw sdkClientError;
             }
@@ -397,7 +399,6 @@ export class SDKClient {
             if (sdkClientError.isGrpcTimeout()) {
                 throw predefined.REQUEST_TIMEOUT;
             }
-
             throw sdkClientError;
         }
     };
