@@ -48,7 +48,7 @@ export class RelayImpl implements Relay {
     dotenv.config({ path: findConfig('.env') || '' });
     logger.info('Configurations successfully loaded');
 
-    const hederaNetwork: string = process.env.HEDERA_NETWORK || '{}';
+    const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
 
     const configuredChainId =
       process.env.CHAIN_ID || RelayImpl.chainIds[hederaNetwork] || '298';
@@ -102,7 +102,7 @@ export class RelayImpl implements Relay {
 
   initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
     let client: Client;
-    if (hederaNetwork.toLowerCase() in RelayImpl.chainIds) {
+    if (hederaNetwork in RelayImpl.chainIds) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));

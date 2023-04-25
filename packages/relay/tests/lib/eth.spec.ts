@@ -2987,6 +2987,38 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.equal("0x00");
     });
 
+    it('eth_call with all fields, but mirror node throws CONTRACT_REVERTED', async function () {
+      const callData = {
+        ...defaultCallData,
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimit
+      };
+
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(400, {
+        '_status': {
+          'messages': [
+            {
+              'message': 'Contract reverted execution'
+            }
+          ]
+        }
+      });
+
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
+            asBytes: function () {
+              return Uint8Array.of(0);
+            }
+          }
+      );
+
+      const result = await ethImpl.call(callData, 'latest');
+
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
+      expect(result).to.equal("0x00");
+    });
+
     it('caps gas at 15_000_000', async function () {
       const callData = {
         ...defaultCallData,
