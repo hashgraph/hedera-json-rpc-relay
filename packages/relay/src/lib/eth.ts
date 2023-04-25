@@ -1055,7 +1055,10 @@ export class EthImpl implements Eth {
 
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
       if (contractCallResponse && contractCallResponse.result) {
-        return contractCallResponse.result == EthImpl.emptyHex ? await this.callConsensusNode(call, gas, requestId) : EthImpl.prepend0x(contractCallResponse.result)
+        if (contractCallResponse.result == EthImpl.emptyHex) {
+          throw new MirrorNodeClientError({ message: "Empty Response" }, MirrorNodeClientError.statusCodes.NO_CONTENT);
+        }
+        return EthImpl.prepend0x(contractCallResponse.result);
       }
       return EthImpl.emptyHex;
     } catch (e: any) {
