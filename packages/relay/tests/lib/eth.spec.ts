@@ -2994,6 +2994,28 @@ describe('Eth calls using MirrorNode', async function () {
         expect(error.message).to.equal(`Invalid Contract Address: ${wrongContractAddress}. Expected length of 42 chars but was ${wrongContractAddress.length}.`);
       }
     });
+
+    it('eth_call with all fields, but mirror-node returns empty response', async function () {
+      const callData = {
+        ...defaultCallData,
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimit
+      };
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x`});
+
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
+          asBytes: function () {
+            return Uint8Array.of(0);
+          }
+        }
+      );
+
+      const result = await ethImpl.call(callData, 'latest');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
+      expect(result).to.equal("0x00");
+    });
   });
 
   describe('eth_sendRawTransaction', async function() {

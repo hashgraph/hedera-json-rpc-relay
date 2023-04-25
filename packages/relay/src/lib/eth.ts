@@ -1054,7 +1054,10 @@ export class EthImpl implements Eth {
       }
 
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
-      return contractCallResponse && contractCallResponse.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
+      if (contractCallResponse && contractCallResponse.result) {
+        return contractCallResponse.result == EthImpl.emptyHex ? await this.callConsensusNode(call, gas, requestId) : EthImpl.prepend0x(contractCallResponse.result)
+      }
+      return EthImpl.emptyHex;
     } catch (e: any) {
       // Temporary workaround until mirror node web3 module implements the support of precompiles
       // If mirror node throws, rerun eth_call and force it to go through the Consensus network
