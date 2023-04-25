@@ -1698,7 +1698,7 @@ describe('Eth calls using MirrorNode', async function () {
             buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":`${timestamp4}.060890954`}),
           ],
           links: {
-            next: `transactions?account.id=${contractId1}&timestamp=gte:${recentBlock.timestamp.to}&timestamp=lt:${timestamp4}.060890940&page=2`
+            next: `/api/v1/accounts/${contractId1}?limit=100&timestamp=lt:${timestamp4}.060890940&page=2`
           }
         });        
 
