@@ -542,6 +542,30 @@ describe('Eth calls using MirrorNode', async function () {
     "contract_id": contractId2,
   };
 
+  const defaultContract3EmptyBytecode = {
+    "address": contractAddress2,
+    "contract_id": contractId2,
+    "admin_key": null,
+    "auto_renew_account": null,
+    "auto_renew_period": 7776000,
+    "created_timestamp": "1659622477.294172233",
+    "deleted": false,
+    "evm_address": null,
+    "expiration_timestamp": null,
+    "file_id": "0.0.1051",
+    "max_automatic_token_associations": 0,
+    "memo": "",
+    "obtainer_id": null,
+    "permanent_removal": null,
+    "proxy_account_id": null,
+    "timestamp": {
+      "from": "1659622477.294172233",
+      "to": null
+    },
+    "bytecode": "0x123456",
+    "runtime_bytecode": "0x"
+  };
+
   const defaultHTSToken =
     {
       "admin_key": null,
@@ -2820,6 +2844,28 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`tokens/${defaultContractResults.results[1].contract_id}`).reply(404, null);
     });
 
+    it('eth_call with all fields, but mirror-node returns empty response', async function () {
+      const callData = {
+        ...defaultCallData,
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimit
+      };
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract3EmptyBytecode);
+
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
+          asBytes: function () {
+            return Uint8Array.of(0);
+          }
+        }
+      );
+
+      const result = await ethImpl.call(callData, 'latest');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
+      expect(result).to.equal("0x00");
+    });
+    
     it('eth_call with no gas', async function () {
       const callData = {
         ...defaultCallData,
@@ -2993,28 +3039,6 @@ describe('Eth calls using MirrorNode', async function () {
       } catch (error: any) {
         expect(error.message).to.equal(`Invalid Contract Address: ${wrongContractAddress}. Expected length of 42 chars but was ${wrongContractAddress.length}.`);
       }
-    });
-
-    it('eth_call with all fields, but mirror-node returns empty response', async function () {
-      const callData = {
-        ...defaultCallData,
-        "from": accountAddress1,
-        "to": contractAddress2,
-        "data": contractCallData,
-        "gas": maxGasLimit
-      };
-      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x`});
-
-      sdkClientStub.submitContractCallQueryWithRetry.returns({
-          asBytes: function () {
-            return Uint8Array.of(0);
-          }
-        }
-      );
-
-      const result = await ethImpl.call(callData, 'latest');
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
-      expect(result).to.equal("0x00");
     });
   });
 

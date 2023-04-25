@@ -1021,7 +1021,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    await this.performCallChecks(call, requestId);
+    const to = await this.performCallChecks(call, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
     let gas = this.getCappedBlockGasLimit(call.gas);
@@ -1032,7 +1032,7 @@ export class EthImpl implements Eth {
       if (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false') {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
-        return await this.callMirrorNode(call, gas, value, requestId);
+        return await this.callMirrorNode(call, to, gas, value, requestId);
       }
       
       return await this.callConsensusNode(call, gas, requestId);
@@ -1042,9 +1042,14 @@ export class EthImpl implements Eth {
     }
   }
 
-  async callMirrorNode(call: any, gas: number, value: string | null, requestId?: string): Promise<string | JsonRpcError> {
+  async callMirrorNode(call: any, to: any, gas: number, value: string | null, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     try {
+      if (to?.type === constants.TYPE_CONTRACT && to?.entity.runtime_bytecode === EthImpl.emptyHex) {
+        this.logger.trace(`${requestIdPrefix} Contract runtime_bytecode equals to 0x and mirror-node will return 0x as well, retrying with consensus node`);
+        throw new MirrorNodeClientError({ message: "Empty Response" }, MirrorNodeClientError.statusCodes.NO_CONTENT);
+      }
+
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`, call.to, gas, call.data, call.from);
       const callData = {
         ...call,
@@ -1054,13 +1059,7 @@ export class EthImpl implements Eth {
       }
 
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
-      if (contractCallResponse && contractCallResponse.result) {
-        if (contractCallResponse.result == EthImpl.emptyHex) {
-          throw new MirrorNodeClientError({ message: "Empty Response" }, MirrorNodeClientError.statusCodes.NO_CONTENT);
-        }
-        return EthImpl.prepend0x(contractCallResponse.result);
-      }
-      return EthImpl.emptyHex;
+      return contractCallResponse && contractCallResponse.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
     } catch (e: any) {
       // Temporary workaround until mirror node web3 module implements the support of precompiles
       // If mirror node throws, rerun eth_call and force it to go through the Consensus network
@@ -1139,6 +1138,8 @@ export class EthImpl implements Eth {
     if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
       throw predefined.NON_EXISTING_CONTRACT(call.to);
     }
+
+    return toEntityType;
   }
 
   /**
