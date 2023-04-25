@@ -85,7 +85,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 
 ## Sample for connecting to Hedera Environments
 
-Hedera Mainnet
+**Hedera Mainnet**
 
 ```.env
 HEDERA_NETWORK=mainnet
@@ -95,7 +95,9 @@ CHAIN_ID=0x127
 MIRROR_NODE_URL=https://mainnet-public.mirrornode.hedera.com/
 ```
 
-Hedera Testnet
+See [`.env.mainnet.sample`](./examples/.env.mainnet.sample).
+
+**Hedera Testnet**
 
 ```.env
 HEDERA_NETWORK=testnet
@@ -105,7 +107,9 @@ CHAIN_ID=0x128
 MIRROR_NODE_URL=https://testnet.mirrornode.hedera.com/
 ```
 
-Hedera Previewnet
+See [`.env.testnet.sample`](./examples/.env.testnet.sample).
+
+**Hedera Previewnet**
 
 ```.env
 HEDERA_NETWORK=previewnet
@@ -115,8 +119,11 @@ CHAIN_ID=0x129
 MIRROR_NODE_URL=https://previewnet.mirrornode.hedera.com/
 ```
 
+See [`.env.previewnet.sample`](./examples/.env.previewnet.sample).
+
 - **_NOTE:_** Replace the redacted operator ID and keys with your own.
 - **_NOTE 2:_** Default values for all other keys are sufficient, no need to set them.
+- **_NOTE 3:_** The above files have been provided for your convenience within the examples directory of this repo. For example, for the Hedera Testnet configuration, run this command in the root directory of this project: `cp ./docs/examples/.env.testnet.sample ./.env`
 
 ## Testing
 
