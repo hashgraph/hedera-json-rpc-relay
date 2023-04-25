@@ -3133,6 +3133,76 @@ describe('Eth calls using MirrorNode', async function () {
       expect(hasError).to.be.true;
     });
   });
+
+  describe('eth_getTranactionCount', async function() {
+    it('should return 0x0 on blockNumOrTag equal to 0 regardless of address', async function() {
+      const result = await ethImpl.getTransactionCount('', '0x0');
+      expect(result).to.exist;
+      expect(result).to.eq('0x0');
+    });
+
+    it('should return 0x0 on blockNumOrTag equal to 1 regardless of address', async function() {
+      const result = await ethImpl.getTransactionCount('', '0x1');
+      expect(result).to.exist;
+      expect(result).to.eq('0x0');
+    });
+
+
+    it('should return 0x0 on non existing address', async function() {
+      restMock.onGet(`accounts/${contractAddress1}`).reply(404);
+
+      const result = await ethImpl.getTransactionCount(contractAddress1, 'latest');
+
+      expect(result).to.exist;
+      expect(result).to.eq('0x0');
+    });
+
+    it('should return 0x0 on null nonce on existing address', async function() {
+      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        ethereum_nonce: null
+      });
+
+      const result = await ethImpl.getTransactionCount(contractAddress1, 'latest');
+
+      expect(result).to.exist;
+      expect(result).to.eq('0x0');
+    });
+
+    it('should return valid count on existing address with valid nonce', async function() {
+      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        ethereum_nonce: 7
+      });
+
+      const result = await ethImpl.getTransactionCount(contractAddress1, 'latest');
+
+      expect(result).to.exist;
+      expect(result).to.eq('0x7');
+    });
+
+    it('should ignore blockNumTag until implemented', async function() {
+      restMock.onGet(`accounts/${contractAddress1}`).reply(200, {
+        account: contractAddress1,
+        ethereum_nonce: 7
+      });
+
+      const result = await ethImpl.getTransactionCount(contractAddress1, '0x123');
+
+      expect(result).to.exist;
+      expect(result).to.eq('0x7');
+
+
+      const resultLatest = await ethImpl.getTransactionCount(contractAddress1, 'latest');
+      expect(resultLatest).to.eq(result);
+
+      const resultPending = await ethImpl.getTransactionCount(contractAddress1, 'pending');
+      expect(resultPending).to.eq(result);
+
+      const resultEarliest = await ethImpl.getTransactionCount(contractAddress1, 'earliest');
+      expect(resultEarliest).to.eq(result);
+    });
+  });
 });
 
 describe('Eth', async function () {

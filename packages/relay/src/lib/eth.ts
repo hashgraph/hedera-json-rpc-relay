@@ -900,36 +900,20 @@ export class EthImpl implements Eth {
   async getTransactionCount(address: string, blockNumOrTag: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionCount(address=${address}, blockNumOrTag=${blockNumOrTag})`);
-    const blockNumber = await this.translateBlockTag(blockNumOrTag, requestId);
-    if (blockNumber === 0) {
+    const blockNumber = Number(blockNumOrTag);
+    if (!isNaN(blockNumber) && blockNumber <= 1) {
       return EthImpl.zeroHex;
-    } else if (address && !blockNumOrTag) {
-      // get latest ethereumNonce
-      const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
-      if (mirrorAccount && mirrorAccount.ethereum_nonce) {
-        return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
-      }
+    } 
+
+    // get latest ethereumNonce
+    const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
+    if (mirrorAccount && mirrorAccount.ethereum_nonce) {
+      return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
     }
 
-    // check consensus node as back up
-    try {
-      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId, [constants.TYPE_ACCOUNT, constants.TYPE_CONTRACT]);
-      if (result?.type === constants.TYPE_ACCOUNT) {
-        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
-        return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
-      }
-      else if (result?.type === constants.TYPE_CONTRACT) {
-        return EthImpl.numberTo0x(1);
-      }
+    this.logger.trace(`${requestIdPrefix} address: ${address} not found by mirror node`);
 
-      return EthImpl.zeroHex;
-    } catch (e: any) {
-      this.logger.error(e, `${requestIdPrefix} Error raised during getTransactionCount for address ${address}, block number or tag ${blockNumOrTag}`);
-      if (e instanceof JsonRpcError) {
-        return e;
-      }
-      return predefined.INTERNAL_ERROR();
-    }
+    return EthImpl.zeroHex;
   }
 
   /**
