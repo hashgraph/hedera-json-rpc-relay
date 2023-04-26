@@ -833,38 +833,38 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             });
 
             it('@release should execute "eth_getTransactionCount" primary', async function () {
-                const res = await relay.call('eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+                const res = await relay.call('eth_getTransactionCount', [mirrorPrimaryAccount.evm_address, EthImpl.blockLatest], requestId);
                 expect(res).to.be.equal('0x0');
             });
 
             it('should execute "eth_getTransactionCount" secondary', async function () {
-                const res = await relay.call('eth_getTransactionCount', [mirrorSecondaryAccount.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+                const res = await relay.call('eth_getTransactionCount', [mirrorSecondaryAccount.evm_address, EthImpl.blockLatest], requestId);
                 expect(res).to.be.equal('0x0');
             });
 
             it('@release should execute "eth_getTransactionCount" contract', async function () {
-                const res = await relay.call('eth_getTransactionCount', [mirrorContract.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+                const res = await relay.call('eth_getTransactionCount', [mirrorContract.evm_address, EthImpl.blockLatest], requestId);
                 expect(res).to.be.equal('0x1');
             });
 
             it('@release should execute "eth_getTransactionCount" for account with id converted to evm_address', async function () {
-                const res = await relay.call('eth_getTransactionCount', [Utils.idToEvmAddress(mirrorPrimaryAccount.account), EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+                const res = await relay.call('eth_getTransactionCount', [Utils.idToEvmAddress(mirrorPrimaryAccount.account), EthImpl.blockLatest], requestId);
                 expect(res).to.be.equal('0x0');
             });
 
             it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address', async function () {
-                const res = await relay.call('eth_getTransactionCount', [Utils.idToEvmAddress(contractId.toString()), EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+                const res = await relay.call('eth_getTransactionCount', [Utils.idToEvmAddress(contractId.toString()), EthImpl.blockLatest], requestId);
                 expect(res).to.be.equal('0x1');
             });
 
             it('should execute "eth_getTransactionCount" for non-existing address', async function () {
-                const res = await relay.call('eth_getTransactionCount', [NON_EXISTING_ADDRESS, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+                const res = await relay.call('eth_getTransactionCount', [NON_EXISTING_ADDRESS, EthImpl.blockLatest], requestId);
                 expect(res).to.be.equal('0x0');
             });
 
             it('should execute "eth_getTransactionCount" from hollow account', async function() {
                 const hollowAccount = ethers.Wallet.createRandom();
-                const resBeforeCreation = await relay.call('eth_getTransactionCount', [hollowAccount.address, 'latest'], requestId);
+                const resBeforeCreation = await relay.call('eth_getTransactionCount', [hollowAccount.address, EthImpl.blockLatest], requestId);
                 expect(resBeforeCreation).to.be.equal('0x0');
 
                 const signedTxHollowAccountCreation = await accounts[2].wallet.signTransaction({
@@ -884,7 +884,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const txHashHA = await relay.call('eth_sendRawTransaction', [signTxFromHollowAccount], requestId);
                 await mirrorNode.get(`/contracts/results/${txHashHA}`, requestId);
 
-                const resAfterCreation = await relay.call('eth_getTransactionCount', [hollowAccount.address, 'latest'], requestId);
+                const resAfterCreation = await relay.call('eth_getTransactionCount', [hollowAccount.address, EthImpl.blockLatest], requestId);
                 expect(resAfterCreation).to.be.equal('0x1');
             });
 
@@ -904,7 +904,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 // Wait for the transaction to be processed and imported in the mirror node with axios-retry
                 await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-                const res = await relay.call('eth_getTransactionCount', ['0x' + account.address, 'latest'], requestId);
+                const res = await relay.call('eth_getTransactionCount', ['0x' + account.address, EthImpl.blockLatest], requestId);
                 expect(res).to.be.equal('0x1');
             });
 

@@ -82,6 +82,7 @@ export class EthImpl implements Eth {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
+  static firstBlockNumber = (process.env.HEDERA_NETWORK || '').toLowerCase() === 'mainnet' ? 0 : 1; // non mainnet blocks are currently 1-indexed
 
   /**
    * Configurable options used when initializing the cache.
@@ -901,7 +902,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionCount(address=${address}, blockNumOrTag=${blockNumOrTag})`);
     const blockNumber = Number(blockNumOrTag);
-    if (!isNaN(blockNumber) && blockNumber <= 1) {
+    if (!isNaN(blockNumber) && blockNumber <= EthImpl.firstBlockNumber) {
       return EthImpl.zeroHex;
     } 
 
