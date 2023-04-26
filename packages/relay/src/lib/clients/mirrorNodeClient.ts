@@ -321,11 +321,63 @@ export class MirrorNodeClient {
             requestId);
     }
 
+    /*******************************************************************************
+     * To be used to make the initial call for the account information including the 
+     * max number of transactions per page.  In most cases this should be sufficient
+     * and not require subsequent calls to the mirror node.
+     *******************************************************************************/
     public async getAccountPageLimit(idOrAliasOrEvmAddress: string, requestId?: string) {
         return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?limit=${constants.MIRROR_NODE_QUERY_LIMIT}`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
             [400, 404],
             requestId);
+    }
+
+
+    /*******************************************************************************
+     * To be used to make paginated calls for the account information when the 
+     * transaction count exceeds the constant MIRROR_NODE_QUERY_LIMIT.
+     *******************************************************************************/
+    public async getAccountPaginated(url: string, requestId?: string) {
+        const queryParamObject = {};
+        const accountId = this.extractAccountIdFromUrl(url, requestId);
+        const params = new URLSearchParams(url.split('?')[1]);
+        
+        this.setQueryParam(queryParamObject, 'account.id', accountId);
+        this.setQueryParam(queryParamObject, 'limit', constants.MIRROR_NODE_QUERY_LIMIT);
+        this.setQueryParam(queryParamObject, 'timestamp', params.get('timestamp'));
+        const queryParams = this.getQueryParams(queryParamObject);
+
+        return this.getPaginatedResults(
+            `${MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT}${queryParams}`,
+            MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT,
+            'transactions',
+            [400, 404],
+            requestId
+        );
+    }
+
+    public extractAccountIdFromUrl(url: string, requestId?: string): string | null {
+        const substringStartIndex = url.indexOf("/accounts/") + "/accounts/".length;
+        if (url.startsWith("0x", substringStartIndex)) {
+            // evm addresss
+            const regex = /\/accounts\/(0x[a-fA-F0-9]{40})/;
+            const match = url.match(regex);
+            const accountId = match ? match[1] : null;
+            if (!accountId) {
+                this.logger.error(`${formatRequestIdMessage(requestId)} Unable to extract evm address from url ${url}`);
+            }
+            return accountId;
+        } else {
+            // account id 
+            const regex = /\/accounts\/([\d\.]+)/;
+            const match = url.match(regex);
+            const accountId = match ? match[1] : null;
+            if (!accountId) {
+                this.logger.error(`${formatRequestIdMessage(requestId)} Unable to extract account ID from url ${url}`);
+            }
+            return accountId;
+        }
     }
 
     public async getTransactionsForAccount(accountId: string, timestampFrom: string, timestampTo: string, requestId?: string) {

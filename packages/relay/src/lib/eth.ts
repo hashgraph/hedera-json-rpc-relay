@@ -36,6 +36,11 @@ const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
 
+interface LatestBlockNumberTimestamp {
+    blockNumber: string,
+    timeStampTo: string
+}
+
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
  * Methods are implemented by delegating to the mirror node or to a
@@ -379,6 +384,38 @@ export class EthImpl implements Eth {
   }
 
   /**
+   * Gets the most recent block number and timestamp.to which represents the block finality.
+   */
+  async blockNumberTimestamp(requestId?: string): Promise<LatestBlockNumberTimestamp> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.trace(`${requestIdPrefix} blockNumber()`);
+
+    // check for cached value
+    const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
+    const blockNumberCached: LatestBlockNumberTimestamp = this.cache.get(cacheKey);
+
+    if(blockNumberCached) {
+      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
+      return blockNumberCached;
+    }
+
+    const blocksResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
+    const blocks = blocksResponse !== null ? blocksResponse.blocks : null;
+    if (Array.isArray(blocks) && blocks.length > 0) {
+      const currentBlock = EthImpl.numberTo0x(blocks[0].number);
+      const timestamp = blocks[0].timestamp.to;
+      const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp };
+      // save the latest block number in cache
+      this.cache.set(cacheKey, blockTimeStamp, { ttl: EthImpl.ethBlockNumberCacheTtlMs });
+      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(currentBlock)}:${JSON.stringify(timestamp)} for ${EthImpl.ethBlockNumberCacheTtlMs} ms`);
+
+      return blockTimeStamp;
+    }
+
+    throw predefined.COULD_NOT_RETRIEVE_LATEST_BLOCK;
+  }  
+  
+  /**
    * Gets the chain ID. This is a static value, in that it always returns
    * the same value. This can be specified via an environment variable
    * `CHAIN_ID`.
@@ -619,11 +656,12 @@ export class EthImpl implements Eth {
     const latestBlockTolerance = 1;
     this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
 
+    let latestBlock: LatestBlockNumberTimestamp | null | undefined;
     // this check is required, because some tools like Metamask pass for parameter latest block, with a number (ex 0x30ea)
     // tolerance is needed, because there is a small delay between requesting latest block from blockNumber and passing it here
     if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
-      const latestBlock = await this.blockNumber(requestId);
-      const blockDiff = Number(latestBlock) - Number(blockNumberOrTag);
+      latestBlock = await this.blockNumberTimestamp(requestId);
+      const blockDiff = Number(latestBlock.blockNumber) - Number(blockNumberOrTag);
 
       if (blockDiff <= latestBlockTolerance) {
         blockNumberOrTag = EthImpl.blockLatest;
@@ -652,11 +690,10 @@ export class EthImpl implements Eth {
 
           // A blockNumberOrTag has been provided. If it is `latest` or `pending` retrieve the balance from /accounts/{account.id}
           if (mirrorAccount) {
-            const latestBlock = await this.getHistoricalBlockResponse(EthImpl.blockLatest, true, requestId);
 
             // If the parsed blockNumber is the same as the one from the latest block retrieve the balance from /accounts/{account.id}
-            if (latestBlock && block.number !== latestBlock.number) {
-              const latestTimestamp = Number(latestBlock.timestamp.from.split('.')[0]);
+            if (latestBlock && block.number !== latestBlock.blockNumber) {
+              const latestTimestamp = Number(latestBlock.timeStampTo.split('.')[0]);
               const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
               const timeDiff = latestTimestamp - blockTimestamp;
               // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
@@ -672,35 +709,47 @@ export class EthImpl implements Eth {
                 // Need to check if there are any transactions before the block.timestamp.to in the current account set returned from the inital
                 // call to getAccountPageLimit.  If there are we may need to paginate.
                 let lastTransactionOnPageTimestamp;
-                if(mirrorAccount.links.next !== null) {
-                  // Get the end of the page of transactions timestamp
-                  const params = new URLSearchParams(mirrorAccount.links.next.split('?')[1]);
-                  if((params === null) || (params === undefined)) {
-                    this.logger.debug(`${requestIdPrefix} Unable to find expected search parameters in account next page link ${mirrorAccount.links.next}), returning 0x0 balance`);
-                    return EthImpl.zeroHex;
-                  }
+                // if(mirrorAccount.links.next !== null) {
+                //   // Get the end of the page of transactions timestamp
+                //   const params = new URLSearchParams(mirrorAccount.links.next.split('?')[1]);
+                //   if((params === null) || (params === undefined)) {
+                //     this.logger.debug(`${requestIdPrefix} Unable to find expected search parameters in account next page link ${mirrorAccount.links.next}), returning 0x0 balance`);
+                //     return EthImpl.zeroHex;
+                //   }
 
-                  const timestampParameters = params.getAll('timestamp'); 
-                  lastTransactionOnPageTimestamp = timestampParameters[0].split(':')[1];
-                  if((lastTransactionOnPageTimestamp === null) || (lastTransactionOnPageTimestamp === undefined)) {
-                    this.logger.debug(`${requestIdPrefix} Unable to find expected beginning (gte:) timestamp in account next page link ${mirrorAccount.links.next}), returning 0x0 balance`);
-                    return EthImpl.zeroHex;
-                  }
-                }
+                //   const timestampParameters = params.getAll('timestamp'); 
+                //   lastTransactionOnPageTimestamp = timestampParameters[0].split(':')[1];
+                //   if((lastTransactionOnPageTimestamp === null) || (lastTransactionOnPageTimestamp === undefined)) {
+                //     this.logger.debug(`${requestIdPrefix} Unable to find expected beginning (gte:) timestamp in account next page link ${mirrorAccount.links.next}), returning 0x0 balance`);
+                //     return EthImpl.zeroHex;
+                //   }
+                // }
 
-                let transactionsInTimeWindow: any = [];
-                if((typeof lastTransactionOnPageTimestamp !== "undefined") && (mirrorAccount.transactions[mirrorAccount.transactions.length -1].consensus_timestamp >= lastTransactionOnPageTimestamp)) {
-                  transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
-                    mirrorAccount.account,
-                    block.timestamp.to,
-                    currentTimestamp,
-                    requestId
-                  );
-                } else {
-                    transactionsInTimeWindow = mirrorAccount.transactions.filter((tx: any) => {
-                    return tx.consensus_timestamp >= block.timestamp.to && tx.consensus_timestamp <= currentTimestamp;
-                  });
-                }
+                // The balance in the account is real time, so we simply reverse the tranasctions to the block.timestamp.to to get a block relevant balance
+                // needs to be updated below.
+                const nextPage: string = mirrorAccount.links.next;
+                const nextPageParams = new URLSearchParams(nextPage.split('?')[1]);
+                const nextPageTimeMarker = nextPageParams.get('timestamp');
+
+                // if((!nextPage) || ((nextPageTimeMarker !== null) && (nextPageTimeMarker.split(':')[1])) >= block.timestamp.to)) {
+                // if (blockTimestamp.to >= )
+                // let transactionsInTimeWindow: any = [];
+                // transactionsInTimeWindow = mirrorAccount.transactions.filter((tx: any) => {
+                //   return tx.consensus_timestamp >= block.timestamp.to && tx.consensus_timestamp <= currentTimestamp;
+                // });
+
+                // if((typeof lastTransactionOnPageTimestamp !== "undefined") && (mirrorAccount.transactions[mirrorAccount.transactions.length -1].consensus_timestamp >= lastTransactionOnPageTimestamp)) {
+                //   transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
+                //     mirrorAccount.account,
+                //     block.timestamp.to,
+                //     currentTimestamp,
+                //     requestId
+                //   );
+                // } else {
+                //     transactionsInTimeWindow = mirrorAccount.transactions.filter((tx: any) => {
+                //     return tx.consensus_timestamp >= block.timestamp.to && tx.consensus_timestamp <= currentTimestamp;
+                //   });
+                // }
 
                 for(const tx of transactionsInTimeWindow) {
                   for (const transfer of tx.transfers) {
@@ -1341,7 +1390,7 @@ export class EthImpl implements Eth {
 
   private static blockTagIsLatestOrPending = (tag) => {
     return tag == null || tag === EthImpl.blockLatest || tag === EthImpl.blockPending;
-  }
+  };
 
   /**
    * Translates a block tag into a number. 'latest', 'pending', and null are the
@@ -1633,6 +1682,25 @@ export class EthImpl implements Eth {
     });
 
     return logs;
+  }
+
+  /**************************************************
+   * Returns the difference between the balance of  *
+   * the account and the transactions subtracted up *
+   * to the block number queried.                   *
+   *************************************************/
+  getBalanceAtBlockTimestamp(account: string, balance: number, transactions: any[], blockTimestamp: number) {
+  
+    transactions.forEach((transaction: any) => {
+      if(transaction.consensus_timestamp >= blockTimestamp) {
+        transaction.transfers.forEach((transfer: any) => {
+          if (transfer.account === account && !transfer.is_approval) {
+            balance -= transfer.amount;
+          }
+        });
+      }
+    });
+    return balance;
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {

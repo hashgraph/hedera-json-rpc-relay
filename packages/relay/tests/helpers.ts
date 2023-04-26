@@ -545,7 +545,7 @@ export const buildCryptoTransferTransaction = (from, to, amount, args: any = {})
     ],
         "valid_duration_seconds": "120",
         "valid_start_timestamp": "1669207645.620109637"
-    }
+    };
 };
 
 export const defaultCallData = {
