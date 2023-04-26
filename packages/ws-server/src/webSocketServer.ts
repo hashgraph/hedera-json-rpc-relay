@@ -32,6 +32,7 @@ import ConnectionLimiter from "./ConnectionLimiter";
 import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
 import {MirrorNodeClient} from "@hashgraph/json-rpc-relay/dist/lib/clients";
 import {EthSubscribeLogsParamsObject} from "@hashgraph/json-rpc-server/dist/validator";
+import KoaJsonRpc from "@hashgraph/json-rpc-server/dist/koaJsonRpc";
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -196,4 +197,48 @@ app.ws.use(async (ctx) => {
     });
 });
 
-export default app;
+const httpApp = (new KoaJsonRpc(logger, register)).getKoaApp();
+
+httpApp.use(async (ctx, next) => {
+    /**
+     * prometheus metrics exposure
+     */
+    if (ctx.url === '/metrics') {
+        ctx.status = 200;
+        ctx.body = await register.metrics();
+    }
+
+    /**
+     * liveness endpoint
+     */
+    else if (ctx.url === '/health/liveness') {
+        ctx.status = 200;
+    }
+
+    /**
+     * readiness endpoint
+     */
+    else if (ctx.url === '/health/readiness') {
+        try {
+            const result = relay.eth().chainId();
+            if (result.indexOf('0x12') >= 0) {
+                ctx.status = 200;
+                ctx.body = 'OK';
+            } else {
+                ctx.body = 'DOWN';
+                ctx.status = 503; // UNAVAILABLE
+            }
+        } catch (e) {
+            logger.error(e);
+            throw e;
+        }
+    }
+    else {
+        return next();
+    }
+});
+
+export {
+    app,
+    httpApp
+};
