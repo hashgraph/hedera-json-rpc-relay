@@ -48,7 +48,7 @@ const mainLogger = pino({
 const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
-const limiter = new ConnectionLimiter(logger);
+const limiter = new ConnectionLimiter(logger, register);
 const mirrorNodeClient = new MirrorNodeClient(
     process.env.MIRROR_NODE_URL || '',
     logger.child({ name: `mirror-node` }),
