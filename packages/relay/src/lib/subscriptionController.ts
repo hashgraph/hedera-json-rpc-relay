@@ -30,6 +30,7 @@ export interface Subscriber {
 }
 
 const LOGGER_PREFIX = 'Subscriptions:';
+const CACHE_TTL = Number(process.env.WS_CACHE_TTL) || 20000;
 
 export class SubscriptionController {
     private poller: Poller;
@@ -41,7 +42,8 @@ export class SubscriptionController {
         this.poller = poller;
         this.logger = logger;
         this.subscriptions = {};
-        this.cache = new LRU({ max: constants.CACHE_MAX, ttl: 2000 });
+
+        this.cache = new LRU({ max: constants.CACHE_MAX, ttl: CACHE_TTL });
     }
 
     createHash(data) {

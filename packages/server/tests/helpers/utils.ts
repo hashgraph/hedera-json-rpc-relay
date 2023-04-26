@@ -81,6 +81,7 @@ export class Utils {
         // re-init the contract with the deployed address
         const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
         contract = new ethers.Contract(receipt.to, contractJson.abi, wallet);
+
         return contract;
     };
 

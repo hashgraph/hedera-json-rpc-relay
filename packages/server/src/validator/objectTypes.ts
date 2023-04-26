@@ -94,7 +94,7 @@ export const OBJECTS_VALIDATIONS = {
     "address" : {
       type: "addressFilter",
       nullable: false,
-      required: true
+      required: false
     },
     "topics" : {
         type: "topics",

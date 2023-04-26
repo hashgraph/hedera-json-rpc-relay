@@ -25,9 +25,11 @@ import WebSocket from 'ws';
 chai.use(solidity);
 
 import {Utils} from '../../helpers/utils';
+import assertions from '../../helpers/assertions';
 import {AliasAccount} from "../../clients/servicesClient";
 import {predefined, WebSocketError} from '../../../../../packages/relay';
-const {ethers} = require('ethers');
+import { ethers } from "ethers";
+
 const LogContractJson = require('../../contracts/Logs.json');
 
 const FOUR_TWENTY_NINE_RESPONSE = 'Unexpected server response: 429';
@@ -67,8 +69,33 @@ async function expectedErrorAndConnections(server: any): Promise<void> {
             await establishConnection();
         });
     } catch (err) {
-        console.log('Caught!', err.message);
+        console.log('Caught error:', err.message);
     }
+};
+
+const unsubscribeAndCloseConnections = async (provider: ethers.providers.WebSocketProvider, subId: string) => {
+    const result = await provider.send('eth_unsubscribe', [subId]);
+    provider.destroy();
+    return result;
+};
+
+const createLogs = async (contract: ethers.Contract) => {
+    const tx1 = await contract.log0(10);
+    const rec1 = await tx1.wait();
+
+    const tx2 = await contract.log1(1);
+    const rec2 = await tx2.wait();
+
+    const tx3 = await contract.log2(1, 2);
+    const rec3 = await tx3.wait();
+
+    const tx4 = await contract.log3(10, 20, 31);
+    const rec4 = await tx4.wait();
+
+    const tx5 = await contract.log4(11, 22, 33, 44);
+    const rec5 = await tx5.wait();
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
 };
 
 describe('@web-socket Acceptance Tests', async function() {
@@ -76,7 +103,7 @@ describe('@web-socket Acceptance Tests', async function() {
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     let server;
     // @ts-ignore
-    const {servicesNode, relay} = global;
+    const {servicesNode, relay, mirrorNode} = global;
 
     // cached entities
     let requestId;
@@ -98,11 +125,9 @@ describe('@web-socket Acceptance Tests', async function() {
         accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
         // Deploy Log Contract
         logContractSigner = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
-        // cache original ENV values
-        originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL;
-        originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED;
 
-        process.env.WS_MAX_CONNECTION_TTL = '10000';
+        // cache original ENV values
+        originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED;
     });
 
     this.beforeEach(async () => {
@@ -126,24 +151,18 @@ describe('@web-socket Acceptance Tests', async function() {
         expect(server._connections).to.equal(0);
     });
 
-    this.afterAll(async () => {
-        // Return ENV variables to their original value
-        process.env.WS_MAX_CONNECTION_TTL = originalWsMaxConnectionTtl;
-    });
-
-
-    describe('Connection', async function() {
-        it('establishes connection', async function() {
+    describe('Connection', async function () {
+        it('establishes connection', async function () {
             expect(wsProvider).to.exist;
             expect(wsProvider._wsReady).to.eq(true);
         });
 
-        it('Socket server responds to the eth_chainId event', async function() {
+        it('Socket server responds to the eth_chainId event', async function () {
             const response = await wsProvider.send('eth_chainId');
             expect(response).to.eq(CHAIN_ID);
         });
 
-        it('Establishes multiple connections', async function() {
+        it('Establishes multiple connections', async function () {
 
             const secondProvider = new ethers.providers.WebSocketProvider(
                 WS_RELAY_URL
@@ -158,12 +177,12 @@ describe('@web-socket Acceptance Tests', async function() {
 
         it('Subscribe and Unsubscribe', async function () {
             // subscribe
-            const subId = await wsProvider.send('eth_subscribe',["logs", {"address":logContractSigner.address}]);
+            const subId = await wsProvider.send('eth_subscribe', ["logs", {"address": logContractSigner.address}]);
             // unsubscribe
             const result = await wsProvider.send('eth_unsubscribe', [subId]);
 
             expect(subId).to.be.length(34);
-            expect(subId.substring(0,2)).to.be.eq("0x");
+            expect(subId.substring(0, 2)).to.be.eq("0x");
             expect(result).to.be.eq(true);
         });
 
@@ -177,7 +196,7 @@ describe('@web-socket Acceptance Tests', async function() {
             // perform an action on the SC that emits a Log1 event
             await logContractSigner.log1(100);
             // wait 1s to expect the message
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 4000));
 
             expect(eventReceived).to.be.eq(100);
         });
@@ -228,7 +247,7 @@ describe('@web-socket Acceptance Tests', async function() {
             wsConn2.destroy();
         });
 
-        it('When JSON is invalid, expect INVALID_REQUEST Error message', async function() {
+        it('When JSON is invalid, expect INVALID_REQUEST Error message', async function () {
 
             const webSocket = new WebSocket(WS_RELAY_URL);
             let response = "";
@@ -329,8 +348,151 @@ describe('@web-socket Acceptance Tests', async function() {
             await new Promise(resolve => setTimeout(resolve, 500));
         });
 
+        it('Expect Unsupported Method Error message when subscribing for newHeads method', async function () {
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = {};
+            webSocket.on('message', function incoming(data) {
+                response = JSON.parse(data);
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["newHeads"],"id":1}');
+            });
 
-        it('Connection TTL is enforced, should close all connections', async function() {
+            // wait 500ms to expect the message
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
+            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
+            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+
+            // close the connection
+            webSocket.close();
+        });
+
+        it('Expect Unsupported Method Error message when subscribing for newPendingTransactions method', async function () {
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = {};
+            webSocket.on('message', function incoming(data) {
+                response = JSON.parse(data);
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["newPendingTransactions"],"id":1}');
+            });
+
+            // wait 500ms to expect the message
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
+            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
+            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+
+            // close the connection
+            webSocket.close();
+        });
+
+        it('Expect Unsupported Method Error message when subscribing for "other" method', async function () {
+            const webSocket = new WebSocket(WS_RELAY_URL);
+            let response = {};
+            webSocket.on('message', function incoming(data) {
+                response = JSON.parse(data);
+            });
+            webSocket.on('open', function open() {
+                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["other"],"id":1}');
+            });
+
+            // wait 500ms to expect the message
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
+            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
+            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+
+            // close the connection
+            webSocket.close();
+            await new Promise(resolve => setTimeout(resolve, 500)); // Wait for the connection to be closed
+        });
+
+        it('Does not allow more connections than the connection limit', async function () {
+            // We already have one connection
+            expect(server._connections).to.equal(1);
+
+            let providers: ethers.providers.WebSocketProvider[] = [];
+            for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT); i++) {
+                providers.push(await establishConnection());
+            }
+
+            expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT));
+
+            await expectedErrorAndConnections(server);
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Now let's close all of these connections
+            providers.forEach(async (provider: ethers.providers.WebSocketProvider) => {
+                const subId = await provider.send('eth_subscribe', ["logs", {"address": logContractSigner.address}]);
+                await unsubscribeAndCloseConnections(provider, subId);
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            expect(server._connections).to.equal(1);
+        });
+
+        it('Closes connections to the server on webSocket close', async function () {
+            // start with the one existing connection to the server.
+            expect(server._connections).to.equal(1);
+
+            let provider = await establishConnection();
+            await new Promise(resolve => setTimeout(resolve, 200));
+            expect(server._connections).to.equal(2);
+
+            // subscribe
+            let subId = await provider.send('eth_subscribe', ["logs", {"address": logContractSigner.address}]);
+            // unsubscribe
+            let result = await unsubscribeAndCloseConnections(provider, subId);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            expect(server._connections).to.equal(1);
+            expect(result).to.be.true;
+
+            // Let's try with 3 connections
+            provider = await establishConnection();
+            await new Promise(resolve => setTimeout(resolve, 200));
+            // subscribe
+            subId = await provider.send('eth_subscribe', ["logs", {"address": logContractSigner.address}]);
+            expect(server._connections).to.equal(2);
+
+            const provider2 = await establishConnection();
+            await new Promise(resolve => setTimeout(resolve, 200));
+            // subscribe
+            const subId2 = await provider.send('eth_subscribe', ["logs", {"address": logContractSigner.address}]);
+            expect(server._connections).to.equal(3);
+
+            // unsubscribe
+            result = await unsubscribeAndCloseConnections(provider2, subId2);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            expect(server._connections).to.equal(2);
+
+            // unsubscribe
+            result = await unsubscribeAndCloseConnections(provider, subId);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            expect(server._connections).to.equal(1);
+        });
+    });
+
+    describe('Connection TTL', async function () {
+        this.beforeAll(async () => {
+            // cache original ENV values
+            originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL;
+            process.env.WS_MAX_CONNECTION_TTL = '10000';
+        });
+        this.afterAll(async () => {
+            // Return ENV variables to their original value
+            process.env.WS_MAX_CONNECTION_TTL = originalWsMaxConnectionTtl;
+        });
+
+
+        it('Connection TTL is enforced, should close all connections', async function () {
             const wsConn2 = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
             const wsConn3 = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
             await new Promise(resolve => setTimeout(resolve, 300)); // Wait for the connections to be established
@@ -358,267 +520,335 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(closeEventHandled3).to.eq(true);
             expect(server._connections).to.equal(0);
         });
+    })
 
-        it('Expect Unsupported Method Error message when subscribing for newHeads method', async function() {
-            const webSocket = new WebSocket(WS_RELAY_URL);
-            let response = {};
-            webSocket.on('message', function incoming(data) {
-                response = JSON.parse(data);
-            });
-            webSocket.on('open', function open() {
-                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["newHeads"],"id":1}');
-            });
+    describe('Subscribes to log events', async function () {
+        let logContractSigner2, logContractSigner3, wsLogsProvider, contracts, cLen;
+        let ANONYMOUS_LOG_DATA, topic1, topic2;
+        let eventsReceivedGlobal: any[] = [];
 
-            // wait 500ms to expect the message
-            await new Promise(resolve => setTimeout(resolve, 500));
+        // Deploy several contracts
+        before(async function() {
+            wsLogsProvider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
 
-            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
-            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
-            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+            const logContractMirror = await mirrorNode.get(`/contracts/${logContractSigner.address}`, requestId);
+            const logContractLongZeroAddress = Utils.idToEvmAddress(logContractMirror.contract_id);
 
-            // close the connection
-            webSocket.close();
-        });
+            logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet, relay);
+            logContractSigner3 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet, relay);
 
-        it('Expect Unsupported Method Error message when subscribing for newPendingTransactions method', async function() {
-            const webSocket = new WebSocket(WS_RELAY_URL);
-            let response = {};
-            webSocket.on('message', function incoming(data) {
-                response = JSON.parse(data);
-            });
-            webSocket.on('open', function open() {
-                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["newPendingTransactions"],"id":1}');
-            });
+            await createLogs(logContractSigner2);
+            const mirrorLogs = await mirrorNode.get(`/contracts/${logContractSigner2.address}/results/logs`, requestId);
 
-            // wait 500ms to expect the message
-            await new Promise(resolve => setTimeout(resolve, 500));
+            expect(mirrorLogs).to.exist;
+            expect(mirrorLogs.logs).to.exist;
+            expect(mirrorLogs.logs.length).to.eq(5);
 
-            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
-            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
-            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
+            ANONYMOUS_LOG_DATA = mirrorLogs.logs[4].data;
+            topic1 = mirrorLogs.logs[3].topics[0];
+            topic2 = mirrorLogs.logs[3].topics[1];
 
-            // close the connection
-            webSocket.close();
-        });
+            const invalidTopic = '0x9999999999999999999999999999999999999999999999999999999999999999';
 
-        it('Expect Unsupported Method Error message when subscribing for "other" method', async function() {
-            const webSocket = new WebSocket(WS_RELAY_URL);
-            let response = {};
-            webSocket.on('message', function incoming(data) {
-                response = JSON.parse(data);
-            });
-            webSocket.on('open', function open() {
-                webSocket.send('{"jsonrpc":"2.0","method":"eth_subscribe","params":["other"],"id":1}');
-            });
+            const testFilters = [
+                {}, // all contract logs
+                {
+                    address: logContractSigner.address
+                },  // logs from single contract with evm address
+                {
+                    address: logContractLongZeroAddress
+                },  // logs from single contract with long zero address
+                {
+                    topics: [topic1]
+                },  // logs for topic emitted by several contracts
+                {
+                    topics: [
+                        topic1, // emitted only by Log1 method
+                        topic2  // emitted by Log1 and Log2 methods
+                    ]
+                },  // logs for multiple topics
+                {
+                    address: logContractSigner2.address,
+                    topics: [
+                        topic1, // emitted only by Log1 method
+                        topic2  // emitted by Log1 and Log2 methods
+                    ]
+                }, // logs filtered by multiple topics and single address
+                {
+                    address: logContractSigner2.address,
+                    topics: [
+                        invalidTopic
+                    ]
+                } // subscribing to valid address and invalid topic
+            ];
 
-            // wait 500ms to expect the message
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
-            expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
-            expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
-
-            // close the connection
-            webSocket.close();
-            await new Promise(resolve => setTimeout(resolve, 500)); // Wait for the connection to be closed
-        });
-
-        it('Does not allow more connections than the connection limit', async function() {
-            // We already have one connection
-            expect(server._connections).to.equal(1);
-
-            let providers: ethers.providers.WebSocketProvider[] = [];
-            for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT); i++) {
-                providers.push(await establishConnection());
+            for (let i = 0; i < testFilters.length; i++) {
+                eventsReceivedGlobal[i] = [];
+                ((i) => {
+                    wsLogsProvider.on(testFilters[i], (event) => {
+                        eventsReceivedGlobal[i].push(event);
+                    });
+                })(i);
             }
 
-            expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT));
+            contracts = [logContractSigner, logContractSigner2, logContractSigner3];
+            cLen = contracts.length;
 
-            await expectedErrorAndConnections(server);
+            // Create logs from all deployed contracts
+            for(let i = 0; i < cLen; i++) {
+                await createLogs(contracts[i]);
+            }
+
+            await wsLogsProvider.destroy();
+        });
+
+        it('Subscribes for all contract logs', async function () {
+            let eventsReceived = eventsReceivedGlobal[0];
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(15);
+
+            for (let i = 0; i < cLen; i++) {
+                const iter = i * 5;
+
+                // event Log0(uint256 num1) anonymous;
+                assertions.expectAnonymousLog(eventsReceived[iter], contracts[i], ANONYMOUS_LOG_DATA);
+
+                // event Log1(uint256 indexed num0);
+                assertions.expectLogArgs(eventsReceived[iter + 1], contracts[i], [1]);
+
+                // event Log2(uint256 indexed num0, uint256 indexed num1);
+                assertions.expectLogArgs(eventsReceived[iter + 2], contracts[i], [1, 2]);
+
+                // event Log3(uint256 indexed num0, uint256 indexed num1, uint256 indexed num2);
+                assertions.expectLogArgs(eventsReceived[iter + 3], contracts[i], [10, 20, 31]);
+
+                // event Log4(uint256 indexed num0, uint256 indexed num1, uint256 indexed num2, uint256 num3);
+                assertions.expectLogArgs(eventsReceived[iter + 4], contracts[i], [11, 22, 33, 44]);
+            }
+        });
+
+        it('Subscribes for contract logs for a specific contract address (using evmAddress)', async function () {
+            let eventsReceived = eventsReceivedGlobal[1];
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(5);
+
+            assertions.expectAnonymousLog(eventsReceived[0], logContractSigner, ANONYMOUS_LOG_DATA);
+            assertions.expectLogArgs(eventsReceived[1], logContractSigner, [1]);
+            assertions.expectLogArgs(eventsReceived[2], logContractSigner, [1, 2]);
+            assertions.expectLogArgs(eventsReceived[3], logContractSigner, [10, 20, 31]);
+            assertions.expectLogArgs(eventsReceived[4], logContractSigner, [11, 22, 33, 44]);
+        });
+
+        it('Subscribes for contract logs for a specific contract address (using long zero address)', async function () {
+            let eventsReceived = eventsReceivedGlobal[2];
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(5);
+
+            assertions.expectAnonymousLog(eventsReceived[0], logContractSigner, ANONYMOUS_LOG_DATA);
+            assertions.expectLogArgs(eventsReceived[1], logContractSigner, [1]);
+            assertions.expectLogArgs(eventsReceived[2], logContractSigner, [1, 2]);
+            assertions.expectLogArgs(eventsReceived[3], logContractSigner, [10, 20, 31]);
+            assertions.expectLogArgs(eventsReceived[4], logContractSigner, [11, 22, 33, 44]);
+        });
+
+        it('Subscribes for contract logs for a single topic', async function () {
+            let eventsReceived = eventsReceivedGlobal[3];
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(3);
+
+            assertions.expectLogArgs(eventsReceived[0], contracts[0], [1]);
+            assertions.expectLogArgs(eventsReceived[1], contracts[1], [1]);
+            assertions.expectLogArgs(eventsReceived[2], contracts[2], [1]);
+        });
+
+        it('Subscribes for contract logs for multiple topics', async function () {
+            let eventsReceived = eventsReceivedGlobal[4];
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(3);
+
+            assertions.expectLogArgs(eventsReceived[0], contracts[0], [1]);
+            assertions.expectLogArgs(eventsReceived[1], contracts[1], [1]);
+            assertions.expectLogArgs(eventsReceived[2], contracts[2], [1]);
+        });
+
+        it('Subscribes for contract logs for address and multiple topics', async function () {
+            let eventsReceived = eventsReceivedGlobal[5];
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(1);
+
+            assertions.expectLogArgs(eventsReceived[0], contracts[1], [1]);
+        });
+
+        it('Subscribing for contract logs for a speciffic contract address and a wrong topic.', async function () {
+            let eventsReceived = eventsReceivedGlobal[6];
+
+            // Only the logs from logContractSigner.address are captured
+            expect(eventsReceived.length).to.eq(0);
+        });
+    });
+
+    describe('ethSubscribe Logs Params Validations', async function() {
+
+        after(() => {
+            // wait 500ms to let the server close the connections
+            return new Promise(resolve => setTimeout(resolve, 500));
+        });
+
+        it('Calling eth_subscribe Logs with a non existent address should fail', async function() {
+            const missingContract = "0xea4168c4cbb744ec22dea4a4bfc5f74b6fe27816";
+            let actualError: any = null;
+            try {
+                await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
+            } catch (e: any) {
+                actualError = JSON.parse(e.response);
+            }
+
+            const expectedError = predefined.INVALID_PARAMETER(`filters.address`, `${missingContract} is not a valid contract type or does not exists`);
+            expect(actualError.error.code).to.be.eq(expectedError.code);
+            expect(actualError.error.name).to.be.eq(expectedError.name);
+            expect(actualError.error.message).to.contains(expectedError.message);
+        });
+
+        it('Calling eth_subscribe Logs with an empty address should fail', async function() {
+            const missingContract = "";
+            let actualError: any = null;
+            try {
+                await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
+            } catch (e: any) {
+                actualError = JSON.parse(e.response);
+            }
+
+            const expectedError = predefined.INVALID_PARAMETER(`'address' for EthSubscribeLogsParamsObject`, `Expected 0x prefixed string representing the address (20 bytes) or an array of addresses, value: `);
+            expect(actualError.error.code).to.be.eq(expectedError.code);
+            expect(actualError.error.name).to.be.eq(expectedError.name);
+            expect(actualError.error.message).to.contains(expectedError.message);
+        });
+
+        it('Calling eth_subscribe Logs with an invalid topics should fail', async function() {
+            let actualError: any = null;
+            try {
+                await wsProvider.send('eth_subscribe', ["logs", {"address": logContractSigner.address, "topics": ["0x000"]}]);
+            } catch (e: any) {
+                actualError = JSON.parse(e.response);
+            }
+
+            const expectedError = predefined.INVALID_PARAMETER(`'topics' for EthSubscribeLogsParamsObject`, `Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: 0x000`);
+            expect(actualError.error.code).to.be.eq(expectedError.code);
+            expect(actualError.error.name).to.be.eq(expectedError.name);
+            expect(actualError.error.message).to.contains(expectedError.message);
+        });
+    });
+
+    describe('IP connection limits', async function () {
+        let originalConnectionLimitPerIp;
+
+        before(() => {
+            originalConnectionLimitPerIp = process.env.WS_CONNECTION_LIMIT_PER_IP;
+            process.env.WS_CONNECTION_LIMIT_PER_IP = 3;
+        });
+
+        after(() => {
+            process.env.WS_CONNECTION_LIMIT_PER_IP = originalConnectionLimitPerIp;
+        });
+
+        it('Does not allow more connections from the same IP than the specified limit', async function () {
+            const providers = [];
+
+            // Creates the maximum allowed connections
+            for (let i = 1; i < parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP); i++) {
+                providers.push(await new ethers.providers.WebSocketProvider(WS_RELAY_URL));
+            }
 
             await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Repeat the following several times to make sure the internal counters are consistently correct
+            for (let i = 0; i < 3; i++) {
+                expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP));
+
+                // The next connection should be closed by the server
+                const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
+
+                let closeEventHandled = false;
+                provider._websocket.on('close', (code, message) => {
+                    closeEventHandled = true;
+                    expect(code).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.code);
+                    expect(message).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.message);
+                })
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP));
+                expect(closeEventHandled).to.eq(true);
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
 
             for (const p of providers) {
                 await p.destroy();
             }
 
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        });
+    });
 
-            expect(server._connections).to.equal(1);
+    describe('Connection subscription limits', async function() {
+        let originalSubsPerConnection;
+
+        before(() => {
+            originalSubsPerConnection = process.env.WS_SUBSCRIPTION_LIMIT;
+            process.env.WS_SUBSCRIPTION_LIMIT = 2;
         });
 
-        describe('ethSubscribe Logs Params Validations', async function() {
-
-            after(() => {
-                // wait 500ms to let the server close the connections
-                return new Promise(resolve => setTimeout(resolve, 500));
-            });
-
-            it('Calling eth_subscribe Logs with a non existent address should fail', async function() {
-                const missingContract = "0xea4168c4cbb744ec22dea4a4bfc5f74b6fe27816";
-                let actualError: any = null;
-                try {
-                    await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
-                } catch (e: any) {
-                    actualError = JSON.parse(e.response);
-                }
-
-                const expectedError = predefined.INVALID_PARAMETER(`filters.address`, `${missingContract} is not a valid contract type or does not exists`);
-                expect(actualError.error.code).to.be.eq(expectedError.code);
-                expect(actualError.error.name).to.be.eq(expectedError.name);
-                expect(actualError.error.message).to.contains(expectedError.message);
-            });
-
-            it('Calling eth_subscribe Logs with an empty address should fail', async function() {
-                const missingContract = "";
-                let actualError: any = null;
-                try {
-                    await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
-                } catch (e: any) {
-                    actualError = JSON.parse(e.response);
-                }
-
-                const expectedError = predefined.INVALID_PARAMETER(`'address' for EthSubscribeLogsParamsObject`, `Expected 0x prefixed string representing the address (20 bytes) or an array of addresses, value: `);
-                expect(actualError.error.code).to.be.eq(expectedError.code);
-                expect(actualError.error.name).to.be.eq(expectedError.name);
-                expect(actualError.error.message).to.contains(expectedError.message);
-            });
-
-            it('Calling eth_subscribe Logs with params without address should fail', async function() {
-                let actualError: any = null;
-                try {
-                    await wsProvider.send('eth_subscribe', ["logs", {}]);
-                } catch (e: any) {
-                    actualError = JSON.parse(e.response);
-                }
-
-                const expectedError = predefined.MISSING_REQUIRED_PARAMETER(`'address' for EthSubscribeLogsParamsObject`);
-                expect(actualError.error.code).to.be.eq(expectedError.code);
-                expect(actualError.error.name).to.be.eq(expectedError.name);
-                expect(actualError.error.message).to.contains(expectedError.message);
-            });
-
-            it('Calling eth_subscribe Logs with an invalid topics should fail', async function() {
-                let actualError: any = null;
-                try {
-                    await wsProvider.send('eth_subscribe', ["logs", {"address": logContractSigner.address, "topics": ["0x000"]}]);
-                } catch (e: any) {
-                    actualError = JSON.parse(e.response);
-                }
-
-                const expectedError = predefined.INVALID_PARAMETER(`'topics' for EthSubscribeLogsParamsObject`, `Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: 0x000`);
-                expect(actualError.error.code).to.be.eq(expectedError.code);
-                expect(actualError.error.name).to.be.eq(expectedError.name);
-                expect(actualError.error.message).to.contains(expectedError.message);
-            });
+        after(() => {
+            process.env.WS_SUBSCRIPTION_LIMIT = originalSubsPerConnection;
         });
 
-        describe('IP connection limits', async function() {
-            let originalConnectionLimitPerIp;
+        it('Does not allow more subscriptions per connection than the specified limit', async function() {
+            let errorsHandled = 0;
 
-            before(() => {
-                originalConnectionLimitPerIp = process.env.WS_CONNECTION_LIMIT_PER_IP;
-                process.env.WS_CONNECTION_LIMIT_PER_IP = 3;
-            });
-
-            after(() => {
-                process.env.WS_CONNECTION_LIMIT_PER_IP = originalConnectionLimitPerIp;
-            });
-
-            it('Does not allow more connections from the same IP than the specified limit', async function() {
-                const providers = [];
-
-                // Creates the maximum allowed connections
-                for (let i = 1; i < parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP); i++) {
-                    providers.push(await new ethers.providers.WebSocketProvider(WS_RELAY_URL));
+            // Create different subscriptions
+            for (let i = 0; i < 3; i++) {
+                try {
+                    const subId = await wsProvider.send('eth_subscribe',["logs", {
+                        address: logContractSigner.address,
+                        topics: [topics[i]]
+                    }]);
                 }
-
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // Repeat the following several times to make sure the internal counters are consistently correct
-                for (let i = 0; i < 3; i++) {
-                    expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP));
-
-                    // The next connection should be closed by the server
-                    const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
-
-                    let closeEventHandled = false;
-                    provider._websocket.on('close', (code, message) => {
-                        closeEventHandled = true;
-                        expect(code).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.code);
-                        expect(message).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.message);
-                    })
-
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP));
-                    expect(closeEventHandled).to.eq(true);
-
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                catch(e: any) {
+                    expect(e.code).to.eq(predefined.MAX_SUBSCRIPTIONS.code);
+                    expect(e.message).to.eq(predefined.MAX_SUBSCRIPTIONS.message);
+                    errorsHandled++;
                 }
+            }
 
-                for (const p of providers) {
-                    await p.destroy();
-                }
-
-            });
+            await new Promise(resolve => setTimeout(resolve, 500));
+            expect(errorsHandled).to.eq(1);
         });
 
-        describe('Connection subscription limits', async function() {
-            let originalSubsPerConnection;
+        it('Calling eth_unsubscribe decrements the internal counters', async function() {
+            let errorsHandled = 0;
 
-            before(() => {
-                originalSubsPerConnection = process.env.WS_SUBSCRIPTION_LIMIT;
-                process.env.WS_SUBSCRIPTION_LIMIT = 2;
-            });
+            // Create different subscriptions
+            for (let i = 0; i < 3; i++) {
+                try {
+                    const subId = await wsProvider.send('eth_subscribe',["logs", {
+                        address: logContractSigner.address,
+                        topics: [topics[i]]
+                    }]);
 
-            after(() => {
-                process.env.WS_SUBSCRIPTION_LIMIT = originalSubsPerConnection;
-            });
-
-            it('Does not allow more subscriptions per connection than the specified limit', async function() {
-                let errorsHandled = 0;
-
-                // Create different subscriptions
-                for (let i = 0; i < 3; i++) {
-                    try {
-                        const subId = await wsProvider.send('eth_subscribe',["logs", {
-                            address: logContractSigner.address,
-                            topics: [topics[i]]
-                        }]);
-                    }
-                    catch(e: any) {
-                        expect(e.code).to.eq(predefined.MAX_SUBSCRIPTIONS.code);
-                        expect(e.message).to.eq(predefined.MAX_SUBSCRIPTIONS.message);
-                        errorsHandled++;
-                    }
+                    const result = await wsProvider.send('eth_unsubscribe', [subId]);
                 }
-
-                await new Promise(resolve => setTimeout(resolve, 500));
-                expect(errorsHandled).to.eq(1);
-            });
-
-            it('Calling eth_unsubscribe decrements the internal counters', async function() {
-                let errorsHandled = 0;
-
-                // Create different subscriptions
-                for (let i = 0; i < 3; i++) {
-                    try {
-                        const subId = await wsProvider.send('eth_subscribe',["logs", {
-                            address: logContractSigner.address,
-                            topics: [topics[i]]
-                        }]);
-
-                        const result = await wsProvider.send('eth_unsubscribe', [subId]);
-                    }
-                    catch(e: any) {
-                        errorsHandled++;
-                    }
+                catch(e: any) {
+                    errorsHandled++;
                 }
+            }
 
-                await new Promise(resolve => setTimeout(resolve, 500));
-                expect(errorsHandled).to.eq(0);
-            });
+            await new Promise(resolve => setTimeout(resolve, 500));
+            expect(errorsHandled).to.eq(0);
         });
     });
 });
-

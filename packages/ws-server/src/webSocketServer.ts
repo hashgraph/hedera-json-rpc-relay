@@ -91,12 +91,14 @@ async function validateSubscribeEthLogsParams(filters: any, requestId: string) {
     paramsObject.validate();
 
     // validate address or addresses are an existing smart contract
-    if(Array.isArray(paramsObject.address)) {
-        for (const address of paramsObject.address) {
-            await validateIsContractAddress(address, requestId);
+    if (paramsObject.address) {
+        if (Array.isArray(paramsObject.address)) {
+            for (const address of paramsObject.address) {
+                await validateIsContractAddress(address, requestId);
+            }
+        } else {
+            await validateIsContractAddress(paramsObject.address, requestId);
         }
-    } else {
-        await validateIsContractAddress(paramsObject.address, requestId);
     }
 }
 
@@ -192,7 +194,6 @@ app.ws.use(async (ctx) => {
 
         ctx.websocket.send(JSON.stringify(response));
     });
-
 });
 
 export default app;

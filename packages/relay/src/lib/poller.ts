@@ -41,7 +41,7 @@ export class Poller {
         this.eth = eth;
         this.logger = logger;
         this.polls = [];
-        this.pollingInterval = Number(process.env.POLLING_INTERVAL) || 500;
+        this.pollingInterval = Number(process.env.WS_POLLING_INTERVAL) || 500;
     }
 
     public poll() {
@@ -57,8 +57,8 @@ export class Poller {
                         null,
                         poll.lastPolled || this.latestBlock || 'latest',
                         'latest',
-                        filters.address || null,
-                        filters.topics || null
+                        filters?.address || null,
+                        filters?.topics || null
                     );
 
                     poll.lastPolled = this.latestBlock;

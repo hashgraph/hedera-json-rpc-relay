@@ -584,24 +584,6 @@ describe('Validator', async () => {
       );
     });
 
-    it("throws an error if 'address' is undefined", async () => {
-      expect(() => {
-        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: undefined});
-        validatorObject.validate();
-      }).to.throw(
-          `Missing value for required parameter 'address' for EthSubscribeLogsParamsObject`
-      );
-    });
-
-    it("throws an error if 'address' is empty array", async () => {
-      expect(() => {
-        const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: []});
-        validatorObject.validate();
-      }).to.throw(
-          `Missing value for required parameter 'address' for EthSubscribeLogsParamsObject`
-      );
-    });
-
     it("throws an error if 'topics' values are not 0x prefixed", async () => {
       expect(() => {
         const validatorObject = new Validator.EthSubscribeLogsParamsObject({address: "0xea4168c4cbb733ec22dea4a4bfc5f74b6fe27816", topics: ["NotHEX"]});
