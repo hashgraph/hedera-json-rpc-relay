@@ -18,8 +18,10 @@
  * ‍
  */
 
-import {check} from "k6";
+import {check, sleep} from "k6";
 import {Gauge} from 'k6/metrics';
+import {randomIntBetween} from 'https://jslib.k6.io/k6-utils/1.4.0/index.js'
+
 import {setDefaultValuesForEnvParameters} from "./parameters.js";
 
 setDefaultValuesForEnvParameters();
@@ -88,6 +90,10 @@ function getOptionsWithScenario(name, tags = {}, maxDuration = undefined, testDu
   });
 }
 
+function isLoadTest() {
+  return __ENV.TEST_TYPE === 'load';
+}
+
 function getFilteredTests(tests){
   if(__ENV.FILTER_TEST && __ENV.FILTER_TEST !== "*") {
     const filteredTests = __ENV.FILTER_TEST.split(",");
@@ -124,7 +130,11 @@ function getSequentialTestScenarios(tests) {
       scenarios[scenarioName] = scenario;
 
       // update the scenario's startTime, so scenarios run in sequence
-      scenario.startTime = getNextStartTime(startTime, duration, gracefulStop);
+      if(isLoadTest()) {
+        scenario.startTime = 0;
+      } else {
+        scenario.startTime = getNextStartTime(startTime, duration, gracefulStop);
+      }
       startTime = scenario.startTime;
       duration = scenario.duration;
       gracefulStop = scenario.gracefulStop;
@@ -184,6 +194,10 @@ function defaultMetrics() {
   };
 }
 
+function getTestType() {
+  return __ENV.TEST_TYPE !== undefined && __ENV.TEST_TYPE === "load" ? "load" : "performance";
+}
+
 function markdownReport(data, isFirstColumnUrl, scenarios) {
   const firstColumnName = isFirstColumnUrl ? 'URL' : 'Scenario';
   const header = `| ${firstColumnName} | VUS | Reqs | Pass % | RPS (1/s) | Pass RPS (1/s) | Avg. Req Duration (ms) | Median (ms) | Min (ms) | Max (ms) | P(90) (ms) | P(95) (ms) | Comment |
@@ -223,6 +237,10 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
   let markdown = '# K6 Performance Test Results \n\n';
   markdown += `JSON-RPC-RELAY URL:  ${__ENV['RELAY_BASE_URL']}\n\n`;
   markdown += `Timestamp: ${new Date(Date.now()).toISOString()} \n\n`;
+  markdown += `Duration: ${__ENV['DEFAULT_DURATION']} \n\n`;
+  markdown += `Test Type: ${getTestType()} \n\n`;
+  markdown += `Virtual Users (VUs): ${__ENV['DEFAULT_VUS']} \n\n`;
+
   markdown += `${header}\n`;
   for (const scenario of Object.keys(scenarioMetrics).sort()) {
     try {
@@ -264,7 +282,16 @@ function TestScenarioBuilder() {
       run: function (testParameters, iteration = 0) {
         const response = that._request(testParameters, iteration);
         check(response, that._checks);
-      },
+
+        // if Load test, then we need to sleep for random time between 1 and 5 seconds
+        if (getTestType() === "load") {
+            sleep(randomIntBetween(1, 5));
+        }
+
+      }
+
+
+      ,
     };
   }
 

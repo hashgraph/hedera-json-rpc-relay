@@ -54,6 +54,7 @@ async function getSignedTxs(mainWallet, greeterContract) {
         trx.nonce = nonce + i;
         const signedTx = await mainWallet.signTransaction(trx);
         signedTxCollection.push(signedTx);
+        console.log("Transaction " + i + " signed.");
     }
 
     return signedTxCollection;
@@ -62,6 +63,7 @@ async function getSignedTxs(mainWallet, greeterContract) {
 (async () => {
     const mainPrivateKeyString = process.env.PRIVATE_KEY;
     const mainWallet = new ethers.Wallet(mainPrivateKeyString, new LoggingProvider(process.env.RELAY_BASE_URL));
+    console.log("RPC Server:  " + process.env.RELAY_BASE_URL);
     console.log("Address: " + mainWallet.address);
 
     const contractFactory = new ethers.ContractFactory(Greeter.abi, Greeter.bytecode, mainWallet);
