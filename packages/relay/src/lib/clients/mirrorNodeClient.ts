@@ -82,7 +82,6 @@ export class MirrorNodeClient {
     private static CONTRACT_STATE_PROPERTY = 'state';
 
 
-
     private static ORDER = {
         ASC: 'asc',
         DESC: 'desc'
@@ -317,6 +316,13 @@ export class MirrorNodeClient {
 
     public async getAccount(idOrAliasOrEvmAddress: string, requestId?: string) {
         return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}`,
+            MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
+            [400, 404],
+            requestId);
+    }
+
+    public async getAccountPageLimit(idOrAliasOrEvmAddress: string, requestId?: string) {
+        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?limit=${constants.MIRROR_NODE_QUERY_LIMIT}`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
             [400, 404],
             requestId);
