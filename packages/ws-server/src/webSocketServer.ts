@@ -57,9 +57,7 @@ const mirrorNodeClient = new MirrorNodeClient(
     process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
 );
 
-const app = websockify(new Koa(), {
-    verifyClient: limiter.verifyClient
-});
+const app = websockify(new Koa());
 
 const CHAIN_ID = relay.eth().chainId();
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();

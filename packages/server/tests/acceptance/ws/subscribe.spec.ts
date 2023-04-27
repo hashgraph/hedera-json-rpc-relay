@@ -29,48 +29,14 @@ import assertions from '../../helpers/assertions';
 import {AliasAccount} from "../../clients/servicesClient";
 import {predefined, WebSocketError} from '../../../../../packages/relay';
 import { ethers } from "ethers";
-
 const LogContractJson = require('../../contracts/Logs.json');
 
-const FOUR_TWENTY_NINE_RESPONSE = 'Unexpected server response: 429';
 const WS_RELAY_URL = `ws://localhost:${process.env.WEB_SOCKET_PORT}`;
 
 const establishConnection = async () => {
     const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
     await provider.send('eth_chainId');
     return provider;
-};
-
-async function expectedErrorAndConnections(server: any): Promise<void> {
-
-    let expectedErrorMessageResult = false;
-    let expectedNumberOfOpenConnections = false;
-
-    const listeners = process.listeners('uncaughtException');
-    process.removeAllListeners('uncaughtException');
-
-    process.on('uncaughtException', function (err) {
-
-        expectedErrorMessageResult = (err.message === FOUR_TWENTY_NINE_RESPONSE);
-        expectedNumberOfOpenConnections = (server._connections == parseInt(process.env.CONNECTION_LIMIT));
-
-        assert.equal(expectedErrorMessageResult, true, `Incorrect error message returned. Expected ${FOUR_TWENTY_NINE_RESPONSE}, got ${err.message}`);
-        assert.equal(expectedNumberOfOpenConnections, true, `Incorrect number of open connections. Expected ${process.env.CONNECTION_LIMIT}, got ${server._connections}`);
-
-        process.removeAllListeners('uncaughtException');
-        listeners.forEach(async (listener) => {
-            process.on('uncaughtException', listener);
-
-        });
-    });
-
-    try {
-        process.nextTick(async () => {
-            await establishConnection();
-        });
-    } catch (err) {
-        console.log('Caught error:', err.message);
-    }
 };
 
 const unsubscribeAndCloseConnections = async (provider: ethers.providers.WebSocketProvider, subId: string) => {
@@ -122,6 +88,9 @@ describe('@web-socket Acceptance Tests', async function() {
     ]
 
     this.beforeAll(async () => {
+        const { socketServer } = global;
+        server = socketServer;
+
         accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
         // Deploy Log Contract
         logContractSigner = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
@@ -134,8 +103,6 @@ describe('@web-socket Acceptance Tests', async function() {
         // restore original ENV value
         process.env.WS_MULTIPLE_ADDRESSES_ENABLED = originalWsMultipleAddressesEnabledValue;
 
-        const { socketServer } = global;
-        server = socketServer;
 
         wsProvider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
 
@@ -412,32 +379,6 @@ describe('@web-socket Acceptance Tests', async function() {
             await new Promise(resolve => setTimeout(resolve, 500)); // Wait for the connection to be closed
         });
 
-        it('Does not allow more connections than the connection limit', async function () {
-            // We already have one connection
-            expect(server._connections).to.equal(1);
-
-            let providers: ethers.providers.WebSocketProvider[] = [];
-            for (let i = 1; i < parseInt(process.env.CONNECTION_LIMIT); i++) {
-                providers.push(await establishConnection());
-            }
-
-            expect(server._connections).to.equal(parseInt(process.env.CONNECTION_LIMIT));
-
-            await expectedErrorAndConnections(server);
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Now let's close all of these connections
-            providers.forEach(async (provider: ethers.providers.WebSocketProvider) => {
-                const subId = await provider.send('eth_subscribe', ["logs", {"address": logContractSigner.address}]);
-                await unsubscribeAndCloseConnections(provider, subId);
-            });
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            expect(server._connections).to.equal(1);
-        });
-
         it('Closes connections to the server on webSocket close', async function () {
             // start with the one existing connection to the server.
             expect(server._connections).to.equal(1);
@@ -477,6 +418,54 @@ describe('@web-socket Acceptance Tests', async function() {
             result = await unsubscribeAndCloseConnections(provider, subId);
             await new Promise(resolve => setTimeout(resolve, 1000));
             expect(server._connections).to.equal(1);
+        });
+    });
+
+    describe('Connection limit', async function () {
+        let originalWsMaxConnectionLimit, providers: ethers.providers.WebSocketProvider[] = [];
+
+        beforeEach(async () => {
+            // cache original ENV values
+            originalWsMaxConnectionLimit = process.env.WS_CONNECTION_LIMIT;
+            process.env.WS_CONNECTION_LIMIT = 5;
+
+            // We already have one connection
+            expect(server._connections).to.equal(1);
+
+            for (let i = 1; i < parseInt(process.env.WS_CONNECTION_LIMIT); i++) {
+                providers.push(await establishConnection());
+            }
+
+            // Server is at max connections
+            expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT));
+        });
+
+        afterEach(async () => {
+            // Return ENV variables to their original value
+            process.env.WS_CONNECTION_LIMIT = originalWsMaxConnectionLimit;
+
+            providers.forEach(async (provider: ethers.providers.WebSocketProvider) => {
+                provider.destroy();
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            expect(server._connections).to.equal(1);
+        });
+
+        it('Does not allow more connections than the connection limit', async function () {
+            const excessProvider = new ethers.providers.WebSocketProvider(WS_RELAY_URL);
+
+            let closeEventHandled = false;
+            excessProvider._websocket.on('close', (code, message) => {
+                closeEventHandled = true;
+                expect(code).to.equal(WebSocketError.CONNECTION_LIMIT_EXCEEDED.code);
+                expect(message).to.equal(WebSocketError.CONNECTION_LIMIT_EXCEEDED.message);
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            expect(closeEventHandled).to.eq(true);
         });
     });
 
