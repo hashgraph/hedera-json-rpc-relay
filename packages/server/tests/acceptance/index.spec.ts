@@ -27,7 +27,7 @@ import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
 import app from '../../dist/server';
-import wsApp from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
+import {app as wsApp} from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
 import {Hbar} from "@hashgraph/sdk";
 
 const testLogger = pino({
