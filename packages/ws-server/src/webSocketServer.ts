@@ -102,7 +102,7 @@ async function validateSubscribeEthLogsParams(filters: any, requestId: string) {
 
 app.ws.use(async (ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
-    logger.info(`New connection ${ctx.websocket.id}`);
+    logger.info(`New connection established. ConnectionId: ${ctx.websocket.id}. Current active connections: ${ctx.app.server._connections}`);
 
     // Close event handle
     ctx.websocket.on('close', async (code, message) => {
@@ -122,12 +122,14 @@ app.ws.use(async (ctx) => {
         try {
             request = JSON.parse(msg.toString('ascii'));
         } catch (e) {
-            logger.error(`${ctx.websocket.id}: ${e}`);
+            logger.error(`Could not decode message from connection ${ctx.websocket.id}: ${e}`);
             ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
             return;
         }
         const {method, params} = request;
         let response;
+
+        logger.debug(`Received message from ${ctx.websocket.id}. Method: ${method}. Params: ${params}`);
 
         if (method === 'eth_subscribe') {
             if (limiter.validateSubscriptionLimit(ctx)) {
@@ -172,7 +174,6 @@ app.ws.use(async (ctx) => {
         }
         else if (method === 'eth_unsubscribe') {
             const subId = params[0];
-            logger.info(`eth_unsubscribe: ${subId} ${ctx.websocket.id}`);
             const unsubbedCount = relay.subs()?.unsubscribe(ctx.websocket, subId);
             const success = unsubbedCount !== 0;
             if (success) {

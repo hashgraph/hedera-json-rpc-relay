@@ -176,9 +176,9 @@ describe("subscriptionController", async function() {
         const count = subscriptionController.unsubscribe(wsConnection);
 
         expect(count).to.be.eq(2);
-        expect(loggerInfoSpy.calledWith(`Subscriptions: Unsubscribing all instances of connection ${wsConnection.id}`)).to.be.eq(true);
-        expect(loggerDebugSpy.calledWith(`Subscriptions: Unsubscribing ${subId}, from ${JSON.stringify(tag1)}`)).to.be.eq(true);
-        expect(loggerDebugSpy.calledWith(`Subscriptions: Unsubscribing ${subId2}, from ${JSON.stringify(tag2)}`)).to.be.eq(true);
+        expect(loggerInfoSpy.calledWith(`Connection ${wsConnection.id}: Unsubscribing from all subscriptions`)).to.be.eq(true);
+        expect(loggerDebugSpy.calledWith(`Connection ${wsConnection.id}. Unsubscribing subId: ${subId}; tag: ${JSON.stringify(tag1)}`)).to.be.eq(true);
+        expect(loggerDebugSpy.calledWith(`Connection ${wsConnection.id}. Unsubscribing subId: ${subId2}; tag: ${JSON.stringify(tag2)}`)).to.be.eq(true);
     });
 
     it('Unsubscribing single subscriptions from connection', async function () {
@@ -194,8 +194,8 @@ describe("subscriptionController", async function() {
         const count = subscriptionController.unsubscribe(wsConnection, subId2);
 
         expect(count).to.be.eq(1);
-        expect(loggerInfoSpy.calledWith(`Subscriptions: Unsubscribing connection ${wsConnection.id} from subscription ${subId2}`)).to.be.eq(true);
-        expect(loggerDebugSpy.calledWith(`Subscriptions: Unsubscribing ${subId2}, from ${JSON.stringify(tag2)}`)).to.be.eq(true);
+        expect(loggerInfoSpy.calledWith(`Connection ${wsConnection.id}: Unsubscribing from ${subId2}`)).to.be.eq(true);
+        expect(loggerDebugSpy.calledWith(`Connection ${wsConnection.id}. Unsubscribing subId: ${subId2}; tag: ${JSON.stringify(tag2)}`)).to.be.eq(true);
     });
 
     it('Unsubscribing without a valid subscription or ws conn should return true', async function () {

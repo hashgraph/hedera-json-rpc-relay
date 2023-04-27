@@ -29,7 +29,6 @@ export interface Subscriber {
     subscriptionId: string
 }
 
-const LOGGER_PREFIX = 'Subscriptions:';
 const CACHE_TTL = Number(process.env.WS_CACHE_TTL) || 20000;
 
 export class SubscriptionController {
@@ -71,13 +70,13 @@ export class SubscriptionController {
         // Check if the connection is already subscribed to this event
         const existingSub = this.subscriptions[tag].find(sub => sub.connection.id === connection.id);
         if (existingSub) {
-            this.logger.debug(`${LOGGER_PREFIX} Connection ${connection.id} already subscribed to ${tag}`);
+            this.logger.debug(`Connection ${connection.id}: Attempting to subscribe to ${tag}; already subscribed`);
             return existingSub.subscriptionId;
         }
 
         const subId = this.generateId();
 
-        this.logger.info(`${LOGGER_PREFIX} New subscription ${subId}, listening for ${tag}`);
+        this.logger.info(`Connection ${connection.id}: created subscription ${subId}, listening for ${tag}`);
 
         this.subscriptions[tag].push({
             subscriptionId: subId,
@@ -93,10 +92,10 @@ export class SubscriptionController {
         const {id} = connection;
 
         if (subId) {
-            this.logger.info(`${LOGGER_PREFIX} Unsubscribing connection ${id} from subscription ${subId}`);
+            this.logger.info(`Connection ${id}: Unsubscribing from ${subId}`);
         }
         else {
-            this.logger.info(`${LOGGER_PREFIX} Unsubscribing all instances of connection ${id}`);
+            this.logger.info(`Connection ${id}: Unsubscribing from all subscriptions`);
         }
 
         let subCount = 0;
@@ -104,7 +103,7 @@ export class SubscriptionController {
             this.subscriptions[tag] = subs.filter(sub => {
                 const match = sub.connection.id === id && (!subId || subId === sub.subscriptionId);
                 if (match) {
-                    this.logger.debug(`${LOGGER_PREFIX} Unsubscribing ${sub.subscriptionId}, from ${tag}`);
+                    this.logger.debug(`Connection ${sub.connection.id}. Unsubscribing subId: ${sub.subscriptionId}; tag: ${tag}`);
                     subCount++;
                 }
 
@@ -112,7 +111,7 @@ export class SubscriptionController {
             });
 
             if (!this.subscriptions[tag].length) {
-                this.logger.debug(`${LOGGER_PREFIX} No subscribers for ${tag}`);
+                this.logger.debug(`No subscribers for ${tag}. Removing from list.`);
                 delete this.subscriptions[tag];
                 this.poller.remove(tag);
             }
@@ -133,7 +132,7 @@ export class SubscriptionController {
                 // If the hash exists in the cache then the data has recently been sent to the subscriber
                 if (!this.cache.get(hash)) {
                     this.cache.set(hash, true);
-                    this.logger.info(`${LOGGER_PREFIX} Sending new data from ${tag} to subscriptionId ${sub.subscriptionId}, connectionId ${sub.connection.id}`);
+                    this.logger.debug(`Sending data from tag: ${tag} to subscriptionId: ${sub.subscriptionId}, connectionId: ${sub.connection.id}, data: ${subscriptionData}`);
                     sub.connection.send(JSON.stringify({
                         method: 'eth_subscription',
                         params: subscriptionData
