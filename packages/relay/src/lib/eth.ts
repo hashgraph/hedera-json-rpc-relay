@@ -642,7 +642,7 @@ export class EthImpl implements Eth {
     let blockNumber = null;
     let balanceFound = false;
     let weibars: BigInt = BigInt(0);
-    const mirrorAccount = await this.mirrorNodeClient.getAccount(account, requestId);
+    const mirrorAccount = await this.mirrorNodeClient.getAccountPageLimit(account, requestId);
 
     try {
       if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
@@ -669,12 +669,38 @@ export class EthImpl implements Eth {
                   currentTimestamp = mirrorAccount.balance.timestamp;
                 }
 
-                let transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
-                  mirrorAccount.account,
-                  block.timestamp.to,
-                  currentTimestamp,
-                  requestId
-                );
+                // Need to check if there are any transactions before the block.timestamp.to in the current account set returned from the inital
+                // call to getAccountPageLimit.  If there are we may need to paginate.
+                let lastTransactionOnPageTimestamp;
+                if(mirrorAccount.links.next !== null) {
+                  // Get the end of the page of transactions timestamp
+                  const params = new URLSearchParams(mirrorAccount.links.next.split('?')[1]);
+                  if((params === null) || (params === undefined)) {
+                    this.logger.debug(`${requestIdPrefix} Unable to find expected search parameters in account next page link ${mirrorAccount.links.next}), returning 0x0 balance`);
+                    return EthImpl.zeroHex;
+                  }
+
+                  const timestampParameters = params.getAll('timestamp'); 
+                  lastTransactionOnPageTimestamp = timestampParameters[0].split(':')[1];
+                  if((lastTransactionOnPageTimestamp === null) || (lastTransactionOnPageTimestamp === undefined)) {
+                    this.logger.debug(`${requestIdPrefix} Unable to find expected beginning (gte:) timestamp in account next page link ${mirrorAccount.links.next}), returning 0x0 balance`);
+                    return EthImpl.zeroHex;
+                  }
+                }
+
+                let transactionsInTimeWindow: any = [];
+                if((typeof lastTransactionOnPageTimestamp !== "undefined") && (mirrorAccount.transactions[mirrorAccount.transactions.length -1].consensus_timestamp >= lastTransactionOnPageTimestamp)) {
+                  transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
+                    mirrorAccount.account,
+                    block.timestamp.to,
+                    currentTimestamp,
+                    requestId
+                  );
+                } else {
+                    transactionsInTimeWindow = mirrorAccount.transactions.filter((tx: any) => {
+                    return tx.consensus_timestamp >= block.timestamp.to && tx.consensus_timestamp <= currentTimestamp;
+                  });
+                }
 
                 for(const tx of transactionsInTimeWindow) {
                   for (const transfer of tx.transfers) {
@@ -1611,7 +1637,7 @@ export class EthImpl implements Eth {
     const logs = logResults.flatMap(logResult => logResult ? logResult : [] );
     logs.sort((a: any, b: any) => {
       return a.timestamp >= b.timestamp ? 1 : -1;
-    })
+    });
 
     return logs;
   }
