@@ -755,81 +755,31 @@ export class EthImpl implements Eth {
                   currentTimestamp = mirrorAccount.balance.timestamp;
                 }
 
-                // Need to check if there are any transactions before the block.timestamp.to in the current account set returned from the inital
-                // call to getAccountPageLimit.  If there are we may need to paginate.
-                let lastTransactionOnPageTimestamp;
-                // if(mirrorAccount.links.next !== null) {
-                //   // Get the end of the page of transactions timestamp
-                //   const params = new URLSearchParams(mirrorAccount.links.next.split('?')[1]);
-                //   if((params === null) || (params === undefined)) {
-                //     this.logger.debug(`${requestIdPrefix} Unable to find expected search parameters in account next page link ${mirrorAccount.links.next}), returning 0x0 balance`);
-                //     return EthImpl.zeroHex;
-                //   }
-
-                //   const timestampParameters = params.getAll('timestamp');
-                //   lastTransactionOnPageTimestamp = timestampParameters[0].split(':')[1];
-                //   if((lastTransactionOnPageTimestamp === null) || (lastTransactionOnPageTimestamp === undefined)) {
-                //     this.logger.debug(`${requestIdPrefix} Unable to find expected beginning (gte:) timestamp in account next page link ${mirrorAccount.links.next}), returning 0x0 balance`);
-                //     return EthImpl.zeroHex;
-                //   }
-                // }
-
                 // The balance in the account is real time, so we simply subtract the transactions to the block.timestamp.to to get a block relevant balance.
                 // needs to be updated below.
                 const nextPage: string = mirrorAccount.links.next;
 
-                if (!nextPage) {
-                  balanceFromTxs = this.getBalanceAtBlockTimestamp(
-                    mirrorAccount.account,
-                    mirrorAccount.transactions,
-                    block.timestamp.to
-                  );
-                } else {
+                if(nextPage) {
                   // If we have a pagination link that falls within the block.timestamp.to, we need to paginate to get the transactions for the block.timestamp.to
                   const nextPageParams = new URLSearchParams(nextPage.split('?')[1]);
                   const nextPageTimeMarker = nextPageParams.get('timestamp');
-                  if (nextPageTimeMarker && nextPageTimeMarker?.split(':')[1] <= block.timestamp.to) {
-                    // If nextPageTimeMarker is less than the block.timestamp.to, then just run the getBalanceAtBlockTimestamp function in this case as well.
-                    balanceFromTxs = this.getBalanceAtBlockTimestamp(
-                      mirrorAccount.account,
-                      mirrorAccount.transactions,
-                      block.timestamp.to
-                    );
+                  if (nextPageTimeMarker && nextPageTimeMarker?.split(':')[1] >= block.timestamp.to) {
+                    // If nextPageTimeMarker is greater than the block.timestamp.to, then we need to paginate to get the transactions for the block.timestamp.to
+                    const pagedTransactions = await this.mirrorNodeClient.getAccountPaginated(nextPage, requestId);
+                    mirrorAccount.transactions = mirrorAccount.transactions.concat(pagedTransactions);
                   }
+                  // If nextPageTimeMarker is less than the block.timestamp.to, then just run the getBalanceAtBlockTimestamp function in this case as well.
                 }
 
-                // if((!nextPage) || ((nextPageTimeMarker !== null) && (nextPageTimeMarker.split(':')[1])) >= block.timestamp.to)) {
-                // if (blockTimestamp.to >= )
-                // let transactionsInTimeWindow: any = [];
-                // transactionsInTimeWindow = mirrorAccount.transactions.filter((tx: any) => {
-                //   return tx.consensus_timestamp >= block.timestamp.to && tx.consensus_timestamp <= currentTimestamp;
-                // });
-
-                // if((typeof lastTransactionOnPageTimestamp !== "undefined") && (mirrorAccount.transactions[mirrorAccount.transactions.length -1].consensus_timestamp >= lastTransactionOnPageTimestamp)) {
-                //   transactionsInTimeWindow = await this.mirrorNodeClient.getTransactionsForAccount(
-                //     mirrorAccount.account,
-                //     block.timestamp.to,
-                //     currentTimestamp,
-                //     requestId
-                //   );
-                // } else {
-                //     transactionsInTimeWindow = mirrorAccount.transactions.filter((tx: any) => {
-                //     return tx.consensus_timestamp >= block.timestamp.to && tx.consensus_timestamp <= currentTimestamp;
-                //   });
-                // }
-
-                // for(const tx of transactionsInTimeWindow) {
-                //   for (const transfer of tx.transfers) {
-                //     if (transfer.account === mirrorAccount.account && !transfer.is_approval) {
-                //       balanceFromTxs += transfer.amount;
-                //     }
-                //   }
-                // }
-
+                balanceFromTxs = this.getBalanceAtBlockTimestamp(
+                  mirrorAccount.account,
+                  mirrorAccount.transactions,
+                  block.timestamp.to
+                );
                 balanceFound = true;
                 weibars = BigInt(currentBalance - balanceFromTxs) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
               }
-
+              
               // The block is NOT from the last 15 minutes, use /balances rest API
               else {
                 const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(

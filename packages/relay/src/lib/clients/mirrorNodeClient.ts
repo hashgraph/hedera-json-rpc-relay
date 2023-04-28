@@ -333,7 +333,6 @@ export class MirrorNodeClient {
             requestId);
     }
 
-
     /*******************************************************************************
      * To be used to make paginated calls for the account information when the 
      * transaction count exceeds the constant MIRROR_NODE_QUERY_LIMIT.
@@ -343,14 +342,14 @@ export class MirrorNodeClient {
         const accountId = this.extractAccountIdFromUrl(url, requestId);
         const params = new URLSearchParams(url.split('?')[1]);
         
-        this.setQueryParam(queryParamObject, 'account.id', accountId);
+        // this.setQueryParam(queryParamObject, 'account.id', accountId);
         this.setQueryParam(queryParamObject, 'limit', constants.MIRROR_NODE_QUERY_LIMIT);
         this.setQueryParam(queryParamObject, 'timestamp', params.get('timestamp'));
         const queryParams = this.getQueryParams(queryParamObject);
 
         return this.getPaginatedResults(
-            `${MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT}${queryParams}`,
-            MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT,
+            `${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${accountId}${queryParams}`,
+            MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
             'transactions',
             [400, 404],
             requestId

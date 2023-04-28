@@ -1694,7 +1694,7 @@ describe('Eth calls using MirrorNode', async function () {
             'to': `${blockTimestamp}.060890941`
           },
         });
-        restMock.onGet(`blocks/1`).reply(200, recentBlockWithinLastfifteen);        
+        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);        
         restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
           account: contractId1,
           balance: {
@@ -1759,12 +1759,12 @@ describe('Eth calls using MirrorNode', async function () {
         expect(resBalance).to.equal(historicalBalance);
       });
 
-      it.only('blockNumber is in the latest 15 minutes with debit transactions and a next pagination with a timestamp greater than the block.timestamp.to', async () => {
+      it('blockNumber is in the latest 15 minutes with debit transactions and a next pagination with a timestamp greater than the block.timestamp.to', async () => {
         const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
           number: 1,
           'timestamp': {
-            'from': `1651550584.060890921`,
-            'to': `1651550585.060890941`
+            'from': `1651550564.060890921`,
+            'to': `1651550565.060890941`
           },
         });
         restMock.onGet(`blocks/1`).reply(200, recentBlockWithinLastfifteen);
@@ -1792,8 +1792,8 @@ describe('Eth calls using MirrorNode', async function () {
             timestamp: '1651550587.060890941'
           },
           transactions: [
-            buildCryptoTransferTransaction("0.0.98", contractId1, 200, {"timestamp":'1651550573.060890964'}),
-            buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":'1651550574.060890958'})
+            buildCryptoTransferTransaction("0.0.98", contractId1, 200, {"timestamp":'1651550574.060890964'}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":'1651550573.060890958'})
           ],
           links: {
             next: null
@@ -1813,7 +1813,7 @@ describe('Eth calls using MirrorNode', async function () {
         });
       
         const resBalance = await ethImpl.getBalance(contractId1, '1');
-        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 - 230) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
+        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 - 480) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);        
       });
 
