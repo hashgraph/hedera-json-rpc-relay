@@ -47,7 +47,7 @@ export class Poller {
     public poll() {
         this.polls.forEach(async (poll) => {
             try {
-                this.logger.debug(`${LOGGER_PREFIX} Fetching data for ${poll.tag}`);
+                this.logger.debug(`${LOGGER_PREFIX} Fetching data for tag: ${poll.tag}`);
 
                 const {event, filters} = JSON.parse(poll.tag);
                 let data;
@@ -67,21 +67,26 @@ export class Poller {
                     this.logger.error(`${LOGGER_PREFIX} Polling for unsupported event: ${event}. Tag: ${poll.tag}`);
                 }
 
+
                 if (Array.isArray(data)) {
-                    data.forEach(d => poll.callback(d));
+                    if (data.length) {
+                        this.logger.trace(`${LOGGER_PREFIX} Received ${data.length} results from tag: ${poll.tag}`);
+                        data.forEach(d => poll.callback(d));
+                    }
                 }
                 else {
+                    this.logger.trace(`${LOGGER_PREFIX} Received 1 result from tag: ${poll.tag}`);
                     poll.callback(data);
                 }
             }
             catch(error) {
-                console.error(error);
+                this.logger.error(error, `Poller error`);
             }
         });
     }
 
     start() {
-        this.logger.info(`${LOGGER_PREFIX} Starting polling`);
+        this.logger.info(`${LOGGER_PREFIX} Starting polling with interval=${this.pollingInterval}`);
         this.interval = setInterval(async () => {
             this.latestBlock = await this.eth.blockNumber();
             this.poll();
@@ -96,7 +101,7 @@ export class Poller {
 
     async add(tag: string, callback: Function) {
         if (!this.hasPoll(tag)) {
-            this.logger.info(`${LOGGER_PREFIX} Polling for ${tag}`);
+            this.logger.info(`${LOGGER_PREFIX} Tag ${tag} added to polling list`);
             this.polls.push({
                 tag,
                 callback
@@ -109,7 +114,7 @@ export class Poller {
     }
 
     remove(tag: string) {
-        this.logger.info(`${LOGGER_PREFIX} No longer polling for ${tag}`);
+        this.logger.info(`${LOGGER_PREFIX} Tag ${tag} removed from polling list`);
         this.polls = this.polls.filter(p => p.tag !== tag);
 
         if (!this.polls.length) {
