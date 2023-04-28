@@ -35,6 +35,9 @@ jobs:
 
       - name: Deploy and interact with contracts
         run: npx hardhat prepare
+      
+      - name: Generate types
+        run: npm run graph-codegen
 
       - name: Start local graph-node
         run: npm run graph-local -- --detach
