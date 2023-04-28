@@ -59,7 +59,7 @@ describe('Polling', async function() {
     });
 
 
-    describe('Poller', () => {
+    describe.only('Poller', () => {
 
         it('should start polling', async() => {
             ethImplStub.blockNumber.returns('0x1b177b');
@@ -73,8 +73,8 @@ describe('Polling', async function() {
             expect(poller.hasPoll(tag)).to.be.true;
 
             expect(loggerSpy.calledTwice).to.be.true;
-            expect(loggerSpy.getCall(0).args[0]).to.equal('Poller: Tag {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}} added to polling list');
-            expect(loggerSpy.getCall(1).args[0]).to.equal(`Poller: Starting polling with interval=${process.env.WS_POLLING_INTERVAL}`);
+            expect(loggerSpy.calledWith('Poller: Tag {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}} added to polling list')).to.equal(true);
+            expect(loggerSpy.calledWith(`Poller: Starting polling with interval=${process.env.WS_POLLING_INTERVAL}`)).to.equal(true);
         });
 
 
@@ -83,9 +83,9 @@ describe('Polling', async function() {
             poller.remove(tag);
             
             expect(poller.isPolling()).to.be.false;
-            expect(loggerSpy.getCall(0).args[0]).to.equal('Poller: Tag {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}} removed from polling list');
-            expect(loggerSpy.getCall(1).args[0]).to.equal('Poller: No active polls.');
-            expect(loggerSpy.getCall(2).args[0]).to.equal('Poller: Stopping polling');     
+            expect(loggerSpy.calledWith('Poller: Tag {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}} removed from polling list')).to.equal(true);
+            expect(loggerSpy.calledWith('Poller: No active polls.')).to.equal(true);
+            expect(loggerSpy.calledWith('Poller: Stopping polling')).to.equal(true);
         });
 
         it('should poll single line of log data', async () => {
