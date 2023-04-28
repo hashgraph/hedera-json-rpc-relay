@@ -19,7 +19,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 18.15
 
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -35,6 +35,9 @@ jobs:
 
       - name: Deploy and interact with contracts
         run: npx hardhat prepare
+      
+      - name: Generate types
+        run: npm run graph-codegen
 
       - name: Start local graph-node
         run: npm run graph-local -- --detach
