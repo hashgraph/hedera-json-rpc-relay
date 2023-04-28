@@ -77,6 +77,7 @@ describe('Polling', async function() {
             expect(loggerSpy.getCall(1).args[0]).to.equal(`Poller: Starting polling with interval=${process.env.WS_POLLING_INTERVAL}`);
         });
 
+
         it('should stop polling', () => {
             const loggerSpy = sandbox.spy(logger, 'info');            
             poller.remove(tag);
