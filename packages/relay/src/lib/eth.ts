@@ -752,7 +752,6 @@ export class EthImpl implements Eth {
                 let balanceFromTxs = 0;
                 if (mirrorAccount.balance) {
                   currentBalance = mirrorAccount.balance.balance;
-                  currentTimestamp = mirrorAccount.balance.timestamp;
                 }
 
                 // The balance in the account is real time, so we simply subtract the transactions to the block.timestamp.to to get a block relevant balance.
@@ -776,10 +775,11 @@ export class EthImpl implements Eth {
                   mirrorAccount.transactions,
                   block.timestamp.to
                 );
+                
                 balanceFound = true;
                 weibars = BigInt(currentBalance - balanceFromTxs) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
               }
-              
+
               // The block is NOT from the last 15 minutes, use /balances rest API
               else {
                 const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(

@@ -1577,7 +1577,7 @@ describe('Eth calls using MirrorNode', async function () {
         expect(resBalance).to.equal(hexBalance3);
       });
 
-      it('blockNumber is in the latest 15 minutes', async () => {
+      it('blockNumber is in the latest 15 minutes and the block.timstamp.to is later than the consensus transactions timestamps', async () => {
         const fromTimestamp = '1651560934';
         const toTimestamp = '1651560935';
         const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
@@ -1587,6 +1587,8 @@ describe('Eth calls using MirrorNode', async function () {
             'to': `${toTimestamp}.980351003`
           },
         });
+        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
+
         restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
           account: contractId1,
           balance: {
@@ -1602,8 +1604,7 @@ describe('Eth calls using MirrorNode', async function () {
             next: null
           }          
         });
-        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
-
+ 
         const resBalance = await ethImpl.getBalance(contractId1, '2');
         const historicalBalance = EthImpl.numberTo0x(BigInt(balance3) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
@@ -1623,12 +1624,12 @@ describe('Eth calls using MirrorNode', async function () {
         expect(resBalance).to.equal(hexBalance1);
       });
 
-      it('blockNumber is in the latest 15 minutes and there have been several debit transactions', async () => {
+      it('blockNumber is in the latest 15 minutes and there have been several debit transactions with consensus.timestamps greater the block.timestamp.to', async () => {
         const blockTimestamp = '1651560900';
         const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
           number: 2,
           'timestamp': {
-            'from': `${blockTimestamp}.060890921`,
+            'from': '1651560899.060890921',
             'to': `${blockTimestamp}.060890941`
           },
         });
@@ -1654,13 +1655,12 @@ describe('Eth calls using MirrorNode', async function () {
         expect(resBalance).to.equal(historicalBalance);
       });
 
-      it('blockNumber is in the latest 15 minutes and there have been several credit transactions', async () => {
-        const blockTimestamp = '1651560900';
+      it('blockNumber is in the latest 15 minutes and there have been several credit transactions with consensus.timestamps greater the block.timestamp.to', async () => {
         const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
           number: 2,
           'timestamp': {
-            'from': `${blockTimestamp}.060890921`,
-            'to': `${blockTimestamp}.060890941`
+            'from': '1651560899.060890921',
+            'to': '1651560900.060890941'
           },
         });
         restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
@@ -1671,9 +1671,9 @@ describe('Eth calls using MirrorNode', async function () {
             timestamp: `${timestamp4}.060890960`
           },
           transactions: [
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":`${timestamp4}.060890954`}),
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":`${timestamp4}.060890953`}),
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 25, {"timestamp":`${timestamp4}.060890952`}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":'1651561386.060890954'}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":'1651561386.060890953'}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25, {"timestamp":'1651561386.060890952'}),
           ],
           links: {
             next: null
@@ -1685,13 +1685,12 @@ describe('Eth calls using MirrorNode', async function () {
         expect(resBalance).to.equal(historicalBalance);
       });
 
-      it('blockNumber is in the latest 15 minutes and there have been mixed credit and debit transactions', async () => {
-        const blockTimestamp = '1651560900';
+      it('blockNumber is in the latest 15 minutes and there have been mixed credit and debit transactions with consensus.timestamps greater the block.timestamp.to', async () => {
         const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
           number: 2,
           'timestamp': {
-            'from': `${blockTimestamp}.060890921`,
-            'to': `${blockTimestamp}.060890941`
+            'from': '1651560899.060890921',
+            'to': '1651560900.060890941'
           },
         });
         restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);        
@@ -1702,10 +1701,10 @@ describe('Eth calls using MirrorNode', async function () {
             timestamp: `${timestamp4}.060890960`
           },
           transactions: [
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":`${timestamp4}.060890954`}),
-            buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":`${timestamp4}.060890953`}),
-            buildCryptoTransferTransaction(contractId1, "0.0.98", 25, {"timestamp":`${timestamp4}.060890952`}),
-            buildCryptoTransferTransaction("0.0.98", contractId1, 10, {"timestamp":`${timestamp4}.060890951`}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":'1651561386.060890954'}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":'1651561386.060890953'}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 25, {"timestamp":'1651561386.060890952'}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 10, {"timestamp":'1651561386.060890951'}),
           ],
           links: {
             next: null
@@ -1763,8 +1762,8 @@ describe('Eth calls using MirrorNode', async function () {
         const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
           number: 1,
           'timestamp': {
-            'from': `1651550564.060890921`,
-            'to': `1651550565.060890941`
+            'from': '1651550564.060890921',
+            'to': '1651550565.060890941'
           },
         });
         restMock.onGet(`blocks/1`).reply(200, recentBlockWithinLastfifteen);
@@ -1816,6 +1815,64 @@ describe('Eth calls using MirrorNode', async function () {
         const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 - 480) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);        
       });
+
+      it('blockNumber is in the latest 15 minutes with credit and debit transactions and a next pagination with a timestamp greater than the block.timestamp.to', async () => {
+        const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
+          number: 1,
+          'timestamp': {
+            'from': '1651550564.060890921',
+            'to': '1651550565.060890941'
+          },
+        });
+        restMock.onGet(`blocks/1`).reply(200, recentBlockWithinLastfifteen);
+        restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
+          account: contractId1,
+          balance: {
+            balance: balance3,
+            timestamp: '1651550587.060890941'
+          },
+          transactions: [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":'1651550587.060890964'}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 55, {"timestamp":'1651550587.060890958'}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":'1651550587.060890953'}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 25, {"timestamp":'1651550587.060890952'}),
+          ],
+          links: {
+            next: `/api/v1/accounts/${contractId1}?limit=100&timestamp=lt:1651550575.060890941`
+          }         
+        });
+
+        restMock.onGet(`accounts/${contractId1}?limit=100&timestamp=lt:1651550575.060890941`).reply(200, {
+          account: contractId1,
+          balance: {
+            balance: balance3,
+            timestamp: '1651550587.060890941'
+          },
+          transactions: [
+            buildCryptoTransferTransaction("0.0.98", contractId1, 200, {"timestamp":'1651550574.060890964'}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":'1651550573.060890958'})
+          ],
+          links: {
+            next: null
+          }         
+        });
+
+        const latestBlock = Object.assign({}, defaultBlock, {
+          number: 4,
+          'timestamp': {
+            'from': `1651550595.060890941`,
+            'to': `1651550597.060890941`
+          },
+        });
+
+        restMock.onGet('blocks?limit=1&order=desc').reply(200, {
+          blocks: [latestBlock]
+        });
+      
+        const resBalance = await ethImpl.getBalance(contractId1, '1');
+        const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 - 80) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
+        expect(resBalance).to.equal(historicalBalance);        
+      });      
 
       it('blockNumber is the same as the latest block', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, '3');
