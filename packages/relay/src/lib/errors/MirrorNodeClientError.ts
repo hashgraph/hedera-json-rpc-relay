@@ -32,7 +32,8 @@ export class MirrorNodeClientError extends Error {
     };
 
     static statusCodes = {
-      NOT_FOUND: 404
+      NOT_FOUND: 404,
+      NO_CONTENT: 204
     };
 
     constructor(error: any, statusCode: number) {
@@ -66,6 +67,10 @@ export class MirrorNodeClientError extends Error {
 
     public isNotSupported(): boolean {
         return this.statusCode === MirrorNodeClientError.ErrorCodes.NOT_SUPPORTED;
+    }
+
+    public isEmpty(): boolean {
+      return this.statusCode === MirrorNodeClientError.statusCodes.NO_CONTENT;
     }
 
     public isNotSupportedSystemContractOperaton(): boolean {
