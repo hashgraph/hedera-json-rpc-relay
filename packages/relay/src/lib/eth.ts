@@ -397,7 +397,6 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
     // this checks whether this is a transfer transaction and not a contract function execution
-    const value = Number(transaction.value);
     if (transaction && transaction.to && (!transaction.data || transaction.data === '0x')) {
       const value = Number(transaction.value);
       if (value > 0) {
