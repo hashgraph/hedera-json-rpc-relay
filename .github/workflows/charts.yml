@@ -18,7 +18,7 @@ jobs:
         uses: helm/chart-testing-action@v2.3.1
 
       - name: Run lint
-        run: ct lint --all
+        run: ct lint --charts=helm-chart --all
 
   install:
     runs-on: ubuntu-latest
@@ -40,15 +40,17 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
 
       - name: Build and push images
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64, linux/arm64
           push: true
-          tags: localhost:5001/${{ github.repository }}:test
+          tags: localhost:5000/${{ github.repository }}:test
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.3.1
