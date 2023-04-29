@@ -18,10 +18,15 @@ jobs:
         uses: helm/chart-testing-action@v2.3.1
 
       - name: Run lint
-        run: ct lint --charts=helm-chart --all
+        run: ct lint --charts=helm-chart
 
   install:
     runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - name: Checkout
         uses: actions/checkout@v3
