@@ -16,6 +16,7 @@ keywords:
   - rpc
 maintainers:
   - name: Hedera Smart Contracts Team
+    email: engsmartcontracts@hedera.com
 name: hedera-json-rpc-relay
 sources:
   - https://github.com/hashgraph/hedera-json-rpc-relay

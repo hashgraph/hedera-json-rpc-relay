@@ -46,7 +46,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 Namespace
 */}}
 {{- define "json-rpc-relay.namespace" -}}
-{{- default .Release.Namespace .Values.global.namespaceOverride -}}
+{{- .Release.Namespace -}}
 {{- end -}}
 
 {{/*
