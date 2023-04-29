@@ -29,7 +29,7 @@ describe('Polling', async function() {
     this.timeout(20000);
 
     const ARRAY_OF_LOGS = 'Called notifySubscriber with an array of log data!';
-    const FETCHING_DATA = 'Poller: Fetching data for {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}}';
+    const FETCHING_DATA = 'Poller: Fetching data for tag: {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}}';
     const logs = '[{"address":"0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x3","data":"0x","logIndex":"0x0","removed":false,"topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000000000000000000000000000000000000000000000","0x000000000000000000000000000000000000000000000000000000000208fa13","0x0000000000000000000000000000000000000000000000000000000000000005"],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392","transactionIndex":"0x1"},{"address":"0x0000000000000000000000000000000002131952","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x3","data":"0x","logIndex":"0x1","removed":false,"topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000000000000000000000000000000000000000000000","0x000000000000000000000000000000000000000000000000000000000208fa13","0x0000000000000000000000000000000000000000000000000000000000000005"],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392","transactionIndex":"0x1"},{"address":"0x0000000000000000000000000000000002131953","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x4","data":"0x","logIndex":"0x0","removed":false,"topics":[],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393","transactionIndex":"0x1"},{"address":"0x0000000000000000000000000000000002131954","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x5","data":"0x","logIndex":"0x0","removed":false,"topics":[],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394","transactionIndex":"0x1"}]';
     const logsArray = new Array([
         [{"address":"0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x3","data":"0x","logIndex":"0x0","removed":false,"topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000000000000000000000000000000000000000000000","0x000000000000000000000000000000000000000000000000000000000208fa13","0x0000000000000000000000000000000000000000000000000000000000000005"],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392","transactionIndex":"0x1"},{"address":"0x0000000000000000000000000000000002131952","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x3","data":"0x","logIndex":"0x1","removed":false,"topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000000000000000000000000000000000000000000000","0x000000000000000000000000000000000000000000000000000000000208fa13","0x0000000000000000000000000000000000000000000000000000000000000005"],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392","transactionIndex":"0x1"},{"address":"0x0000000000000000000000000000000002131953","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x4","data":"0x","logIndex":"0x0","removed":false,"topics":[],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393","transactionIndex":"0x1"},{"address":"0x0000000000000000000000000000000002131954","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x5","data":"0x","logIndex":"0x0","removed":false,"topics":[],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394","transactionIndex":"0x1"}],
@@ -59,7 +59,7 @@ describe('Polling', async function() {
     });
 
 
-    describe('Poller', () => {
+    describe.only('Poller', () => {
 
         it('should start polling', async() => {
             ethImplStub.blockNumber.returns('0x1b177b');
@@ -73,23 +73,25 @@ describe('Polling', async function() {
             expect(poller.hasPoll(tag)).to.be.true;
 
             expect(loggerSpy.calledTwice).to.be.true;
-            expect(loggerSpy.getCall(0).args[0]).to.equal('Poller: Polling for {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}}');
-            expect(loggerSpy.getCall(1).args[0]).to.equal('Poller: Starting polling');            
+            expect(loggerSpy.calledWith('Poller: Tag {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}} added to polling list')).to.equal(true);
+            expect(loggerSpy.calledWith(`Poller: Starting polling with interval=${process.env.WS_POLLING_INTERVAL}`)).to.equal(true);
         });
+
 
         it('should stop polling', () => {
             const loggerSpy = sandbox.spy(logger, 'info');            
             poller.remove(tag);
             
             expect(poller.isPolling()).to.be.false;
-            expect(loggerSpy.getCall(0).args[0]).to.equal('Poller: No longer polling for {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}}');
-            expect(loggerSpy.getCall(1).args[0]).to.equal('Poller: No active polls.');
-            expect(loggerSpy.getCall(2).args[0]).to.equal('Poller: Stopping polling');     
+            expect(loggerSpy.calledWith('Poller: Tag {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}} removed from polling list')).to.equal(true);
+            expect(loggerSpy.calledWith('Poller: No active polls.')).to.equal(true);
+            expect(loggerSpy.calledWith('Poller: Stopping polling')).to.equal(true);
         });
 
         it('should poll single line of log data', async () => {
-            const notifySubscriber = (tag, logs) =>{
+            const notifySubscriber = (data) =>{
                 logger.debug(SINGLE_LINE);
+                expect(data).to.eq(logs);
                 return;
             };
 
@@ -111,8 +113,9 @@ describe('Polling', async function() {
 
         it('should poll an array of log data', async () => {
 
-            const notifySubscriber = (tag, logsArray) =>{
+            const notifySubscriber = (data) =>{
                 logger.debug(ARRAY_OF_LOGS);
+                expect(data).to.deep.eq(logsArray);
                 return;
             };
 

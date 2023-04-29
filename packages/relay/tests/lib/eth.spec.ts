@@ -2106,6 +2106,30 @@ describe('Eth calls using MirrorNode', async function () {
       expectLogData(result[3], filteredLogs.logs[3], defaultDetailedContractResults3);
     });
 
+    it('no filters but undefined transaction_index', async function () {
+      const filteredLogs = {
+        logs: [
+          {...defaultLogs.logs[0], transaction_index: undefined},
+          {...defaultLogs.logs[1], transaction_index: undefined},
+          {...defaultLogs.logs[2], transaction_index: undefined},
+          {...defaultLogs.logs[3], transaction_index: undefined}
+        ]
+      };
+      restMock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
+      restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogs);
+      filteredLogs.logs.forEach((log, index) => {
+        restMock.onGet(`contracts/${log.address}`).reply(200, {...defaultContract, contract_id: `0.0.105${index}`});
+      });
+
+      const result = await ethImpl.getLogs(null, null, null, null, null);
+      expect(result).to.exist;
+
+      expect(result.length).to.eq(4);
+      result.forEach((log, index) => {
+        expect(log.transactionIndex).to.be.null;
+      });
+    });
+
     it('should be able to return more than two logs with limit of two per request', async function () {
       const unfilteredLogs = {
         logs: [
@@ -3929,6 +3953,26 @@ describe('Eth', async function () {
 
       expect(result).to.exist;
       expect(result.v).to.eq('0x0');
+    });
+
+    it('handles transactions with undefined transaction_index', async function () {
+      const detailedResultsWithNullNullableValues = {
+        ...defaultDetailedContractResultByHash,
+        transaction_index: undefined
+      };
+
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640534';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
+      const result = await ethImpl.getTransactionByHash(uniqueTxHash);
+      if (result == null) return;
+
+      expect(result).to.exist;
+      expect(result.transactionIndex).to.be.null;
     });
 
     it('returns reverted transactions', async function () {

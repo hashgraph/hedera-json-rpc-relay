@@ -25,8 +25,7 @@ type IpCounter = {
     [key: string]: number;
 };
 
-const IP_LIMIT_ERROR = WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED;
-const TTL_EXPIRED = WebSocketError.TTL_EXPIRED;
+const {CONNECTION_IP_LIMIT_EXCEEDED, TTL_EXPIRED, CONNECTION_LIMIT_EXCEEDED} = WebSocketError;
 
 export default class ConnectionLimiter {
     private connectedClients: number;
@@ -66,13 +65,20 @@ export default class ConnectionLimiter {
     }
 
     public applyLimits(ctx) {
+        // Limit total connections
+        if (this.connectedClients > parseInt(process.env.WS_CONNECTION_LIMIT || '10')) {
+            this.logger.info(`Closing connection ${ctx.websocket.id} due to exceeded maximum connections (${process.env.WS_CONNECTION_LIMIT})`);
+            ctx.websocket.close(CONNECTION_LIMIT_EXCEEDED.code, CONNECTION_LIMIT_EXCEEDED.message);
+            return;
+        }
+
         const {ip} = ctx.request;
 
         // Limit connections from a single IP address
         const limitPerIp = parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP || '10');
         if (this.clientIps[ip] && this.clientIps[ip] > limitPerIp) {
-            this.logger.info(`Maximum allowed connections from a single IP (${this.clientIps[ip]}) exceeded for address ${ip}`);
-            ctx.websocket.close(IP_LIMIT_ERROR.code, IP_LIMIT_ERROR.message);
+            this.logger.info(`Closing connection ${ctx.websocket.id} due to exceeded maximum connections from a single IP (${this.clientIps[ip]}) for address ${ip}`);
+            ctx.websocket.close(CONNECTION_IP_LIMIT_EXCEEDED.code, CONNECTION_IP_LIMIT_EXCEEDED.message);
             return;
         }
 
@@ -88,13 +94,6 @@ export default class ConnectionLimiter {
                 }
             }
         }, maxConnectionTTL);
-    }
-
-    public verifyClient(info, done) {
-        if (this.connectedClients >= parseInt(process.env.CONNECTION_LIMIT || '10')) {
-            return done(false, 429, 'Connection limit exceeded');
-        }
-        done(true);
     }
 
     public incrementSubs(ctx) {
