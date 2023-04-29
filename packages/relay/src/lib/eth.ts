@@ -1226,7 +1226,7 @@ export class EthImpl implements Eth {
       r: rSig,
       s: sSig,
       to: contractResult.to?.substring(0, 42),
-      transactionIndex: EthImpl.numberTo0x(contractResult.transaction_index),
+      transactionIndex: EthImpl.nullableNumberTo0x(contractResult.transaction_index),
       type: EthImpl.nullableNumberTo0x(contractResult.type),
       v: EthImpl.nanOrNumberTo0x(contractResult.v),
       value: EthImpl.nanOrNumberTo0x(contractResult.amount),
@@ -1531,7 +1531,7 @@ export class EthImpl implements Eth {
             r: rSig,
             s: sSig,
             to: contractResultDetails.to.substring(0, 42),
-            transactionIndex: EthImpl.numberTo0x(contractResultDetails.transaction_index),
+            transactionIndex: EthImpl.nullableNumberTo0x(contractResultDetails.transaction_index),
             type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
             v: EthImpl.nanOrNumberTo0x(contractResultDetails.v),
             value: EthImpl.nanOrNumberTo0x(contractResultDetails.amount),
@@ -1676,11 +1676,11 @@ export class EthImpl implements Eth {
           blockHash: EthImpl.toHash32(log.block_hash),
           blockNumber: EthImpl.numberTo0x(log.block_number),
           data: log.data,
-          logIndex: EthImpl.numberTo0x(log.index),
+          logIndex: EthImpl.nullableNumberTo0x(log.index),
           removed: false,
           topics: log.topics,
           transactionHash: EthImpl.toHash32(log.transaction_hash),
-          transactionIndex: EthImpl.numberTo0x(log.transaction_index)
+          transactionIndex: EthImpl.nullableNumberTo0x(log.transaction_index)
         })
       );
     }
