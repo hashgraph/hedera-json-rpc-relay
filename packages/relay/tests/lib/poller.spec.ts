@@ -59,7 +59,7 @@ describe('Polling', async function() {
     });
 
 
-    describe.only('Poller', () => {
+    describe('Poller', () => {
 
         it('should start polling', async() => {
             ethImplStub.blockNumber.returns('0x1b177b');
