@@ -282,48 +282,43 @@ function TestScenarioBuilder() {
       run: function (testParameters, iteration = 0) {
         const response = that._request(testParameters, iteration);
         check(response, that._checks);
-
         // if Load test, then we need to sleep for random time between 1 and 5 seconds
         if (getTestType() === "load") {
             sleep(randomIntBetween(1, 5));
         }
-
-      }
-
-
-      ,
+      },
     };
-  }
+  };
 
   this.check = function (name, func) {
     this._checks[name] = func;
     return this;
-  }
+  };
 
   this.name = function (name) {
     this._name = name;
     return this;
-  }
+  };
 
   this.request = function (func) {
     this._request = func;
     return this;
-  }
+  };
 
   this.tags = function (tags) {
     this._tags = tags;
     return this;
-  }
+  };
 
   this.testDuration = function (testDuration) {
     this._testDuration = testDuration;
     return this;
-  }
+  };
 
   this.maxDuration = function (maxDuration){
     this._maxDuration = maxDuration;
     return this;
-  }
+  };
 
   return this;
 }
