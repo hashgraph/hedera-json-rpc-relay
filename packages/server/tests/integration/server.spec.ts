@@ -26,8 +26,7 @@ dotenv.config({ path: path.resolve(__dirname, './test.env') });
 import app from '../../src/server';
 import { Validator } from '../../src/validator';
 import Assertions from '../helpers/assertions';
-import RelayCalls from '../../../relay/src/lib/constants';
-import constants from '../../../relay/src/lib/constants';
+import RelayCalls from '../../tests/helpers/constants';
 
 const MISSING_PARAM_ERROR = "Missing value for required parameter";
 
@@ -48,7 +47,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_CHAIN_ID,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
       'params': [null]
     });
 
@@ -60,7 +59,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_ACCOUNTS,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_ACCOUNTS,
       'params': [null]
     });
 
@@ -73,7 +72,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.WEB3_CLIENTVERSION,
+      'method': RelayCalls.ETH_ENDPOINTS.WEB3_CLIENTVERSION,
       'params': [null]
     });
 
@@ -86,7 +85,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.ETH_GET_TRANSACTION_BY_HASH,
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
         'params': ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7237170ae5e5e7957eb6392']
       });
     } catch (error) {
@@ -99,7 +98,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_GET_UNCLE_BY_BLOCK_HASH_AND_INDEX,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_UNCLE_BY_BLOCK_HASH_AND_INDEX,
       'params': [null]
     });
 
@@ -111,7 +110,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_GET_UNCLE_BY_BLOCK_NUMBER_AND_INDEX,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_UNCLE_BY_BLOCK_NUMBER_AND_INDEX,
       'params': [null]
     });
 
@@ -123,7 +122,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_GET_UNCLE_COUNT_BY_BLOCK_HASH,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_UNCLE_COUNT_BY_BLOCK_HASH,
       'params': [null]
     });
 
@@ -135,7 +134,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_GET_UNCLE_COUNT_BY_BLOCK_NUMBER,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_UNCLE_COUNT_BY_BLOCK_NUMBER,
       'params': [null]
     });
 
@@ -147,7 +146,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_HASH_RATE,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_HASH_RATE,
       'params': [null]
     });
 
@@ -159,7 +158,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_MINING,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_MINING,
       'params': [null]
     });
 
@@ -171,7 +170,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_SUBMIT_WORK,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_SUBMIT_WORK,
       'params': [null]
     });
 
@@ -183,7 +182,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_SYNCING,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_SYNCING,
       'params': [null]
     });
 
@@ -195,7 +194,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.NET_LISTENING,
+      'method': RelayCalls.ETH_ENDPOINTS.NET_LISTENING,
       'params': [null]
     });
 
@@ -208,7 +207,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.WEB3_SHA,
+        'method': RelayCalls.ETH_ENDPOINTS.WEB3_SHA,
         'params': [null]
       });
 
@@ -223,7 +222,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.NET_PEER_COUNT,
+        'method': RelayCalls.ETH_ENDPOINTS.NET_PEER_COUNT,
         'params': [null]
       });
 
@@ -238,7 +237,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.ETH_SUBMIT_HASH_RATE,
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_SUBMIT_HASH_RATE,
         'params': [null]
       });
 
@@ -253,7 +252,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.ETH_SIGN_TYPED_DATA,
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_SIGN_TYPED_DATA,
         'params': [null]
       });
 
@@ -268,7 +267,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.ETH_SIGN_TRANSACTION,
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_SIGN_TRANSACTION,
         'params': [null]
       });
 
@@ -283,7 +282,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': constants.ETH_SIGN,
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_SIGN,
         'params': [null]
       });
 
@@ -298,7 +297,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.ETH_SEND_TRANSACTION,
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_SEND_TRANSACTION,
         'params': [null]
       });
 
@@ -313,7 +312,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.ETH_PROTOCOL_VERSION,
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_PROTOCOL_VERSION,
         'params': [null]
       });
 
@@ -328,7 +327,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.ETH_GET_PROOF,
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_PROOF,
         'params': [null]
       });
 
@@ -343,7 +342,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.ETH_COINBASE,
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_COINBASE,
         'params': [null]
       });
 
@@ -358,7 +357,7 @@ describe('RPC Server', async function() {
       await this.testClient.post('/', {
         'id': '2',
         'jsonrpc': '2.0',
-        'method': RelayCalls.ETH_GET_WORK,
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_WORK,
         'params': [null]
       });
 
@@ -372,7 +371,7 @@ describe('RPC Server', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
       'jsonrpc': '2.0',
-      'method': RelayCalls.ETH_MAX_PRIORITY_FEE_PER_GAS,
+      'method': RelayCalls.ETH_ENDPOINTS.ETH_MAX_PRIORITY_FEE_PER_GAS,
       'params': [null]
     });
 
@@ -387,7 +386,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': []
           });
 
@@ -402,7 +401,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': ["0x0"]
           });
 
@@ -417,7 +416,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': [{"to": "0x1"}]
           });
 
@@ -431,7 +430,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': [{"from": '0x1'}]
           });
 
@@ -446,7 +445,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': [{"gas": 123}]
           });
 
@@ -462,7 +461,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': [{"gasPrice": 123}]
           });
 
@@ -478,7 +477,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': [{"maxPriorityFeePerGas": 123}]
           });
 
@@ -494,7 +493,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': [{"maxFeePerGas": "123"}]
           });
 
@@ -509,7 +508,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': [{"value": "123"}]
           });
 
@@ -524,7 +523,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': [{"data": "123"}]
           });
 
@@ -539,7 +538,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': [{"to": "0x0000000000000000000000000000000000000001"}, "123"]
           });
 
@@ -554,7 +553,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_ESTIMATE_GAS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
             'params': [{"to": "0x0000000000000000000000000000000000000001"}, "newest"]
           });
 
@@ -571,7 +570,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BALANCE,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
             'params': []
           });
 
@@ -586,7 +585,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BALANCE,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
             'params': ["0x0"]
           });
 
@@ -601,7 +600,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BALANCE,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
             'params': ["0x0000000000000000000000000000000000000001"]
           });
 
@@ -616,7 +615,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BALANCE,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
             'params': ["0x0000000000000000000000000000000000000001", "123"]
           });
 
@@ -632,7 +631,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BALANCE,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
             'params': ["0x0000000000000000000000000000000000000001", "newest"]
           });
 
@@ -649,7 +648,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_CODE,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
             'params': []
           });
 
@@ -665,7 +664,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_CODE,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
             'params': ['0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35']
           });
 
@@ -680,7 +679,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_CODE,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
             'params': ["0x0000000000000000000000000000000000000001"]
           });
 
@@ -695,7 +694,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_CODE,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
             'params': ["0x0000000000000000000000000000000000000001", "123"]
           });
 
@@ -727,7 +726,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_BY_NUMBER,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
             'params': []
           });
 
@@ -742,7 +741,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_BY_NUMBER,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
             'params': [1]
           });
 
@@ -757,7 +756,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_BY_NUMBER,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
             'params': ["newest"]
           });
 
@@ -772,7 +771,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_BY_NUMBER,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
             'params': ["0x1"]
           });
 
@@ -787,7 +786,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_BY_NUMBER,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
             'params': ["0x1", "true"]
           });
 
@@ -804,7 +803,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_BY_HASH,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_HASH,
             'params': []
           });
 
@@ -819,7 +818,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_BY_HASH,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_HASH,
             'params': ['0x1']
           });
 
@@ -834,7 +833,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_BY_HASH,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_HASH,
             'params': ["0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6"]
           });
 
@@ -849,7 +848,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_BY_HASH,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_HASH,
             'params': ["0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6", "true"]
           });
 
@@ -866,7 +865,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_COUNT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
             'params': []
           });
 
@@ -881,7 +880,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_COUNT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
             'params': ["0x0001"]
           });
 
@@ -896,7 +895,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_COUNT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
             'params': ["0x0000000000000000000000000000000000000001"]
           });
 
@@ -911,7 +910,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_COUNT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
             'params': ["0x0000000000000000000000000000000000000001", 123]
           });
 
@@ -926,7 +925,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_COUNT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
             'params': ["0x0000000000000000000000000000000000000001", 'newest']
           });
 
@@ -943,7 +942,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': []
           });
 
@@ -958,7 +957,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': ["0x0"]
           });
 
@@ -973,7 +972,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"to": "0x1"}]
           });
 
@@ -987,7 +986,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"from": '0x1'}]
           });
 
@@ -1002,7 +1001,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"gas": 123}]
           });
 
@@ -1017,7 +1016,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"gasPrice": 123}]
           });
 
@@ -1032,7 +1031,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"maxPriorityFeePerGas": 123}]
           });
 
@@ -1047,7 +1046,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"maxFeePerGas": "123"}]
           });
 
@@ -1062,7 +1061,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"value": "123"}]
           });
 
@@ -1077,7 +1076,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"data": "123"}]
           });
 
@@ -1092,7 +1091,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"to": "0x0000000000000000000000000000000000000001"}, "123"]
           });
 
@@ -1107,7 +1106,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"to": "0x0000000000000000000000000000000000000001"}, "newest"]
           });
 
@@ -1122,7 +1121,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"to": "0x0000000000000000000000000000000000000001"}, { "blockHash": "0x123" }]
           });
 
@@ -1137,7 +1136,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_CALL,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_CALL,
             'params': [{"to": "0x0000000000000000000000000000000000000001"}, { "blockNumber": "123" }]
           });
 
@@ -1154,7 +1153,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_SEND_RAW_TRANSACTION,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION,
             'params': []
           });
 
@@ -1169,7 +1168,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_SEND_RAW_TRANSACTION,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION,
             'params': ['f868']
           });
 
@@ -1186,7 +1185,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_BY_HASH,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
             'params': []
           });
 
@@ -1201,7 +1200,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_BY_HASH,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
             'params': []
           });
 
@@ -1218,7 +1217,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_FEE_HISTORY,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY,
             'params': []
           });
 
@@ -1233,7 +1232,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_FEE_HISTORY,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY,
             'params': ["0x5"]
           });
 
@@ -1248,7 +1247,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_FEE_HISTORY,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY,
             'params': ["0x5", "latest", {}]
           });
 
@@ -1265,7 +1264,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_HASH,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_HASH,
             'params': []
           });
 
@@ -1280,7 +1279,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_HASH,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_HASH,
             'params': ["0x1234"]
           });
 
@@ -1297,7 +1296,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER,
             'params': []
           });
 
@@ -1312,7 +1311,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER,
             'params': ["1234"]
           });
 
@@ -1327,7 +1326,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER,
             'params': ["newest"]
           });
 
@@ -1344,7 +1343,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_STORAGE_AT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
             'params': []
           });
 
@@ -1359,7 +1358,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_STORAGE_AT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
             'params': ["0000000000000000000000000000000000000001"]
           });
 
@@ -1374,7 +1373,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_STORAGE_AT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
             'params': ["0x0000000000000000000000000000000000000001"]
           });
 
@@ -1389,7 +1388,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_STORAGE_AT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
             'params': ["0x0000000000000000000000000000000000000001", 1234]
           });
 
@@ -1404,7 +1403,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_STORAGE_AT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
             'params': ["0x0000000000000000000000000000000000000001", "0x1", 123]
           });
 
@@ -1419,7 +1418,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_STORAGE_AT,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
             'params': ["0x0000000000000000000000000000000000000001", "0x1", "newest"]
           });
 
@@ -1436,7 +1435,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
             'params': []
           });
 
@@ -1451,7 +1450,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
             'params': ["0x1a2b3c"]
           });
 
@@ -1466,7 +1465,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
             'params': ["0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35"]
           });
 
@@ -1498,7 +1497,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
             'params': []
           });
 
@@ -1513,7 +1512,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
             'params': [123]
           });
 
@@ -1528,7 +1527,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
             'params': ["newest"]
           });
 
@@ -1543,7 +1542,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
             'params': ["0x5BAD55"]
           });
 
@@ -1558,7 +1557,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
             'params': ["0x5BAD55", "08"]
           });
 
@@ -1575,7 +1574,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_LOGS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             'params': ["0x1"]
           });
 
@@ -1590,7 +1589,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_LOGS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             'params': [{ "blockHash": "0x123", "toBlock": "latest" }]
           });
 
@@ -1606,7 +1605,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_LOGS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             'params': [{ "blockHash": "0x123" }]
           });
 
@@ -1621,7 +1620,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_LOGS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             'params': [{ "toBlock": 123 }]
           });
 
@@ -1636,7 +1635,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_LOGS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             'params': [{ "fromBlock": 123 }]
           });
 
@@ -1651,7 +1650,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_LOGS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             'params': [{ "address": '0x012345' }]
           });
 
@@ -1666,7 +1665,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_LOGS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             'params': [{ "topics": {}}]
           });
 
@@ -1681,7 +1680,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_LOGS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             'params': [{ "topics": [123]}]
           });
 
@@ -1696,7 +1695,7 @@ describe('RPC Server', async function() {
           await this.testClient.post('/', {
             'id': '2',
             'jsonrpc': '2.0',
-            'method': RelayCalls.ETH_GET_LOGS,
+            'method': RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             'params': [{ "topics": [[123]]}]
           });
 

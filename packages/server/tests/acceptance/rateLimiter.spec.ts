@@ -24,7 +24,7 @@ import { ethers } from 'ethers';
 import { AliasAccount } from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
 import { ContractFunctionParameters } from '@hashgraph/sdk';
-import RelayCalls from '../../../relay/src/lib/constants';
+import Constants from '../../tests/helpers/constants';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
@@ -50,18 +50,18 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
 
     describe('RPC Rate Limiter Acceptance Tests', () => {
-        it('should throw rate limit exceeded error', async function() {
+        it('should throw rate limit exceeded error', async function () {
             let rateLimited = false;
-            try{
+            try {
                 //Currently chaindId is TIER 2 request per LIMIT_DURATION from env. We are trying to get an error for rate limit by exceeding this threshold
                 for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!) * 2; index++) {
-                    await relay.call(RelayCalls.ETH_CHAIN_ID, [null], requestId);
+                    await relay.call(Constants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
                     // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
                     await new Promise(r => setTimeout(r, 1));
                 }
-            }catch(error) {
+            } catch (error) {
                 rateLimited = true;
-                Assertions.jsonRpcError(error, predefined.IP_RATE_LIMIT_EXCEEDED(RelayCalls.ETH_CHAIN_ID));
+                Assertions.jsonRpcError(error, predefined.IP_RATE_LIMIT_EXCEEDED(Constants.ETH_ENDPOINTS.ETH_CHAIN_ID));
             }
 
             expect(rateLimited).to.be.true;
@@ -72,7 +72,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
         it('should not throw rate limit exceeded error', async function () {
             for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
-                await relay.call(RelayCalls.ETH_CHAIN_ID, [null], requestId);
+                await relay.call(Constants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
                 // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
                 await new Promise(r => setTimeout(r, 1));
             }
@@ -81,7 +81,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION!)));
 
             for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
-                await relay.call(RelayCalls.ETH_CHAIN_ID, [null], requestId);
+                await relay.call(Constants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
                 // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
                 await new Promise(r => setTimeout(r, 1));
             }
@@ -131,7 +131,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
             async function deployBaseHTSContract() {
                 const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, accounts[1].wallet);
-                const baseHTS = await baseHTSFactory.deploy({gasLimit: 10_000_000});
+                const baseHTS = await baseHTSFactory.deploy({ gasLimit: 10_000_000 });
                 const { contractAddress } = await baseHTS.deployTransaction.wait();
 
                 return contractAddress;
@@ -171,7 +171,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                         maxFeePerGas: gasPrice,
                     };
                     const signedTx = await accounts[1].wallet.signTransaction(transaction);
-                    await relay.call(RelayCalls.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId);
+                    await relay.call(Constants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId);
                 } catch (error) {
                     rateLimit = true;
                 }
