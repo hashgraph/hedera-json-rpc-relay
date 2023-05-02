@@ -274,7 +274,7 @@ export class MirrorNodeClient {
             // always abort the request on failure as the axios call can hang until the parent code/stack times out (might be a few minutes in a server-side applications)
             controller.abort();
 
-            this.handleError(error, path, effectiveStatusCode, method, requestId);
+            this.handleError(error, path, pathLabel, effectiveStatusCode, method, requestId);
         }
 
         return null;
@@ -289,10 +289,11 @@ export class MirrorNodeClient {
         return this.request(path, pathLabel, 'POST', data, requestId);
     }
 
-    handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, requestId?: string) {
+    handleError(error: any, path: string, pathLabel: string, effectiveStatusCode: number, method: REQUEST_METHODS, requestId?: string) {
         const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);   
         const requestIdPrefix = formatRequestIdMessage(requestId);
-        if (error.response && MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(path)?.indexOf(effectiveStatusCode) !== -1) {
+        const acceptedErrorResponses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
+        if (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1) {
             this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
             return null;
         }
