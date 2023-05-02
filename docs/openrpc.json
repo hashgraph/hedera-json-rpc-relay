@@ -5,6 +5,24 @@
         "description": "A specification of the implemented Ethereum JSON RPC APIs interface for Hedera clients and adheres to the Ethereum execution APIs schema.",
         "version": "0.23.0-SNAPSHOT"
     },
+    "servers": [
+        {
+          "name": "Hedera Mainnet RPC Relay",
+          "url": "https://mainnet.hashio.io/api"
+        },
+        {
+          "name": "Hedera Testnet RPC Relay",
+          "url": "https://testnet.hashio.io/api"
+        },
+        {
+          "name": "Hedera Previewnet RPC Relay",
+          "url": "https://previewnet.hashio.io/api"
+        },
+        {
+          "name": "localhost Hedera RPC Relay",
+          "url": "http://localhost:7564"
+        }
+    ],
     "methods": [
         {
             "name": "eth_accounts",
