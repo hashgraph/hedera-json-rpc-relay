@@ -35,7 +35,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Allow
-  schedule: {{ .Values.test.schedule }}
+  schedule: {{ .Values.test.schedule | quote }}
   jobTemplate:
     spec:
       backoffLimit: 2
