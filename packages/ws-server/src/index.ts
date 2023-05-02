@@ -21,8 +21,8 @@
 import { app, httpApp } from './webSocketServer';
 
 async function main() {
-  app.listen({ port: process.env.WEB_SOCKET_PORT || 8546 });
-  httpApp.listen({ port: process.env.WEB_SOCKET_HTTP_PORT || 8547 });
+  await app.listen({ port: process.env.WEB_SOCKET_PORT || 8546 });
+  await httpApp.listen({ port: process.env.WEB_SOCKET_HTTP_PORT || 8547 });
 }
 
 main();
