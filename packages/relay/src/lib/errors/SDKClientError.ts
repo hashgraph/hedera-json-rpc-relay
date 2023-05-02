@@ -52,6 +52,10 @@ export class SDKClientError extends Error {
       (this.statusCode === Status.InvalidContractId._code || this.message?.includes(Status.InvalidContractId.toString()));
   }
 
+  public isContractDeleted(): boolean {
+    return this.statusCode == Status.ContractDeleted._code;
+  }
+
   public isInsufficientTxFee(): boolean {
     return this.statusCode === Status.InsufficientTxFee._code;
   }

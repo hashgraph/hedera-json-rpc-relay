@@ -35,6 +35,7 @@ import crypto from 'crypto';
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
+const asm = require('@ethersproject/asm');
 
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
@@ -777,10 +778,15 @@ export class EthImpl implements Eth {
         if (result?.type === constants.TYPE_TOKEN) {
           this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
           return EthImpl.redirectBytecodeAddressReplace(address);
-        }
-        else if (result?.type === constants.TYPE_CONTRACT) {
+        } else if (result?.type === constants.TYPE_CONTRACT) {
           if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
-            return result?.entity.runtime_bytecode;
+            const prohibitedOpcodes = ['CALLCODE', 'DELEGATECALL', 'SELFDESTRUCT', 'SUICIDE'];
+            const opcodes = asm.disassemble(result?.entity.runtime_bytecode);
+            const hasProhibitedOpcode = opcodes.filter(opcode => prohibitedOpcodes.indexOf(opcode.opcode.mnemonic) > -1).length > 0;
+            if (!hasProhibitedOpcode) {
+              this.cache.set(cachedLabel, result?.entity.runtime_bytecode);
+              return result?.entity.runtime_bytecode;
+            }
           }
         }
       }
@@ -789,8 +795,8 @@ export class EthImpl implements Eth {
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       if (e instanceof SDKClientError) {
-        // handle INVALID_CONTRACT_ID
-        if (e.isInvalidContractId()) {
+        // handle INVALID_CONTRACT_ID or CONTRACT_DELETED
+        if (e.isInvalidContractId() || e.isContractDeleted()) {
           this.logger.debug(`${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.statusCode}`);
           this.cache.set(cachedLabel, EthImpl.emptyHex);
           return EthImpl.emptyHex;
