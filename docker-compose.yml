@@ -12,13 +12,14 @@ services:
       - ./.env:/home/node/app/.env
   relay-ws:
     container_name: hedera-json-rpc-relay-ws
-    image: "ghcr.io/hashgraph/hedera-json-rpc-relay:main"
+    command: start:ws
+    environment:
+      HEALTHCHECK_PORT: 8547
     restart: "unless-stopped"
     ports:
       - 8546:8546
       - 8547:8547
     pull_policy: always
     tty: true
-    command: start:ws
     volumes:
       - ./.env:/home/node/app/.env
