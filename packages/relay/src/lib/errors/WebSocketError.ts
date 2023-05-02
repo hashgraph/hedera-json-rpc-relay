@@ -37,4 +37,8 @@ export default {
         code: 4002,
         message: `Connection timeout expired`
     }),
+    'CONNECTION_LIMIT_EXCEEDED': new WebSocketError({
+        code: 4003,
+        message: `Connection limit exceeded`
+    }),
 };
