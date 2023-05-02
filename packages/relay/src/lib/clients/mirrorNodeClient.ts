@@ -83,20 +83,20 @@ export class MirrorNodeClient {
 
     static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
         [MirrorNodeClient.GET_ACCOUNTS_ENDPOINT, [400, 404]],
-        [MirrorNodeClient.GET_BALANCE_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_BALANCE_ENDPOINT, [400]],
         [MirrorNodeClient.GET_BLOCK_ENDPOINT, [400, 404]],
-        [MirrorNodeClient.GET_BLOCKS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_BLOCKS_ENDPOINT, [400]],
         [MirrorNodeClient.GET_CONTRACT_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT, [206, 400, 404]],
         [MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT, [400]],
         [MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT, [400, 404]],
-        [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT, [400]],
         [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT, [400, 404]],
-        [MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT, [400]],
         [MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT, [400, 404]],
-        [MirrorNodeClient.GET_TOKENS_ENDPOINT, [400, 404]],
-        [MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_TOKENS_ENDPOINT, [400]],
+        [MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, [400]],
         [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, []],
         [MirrorNodeClient.GET_STATE_ENDPOINT, [400, 404]]
     ]);
