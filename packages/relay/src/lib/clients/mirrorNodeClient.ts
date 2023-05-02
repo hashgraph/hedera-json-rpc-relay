@@ -110,6 +110,7 @@ export class MirrorNodeClient {
     private mirrorResponseHistogram;
 
     private readonly cache;
+    static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;    
 
     protected createAxiosClient(
         baseUrl: string
@@ -327,6 +328,50 @@ export class MirrorNodeClient {
             [400, 404],
             requestId);
     }
+    /*******************************************************************************
+     * To be used to make paginated calls for the account information when the 
+     * transaction count exceeds the constant MIRROR_NODE_QUERY_LIMIT.
+     *******************************************************************************/
+    public async getAccountPaginated(url: string, requestId?: string) {
+        const queryParamObject = {};
+        const accountId = this.extractAccountIdFromUrl(url, requestId);
+        const params = new URLSearchParams(url.split('?')[1]);
+        
+        this.setQueryParam(queryParamObject, 'limit', constants.MIRROR_NODE_QUERY_LIMIT);
+        this.setQueryParam(queryParamObject, 'timestamp', params.get('timestamp'));
+        const queryParams = this.getQueryParams(queryParamObject);
+
+        return this.getPaginatedResults(
+            `${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${accountId}${queryParams}`,
+            MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
+            'transactions',
+            [400, 404],
+            requestId
+        );
+    }
+
+    public extractAccountIdFromUrl(url: string, requestId?: string): string | null {
+        const substringStartIndex = url.indexOf("/accounts/") + "/accounts/".length;
+        if (url.startsWith("0x", substringStartIndex)) {
+            // evm addresss
+            const regex = /\/accounts\/(0x[a-fA-F0-9]{40})/;
+            const match = url.match(regex);
+            const accountId = match ? match[1] : null;
+            if (!accountId) {
+                this.logger.error(`${formatRequestIdMessage(requestId)} Unable to extract evm address from url ${url}`);
+            }
+            return accountId;
+        } else {
+            // account id 
+            const match = url.match(MirrorNodeClient.EVM_ADDRESS_REGEX);
+            const accountId = match ? match[1] : null;
+            if (!accountId) {
+                this.logger.error(`${formatRequestIdMessage(requestId)} Unable to extract account ID from url ${url}`);
+            }
+            return accountId;
+        }
+    }
+
 
     public async getTransactionsForAccount(accountId: string, timestampFrom: string, timestampTo: string, requestId?: string) {
         const queryParamObject = {};
