@@ -31,4 +31,5 @@ RUN apt-get update && \
 USER node
 
 # Run
-ENTRYPOINT ["npm", "run", "start"]
+ENTRYPOINT ["npm", "run"]
+CMD ["start"]
