@@ -25,9 +25,9 @@ export class SDKClientError extends Error {
   private validNetworkError: boolean = false;
   
   constructor(e: any, message?: string) {
-    super(e && e.status && e.status._code ? e.message : message);
+    super(e?.status?._code ? e.message : message);
 
-    if(e && e.status && e.status._code) {
+    if(e?.status?._code) {
       this.validNetworkError = true;
       this.status = e.status;
     }

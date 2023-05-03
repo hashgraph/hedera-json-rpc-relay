@@ -335,7 +335,7 @@ export class EthImpl implements Eth {
 
     if (networkFees && Array.isArray(networkFees.fees)) {
       const txFee = networkFees.fees.find(({ transaction_type }) => transaction_type === EthImpl.ethTxType);
-      if (txFee && txFee.gas) {
+      if (txFee?.gas) {
         // convert tinyBars into weiBars
         const weibars = Hbar
           .fromTinybars(txFee.gas)
@@ -398,7 +398,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
     //this checks whether this is a transfer transaction and not a contract function execution
-    if (!transaction || !transaction.data || transaction.data === '0x') {
+    if (!transaction?.data || transaction.data === '0x') {
       const accountCacheKey = `account_${transaction.to}`;
       let toAccount: object | null = this.cache.get(accountCacheKey);
       if (!toAccount) {
@@ -938,7 +938,7 @@ export class EthImpl implements Eth {
     } else if (address && !blockNumOrTag) {
       // get latest ethereumNonce
       const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
-      if (mirrorAccount && mirrorAccount.ethereum_nonce) {
+      if (mirrorAccount?.ethereum_nonce) {
         return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
       }
     }
@@ -1091,7 +1091,7 @@ export class EthImpl implements Eth {
       }
 
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
-      return contractCallResponse && contractCallResponse.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
+      return contractCallResponse?.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
     } catch (e: any) {
       // Temporary workaround until mirror node web3 module implements the support of precompiles
       // If mirror node throws, rerun eth_call and force it to go through the Consensus network
@@ -1201,7 +1201,7 @@ export class EthImpl implements Eth {
         }
       }
 
-      if (accountResult && accountResult.evm_address && accountResult.evm_address.length > 0) {
+      if (accountResult?.evm_address.length > 0) {
         fromAddress = accountResult.evm_address.substring(0,42);
       }
     }
@@ -1500,7 +1500,7 @@ export class EthImpl implements Eth {
   }
 
   private getTransactionFromContractResults(contractResults: any, requestId?: string) {
-    if (!contractResults || !contractResults.results || contractResults.results.length == 0) {
+    if (!contractResults?.results || contractResults.results.length == 0) {
       // contract result not found
       return null;
     }
