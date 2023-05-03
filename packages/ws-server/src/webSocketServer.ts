@@ -25,7 +25,7 @@ import Koa from 'koa';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import websockify from 'koa-websocket';
 import {Relay, RelayImpl, predefined, JsonRpcError} from '@hashgraph/json-rpc-relay';
-import { Registry } from 'prom-client';
+import {Registry, Counter} from 'prom-client';
 import pino from 'pino';
 
 import ConnectionLimiter from "./ConnectionLimiter";
@@ -62,6 +62,20 @@ const app = websockify(new Koa());
 
 const CHAIN_ID = relay.eth().chainId();
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
+
+const methodsCounter = new Counter({
+    name: 'rpc_websocket_method_counter',
+    help: 'Relay websocket total methods called',
+    labelNames: ['method'],
+    registers: [register]
+});
+
+const methodsCounterByIp = new Counter({
+    name: 'rpc_websocket_method_by_ip_counter',
+    help: 'Relay websocket methods called by ip',
+    labelNames: ['ip', 'method'],
+    registers: [register]
+});
 
 async function handleConnectionClose(ctx) {
     relay.subs()?.unsubscribe(ctx.websocket);
@@ -131,6 +145,9 @@ app.ws.use(async (ctx) => {
         let response;
 
         logger.debug(`Received message from ${ctx.websocket.id}. Method: ${method}. Params: ${params}`);
+
+        methodsCounter.labels(method).inc();
+        methodsCounterByIp.labels(ctx.request.ip, method).inc();
 
         if (method === 'eth_subscribe') {
             if (limiter.validateSubscriptionLimit(ctx)) {

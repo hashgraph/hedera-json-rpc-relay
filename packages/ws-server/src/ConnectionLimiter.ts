@@ -50,7 +50,7 @@ export default class ConnectionLimiter {
 
         this.activeConnectionsGauge = new Gauge({
             name: activeConnectionsMetric,
-            help: 'Relay websocket active connections gauge',
+            help: 'Relay websocket active connections',
             registers: [register]
         });
 
@@ -58,13 +58,13 @@ export default class ConnectionLimiter {
         this.register.removeSingleMetric(ipConnectionsMetric);
         this.ipConnectionsGauge = new Gauge({
             name: ipConnectionsMetric,
-            help: 'Relay websocket active connections by ip histogram',
+            help: 'Relay websocket active connections by ip',
             labelNames: ['ip'],
             registers: [register]
         });
 
         const connectionLimitMetric = 'rpc_websocket_total_connection_limit_enforced';
-        this.register.removeSingleMetric(ipConnectionsMetric);
+        this.register.removeSingleMetric(connectionLimitMetric);
         this.connectionLimitCounter = new Counter({
             name: connectionLimitMetric,
             help: 'Relay websocket total connection limits enforced',
@@ -105,14 +105,14 @@ export default class ConnectionLimiter {
         ctx.websocket.subscriptions = 0;
 
         this.activeConnectionsGauge.set(this.connectedClients);
-        this.ipConnectionsGauge.labels({ip}).set(this.clientIps[ip]);
+        this.ipConnectionsGauge.labels(ip).set(this.clientIps[ip]);
     }
 
     public decrementCounters(ctx) {
         if (ctx.websocket.ipCounted) {
             const {ip} = ctx.request;
             this.clientIps[ip]--;
-            this.ipConnectionsGauge.labels({ip}).set(this.clientIps[ip]);
+            this.ipConnectionsGauge.labels(ip).set(this.clientIps[ip]);
             if (this.clientIps[ip] === 0) delete this.clientIps[ip];
         }
         this.connectedClients--;
@@ -123,6 +123,7 @@ export default class ConnectionLimiter {
         // Limit total connections
         if (this.connectedClients > parseInt(process.env.WS_CONNECTION_LIMIT || '10')) {
             this.logger.info(`Closing connection ${ctx.websocket.id} due to exceeded maximum connections (${process.env.WS_CONNECTION_LIMIT})`);
+            this.connectionLimitCounter.inc();
             ctx.websocket.close(CONNECTION_LIMIT_EXCEEDED.code, CONNECTION_LIMIT_EXCEEDED.message);
             return;
         }
@@ -133,7 +134,7 @@ export default class ConnectionLimiter {
         const limitPerIp = parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP || '10');
         if (this.clientIps[ip] && this.clientIps[ip] > limitPerIp) {
             this.logger.info(`Closing connection ${ctx.websocket.id} due to exceeded maximum connections from a single IP (${this.clientIps[ip]}) for address ${ip}`);
-            this.ipConnectionLimitCounter.inc({ ip });
+            this.ipConnectionLimitCounter.labels(ip).inc();
             ctx.websocket.close(CONNECTION_IP_LIMIT_EXCEEDED.code, CONNECTION_IP_LIMIT_EXCEEDED.message);
             return;
         }
@@ -151,14 +152,6 @@ export default class ConnectionLimiter {
                 }
             }
         }, maxConnectionTTL);
-    }
-
-    public verifyClient(info, done) {
-        if (this.connectedClients >= parseInt(process.env.CONNECTION_LIMIT || '10')) {
-            this.connectionLimitCounter.inc();
-            return done(false, 429, 'Connection limit exceeded');
-        }
-        done(true);
     }
 
     public incrementSubs(ctx) {

@@ -23,10 +23,12 @@ import LRU from "lru-cache";
 import crypto from "crypto";
 import constants from "./constants";
 import { Poller } from './poller';
+import {Registry, Gauge} from "prom-client";
 
 export interface Subscriber {
     connection: any,
-    subscriptionId: string
+    subscriptionId: string,
+    endTimer: () => void
 }
 
 const CACHE_TTL = Number(process.env.WS_CACHE_TTL) || 20000;
@@ -36,13 +38,21 @@ export class SubscriptionController {
     private logger: Logger;
     private subscriptions: {[key: string]: Subscriber[]};
     private cache;
+    private activeSubscriptionGauge: Gauge;
 
-    constructor(poller: Poller, logger: Logger) {
+    constructor(poller: Poller, logger: Logger, register: Registry) {
         this.poller = poller;
         this.logger = logger;
         this.subscriptions = {};
 
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: CACHE_TTL });
+
+        this.activeSubscriptionGauge = new Gauge({
+            name: 'rpc_websocket_subscription_times',
+            help: 'Relay websocket active subscription timer',
+            labelNames: ['subId'],
+            registers: [register]
+        })
     }
 
     createHash(data) {
@@ -80,7 +90,8 @@ export class SubscriptionController {
 
         this.subscriptions[tag].push({
             subscriptionId: subId,
-            connection
+            connection,
+            endTimer: this.activeSubscriptionGauge.labels(subId).startTimer()
         });
 
         this.poller.add(tag, this.notifySubscribers.bind(this, tag));
@@ -104,6 +115,7 @@ export class SubscriptionController {
                 const match = sub.connection.id === id && (!subId || subId === sub.subscriptionId);
                 if (match) {
                     this.logger.debug(`Connection ${sub.connection.id}. Unsubscribing subId: ${sub.subscriptionId}; tag: ${tag}`);
+                    sub.endTimer();
                     subCount++;
                 }
 

@@ -78,7 +78,7 @@ export class RelayImpl implements Relay {
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
       const poller = new Poller(this.ethImpl, logger);
-      this.subImpl = new SubscriptionController(poller, logger);
+      this.subImpl = new SubscriptionController(poller, logger, register);
     }
 
     logger.info('Relay running with chainId=%s', chainId);
