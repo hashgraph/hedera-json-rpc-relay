@@ -2667,7 +2667,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.exist;
     expect(result.code).to.equal(-32602);
     expect(result.name).to.equal('Invalid parameter');
-    expect(result.message).to.equal('Invalid parameter 0: Invalid value field in transaction param. Value must be greater than 0');
+    expect(result.message).to.equal(`Invalid parameter 0: Invalid 'value' field in transaction param. Value must be greater than 0`);
   });
 
   it('eth_estimateGas transfer with invalid value', async function() {
@@ -2680,7 +2680,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.exist;
     expect(result.code).to.equal(-32602);
     expect(result.name).to.equal('Invalid parameter');
-    expect(result.message).to.equal('Invalid parameter 0: Invalid value field in transaction param. Value must be greater than 0');
+    expect(result.message).to.equal(`Invalid parameter 0: Invalid 'value' field in transaction param. Value must be greater than 0`);
   });
 
   it('eth_estimateGas empty call returns transfer cost', async function () {
