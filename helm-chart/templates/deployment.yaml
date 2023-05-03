@@ -35,9 +35,9 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         envFrom:
         - configMapRef:
-          name: {{ include "json-rpc-relay.fullname" . }}
+            name: {{ include "json-rpc-relay.fullname" . }}
         - secretRef:
-          name: {{ include "json-rpc-relay.fullname" . }}  
+            name: {{ include "json-rpc-relay.fullname" . }}  
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
