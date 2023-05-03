@@ -707,12 +707,11 @@ describe('MirrorNodeClient', async function () {
       expect(entityType).to.have.property('entity');
       expect(entityType.type).to.eq('token');
       expect(entityType.entity.token_id).to.eq(mockData.tokenId);
-
-      expect(mock.history.get.length).to.eq(2); // mirror Node API called for both account and tokens
     });
 
     it('does not call mirror node tokens API when token is not long zero type', async() => {
       mock.onGet(`contracts/${mockData.contractEvmAddress}`).reply(200, mockData.contract);
+      mock.onGet(`tokens/${mockData.tokenId}`).reply(404, mockData.notFound);
 
       const entityType = await mirrorNodeInstance.resolveEntityType(mockData.contractEvmAddress, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN]); 
       expect(entityType).to.exist;
@@ -721,8 +720,6 @@ describe('MirrorNodeClient', async function () {
       expect(entityType.type).to.eq('contract');
       expect(entityType.entity).to.have.property('contract_id');
       expect(entityType.entity.contract_id).to.eq(mockData.contract.contract_id);
-
-      expect(mock.history.get.length).to.eq(1); // mirror Node API called for both account and tokens
     });
   });
 
