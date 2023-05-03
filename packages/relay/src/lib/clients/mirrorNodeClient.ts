@@ -81,6 +81,25 @@ export class MirrorNodeClient {
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
     private static CONTRACT_STATE_PROPERTY = 'state';
 
+    static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
+        [MirrorNodeClient.GET_ACCOUNTS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_BALANCE_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_BLOCK_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_BLOCKS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_CONTRACT_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT, [206, 400, 404]],
+        [MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_TOKENS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, []],
+        [MirrorNodeClient.GET_STATE_ENDPOINT, [400, 404]]
+    ]);
 
     private static ORDER = {
         ASC: 'asc',
@@ -221,7 +240,7 @@ export class MirrorNodeClient {
         return `${baseUrl}api/v1/`;
     }
 
-    private async request(path: string, pathLabel: string, method: REQUEST_METHODS, data?: any, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
+    private async request(path: string, pathLabel: string, method: REQUEST_METHODS, data?: any, requestId?: string): Promise<any> {
         const start = Date.now();
         const requestIdPrefix = formatRequestIdMessage(requestId);
         let ms;
@@ -255,29 +274,28 @@ export class MirrorNodeClient {
             // always abort the request on failure as the axios call can hang until the parent code/stack times out (might be a few minutes in a server-side applications)
             controller.abort();
 
-            this.handleError(error, path, effectiveStatusCode, method, allowedErrorStatuses, requestId);
+            this.handleError(error, path, pathLabel, effectiveStatusCode, method, requestId);
         }
 
         return null;
     }
 
-    async get(path: string, pathLabel: string, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
-        return this.request(path, pathLabel, 'GET', null, allowedErrorStatuses, requestId);
+    async get(path: string, pathLabel: string, requestId?: string): Promise<any> {
+        return this.request(path, pathLabel, 'GET', null, requestId);
     }
 
-    async post(path: string, data: any, pathLabel: string, allowedErrorStatuses?: number[], requestId?: string): Promise<any> {
+    async post(path: string, data: any, pathLabel: string, requestId?: string): Promise<any> {
         if (!data) data = {};
-        return this.request(path, pathLabel, 'POST', data, allowedErrorStatuses, requestId);
+        return this.request(path, pathLabel, 'POST', data, requestId);
     }
 
-    handleError(error: any, path: string, effectiveStatusCode: number, method: REQUEST_METHODS, allowedErrorStatuses?: number[], requestId?: string) {     
+    handleError(error: any, path: string, pathLabel: string, effectiveStatusCode: number, method: REQUEST_METHODS, requestId?: string) {
         const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);   
         const requestIdPrefix = formatRequestIdMessage(requestId);
-        if (allowedErrorStatuses && allowedErrorStatuses.length) {
-            if (error.response && allowedErrorStatuses.indexOf(effectiveStatusCode) !== -1) {
-                this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
-                return null;
-            }
+        const acceptedErrorResponses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
+        if (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1) {
+            this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
+            return null;
         }
 
         this.logger.error(new Error(error.message), `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
@@ -290,8 +308,8 @@ export class MirrorNodeClient {
         throw mirrorError;
     }
 
-    async getPaginatedResults(url: string, pathLabel: string, resultProperty: string, allowedErrorStatuses?: number[], requestId?: string, results = [], page = 1) {
-        const result = await this.get(url, pathLabel, allowedErrorStatuses, requestId);
+    async getPaginatedResults(url: string, pathLabel: string, resultProperty: string, requestId?: string, results = [], page = 1) {
+        const result = await this.get(url, pathLabel, requestId);
 
         if (result && result[resultProperty]) {
             results = results.concat(result[resultProperty]);
@@ -300,7 +318,7 @@ export class MirrorNodeClient {
         if (result && result.links?.next && page < constants.MAX_MIRROR_NODE_PAGINATION) {
             page++;
             const next = result.links.next.replace(constants.NEXT_LINK_PREFIX, "");
-            return this.getPaginatedResults(next, pathLabel, resultProperty, allowedErrorStatuses, requestId, results, page);
+            return this.getPaginatedResults(next, pathLabel, resultProperty, requestId, results, page);
         }
         else {
             return results;
@@ -310,21 +328,18 @@ export class MirrorNodeClient {
     public async getAccountLatestTransactionByAddress(idOrAliasOrEvmAddress: string, requestId?: string): Promise<object> {
         return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?order=desc&limit=1`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
-            [400],
             requestId);
     }
 
     public async getAccount(idOrAliasOrEvmAddress: string, requestId?: string) {
         return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
     public async getAccountPageLimit(idOrAliasOrEvmAddress: string, requestId?: string) {
         return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?limit=${constants.MIRROR_NODE_QUERY_LIMIT}`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
@@ -339,7 +354,6 @@ export class MirrorNodeClient {
             `${MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT,
             'transactions',
-            [400, 404],
             requestId
         );
     }
@@ -351,14 +365,12 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.get(`${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_BALANCE_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
     public async getBlock(hashOrBlockNumber: string | number, requestId?: string) {
         return this.get(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`,
             MirrorNodeClient.GET_BLOCK_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
@@ -370,14 +382,12 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.get(`${MirrorNodeClient.GET_BLOCKS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_BLOCKS_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
     public async getContract(contractIdOrAddress: string, requestId?: string) {
         return this.get(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`,
             MirrorNodeClient.GET_CONTRACT_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
@@ -394,7 +404,6 @@ export class MirrorNodeClient {
 
         const response = await this.get(path,
             MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT,
-            [400, 404],
             requestId);
 
         if(response != undefined && response.transaction_index != undefined && response.result === "SUCCESS") {
@@ -427,14 +436,12 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.get(`${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
     public async getContractResultsDetails(contractId: string, timestamp: string, requestId?: string) {
         return this.get(`${this.getContractResultsDetailsByContractIdAndTimestamp(contractId, timestamp)}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
@@ -449,14 +456,12 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.get(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT,
-            [400],
             requestId);
     }
 
     public async getContractResultsByAddressAndTimestamp(contractIdOrAddress: string, timestamp: string, requestId?: string) {
         return this.get(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}/${timestamp}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT,
-            [206, 400, 404],
             requestId);
     }
 
@@ -487,7 +492,6 @@ export class MirrorNodeClient {
             `${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
             MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
-            [400, 404],
             requestId
         );
     }
@@ -508,7 +512,6 @@ export class MirrorNodeClient {
             `${apiEndpoint}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT,
             MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
-            [400, 404],
             requestId
         );
     }
@@ -528,7 +531,6 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.get(`${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
@@ -539,7 +541,6 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.get(`${MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
@@ -556,7 +557,6 @@ export class MirrorNodeClient {
     public async getTokenById(tokenId: string, requestId?: string) {
         return this.get(`${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}`,
             MirrorNodeClient.GET_TOKENS_ENDPOINT,
-            [400, 404],
             requestId);
     }
 
@@ -582,12 +582,11 @@ export class MirrorNodeClient {
 
         return this.get(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${address}${MirrorNodeClient.GET_STATE_ENDPOINT}${queryParams}`,
         MirrorNodeClient.GET_STATE_ENDPOINT,
-        [400, 404],
         requestId);
     }
 
     public async postContractCall(callData: string, requestId?: string) {
-        return this.post(MirrorNodeClient.CONTRACT_CALL_ENDPOINT, callData, MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [], requestId);
+        return this.post(MirrorNodeClient.CONTRACT_CALL_ENDPOINT, callData, MirrorNodeClient.CONTRACT_CALL_ENDPOINT, requestId);
     }
 
     public async getTransactionById(transactionId: string, nonce: number | undefined, requestId?: string) {
@@ -600,7 +599,6 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
         return this.get(`${MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT}/${formattedId}${queryParams}`,
         MirrorNodeClient.GET_STATE_ENDPOINT,
-        [400, 404],
         requestId);
     }
 
