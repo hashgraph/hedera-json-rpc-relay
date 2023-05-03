@@ -35,6 +35,8 @@ const {options, run} = new TestScenarioBuilder()
     )
   )
   .check(methodName, (r) => isNonErrorResponse(r))
+  .testDuration("3s")
+  .maxDuration(2000)
   .build();
 
 export {options, run};

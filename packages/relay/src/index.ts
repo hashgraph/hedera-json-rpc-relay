@@ -63,7 +63,7 @@ export interface Eth {
 
   coinbase(requestId?: string): JsonRpcError;
 
-  estimateGas(transaction:any, blockParam: string| null, requestId?: string): Promise<string>;
+  estimateGas(transaction:any, blockParam: string| null, requestId?: string): Promise<string | JsonRpcError>;
 
   gasPrice(requestId?: string): Promise<string>;
 
