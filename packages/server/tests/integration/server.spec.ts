@@ -80,7 +80,7 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('relay/' + process.env.npm_package_version);
   });
 
-  it.only('should execute "eth_getTransactionByHash with missing transaction"', async function() {
+  it('should execute "eth_getTransactionByHash with missing transaction"', async function() {
     try {
       await this.testClient.post('/', {
         'id': '2',
