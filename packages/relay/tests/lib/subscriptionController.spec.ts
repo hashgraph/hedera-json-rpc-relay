@@ -49,7 +49,7 @@ class MockWsConnection {
 
 }
 
-describe.skip("subscriptionController", async function() {
+describe("subscriptionController", async function() {
     this.timeout(20000);
     let subscriptionController: SubscriptionController;
     let sandbox;
