@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -389,15 +389,8 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} blockNumber()`);
 
-    // check for cached value
     const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
-    const blockNumberCached: LatestBlockNumberTimestamp = this.cache.get(cacheKey);
-
-    if (blockNumberCached) {
-      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
-      return blockNumberCached;
-    }
-
+   
     const blocksResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
     const blocks = blocksResponse !== null ? blocksResponse.blocks : null;
     if (Array.isArray(blocks) && blocks.length > 0) {
@@ -405,7 +398,7 @@ export class EthImpl implements Eth {
       const timestamp = blocks[0].timestamp.to;
       const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp };
       // save the latest block number in cache
-      this.cache.set(cacheKey, blockTimeStamp, { ttl: EthImpl.ethBlockNumberCacheTtlMs });
+      this.cache.set(cacheKey, currentBlock, { ttl: EthImpl.ethBlockNumberCacheTtlMs });
       this.logger.trace(
         `${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(currentBlock)}:${JSON.stringify(timestamp)} for ${
           EthImpl.ethBlockNumberCacheTtlMs
@@ -663,11 +656,26 @@ export class EthImpl implements Eth {
     // this check is required, because some tools like Metamask pass for parameter latest block, with a number (ex 0x30ea)
     // tolerance is needed, because there is a small delay between requesting latest block from blockNumber and passing it here
     if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
-      latestBlock = await this.blockNumberTimestamp(requestId);
+      const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
+      const blockNumberCached = this.cache.get(cacheKey);
+      
+      if(blockNumberCached) {
+        this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
+        latestBlock = { blockNumber: blockNumberCached, timeStampTo: '0' };
+
+      } else {
+        latestBlock = await this.blockNumberTimestamp(requestId);
+      }
       const blockDiff = Number(latestBlock.blockNumber) - Number(blockNumberOrTag);
 
       if (blockDiff <= latestBlockTolerance) {
         blockNumberOrTag = EthImpl.blockLatest;
+      }
+
+      // If ever we get the latest block from cache, and blockNumberOrTag is not latest, then we need to get the block timestamp
+      // This should rarely happen.
+      if((blockNumberOrTag !== EthImpl.blockLatest) && (latestBlock.timeStampTo === "0")) {
+        latestBlock = await this.blockNumberTimestamp(requestId);
       }
     }
 
@@ -748,7 +756,7 @@ export class EthImpl implements Eth {
           }
         }
       }
-
+      
       if (!balanceFound && mirrorAccount?.balance) {
         balanceFound = true;
         weibars = BigInt(mirrorAccount.balance.balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);

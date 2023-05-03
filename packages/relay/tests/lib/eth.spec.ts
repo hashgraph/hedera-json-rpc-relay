@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1475,6 +1475,48 @@ describe('Eth calls using MirrorNode', async function () {
       expect(resCached).to.equal(defHexBalance);
     });
 
+    it('should return cached value for mirror nodes that is not latest so will need to query mirror node', async () => {
+      const blockNumber = "0x1";
+      restMock.onGet('blocks/1').reply(200, defaultBlock);
+
+      restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 3,
+          'timestamp': {
+            'from': `${blockTimestamp}.060890919`,
+            'to': '1651560389.060890949'
+          },            
+        }]
+      });
+      
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
+        },
+        transactions: [
+          buildCryptoTransferTransaction("0.0.98", contractId1, 100, {"timestamp":`${blockTimestamp}.002391010`}),
+          buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":`${blockTimestamp}.002392003`}),
+          buildCryptoTransferTransaction("0.0.98", contractId1, 25, {"timestamp":`${blockTimestamp}.980350003`}),
+        ],
+        links: {
+          next: null
+        }       
+      });
+
+      const resNoCache = await ethImpl.getBalance(contractAddress1, blockNumber);
+
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, {
+        _status: {
+          messages: [{ message: 'Not found' }]
+        }
+      });
+
+      const resCached = await ethImpl.getBalance(contractAddress1, blockNumber);
+      expect(resNoCache).to.equal(defHexBalance);
+      expect(resCached).to.equal(defHexBalance);
+    });    
+
     describe('with blockNumberOrTag filter', async function() {
       const balance1 = 99960581131;
       const balance2 = 99960581132;
@@ -1773,7 +1815,7 @@ describe('Eth calls using MirrorNode', async function () {
         const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 - 230) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
       });
-      
+
       it('blockNumber is in the latest 15 minutes with debit transactions and a next pagination with a timestamp greater than the block.timestamp.to', async () => {
         const recentBlockWithinLastfifteen = Object.assign({}, defaultBlock, {
           number: 1,
