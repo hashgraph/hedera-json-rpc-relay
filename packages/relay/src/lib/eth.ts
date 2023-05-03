@@ -35,6 +35,7 @@ import crypto from 'crypto';
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
+const asm = require('@ethersproject/asm');
 
 /**
  * Implementation of the "eth_" methods from the Ethereum JSON-RPC API.
