@@ -2653,7 +2653,7 @@ describe('Eth calls using MirrorNode', async function () {
     }, null);
 
     expect(result).to.exist;
-    expect(result.code).to.equal(-32008);
+    expect(result.code).to.equal(-32602);
     expect(result.name).to.equal('Invalid parameter');
     expect(result.message).to.equal('Invalid value field in transaction param. Value must be greater than 0');
   });
@@ -2666,7 +2666,7 @@ describe('Eth calls using MirrorNode', async function () {
     }, null);
 
     expect(result).to.exist;
-    expect(result.code).to.equal(-32008);
+    expect(result.code).to.equal(-32602);
     expect(result.name).to.equal('Invalid parameter');
     expect(result.message).to.equal('Invalid value field in transaction param. Value must be greater than 0');
   });
@@ -2674,19 +2674,19 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas empty call returns transfer cost', async function () {
     restMock.onGet(`accounts/undefined`).reply(404);
     const gas = await ethImpl.estimateGas({}, null);
-    expect(gas).to.equal(EthImpl.gasTxHollowAccountCreation);
+    expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
   it('eth_estimateGas empty input transfer cost', async function () {
     restMock.onGet(`accounts/undefined`).reply(404);
     const gas = await ethImpl.estimateGas({ data: "" }, null);
-    expect(gas).to.equal(EthImpl.gasTxHollowAccountCreation);
+    expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
   it('eth_estimateGas zero input returns transfer cost', async function () {
     restMock.onGet(`accounts/undefined`).reply(404);
     const gas = await ethImpl.estimateGas({ data: "0x" }, null);
-    expect(gas).to.equal(EthImpl.gasTxHollowAccountCreation);
+    expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
   it('eth_gasPrice', async function () {
