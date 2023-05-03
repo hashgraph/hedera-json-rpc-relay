@@ -655,7 +655,7 @@ export class MirrorNodeClient {
      * @param entityIdentifier the address of the contract
      * @param requestId the request id
      * @param searchableTypes the types to search for
-     * @returns enitty object or null if not found
+     * @returns entity object or null if not found
      */
     public async resolveEntityType(
       entityIdentifier: string,
