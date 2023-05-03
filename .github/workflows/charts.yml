@@ -37,7 +37,7 @@ jobs:
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
       - name: Create k3d cluster
-        run: k3d cluster create mirror --agents 1 --timeout 5m --registry-create registry:0.0.0.0:5001 --image rancher/k3s:v1.24.7-k3s1
+        run: k3d cluster create relay --agents 1 --timeout 5m --registry-create registry:0.0.0.0:5001 --image rancher/k3s:v1.24.7-k3s1
         timeout-minutes: 3
 
       - name: Set up Docker Qemu
@@ -55,10 +55,10 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64, linux/arm64
           push: true
-          tags: localhost:5000/${{ github.repository }}:test
+          tags: localhost:5001/${{ github.repository }}:test
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.3.1
 
       - name: Install chart
-        run: ct install --charts=helm-chart --helm-extra-args="--timeout 10m" --helm-extra-set-args="--set=image.registry=localhost:5000 --set=image.tag=test --set=config.hosted.HEDERA_NEWORK={"127.0.01:50211":"0.0.3"} --set=config.MIRROR_NODE_URL=http://127.0.0.1:5551 --set=config.CHAIN_ID=0x12a"
+        run: ct install --charts=helm-chart --helm-extra-args="--timeout 10m" --helm-extra-set-args="--set=image.registry=registry:5000 --set=image.tag=test --set=config.hosted.HEDERA_NEWORK={"127.0.01:50211":"0.0.3"} --set=config.MIRROR_NODE_URL=http://127.0.0.1:5551 --set=config.CHAIN_ID=0x12a"
