@@ -61,4 +61,4 @@ jobs:
         uses: helm/chart-testing-action@v2.3.1
 
       - name: Install chart
-        run: ct install --charts=helm-chart --helm-extra-args="--timeout 10m" --helm-extra-set-args="--set=image.registry=registry:5000 --set=image.tag=test --set=config.hosted.HEDERA_NEWORK={"127.0.01:50211":"0.0.3"} --set=config.MIRROR_NODE_URL=http://127.0.0.1:5551 --set=config.CHAIN_ID=0x12a"
+        run: ct install --charts=helm-chart --helm-extra-args="--timeout 10m" --helm-extra-set-args="--set=image.registry=localhost:5000 --set=image.tag=test --set=config.hosted.HEDERA_NEWORK={"127.0.01:50211":"0.0.3"} --set=config.MIRROR_NODE_URL=http://127.0.0.1:5551 --set=config.CHAIN_ID=0x12a"
