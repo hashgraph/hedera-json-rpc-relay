@@ -360,7 +360,6 @@ export class MirrorNodeClient {
             `${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${accountId}${queryParams}`,
             MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
             'transactions',
-            [400, 404],
             requestId
         );
     }
