@@ -1723,6 +1723,8 @@ class BaseTest {
   }
 
   static defaultResponseChecks(response) {
+    expect(response.status).to.eq(200);
+    expect(response.statusText).to.eq('OK');
     expect(response, "Default response: Should have 'data' property").to.have.property('data');
     expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
     expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');

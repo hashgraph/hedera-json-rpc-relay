@@ -129,7 +129,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
             it('@release should execute "eth_estimateGas" for existing account', async function() {
                 const res = await relay.call('eth_estimateGas', [{
-                    to: mirrorSecondaryAccount.evm_address
+                    to: mirrorSecondaryAccount.evm_address,
+                    value: '0x1',
                 }], requestId);
                 expect(res).to.contain('0x');
                 expect(res).to.equal(EthImpl.gasTxBaseCost);
@@ -138,7 +139,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             it('@release should execute "eth_estimateGas" hollow account creation', async function() {
                 const hollowAccount = ethers.Wallet.createRandom();
                 const res = await relay.call('eth_estimateGas', [{
-                    to: hollowAccount.address
+                    to: hollowAccount.address,
+                    value: '0x1',
                 }], requestId);
                 expect(res).to.contain('0x');
                 expect(res).to.equal(EthImpl.gasTxHollowAccountCreation);
