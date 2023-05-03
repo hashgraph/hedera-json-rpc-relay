@@ -360,8 +360,7 @@ export class MirrorNodeClient {
             if (!accountId) {
                 this.logger.error(`${formatRequestIdMessage(requestId)} Unable to extract evm address from url ${url}`);
             }
-            
-            return accountId;
+            return String(accountId);
         } else {
             // account id 
             const match = url.match(MirrorNodeClient.EVM_ADDRESS_REGEX);
@@ -369,7 +368,7 @@ export class MirrorNodeClient {
             if (!accountId) {
                 this.logger.error(`${formatRequestIdMessage(requestId)} Unable to extract account ID from url ${url}`);
             }
-            return accountId;
+            return String(accountId);
         }
     }
 
