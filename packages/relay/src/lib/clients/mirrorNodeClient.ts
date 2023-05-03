@@ -360,6 +360,7 @@ export class MirrorNodeClient {
             if (!accountId) {
                 this.logger.error(`${formatRequestIdMessage(requestId)} Unable to extract evm address from url ${url}`);
             }
+            
             return accountId;
         } else {
             // account id 
