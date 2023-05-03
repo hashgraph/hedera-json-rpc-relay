@@ -57,7 +57,8 @@ fullnameOverride: ''
 
 image:
   pullPolicy: IfNotPresent
-  repository: ghcr.io/hashgraph/hedera-json-rpc-relay
+  registry: ghcr.io
+  repository: hashgraph/hedera-json-rpc-relay
   # Overrides the image tag whose default is the chart appVersion.
   tag: ''
 
