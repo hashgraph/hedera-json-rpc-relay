@@ -1755,7 +1755,7 @@ export class EthImpl implements Eth {
     return predefined.INTERNAL_ERROR();
   }
 
-    /**************************************************
+  /**************************************************
    * Returns the difference between the balance of  *
    * the account and the transactions summed up     *
    * to the block number queried.                   *
