@@ -815,7 +815,7 @@ export class EthImpl implements Eth {
     }
 
     try {
-      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN]);
+      const result = await this.mirrorNodeClient.resolveEntityType(address, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN], requestId);
       if (result) {
         if (result?.type === constants.TYPE_TOKEN) {
           this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
@@ -982,7 +982,7 @@ export class EthImpl implements Eth {
 
     // check consensus node as back up
     try {
-      const result = await this.mirrorNodeClient.resolveEntityType(address, requestId, [constants.TYPE_ACCOUNT, constants.TYPE_CONTRACT]);
+      const result = await this.mirrorNodeClient.resolveEntityType(address, [constants.TYPE_ACCOUNT, constants.TYPE_CONTRACT], requestId);
       if (result?.type === constants.TYPE_ACCOUNT) {
         const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
         return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
@@ -1197,13 +1197,13 @@ export class EthImpl implements Eth {
 
     // If "From" is distinct from blank, we check is a valid account
     if(call.from) {
-      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, requestId, [constants.TYPE_ACCOUNT]);
+      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, [constants.TYPE_ACCOUNT], requestId);
       if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
         throw predefined.NON_EXISTING_ACCOUNT(call.from);
       }
     }
     // Check "To" is a valid Contract or HTS Address
-    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, requestId, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT]);
+    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT], requestId);
     if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
       throw predefined.NON_EXISTING_CONTRACT(call.to);
     }
