@@ -7,20 +7,24 @@
     },
     "servers": [
         {
-          "name": "Hedera Mainnet RPC Relay",
-          "url": "https://mainnet.hashio.io/api"
+          "name": "Mainnet",
+          "url": "https://mainnet.hashio.io/api",
+          "description": "Hedera Mainnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Global rate limits apply."
         },
         {
-          "name": "Hedera Testnet RPC Relay",
-          "url": "https://testnet.hashio.io/api"
+          "name": "Testnet",
+          "url": "https://testnet.hashio.io/api",
+          "description": "Hedera Testnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Global rate limits apply."
         },
         {
-          "name": "Hedera Previewnet RPC Relay",
-          "url": "https://previewnet.hashio.io/api"
+          "name": "Previewnet",
+          "url": "https://previewnet.hashio.io/api",
+          "description": "Hedera Previewnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Global rate limits apply."
         },
         {
-          "name": "localhost Hedera RPC Relay",
-          "url": "http://localhost:7564"
+          "name": "localhost",
+          "url": "http://localhost:7564",
+          "description": "Run your own instance of [`hedera-json-rpc-relay`](https://github.com/hashgraph/hedera-json-rpc-relay) on `localhost`, and configure it connect to your choice of Hedera networks. No rate limits apply."
         }
     ],
     "methods": [
