@@ -75,7 +75,7 @@ function getMultipleAddressesEnabled() {
 }
 
 async function validateIsContractAddress(address, requestId) {
-    const isContract = await mirrorNodeClient.resolveEntityType(address, requestId, [constants.TYPE_CONTRACT]);
+    const isContract = await mirrorNodeClient.resolveEntityType(address, [constants.TYPE_CONTRACT], requestId);
     if (!isContract) {
         throw new JsonRpcError(predefined.INVALID_PARAMETER(`filters.address`, `${address} is not a valid contract type or does not exists`), requestId);
     }

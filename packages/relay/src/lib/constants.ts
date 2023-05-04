@@ -70,5 +70,7 @@ export default {
     NEXT_LINK_PREFIX: '/api/v1/',
     QUERY_COST_INCREMENTATION_STEP: 1.1,
 
-    TRANSACTION_ID_REGEX: /\d{1}\.\d{1}\.\d{1,10}\@\d{1,10}\.\d{1,9}/
+    TRANSACTION_ID_REGEX: /\d{1}\.\d{1}\.\d{1,10}\@\d{1,10}\.\d{1,9}/,
+
+    LONG_ZERO_PREFIX: '0x000000000000',
 };
