@@ -179,7 +179,7 @@ export class MirrorNodeClient {
                 const requestId = request ? request.split('\n')[3].substring(11,47) : '';
                 const requestIdPrefix = formatRequestIdMessage(requestId);
                 const delay = isDevMode ? mirrorNodeRetryDelayDevMode || 200 : mirrorNodeRetryDelay * retryCount;
-                this.logger.trace(`${requestIdPrefix} Retry delay ${delay} ms`);                
+                this.logger.trace(`${requestIdPrefix} Retry delay ${delay} ms on '${error?.request?.path}'`);                
                 return delay;
             },
             retryCondition: (error) => {
@@ -650,10 +650,17 @@ export class MirrorNodeClient {
         }
     }
 
+    /**
+     * Get the contract results for a given address
+     * @param entityIdentifier the address of the contract
+     * @param requestId the request id
+     * @param searchableTypes the types to search for
+     * @returns entity object or null if not found
+     */
     public async resolveEntityType(
       entityIdentifier: string,
-      requestId?: string,
-      searchableTypes: any[] = [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT, constants.TYPE_TOKEN]
+      searchableTypes: any[] = [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT, constants.TYPE_TOKEN],
+      requestId?: string
     ) {
         const cachedLabel = `resolveEntityType.${entityIdentifier}`;
         const cachedResponse: { type: string, entity: any } | undefined = this.cache.get(cachedLabel);
@@ -682,8 +689,13 @@ export class MirrorNodeClient {
         try {
             const promises = [
                 searchableTypes.find(t => t === constants.TYPE_ACCOUNT) ? buildPromise(this.getAccount(entityIdentifier, requestId)) : Promise.reject(),
-                searchableTypes.find(t => t === constants.TYPE_TOKEN) ? buildPromise(this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId)) : Promise.reject()
             ];
+
+            // only add long zero evm addresses for tokens as they do not refer to actual contract addresses but rather encoded entity nums            
+            if (entityIdentifier.startsWith(constants.LONG_ZERO_PREFIX)) {
+                promises.push(searchableTypes.find(t => t === constants.TYPE_TOKEN) ? buildPromise(this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId)) : Promise.reject());
+            }
+
             // maps the promises with indices of the promises array
             // because there is no such method as Promise.anyWithIndex in js
             // the index is needed afterward for detecting the resolved promise type (contract, account, or token)
