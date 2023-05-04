@@ -110,23 +110,30 @@ describe('SdkClient', async function () {
         });
 
         it('should return cached getTinyBarGasFee value', async () => {
-            const getFeeScheduleAndExchangeRateQueriesCount = async () => {
-                const metrics = await registry.getMetricsAsJSON();
-                const queries = metrics.length ? metrics[0]['values'].filter(e => e.metricName == 'rpc_relay_consensusnode_response_count') : [];
-                const feeScheduleQueries = queries.length ? queries.filter(e => e.labels.interactingEntity == constants.FEE_SCHEDULE_FILE_ID)[0].value : 0;
-                const exchangeRateQueries = queries.length ? queries.filter(e => e.labels.interactingEntity == constants.EXCHANGE_RATE_FILE_ID)[0].value : 0;
+            const getFeeScheduleStub = sinon.stub(sdkClient, 'getFeeSchedule').callsFake(() => {
+                return {
+                    current: {
+                        transactionFeeSchedule: [{
+                            hederaFunctionality: {
+                                _code: constants.ETH_FUNCTIONALITY_CODE
+                            },
+                            fees: [{
+                                servicedata: undefined
+                            }]
+                        }]
+                    }
+                };
+            });
+            const getExchangeRateStub = sinon.stub(sdkClient, 'getExchangeRate').callsFake(() => {});
+            const convertGasPriceToTinyBarsStub = sinon.stub(sdkClient, 'convertGasPriceToTinyBars').callsFake(() => 0x160c);
 
-                return [feeScheduleQueries, exchangeRateQueries];
-            };
-
-            const [feeScheduleQueriesBefore, exchangeRateQueriesBefore] = await getFeeScheduleAndExchangeRateQueriesCount();
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 5; i++) {
                 await sdkClient.getTinyBarGasFee('');
             }
-            const [feeScheduleQueriesAfter, exchangeRateQueriesAfter] = await getFeeScheduleAndExchangeRateQueriesCount();
 
-            expect(feeScheduleQueriesBefore + 1).to.eq(feeScheduleQueriesAfter);
-            expect(exchangeRateQueriesBefore + 1).to.eq(exchangeRateQueriesAfter);
+            sinon.assert.calledOnce(getFeeScheduleStub);
+            sinon.assert.calledOnce(getExchangeRateStub);
+            sinon.assert.calledOnce(convertGasPriceToTinyBarsStub);
         });
     })
 });
