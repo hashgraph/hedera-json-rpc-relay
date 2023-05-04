@@ -9,17 +9,17 @@
         {
           "name": "Mainnet",
           "url": "https://mainnet.hashio.io/api",
-          "description": "Hedera Mainnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Global rate limits apply."
+          "description": "Hedera Mainnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
         },
         {
           "name": "Testnet",
           "url": "https://testnet.hashio.io/api",
-          "description": "Hedera Testnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Global rate limits apply."
+          "description": "Hedera Testnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
         },
         {
           "name": "Previewnet",
           "url": "https://previewnet.hashio.io/api",
-          "description": "Hedera Previewnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Global rate limits apply."
+          "description": "Hedera Previewnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
         },
         {
           "name": "localhost",
