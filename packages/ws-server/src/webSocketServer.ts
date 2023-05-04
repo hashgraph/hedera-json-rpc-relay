@@ -30,7 +30,6 @@ import pino from 'pino';
 
 import ConnectionLimiter from "./ConnectionLimiter";
 import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
-import {MirrorNodeClient} from "@hashgraph/json-rpc-relay/dist/lib/clients";
 import {EthSubscribeLogsParamsObject} from "@hashgraph/json-rpc-server/dist/validator";
 import KoaJsonRpc from "@hashgraph/json-rpc-server/dist/koaJsonRpc";
 
@@ -50,13 +49,7 @@ const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 const limiter = new ConnectionLimiter(logger, register);
-const mirrorNodeClient = new MirrorNodeClient(
-    process.env.MIRROR_NODE_URL || '',
-    logger.child({ name: `mirror-node` }),
-    register,
-    undefined,
-    process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
-);
+const mirrorNodeClient = relay.mirrorClient();
 
 const app = websockify(new Koa());
 

@@ -20,6 +20,7 @@
 
 import { Eth } from '../index';
 import { Logger } from 'pino';
+import {Registry, Gauge} from "prom-client";
 
 export interface Poll {
     tag: string,
@@ -36,12 +37,19 @@ export class Poller {
     private interval?: NodeJS.Timer;
     private latestBlock?: string;
     private pollingInterval: number;
+    private activePollsGauge: Gauge;
 
-    constructor(eth: Eth, logger: Logger) {
+    constructor(eth: Eth, logger: Logger, register: Registry) {
         this.eth = eth;
         this.logger = logger;
         this.polls = [];
         this.pollingInterval = Number(process.env.WS_POLLING_INTERVAL) || 500;
+
+        this.activePollsGauge = new Gauge({
+            name: 'rpc_websocket_active_polls',
+            help: 'Relay websocket active polls count',
+            registers: [register]
+        })
     }
 
     public poll() {
@@ -71,7 +79,9 @@ export class Poller {
                 if (Array.isArray(data)) {
                     if (data.length) {
                         this.logger.trace(`${LOGGER_PREFIX} Received ${data.length} results from tag: ${poll.tag}`);
-                        data.forEach(d => poll.callback(d));
+                        data.forEach(d => {
+                            poll.callback(d);
+                        });
                     }
                 }
                 else {
@@ -106,6 +116,7 @@ export class Poller {
                 tag,
                 callback
             })
+            this.activePollsGauge.inc();
         }
 
         if (!this.isPolling()) {
@@ -115,7 +126,13 @@ export class Poller {
 
     remove(tag: string) {
         this.logger.info(`${LOGGER_PREFIX} Tag ${tag} removed from polling list`);
+        const pollsAtStart = this.polls.length;
         this.polls = this.polls.filter(p => p.tag !== tag);
+
+        const pollsRemoved = pollsAtStart - this.polls.length
+        if (pollsRemoved > 0) {
+            this.activePollsGauge.dec(pollsRemoved);
+        }
 
         if (!this.polls.length) {
             this.logger.info(`${LOGGER_PREFIX} No active polls.`);
