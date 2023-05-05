@@ -6,7 +6,6 @@
     "keywords": [],
     "author": "Hedera Smart Contracts Team",
     "dependencies": {
-        "@ethersproject/asm": "^5.7.0",
         "@hashgraph/json-rpc-relay": "file:../relay",
         "axios": "^0.27.2",
         "co-body": "6.1.0",
