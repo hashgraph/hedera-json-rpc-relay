@@ -81,7 +81,7 @@ When calling the `eth_subscribe` method 2 parameters should be specified:
 
 When a related event occurs the server sends the data in the following format:
 
-```json
+```js
 {
   "method": "eth_subscription",
   "params": {
@@ -96,7 +96,7 @@ When a related event occurs the server sends the data in the following format:
 
 Terminates an active subscription. Expects `params[0]` to have the value of the `subscriptionId`. Returns a boolean:
 
-```json
+```js
   {
     "id": 1,
     "jsonrpc": "2.0",
@@ -108,7 +108,7 @@ Terminates an active subscription. Expects `params[0]` to have the value of the 
 ### eth_chainID
 
 Returns the chain id:
-```json
+```js
   {
     "id": 1,
     "jsonrpc": "2.0",
