@@ -3,7 +3,7 @@ With the implementation of [HIP 694](https://hips.hedera.com/hip/hip-694), the H
 
 ## Establishing a connection
 
-Here is an example js code to establish a connection using ethers.js (v5.7.0):
+Example connection using ethers.js (v5.7.0):
 
 ```js
 const provider = await new ethers.providers.WebSocketProvider(WEBSOCKET_ENDPOINT_URL);
@@ -25,9 +25,10 @@ The server expects to receive messages that are JSON encoded strings of data wit
 ```
 
 The allowed methods are: 
-    - `eth_subscribe`
-    - `eth_unsubscribe`
-    - `eth_chainId`
+
+- `eth_subscribe`
+- `eth_unsubscribe`
+- `eth_chainId`
 
 Upon receiving a message with a valid `method` and `params` the server will emit a message with a stringified JSON-RPC format:
   
@@ -65,11 +66,11 @@ The `eth_subscribe` method is used to establish a subscription, which listens fo
 ```
 
 When calling the `eth_subscribe` method 2 parameters should be specified:
-    1. `params[0]` is used to specify the type of event. Possible values are:
-        - `logs` - subscribes for newly created Logs from specified Contracts. The result data is in the [Log](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#log-object) format.
-        - `newHeads` - is not supported at this time.
+1. `params[0]` is used to specify the type of event. Possible values are:
+- `logs` - subscribes to newly created Logs from specified Contracts. The result data is in the [Log](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#log-object) format.
+- `newHeads` - not supported at this time.
 
-   2. `params[1]` is used to specify filters. Logs can be filtered by `address` and/or `topics`:
+2. `params[1]` is used to specify filters. Logs can be filtered by `address` and/or `topics`:
 
 ```typescript
 {
@@ -111,7 +112,7 @@ Returns the chain id:
   {
     "id": 1,
     "jsonrpc": "2.0",
-    "result": "0x12a"
+    "result": CHAIN_ID
   }
 ```
 
