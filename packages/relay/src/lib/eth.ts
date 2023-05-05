@@ -1244,7 +1244,7 @@ export class EthImpl implements Eth {
         }
       }
 
-      if (accountResult?.evm_address.length > 0) {
+      if (accountResult?.evm_address?.length > 0) {
         fromAddress = accountResult.evm_address.substring(0,42);
       }
     }
@@ -1543,7 +1543,7 @@ export class EthImpl implements Eth {
   }
 
   private getTransactionFromContractResults(contractResults: any, requestId?: string) {
-    if (!contractResults?.results || contractResults.results.length == 0) {
+    if (contractResults?.results?.length == 0) {
       // contract result not found
       return null;
     }
