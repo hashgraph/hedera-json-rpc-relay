@@ -56,6 +56,8 @@ const app = websockify(new Koa());
 const CHAIN_ID = relay.eth().chainId();
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
 
+const methodsCounterName = 'rpc_websocket_method_counter';
+register.removeSingleMetric(methodsCounterName);
 const methodsCounter = new Counter({
     name: 'rpc_websocket_method_counter',
     help: 'Relay websocket total methods called',
@@ -63,8 +65,10 @@ const methodsCounter = new Counter({
     registers: [register]
 });
 
+const methodsCounterByIpName = 'rpc_websocket_method_by_ip_counter';
+register.removeSingleMetric(methodsCounterByIpName);
 const methodsCounterByIp = new Counter({
-    name: 'rpc_websocket_method_by_ip_counter',
+    name: methodsCounterByIpName,
     help: 'Relay websocket methods called by ip',
     labelNames: ['ip', 'method'],
     registers: [register]

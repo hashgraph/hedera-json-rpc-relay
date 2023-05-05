@@ -45,8 +45,10 @@ export class Poller {
         this.polls = [];
         this.pollingInterval = Number(process.env.WS_POLLING_INTERVAL) || 500;
 
+        const activePollsGaugeName = 'rpc_websocket_active_polls';
+        register.removeSingleMetric(activePollsGaugeName);
         this.activePollsGauge = new Gauge({
-            name: 'rpc_websocket_active_polls',
+            name: activePollsGaugeName,
             help: 'Relay websocket active polls count',
             registers: [register]
         })

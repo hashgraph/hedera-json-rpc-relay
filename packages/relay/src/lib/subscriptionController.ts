@@ -48,8 +48,10 @@ export class SubscriptionController {
 
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: CACHE_TTL });
 
+        const activeSubscriptionHistogramName = 'rpc_websocket_subscription_times';
+        register.removeSingleMetric(activeSubscriptionHistogramName);
         this.activeSubscriptionHistogram = new Histogram({
-            name: 'rpc_websocket_subscription_times',
+            name: activeSubscriptionHistogramName,
             help: 'Relay websocket active subscription timer',
             registers: [register],
             buckets: [
@@ -65,6 +67,8 @@ export class SubscriptionController {
             ]
         })
 
+        const resultsSentToSubscribersCounterName = 'rpc_websocket_poll_received_results';
+        register.removeSingleMetric(resultsSentToSubscribersCounterName);
         this.resultsSentToSubscribersCounter = new Counter({
             name: 'rpc_websocket_poll_received_results',
             help: 'Relay websocket counter for the unique results sent to subscribers',
