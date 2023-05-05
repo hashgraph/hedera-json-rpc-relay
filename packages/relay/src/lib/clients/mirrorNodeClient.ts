@@ -414,7 +414,7 @@ export class MirrorNodeClient {
 
     public async getBlock(hashOrBlockNumber: string | number, requestId?: string) {
         const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.${hashOrBlockNumber}`;
-        const cachedResponse: any | undefined = this.cache.get(cachedLabel);
+        const cachedResponse: any = this.cache.get(cachedLabel);
         if (cachedResponse != undefined) {
             return cachedResponse;
         }
