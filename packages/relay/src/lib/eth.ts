@@ -1543,7 +1543,7 @@ export class EthImpl implements Eth {
   }
 
   private getTransactionFromContractResults(contractResults: any, requestId?: string) {
-    if (contractResults?.results?.length == 0) {
+    if (!contractResults || !contractResults.results || contractResults.results.length == 0) {
       // contract result not found
       return null;
     }
