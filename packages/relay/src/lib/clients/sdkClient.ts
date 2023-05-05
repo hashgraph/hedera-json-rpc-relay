@@ -59,6 +59,7 @@ import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import {RelayImpl} from "../relay";
 
 const _ = require('lodash');
+const LRU = require('lru-cache');
 
 export class SDKClient {
     static transactionMode = 'TRANSACTION';
@@ -257,6 +258,11 @@ export class SDKClient {
     }
 
     async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
+        const cachedResponse: number | undefined = this.cache.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE);
+        if (cachedResponse != undefined) {
+            return cachedResponse;
+        }
+
         const feeSchedules = await this.getFeeSchedule(callerName, requestId);
         if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
             throw new SDKClientError({}, 'Invalid FeeSchedules proto format');
@@ -266,8 +272,10 @@ export class SDKClient {
             if (schedule.hederaFunctionality?._code === constants.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
                 // get exchange rate & convert to tiny bar
                 const exchangeRates = await this.getExchangeRate(callerName, requestId);
+                const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
-                return this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
+                this.cache.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars);
+                return tinyBars;
             }
         }
 
