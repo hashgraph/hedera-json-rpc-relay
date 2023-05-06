@@ -19,7 +19,7 @@ data:
 {{- if and .Values.HEDERA_NETWORK }}
   HEDERA_NETWORK: {{ .Values.config.HEDERA_NETWORK | toJson | quote}}
 {{- else }}
-  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in .Values.config.HEDERA_NETWORK) }}
+  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in" .Values.config.HEDERA_NETWORK }}
 {{- end }}
   INPUT_SIZE_LIMIT: {{ .Values.config.INPUT_SIZE_LIMIT | quote }}
   LIMIT_DURATION: {{ .Values.config.LIMIT_DURATION | quote }}
