@@ -23,8 +23,6 @@ export class MirrorNodeClientError extends Error {
     public statusCode: number;
     public errorMessage?: string;
 
-    static retryErrorCodes: Array<number> = [404]; // we should only retry on 404 errors
-
     static ErrorCodes = {
       ECONNABORTED: 504,
       CONTRACT_REVERT_EXECUTED : 400,
