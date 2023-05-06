@@ -3,10 +3,10 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ printf "%s-%s" (include "json-rpc-relay.name" .) "restart" | trimSuffix "-"| trunc 52 }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "json-rpc-relay.namespace" . }}
 spec:
   concurrencyPolicy: Forbid
-  schedule: {{ .Values.rolling_restart.schedule }}
+  schedule: {{ .Values.rolling_restart.schedule | quote }}
   jobTemplate:
     spec:
       backoffLimit: 2
@@ -27,7 +27,7 @@ spec:
 {{- end }}
 
 ---
-{{- if .Values.test.enabled }}
+{{- if .Values.cronjob.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -35,7 +35,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Allow
-  schedule: {{ .Values.test.schedule | quote }}
+  schedule: {{ .Values.cronjob.schedule | quote }}
   jobTemplate:
     spec:
       backoffLimit: 2
@@ -56,13 +56,14 @@ spec:
                 mountPath: "/"
           containers:
             - name: newman
-              image: postman/newman
+              image: "{{ .Values.cronjob.image.repository }}:{{ .Values.cronjob.image.tag }}"
+              imagePullPolicy: {{ .Values.cronjob.image.pullPolicy }}
               command: 
                 - newman
                 - run
                 - postman.json
                 - --env-var 
-                - baseUrl={{ .Values.test.baseUrl | quote }}
+                - baseUrl=http://{{ include "json-rpc-relay.fullname" . }}:{{ .Values.service.port }}
               volumeMounts:
               - name: config-json
                 mountPath: "/"

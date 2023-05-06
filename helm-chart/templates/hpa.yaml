@@ -2,9 +2,10 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "json-rpc-relay.fullname" . }}
   labels:
     {{- include "json-rpc-relay.labels" . | nindent 4 }}
+  name: {{ include "json-rpc-relay.fullname" . }}
+  namespace: {{ include "json-rpc-relay.namespace" . }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

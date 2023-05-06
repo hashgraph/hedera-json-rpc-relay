@@ -53,7 +53,7 @@ jobs:
         with:
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64, linux/arm64
+          platforms: linux/amd64
           push: true
           tags: localhost:5001/${{ github.repository }}:test
 

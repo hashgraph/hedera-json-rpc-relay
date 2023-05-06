@@ -35,7 +35,7 @@ spec:
     runAsUser: 1000
     seccompProfile:
       type: RuntimeDefault
-  terminationGracePeriodSeconds: 1
+  terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
   volumes:
     - name: relay-test
       configMap:

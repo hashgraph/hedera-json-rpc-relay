@@ -2,15 +2,16 @@
 affinity: {}
 
 autoscaling:
-  enabled: true
+  # need to test
+  enabled: false
   minReplicas: 2
   maxReplicas: 6
-  targetCPUUtilizationPercentage: 50
-  targetMemoryUtilizationPercentage: 50
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 config:
   # This value should be in decimal, not hexadecimal format. Defaulted to testnet
-  CHAIN_ID: '0x128'
+  CHAIN_ID: ''
   CLIENT_TRANSPORT_SECURITY: false
   CONSENSUS_MAX_EXECUTION_TIME: 15000
   CONTRACT_QUERY_TIMEOUT_RETRIES: 3
@@ -22,24 +23,16 @@ config:
   GAS_PRICE_TINY_BAR_BUFFER: 10000000000
   HBAR_RATE_LIMIT_TINYBAR: 5000000000
   HBAR_RATE_LIMIT_DURATION: 60000
-  # Use config.hosted.HEDERA_NETWORK when running against a hosted Hedera network.  Valid options are `previewnet`, `testnet`, and `mainnet`
-  hosted:
-    # Defaulted to testnet
-    HEDERA_NETWORK: 'testnet'
+  # Valid options are `previewnet`, `testnet`, and `mainnet` for remote options. For local use {"127.0.01:50211":"0.0.3"}. For IPs use {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1"} form
+  HEDERA_NETWORK: ''
   INPUT_SIZE_LIMIT: 1
   LIMIT_DURATION: 60000
-  # Use config.local.HEDERA_NETWORK when running against a locally hosted hedera network
-  # local:
-  #   config.local.HEDERA_NETWORK should configured as a json set - {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1","$IPv4_ADDR_2:$PORT_2":"$ACCOUNT_ID_2"}
-  #   HEDERA_NETWORK: {"127.0.01:50211":"0.0.3"}
-  #   HEDERA_NETWORK: ""
   LOCAL_NODE: false
   LOG_LEVEL: ''
   MIRROR_NODE_RETRIES: 3
   MIRROR_NODE_RETRY_DELAY: 250
   MIRROR_NODE_LIMIT_PARAM: 100
-  # Defaulted to testnet
-  MIRROR_NODE_URL: 'https://testnet.mirrornode.hedera.com'
+  MIRROR_NODE_URL: ''
   OPERATOR_ID_MAIN: ''
   OPERATOR_KEY_MAIN: ''
   OPERATOR_ID_ETH_SENDRAWTRANSACTION: ''
@@ -53,7 +46,19 @@ config:
   TIER_3_RATE_LIMIT: 400
   WEB_SOCKET_PORT: 8546
 
+cronjob:
+  enabled: false
+  image:
+    pullPolicy: IfNotPresent
+    repository: postman/newman
+    tag: 5.3.1-alpine
+  postman: ""  # Custom postman.json in base64 encoding
+  schedule: '@daily'
+
 fullnameOverride: ''
+
+global:
+  namespaceOverride: ''
 
 image:
   pullPolicy: IfNotPresent
@@ -90,7 +95,13 @@ nodeSelector: {}
 
 podAnnotations: {}
 
-podSecurityContext: {}
+podSecurityContext:
+  fsGroup: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
 
 ports:
   name: jsonrpcrelay
@@ -103,8 +114,8 @@ resources:
     cpu: 1100m
     memory: 350Mi
   requests:
-    cpu: 700m
-    memory: 64Mi
+    cpu: 1100m
+    memory: 350Mi
 
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:
