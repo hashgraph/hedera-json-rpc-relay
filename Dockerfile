@@ -12,8 +12,8 @@ COPY package*.json ./
 COPY lerna.json ./
 COPY --chown=node:node ./packages ./packages
 RUN apt-get update && \
-    apt-get install -y wget make g++ python3 && \
-    npm ci --only=production && \
+    apt-get install --no-install-recommends build-essential -y wget make g++ python3 && \
+    npm ci --only=production --ignore-scripts && \
     npm cache clean --force --loglevel=error && \
     chown -R node:node . && \
     rm -rf /var/lib/apt/lists/*
