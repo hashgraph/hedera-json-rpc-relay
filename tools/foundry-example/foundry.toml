@@ -1,0 +1,11 @@
+[profile.default]
+src = 'src'
+out = 'out'
+libs = ['lib']
+
+[rpc_endpoints]
+h_previewnet = "https://previewnet.hashio.io/api"
+h_testnet = "https://testnet.hashio.io/api"
+h_mainnet = "https://mainnet.hashio.io/api"
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
