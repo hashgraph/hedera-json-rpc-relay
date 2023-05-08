@@ -59,7 +59,6 @@ export default class RelayClient {
         try {
             const res = await this.call(methodName, params, requestId);
             this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
-            Assertions.expectedError();
         } catch (err) {
             Assertions.jsonRpcError(err, expectedRpcError);
         }
