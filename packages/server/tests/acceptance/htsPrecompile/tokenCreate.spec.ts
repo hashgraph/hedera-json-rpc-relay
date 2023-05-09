@@ -705,17 +705,6 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   });
 });
 
-async function associateToken(mainContractOwner: any, mainContractAddress: any, HTSTokenContractAddress: any, TX_SUCCESS_CODE: number, mainContractReceiverWalletFirst: any, accounts: AliasAccount[], mainContractReceiverWalletSecond: any) {
-  const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, HTSTokenContractAddress, { gasLimit: 10000000 });
-  expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-  const txRWF = await mainContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
-  expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-  const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
-  expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-}
-
 async function associateTokenAndVerifyEvent(contract: any, entityToAssociate: string, tokenAddress: string, expectedTxResponseCode) {
   const tx = await contract.associateTokenPublic(entityToAssociate, tokenAddress, { gasLimit: 10000000 });
   await new Promise(r => setTimeout(r, 2000));
