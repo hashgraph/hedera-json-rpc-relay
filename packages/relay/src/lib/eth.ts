@@ -1290,6 +1290,14 @@ export class EthImpl implements Eth {
   async getTransactionReceipt(hash: string, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
+
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_RECEIPT}_${hash}`;
+    let cachedResponse = this.cache.get(cacheKey);
+    if (cachedResponse) {
+      this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached response: ${cachedResponse}`);
+      return cachedResponse;
+    }
+
     const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestId);
     if (receiptResponse === null || receiptResponse.hash === undefined) {
       this.logger.trace(`${requestIdPrefix} no receipt for ${hash}`);
@@ -1338,6 +1346,8 @@ export class EthImpl implements Eth {
       }
 
       this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
+
+      this.cache.set(cacheKey, receipt);
       return receipt;
     }
   }
