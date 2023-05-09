@@ -36,6 +36,7 @@ import {Registry} from "prom-client";
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
+const asm = require('@ethersproject/asm');
 interface LatestBlockNumberTimestamp {
   blockNumber: string;
   timeStampTo: string;
@@ -373,7 +374,7 @@ export class EthImpl implements Eth {
 
     if (networkFees && Array.isArray(networkFees.fees)) {
       const txFee = networkFees.fees.find(({ transaction_type }) => transaction_type === EthImpl.ethTxType);
-      if (txFee && txFee.gas) {
+      if (txFee?.gas) {
         // convert tinyBars into weiBars
         const weibars = Hbar
           .fromTinybars(txFee.gas)
@@ -425,7 +426,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} blockNumber()`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
-   
+
     const blocksResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
     const blocks = blocksResponse !== null ? blocksResponse.blocks : null;
     if (Array.isArray(blocks) && blocks.length > 0) {
@@ -445,7 +446,7 @@ export class EthImpl implements Eth {
 
     throw predefined.COULD_NOT_RETRIEVE_LATEST_BLOCK;
   }
-  
+
   /**
    * Gets the chain ID. This is a static value, in that it always returns
    * the same value. This can be specified via an environment variable
@@ -473,12 +474,12 @@ export class EthImpl implements Eth {
         if (!toAccount) {
           toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
         }
-  
+
         // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
         if (toAccount) {
           this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey}:${JSON.stringify(toAccount)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
           this.cache.set(accountCacheKey, toAccount);
-  
+
           return EthImpl.gasTxBaseCost;
         }
 
@@ -698,7 +699,7 @@ export class EthImpl implements Eth {
     if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
       const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
       const blockNumberCached = this.cache.get(cacheKey);
-      
+
       if(blockNumberCached) {
         this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
         latestBlock = { blockNumber: blockNumberCached, timeStampTo: '0' };
@@ -775,7 +776,7 @@ export class EthImpl implements Eth {
                   mirrorAccount.transactions,
                   block.timestamp.to
                 );
-                
+
                 balanceFound = true;
                 weibars = BigInt(currentBalance - balanceFromTxs) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
               }
@@ -796,7 +797,7 @@ export class EthImpl implements Eth {
           }
         }
       }
-      
+
       if (!balanceFound && mirrorAccount?.balance) {
         balanceFound = true;
         weibars = BigInt(mirrorAccount.balance.balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
@@ -855,10 +856,15 @@ export class EthImpl implements Eth {
         if (result?.type === constants.TYPE_TOKEN) {
           this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
           return EthImpl.redirectBytecodeAddressReplace(address);
-        }
-        else if (result?.type === constants.TYPE_CONTRACT) {
+        } else if (result?.type === constants.TYPE_CONTRACT) {
           if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
-            return result?.entity.runtime_bytecode;
+            const prohibitedOpcodes = ['CALLCODE', 'DELEGATECALL', 'SELFDESTRUCT', 'SUICIDE'];
+            const opcodes = asm.disassemble(result?.entity.runtime_bytecode);
+            const hasProhibitedOpcode = opcodes.filter(opcode => prohibitedOpcodes.indexOf(opcode.opcode.mnemonic) > -1).length > 0;
+            if (!hasProhibitedOpcode) {
+              this.cache.set(cachedLabel, result?.entity.runtime_bytecode);
+              return result?.entity.runtime_bytecode;
+            }
           }
         }
       }
@@ -867,8 +873,8 @@ export class EthImpl implements Eth {
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       if (e instanceof SDKClientError) {
-        // handle INVALID_CONTRACT_ID
-        if (e.isInvalidContractId()) {
+        // handle INVALID_CONTRACT_ID or CONTRACT_DELETED
+        if (e.isInvalidContractId() || e.isContractDeleted()) {
           this.logger.debug(`${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.statusCode}`);
           this.cache.set(cachedLabel, EthImpl.emptyHex);
           return EthImpl.emptyHex;
@@ -1010,7 +1016,7 @@ export class EthImpl implements Eth {
     } else if (address && !blockNumOrTag) {
       // get latest ethereumNonce
       const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
-      if (mirrorAccount && mirrorAccount.ethereum_nonce) {
+      if (mirrorAccount?.ethereum_nonce) {
         return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
       }
     }
@@ -1166,7 +1172,7 @@ export class EthImpl implements Eth {
       };
 
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
-      return contractCallResponse && contractCallResponse.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
+      return contractCallResponse?.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
     } catch (e: any) {
       if (e instanceof JsonRpcError) {
         return e;
@@ -1291,7 +1297,7 @@ export class EthImpl implements Eth {
         }
       }
 
-      if (accountResult && accountResult.evm_address && accountResult.evm_address.length > 0) {
+      if (accountResult?.evm_address?.length > 0) {
         fromAddress = accountResult.evm_address.substring(0,42);
       }
     }

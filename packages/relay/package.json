@@ -27,6 +27,7 @@
         "test": "nyc ts-mocha --recursive ./tests/**/*.spec.ts --exit"
     },
     "dependencies": {
+        "@ethersproject/asm": "^5.7.0",
         "@hashgraph/sdk": "^2.19.0",
         "@keyvhq/core": "^1.6.9",
         "axios": "^0.26.1",

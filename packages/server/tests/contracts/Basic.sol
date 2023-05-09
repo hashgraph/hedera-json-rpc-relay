@@ -1,5 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
+
 contract Basic {
 
     constructor() {}
@@ -8,5 +9,9 @@ contract Basic {
         return 1;
     }
 
-    receive() external payable { }
+    function destroy() public {
+        selfdestruct(payable(msg.sender));
+    }
+
+    receive() external payable {}
 }
