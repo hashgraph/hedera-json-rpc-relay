@@ -3435,7 +3435,7 @@ describe('Eth calls using MirrorNode', async function () {
       } catch (e) {
         hasError = true;
         expect(e.code).to.equal(predefined.INTERNAL_ERROR(e.message).code);
-        expect(e.message).to.equal(predefined.INTERNAL_ERROR(e.message).message);
+        expect(`Error invoking RPC: ${e.message}`).to.equal(predefined.INTERNAL_ERROR(e.message).message);
       }
       expect(hasError).to.be.true;
     });

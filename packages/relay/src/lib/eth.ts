@@ -1113,7 +1113,10 @@ export class EthImpl implements Eth {
       return await this.callConsensusNode(call, gas, requestId);
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
-      return e instanceof JsonRpcError ? e : e.message ? predefined.INTERNAL_ERROR(e.message) : predefined.INTERNAL_ERROR();
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return e.message ? predefined.INTERNAL_ERROR(e.message) : predefined.INTERNAL_ERROR();
     }
   }
 
@@ -1145,7 +1148,10 @@ export class EthImpl implements Eth {
         return await this.callConsensusNode(call, gas, requestId);
       } 
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
-      return e instanceof JsonRpcError ? e : e.message ? predefined.INTERNAL_ERROR(e.message) : predefined.INTERNAL_ERROR();
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return e.message ? predefined.INTERNAL_ERROR(e.message) : predefined.INTERNAL_ERROR();
     }
   }
 
