@@ -25,9 +25,9 @@ export class SDKClientError extends Error {
   private validNetworkError: boolean = false;
   
   constructor(e: any, message?: string) {
-    super(e && e.status && e.status._code ? e.message : message);
+    super(e?.status?._code ? e.message : message);
 
-    if(e && e.status && e.status._code) {
+    if(e?.status?._code) {
       this.validNetworkError = true;
       this.status = e.status;
     }
@@ -50,6 +50,10 @@ export class SDKClientError extends Error {
   public isInvalidContractId(): boolean {
     return this.isValidNetworkError() && 
       (this.statusCode === Status.InvalidContractId._code || this.message?.includes(Status.InvalidContractId.toString()));
+  }
+
+  public isContractDeleted(): boolean {
+    return this.statusCode == Status.ContractDeleted._code;
   }
 
   public isInsufficientTxFee(): boolean {

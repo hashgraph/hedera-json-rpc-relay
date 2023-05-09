@@ -147,6 +147,7 @@ export class MirrorNodeClient {
         const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE!) || 5;
         const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 250;
         const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE!) || 200;
+        const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES) : [404]; // by default we should only retry on 404 errors
 
         const axiosClient: AxiosInstance = Axios.create({
             baseURL: baseUrl,
@@ -184,7 +185,7 @@ export class MirrorNodeClient {
                 return delay;
             },
             retryCondition: (error) => {
-                return !error?.response?.status || MirrorNodeClientError.retryErrorCodes.includes(error?.response?.status);
+                return !error?.response?.status || mirrorNodeRetryErrorCodes.includes(error?.response?.status);
             },
             shouldResetTimeout: true
         });
