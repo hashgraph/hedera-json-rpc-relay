@@ -565,7 +565,10 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
 
-    it('should be able to transfer both fungible and non-fungible tokens in single cryptoTransfer', async function() {
+    it.only('should be able to transfer both fungible and non-fungible tokens in single cryptoTransfer', async function() {
+      await associateTokenAndVerifyEvent(mainContractReceiverWalletFirst, mainContractAddress, HTSTokenContractAddress, TX_SUCCESS_CODE);
+      await associateTokenAndVerifyEvent(mainContractOwner, accounts[1].wallet.address, HTSTokenContractAddress, TX_SUCCESS_CODE);
+      await associateTokenAndVerifyEvent(mainContractOwner, accounts[2].wallet.address, HTSTokenContractAddress, TX_SUCCESS_CODE);
       // Mint an NFT
       const txMint = await mainContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x05'], { gasLimit: 1_000_000 });
       expect((await txMint.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
@@ -707,7 +710,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
 async function associateTokenAndVerifyEvent(contract: any, entityToAssociate: string, tokenAddress: string, expectedTxResponseCode) {
   const tx = await contract.associateTokenPublic(entityToAssociate, tokenAddress, { gasLimit: 10000000 });
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise(r => setTimeout(r, 4000));
   expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(expectedTxResponseCode);
 }
 
