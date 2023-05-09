@@ -24,7 +24,8 @@ enum CACHE_KEY {
     GET_CONTRACT_RESULT = 'getContractResult',
     ETH_BLOCK_NUMBER = 'eth_block_number',
     ETH_GET_BALANCE = 'eth_get_balance',
-    GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee'
+    GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee',
+    GET_BLOCK = 'getBlock'
 }
 
 enum CACHE_TTL {

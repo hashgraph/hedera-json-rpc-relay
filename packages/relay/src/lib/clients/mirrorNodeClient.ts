@@ -414,9 +414,18 @@ export class MirrorNodeClient {
     }
 
     public async getBlock(hashOrBlockNumber: string | number, requestId?: string) {
-        return this.get(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`,
-            MirrorNodeClient.GET_BLOCK_ENDPOINT,
-            requestId);
+        const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.${hashOrBlockNumber}`;
+        const cachedResponse: any = this.cache.get(cachedLabel);
+        if (cachedResponse != undefined) {
+            return cachedResponse;
+        }
+
+        const block = await this.get(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`,
+          MirrorNodeClient.GET_BLOCK_ENDPOINT,
+          requestId);
+
+        this.cache.set(cachedLabel, block);
+        return block;
     }
 
     public async getBlocks(blockNumber?: number | string[], timestamp?: string, limitOrderParams?: ILimitOrderParams, requestId?: string) {

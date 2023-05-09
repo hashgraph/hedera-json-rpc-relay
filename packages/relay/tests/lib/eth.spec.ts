@@ -80,6 +80,7 @@ let restMock: MockAdapter, web3Mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let sdkClientStub;
 let cache;
+let mirrorNodeCache;
 
 describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
@@ -90,6 +91,9 @@ describe('Eth calls using MirrorNode', async function () {
   this.beforeAll(() => {
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry);
+
+    // @ts-ignore
+    mirrorNodeCache = mirrorNodeInstance.cache;
 
     // @ts-ignore
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: "throwException" });
@@ -792,6 +796,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with zero transactions', async function () {
+    mirrorNodeCache.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, gas_used: 0});
     restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, { 'results': [] });
@@ -814,6 +819,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with match and details', async function () {
+    mirrorNodeCache.clear();
     const resultWithNullGasUsed = {
       ...defaultDetailedContractResults,
       gas_used: null
@@ -844,6 +850,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with block match and contract revert', async function () {
+    mirrorNodeCache.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, gas_used: gasUsed1});
     restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResultsRevert);
@@ -866,6 +873,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with no match', async function () {
+    mirrorNodeCache.clear();
     restMock.onGet(`blocks/${blockNumber}`).reply(400, {
       '_status': {
         'messages': [
@@ -993,6 +1001,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByHash with block match and contract revert', async function () {
+    mirrorNodeCache.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockHash}`).reply(200, {...defaultBlock, gas_used: gasUsed1});
     restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResultsRevert);
@@ -1015,6 +1024,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByHash with no match', async function () {
+    mirrorNodeCache.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockHash}`).reply(400, {
       '_status': {
@@ -1056,6 +1066,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockTransactionCountByNumber with no match', async function () {
+    mirrorNodeCache.clear();
     restMock.onGet(`blocks/${blockNumber}`).reply(400, {
       '_status': {
         'messages': [
@@ -1113,6 +1124,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockTransactionCountByHash with no match', async function () {
+    mirrorNodeCache.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockHash}`).reply(400, {
       '_status': {
@@ -1553,6 +1565,7 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       beforeEach(async () => {
+        mirrorNodeCache.clear();
         restMock.onGet(`blocks?limit=1&order=desc`).reply(200, { blocks: [latestBlock] });
         restMock.onGet(`blocks/3`).reply(200, defaultBlock);
         restMock.onGet(`blocks/0`).reply(200, blockZero);
@@ -2355,6 +2368,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('with non-existing toBlock filter', async function () {
+      mirrorNodeCache.clear();
       const filteredLogs = {
         logs: [defaultLogs.logs[0]]
       };
@@ -2493,6 +2507,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('with topics and blocks filter', async function () {
+      mirrorNodeCache.clear();
       const filteredLogs = {
         logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
       };
@@ -3511,7 +3526,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when block not found', async function () {
-
+      mirrorNodeCache.clear();
       let hasError = false;
       try {
         restMock.onGet(`blocks/${blockNumber}`).reply(200, null);
