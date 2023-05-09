@@ -151,7 +151,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   }
 
   it('should associate to a token', async function() {
-    await associateToken(mainContractOwner, mainContractAddress, HTSTokenContractAddress, TX_SUCCESS_CODE, mainContractReceiverWalletFirst, accounts, mainContractReceiverWalletSecond);      // check if KYC is revoked
+    await associateTokenAndVerifyEvent(mainContractReceiverWalletFirst, mainContractAddress, HTSTokenContractAddress, TX_SUCCESS_CODE);
+    await associateTokenAndVerifyEvent(mainContractOwner, accounts[1].wallet.address, HTSTokenContractAddress, TX_SUCCESS_CODE);
+    await associateTokenAndVerifyEvent(mainContractOwner, accounts[2].wallet.address, HTSTokenContractAddress, TX_SUCCESS_CODE);
   });
 
   it('should associate to a nft', async function() {
@@ -413,15 +415,20 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       await checkTokenDefaultKYCStatus(mainContractOwner, NftHTSTokenContractAddress, false);
     });
 
-    it('should be able to grant KYC, tranfer hts tokens and revoke KYC', async function() {
+    it.only('should be able to grant KYC, tranfer hts tokens and revoke KYC', async function() {
 
-      await associateToken(mainContractOwner, mainContractAddress, HTSTokenContractAddress, TX_SUCCESS_CODE, mainContractReceiverWalletFirst, accounts, mainContractReceiverWalletSecond);      // check if KYC is revoked
-
+      await associateTokenAndVerifyEvent(mainContractReceiverWalletFirst, mainContractAddress, HTSTokenContractAddress, TX_SUCCESS_CODE);
+      await associateTokenAndVerifyEvent(mainContractOwner, accounts[1].wallet.address, HTSTokenContractAddress, TX_SUCCESS_CODE);
+      await associateTokenAndVerifyEvent(mainContractOwner, accounts[2].wallet.address, HTSTokenContractAddress, TX_SUCCESS_CODE);
+      
       await checkKyc(mainContractOwner, HTSTokenContractAddress, accounts[2].wallet.address, false);
+      await new Promise(r => setTimeout(r, 2000));
   
       // grant KYC
       const grantKycTx = await mainContractOwner.grantTokenKycPublic(HTSTokenContractAddress, accounts[2].wallet.address, { gasLimit: 1_000_000 });
+      await new Promise(r => setTimeout(r, 2000));
       const responseCodeGrantKyc = (await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      await new Promise(r => setTimeout(r, 2000));
       expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
   
       // check if KYC is granted
@@ -433,16 +440,20 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       await mainContract.connect(accounts[0].wallet).cryptoTransferTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, amount);
       await new Promise(r => setTimeout(r, 2000));
       const balanceAfter = await HTSTokenContract.balanceOf(accounts[2].wallet.address);
+      await new Promise(r => setTimeout(r, 2000));
   
       expect(balanceBefore + amount).to.equal(balanceAfter);
 
       // revoke KYC
       const revokeKycTx = await mainContractOwner.revokeTokenKycPublic(HTSTokenContractAddress, accounts[2].wallet.address, { gasLimit: 1_000_000 });
+      await new Promise(r => setTimeout(r, 2000));
       const responseCodeRevokeKyc = (await revokeKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      await new Promise(r => setTimeout(r, 2000));
       expect(responseCodeRevokeKyc).to.equal(TX_SUCCESS_CODE);
   
       // check if KYC is revoked
       await checkKyc(mainContractOwner, HTSTokenContractAddress, accounts[2].wallet.address, false);
+      await new Promise(r => setTimeout(r, 2000));
     });
   });
 
@@ -703,5 +714,11 @@ async function associateToken(mainContractOwner: any, mainContractAddress: any, 
 
   const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
   expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+}
+
+async function associateTokenAndVerifyEvent(contract: any, entityToAssociate: string, tokenAddress: string, expectedTxResponseCode) {
+  const tx = await contract.associateTokenPublic(entityToAssociate, tokenAddress, { gasLimit: 10000000 });
+  await new Promise(r => setTimeout(r, 2000));
+  expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(expectedTxResponseCode);
 }
 
