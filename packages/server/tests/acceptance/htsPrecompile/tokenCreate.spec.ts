@@ -151,14 +151,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   }
 
   it('should associate to a token', async function() {
-    const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, HTSTokenContractAddress, { gasLimit: 10000000 });
-    expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-    const txRWF = await mainContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
-    expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-    const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
-    expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+    await associateToken(mainContractOwner, mainContractAddress, HTSTokenContractAddress, TX_SUCCESS_CODE, mainContractReceiverWalletFirst, accounts, mainContractReceiverWalletSecond);      // check if KYC is revoked
   });
 
   it('should associate to a nft', async function() {
@@ -394,10 +387,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   });
 
   describe('HTS Precompile KYC Tests', async function() {
-    before(async () => {
-      await associateToken(mainContractOwner, mainContractAddress, HTSTokenContractAddress, TX_SUCCESS_CODE, mainContractReceiverWalletFirst, accounts, mainContractReceiverWalletSecond);
-    });
-
+ 
     async function checkKyc(contractOwner, tokenAddress, accountAddress, expectedValue: boolean) {
       const tx = await contractOwner.isKycPublic(tokenAddress, accountAddress, { gasLimit: 1_000_000 });
       const responseCodeIsKyc = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
@@ -424,7 +414,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
     });
 
     it('should be able to grant KYC, tranfer hts tokens and revoke KYC', async function() {
-      // check if KYC is revoked
+
+      await associateToken(mainContractOwner, mainContractAddress, HTSTokenContractAddress, TX_SUCCESS_CODE, mainContractReceiverWalletFirst, accounts, mainContractReceiverWalletSecond);      // check if KYC is revoked
+
       await checkKyc(mainContractOwner, HTSTokenContractAddress, accounts[2].wallet.address, false);
   
       // grant KYC
