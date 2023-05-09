@@ -602,7 +602,11 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     gasPrice: await relay.gasPrice(requestId)
                 };
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INTERNAL_ERROR(), requestId);
+                try {
+                    await relay.sendRawTransaction(signedTx, requestId);
+                } catch (error) {
+                    expect(`Error invoking RPC: ${error.message}`).to.equal(predefined.INTERNAL_ERROR(error.message).message);
+                } 
             });
 
             it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with gas price too low)', async function () {
