@@ -415,7 +415,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       await checkTokenDefaultKYCStatus(mainContractOwner, NftHTSTokenContractAddress, false);
     });
 
-    it.only('should be able to grant KYC, tranfer hts tokens and revoke KYC', async function() {
+    it('should be able to grant KYC, tranfer hts tokens and revoke KYC', async function() {
 
       await associateTokenAndVerifyEvent(mainContractReceiverWalletFirst, mainContractAddress, HTSTokenContractAddress, TX_SUCCESS_CODE);
       await associateTokenAndVerifyEvent(mainContractOwner, accounts[1].wallet.address, HTSTokenContractAddress, TX_SUCCESS_CODE);
