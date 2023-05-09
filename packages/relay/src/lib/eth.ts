@@ -1003,7 +1003,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return e.message ? predefined.INTERNAL_ERROR(e.message.toString()) : predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1062,7 +1062,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return e.message ? predefined.INTERNAL_ERROR(e.message.toString()) : predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1116,7 +1116,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return e.message ? predefined.INTERNAL_ERROR(e.message) : predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1151,7 +1151,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return e.message ? predefined.INTERNAL_ERROR(e.message) : predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1191,7 +1191,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return e.message ? predefined.INTERNAL_ERROR(e.message.toString()) : predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1598,7 +1598,7 @@ export class EthImpl implements Eth {
           e,
           `${requestIdPrefix} Failed to retrieve contract result details for contract address ${to} at timestamp=${timestamp}`
         );
-        throw e.message ? predefined.INTERNAL_ERROR(e.message.toString()) : predefined.INTERNAL_ERROR();
+        throw predefined.INTERNAL_ERROR(e.message.toString());
       });
   }
 
@@ -1767,7 +1767,7 @@ export class EthImpl implements Eth {
     if (error instanceof JsonRpcError) {
       throw error;
     }
-    return error.message ? predefined.INTERNAL_ERROR(error.message.toString()) : predefined.INTERNAL_ERROR();
+    return predefined.INTERNAL_ERROR(error.message.toString());
   }
 
   /**************************************************
