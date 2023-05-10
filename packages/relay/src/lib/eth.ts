@@ -997,7 +997,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1056,7 +1056,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1107,7 +1107,10 @@ export class EthImpl implements Eth {
       return await this.callConsensusNode(call, gas, requestId);
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
-      return e instanceof JsonRpcError ? e : predefined.INTERNAL_ERROR();
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1139,7 +1142,10 @@ export class EthImpl implements Eth {
         return await this.callConsensusNode(call, gas, requestId);
       } 
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
-      return e instanceof JsonRpcError ? e : predefined.INTERNAL_ERROR();
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1179,7 +1185,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1586,8 +1592,7 @@ export class EthImpl implements Eth {
           e,
           `${requestIdPrefix} Failed to retrieve contract result details for contract address ${to} at timestamp=${timestamp}`
         );
-
-        throw predefined.INTERNAL_ERROR();
+        throw predefined.INTERNAL_ERROR(e.message.toString());
       });
   }
 
@@ -1756,8 +1761,7 @@ export class EthImpl implements Eth {
     if (error instanceof JsonRpcError) {
       throw error;
     }
-
-    return predefined.INTERNAL_ERROR();
+    return predefined.INTERNAL_ERROR(error.message.toString());
   }
 
   /**************************************************
