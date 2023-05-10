@@ -32,7 +32,7 @@ import { MirrorNodeClient, SDKClient } from './clients';
 import { Registry } from 'prom-client';
 
 export class RelayImpl implements Relay {
-  private static chainIds = {
+  static chainIds = {
     mainnet: 0x127,
     testnet: 0x128,
     previewnet: 0x129,

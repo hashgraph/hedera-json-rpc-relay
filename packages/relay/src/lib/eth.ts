@@ -175,6 +175,12 @@ export class EthImpl implements Eth {
 
   getSdkClient() {
 
+    var isInTest = typeof global.it === 'function';
+    // for unit tests we need to use the mocked sdk client using DI
+    if(isInTest) {
+      return this.sdkClient;
+    }
+
     // if we have reached the max number of requests per sdk client instance, or if the sdk client instance is undefined, create a new one
     if (this.requestsPerSdkClient >= this.maxRequestsPerSdkClient || this.ethCallSdkClient == undefined) {
       const hederaClient = SDKClient.initClient(this.logger, this.hederaNetwork);

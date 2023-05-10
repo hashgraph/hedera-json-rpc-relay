@@ -56,6 +56,7 @@ import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
+import {RelayImpl} from "../relay";
 
 const _ = require('lodash');
 
@@ -64,15 +65,9 @@ export class SDKClient {
     static queryMode = 'QUERY';
     static recordMode = 'RECORD';
 
-    private static chainIds = {
-        mainnet: 0x127,
-        testnet: 0x128,
-        previewnet: 0x129,
-    };
-
     static initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
         let client: Client;
-        if (hederaNetwork in SDKClient.chainIds) {
+        if (hederaNetwork in RelayImpl.chainIds) {
             client = Client.forName(hederaNetwork);
         } else {
             client = Client.forNetwork(JSON.parse(hederaNetwork));
