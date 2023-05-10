@@ -108,5 +108,32 @@ describe('SdkClient', async function () {
                 expect(e.status).to.eq(Status.InsufficientTxFee);
             }
         });
+
+        it('should return cached getTinyBarGasFee value', async () => {
+            const getFeeScheduleStub = sinon.stub(sdkClient, 'getFeeSchedule').callsFake(() => {
+                return {
+                    current: {
+                        transactionFeeSchedule: [{
+                            hederaFunctionality: {
+                                _code: constants.ETH_FUNCTIONALITY_CODE
+                            },
+                            fees: [{
+                                servicedata: undefined
+                            }]
+                        }]
+                    }
+                };
+            });
+            const getExchangeRateStub = sinon.stub(sdkClient, 'getExchangeRate').callsFake(() => {});
+            const convertGasPriceToTinyBarsStub = sinon.stub(sdkClient, 'convertGasPriceToTinyBars').callsFake(() => 0x160c);
+
+            for (let i = 0; i < 5; i++) {
+                await sdkClient.getTinyBarGasFee('');
+            }
+
+            sinon.assert.calledOnce(getFeeScheduleStub);
+            sinon.assert.calledOnce(getExchangeRateStub);
+            sinon.assert.calledOnce(convertGasPriceToTinyBarsStub);
+        });
     })
 });
