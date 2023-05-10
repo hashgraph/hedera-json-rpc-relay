@@ -182,7 +182,7 @@ export class EthImpl implements Eth {
     // if we have reached the max number of requests per sdk client instance, or if the sdk client instance is undefined, create a new one
     if (this.requestsPerSdkClient >= this.maxRequestsPerSdkClient || this.ethCallSdkClient == undefined) {
       const hederaClient = this.initClient(this.logger, this.hederaNetwork);
-      this.ethCallSdkClient = new SDKClient(hederaClient, this.logger.child({ name: `consensus-node` }), this.registry);
+      this.ethCallSdkClient = new SDKClient(hederaClient, this.logger, this.registry);
       this.requestsPerSdkClient = 0;
     }
 
