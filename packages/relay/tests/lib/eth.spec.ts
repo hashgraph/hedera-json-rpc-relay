@@ -3475,8 +3475,8 @@ describe('Eth calls using MirrorNode', async function () {
         await ethImpl.sendRawTransaction(txHash);
       } catch (e) {
         hasError = true;
-        expect(e.code).to.equal(predefined.INTERNAL_ERROR().code);
-        expect(e.message).to.equal(predefined.INTERNAL_ERROR().message);
+        expect(e.code).to.equal(predefined.INTERNAL_ERROR(e.message).code);
+        expect(`Error invoking RPC: ${e.message}`).to.equal(predefined.INTERNAL_ERROR(e.message).message);
       }
       expect(hasError).to.be.true;
     });
