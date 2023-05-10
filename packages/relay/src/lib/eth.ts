@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { Hbar, EthereumTransaction } from '@hashgraph/sdk';
+import {Hbar, EthereumTransaction, Client, AccountId, PrivateKey} from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import {BigNumber as BN} from "bignumber.js";
 import { Logger } from 'pino';
@@ -32,6 +32,7 @@ import constants from './constants';
 import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
 import crypto from 'crypto';
+import {Registry} from "prom-client";
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -136,6 +137,7 @@ export class EthImpl implements Eth {
    * @private
    */
   private readonly chain: string;
+  private registry: Registry;
 
   /**
    * Create a new Eth implementation.
@@ -149,6 +151,7 @@ export class EthImpl implements Eth {
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
     chain: string,
+    register: Registry,
     cache?
   ) {
     this.sdkClient = nodeClient;
@@ -157,7 +160,79 @@ export class EthImpl implements Eth {
     this.chain = chain;
     this.precheck = new Precheck(mirrorNodeClient, nodeClient, logger, chain);
     this.cache = cache;
+    this.registry = register;
     if (!cache) this.cache = new LRU(this.options);
+  }
+
+  /* Temporary code duplication for a temporary HotFix workaround while the definitive  fix is implemented
+  * Please remove initClient workaround, or better yet, do not let this be merged on MAIN, short-lived fix intended only for 0.23.1 version */
+  private static chainIds = {
+    mainnet: 0x127,
+    testnet: 0x128,
+    previewnet: 0x129,
+  };
+
+  private requestsPerSdkClient = 0;
+  private maxRequestsPerSdkClient = process.env.ETH_CALL_MAX_REQUEST_PER_SDK_INSTANCE || 50;
+  private hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
+  private ethCallSdkClient: SDKClient | undefined;
+
+  getSdkClient() {
+
+    // if we have reached the max number of requests per sdk client instance, or if the sdk client instance is undefined, create a new one
+    if (this.requestsPerSdkClient >= this.maxRequestsPerSdkClient || this.ethCallSdkClient == undefined) {
+      const hederaClient = this.initClient(this.logger, this.hederaNetwork);
+      this.ethCallSdkClient = new SDKClient(hederaClient, this.logger.child({ name: `consensus-node` }), this.registry);
+      this.requestsPerSdkClient = 0;
+    }
+
+    // increment the number of requests per sdk client instance
+    this.requestsPerSdkClient++;
+
+    return this.ethCallSdkClient;
+  }
+
+  initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
+    let client: Client;
+    if (hederaNetwork in EthImpl.chainIds) {
+      client = Client.forName(hederaNetwork);
+    } else {
+      client = Client.forNetwork(JSON.parse(hederaNetwork));
+    }
+
+    if (type === 'eth_sendRawTransaction') {
+      if (
+          process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION &&
+          process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
+      ) {
+        client = client.setOperator(
+            AccountId.fromString(
+                process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION
+            ),
+            PrivateKey.fromString(
+                process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
+            )
+        );
+      } else {
+        logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
+      }
+    } else {
+      if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
+        client = client.setOperator(
+            AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()),
+            PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
+        );
+      } else {
+        logger.warn(`Invalid 'OPERATOR' env variables provided`);
+      }
+    }
+
+    client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
+    client.setRequestTimeout(parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000'));
+
+    logger.info(`SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${client.operatorAccountId} with request timeout value: ${process.env.SDK_REQUEST_TIMEOUT}`);
+
+    return client;
   }
 
   /**
@@ -329,7 +404,7 @@ export class EthImpl implements Eth {
       networkFees = {
         fees: [
           {
-            gas: await this.sdkClient.getTinyBarGasFee(callerName, requestId),
+            gas: await this.getSdkClient().getTinyBarGasFee(callerName, requestId),
             'transaction_type': EthImpl.ethTxType
           }
         ]
@@ -828,7 +903,7 @@ export class EthImpl implements Eth {
         }
       }
 
-      const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
+      const bytecode = await this.getSdkClient().getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       if (e instanceof SDKClientError) {
@@ -984,7 +1059,7 @@ export class EthImpl implements Eth {
     try {
       const result = await this.mirrorNodeClient.resolveEntityType(address, [constants.TYPE_ACCOUNT, constants.TYPE_CONTRACT], requestId);
       if (result?.type === constants.TYPE_ACCOUNT) {
-        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
+        const accountInfo = await this.getSdkClient().getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
         return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
       }
       else if (result?.type === constants.TYPE_CONTRACT) {
@@ -1025,11 +1100,11 @@ export class EthImpl implements Eth {
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     try {
-      const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
+      const contractExecuteResponse = await this.getSdkClient().submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
 
       try {
         // Wait for the record from the execution.
-        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
+        const record = await this.getSdkClient().executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
         if (!record) {
           this.logger.warn(`${requestIdPrefix} No record retrieved`);
           throw predefined.INTERNAL_ERROR();
@@ -1175,7 +1250,7 @@ export class EthImpl implements Eth {
         return cachedResponse;
       }
 
-      const contractCallResponse = await this.sdkClient.submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
+      const contractCallResponse = await this.getSdkClient().submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
       const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
       this.cache.set(cacheKey, formattedCallReponse, { ttl: EthImpl.ethCallCacheTtl });

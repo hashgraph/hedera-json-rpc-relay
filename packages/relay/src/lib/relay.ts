@@ -73,7 +73,7 @@ export class RelayImpl implements Relay {
       sdkClient,
       mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
-      chainId);
+      chainId, register);
 
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
