@@ -166,11 +166,7 @@ export class EthImpl implements Eth {
 
   /* Temporary code duplication for a temporary HotFix workaround while the definitive  fix is implemented
   * Please remove initClient workaround, or better yet, do not let this be merged on MAIN, short-lived fix intended only for 0.23.1 version */
-  private static chainIds = {
-    mainnet: 0x127,
-    testnet: 0x128,
-    previewnet: 0x129,
-  };
+
 
   private requestsPerSdkClient = 0;
   private maxRequestsPerSdkClient = process.env.ETH_CALL_MAX_REQUEST_PER_SDK_INSTANCE || 50;
@@ -181,7 +177,7 @@ export class EthImpl implements Eth {
 
     // if we have reached the max number of requests per sdk client instance, or if the sdk client instance is undefined, create a new one
     if (this.requestsPerSdkClient >= this.maxRequestsPerSdkClient || this.ethCallSdkClient == undefined) {
-      const hederaClient = this.initClient(this.logger, this.hederaNetwork);
+      const hederaClient = SDKClient.initClient(this.logger, this.hederaNetwork);
       this.ethCallSdkClient = new SDKClient(hederaClient, this.logger, this.registry);
       this.requestsPerSdkClient = 0;
     }
@@ -190,49 +186,6 @@ export class EthImpl implements Eth {
     this.requestsPerSdkClient++;
 
     return this.ethCallSdkClient;
-  }
-
-  initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
-    let client: Client;
-    if (hederaNetwork in EthImpl.chainIds) {
-      client = Client.forName(hederaNetwork);
-    } else {
-      client = Client.forNetwork(JSON.parse(hederaNetwork));
-    }
-
-    if (type === 'eth_sendRawTransaction') {
-      if (
-          process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION &&
-          process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
-      ) {
-        client = client.setOperator(
-            AccountId.fromString(
-                process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION
-            ),
-            PrivateKey.fromString(
-                process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
-            )
-        );
-      } else {
-        logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
-      }
-    } else {
-      if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
-        client = client.setOperator(
-            AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()),
-            PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
-        );
-      } else {
-        logger.warn(`Invalid 'OPERATOR' env variables provided`);
-      }
-    }
-
-    client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
-    client.setRequestTimeout(parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000'));
-
-    logger.info(`SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${client.operatorAccountId} with request timeout value: ${process.env.SDK_REQUEST_TIMEOUT}`);
-
-    return client;
   }
 
   /**

@@ -46,7 +46,7 @@ import {
     EthereumTransactionData,
     PrecheckStatusError,
     TransactionRecordQuery,
-    Hbar,
+    Hbar, PrivateKey,
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
@@ -63,6 +63,57 @@ export class SDKClient {
     static transactionMode = 'TRANSACTION';
     static queryMode = 'QUERY';
     static recordMode = 'RECORD';
+
+    private static chainIds = {
+        mainnet: 0x127,
+        testnet: 0x128,
+        previewnet: 0x129,
+    };
+
+    static initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
+        let client: Client;
+        if (hederaNetwork in SDKClient.chainIds) {
+            client = Client.forName(hederaNetwork);
+        } else {
+            client = Client.forNetwork(JSON.parse(hederaNetwork));
+        }
+
+        if (type === 'eth_sendRawTransaction') {
+            if (
+                process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION &&
+                process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
+            ) {
+                client = client.setOperator(
+                    AccountId.fromString(
+                        process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION
+                    ),
+                    PrivateKey.fromString(
+                        process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
+                    )
+                );
+            } else {
+                logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
+            }
+        } else {
+            if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
+                client = client.setOperator(
+                    AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()),
+                    PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
+                );
+            } else {
+                logger.warn(`Invalid 'OPERATOR' env variables provided`);
+            }
+        }
+
+        client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
+        client.setRequestTimeout(parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000'));
+
+        logger.info(`SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${client.operatorAccountId} with request timeout value: ${process.env.SDK_REQUEST_TIMEOUT}`);
+
+        return client;
+    }
+
+
     /**
      * The client to use for connecting to the main consensus network. The account
      * associated with this client will pay for all operations on the main network.
