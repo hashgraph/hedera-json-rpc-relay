@@ -98,6 +98,10 @@ Below is a table of provided methods.
 | [web3_clientVersion](https://ethereum.org/en/developers/docs/apis/json-rpc/#web3_clientversion)                                           | `relay/<semanticVersion>`                 | Relay Only    |
 
 
+### Live events API
+
+Details for the Real-Time Events API can be found [here](./live-events-api.md)
+
 ### Open RPC Spec
 The detailed schema specifications of the current methods offerred by the JSON RPC relay is captured in our
 [Open RPC Specification](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/openrpc.json&uiSchema%5BappBar%5D%5Bui:splitView%5D=false&uiSchema%5BappBar%5D%5Bui:input%5D=false&uiSchema%5BappBar%5D%5Bui:examplesDropdown%5D=false)
