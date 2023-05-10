@@ -74,7 +74,7 @@ export const predefined = {
   'INTERNAL_ERROR': (message = '') => new JsonRpcError({
     name: 'Internal error',
     code: -32603,
-    message: message === '' ? 'Unknown error invoking RPC' : `Error invoking RPC: ${message}`
+    message: message === '' || undefined ? 'Unknown error invoking RPC' : `Error invoking RPC: ${message}`
   }),
   'INVALID_PARAMETER': (index: number | string, message: string) =>  new JsonRpcError({
     name: 'Invalid parameter',
