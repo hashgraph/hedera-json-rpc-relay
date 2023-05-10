@@ -4,7 +4,8 @@
 
 [![Build](https://github.com/hashgraph/hedera-json-rpc-relay/actions/workflows/test.yml/badge.svg)](https://github.com/hashgraph/hedera-json-rpc-relay/actions)
 [![Latest Version](https://img.shields.io/github/v/tag/hashgraph/hedera-json-rpc-relay?sort=semver&label=version)](README.md)
-[![RPC API Methods](https://img.shields.io/badge/docs-quickstart-green.svg)](docs/rpc-api.md)
+[![RPC API Methods](https://img.shields.io/badge/api-docs-green.svg)](docs/rpc-api.md)
+[![RPC API Methods](https://img.shields.io/badge/websocket-docs-green.svg)](docs/live-events-api.md)
 [![Discord](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://hedera.com/discord)
 [![Made With](https://img.shields.io/badge/made_with-typescript-blue)](https://github.com/hashgraph/hederajson-rpc-relay/)
 [![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
@@ -144,7 +145,7 @@ docker compose up -d
 
 > **_NOTE:_** If you encounter `unauthorized` when pulling image, then ensure you're logged in with `docker login ghcr.io` or use a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) to authorize your login.
 
-By default the relay will be made accessible on port `7546`
+By default the relay will be made accessible on port `7546` and the websocket server - on port `8546`
 
 #### Request Test
 
