@@ -3298,6 +3298,32 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.equal("0x00");
     });
 
+    it('eth_call with all fields but mirrorNode throws 504 (timeout) on pre-check', async function () {
+
+      const timeoutAddress = "0x00000000000000000000000000000000000004e2";
+      const timeoutContract  =  "0x00000000000000000000000000000000000004e3";
+      restMock.onGet(`contracts/${timeoutAddress}`).reply(504);
+      restMock.onGet(`accounts/${timeoutContract}`).reply(504);
+
+      const callData = {
+        ...defaultCallData,
+        "from": timeoutAddress,
+        "to": timeoutContract,
+        "data": contractCallData,
+        "gas": maxGasLimit
+      };
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
+
+      let  error;
+      try {
+        const result = await ethImpl.call(callData, 'latest');
+      }  catch (e) {
+        error = e;
+      }
+      expect(error).to.be.not.null;
+      expect(error.message).to.equal("Non Existing Account Address: 0x00000000000000000000000000000000000004e2. Expected an Account Address.");
+    });
+
     it('eth_call with all fields, but mirror node throws NOT_SUPPORTED', async function () {
       const callData = {
         ...defaultCallData,
