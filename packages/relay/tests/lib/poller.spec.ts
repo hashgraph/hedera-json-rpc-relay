@@ -22,6 +22,7 @@ import { expect } from 'chai';
 import pino from 'pino';
 import { Poller } from '../../src/lib/poller';
 import sinon from 'sinon';
+import {Registry} from "prom-client";
 
 const logger = pino();
 
@@ -43,21 +44,18 @@ describe('Polling', async function() {
     let sandbox;
 
     this.beforeEach(() => {
- 
         ethImplStub = sinon.createStubInstance(EthImpl);
         ethImplStub.blockNumber.returns('0x1b177b');
         ethImplStub.getLogs.returns(logs);
 
-        poller = new Poller(ethImplStub, logger);
-        
+        const registry = new Registry();
+        poller = new Poller(ethImplStub, logger, registry);
         sandbox = sinon.createSandbox();
-
     });
 
     this.afterEach(() => {
         sandbox.restore();
     });
-
 
     describe('Poller', () => {
 

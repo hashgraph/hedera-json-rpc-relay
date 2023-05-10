@@ -23,10 +23,12 @@ import LRU from "lru-cache";
 import crypto from "crypto";
 import constants from "./constants";
 import { Poller } from './poller';
+import {Registry, Histogram, Counter} from "prom-client";
 
 export interface Subscriber {
     connection: any,
-    subscriptionId: string
+    subscriptionId: string,
+    endTimer: () => void
 }
 
 const CACHE_TTL = Number(process.env.WS_CACHE_TTL) || 20000;
@@ -36,13 +38,43 @@ export class SubscriptionController {
     private logger: Logger;
     private subscriptions: {[key: string]: Subscriber[]};
     private cache;
+    private activeSubscriptionHistogram: Histogram;
+    private resultsSentToSubscribersCounter: Counter;
 
-    constructor(poller: Poller, logger: Logger) {
+    constructor(poller: Poller, logger: Logger, register: Registry) {
         this.poller = poller;
         this.logger = logger;
         this.subscriptions = {};
 
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: CACHE_TTL });
+
+        const activeSubscriptionHistogramName = 'rpc_websocket_subscription_times';
+        register.removeSingleMetric(activeSubscriptionHistogramName);
+        this.activeSubscriptionHistogram = new Histogram({
+            name: activeSubscriptionHistogramName,
+            help: 'Relay websocket active subscription timer',
+            registers: [register],
+            buckets: [
+                0.05,    // fraction of a second
+                1,       // one second
+                10,      // 10 seconds
+                60,      // 1 minute
+                120,     // 2 minute
+                300,     // 5 minutes
+                1200,    // 20 minutes
+                3600,    // 1 hour
+                86400    // 24 hours
+            ]
+        })
+
+        const resultsSentToSubscribersCounterName = 'rpc_websocket_poll_received_results';
+        register.removeSingleMetric(resultsSentToSubscribersCounterName);
+        this.resultsSentToSubscribersCounter = new Counter({
+            name: 'rpc_websocket_poll_received_results',
+            help: 'Relay websocket counter for the unique results sent to subscribers',
+            registers: [register],
+            labelNames: ['subId', 'tag']
+        })
     }
 
     createHash(data) {
@@ -80,7 +112,8 @@ export class SubscriptionController {
 
         this.subscriptions[tag].push({
             subscriptionId: subId,
-            connection
+            connection,
+            endTimer: this.activeSubscriptionHistogram.startTimer() // observes the time in seconds
         });
 
         this.poller.add(tag, this.notifySubscribers.bind(this, tag));
@@ -104,6 +137,7 @@ export class SubscriptionController {
                 const match = sub.connection.id === id && (!subId || subId === sub.subscriptionId);
                 if (match) {
                     this.logger.debug(`Connection ${sub.connection.id}. Unsubscribing subId: ${sub.subscriptionId}; tag: ${tag}`);
+                    sub.endTimer();
                     subCount++;
                 }
 
@@ -133,6 +167,7 @@ export class SubscriptionController {
                 if (!this.cache.get(hash)) {
                     this.cache.set(hash, true);
                     this.logger.debug(`Sending data from tag: ${tag} to subscriptionId: ${sub.subscriptionId}, connectionId: ${sub.connection.id}, data: ${subscriptionData}`);
+                    this.resultsSentToSubscribersCounter.labels('sub.subscriptionId', tag).inc();
                     sub.connection.send(JSON.stringify({
                         method: 'eth_subscription',
                         params: subscriptionData
