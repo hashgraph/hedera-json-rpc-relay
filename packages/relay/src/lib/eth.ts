@@ -171,27 +171,28 @@ export class EthImpl implements Eth {
   private requestsPerSdkClient = 0;
   private maxRequestsPerSdkClient = process.env.ETH_CALL_MAX_REQUEST_PER_SDK_INSTANCE || 50;
   private hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
-  private ethCallSdkClient: SDKClient | undefined;
+  private ethSdkClient: SDKClient | undefined;
+  private isInTest = typeof global.it === 'function';
 
   getSdkClient() {
 
-    var isInTest = typeof global.it === 'function';
+
     // for unit tests we need to use the mocked sdk client using DI
-    if(isInTest) {
+    if(this.isInTest) {
       return this.sdkClient;
     }
 
     // if we have reached the max number of requests per sdk client instance, or if the sdk client instance is undefined, create a new one
-    if (this.requestsPerSdkClient >= this.maxRequestsPerSdkClient || this.ethCallSdkClient == undefined) {
+    if (this.requestsPerSdkClient >= this.maxRequestsPerSdkClient || this.ethSdkClient == undefined) {
       const hederaClient = SDKClient.initClient(this.logger, this.hederaNetwork);
-      this.ethCallSdkClient = new SDKClient(hederaClient, this.logger, this.registry);
+      this.ethSdkClient = new SDKClient(hederaClient, this.logger, this.registry);
       this.requestsPerSdkClient = 0;
     }
 
     // increment the number of requests per sdk client instance
     this.requestsPerSdkClient++;
 
-    return this.ethCallSdkClient;
+    return this.ethSdkClient;
   }
 
   /**
