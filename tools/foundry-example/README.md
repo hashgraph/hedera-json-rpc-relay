@@ -4,9 +4,7 @@ Simple scripts for basic operations like hbars transfer, balance fetching, and c
 
 ## Prerequisite
 
-You must have the Foundry CLI(forge) installed.
-
-## Configuration
+You must have the Foundry CLI(forge) installed. See https://book.getfoundry.sh/getting-started/installation
 
 ## Setup & Install
 
@@ -33,4 +31,4 @@ For varying degrees of verbosity in trace logs use the flags: `-v`, `-vv`, `-vvv
 ## Deploy to Network
 
 To deploy the `src/Counter.sol:Counter` contract to the Hedera testnet(alias is configured in `foundry.toml` as `h_testnet`)
-`forge create --rpc-url h_testnet --private-key 0x744963be31f2a9252bd58bfe59d3aba886395ad063a3abd1cf8b52b00185d4fd src/Counter.sol:Counter`
+`forge create --rpc-url h_testnet --private-key {PrivateKey} src/Counter.sol:Counter`

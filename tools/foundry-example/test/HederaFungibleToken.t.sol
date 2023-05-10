@@ -6,19 +6,6 @@ import 'hedera-smart-contracts/hts-precompile/KeyHelper.sol';
 import './utils/HederaTokenUtils.sol';
 import './utils/HederaFungibleTokenUtils.sol';
 
-// DONE - refactor for actions to be standalone internal functions with assertions inside
-// DONE - complete other precompile contracts implementation and test suite
-// DONE - investigate permissions that tx.origin is granted in precompile mock and adjust authorization accordingly if required
-// DONE - add deploy contracts scripts for hedera testnet and mainnet & document cmd in README.md
-// DONE - do validation on token at creation
-// DONE - do validations in _precheck functions such that never reverts with error strings in ERC{20/721}
-
-// TODO: search project for all TODOs and prioritize accordingly
-// TODO: write tests for all token keyTypes
-// TODO: investigate ordering of response codes on Hedera and adjust ordering in mocks accordingly
-// TODO: evaluate code coverage of all tests
-// TODO: match gas cost/consumption and msg.value for all 3 precompile/system contract's mock functions with gas cost and HBAR value/cost on Hedera
-
 contract HederaFungibleTokenTest is HederaTokenUtils, HederaFungibleTokenUtils, KeyHelper {
 
     // setUp is executed before each and every test function
