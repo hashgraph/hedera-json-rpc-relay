@@ -58,7 +58,7 @@ export class EthImpl implements Eth {
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-  static defaultGas = EthImpl.numberTo0x(constants.TX_DEFAULT_GAS);
+  static defaultGas = EthImpl.numberTo0x(process.env.TX_DEFAULT_GAS ? Number.parseInt(process.env.TX_DEFAULT_GAS) : 400_000);
   static gasTxBaseCost = EthImpl.numberTo0x(constants.TX_BASE_COST);
   static gasTxHollowAccountCreation = EthImpl.numberTo0x(constants.TX_HOLLOW_ACCOUNT_CREATION_GAS);
   static ethTxType = 'EthereumTransaction';
@@ -1424,7 +1424,7 @@ export class EthImpl implements Eth {
 
   private getCappedBlockGasLimit(gasString: string, requestIdPrefix?: string): number {
     if (!gasString) {
-      return 400_000;
+      return Number.parseInt(EthImpl.defaultGas);
     }
 
     // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
