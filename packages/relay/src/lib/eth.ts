@@ -1237,7 +1237,7 @@ export class EthImpl implements Eth {
       
       return await this.callConsensusNode(call, gas, requestId);
     } catch (e: any) {
-      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
+      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call on contract: '${call.to}' with selector: '${selector}'`);
       if (e instanceof JsonRpcError) {
         return e;
       }
