@@ -166,8 +166,6 @@ export class EthImpl implements Eth {
 
   /* Temporary code duplication for a temporary HotFix workaround while the definitive  fix is implemented
   * Please remove initClient workaround, or better yet, do not let this be merged on MAIN, short-lived fix intended only for 0.23.1 version */
-
-
   private requestsPerSdkClient = 0;
   private maxRequestsPerSdkClient = process.env.ETH_CALL_MAX_REQUEST_PER_SDK_INSTANCE || 50;
   private hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
@@ -175,7 +173,6 @@ export class EthImpl implements Eth {
   private isInTest = typeof global.it === 'function';
 
   getSdkClient() {
-
 
     // for unit tests we need to use the mocked sdk client using DI
     if(this.isInTest) {
