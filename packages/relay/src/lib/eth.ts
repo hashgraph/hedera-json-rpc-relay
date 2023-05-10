@@ -469,7 +469,7 @@ export class EthImpl implements Eth {
     if (transaction && transaction.to && (!transaction.data || transaction.data === '0x')) {
       const value = Number(transaction.value);
       if (value > 0) {
-        const accountCacheKey = `account_${transaction.to}`;
+        const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${transaction.to}`;
         let toAccount: object | null = this.cache.get(accountCacheKey);
         if (!toAccount) {
           toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
@@ -911,7 +911,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
 
-    const cacheKey = `eth_getBlockByNumber_${blockNumOrTag}_${showDetails}`;
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_NUMBER}_${blockNumOrTag}_${showDetails}`;
     let block = this.cache.get(cacheKey);
     if (!block) {
       block = await this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
@@ -1220,7 +1220,7 @@ export class EthImpl implements Eth {
         data = crypto.createHash('sha1').update(call.data).digest('hex'); // NOSONAR
       }
 
-      const cacheKey = `eth_call:.${call.to}.${data}`;
+      const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:.${call.to}.${data}`;
       let cachedResponse = this.cache.get(cacheKey);
 
       if (cachedResponse != undefined) {
@@ -1287,7 +1287,7 @@ export class EthImpl implements Eth {
     if (contractResult.from) {
       fromAddress = contractResult.from.substring(0, 42);
 
-      const accountCacheKey = `account_${fromAddress}`;
+      const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${fromAddress}`;
       let accountResult: any | null = this.cache.get(accountCacheKey);
       if (!accountResult) {
         accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
