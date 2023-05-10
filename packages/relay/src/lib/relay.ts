@@ -30,6 +30,7 @@ import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNodeClient, SDKClient } from './clients';
 import { Registry } from 'prom-client';
+import ClientService from './services/clientService';
 
 export class RelayImpl implements Relay {
   private static chainIds = {
@@ -54,8 +55,8 @@ export class RelayImpl implements Relay {
     const configuredChainId =
       process.env.CHAIN_ID || RelayImpl.chainIds[hederaNetwork] || '298';
     const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
-
-    this.clientMain = this.initClient(logger, hederaNetwork);
+    const clientService = new ClientService(logger, register);
+    this.clientMain = clientService.getClient();
 
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain, chainId);
@@ -68,14 +69,11 @@ export class RelayImpl implements Relay {
       process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
     );
 
-    const sdkClient = new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), register);
-
     this.ethImpl = new EthImpl(
-      sdkClient,
+      clientService,
       this.mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId);
-
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
       const poller = new Poller(this.ethImpl, logger, register);
@@ -103,48 +101,5 @@ export class RelayImpl implements Relay {
 
   mirrorClient(): MirrorNodeClient {
     return this.mirrorNodeClient;
-  }
-
-  initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
-    let client: Client;
-    if (hederaNetwork in RelayImpl.chainIds) {
-      client = Client.forName(hederaNetwork);
-    } else {
-      client = Client.forNetwork(JSON.parse(hederaNetwork));
-    }
-
-    if (type === 'eth_sendRawTransaction') {
-      if (
-        process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION &&
-        process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
-      ) {
-        client = client.setOperator(
-          AccountId.fromString(
-            process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION
-          ),
-          PrivateKey.fromString(
-            process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
-          )
-        );
-      } else {
-        logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
-      }
-    } else {
-      if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
-        client = client.setOperator(
-          AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()),
-          PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
-        );
-      } else {
-        logger.warn(`Invalid 'OPERATOR' env variables provided`);
-      }
-    }
-
-    client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
-    client.setRequestTimeout(parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000'));
-
-    logger.info(`SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${client.operatorAccountId} with request timeout value: ${process.env.SDK_REQUEST_TIMEOUT}`);
-
-    return client;
   }
 }

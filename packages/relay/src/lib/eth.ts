@@ -32,6 +32,7 @@ import constants from './constants';
 import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
 import crypto from 'crypto';
+import ClientService from './services/clientService';
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -118,6 +119,14 @@ export class EthImpl implements Eth {
    *
    * @private
    */
+  private readonly clientService: ClientService;
+
+  /**
+   * The sdk client use for connecting to both the consensus nodes and mirror node. The account
+   * associated with this client will pay for all operations on the main network.
+   *
+   * @private
+   */
   private readonly sdkClient: SDKClient;
 
   /**
@@ -152,17 +161,18 @@ export class EthImpl implements Eth {
    * @param chain
    */
   constructor(
-    nodeClient: SDKClient,
+    clientSevice: ClientService,
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
     chain: string,
     cache?
   ) {
-    this.sdkClient = nodeClient;
+    this.clientService = clientSevice;
+    this.sdkClient = this.clientService.getSDKClient();
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient, nodeClient, logger, chain);
+    this.precheck = new Precheck(mirrorNodeClient, this.clientService, logger, chain);
     this.cache = cache;
     if (!cache) this.cache = new LRU(this.options);
   }

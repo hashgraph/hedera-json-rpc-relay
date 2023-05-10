@@ -25,16 +25,19 @@ import { Logger } from 'pino';
 import constants from './constants';
 import { ethers, Transaction } from 'ethers';
 import { formatRequestIdMessage } from '../formatters';
+import ClientService from './services/clientService';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
+  private clientService: ClientService;
   private sdkClient: SDKClient;
   private readonly chain: string;
   private readonly logger: Logger;
 
-  constructor(mirrorNodeClient: MirrorNodeClient, sdkClient: SDKClient, logger: Logger, chainId: string) {
+  constructor(mirrorNodeClient: MirrorNodeClient, clientService: ClientService, logger: Logger, chainId: string) {
     this.mirrorNodeClient = mirrorNodeClient;
-    this.sdkClient = sdkClient;
+    this.clientService = clientService;
+    this.sdkClient = this.clientService.getSDKClient();
     this.chain = chainId;
     this.logger = logger;
   }
