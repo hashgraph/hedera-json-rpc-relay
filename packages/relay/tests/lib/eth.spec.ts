@@ -1065,6 +1065,15 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
   });
 
+  it('eth_getBlockTransactionCountByNumber with match should hit cache', async function() {
+    restMock.onGet(`blocks/${blockNumber}`).replyOnce(200, defaultBlock);
+
+    for (let i = 0; i < 3; i++) {
+      const result = await ethImpl.getBlockTransactionCountByNumber(blockNumber.toString());
+      expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
+    }
+  });
+
   it('eth_getBlockTransactionCountByNumber with no match', async function () {
     mirrorNodeCache.clear();
     restMock.onGet(`blocks/${blockNumber}`).reply(400, {
@@ -1121,6 +1130,15 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockTransactionCountByHash(blockHash);
     expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
+  });
+
+  it('eth_getBlockTransactionCountByHash with match should hit cache', async function() {
+    restMock.onGet(`blocks/${blockHash}`).replyOnce(200, defaultBlock);
+
+    for (let i = 0; i < 3; i++) {
+      const result = await ethImpl.getBlockTransactionCountByHash(blockHash);
+      expect(result).equal(EthImpl.numberTo0x(blockTransactionCount));
+    }
   });
 
   it('eth_getBlockTransactionCountByHash with no match', async function () {
