@@ -649,6 +649,21 @@ describe('MirrorNodeClient', async function () {
     expect(result.number).equal(block.number);
   });
 
+  it('`getBlocks` should hit the cache', async () => {
+    const hash = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b';
+    mock.onGet(`blocks/${hash}`).replyOnce(200, {
+      'hash': '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b',
+      'number': 77
+    });
+
+    for (let i = 0; i < 3; i++) {
+      const result = await mirrorNodeInstance.getBlock(hash);
+      expect(result).to.exist;
+      expect(result.hash).equal(hash);
+      expect(result.number).equal(77);
+    }
+  });
+
   it('`getNetworkExchangeRate`', async () => {
     const exchangerate = {
       'current_rate': {
