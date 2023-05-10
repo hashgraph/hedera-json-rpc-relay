@@ -414,9 +414,18 @@ export class MirrorNodeClient {
     }
 
     public async getBlock(hashOrBlockNumber: string | number, requestId?: string) {
-        return this.get(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`,
-            MirrorNodeClient.GET_BLOCK_ENDPOINT,
-            requestId);
+        const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.${hashOrBlockNumber}`;
+        const cachedResponse: any = this.cache.get(cachedLabel);
+        if (cachedResponse != undefined) {
+            return cachedResponse;
+        }
+
+        const block = await this.get(`${MirrorNodeClient.GET_BLOCK_ENDPOINT}${hashOrBlockNumber}`,
+          MirrorNodeClient.GET_BLOCK_ENDPOINT,
+          requestId);
+
+        this.cache.set(cachedLabel, block);
+        return block;
     }
 
     public async getBlocks(blockNumber?: number | string[], timestamp?: string, limitOrderParams?: ILimitOrderParams, requestId?: string) {
@@ -719,7 +728,7 @@ export class MirrorNodeClient {
         }));
 
         if (searchableTypes.find(t => t === constants.TYPE_CONTRACT)) {
-            const contract = await this.getContract(entityIdentifier, requestId);
+            const contract = await this.getContract(entityIdentifier, requestId).catch(() =>  {return null;});
             if (contract) {
                 const response = {
                     type: constants.TYPE_CONTRACT,
@@ -733,12 +742,12 @@ export class MirrorNodeClient {
         let data;
         try {
             const promises = [
-                searchableTypes.find(t => t === constants.TYPE_ACCOUNT) ? buildPromise(this.getAccount(entityIdentifier, requestId)) : Promise.reject(),
+                searchableTypes.find(t => t === constants.TYPE_ACCOUNT) ? buildPromise(this.getAccount(entityIdentifier, requestId).catch(() =>  {return null;})) : Promise.reject(),
             ];
 
             // only add long zero evm addresses for tokens as they do not refer to actual contract addresses but rather encoded entity nums            
             if (entityIdentifier.startsWith(constants.LONG_ZERO_PREFIX)) {
-                promises.push(searchableTypes.find(t => t === constants.TYPE_TOKEN) ? buildPromise(this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId)) : Promise.reject());
+                promises.push(searchableTypes.find(t => t === constants.TYPE_TOKEN) ? buildPromise(this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestId).catch(() =>  {return null;})) : Promise.reject());
             }
 
             // maps the promises with indices of the promises array

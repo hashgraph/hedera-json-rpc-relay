@@ -56,8 +56,8 @@ An object with the following fields:
 
 - address (optional): `string` or [`array of strings`] Singular address or array of addresses. Only logs created from one of these addresses will be emitted. Initially only `string` should be supported and filtering by multiple addresses can be added at a later stage.
 - topics: an array of topic specifiers.
-  - Each topic specifier is either null, a single string, or an array of strings.
-  - For every non-null topic, a log will be emitted when activity associated with that topic occurs.
+    - Each topic specifier is either null, a single string, or an array of strings.
+    - For every non-null topic, a log will be emitted when activity associated with that topic occurs.
 
 #### Request
 
@@ -241,7 +241,7 @@ The following test cases should be covered but additional tests would be welcome
 5. Multiple active subscriptions and each of them receives their appropriate log data.
 6. Exceeding the global subscription limit.
 7. Exceeding the IP subscription limit.
-8. Unsubscribing due to automatic subscription termination. 
+8. Unsubscribing due to automatic subscription termination.
 9. E2E test using popular libraries (`ethers.js WebSocketProvider`) that include - connecting, subscribing, receiving data, unsubscribing
 
 ## Non-Functional Requirements

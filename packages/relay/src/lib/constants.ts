@@ -26,6 +26,7 @@ enum CACHE_KEY {
     ETH_GET_BLOCK_BY_NUMBER = 'eth_getBlockByNumber',
     FEE_HISTORY = 'fee_history',
     GAS_PRICE = 'gas_price',
+    GET_BLOCK = 'getBlock',
     GET_CONTRACT_RESULT = 'getContractResult',
     GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee',
     RESOLVE_ENTITY_TYPE = 'resolveEntityType',

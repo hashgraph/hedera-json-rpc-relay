@@ -28,6 +28,7 @@ import {EthImpl} from "../../src/lib/eth";
 import sinon from 'sinon';
 import dotenv from "dotenv";
 import path from 'path';
+import {Registry} from "prom-client";
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -57,9 +58,10 @@ describe("subscriptionController", async function() {
     this.beforeAll(() => {
         // @ts-ignore
         ethImpl =  sinon.createStubInstance(EthImpl);
-        poller = new Poller(ethImpl, logger);
+        const registry = new Registry();
+        poller = new Poller(ethImpl, logger, registry);
 
-        subscriptionController = new SubscriptionController(poller, logger);
+        subscriptionController = new SubscriptionController(poller, logger, registry);
     });
 
     this.beforeEach(()=> {
