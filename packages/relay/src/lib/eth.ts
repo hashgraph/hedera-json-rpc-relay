@@ -112,7 +112,7 @@ export class EthImpl implements Eth {
    *
    * @private
    */
-  private readonly sdkClient: SDKClient;
+  private readonly injectedSdkClient: SDKClient;
 
   /**
    * The interface through which we interact with the mirror node
@@ -154,7 +154,7 @@ export class EthImpl implements Eth {
     register: Registry,
     cache?
   ) {
-    this.sdkClient = nodeClient;
+    this.injectedSdkClient = nodeClient;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
@@ -176,7 +176,7 @@ export class EthImpl implements Eth {
 
     // for unit tests we need to use the mocked sdk client using DI
     if(this.isInTest) {
-      return this.sdkClient;
+      return this.injectedSdkClient;
     }
 
     // if we have reached the max number of requests per sdk client instance, or if the sdk client instance is undefined, create a new one
