@@ -22,6 +22,7 @@ import { Block, Log, Receipt, Transaction } from './lib/model';
 import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
 import WebSocketError from './lib/errors/WebSocketError';
 import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
+import {MirrorNodeClient} from "./lib/clients";
 
 export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError };
 
@@ -35,6 +36,8 @@ export interface Relay {
   eth(): Eth;
 
   subs(): Subs | undefined;
+
+  mirrorClient(): MirrorNodeClient;
 }
 
 export interface Subs {

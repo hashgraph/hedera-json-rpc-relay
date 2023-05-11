@@ -19,12 +19,17 @@
   */
 
 enum CACHE_KEY {
-    GAS_PRICE = 'gas_price',
-    FEE_HISTORY = 'fee_history',
-    GET_CONTRACT_RESULT = 'getContractResult',
+    ACCOUNT = 'account',
     ETH_BLOCK_NUMBER = 'eth_block_number',
+    ETH_CALL = 'eth_call',
     ETH_GET_BALANCE = 'eth_get_balance',
+    ETH_GET_BLOCK_BY_NUMBER = 'eth_getBlockByNumber',
+    FEE_HISTORY = 'fee_history',
+    GAS_PRICE = 'gas_price',
+    GET_BLOCK = 'getBlock',
+    GET_CONTRACT_RESULT = 'getContractResult',
     GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee',
+    RESOLVE_ENTITY_TYPE = 'resolveEntityType',
     ETH_GET_TRANSACTION_RECEIPT = 'eth_getTransactionReceipt'
 }
 
