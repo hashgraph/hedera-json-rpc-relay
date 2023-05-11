@@ -32,7 +32,6 @@ import pino from 'pino';
 import ConnectionLimiter from "./ConnectionLimiter";
 import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
 import { EthSubscribeLogsParamsObject } from "@hashgraph/json-rpc-server/dist/validator";
-import KoaJsonRpc from "@hashgraph/json-rpc-server/dist/koaJsonRpc";
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
