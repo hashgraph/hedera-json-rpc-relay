@@ -110,7 +110,7 @@ describe('Eth calls using MirrorNode', async function () {
     process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
     // @ts-ignore
-    ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+    ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cache);
   });
 
   this.afterAll(() => {
@@ -3609,7 +3609,7 @@ describe('Eth', async function () {
   let ethImpl: EthImpl;
   this.beforeAll(() => {
     // @ts-ignore
-    ethImpl = new EthImpl(null, mirrorNodeInstance, logger);
+    ethImpl = new EthImpl(null, mirrorNodeInstance, logger, '0x12a', new Registry());
   });
 
   const contractEvmAddress = '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9';

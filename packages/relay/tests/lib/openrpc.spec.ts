@@ -109,7 +109,7 @@ describe("Open RPC Specification", function () {
         mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
         sdkClientStub = sinon.createStubInstance(SDKClient);
         // @ts-ignore
-        ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a');
+        ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry);
 
         // mocked data
         mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
