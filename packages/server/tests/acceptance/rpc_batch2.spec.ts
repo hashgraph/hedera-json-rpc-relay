@@ -559,6 +559,18 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 const res = await relay.call('eth_getCode', [alias, 'latest'], requestId);
                 expect(res).to.eq(EthImpl.emptyHex);
             });
+
+            it('should not return contract bytecode after sefldestruct', async function() {
+                const evmAddress = basicContract.contractId.toSolidityAddress();
+                const bytecodeBefore = await relay.call('eth_getCode', [`0x${evmAddress}`, 'latest'], requestId);
+
+                (await accounts[0].client
+                  .executeContractCall(basicContract.contractId, 'destroy', new ContractFunctionParameters(), 1_000_000));
+
+                const bytecodeAfter = await relay.call('eth_getCode', [`0x${evmAddress}`, 'latest'], requestId);
+                expect(bytecodeAfter).to.not.eq(bytecodeBefore);
+                expect(bytecodeAfter).to.eq('0x');
+            });
         });
 
     });
