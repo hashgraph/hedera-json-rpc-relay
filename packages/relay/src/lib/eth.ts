@@ -24,7 +24,7 @@ import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import {BigNumber as BN} from "bignumber.js";
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
-import { MirrorNodeClient, SDKClient } from './clients';
+import { MirrorNodeClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
@@ -114,20 +114,11 @@ export class EthImpl implements Eth {
   private readonly cache;
 
   /**
-   * The sdk client use for connecting to both the consensus nodes and mirror node. The account
-   * associated with this client will pay for all operations on the main network.
+   * The client service which is responsible for client all logic related to initialization, reinitialization and error/transactions tracking.
    *
    * @private
    */
   private readonly clientService: ClientService;
-
-  /**
-   * The sdk client use for connecting to both the consensus nodes and mirror node. The account
-   * associated with this client will pay for all operations on the main network.
-   *
-   * @private
-   */
-  private readonly sdkClient: SDKClient;
 
   /**
    * The interface through which we interact with the mirror node
@@ -168,7 +159,6 @@ export class EthImpl implements Eth {
     cache?
   ) {
     this.clientService = clientSevice;
-    this.sdkClient = this.clientService.getSDKClient();
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
@@ -346,7 +336,7 @@ export class EthImpl implements Eth {
       networkFees = {
         fees: [
           {
-            gas: await this.sdkClient.getTinyBarGasFee(callerName, requestId),
+            gas: await this.clientService.getSDKClient().getTinyBarGasFee(callerName, requestId),
             'transaction_type': EthImpl.ethTxType
           }
         ]
@@ -861,7 +851,7 @@ export class EthImpl implements Eth {
         }
       }
 
-      const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
+      const bytecode = await this.clientService.getSDKClient().getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       if (e instanceof SDKClientError) {
@@ -1047,7 +1037,7 @@ export class EthImpl implements Eth {
     try {
       const result = await this.mirrorNodeClient.resolveEntityType(address, [constants.TYPE_ACCOUNT, constants.TYPE_CONTRACT], requestId);
       if (result?.type === constants.TYPE_ACCOUNT) {
-        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
+        const accountInfo = await this.clientService.getSDKClient().getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
         return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
       }
       else if (result?.type === constants.TYPE_CONTRACT) {
@@ -1088,11 +1078,11 @@ export class EthImpl implements Eth {
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     try {
-      const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
+      const contractExecuteResponse = await this.clientService.getSDKClient().submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
 
       try {
         // Wait for the record from the execution.
-        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
+        const record = await this.clientService.getSDKClient().executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
         if (!record) {
           this.logger.warn(`${requestIdPrefix} No record retrieved`);
           throw predefined.INTERNAL_ERROR();
@@ -1238,7 +1228,7 @@ export class EthImpl implements Eth {
         return cachedResponse;
       }
 
-      const contractCallResponse = await this.sdkClient.submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
+      const contractCallResponse = await this.clientService.getSDKClient().submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
       const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
       this.cache.set(cacheKey, formattedCallReponse, { ttl: this.ethCallCacheTtl });

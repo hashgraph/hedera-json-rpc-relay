@@ -19,7 +19,7 @@
  */
 
 import { predefined } from './errors/JsonRpcError';
-import { MirrorNodeClient, SDKClient } from './clients';
+import { MirrorNodeClient } from './clients';
 import { EthImpl } from './eth';
 import { Logger } from 'pino';
 import constants from './constants';
@@ -30,14 +30,12 @@ import ClientService from './services/clientService';
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
   private clientService: ClientService;
-  private sdkClient: SDKClient;
   private readonly chain: string;
   private readonly logger: Logger;
 
   constructor(mirrorNodeClient: MirrorNodeClient, clientService: ClientService, logger: Logger, chainId: string) {
     this.mirrorNodeClient = mirrorNodeClient;
     this.clientService = clientService;
-    this.sdkClient = this.clientService.getSDKClient();
     this.chain = chainId;
     this.logger = logger;
   }
@@ -153,7 +151,7 @@ export class Precheck {
     }
 
     try {
-      tinybars = await this.sdkClient.getAccountBalanceInTinyBar(accountResponse.account, callerName, requestId);
+      tinybars = await this.clientService.getSDKClient().getAccountBalanceInTinyBar(accountResponse.account, callerName, requestId);
       result.passes = ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
     } catch (error: any) {
       this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);

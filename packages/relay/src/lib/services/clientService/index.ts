@@ -24,14 +24,28 @@ import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Registry, Counter } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
+import constants from '../../constants';
 
 export default class ClientService {
   private transactionCount: number;
   private errorCount: number;
   private resetDuration: number;
+  private shouldReset: boolean;
 
   private clientMain: Client;
+
+  /**
+   * The sdk client use for connecting to both the consensus nodes and mirror node. The account
+   * associated with this client will pay for all operations on the main network.
+   *
+   * @private
+   */
   private client: SDKClient;
+
+  /**
+   * The logger used for logging all output from this class.
+   * @private
+   */
   private logger: Logger;
   private readonly register: Registry;
   private clientResetCounter: Counter;
@@ -55,9 +69,10 @@ export default class ClientService {
     this.clientMain = this.initClient(logger, hederaNetwork);
     this.client = this.initSDKClient(logger, register);
 
-    this.transactionCount = 0;
-    this.errorCount = 0;
-    this.resetDuration = 600000;
+    this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || constants.CLIENT_TRANSACTION_RESET;
+    this.resetDuration = parseInt(process.env.CLIENT_DURATION_RESET!) || constants.CLIENT_DURATION_RESET;
+    this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || constants.CLIENT_ERROR_RESET;
+    this.shouldReset = false;
 
     this.register = register;
 
@@ -67,25 +82,40 @@ export default class ClientService {
       name: metricCounterName,
       help: 'Relay Client Service',
       registers: [register],
-      labelNames: ['mode', 'methodName'],
+      labelNames: ['transactions', 'duration', 'errors'],
     });
   }
 
   /**
-   *  Increment transaction counter. If limit is reached, reset client. Check also if resetDuration has been reached and reset the client, if yes.
+   *  Decrement transaction counter. If 0 is reached, reset the client. Check also if resetDuration has been reached and reset the client, if yes.
    */
-  public incrementTransactions() {}
+  private decrementTransactionCounter() {}
 
   /**
-   *  Increment error encountered counter. If limit is reached, reset client. Check also if resetDuration has been reached and reset the client, if yes.
+   *  Decrement error encountered counter. If 0 is reached, reset the client. Check also if resetDuration has been reached and reset the client, if yes.
    */
-  public incrementErrors() {}
+  private decrementErrorCounter() {}
 
   /**
    * Reset the main client, SDK Client and reset all counters.
    */
   private resetClient() {
+    this.clientResetCounter
+      .labels(this.transactionCount.toString(), this.resetDuration.toString(), this.errorCount.toString())
+      .inc(1);
+
     // this.client = null;
+  }
+
+  /**
+   * Reset all counters with predefined configuration.
+   */
+  private resetCounters() {
+    this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || constants.CLIENT_TRANSACTION_RESET;
+    this.resetDuration = parseInt(process.env.CLIENT_DURATION_RESET!) || constants.CLIENT_DURATION_RESET;
+    this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || constants.CLIENT_ERROR_RESET;
+
+    this.shouldReset = false;
   }
 
   /**
@@ -101,6 +131,10 @@ export default class ClientService {
    * @returns SDK Client
    */
   public getSDKClient(): SDKClient {
+    // decrement transaction counter
+    // decrement duration
+
+    //check error/transaction/duration and reset if needed
     return this.client;
   }
 
