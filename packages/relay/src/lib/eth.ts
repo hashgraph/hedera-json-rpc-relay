@@ -434,7 +434,7 @@ export class EthImpl implements Eth {
     if (transaction && transaction.to && (!transaction.data || transaction.data === '0x')) {
       const value = Number(transaction.value);
       if (value > 0) {
-        const accountCacheKey = `account_${transaction.to}`;
+        const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${transaction.to}`;
         let toAccount: object | null = this.cache.get(accountCacheKey);
         if (!toAccount) {
           toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
@@ -876,7 +876,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
 
-    const cacheKey = `eth_getBlockByNumber_${blockNumOrTag}_${showDetails}`;
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_NUMBER}_${blockNumOrTag}_${showDetails}`;
     let block = this.cache.get(cacheKey);
     if (!block) {
       block = await this.getBlock(blockNumOrTag, showDetails, requestId).catch((e: any) => {
@@ -1025,7 +1025,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1084,7 +1084,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1135,7 +1135,10 @@ export class EthImpl implements Eth {
       return await this.callConsensusNode(call, gas, requestId);
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
-      return e instanceof JsonRpcError ? e : predefined.INTERNAL_ERROR();
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1167,7 +1170,10 @@ export class EthImpl implements Eth {
         return await this.callConsensusNode(call, gas, requestId);
       } 
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
-      return e instanceof JsonRpcError ? e : predefined.INTERNAL_ERROR();
+      if (e instanceof JsonRpcError) {
+        return e;
+      }
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1189,7 +1195,7 @@ export class EthImpl implements Eth {
         data = crypto.createHash('sha1').update(call.data).digest('hex'); // NOSONAR
       }
 
-      const cacheKey = `eth_call:.${call.to}.${data}`;
+      const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:.${call.to}.${data}`;
       let cachedResponse = this.cache.get(cacheKey);
 
       if (cachedResponse != undefined) {
@@ -1207,7 +1213,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      return predefined.INTERNAL_ERROR();
+      return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
 
@@ -1256,7 +1262,7 @@ export class EthImpl implements Eth {
     if (contractResult.from) {
       fromAddress = contractResult.from.substring(0, 42);
 
-      const accountCacheKey = `account_${fromAddress}`;
+      const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${fromAddress}`;
       let accountResult: any | null = this.cache.get(accountCacheKey);
       if (!accountResult) {
         accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
@@ -1614,8 +1620,7 @@ export class EthImpl implements Eth {
           e,
           `${requestIdPrefix} Failed to retrieve contract result details for contract address ${to} at timestamp=${timestamp}`
         );
-
-        throw predefined.INTERNAL_ERROR();
+        throw predefined.INTERNAL_ERROR(e.message.toString());
       });
   }
 
@@ -1784,8 +1789,7 @@ export class EthImpl implements Eth {
     if (error instanceof JsonRpcError) {
       throw error;
     }
-
-    return predefined.INTERNAL_ERROR();
+    return predefined.INTERNAL_ERROR(error.message.toString());
   }
 
   /**************************************************

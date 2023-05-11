@@ -716,7 +716,7 @@ export class MirrorNodeClient {
       searchableTypes: any[] = [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT, constants.TYPE_TOKEN],
       requestId?: string
     ) {
-        const cachedLabel = `resolveEntityType.${entityIdentifier}`;
+        const cachedLabel = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${entityIdentifier}`;
         const cachedResponse: { type: string, entity: any } | undefined = this.cache.get(cachedLabel);
         if (cachedResponse != undefined) {
             return cachedResponse;
