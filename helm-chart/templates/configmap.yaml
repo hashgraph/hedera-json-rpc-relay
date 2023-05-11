@@ -6,19 +6,27 @@ metadata:
     app:  {{ template "json-rpc-relay.name" . }}
     {{ include "json-rpc-relay.labels" . | nindent 4 }}
 data:
-{{- if and .Values.config.local .Values.config.local.HEDERA_NETWORK }}
-  HEDERA_NETWORK: {{ .Values.config.local.HEDERA_NETWORK | toJson | quote}}
-{{- else if .Values.config.hosted.HEDERA_NETWORK }}
-  HEDERA_NETWORK: {{ .Values.config.hosted.HEDERA_NETWORK | quote }}
-{{- else }}
-  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in either .Values.config.local.HEDERA_NETWORK or .Values.config.hosted.HEDERA_NETWORK " (or .Values.config.local.HEDERA_NETWORK .Values.config.hosted.HEDERA_NETWORK) }}
-{{- end }}
-  MIRROR_NODE_URL: {{ .Values.config.MIRROR_NODE_URL | quote }}
-  LOCAL_NODE: {{ .Values.config.LOCAL_NODE | quote }}
-  SERVER_PORT: {{ .Values.config.SERVER_PORT | quote }}
-  WEB_SOCKET_PORT: {{ .Values.config.WEB_SOCKET_PORT | quote }}
   CHAIN_ID: {{ .Values.config.CHAIN_ID | quote }}
+  CONSENSUS_MAX_EXECUTION_TIME: {{ .Values.config.CONSENSUS_MAX_EXECUTION_TIME | quote }}
+  CONTRACT_QUERY_TIMEOUT_RETRIES: {{ .Values.config.CONTRACT_QUERY_TIMEOUT_RETRIES | quote }}
   DEFAULT_RATE_LIMIT: {{ .Values.config.DEFAULT_RATE_LIMIT | quote }}
+  DEV_MODE: {{ .Values.config.DEV_MODE | quote }}
+  ETH_CALL_CACHE_TTL: {{ .Values.config.ETH_CALL_CACHE_TTL | quote }}
+  ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: {{ .Values.config.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE | quote }}
+  ETH_GET_LOGS_BLOCK_RANGE_LIMIT: {{ .Values.config.ETH_GET_LOGS_BLOCK_RANGE_LIMIT | quote }}
+  HBAR_RATE_LIMIT_TINYBAR: {{ .Values.config.HBAR_RATE_LIMIT_TINYBAR | quote }}
+  HBAR_RATE_LIMIT_DURATION: {{ .Values.config.HBAR_RATE_LIMIT_DURATION | quote }}
+  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in" .Values.config.HEDERA_NETWORK | toJson | quote }}
+  INPUT_SIZE_LIMIT: {{ .Values.config.INPUT_SIZE_LIMIT | quote }}
+  LIMIT_DURATION: {{ .Values.config.LIMIT_DURATION | quote }}
+  LOCAL_NODE: {{ .Values.config.LOCAL_NODE | quote }}
+  MIRROR_NODE_LIMIT_PARAM: {{ .Values.config.MIRROR_NODE_LIMIT_PARAM | quote }}
+  MIRROR_NODE_RETRIES: {{ .Values.config.MIRROR_NODE_RETRIES | quote }}
+  MIRROR_NODE_RETRY_DELAY: {{ .Values.config.MIRROR_NODE_RETRY_DELAY | quote }}
+  MIRROR_NODE_URL: {{ .Values.config.MIRROR_NODE_URL | quote }}
+  RATE_LIMIT_DISABLED: {{ .Values.config.RATE_LIMIT_DISABLED | quote }}
+  SERVER_PORT: {{ .Values.config.SERVER_PORT | quote }}
+  SUBSCRIPTIONS_ENABLED: {{ .Values.config.SUBSCRIPTIONS_ENABLED | quote }}
   TIER_1_RATE_LIMIT: {{ .Values.config.TIER_1_RATE_LIMIT | quote }}
   TIER_2_RATE_LIMIT: {{ .Values.config.TIER_2_RATE_LIMIT | quote }}
   TIER_3_RATE_LIMIT: {{ .Values.config.TIER_3_RATE_LIMIT | quote }}

@@ -1,10 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "json-rpc-relay.fullname" . }}
   labels:
     app:  {{ template "json-rpc-relay.name" . }}
     {{ include "json-rpc-relay.labels" . | nindent 4 }}
+  name: {{ include "json-rpc-relay.fullname" . }}
+  namespace: {{ include "json-rpc-relay.namespace" . }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -31,20 +32,19 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
       - name: {{ .Chart.Name }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         envFrom:
         - configMapRef:
-          name: {{ include "json-rpc-relay.fullname" . }}
+            name: {{ include "json-rpc-relay.fullname" . }}
         - secretRef:
-          name: {{ include "json-rpc-relay.fullname" . }}  
+            name: {{ include "json-rpc-relay.fullname" . }}  
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
         livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
         readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
-        resources:
-          {{- toYaml .Values.resources | indent 12 }}
+        resources: {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
