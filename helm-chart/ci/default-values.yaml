@@ -1,12 +1,9 @@
-# Default values for json-rpc-relay in CI.
+# Default values for json-rpc-relay in CI. Configured to testnet
 config:
-  # This value should be in decimal, not hexadecimal format. Defaulted to testnet
   CHAIN_ID: '0x128'
-  # Use config.hosted.HEDERA_NETWORK when running against a hosted Hedera network.  Valid options are `previewnet`, `testnet`, and `mainnet`
   HEDERA_NETWORK: 'testnet'
-  # Defaulted to testnet
   MIRROR_NODE_URL: 'https://testnet.mirrornode.hedera.com'
 
 image:
-  registry: registry:5000
+  registry: registry:5001
   tag: test
