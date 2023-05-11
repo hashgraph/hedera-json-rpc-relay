@@ -3830,6 +3830,11 @@ describe('Eth', async function () {
   });
 
   describe('eth_getTransactionReceipt', async function () {
+    this.beforeEach(() => {
+      // @ts-ignore
+      ethImpl.cache.clear();
+    });
+
     it('returns `null` for non-existent hash', async function () {
       const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
       restMock.onGet(`contracts/results/${txHash}`).reply(404, {
@@ -3884,6 +3889,22 @@ describe('Eth', async function () {
       expect(receipt.root).to.eq(defaultReceipt.root);
       expect(receipt.status).to.eq(defaultReceipt.status);
       expect(receipt.effectiveGasPrice).to.eq(defaultReceipt.effectiveGasPrice);
+    });
+
+    it('valid receipt on match should hit cache', async function() {
+      restMock.onGet(`contracts/results/${defaultTxHash}`).replyOnce(200, defaultDetailedContractResultByHash);
+      restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).replyOnce(404);
+
+      for (let i = 0; i < 3; i++) {
+        const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+        expect(receipt).to.exist;
+        if (receipt == null) return;
+        expect(validateHash(receipt.transactionHash, 64)).to.eq(true);
+        expect(receipt.transactionHash).to.exist;
+        expect(receipt.to).to.eq(defaultReceipt.to);
+        expect(receipt.contractAddress).to.eq(defaultReceipt.contractAddress);
+        expect(receipt.logs).to.deep.eq(defaultReceipt.logs);
+      }
     });
 
     it('valid receipt with evm address on match', async function() {

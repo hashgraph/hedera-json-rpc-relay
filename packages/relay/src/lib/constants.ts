@@ -30,7 +30,8 @@ enum CACHE_KEY {
     GET_CONTRACT_RESULT = 'getContractResult',
     GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee',
     RESOLVE_ENTITY_TYPE = 'resolveEntityType',
-    ETH_GET_BLOCK_BY_HASH = 'eth_getBlockByHash'
+    ETH_GET_BLOCK_BY_HASH = 'eth_getBlockByHash',
+    ETH_GET_TRANSACTION_RECEIPT = 'eth_getTransactionReceipt'
 }
 
 enum CACHE_TTL {
