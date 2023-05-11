@@ -861,6 +861,8 @@ export class EthImpl implements Eth {
           this.cache.set(cachedLabel, EthImpl.emptyHex);
           return EthImpl.emptyHex;
         }
+
+        this.clientService.decrementErrorCounter();
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}, err code: ${e.statusCode}`);
       } else {
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}`);
@@ -1050,6 +1052,8 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
+      
+      this.clientService.decrementErrorCounter();
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
@@ -1109,6 +1113,8 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
+
+      this.clientService.decrementErrorCounter();
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
@@ -1238,6 +1244,8 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
+      
+      this.clientService.decrementErrorCounter();
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }

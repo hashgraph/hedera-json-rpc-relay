@@ -90,6 +90,6 @@ export default {
 
     // client configuration
     CLIENT_TRANSACTION_RESET: 400000,
-    CLIENT_DURATION_RESET: 21600, // 6 hours
+    CLIENT_DURATION_RESET: 21600000, // 6 hours
     CLIENT_ERROR_RESET: 100
 };

@@ -70,7 +70,7 @@ export default class ClientService {
     this.client = this.initSDKClient(logger, register);
 
     this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || constants.CLIENT_TRANSACTION_RESET;
-    this.resetDuration = parseInt(process.env.CLIENT_DURATION_RESET!) || constants.CLIENT_DURATION_RESET;
+    this.resetDuration = Date.now() + parseInt(process.env.CLIENT_DURATION_RESET!) || constants.CLIENT_DURATION_RESET;
     this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || constants.CLIENT_ERROR_RESET;
     this.shouldReset = false;
 
@@ -89,12 +89,28 @@ export default class ClientService {
   /**
    *  Decrement transaction counter. If 0 is reached, reset the client. Check also if resetDuration has been reached and reset the client, if yes.
    */
-  private decrementTransactionCounter() {}
+  private decrementTransactionCounter() {
+    this.transactionCount--;
+    if (this.transactionCount <= 0) {
+      this.shouldReset = true;
+    }
+  }
 
   /**
    *  Decrement error encountered counter. If 0 is reached, reset the client. Check also if resetDuration has been reached and reset the client, if yes.
    */
-  private decrementErrorCounter() {}
+  public decrementErrorCounter() {
+    this.errorCount--;
+    if (this.errorCount <= 0) {
+      this.shouldReset = true;
+    }
+  }
+
+  private checkResetDuration() {
+    if (this.resetDuration < Date.now()) {
+      this.shouldReset = true;
+    }
+  }
 
   /**
    * Reset the main client, SDK Client and reset all counters.
@@ -104,7 +120,11 @@ export default class ClientService {
       .labels(this.transactionCount.toString(), this.resetDuration.toString(), this.errorCount.toString())
       .inc(1);
 
-    // this.client = null;
+    const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
+    this.clientMain = this.initClient(this.logger, hederaNetwork);
+    this.client = this.initSDKClient(this.logger, this.register);
+
+    this.resetCounters();
   }
 
   /**
@@ -112,7 +132,7 @@ export default class ClientService {
    */
   private resetCounters() {
     this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || constants.CLIENT_TRANSACTION_RESET;
-    this.resetDuration = parseInt(process.env.CLIENT_DURATION_RESET!) || constants.CLIENT_DURATION_RESET;
+    this.resetDuration = Date.now() + parseInt(process.env.CLIENT_DURATION_RESET!) || constants.CLIENT_DURATION_RESET;
     this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || constants.CLIENT_ERROR_RESET;
 
     this.shouldReset = false;
@@ -131,10 +151,12 @@ export default class ClientService {
    * @returns SDK Client
    */
   public getSDKClient(): SDKClient {
-    // decrement transaction counter
-    // decrement duration
+    if (this.shouldReset) {
+      this.resetClient();
+    }
+    this.decrementTransactionCounter();
+    this.checkResetDuration();
 
-    //check error/transaction/duration and reset if needed
     return this.client;
   }
 

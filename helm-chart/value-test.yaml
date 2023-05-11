@@ -127,7 +127,7 @@ config:
   SUBSCRIPTIONS_ENABLED: false
   ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: false
   CLIENT_TRANSACTION_RESET: 400000
-  CLIENT_DURATION_RESET: 21600
+  CLIENT_DURATION_RESET: 21600000
   CLIENT_ERROR_RESET: 100
   
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
