@@ -39,6 +39,7 @@ export class RelayImpl implements Relay {
   };
 
   private readonly clientMain: Client;
+  private readonly mirrorNodeClient: MirrorNodeClient;
   private readonly web3Impl: Web3;
   private readonly netImpl: Net;
   private readonly ethImpl: Eth;
@@ -59,7 +60,7 @@ export class RelayImpl implements Relay {
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain, chainId);
 
-    const mirrorNodeClient = new MirrorNodeClient(
+    this.mirrorNodeClient = new MirrorNodeClient(
       process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
       register,
@@ -71,14 +72,14 @@ export class RelayImpl implements Relay {
 
     this.ethImpl = new EthImpl(
       sdkClient,
-      mirrorNodeClient,
+      this.mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId);
 
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
-      const poller = new Poller(this.ethImpl, logger);
-      this.subImpl = new SubscriptionController(poller, logger);
+      const poller = new Poller(this.ethImpl, logger, register);
+      this.subImpl = new SubscriptionController(poller, logger, register);
     }
 
     logger.info('Relay running with chainId=%s', chainId);
@@ -98,6 +99,10 @@ export class RelayImpl implements Relay {
 
   subs(): Subs | undefined {
     return this.subImpl;
+  }
+
+  mirrorClient(): MirrorNodeClient {
+    return this.mirrorNodeClient;
   }
 
   initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
