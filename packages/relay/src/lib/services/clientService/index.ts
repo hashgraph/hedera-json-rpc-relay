@@ -24,7 +24,6 @@ import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Registry, Counter } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
-import constants from '../../constants';
 
 export default class ClientService {
   private transactionCount: number;
@@ -211,7 +210,7 @@ export default class ClientService {
    * Return main client
    * @returns Main Client
    */
-  public getClient() {
+  public getMainClient() {
     return this.clientMain;
   }
 

@@ -26,9 +26,9 @@ import { NetImpl } from './net';
 import { EthImpl } from './eth';
 import { Poller } from './poller';
 import { SubscriptionController } from './subscriptionController';
-import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
+import { Client } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { MirrorNodeClient, SDKClient } from './clients';
+import { MirrorNodeClient } from './clients';
 import { Registry } from 'prom-client';
 import ClientService from './services/clientService';
 
@@ -56,7 +56,7 @@ export class RelayImpl implements Relay {
       process.env.CHAIN_ID || RelayImpl.chainIds[hederaNetwork] || '298';
     const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
     const clientService = new ClientService(logger, register);
-    this.clientMain = clientService.getClient();
+    this.clientMain = clientService.getMainClient();
 
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain, chainId);

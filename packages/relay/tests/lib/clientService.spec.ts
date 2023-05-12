@@ -47,7 +47,7 @@ describe.only('Client Service', async function () {
 
     it('should be able to initialize SDK instance', async function () {
         clientService = new ClientService(logger, registry);
-        const client = clientService.getClient();
+        const client = clientService.getMainClient();
         const sdkClient = clientService.getSDKClient();
 
         expect(client).to.be.instanceof(Client);
