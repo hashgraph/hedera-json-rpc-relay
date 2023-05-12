@@ -87,9 +87,4 @@ export default {
     TRANSACTION_ID_REGEX: /\d{1}\.\d{1}\.\d{1,10}\@\d{1,10}\.\d{1,9}/,
 
     LONG_ZERO_PREFIX: '0x000000000000',
-
-    // client configuration
-    CLIENT_TRANSACTION_RESET: 50,
-    CLIENT_DURATION_RESET: 3600000, // 1 hour
-    CLIENT_ERROR_RESET: 100
 };

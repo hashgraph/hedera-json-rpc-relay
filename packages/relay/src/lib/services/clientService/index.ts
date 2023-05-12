@@ -37,7 +37,7 @@ export default class ClientService {
   private clientMain: Client;
 
   /**
-   * The sdk client use for connecting to both the consensus nodes and mirror node. The account
+   * The SDK Client use for connecting to both the consensus nodes and mirror node. The account
    * associated with this client will pay for all operations on the main network.
    *
    * @private
@@ -71,15 +71,15 @@ export default class ClientService {
     this.clientMain = this.initClient(logger, hederaNetwork);
     this.client = this.initSDKClient(logger, register);
 
-    this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || constants.CLIENT_TRANSACTION_RESET;
-    this.resetDuration = Date.now() + parseInt(process.env.CLIENT_DURATION_RESET!) || constants.CLIENT_DURATION_RESET;
-    this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || constants.CLIENT_ERROR_RESET;
+    const currentDateNow = Date.now();
+    this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || 0;
+    this.resetDuration = currentDateNow + parseInt(process.env.CLIENT_DURATION_RESET!) || 0;
+    this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || 0;
+    this.isEnabled = true;
 
-    if (this.transactionCount === 0 && this.errorCount === 0 && this.resetDuration === 0) {
+    if (this.transactionCount === 0 && this.errorCount === 0 && this.resetDuration === currentDateNow) {
       this.isEnabled = false;
     }
-
-    this.isEnabled = true;
     this.shouldReset = false;
 
     this.register = register;
@@ -143,9 +143,9 @@ export default class ClientService {
    * Reset all counters with predefined configuration.
    */
   private resetCounters() {
-    this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || constants.CLIENT_TRANSACTION_RESET;
-    this.resetDuration = Date.now() + parseInt(process.env.CLIENT_DURATION_RESET!) || constants.CLIENT_DURATION_RESET;
-    this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || constants.CLIENT_ERROR_RESET;
+    this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || 0;
+    this.resetDuration = Date.now() + parseInt(process.env.CLIENT_DURATION_RESET!) || 0;
+    this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || 0;
 
     this.shouldReset = false;
   }
