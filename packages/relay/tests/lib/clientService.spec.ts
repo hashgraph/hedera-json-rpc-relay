@@ -36,9 +36,9 @@ describe('Client Service', async function () {
     let clientService: ClientService | null;
     
     this.beforeEach(() => {
-        process.env.CLIENT_TRANSACTION_RESET = "50";
-        process.env.CLIENT_DURATION_RESET = "36000";
-        process.env.CLIENT_ERROR_RESET = "100";
+        process.env.CLIENT_TRANSACTION_RESET = "0";
+        process.env.CLIENT_DURATION_RESET = "0";
+        process.env.CLIENT_ERROR_RESET = "0";
     })
 
     this.afterEach(() => {
@@ -96,6 +96,8 @@ describe('Client Service', async function () {
 
     it('should be able to reset all counter upon reinitialization of the SDK Client', async function () {
         process.env.CLIENT_ERROR_RESET = "1";
+        process.env.CLIENT_TRANSACTION_RESET = "50";
+        process.env.CLIENT_DURATION_RESET = "36000";
         clientService = new ClientService(logger, registry);
         expect(clientService.getErrorCount()).to.eq(parseInt(process.env.CLIENT_ERROR_RESET!));
 
