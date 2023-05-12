@@ -32,6 +32,7 @@ export default class ClientService {
   private shouldReset: boolean;
 
   private isEnabled: boolean;
+  private isTimeResetDisabled: boolean;
 
   private clientMain: Client;
 
@@ -75,8 +76,9 @@ export default class ClientService {
     this.resetDuration = currentDateNow + parseInt(process.env.CLIENT_DURATION_RESET!) || 0;
     this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || 0;
     this.isEnabled = true;
+    this.isTimeResetDisabled = this.resetDuration === currentDateNow;
 
-    if (this.transactionCount === 0 && this.errorCount === 0 && this.resetDuration === currentDateNow) {
+    if (this.transactionCount === 0 && this.errorCount === 0 && this.isTimeResetDisabled) {
       this.isEnabled = false;
     }
     this.shouldReset = false;
@@ -97,6 +99,10 @@ export default class ClientService {
    *  Decrement transaction counter. If 0 is reached, reset the client. Check also if resetDuration has been reached and reset the client, if yes.
    */
   private decrementTransactionCounter() {
+    if (this.transactionCount == 0) {
+      return;
+    }
+
     this.transactionCount--;
     if (this.transactionCount <= 0) {
       this.shouldReset = true;
@@ -107,7 +113,7 @@ export default class ClientService {
    *  Decrement error encountered counter. If 0 is reached, reset the client. Check also if resetDuration has been reached and reset the client, if yes.
    */
   public decrementErrorCounter() {
-    if (!this.isEnabled) {
+    if (!this.isEnabled || this.errorCount == 0) {
       return;
     }
 
@@ -118,6 +124,10 @@ export default class ClientService {
   }
 
   private checkResetDuration() {
+    if (this.isTimeResetDisabled) {
+      return;
+    }
+    
     if (this.resetDuration < Date.now()) {
       this.shouldReset = true;
     }
