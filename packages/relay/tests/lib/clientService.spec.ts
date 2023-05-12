@@ -31,7 +31,7 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const registry = new Registry();
 const logger = pino();
 
-describe.only('Client Service', async function () {
+describe('Client Service', async function () {
     this.timeout(20000);
     let clientService: ClientService | null;
     
