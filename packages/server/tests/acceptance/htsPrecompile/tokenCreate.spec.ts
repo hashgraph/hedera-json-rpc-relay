@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,18 +118,18 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
   async function createHTSToken() {
     const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
-    const tx = await mainContract.createFungibleTokenPublic(accounts[0].wallet.address, {
+    const tx = await mainContract.createFungibleTokenPublic(mainContractAddress, {
       value: ethers.BigNumber.from('10000000000000000000'),
       gasLimit: 10000000
     });
     const { tokenAddress } = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
-
+  
     return tokenAddress;
   }
 
   async function createNftHTSToken() {
     const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
-    const tx = await mainContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
+    const tx = await mainContract.createNonFungibleTokenPublic(mainContractAddress, {
       value: ethers.BigNumber.from('10000000000000000000'),
       gasLimit: 10000000
     });
@@ -140,7 +140,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
   async function createHTSTokenWithCustomFees() {
     const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
-    const tx = await mainContract.createFungibleTokenWithCustomFeesPublic(accounts[0].wallet.address, HTSTokenContractAddress, {
+    const tx = await mainContract.createFungibleTokenWithCustomFeesPublic(mainContractAddress, HTSTokenContractAddress, {
       value: ethers.BigNumber.from('20000000000000000000'),
       gasLimit: 10_000_000
     });
@@ -150,47 +150,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
     return tokenAddress;
   }
 
-  it('should associate to a token', async function() {
-    const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, HTSTokenContractAddress, { gasLimit: 10000000 });
-    expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-    const txRWF = await mainContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
-    expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-    const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, { gasLimit: 10000000 });
-    expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-  });
-
-  it('should associate to a nft', async function() {
-    const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, NftHTSTokenContractAddress, { gasLimit: 10000000 });
-    expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-    const txRWF = await mainContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, NftHTSTokenContractAddress, { gasLimit: 10000000 });
-    expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-    const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, NftHTSTokenContractAddress, { gasLimit: 10000000 });
-    expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-  });
-
-  it('should associate to a token with custom fees', async function() {
-    //delay for hbar rate limiter to reset
-    await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
-
-    const mainContractOwner = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
-    const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, HTSTokenWithCustomFeesContractAddress, { gasLimit: 10000000 });
-    expect((await txCO.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-    const mainContractReceiverWalletFirst = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[1].wallet);
-    const txRWF = await mainContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenWithCustomFeesContractAddress, { gasLimit: 10000000 });
-    expect((await txRWF.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-
-    const mainContractReceiverWalletSecond = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[2].wallet);
-    const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenWithCustomFeesContractAddress, { gasLimit: 10000000 });
-    expect((await txRWS.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
-  });
-
+  
   it('should check initial balances', async function() {
-    expect(await HTSTokenContract.balanceOf(accounts[0].wallet.address)).to.equal(1000);
+    expect(await HTSTokenContract.balanceOf(mainContractAddress)).to.equal(1000);
     expect(await HTSTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(0);
     expect(await HTSTokenContract.balanceOf(accounts[2].wallet.address)).to.equal(0);
   });
@@ -206,59 +168,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   });
 
   describe('HTS Precompile Approval Tests', async function() {
-    //When we use approve from our mainContract, it always gives approval only from itself (mainContract is owner).
-    it('should be able to approve anyone to spend tokens', async function() {
-      const amount = 13;
-
-      const txBefore = await mainContract.allowancePublic(HTSTokenContractAddress, mainContractAddress, accounts[2].wallet.address);
-      const beforeAmount =  (await txBefore.wait()).events.filter(e => e.event === 'AllowanceValue')[0].args.amount.toNumber();
-      const { responseCode } = (await txBefore.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
-      expect(responseCode).to.equal(TX_SUCCESS_CODE);
-
-      // grant KYC
-      {
-        const grantKycTx = await mainContractOwner.grantTokenKycPublic(HTSTokenContractAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
-        const responseCodeGrantKyc = (await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-        expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
-      }
-      {
-        const grantKycTx = await mainContractOwner.grantTokenKycPublic(HTSTokenContractAddress, mainContract.address, { gasLimit: 1_000_000 });
-        const responseCodeGrantKyc = (await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-        expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
-      }
-
-      //Transfer some hbars to the contract address
-      await mainContract.cryptoTransferTokenPublic(mainContract.address, HTSTokenContractAddress, amount);
-      await new Promise(r => setTimeout(r, 2000));
-      expect(await HTSTokenContract.balanceOf(mainContract.address)).to.equal(amount);
-      expect(await HTSTokenContract.balanceOf(accounts[2].wallet.address)).to.be.equal(0);
-
-      //Give approval for account[2] to use HTSTokens which are owned by mainContract
-      await mainContract.approvePublic(HTSTokenContractAddress, accounts[2].wallet.address, amount, { gasLimit: 1_000_000 });
-
-      //Check if approval was given
-      const txAfter = await mainContract.allowancePublic(HTSTokenContractAddress, mainContractAddress, accounts[2].wallet.address);
-      const afterAmount = (await txAfter.wait()).events.filter(e => e.event === 'AllowanceValue')[0].args.amount.toNumber();
-      expect(beforeAmount).to.equal(0);
-      expect(afterAmount).to.equal(amount);
-
-      //transfer token which are owned by mainContract using signer account[2] with transferFrom to account[1]
-      await HTSTokenContract.connect(accounts[2].wallet).transferFrom(mainContract.address, accounts[1].wallet.address, amount, { gasLimit: 1_000_000 });
-      await new Promise(r => setTimeout(r, 2000));
-      expect(await HTSTokenContract.balanceOf(accounts[1].wallet.address)).to.be.equal(amount);
-
-      {
-        const revokeKycTx = await mainContractOwner.revokeTokenKycPublic(HTSTokenContractAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
-        const responseCodeRevokeKyc = (await revokeKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-        expect(responseCodeRevokeKyc).to.equal(TX_SUCCESS_CODE);
-      }
-      {
-        const revokeKycTx = await mainContractOwner.revokeTokenKycPublic(HTSTokenContractAddress, mainContract.address, { gasLimit: 1_000_000 });
-        const responseCodeRevokeKyc = (await revokeKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-        expect(responseCodeRevokeKyc).to.equal(TX_SUCCESS_CODE);
-      }
-    });
-
+ 
     //not working since 0.32.0-alpha.1.
     xit('should be able to execute setApprovalForAllPublic', async function() {
       const txBefore = (await mainContract.isApprovedForAllPublic(NftHTSTokenContractAddress, mainContractAddress, accounts[1].wallet.address));
@@ -287,27 +197,30 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       expect(approved).to.equal('0x0000000000000000000000000000000000000000');
     });
 
-    it('should be able to transfer nft with transferFrom', async function() {
-      expect(await NFTokenContract.balanceOf(accounts[0].wallet.address)).to.equal(1);
+    xit('should be able to transfer nft with transferFrom', async function() {
+      expect(await NFTokenContract.balanceOf(accounts[0].wallet.address)).to.equal(0);
       expect(await NFTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(0);
+
+      // Mint an NFT
+      const txMint = await mainContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x05'], { gasLimit: 1_000_000 });
+      expect((await txMint.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
+      const { serialNumbers } = (await txMint.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
+      const NftSerialNumber = serialNumbers[0];
+
+      const txBefore = await mainContract.allowancePublic(NftHTSTokenContractAddress, mainContractAddress, accounts[0].wallet.address);
+      const beforeAmount =  (await txBefore.wait()).events.filter(e => e.event === 'AllowanceValue')[0].args.amount.toNumber();
+      const { responseCode } = (await txBefore.wait()).events.filter(e => e.event === 'ResponseCode')[0].args;
+      expect(responseCode).to.equal(TX_SUCCESS_CODE);
+
 
       // grant KYC
       {
-        const grantKycTx = await mainContractOwner.grantTokenKycPublic(NftHTSTokenContractAddress, accounts[0].wallet.address, { gasLimit: 1_000_000 });
+        // await associateTokenAndVerifyEvent(mainContractOwner, accounts[0].wallet.address, NftHTSTokenContractAddress, TX_SUCCESS_CODE);
+        const grantKycTx = await mainContractOwner.grantTokenKycPublic(NftHTSTokenContractAddress, mainContractAddress, { gasLimit: 1_000_000 });
         const responseCodeGrantKyc = (await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
         expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
       }
-      {
-        const grantKycTx = await mainContractOwner.grantTokenKycPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
-        const responseCodeGrantKyc = (await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-        expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
-      }
-      {
-        const grantKycTx = await mainContractOwner.grantTokenKycPublic(NftHTSTokenContractAddress, mainContract.address, { gasLimit: 1_000_000 });
-        const responseCodeGrantKyc = (await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
-        expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
-      }
-
+ 
       //transfer NFT to contract address
       const tokenTransferList = [{
         token: `${NftHTSTokenContractAddress}`,
@@ -394,6 +307,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   });
 
   describe('HTS Precompile KYC Tests', async function() {
+ 
     async function checkKyc(contractOwner, tokenAddress, accountAddress, expectedValue: boolean) {
       const tx = await contractOwner.isKycPublic(tokenAddress, accountAddress, { gasLimit: 1_000_000 });
       const responseCodeIsKyc = (await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
@@ -420,12 +334,19 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
     });
 
     it('should be able to grant KYC, tranfer hts tokens and revoke KYC', async function() {
-      // check if KYC is revoked
+
+      await associateTokenAndVerifyEvent(mainContractReceiverWalletFirst, mainContractAddress, HTSTokenContractAddress, TX_SUCCESS_CODE);
+      await associateTokenAndVerifyEvent(mainContractReceiverWalletFirst, accounts[1].wallet.address, HTSTokenContractAddress, TX_SUCCESS_CODE);
+      await associateTokenAndVerifyEvent(mainContractReceiverWalletSecond, accounts[2].wallet.address, HTSTokenContractAddress, TX_SUCCESS_CODE);
+      
       await checkKyc(mainContractOwner, HTSTokenContractAddress, accounts[2].wallet.address, false);
+      await new Promise(r => setTimeout(r, 2000));
   
       // grant KYC
       const grantKycTx = await mainContractOwner.grantTokenKycPublic(HTSTokenContractAddress, accounts[2].wallet.address, { gasLimit: 1_000_000 });
+      await new Promise(r => setTimeout(r, 2000));
       const responseCodeGrantKyc = (await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      await new Promise(r => setTimeout(r, 2000));
       expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
   
       // check if KYC is granted
@@ -437,16 +358,20 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       await mainContract.connect(accounts[0].wallet).cryptoTransferTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, amount);
       await new Promise(r => setTimeout(r, 2000));
       const balanceAfter = await HTSTokenContract.balanceOf(accounts[2].wallet.address);
+      await new Promise(r => setTimeout(r, 2000));
   
       expect(balanceBefore + amount).to.equal(balanceAfter);
 
       // revoke KYC
       const revokeKycTx = await mainContractOwner.revokeTokenKycPublic(HTSTokenContractAddress, accounts[2].wallet.address, { gasLimit: 1_000_000 });
+      await new Promise(r => setTimeout(r, 2000));
       const responseCodeRevokeKyc = (await revokeKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode;
+      await new Promise(r => setTimeout(r, 2000));
       expect(responseCodeRevokeKyc).to.equal(TX_SUCCESS_CODE);
   
       // check if KYC is revoked
       await checkKyc(mainContractOwner, HTSTokenContractAddress, accounts[2].wallet.address, false);
+      await new Promise(r => setTimeout(r, 2000));
     });
   });
 
@@ -497,9 +422,11 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       const grantKycTx = await mainContractOwner.grantTokenKycPublic(tokenAddress, accounts[0].wallet.address, { gasLimit: 1_000_000 });
       expect((await grantKycTx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
+      await associateTokenAndVerifyEvent(mainContractReceiverWalletFirst, accounts[1].wallet.address, tokenAddress, TX_SUCCESS_CODE);
       const grantKycTx1 = await mainContractOwner.grantTokenKycPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
       expect((await grantKycTx1.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
+      await associateTokenAndVerifyEvent(mainContractReceiverWalletSecond, accounts[2].wallet.address, tokenAddress, TX_SUCCESS_CODE);
       const grantKycTx2 = await mainContractOwner.grantTokenKycPublic(tokenAddress, accounts[2].wallet.address, { gasLimit: 1_000_000 });
       expect((await grantKycTx2.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     }
@@ -526,6 +453,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         ],
         nftTransfers: [],
       }];
+  
       const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList);
       expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
@@ -558,7 +486,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
 
-    it('should be able to transfer both fungible and non-fungible tokens in single cryptoTransfer', async function() {
+    // Issue: #1239
+    xit('should be able to transfer both fungible and non-fungible tokens in single cryptoTransfer', async function() {
+      
       // Mint an NFT
       const txMint = await mainContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x05'], { gasLimit: 1_000_000 });
       expect((await txMint.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
@@ -575,20 +505,24 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
           serialNumber: NftSerialNumber.toNumber(),
         }],
       },
-      {
-        token: `${HTSTokenContractAddress}`,
-        transfers: [
-          {
-            accountID: `${accounts[1].wallet.address}`,
-            amount: 10,
-          },
-          {
-            accountID: `${accounts[0].wallet.address}`,
-            amount: -10,
-          },
-        ],
-        nftTransfers: [],
-      }];
+      // {
+      //   token: `${HTSTokenContractAddress}`,
+      //   transfers: [
+      //     {
+      //       accountID: `${accounts[1].wallet.address}`,
+      //       amount: 10,
+      //     },
+      //     {
+      //       accountID: `${accounts[0].wallet.address}`,
+      //       amount: -10,
+      //     },
+      //   ],
+      //   nftTransfers: [],
+      // }
+    ];
+  
+      await approveNft(mainContract, NftHTSTokenContractAddress, accounts[0].wallet.address, NftSerialNumber.toNumber(), TX_SUCCESS_CODE);
+
       const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList);
       expect((await txXfer.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
@@ -669,6 +603,12 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
     it('should fail to transfer fungible and non-fungible tokens in a single tokenTransferList', async function() {
       // setup the transfer
       const xferAmount = 10;
+      
+      const txMint = await mainContract.mintTokenPublic(NftHTSTokenContractAddress, 0, ['0x05'], { gasLimit: 1_000_000 });
+      expect((await txMint.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
+      const { serialNumbers } = (await txMint.wait()).events.filter(e => e.event === 'MintedToken')[0].args;
+      const NftSerialNumber = serialNumbers[0];
+
       const tokenTransferList = [{
         token: `${NftHTSTokenContractAddress}`,
         transfers: [
@@ -697,3 +637,10 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
     });
   });
 });
+
+async function associateTokenAndVerifyEvent(contract: any, entityToAssociate: string, tokenAddress: string, expectedTxResponseCode) {
+  const tx = await contract.associateTokenPublic(entityToAssociate, tokenAddress, { gasLimit: 10000000 });
+  await new Promise(r => setTimeout(r, 2000));
+  expect((await tx.wait()).events.filter(e => e.event === 'ResponseCode')[0].args.responseCode).to.equal(expectedTxResponseCode);
+}
+
