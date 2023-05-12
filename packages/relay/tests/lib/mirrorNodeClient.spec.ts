@@ -55,6 +55,21 @@ describe('MirrorNodeClient', async function () {
     mock = new MockAdapter(instance);
   });
 
+  it('Can extract the account number out of an account pagination next link url', async () => {
+    const accountId = '0.0.123';
+    const url = `/api/v1/accounts/${accountId}?limit=100&timestamp=lt:1682455406.562695326`;
+    const extractedAccountId = mirrorNodeInstance.extractAccountIdFromUrl(url);
+    expect(extractedAccountId).to.eq(accountId);
+
+  });
+
+  it('Can extract the evm address out of an account pagination next link url', async () => {
+    const evmAddress = '0x583031d1113ad414f02576bd6afa5bbdf935b7d9';
+    const url = `/api/v1/accounts/${evmAddress}?limit=100&timestamp=lt:1682455406.562695326`;
+    const extractedEvmAddress = mirrorNodeInstance.extractAccountIdFromUrl(url);
+    expect(extractedEvmAddress).to.eq(evmAddress);
+  });
+
   it('it should have a `request` method ', async () => {
     expect(mirrorNodeInstance).to.exist;
     expect(mirrorNodeInstance.request).to.exist;
@@ -65,6 +80,22 @@ describe('MirrorNodeClient', async function () {
     const prodMirrorNodeInstance = new MirrorNodeClient(domain, logger.child({ name: `mirror-node` }), registry);
     expect(prodMirrorNodeInstance.restUrl).to.eq(`https://${domain}/api/v1/`);
   });
+
+  it('Can extract the account number out of an account pagination next link url', async () => {
+    const accountId = '0.0.123';
+    const url = `/api/v1/accounts/${accountId}?limit=100&timestamp=lt:1682455406.562695326`;
+    const extractedAccountId = mirrorNodeInstance.extractAccountIdFromUrl(url);
+    expect(extractedAccountId).to.eq(accountId);
+
+  });
+
+  it('Can extract the evm address out of an account pagination next link url', async () => {
+    const evmAddress = '0x583031d1113ad414f02576bd6afa5bbdf935b7d9';
+    const url = `/api/v1/accounts/${evmAddress}?limit=100&timestamp=lt:1682455406.562695326`;
+    const extractedEvmAddress = mirrorNodeInstance.extractAccountIdFromUrl(url);
+    expect(extractedEvmAddress).to.eq(evmAddress);
+  });
+
 
   it('`getQueryParams` general', async () => {
     const queryParams = {
@@ -618,6 +649,21 @@ describe('MirrorNodeClient', async function () {
     expect(result.number).equal(block.number);
   });
 
+  it('`getBlocks` should hit the cache', async () => {
+    const hash = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b';
+    mock.onGet(`blocks/${hash}`).replyOnce(200, {
+      'hash': '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b',
+      'number': 77
+    });
+
+    for (let i = 0; i < 3; i++) {
+      const result = await mirrorNodeInstance.getBlock(hash);
+      expect(result).to.exist;
+      expect(result.hash).equal(hash);
+      expect(result.number).equal(77);
+    }
+  });
+
   it('`getNetworkExchangeRate`', async () => {
     const exchangerate = {
       'current_rate': {
@@ -695,6 +741,31 @@ describe('MirrorNodeClient', async function () {
 
       const entityType = await mirrorNodeInstance.resolveEntityType(notFoundAddress);
       expect(entityType).to.be.null;
+    });
+
+    it('calls mirror node tokens API when token is long zero type', async() => {
+      mock.onGet(`contracts/${mockData.tokenId}`).reply(404, mockData.notFound);
+      mock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+
+      const entityType = await mirrorNodeInstance.resolveEntityType(mockData.tokenLongZero, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN]); 
+      expect(entityType).to.exist;
+      expect(entityType).to.have.property('type');
+      expect(entityType).to.have.property('entity');
+      expect(entityType.type).to.eq('token');
+      expect(entityType.entity.token_id).to.eq(mockData.tokenId);
+    });
+
+    it('does not call mirror node tokens API when token is not long zero type', async() => {
+      mock.onGet(`contracts/${mockData.contractEvmAddress}`).reply(200, mockData.contract);
+      mock.onGet(`tokens/${mockData.tokenId}`).reply(404, mockData.notFound);
+
+      const entityType = await mirrorNodeInstance.resolveEntityType(mockData.contractEvmAddress, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN]); 
+      expect(entityType).to.exist;
+      expect(entityType).to.have.property('type');
+      expect(entityType).to.have.property('entity');
+      expect(entityType.type).to.eq('contract');
+      expect(entityType.entity).to.have.property('contract_id');
+      expect(entityType.entity.contract_id).to.eq(mockData.contract.contract_id);
     });
   });
 

@@ -25,13 +25,13 @@ import Koa from 'koa';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import websockify from 'koa-websocket';
 import {Relay, RelayImpl, predefined, JsonRpcError} from '@hashgraph/json-rpc-relay';
-import { Registry } from 'prom-client';
+import {Registry, Counter} from 'prom-client';
 import pino from 'pino';
 
 import ConnectionLimiter from "./ConnectionLimiter";
 import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
-import {MirrorNodeClient} from "@hashgraph/json-rpc-relay/dist/lib/clients";
 import {EthSubscribeLogsParamsObject} from "@hashgraph/json-rpc-server/dist/validator";
+import KoaJsonRpc from "@hashgraph/json-rpc-server/dist/koaJsonRpc";
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -48,19 +48,31 @@ const mainLogger = pino({
 const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
-const limiter = new ConnectionLimiter(logger);
-const mirrorNodeClient = new MirrorNodeClient(
-    process.env.MIRROR_NODE_URL || '',
-    logger.child({ name: `mirror-node` }),
-    register,
-    undefined,
-    process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
-);
+const limiter = new ConnectionLimiter(logger, register);
+const mirrorNodeClient = relay.mirrorClient();
 
 const app = websockify(new Koa());
 
 const CHAIN_ID = relay.eth().chainId();
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
+
+const methodsCounterName = 'rpc_websocket_method_counter';
+register.removeSingleMetric(methodsCounterName);
+const methodsCounter = new Counter({
+    name: 'rpc_websocket_method_counter',
+    help: 'Relay websocket total methods called',
+    labelNames: ['method'],
+    registers: [register]
+});
+
+const methodsCounterByIpName = 'rpc_websocket_method_by_ip_counter';
+register.removeSingleMetric(methodsCounterByIpName);
+const methodsCounterByIp = new Counter({
+    name: methodsCounterByIpName,
+    help: 'Relay websocket methods called by ip',
+    labelNames: ['ip', 'method'],
+    registers: [register]
+});
 
 async function handleConnectionClose(ctx) {
     relay.subs()?.unsubscribe(ctx.websocket);
@@ -75,7 +87,7 @@ function getMultipleAddressesEnabled() {
 }
 
 async function validateIsContractAddress(address, requestId) {
-    const isContract = await mirrorNodeClient.resolveEntityType(address, requestId, [constants.TYPE_CONTRACT]);
+    const isContract = await mirrorNodeClient.resolveEntityType(address, [constants.TYPE_CONTRACT], requestId);
     if (!isContract) {
         throw new JsonRpcError(predefined.INVALID_PARAMETER(`filters.address`, `${address} is not a valid contract type or does not exists`), requestId);
     }
@@ -130,6 +142,9 @@ app.ws.use(async (ctx) => {
         let response;
 
         logger.debug(`Received message from ${ctx.websocket.id}. Method: ${method}. Params: ${params}`);
+
+        methodsCounter.labels(method).inc();
+        methodsCounterByIp.labels(ctx.request.ip, method).inc();
 
         if (method === 'eth_subscribe') {
             if (limiter.validateSubscriptionLimit(ctx)) {
@@ -195,4 +210,48 @@ app.ws.use(async (ctx) => {
     });
 });
 
-export default app;
+const httpApp = (new KoaJsonRpc(logger, register)).getKoaApp();
+
+httpApp.use(async (ctx, next) => {
+    /**
+     * prometheus metrics exposure
+     */
+    if (ctx.url === '/metrics') {
+        ctx.status = 200;
+        ctx.body = await register.metrics();
+    }
+
+    /**
+     * liveness endpoint
+     */
+    else if (ctx.url === '/health/liveness') {
+        ctx.status = 200;
+    }
+
+    /**
+     * readiness endpoint
+     */
+    else if (ctx.url === '/health/readiness') {
+        try {
+            const result = relay.eth().chainId();
+            if (result.indexOf('0x12') >= 0) {
+                ctx.status = 200;
+                ctx.body = 'OK';
+            } else {
+                ctx.body = 'DOWN';
+                ctx.status = 503; // UNAVAILABLE
+            }
+        } catch (e) {
+            logger.error(e);
+            throw e;
+        }
+    }
+    else {
+        return next();
+    }
+});
+
+export {
+    app,
+    httpApp
+};

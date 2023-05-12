@@ -88,7 +88,6 @@ describe('RPC Server', async function() {
         'method': 'eth_getTransactionByHash',
         'params': ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7237170ae5e5e7957eb6392']
       });
-      Assertions.expectedError();
     } catch (error) {
       expect(error.message).to.equal('Request failed with status code 500');
     }
@@ -1723,6 +1722,8 @@ class BaseTest {
   }
 
   static defaultResponseChecks(response) {
+    expect(response.status).to.eq(200);
+    expect(response.statusText).to.eq('OK');
     expect(response, "Default response: Should have 'data' property").to.have.property('data');
     expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
     expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');

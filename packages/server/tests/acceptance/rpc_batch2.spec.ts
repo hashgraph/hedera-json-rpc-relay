@@ -129,7 +129,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
             it('@release should execute "eth_estimateGas" for existing account', async function() {
                 const res = await relay.call('eth_estimateGas', [{
-                    to: mirrorSecondaryAccount.evm_address
+                    to: mirrorSecondaryAccount.evm_address,
+                    value: '0x1',
                 }], requestId);
                 expect(res).to.contain('0x');
                 expect(res).to.equal(EthImpl.gasTxBaseCost);
@@ -138,7 +139,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             it('@release should execute "eth_estimateGas" hollow account creation', async function() {
                 const hollowAccount = ethers.Wallet.createRandom();
                 const res = await relay.call('eth_estimateGas', [{
-                    to: hollowAccount.address
+                    to: hollowAccount.address,
+                    value: '0x1',
                 }], requestId);
                 expect(res).to.contain('0x');
                 expect(res).to.equal(EthImpl.gasTxHollowAccountCreation);
@@ -556,6 +558,18 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 const alias = Utils.idToEvmAddress(accounts[2].accountId.toString());
                 const res = await relay.call('eth_getCode', [alias, 'latest'], requestId);
                 expect(res).to.eq(EthImpl.emptyHex);
+            });
+
+            it('should not return contract bytecode after sefldestruct', async function() {
+                const evmAddress = basicContract.contractId.toSolidityAddress();
+                const bytecodeBefore = await relay.call('eth_getCode', [`0x${evmAddress}`, 'latest'], requestId);
+
+                (await accounts[0].client
+                  .executeContractCall(basicContract.contractId, 'destroy', new ContractFunctionParameters(), 1_000_000));
+
+                const bytecodeAfter = await relay.call('eth_getCode', [`0x${evmAddress}`, 'latest'], requestId);
+                expect(bytecodeAfter).to.not.eq(bytecodeBefore);
+                expect(bytecodeAfter).to.eq('0x');
             });
         });
 
