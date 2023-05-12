@@ -32,6 +32,8 @@ export default class ClientService {
   private resetDuration: number;
   private shouldReset: boolean;
 
+  private isEnabled: boolean;
+
   private clientMain: Client;
 
   /**
@@ -72,6 +74,12 @@ export default class ClientService {
     this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || constants.CLIENT_TRANSACTION_RESET;
     this.resetDuration = Date.now() + parseInt(process.env.CLIENT_DURATION_RESET!) || constants.CLIENT_DURATION_RESET;
     this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || constants.CLIENT_ERROR_RESET;
+
+    if (this.transactionCount === 0 && this.errorCount === 0 && this.resetDuration === 0) {
+      this.isEnabled = false;
+    }
+
+    this.isEnabled = true;
     this.shouldReset = false;
 
     this.register = register;
@@ -100,6 +108,10 @@ export default class ClientService {
    *  Decrement error encountered counter. If 0 is reached, reset the client. Check also if resetDuration has been reached and reset the client, if yes.
    */
   public decrementErrorCounter() {
+    if (!this.isEnabled) {
+      return;
+    }
+
     this.errorCount--;
     if (this.errorCount <= 0) {
       this.shouldReset = true;
@@ -136,28 +148,6 @@ export default class ClientService {
     this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || constants.CLIENT_ERROR_RESET;
 
     this.shouldReset = false;
-  }
-
-  /**
-   * Return main client
-   * @returns Main Client
-   */
-  public getClient() {
-    return this.clientMain;
-  }
-
-  /**
-   * Return configured sdk client
-   * @returns SDK Client
-   */
-  public getSDKClient(): SDKClient {
-    if (this.shouldReset) {
-      this.resetClient();
-    }
-    this.decrementTransactionCounter();
-    this.checkResetDuration();
-
-    return this.client;
   }
 
   /**
@@ -215,5 +205,63 @@ export default class ClientService {
     );
 
     return client;
+  }
+
+  /**
+   * Return main client
+   * @returns Main Client
+   */
+  public getClient() {
+    return this.clientMain;
+  }
+
+  /**
+   * Return configured sdk client
+   * @returns SDK Client
+   */
+  public getSDKClient(): SDKClient {
+    if (!this.isEnabled) {
+      return this.client;
+    }
+
+    if (this.shouldReset) {
+      this.logger.warn(`SDK Client reinitialization.`);
+      this.resetClient();
+    }
+    this.decrementTransactionCounter();
+    this.checkResetDuration();
+
+    return this.client;
+  }
+
+  /**
+   * Return true if reinitialization feature is enabled.
+   * @returns isEnabled boolean
+   */
+  public getIsEnabled() {
+    return this.isEnabled;
+  }
+
+  /**
+   * Return transaction count with current sdk instance.
+   * @returns transactionCount
+   */
+  public getTransactionCount() {
+    return this.transactionCount;
+  }
+
+  /**
+   * Return error count with current sdk instance.
+   * @returns errorCount
+   */
+  public getErrorCount() {
+    return this.errorCount;
+  }
+
+  /**
+   * Return time until reset of the current sdk instance.
+   */
+  public getTimeUntilReset() {
+    return this.resetDuration - Date.now();
   }
 }

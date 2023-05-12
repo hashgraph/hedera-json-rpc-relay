@@ -3207,7 +3207,6 @@ describe('Eth calls using MirrorNode', async function () {
         await new Promise(r => setTimeout(r, 50));
       }
 
-      sinon.resetBehavior();
       await new Promise(r => setTimeout(r, 200));
       try {
         await ethImpl.call({
