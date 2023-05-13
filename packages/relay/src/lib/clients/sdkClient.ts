@@ -88,7 +88,7 @@ export class SDKClient {
      * LRU cache container.
      * @private
      */
-    private readonly cache;
+    private readonly cache: ClientCache;
 
     private consensusNodeClientHistogramCost;
     private consensusNodeClientHistogramGasFee;

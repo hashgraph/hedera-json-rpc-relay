@@ -134,6 +134,7 @@ export class MirrorNodeClient {
 
     private mirrorResponseHistogram;
     private operatorAccountGauge;
+    private operatorAccount;
 
     private readonly cache: ClientCache;
     static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;   
@@ -241,6 +242,12 @@ export class MirrorNodeClient {
             buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000] // ms (milliseconds)
         });
 
+        this.operatorAccount = process.env.OPERATOR_ID_MAIN?.trim() || '0.0.relayer';
+        const operatororBalanceCollect = async () => {
+            const account = await this.getAccount(this.operatorAccount);
+            this.operatorAccountGauge.labels({ 'accountId': this.operatorAccount }).set(account.balance.balance);
+        };
+
         const metricGaugeName = 'rpc_relay_operator_balance';
         register.removeSingleMetric(metricGaugeName);
         this.operatorAccountGauge = new Gauge({
@@ -249,15 +256,7 @@ export class MirrorNodeClient {
             labelNames: ['mode', 'type', 'accountId'],
             registers: [register],
             async collect() {
-                // Invoked when the registry collects its metrics' values.
-                // Allows for updated account balance tracking
-                try {
-                    // const accountBalance = await getAcc;
-                    // this.labels({ 'accountId': '0.0.902' })
-                    //     .set(accountBalance.hbars.toTinybars().toNumber());
-                } catch (e: any) {
-                    logger.error(e, `Error collecting operator balance. Skipping balance set`);
-                }
+                operatororBalanceCollect();
             },
         });
 
