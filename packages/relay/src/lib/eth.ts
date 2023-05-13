@@ -24,7 +24,7 @@ import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import {BigNumber as BN} from "bignumber.js";
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
-import { MirrorNodeClient } from './clients';
+import { ClientCache, MirrorNodeClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
@@ -125,7 +125,7 @@ export class EthImpl implements Eth {
    *
    * @private
    */
-  private readonly cache;
+  private readonly cache: ClientCache;
 
   /**
    * The client service which is responsible for client all logic related to initialization, reinitialization and error/transactions tracking.
@@ -177,15 +177,14 @@ export class EthImpl implements Eth {
     logger: Logger,
     chain: string,
     registry: Registry,
-    cache?
+    clientCache?
   ) {
     this.hapiService = hapiService;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
     this.precheck = new Precheck(mirrorNodeClient, this.hapiService, logger, chain);
-    this.cache = cache;
-    if (!cache) this.cache = new LRU(this.options);
+    this.cache = clientCache;
 
     this.ethExecutionsCounter = this.initEthExecutionCounter(registry);
   }

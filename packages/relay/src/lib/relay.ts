@@ -79,7 +79,8 @@ export class RelayImpl implements Relay {
       this.mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId,
-      register,);
+      register,
+      this.clientCache);
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
       const poller = new Poller(this.ethImpl, logger, register);
