@@ -903,9 +903,17 @@ export class EthImpl implements Eth {
   async getBlockByHash(hash: string, showDetails: boolean, requestId?: string): Promise<Block | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
-    return this.getBlock(hash, showDetails, requestId).catch((e: any) => {
-      throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-    });
+
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_HASH}_${hash}_${showDetails}`;
+    let block = this.cache.get(cacheKey);
+    if (!block) {
+      block = await this.getBlock(hash, showDetails, requestId).catch((e: any) => {
+        throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
+      });
+      this.cache.set(cacheKey, block);
+    }
+
+    return block;
   }
 
   /**

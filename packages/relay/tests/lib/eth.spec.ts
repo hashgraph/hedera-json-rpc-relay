@@ -975,6 +975,23 @@ describe('Eth calls using MirrorNode', async function () {
     verifyBlockConstants(result);
   });
 
+  it('eth_getBlockByHash should hit cache', async function() {
+    restMock.onGet(`blocks/${blockHash}`).replyOnce(200, defaultBlock);
+    restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).replyOnce(200, defaultContractResults);
+    restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).replyOnce(200, defaultDetailedContractResults);
+    restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).replyOnce(200, defaultDetailedContractResults);
+    restMock.onGet('network/fees').replyOnce(200, defaultNetworkFees);
+
+    for (let i = 0; i < 3; i++) {
+      const result = await ethImpl.getBlockByHash(blockHash, false);
+      expect(result).to.exist;
+      if (result == null) return;
+      expect(result.hash).equal(blockHashTrimmed);
+      expect(result.number).equal(blockNumberHex);
+      verifyBlockConstants(result);
+    }
+  });
+
   it('eth_getBlockByHash with match and details', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
