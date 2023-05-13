@@ -60,7 +60,7 @@ import {
 import pino from 'pino';
 import { Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
-import { SDKClient } from '../../src/lib/clients';
+import { ClientCache, SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
@@ -80,10 +80,10 @@ let restMock: MockAdapter, web3Mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
 let sdkClientStub;
-let cache;
 let mirrorNodeCache;
 let defaultLogs, defaultDetailedContractResults2, defaultDetailedContractResults3;
 
+let clientCache;
 
 describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
@@ -93,8 +93,9 @@ describe('Eth calls using MirrorNode', async function () {
   const ethFeeHistoryValue = process.env.ETH_FEE_HISTORY_FIXED || 'true';
 
   this.beforeAll(() => {
+    const clientCache = new ClientCache(logger.child({ name: `cache` }), registry,);
     // @ts-ignore
-    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry);
+    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache);
 
     // @ts-ignore
     mirrorNodeCache = mirrorNodeInstance.cache;
@@ -113,15 +114,10 @@ describe('Eth calls using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkClientStub);
 
-    cache = new LRU({
-      max: constants.CACHE_MAX,
-      ttl: constants.CACHE_TTL.ONE_HOUR
-    });
-
     process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
     // @ts-ignore
-    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cache);
+    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
   });
 
   this.afterAll(() => {
@@ -131,7 +127,7 @@ describe('Eth calls using MirrorNode', async function () {
   this.beforeEach(() => {
     // reset cache and restMock
     mirrorNodeCache.clear();
-    cache.clear();
+    clientCache.clear();
     restMock.reset();
   });
 
@@ -477,7 +473,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(blockNumber2).to.be.eq(blockNumber);
 
     // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
-    cache.clear();
+    clientCache.clear();
     // Third call should return new number using mirror node
     const newBlockNumber = 7;
     restMock.onGet('blocks?limit=1&order=desc').reply(200, {
@@ -1399,7 +1395,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
       // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
-      cache.clear();
+      clientCache.clear();
 
       const resBalanceNew = await ethImpl.getBalance(contractAddress1, null);
       expect(newBalanceHex).to.equal(resBalanceNew);

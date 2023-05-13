@@ -33,7 +33,7 @@ import { RelayImpl } from '../../src/lib/relay';
 import { Registry } from 'prom-client';
 
 import { EthImpl } from '../../src/lib/eth';
-import { SDKClient } from '../../src/lib/clients';
+import { ClientCache, SDKClient } from '../../src/lib/clients';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 import openRpcSchema from "../../../../docs/openrpc.json";
@@ -110,8 +110,9 @@ describe("Open RPC Specification", function () {
 
         // @ts-ignore
         mock = new MockAdapter(instance, { onNoMatch: "throwException" });
+        const clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
         // @ts-ignore
-        mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
+        mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache, instance);
         const duration = constants.HBAR_RATE_LIMIT_DURATION;
         const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
@@ -120,7 +121,7 @@ describe("Open RPC Specification", function () {
         sdkClientStub = sinon.createStubInstance(SDKClient);
         sinon.stub(clientServiceInstance, "getSDKClient").returns(sdkClientStub);
         // @ts-ignore
-        ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a', registry);
+        ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
 
         // mocked data
         mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });

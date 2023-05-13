@@ -24,13 +24,13 @@ import { expect } from 'chai';
 import sinon from 'sinon';
 import { Registry } from 'prom-client';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-import {SDKClient} from '../../src/lib/clients/sdkClient';
 const registry = new Registry();
 import pino from 'pino';
 import {AccountId, Client, ContractCallQuery, PrivateKey, TransactionId, Hbar, Status} from "@hashgraph/sdk";
 const logger = pino();
 import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
+import { ClientCache, SDKClient } from '../../src/lib/clients';
 
 describe('SdkClient', async function () {
     this.timeout(20000);
@@ -45,7 +45,7 @@ describe('SdkClient', async function () {
         const duration = constants.HBAR_RATE_LIMIT_DURATION;
         const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-        sdkClient = new SDKClient(client, logger.child({ name: `consensus-node` }), hbarLimiter, { costHistogram: undefined, gasHistogram: undefined });
+        sdkClient = new SDKClient(client, logger.child({ name: `consensus-node` }), hbarLimiter, { costHistogram: undefined, gasHistogram: undefined }, new ClientCache(logger.child({ name: `cache` }), registry));
     })
 
     describe('increaseCostAndRetryExecution', async () => {
