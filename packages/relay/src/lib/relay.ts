@@ -29,7 +29,7 @@ import { Poller } from './poller';
 import { SubscriptionController } from './subscriptionController';
 import { Client } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { MirrorNodeClient } from './clients';
+import { ClientCache, MirrorNodeClient } from './clients';
 import { Gauge, Registry } from 'prom-client';
 import HAPIService from './services/hapiService/hapiService';
 import constants from './constants';
@@ -42,6 +42,7 @@ export class RelayImpl implements Relay {
   private readonly netImpl: Net;
   private readonly ethImpl: Eth;
   private readonly subImpl?: Subs;
+  private readonly clientCache: ClientCache;
 
   constructor(logger: Logger, register: Registry) {
     logger.info('Configurations successfully loaded');
@@ -62,12 +63,15 @@ export class RelayImpl implements Relay {
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain, chainId);
 
+    this.clientCache = new ClientCache(logger.child({ name: 'client-cache' }), register);
+
     this.mirrorNodeClient = new MirrorNodeClient(
       process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
       register,
+      this.clientCache,
       undefined,
-      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
+      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || ''
     );
 
     this.ethImpl = new EthImpl(
