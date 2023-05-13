@@ -15,11 +15,12 @@ apiVersion: extensions/v1beta1
 {{- end }}
 kind: Ingress
 metadata:
-  name: {{ $fullName }}
   labels:
     app: {{ template "hedera-json-rpc-relay.name" . }}
     {{- include "json-rpc-relay.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
+  name: {{ $fullName }}
+  namespace: {{ include "json-rpc-relay.namespace" . }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
