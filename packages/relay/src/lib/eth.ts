@@ -413,8 +413,7 @@ export class EthImpl implements Eth {
     if (Array.isArray(blocks) && blocks.length > 0) {
       const currentBlock = EthImpl.numberTo0x(blocks[0].number);
       // save the latest block number in cache
-      this.cache.set(cacheKey, currentBlock, { ttl: this.ethBlockNumberCacheTtlMs });
-      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(currentBlock)} for ${this.ethBlockNumberCacheTtlMs} ms`);
+      this.cache.set(cacheKey, currentBlock,this.ethBlockNumberCacheTtlMs);
 
       return currentBlock;
     }
@@ -438,12 +437,7 @@ export class EthImpl implements Eth {
       const timestamp = blocks[0].timestamp.to;
       const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp };
       // save the latest block number in cache
-      this.cache.set(cacheKey, currentBlock, { ttl: this.ethBlockNumberCacheTtlMs });
-      this.logger.trace(
-        `${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(currentBlock)}:${JSON.stringify(timestamp)} for ${
-          this.ethBlockNumberCacheTtlMs
-        } ms`
-      );
+      this.cache.set(cacheKey, currentBlock, this.ethBlockNumberCacheTtlMs);
 
       return blockTimeStamp;
     }
@@ -535,8 +529,7 @@ export class EthImpl implements Eth {
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestId);
         // fees should not change so often we are safe with 1 day instead of 1 hour
-        this.logger.trace(`${requestIdPrefix} caching ${constants.CACHE_KEY.GAS_PRICE}:${gasPrice} for ${constants.CACHE_TTL.ONE_DAY} ms`);
-        this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, {ttl: constants.CACHE_TTL.ONE_DAY});
+        this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_DAY);
       }
 
       return EthImpl.numberTo0x(gasPrice);
@@ -847,10 +840,7 @@ export class EthImpl implements Eth {
       }
 
       // save in cache the current balance for the account and blockNumberOrTag
-      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), { ttl: this.ethGetBalanceCacheTtlMs });
-      this.logger.trace(
-        `${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(cachedBalance)} for ${this.ethGetBalanceCacheTtlMs} ms`
-      );
+      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), this.ethGetBalanceCacheTtlMs);
 
       return EthImpl.numberTo0x(weibars);
     } catch (error: any) {
@@ -1104,8 +1094,7 @@ export class EthImpl implements Eth {
     }
 
     const cacheTtl = blockNumOrTag === EthImpl.blockEarliest || !isNaN(blockNum) ? constants.CACHE_TTL.ONE_DAY : this.ethGetTransactionCountCacheTtl; // cache historical values longer as they don't change
-    this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${nonceCount} for ${cacheTtl} ms`);
-    this.cache.set(cacheKey, nonceCount, { ttl: cacheTtl }); 
+    this.cache.set(cacheKey, nonceCount, cacheTtl); 
 
     return nonceCount;
   }
@@ -1327,7 +1316,7 @@ export class EthImpl implements Eth {
       if (contractCallResponse) {
         const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
-        this.cache.set(cacheKey, formattedCallReponse, { ttl: this.ethCallCacheTtl });
+        this.cache.set(cacheKey, formattedCallReponse, this.ethCallCacheTtl);
         return formattedCallReponse;
       }
 
