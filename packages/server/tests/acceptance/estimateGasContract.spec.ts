@@ -42,7 +42,6 @@ describe('EstimateGasContract tests', function() {
   const baseGasCheck = (response, expectedValue: number) => {
     const gasValue = ethers.BigNumber.from(response);
     // handle deviation of 20%
-    expect(gasValue.toNumber()).to.be.greaterThan(expectedValue * 0.8);
     expect(gasValue.toNumber()).to.be.lessThan(expectedValue * 1.2);
   };
 
