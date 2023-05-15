@@ -31,7 +31,7 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const registry = new Registry();
 const logger = pino();
 
-describe.only('HAPI Service', async function () {
+describe('HAPI Service', async function () {
     this.timeout(20000);
     let hapiService: HAPIService | null;
     const errorStatus = 50;
@@ -106,10 +106,10 @@ describe.only('HAPI Service', async function () {
         hapiService.decrementErrorCounter(errorStatus);
         const newSDKInstance = hapiService.getSDKClient();
 
-        expect(oldSDKInstance).to.not.be.equal(newSDKInstance);
+        expect(hapiService.getTimeUntilReset()).to.eq(parseInt(process.env.HAPI_CLIENT_DURATION_RESET!));
         expect(hapiService.getErrorCodes()[0]).to.eq(JSON.parse(process.env.HAPI_CLIENT_ERROR_RESET!)[0]);
         expect(hapiService.getTransactionCount()).to.eq(parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!) - 1); // one less because we took the instance once and decreased the counter
-        expect(hapiService.getTimeUntilReset()).to.eq(parseInt(process.env.HAPI_CLIENT_DURATION_RESET!));
+        expect(oldSDKInstance).to.not.be.equal(newSDKInstance);
     });
 
     it('should not be able to reinitialise and decrement counters, if it is disabled', async function () {
