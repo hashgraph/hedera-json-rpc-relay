@@ -133,7 +133,7 @@ describe('EstimateGasContract tests', function() {
       to: Utils.add0xPrefix(contract.address),
       from: Utils.add0xPrefix(signers[0].address)
     }]);
-    baseGasCheck(estimateGasResponse, 0x5208);
+    baseGasCheck(estimateGasResponse, 0x61A80);
   });
   it('#016 "data" from request body with wrong encoded parameter', async function() {
     const estimateGasResponse = await relay.call('eth_estimateGas', [{
@@ -141,7 +141,7 @@ describe('EstimateGasContract tests', function() {
       to: Utils.add0xPrefix(contract.address),
       from: Utils.add0xPrefix(signers[0].address)
     }]);
-    baseGasCheck(estimateGasResponse, 0x5208);
+    baseGasCheck(estimateGasResponse, 0x61A80);
   });
   it('#017 non existing "from" from request body', async function() {
     const estimateGasResponse = await relay.call('eth_estimateGas', [{
@@ -157,7 +157,7 @@ describe('EstimateGasContract tests', function() {
       to: randomAddress,
       from: Utils.add0xPrefix(signers[0].address)
     }]);
-    baseGasCheck(estimateGasResponse, 0x5208);
+    baseGasCheck(estimateGasResponse, 0x61A80);
   });
   it('#019 Function that makes a call to a method to invalid smart contract', async function() {
     const tx = await contract.populateTransaction.callToInvalidContract(randomAddress);
