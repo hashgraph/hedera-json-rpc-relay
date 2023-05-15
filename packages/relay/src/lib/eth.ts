@@ -436,7 +436,7 @@ export class EthImpl implements Eth {
         ...transaction,
         estimate: true
       }, requestId);
-      if (contractCallResponse && contractCallResponse.result) {
+      if (contractCallResponse?.result) {
         return EthImpl.prepend0x(contractCallResponse.result);
       }
       return EthImpl.gasTxBaseCost;

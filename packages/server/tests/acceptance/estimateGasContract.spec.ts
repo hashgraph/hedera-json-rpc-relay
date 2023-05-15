@@ -30,14 +30,6 @@ describe('EstimateGasContract tests', function() {
   let randomAddress: string;
   const { servicesNode, relay }: any = global;
 
-  const add0xPrefix = (num) => {
-    return num.startsWith('0x') ? num : '0x' + num;
-  };
-
-  const estimateGasCall = async (body = {}) => {
-    return await relay.call('eth_estimateGas', [body]);
-  };
-
   before(async function() {
     signers[0] = await servicesNode.createAliasAccount(15, null, Utils.generateRequestId());
 
@@ -47,137 +39,144 @@ describe('EstimateGasContract tests', function() {
     randomAddress = (ethers.Wallet.createRandom()).address;
   });
 
-  const baseGasCheck = (response) => {
+  const baseGasCheck = (response, expectedValue: number) => {
     const gasValue = ethers.BigNumber.from(response);
-    expect(gasValue.toNumber()).to.be.greaterThan(0);
+    // handle deviation of 20%
+    expect(gasValue.toNumber()).to.be.greaterThan(expectedValue * 0.8);
+    expect(gasValue.toNumber()).to.be.lessThan(expectedValue * 1.2);
   };
 
-  const expectRevert = (response) => {
-    expect(response).to.haveOwnProperty('_status');
-    expect(response._status).to.haveOwnProperty('messages');
-    expect(response._status.messages).to.not.be.empty;
-  };
+  const basicTests = [
+    {
+      name: '#001 Pure function without arguments that multiplies two numbers',
+      functionName: 'pureMultiply',
+      expectedGas: 0x567d
+    },
+    {
+      name: '#002 Function with msg.send (address)',
+      functionName: 'msgSender',
+      expectedGas: 0x56d2
+    },
+    {
+      name: '#003 Function with tx.origin (address)',
+      functionName: 'txOrigin',
+      expectedGas: 0x56d1
+    },
+    {
+      name: '#004 Function with msg.value (uint)',
+      functionName: 'msgValue',
+      expectedGas: 0x566d
+    },
+    {
+      name: '#005 Function with msg.sig (bytes4)',
+      functionName: 'msgSig',
+      expectedGas: 0x56ac
+    },
+    {
+      name: '#010 Function that makes a static call to a method from a different contract (test STATICCALL op code)',
+      functionName: 'staticCallToContract',
+      expectedGas: 0x6ad7
+    },
+    {
+      name: '#011 Function that makes a delegate call to a method from a different contract (test DELEGATECALL op code)',
+      functionName: 'delegateCallToContract',
+      expectedGas: 0x6aab
+    },
+    {
+      name: '#012 Function that makes a call code to a method from a different contract (test CALLCODE op code)',
+      functionName: 'callCodeToContract',
+      expectedGas: 0x6aaf
+    },
+    {
+      name: '#013 Function that perfroms LOG0, LOG1, LOG2, LOG3, LOG4 operations (test those op code)',
+      functionName: 'logs',
+      expectedGas: 0x69cb
+    },
+    {
+      name: '#014 Function that performs self destruct (test SELFDESCTRUCT op code)',
+      functionName: 'destroy',
+      expectedGas: 0x69cb
+    }
+  ];
 
-  it('#001 Pure function without arguments that multiplies two numbers', async function() {
-    const tx = await contract.populateTransaction.pureMultiply();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
-  });
-  it('#002 Function with msg.send (address)', async function() {
-    const tx = await contract.populateTransaction.msgSender();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
-  });
-  it('#003 Function with tx.origin (address)', async function() {
-    const tx = await contract.populateTransaction.txOrigin();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
-  });
-  it('#004 Function with msg.value (uint)', async function() {
-    const tx = await contract.populateTransaction.msgValue();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
-  });
-  it('#005 Function with msg.sig (bytes4)', async function() {
-    const tx = await contract.populateTransaction.msgSig();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
-  });
+  for (const test of basicTests) {
+    it(test.name, async function() {
+      baseGasCheck(await relay.call('eth_estimateGas', [
+        contract.populateTransaction[test.functionName]()
+      ]), test.expectedGas);
+    });
+  }
+
   it('#006 Function with .balance (uint256)', async function() {
     const tx = await contract.populateTransaction.addressBalance(signers[0].address);
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x57ac);
   });
   it('#007 Function that accepts an argument and change contract slot information by updating global contract field with the passed argument', async function() {
     const tx = await contract.populateTransaction.updateCounter(5644);
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x6a4e);
   });
   it('#008 Function that successfully deploys a new smart contract via CREATE op code', async function() {
     const tx = await contract.populateTransaction.deployViaCreate();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0xd48b);
   });
   it('#009 Function that successfully deploys a new smart contract via CREATE2 op code', async function() {
     const tx = await contract.populateTransaction.deployViaCreate2();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
-  });
-  it('#010 Function that makes a static call to a method from a different contract (test STATICCALL op code)', async function() {
-    const tx = await contract.populateTransaction.staticCallToContract();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
-  });
-  it('#011 Function that makes a delegate call to a method from a different contract (test DELEGATECALL op code)', async function() {
-    const tx = await contract.populateTransaction.delegateCallToContract();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
-  });
-  it('#012 Function that makes a call code to a method from a different contract (test CALLCODE op code)', async function() {
-    const tx = await contract.populateTransaction.callCodeToContract();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
-  });
-  it('#013 Function that perfroms LOG0, LOG1, LOG2, LOG3, LOG4 operations (test those op code)', async function() {
-    const tx = await contract.populateTransaction.logs();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
-  });
-  it('#014 Function that performs self destruct (test SELFDESCTRUCT op code)', async function() {
-    const tx = await contract.populateTransaction.destroy();
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0xdcc4);
   });
   it('#015 "data" from request body with wrong method signature', async function() {
-    const estimateGasResponse = await estimateGasCall({
+    const estimateGasResponse = await relay.call('eth_estimateGas', [{
       data: '0xffffffff',
-      to: add0xPrefix(contract.address),
-      from: add0xPrefix(signers[0].address)
-    });
-    baseGasCheck(estimateGasResponse);
+      to: Utils.add0xPrefix(contract.address),
+      from: Utils.add0xPrefix(signers[0].address)
+    }]);
+    baseGasCheck(estimateGasResponse, 0x5208);
   });
   it('#016 "data" from request body with wrong encoded parameter', async function() {
-    const estimateGasResponse = await estimateGasCall({
+    const estimateGasResponse = await relay.call('eth_estimateGas', [{
       data: '0x3ec4de35',
-      to: add0xPrefix(contract.address),
-      from: add0xPrefix(signers[0].address)
-    });
-    baseGasCheck(estimateGasResponse);
+      to: Utils.add0xPrefix(contract.address),
+      from: Utils.add0xPrefix(signers[0].address)
+    }]);
+    baseGasCheck(estimateGasResponse, 0x5208);
   });
   it('#017 non existing "from" from request body', async function() {
-    const estimateGasResponse = await estimateGasCall({
+    const estimateGasResponse = await relay.call('eth_estimateGas', [{
       data: '0x0ec1551d',
-      to: add0xPrefix(contract.address),
+      to: Utils.add0xPrefix(contract.address),
       from: randomAddress
-    });
-    baseGasCheck(estimateGasResponse);
+    }]);
+    baseGasCheck(estimateGasResponse, 0x567d);
   });
   it('#018 non existing "to" from request body', async function() {
-    const estimateGasResponse = await estimateGasCall({
+    const estimateGasResponse = await relay.call('eth_estimateGas', [{
       data: '0x0ec1551d',
       to: randomAddress,
-      from: add0xPrefix(signers[0].address)
-    });
-    baseGasCheck(estimateGasResponse);
+      from: Utils.add0xPrefix(signers[0].address)
+    }]);
+    baseGasCheck(estimateGasResponse, 0x5208);
   });
   it('#019 Function that makes a call to a method to invalid smart contract', async function() {
     const tx = await contract.populateTransaction.callToInvalidContract(randomAddress);
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x62de);
   });
   it('#020 Function that makes a delegate call to a method to invalid smart contract', async function() {
     const tx = await contract.populateTransaction.delegateCallToInvalidContract(randomAddress);
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x6299);
   });
   it('#021 Function that makes a static call to a method to invalid smart contract', async function() {
     const tx = await contract.populateTransaction.staticCallToInvalidContract(randomAddress);
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x62dc);
   });
   it('#022 Function that makes a call code to a method to invalid smart contract', async function() {
     const tx = await contract.populateTransaction.callCodeToInvalidContract(randomAddress);
-    const estimateGasResponse = await estimateGasCall(tx);
-    baseGasCheck(estimateGasResponse);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x6187);
   });
 });
