@@ -162,6 +162,7 @@ export class EthImpl implements Eth {
     this.cache = cache;
     this.registry = register;
     if (!cache) this.cache = new LRU(this.options);
+    this.hederaClient = SDKClient.initClient(this.logger, this.hederaNetwork);
   }
 
   /* Temporary code duplication for a temporary HotFix workaround while the definitive  fix is implemented
@@ -172,6 +173,8 @@ export class EthImpl implements Eth {
   private ethSdkClient: SDKClient | undefined;
   private isInTest = typeof global.it === 'function';
 
+  private hederaClient;
+
   getSdkClient() {
 
     // for unit tests we need to use the mocked sdk client using DI
@@ -181,9 +184,9 @@ export class EthImpl implements Eth {
 
     // if we have reached the max number of requests per sdk client instance, or if the sdk client instance is undefined, create a new one
     if (this.requestsPerSdkClient >= this.maxRequestsPerSdkClient || this.ethSdkClient == undefined) {
-      const hederaClient = SDKClient.initClient(this.logger, this.hederaNetwork);
-      this.ethSdkClient = new SDKClient(hederaClient, this.logger, this.registry);
+      this.ethSdkClient = new SDKClient(this.hederaClient, this.logger, this.registry);
       this.requestsPerSdkClient = 0;
+      this.logger.debug(`Limit of requests per instance ${this.maxRequestsPerSdkClient} was reached. Created new SDK client instance`);
     }
 
     // increment the number of requests per sdk client instance

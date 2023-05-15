@@ -133,11 +133,11 @@ export class SDKClient {
      * This limiter tracks hbar expenses and limits.
      * @private
      */
-    private readonly hbarLimiter: HbarLimit;
+    private static hbarLimiter: HbarLimit;
 
-    private consensusNodeClientHistogramCost;
-    private consensusNodeClientHistogramGasFee;
-    private operatorAccountGauge;
+    private static consensusNodeClientHistogramCost;
+    private static consensusNodeClientHistogramGasFee;
+    private static operatorAccountGauge;
     private operatorAccountId;
 
     // populate with consensusnode requests via SDK
@@ -154,49 +154,59 @@ export class SDKClient {
         this.register = register;
         this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
 
-        // clear and create metrics in registry
-        const metricHistogramCost = 'rpc_relay_consensusnode_response';
-        register.removeSingleMetric(metricHistogramCost);
-        this.consensusNodeClientHistogramCost = new Histogram({
-            name: metricHistogramCost,
-            help: 'Relay consensusnode mode type status cost histogram',
-            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-            registers: [register]
-        });
-        const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
-        register.removeSingleMetric(metricHistogramGasFee);
-        this.consensusNodeClientHistogramGasFee = new Histogram({
-            name: metricHistogramGasFee,
-            help: 'Relay consensusnode mode type status gas fee histogram',
-            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-            registers: [register]
-        });
+        // Long lived instances were moved to a singleton private static instance of this class, so we can reuse them among all instances
+        if(SDKClient.consensusNodeClientHistogramCost === undefined) {
+            // clear and create metrics in registry
+            const metricHistogramCost = 'rpc_relay_consensusnode_response';
+            register.removeSingleMetric(metricHistogramCost);
+            SDKClient.consensusNodeClientHistogramCost = new Histogram({
+                name: metricHistogramCost,
+                help: 'Relay consensusnode mode type status cost histogram',
+                labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+                registers: [register]
+            });
+        }
 
-        const metricGaugeName = 'rpc_relay_operator_balance';
-        register.removeSingleMetric(metricGaugeName);
-        this.operatorAccountGauge = new Gauge({
-            name: metricGaugeName,
-            help: 'Relay operator balance gauge',
-            labelNames: ['mode', 'type', 'accountId'],
-            registers: [register],
-            async collect() {
-                // Invoked when the registry collects its metrics' values.
-                // Allows for updated account balance tracking
-                try {
-                    const accountBalance = await (new AccountBalanceQuery()
-                        .setAccountId(clientMain.operatorAccountId!))
-                        .execute(clientMain);
-                    this.labels({ 'accountId': clientMain.operatorAccountId!.toString() })
-                        .set(accountBalance.hbars.toTinybars().toNumber());
-                } catch (e: any) {
-                    logger.error(e, `Error collecting operator balance. Skipping balance set`);
-                }
-            },
-        });
+        if(SDKClient.consensusNodeClientHistogramGasFee === undefined) {
+            const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
+            register.removeSingleMetric(metricHistogramGasFee);
+            SDKClient.consensusNodeClientHistogramGasFee = new Histogram({
+                name: metricHistogramGasFee,
+                help: 'Relay consensusnode mode type status gas fee histogram',
+                labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+                registers: [register]
+            });
+        }
 
-        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
-        this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
+        if(SDKClient.operatorAccountGauge === undefined) {
+            const metricGaugeName = 'rpc_relay_operator_balance';
+            register.removeSingleMetric(metricGaugeName);
+            SDKClient.operatorAccountGauge = new Gauge({
+                name: metricGaugeName,
+                help: 'Relay operator balance gauge',
+                labelNames: ['mode', 'type', 'accountId'],
+                registers: [register],
+                async collect() {
+                    // Invoked when the registry collects its metrics' values.
+                    // Allows for updated account balance tracking
+                    try {
+                        const accountBalance = await (new AccountBalanceQuery()
+                            .setAccountId(clientMain.operatorAccountId!))
+                            .execute(clientMain);
+                        this.labels({'accountId': clientMain.operatorAccountId!.toString()})
+                            .set(accountBalance.hbars.toTinybars().toNumber());
+                    } catch (e: any) {
+                        logger.error(e, `Error collecting operator balance. Skipping balance set`);
+                    }
+                },
+            });
+        }
+
+        if(SDKClient.hbarLimiter === undefined) {
+            const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+            const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+            SDKClient.hbarLimiter = new HbarLimit(logger.child({name: 'hbar-rate-limit'}), Date.now(), total, duration, register);
+        }
     }
 
     async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
@@ -389,7 +399,7 @@ export class SDKClient {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         const currentDateNow = Date.now();
         try {
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.queryMode, callerName);
+            const shouldLimit = SDKClient.hbarLimiter.shouldLimit(currentDateNow, SDKClient.queryMode, callerName);
             if (shouldLimit) {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
@@ -400,7 +410,7 @@ export class SDKClient {
                 const res = await this.increaseCostAndRetryExecution(query, baseCost, client, 3, 0, requestId);
                 resp = res.resp;
                 cost = res.cost.toTinybars().toNumber();
-                this.hbarLimiter.addExpense(cost, currentDateNow);
+                SDKClient.hbarLimiter.addExpense(cost, currentDateNow);
             }
             else {
                 resp = await query.execute(client);
@@ -431,7 +441,7 @@ export class SDKClient {
                 interactingEntity);
             this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${query._queryPayment}`);
             if (cost) {
-                this.hbarLimiter.addExpense(cost, currentDateNow);
+                SDKClient.hbarLimiter.addExpense(cost, currentDateNow);
             }
 
             if (e instanceof PrecheckStatusError && e.contractFunctionResult?.errorMessage) {
@@ -454,7 +464,7 @@ export class SDKClient {
         const requestIdPrefix = formatRequestIdMessage(requestId);
         const currentDateNow = Date.now();
         try {
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+            const shouldLimit = SDKClient.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
             if (shouldLimit) {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
@@ -488,7 +498,7 @@ export class SDKClient {
                         callerName,
                         interactingEntity);
 
-                    this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+                    SDKClient.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
                 } catch (err: any) {
                     const recordQueryError = new SDKClientError(err, err.message);
                     this.logger.error(recordQueryError, `${requestIdPrefix} Error raised during TransactionRecordQuery for ${transaction.transactionId}`);
@@ -510,14 +520,14 @@ export class SDKClient {
             if (!resp.getRecord) {
                 throw new SDKClientError({}, `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
             }
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, transactionName);
+            const shouldLimit = SDKClient.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, transactionName);
             if (shouldLimit) {
                 throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
             }
 
             const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
             const cost = transactionRecord.transactionFee.toTinybars().toNumber();
-            this.hbarLimiter.addExpense(cost, currentDateNow);
+            SDKClient.hbarLimiter.addExpense(cost, currentDateNow);
             this.logger.info(`${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionName} record status: ${Status.Success} (${Status.Success._code}), cost: ${transactionRecord.transactionFee}`);
             this.captureMetrics(
                 SDKClient.transactionMode,
@@ -528,7 +538,7 @@ export class SDKClient {
                 callerName,
                 interactingEntity);
 
-            this.hbarLimiter.addExpense(cost, currentDateNow);
+            SDKClient.hbarLimiter.addExpense(cost, currentDateNow);
 
             return transactionRecord;
         }
@@ -555,7 +565,7 @@ export class SDKClient {
                         callerName,
                         interactingEntity);
 
-                    this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+                    SDKClient.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
                 } catch (err: any) {
                     const recordQueryError = new SDKClientError(err, err.message);
                     this.logger.error(recordQueryError, `${requestIdPrefix} Error raised during TransactionRecordQuery for ${resp.transactionId}`);
@@ -574,14 +584,14 @@ export class SDKClient {
     private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
         const resolvedCost = cost ? cost : 0;
         const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
-        this.consensusNodeClientHistogramCost.labels(
+        SDKClient.consensusNodeClientHistogramCost.labels(
           mode,
           type,
           status,
           caller,
           interactingEntity)
           .observe(resolvedCost);
-        this.consensusNodeClientHistogramGasFee.labels(
+        SDKClient.consensusNodeClientHistogramGasFee.labels(
           mode,
           type,
           status,
