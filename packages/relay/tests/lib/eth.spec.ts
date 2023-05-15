@@ -93,7 +93,7 @@ describe('Eth calls using MirrorNode', async function () {
   const ethFeeHistoryValue = process.env.ETH_FEE_HISTORY_FIXED || 'true';
 
   this.beforeAll(() => {
-    const clientCache = new ClientCache(logger.child({ name: `cache` }), registry,);
+    const clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache);
 
