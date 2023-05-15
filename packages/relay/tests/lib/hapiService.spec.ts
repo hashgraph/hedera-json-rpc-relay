@@ -31,7 +31,7 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const registry = new Registry();
 const logger = pino();
 
-describe('HAPI Service', async function () {
+describe.only('HAPI Service', async function () {
     this.timeout(20000);
     let hapiService: HAPIService | null;
     const errorStatus = 50;
@@ -115,7 +115,7 @@ describe('HAPI Service', async function () {
     it('should not be able to reinitialise and decrement counters, if it is disabled', async function () {
         process.env.HAPI_CLIENT_TRANSACTION_RESET = "0";
         process.env.HAPI_CLIENT_DURATION_RESET = "0";
-        process.env.HAPI_CLIENT_ERROR_RESET = "0";
+        process.env.HAPI_CLIENT_ERROR_RESET = "[]";
         
         hapiService = new HAPIService(logger, registry);
         expect(hapiService.getTransactionCount()).to.eq(parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!));
