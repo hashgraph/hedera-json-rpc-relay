@@ -469,7 +469,7 @@ export class EthImpl implements Eth {
         }
       } catch (e) {
       }
-      return EthImpl.gasTxBaseCost;
+      return this.defaultGas;
     }
   }
 
