@@ -87,4 +87,9 @@ export default {
     TRANSACTION_ID_REGEX: /\d{1}\.\d{1}\.\d{1,10}\@\d{1,10}\.\d{1,9}/,
 
     LONG_ZERO_PREFIX: '0x000000000000',
+    CHAIN_IDS: {
+        mainnet: 0x127,
+        testnet: 0x128,
+        previewnet: 0x129,
+    }
 };

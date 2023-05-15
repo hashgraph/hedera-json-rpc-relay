@@ -42,7 +42,7 @@ import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
-import ClientService from '../../src/lib/services/clientService';
+import ClientService from '../../src/lib/services/hapiService';
 
 const LRU = require('lru-cache');
 

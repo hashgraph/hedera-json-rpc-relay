@@ -25,17 +25,18 @@ import { Logger } from 'pino';
 import constants from './constants';
 import { ethers, Transaction } from 'ethers';
 import { formatRequestIdMessage } from '../formatters';
-import ClientService from './services/clientService';
+import HAPIService from './services/hapiService';
+import { SDKClientError } from './errors/SDKClientError';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
-  private clientService: ClientService;
+  private hapiService: HAPIService;
   private readonly chain: string;
   private readonly logger: Logger;
 
-  constructor(mirrorNodeClient: MirrorNodeClient, clientService: ClientService, logger: Logger, chainId: string) {
+  constructor(mirrorNodeClient: MirrorNodeClient, hapiService: HAPIService, logger: Logger, chainId: string) {
     this.mirrorNodeClient = mirrorNodeClient;
-    this.clientService = clientService;
+    this.hapiService = hapiService;
     this.chain = chainId;
     this.logger = logger;
   }
@@ -151,11 +152,13 @@ export class Precheck {
     }
 
     try {
-      tinybars = await this.clientService.getSDKClient().getAccountBalanceInTinyBar(accountResponse.account, callerName, requestId);
+      tinybars = await this.hapiService.getSDKClient().getAccountBalanceInTinyBar(accountResponse.account, callerName, requestId);
       result.passes = ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
     } catch (error: any) {
       this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);
-      this.clientService.decrementErrorCounter();
+      if (error instanceof SDKClientError) {
+        this.hapiService.decrementErrorCounter(error.statusCode);
+      }
       throw predefined.INTERNAL_ERROR('balance precheck');
     }
 

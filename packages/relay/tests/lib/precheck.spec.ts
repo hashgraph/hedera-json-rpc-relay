@@ -33,7 +33,7 @@ import MockAdapter from "axios-mock-adapter";
 import { ethers } from "ethers";
 import constants from '../../src/lib/constants';
 import { predefined } from '../../src';
-import ClientService from '../../src/lib/services/clientService';
+import ClientService from '../../src/lib/services/hapiService';
 const logger = pino();
 
 describe('Precheck', async function() {

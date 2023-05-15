@@ -24,15 +24,20 @@ import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Registry, Counter } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
+import constants from '../../constants';
 
-export default class ClientService {
+export default class HAPIService {
   private transactionCount: number;
-  private errorCount: number;
+  private errorCodes: number[];
   private resetDuration: number;
   private shouldReset: boolean;
 
-  private isEnabled: boolean;
+  private isReinitEnabled: boolean;
   private isTimeResetDisabled: boolean;
+
+  private initialTransactionCount: number;
+  private initialErrorCodes: number[];
+  private initialResetDuration: number;
 
   private clientMain: Client;
 
@@ -52,12 +57,6 @@ export default class ClientService {
   private readonly register: Registry;
   private clientResetCounter: Counter;
 
-  private chainIds = {
-    mainnet: 0x127,
-    testnet: 0x128,
-    previewnet: 0x129,
-  };
-
   /**
    * @param {Logger} logger
    * @param {Registry} register
@@ -72,19 +71,23 @@ export default class ClientService {
     this.client = this.initSDKClient(logger, register);
 
     const currentDateNow = Date.now();
-    this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || 0;
-    this.resetDuration = currentDateNow + parseInt(process.env.CLIENT_DURATION_RESET!) || 0;
-    this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || 0;
-    this.isEnabled = true;
+    this.initialTransactionCount = parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!) || 0;
+    this.initialResetDuration = parseInt(process.env.HAPI_CLIENT_DURATION_RESET!) || 0;
+    this.initialErrorCodes = JSON.parse(process.env.HAPI_CLIENT_ERROR_RESET!) || [];
+
+    this.transactionCount = this.initialTransactionCount;
+    this.resetDuration = currentDateNow + this.initialResetDuration;
+    this.errorCodes = this.initialErrorCodes;
+
+    this.isReinitEnabled = true;
     this.isTimeResetDisabled = this.resetDuration === currentDateNow;
 
-    if (this.transactionCount === 0 && this.errorCount === 0 && this.isTimeResetDisabled) {
-      this.isEnabled = false;
+    if (this.transactionCount === 0 && this.errorCodes.length === 0 && this.isTimeResetDisabled) {
+      this.isReinitEnabled = false;
     }
     this.shouldReset = false;
 
     this.register = register;
-
     const metricCounterName = 'rpc_relay_client_service';
     register.removeSingleMetric(metricCounterName);
     this.clientResetCounter = new Counter({
@@ -112,13 +115,12 @@ export default class ClientService {
   /**
    *  Decrement error encountered counter. If 0 is reached, reset the client. Check also if resetDuration has been reached and reset the client, if yes.
    */
-  public decrementErrorCounter() {
-    if (!this.isEnabled || this.errorCount == 0) {
+  public decrementErrorCounter(statusCode: number) {
+    if (!this.isReinitEnabled || this.errorCodes.length === 0) {
       return;
     }
 
-    this.errorCount--;
-    if (this.errorCount <= 0) {
+    if (this.errorCodes.includes(statusCode)) {
       this.shouldReset = true;
     }
   }
@@ -127,24 +129,21 @@ export default class ClientService {
     if (this.isTimeResetDisabled) {
       return;
     }
-    
+
     if (this.resetDuration < Date.now()) {
       this.shouldReset = true;
     }
   }
 
   /**
-   * Reset the main client, SDK Client and reset all counters.
+   * Reset the SDK Client and all counters.
    */
   private resetClient() {
     this.clientResetCounter
-      .labels(this.transactionCount.toString(), this.resetDuration.toString(), this.errorCount.toString())
+      .labels(this.transactionCount.toString(), this.resetDuration.toString(), this.errorCodes.toString())
       .inc(1);
 
-    const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
-    this.clientMain = this.initClient(this.logger, hederaNetwork);
     this.client = this.initSDKClient(this.logger, this.register);
-
     this.resetCounters();
   }
 
@@ -152,9 +151,8 @@ export default class ClientService {
    * Reset all counters with predefined configuration.
    */
   private resetCounters() {
-    this.transactionCount = parseInt(process.env.CLIENT_TRANSACTION_RESET!) || 0;
-    this.resetDuration = Date.now() + parseInt(process.env.CLIENT_DURATION_RESET!) || 0;
-    this.errorCount = parseInt(process.env.CLIENT_ERROR_RESET!) || 0;
+    this.transactionCount = this.initialTransactionCount;
+    this.resetDuration = Date.now() + this.initialResetDuration;
 
     this.shouldReset = false;
   }
@@ -178,7 +176,7 @@ export default class ClientService {
    */
   private initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
     let client: Client;
-    if (hederaNetwork in this.chainIds) {
+    if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
@@ -220,16 +218,16 @@ export default class ClientService {
    * Return main client
    * @returns Main Client
    */
-  public getMainClient() {
+  public getSingletonSDKClient() {
     return this.clientMain;
   }
 
   /**
-   * Return configured sdk client
+   * Return configured sdk client and reinitialize it before retuning, if needed.
    * @returns SDK Client
    */
   public getSDKClient(): SDKClient {
-    if (!this.isEnabled) {
+    if (!this.isReinitEnabled) {
       return this.client;
     }
 
@@ -247,8 +245,8 @@ export default class ClientService {
    * Return true if reinitialization feature is enabled.
    * @returns isEnabled boolean
    */
-  public getIsEnabled() {
-    return this.isEnabled;
+  public getIsReinitEnabled() {
+    return this.isReinitEnabled;
   }
 
   /**
@@ -260,11 +258,11 @@ export default class ClientService {
   }
 
   /**
-   * Return error count with current sdk instance.
-   * @returns errorCount
+   * Return error codes which can trigger a sdk instance reinitialization.
+   * @returns errorCodes
    */
-  public getErrorCount() {
-    return this.errorCount;
+  public getErrorCodes() {
+    return this.errorCodes;
   }
 
   /**

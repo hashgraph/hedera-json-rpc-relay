@@ -30,15 +30,10 @@ import { Client } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNodeClient } from './clients';
 import { Registry } from 'prom-client';
-import ClientService from './services/clientService';
+import HAPIService from './services/hapiService';
+import constants from './constants';
 
 export class RelayImpl implements Relay {
-  private static chainIds = {
-    mainnet: 0x127,
-    testnet: 0x128,
-    previewnet: 0x129,
-  };
-
   private readonly clientMain: Client;
   private readonly mirrorNodeClient: MirrorNodeClient;
   private readonly web3Impl: Web3;
@@ -53,10 +48,10 @@ export class RelayImpl implements Relay {
     const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
 
     const configuredChainId =
-      process.env.CHAIN_ID || RelayImpl.chainIds[hederaNetwork] || '298';
+      process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
-    const clientService = new ClientService(logger, register);
-    this.clientMain = clientService.getMainClient();
+    const hapiService = new HAPIService(logger, register);
+    this.clientMain = hapiService.getSingletonSDKClient();
 
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain, chainId);
@@ -70,7 +65,7 @@ export class RelayImpl implements Relay {
     );
 
     this.ethImpl = new EthImpl(
-      clientService,
+      hapiService,
       this.mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId);

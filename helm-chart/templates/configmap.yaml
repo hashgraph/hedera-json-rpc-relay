@@ -31,6 +31,6 @@ data:
   TIER_2_RATE_LIMIT: {{ .Values.config.TIER_2_RATE_LIMIT | quote }}
   TIER_3_RATE_LIMIT: {{ .Values.config.TIER_3_RATE_LIMIT | quote }}
   WEB_SOCKET_PORT: {{ .Values.config.WEB_SOCKET_PORT | quote }}
-  CLIENT_TRANSACTION_RESET: {{ .Values.config.CLIENT_TRANSACTION_RESET | quote }}
-  CLIENT_DURATION_RESET: {{ .Values.config.CLIENT_DURATION_RESET | quote }}
-  CLIENT_ERROR_RESET: {{ .Values.config.CLIENT_ERROR_RESET | quote }}
+  HAPI_CLIENT_TRANSACTION_RESET: {{ .Values.config.HAPI_CLIENT_TRANSACTION_RESET | quote }}
+  HAPI_CLIENT_DURATION_RESET: {{ .Values.config.HAPI_CLIENT_DURATION_RESET | quote }}
+  HAPI_CLIENT_ERROR_RESET: {{ .Values.config.HAPI_CLIENT_ERROR_RESET | quote }}

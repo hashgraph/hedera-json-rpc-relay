@@ -32,7 +32,7 @@ import constants from './constants';
 import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
 import crypto from 'crypto';
-import ClientService from './services/clientService';
+import HAPIService from './services/hapiService';
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -118,7 +118,7 @@ export class EthImpl implements Eth {
    *
    * @private
    */
-  private readonly clientService: ClientService;
+  private readonly hapiService: HAPIService;
 
   /**
    * The interface through which we interact with the mirror node
@@ -152,17 +152,17 @@ export class EthImpl implements Eth {
    * @param chain
    */
   constructor(
-    clientSevice: ClientService,
+    hapiService: HAPIService,
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
     chain: string,
     cache?
   ) {
-    this.clientService = clientSevice;
+    this.hapiService = hapiService;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient, this.clientService, logger, chain);
+    this.precheck = new Precheck(mirrorNodeClient, this.hapiService, logger, chain);
     this.cache = cache;
     if (!cache) this.cache = new LRU(this.options);
   }
@@ -336,7 +336,7 @@ export class EthImpl implements Eth {
       networkFees = {
         fees: [
           {
-            gas: await this.clientService.getSDKClient().getTinyBarGasFee(callerName, requestId),
+            gas: await this.hapiService.getSDKClient().getTinyBarGasFee(callerName, requestId),
             'transaction_type': EthImpl.ethTxType
           }
         ]
@@ -851,7 +851,7 @@ export class EthImpl implements Eth {
         }
       }
 
-      const bytecode = await this.clientService.getSDKClient().getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
+      const bytecode = await this.hapiService.getSDKClient().getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       if (e instanceof SDKClientError) {
@@ -862,7 +862,7 @@ export class EthImpl implements Eth {
           return EthImpl.emptyHex;
         }
 
-        this.clientService.decrementErrorCounter();
+        this.hapiService.decrementErrorCounter(e.statusCode);
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}, err code: ${e.statusCode}`);
       } else {
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}`);
@@ -1039,7 +1039,7 @@ export class EthImpl implements Eth {
     try {
       const result = await this.mirrorNodeClient.resolveEntityType(address, [constants.TYPE_ACCOUNT, constants.TYPE_CONTRACT], requestId);
       if (result?.type === constants.TYPE_ACCOUNT) {
-        const accountInfo = await this.clientService.getSDKClient().getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
+        const accountInfo = await this.hapiService.getSDKClient().getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
         return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
       }
       else if (result?.type === constants.TYPE_CONTRACT) {
@@ -1052,8 +1052,10 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      
-      this.clientService.decrementErrorCounter();
+
+      if (e instanceof SDKClientError) {
+        this.hapiService.decrementErrorCounter(e.statusCode);
+      }
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
@@ -1082,11 +1084,11 @@ export class EthImpl implements Eth {
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     try {
-      const contractExecuteResponse = await this.clientService.getSDKClient().submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
+      const contractExecuteResponse = await this.hapiService.getSDKClient().submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
 
       try {
         // Wait for the record from the execution.
-        const record = await this.clientService.getSDKClient().executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
+        const record = await this.hapiService.getSDKClient().executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
         if (!record) {
           this.logger.warn(`${requestIdPrefix} No record retrieved`);
           throw predefined.INTERNAL_ERROR();
@@ -1114,7 +1116,9 @@ export class EthImpl implements Eth {
         return e;
       }
 
-      this.clientService.decrementErrorCounter();
+      if (e instanceof SDKClientError) {
+        this.hapiService.decrementErrorCounter(e.statusCode);
+      }
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
@@ -1234,7 +1238,7 @@ export class EthImpl implements Eth {
         return cachedResponse;
       }
 
-      const contractCallResponse = await this.clientService.getSDKClient().submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
+      const contractCallResponse = await this.hapiService.getSDKClient().submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
       const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
       this.cache.set(cacheKey, formattedCallReponse, { ttl: this.ethCallCacheTtl });
@@ -1244,8 +1248,10 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      
-      this.clientService.decrementErrorCounter();
+
+      if (e instanceof SDKClientError) {
+        this.hapiService.decrementErrorCounter(e.statusCode);
+      }
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
