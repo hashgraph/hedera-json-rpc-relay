@@ -66,7 +66,7 @@ import {
     defaultTxHash,
     signedTransactionHash
 } from '../helpers';
-import ClientService from '../../src/lib/services/hapiService';
+import ClientService from '../../src/lib/services/hapiService/hapiService';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 

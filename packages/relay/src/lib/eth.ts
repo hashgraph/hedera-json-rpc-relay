@@ -32,7 +32,7 @@ import constants from './constants';
 import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
 import crypto from 'crypto';
-import HAPIService from './services/hapiService';
+import HAPIService from './services/hapiService/hapiService';
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');

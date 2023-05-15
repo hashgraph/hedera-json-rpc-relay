@@ -25,7 +25,7 @@ import { Logger } from 'pino';
 import constants from './constants';
 import { ethers, Transaction } from 'ethers';
 import { formatRequestIdMessage } from '../formatters';
-import HAPIService from './services/hapiService';
+import HAPIService from './services/hapiService/hapiService';
 import { SDKClientError } from './errors/SDKClientError';
 
 export class Precheck {

@@ -23,7 +23,7 @@ import { expect } from 'chai';
 import dotenv from 'dotenv';
 import pino from 'pino';
 import { Registry } from "prom-client";
-import HAPIService from '../../src/lib/services/hapiService';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { SDKClient } from '../../src/lib/clients';
 import { Client } from '@hashgraph/sdk';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });

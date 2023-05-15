@@ -42,7 +42,7 @@ import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
-import ClientService from '../../src/lib/services/hapiService';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
 
 const LRU = require('lru-cache');
 
@@ -78,7 +78,7 @@ const verifyBlockConstants = (block: Block) => {
 
 let restMock: MockAdapter, web3Mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
-let clientServiceInstance: ClientService;
+let hapiServiceInstance: HAPIService;
 let sdkClientStub;
 let clientServiceStub;
 let cache;
@@ -103,9 +103,9 @@ describe('Eth calls using MirrorNode', async function () {
     // @ts-ignore
     web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: "throwException" });
 
-    clientServiceInstance = new ClientService(logger, registry);
+    hapiServiceInstance = new HAPIService(logger, registry);
     sdkClientStub = sinon.createStubInstance(SDKClient);
-    sinon.stub(clientServiceInstance, "getSDKClient").returns(sdkClientStub);
+    sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkClientStub);
 
     cache = new LRU({
       max: constants.CACHE_MAX,
@@ -115,7 +115,7 @@ describe('Eth calls using MirrorNode', async function () {
     process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
     // @ts-ignore
-    ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a', cache);
+    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', cache);
   });
 
   this.afterAll(() => {

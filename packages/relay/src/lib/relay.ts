@@ -30,7 +30,7 @@ import { Client } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNodeClient } from './clients';
 import { Registry } from 'prom-client';
-import HAPIService from './services/hapiService';
+import HAPIService from './services/hapiService/hapiService';
 import constants from './constants';
 
 export class RelayImpl implements Relay {
