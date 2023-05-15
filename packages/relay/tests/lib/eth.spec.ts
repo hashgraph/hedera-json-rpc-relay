@@ -974,6 +974,23 @@ describe('Eth calls using MirrorNode', async function () {
     verifyBlockConstants(result);
   });
 
+  it('eth_getBlockByHash should hit cache', async function() {
+    restMock.onGet(`blocks/${blockHash}`).replyOnce(200, defaultBlock);
+    restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).replyOnce(200, defaultContractResults);
+    restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).replyOnce(200, defaultDetailedContractResults);
+    restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).replyOnce(200, defaultDetailedContractResults);
+    restMock.onGet('network/fees').replyOnce(200, defaultNetworkFees);
+
+    for (let i = 0; i < 3; i++) {
+      const result = await ethImpl.getBlockByHash(blockHash, false);
+      expect(result).to.exist;
+      if (result == null) return;
+      expect(result.hash).equal(blockHashTrimmed);
+      expect(result.number).equal(blockNumberHex);
+      verifyBlockConstants(result);
+    }
+  });
+
   it('eth_getBlockByHash with match and details', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
@@ -2862,7 +2879,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_estimateGas contract call returns default', async function () {
     const gas = await ethImpl.estimateGas({ data: "0x01" }, null);
-    expect(gas).to.equal(EthImpl.defaultGas);
+    expect(gas).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
 
   it('eth_estimateGas transfer to existing account', async function() {
@@ -2936,19 +2953,46 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas empty call returns transfer cost', async function () {
     restMock.onGet(`accounts/undefined`).reply(404);
     const gas = await ethImpl.estimateGas({}, null);
-    expect(gas).to.equal(EthImpl.defaultGas);
+    expect(gas).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
+  });
+
+  it('eth_estimateGas empty call returns transfer cost with overridden default gas', async function () {
+    const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
+    process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+    restMock.onGet(`accounts/undefined`).reply(404);
+    const gas = await ethImplOverridden.estimateGas({}, null);
+    expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
   });
 
   it('eth_estimateGas empty input transfer cost', async function () {
     restMock.onGet(`accounts/undefined`).reply(404);
     const gas = await ethImpl.estimateGas({ data: "" }, null);
-    expect(gas).to.equal(EthImpl.defaultGas);
+    expect(gas).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
+  });
+
+  it('eth_estimateGas empty input transfer cost with overridden default gas', async function () {
+    const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
+    process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+    restMock.onGet(`accounts/undefined`).reply(404);
+    const gas = await ethImplOverridden.estimateGas({ data: "" }, null);
+    expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
   });
 
   it('eth_estimateGas zero input returns transfer cost', async function () {
     restMock.onGet(`accounts/undefined`).reply(404);
     const gas = await ethImpl.estimateGas({ data: "0x" }, null);
-    expect(gas).to.equal(EthImpl.defaultGas);
+    expect(gas).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
+  });
+
+  it('eth_estimateGas zero input returns transfer cost with overridden default gas', async function () {
+    const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
+    process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+    restMock.onGet(`accounts/undefined`).reply(404);
+    const gas = await ethImplOverridden.estimateGas({ data: "0x" }, null);
+    expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
   });
 
   it('eth_gasPrice', async function () {

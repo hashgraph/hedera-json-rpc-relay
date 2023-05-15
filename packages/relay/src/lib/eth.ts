@@ -58,7 +58,6 @@ export class EthImpl implements Eth {
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom = "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-  static defaultGas = EthImpl.numberTo0x(constants.TX_DEFAULT_GAS);
   static gasTxBaseCost = EthImpl.numberTo0x(constants.TX_BASE_COST);
   static gasTxHollowAccountCreation = EthImpl.numberTo0x(constants.TX_HOLLOW_ACCOUNT_CREATION_GAS);
   static ethTxType = 'EthereumTransaction';
@@ -70,9 +69,6 @@ export class EthImpl implements Eth {
   static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
   static iHTSAddress = '0x0000000000000000000000000000000000000167';
   static invalidEVMInstruction = '0xfe';
-  static ethCallCacheTtl = process.env.ETH_CALL_CACHE_TTL || 200;
-  static ethBlockNumberCacheTtlMs = process.env.ETH_BLOCK_NUMBER_CACHE_TTL_MS || 1000;
-  static ethGetBalanceCacheTtlMs = process.env.ETH_GET_BALANCE_CACHE_TTL_MS || 1000;
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
@@ -89,6 +85,16 @@ export class EthImpl implements Eth {
   static blockPending = 'pending';
 
   /**
+   * Overrideable options used when initializing.
+   *
+   * @private
+   */
+  private readonly defaultGas = EthImpl.numberTo0x(Number.parseInt(process.env.TX_DEFAULT_GAS ?? constants.TX_DEFAULT_GAS_DEFAULT.toString()));
+  private readonly ethCallCacheTtl = Number.parseInt(process.env.ETH_CALL_CACHE_TTL ?? constants.ETH_CALL_CACHE_TTL_DEFAULT.toString());
+  private readonly ethBlockNumberCacheTtlMs = Number.parseInt(process.env.ETH_BLOCK_NUMBER_CACHE_TTL_MS ?? constants.ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT.toString());
+  private readonly ethGetBalanceCacheTtlMs = Number.parseInt(process.env.ETH_GET_BALANCE_CACHE_TTL_MS ?? constants.ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT.toString());
+
+  /**
    * Configurable options used when initializing the cache.
    *
    * @private
@@ -98,7 +104,7 @@ export class EthImpl implements Eth {
     max: constants.CACHE_MAX,
     // Max time to live in ms, for items before they are considered stale.
     ttl: constants.CACHE_TTL.ONE_HOUR,
-  }
+  };
   /**
    * The LRU cache used for caching items from requests.
    *
@@ -374,8 +380,8 @@ export class EthImpl implements Eth {
     if (Array.isArray(blocks) && blocks.length > 0) {
       const currentBlock = EthImpl.numberTo0x(blocks[0].number);
       // save the latest block number in cache
-      this.cache.set(cacheKey, currentBlock, { ttl: EthImpl.ethBlockNumberCacheTtlMs });
-      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(currentBlock)} for ${EthImpl.ethBlockNumberCacheTtlMs} ms`);
+      this.cache.set(cacheKey, currentBlock, { ttl: this.ethBlockNumberCacheTtlMs });
+      this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(currentBlock)} for ${this.ethBlockNumberCacheTtlMs} ms`);
 
       return currentBlock;
     }
@@ -399,10 +405,10 @@ export class EthImpl implements Eth {
       const timestamp = blocks[0].timestamp.to;
       const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp };
       // save the latest block number in cache
-      this.cache.set(cacheKey, currentBlock, { ttl: EthImpl.ethBlockNumberCacheTtlMs });
+      this.cache.set(cacheKey, currentBlock, { ttl: this.ethBlockNumberCacheTtlMs });
       this.logger.trace(
         `${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(currentBlock)}:${JSON.stringify(timestamp)} for ${
-          EthImpl.ethBlockNumberCacheTtlMs
+          this.ethBlockNumberCacheTtlMs
         } ms`
       );
 
@@ -788,10 +794,10 @@ export class EthImpl implements Eth {
       }
 
       // save in cache the current balance for the account and blockNumberOrTag
-      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), { ttl: EthImpl.ethGetBalanceCacheTtlMs });
+      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), { ttl: this.ethGetBalanceCacheTtlMs });
       this.logger.trace(
         `${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(cachedBalance)} for ${
-          EthImpl.ethGetBalanceCacheTtlMs
+          this.ethGetBalanceCacheTtlMs
         } ms`
       );
 
@@ -872,9 +878,17 @@ export class EthImpl implements Eth {
   async getBlockByHash(hash: string, showDetails: boolean, requestId?: string): Promise<Block | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
-    return this.getBlock(hash, showDetails, requestId).catch((e: any) => {
-      throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
-    });
+
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_HASH}_${hash}_${showDetails}`;
+    let block = this.cache.get(cacheKey);
+    if (!block) {
+      block = await this.getBlock(hash, showDetails, requestId).catch((e: any) => {
+        throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
+      });
+      this.cache.set(cacheKey, block);
+    }
+
+    return block;
   }
 
   /**
@@ -1194,7 +1208,7 @@ export class EthImpl implements Eth {
       const contractCallResponse = await this.sdkClient.submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
       const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
-      this.cache.set(cacheKey, formattedCallReponse, { ttl: EthImpl.ethCallCacheTtl });
+      this.cache.set(cacheKey, formattedCallReponse, { ttl: this.ethCallCacheTtl });
       return formattedCallReponse;
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
@@ -1444,7 +1458,7 @@ export class EthImpl implements Eth {
 
   private getCappedBlockGasLimit(gasString: string, requestIdPrefix?: string): number {
     if (!gasString) {
-      return 400_000;
+      return Number.parseInt(this.defaultGas);
     }
 
     // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000

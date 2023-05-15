@@ -67,6 +67,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `TIER_1_RATE_LIMIT`                   | "100"         | Maximum restrictive request count limit used for expensive endpoints rate limiting.                                                                                                                                                                                                                    |
 | `TIER_2_RATE_LIMIT`                   | "800"         | Maximum moderate request count limit used for non expensive endpoints.                                                                                                                                                                                                                                 |
 | `TIER_3_RATE_LIMIT`                   | "1600"        | Maximum relaxed request count limit used for static return endpoints.                                                                                                                                                                                                                                  |
+| `TX_DEFAULT_GAS`                      | "400000"      | Default gas for transactions that do not specify gas.                                                                                                                                                                                                                                                  |
 
 ## WS-Server
 
