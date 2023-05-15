@@ -55,7 +55,7 @@ describe('MirrorNodeClient', async function () {
       },
       timeout: 20 * 1000
     });
-    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, new ClientCache(logger.child({ name: `cache` }), registry) instance);
+    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, new ClientCache(logger.child({ name: `cache` }), registry), instance);
   });
 
   beforeEach(() => {
