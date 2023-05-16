@@ -467,7 +467,8 @@ export class EthImpl implements Eth {
         if (contractCallResponse?.result) {
           return EthImpl.prepend0x(contractCallResponse.result);
         }
-      } catch (e) {
+      } catch (e: any) {
+        this.logger.error(e, `${requestIdPrefix} Error raised during estimateGas with: ${JSON.stringify(e)}`);
       }
       return this.defaultGas;
     }
