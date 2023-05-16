@@ -494,6 +494,17 @@ export class EthImpl implements Eth {
 
       return predefined.INVALID_PARAMETER(0, `Invalid 'value' field in transaction param. Value must be greater than 0`);
     } else {
+      try {
+        const contractCallResponse = await this.mirrorNodeClient.postContractCall({
+          ...transaction,
+          estimate: true
+        }, requestId);
+        if (contractCallResponse?.result) {
+          return EthImpl.prepend0x(contractCallResponse.result);
+        }
+      } catch (e: any) {
+        this.logger.error(e, `${requestIdPrefix} Error raised during estimateGas with: ${JSON.stringify(e)}`);
+      }
       return this.defaultGas;
     }
   }

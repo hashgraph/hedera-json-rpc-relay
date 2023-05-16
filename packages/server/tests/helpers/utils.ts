@@ -115,4 +115,8 @@ export class Utils {
         const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
         return new ethers.Contract(evmAddress, abi, owner.wallet);
     };
+
+    static add0xPrefix = (num) => {
+        return num.startsWith('0x') ? num : '0x' + num;
+    };
 }
