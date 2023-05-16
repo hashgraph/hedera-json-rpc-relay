@@ -20,9 +20,9 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
+import { AccountBalanceQuery, AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Registry, Counter } from 'prom-client';
+import { Registry, Counter, Gauge, Histogram } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import constants from '../../constants';
 import HbarLimit from '../../hbarlimiter';
@@ -62,8 +62,17 @@ export default class HAPIService {
    * @private
    */
   private hbarLimiter: HbarLimit;
+
+  /**
+   * The metrics register used for metrics tracking.
+   * @private
+   */
   private readonly register: Registry;
   private clientResetCounter: Counter;
+  private consensusNodeClientHistogramCost: Histogram;
+  private consensusNodeClientHistogramGasFee: Histogram;
+  private operatorAccountGauge: Gauge;
+  private metrics: any;
 
   /**
    * @param {Logger} logger
@@ -77,7 +86,13 @@ export default class HAPIService {
 
     this.hederaNetwork = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
-    this.client = this.initSDKClient(logger, register);
+
+    this.operatorAccountGauge = this.initOperatorMetric(this.clientMain, logger, register);
+    this.consensusNodeClientHistogramCost = this.initCostMetric(register);
+    this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
+
+    this.metrics = { operatorGauge: this.operatorAccountGauge, costHistogram: this.consensusNodeClientHistogramCost, gasHistogram: this.consensusNodeClientHistogramGasFee };
+    this.client = this.initSDKClient(logger, this.metrics);
 
     const currentDateNow = Date.now();
     this.initialTransactionCount = parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!) || 0;
@@ -153,7 +168,7 @@ export default class HAPIService {
       .inc(1);
 
     this.clientMain = this.initClient(this.logger, this.hederaNetwork);
-    this.client = this.initSDKClient(this.logger, this.register);
+    this.client = this.initSDKClient(this.logger, this.metrics);
     this.resetCounters();
   }
 
@@ -170,11 +185,10 @@ export default class HAPIService {
   /**
    * Configure SDK Client from main client
    * @param {Logger} logger
-   * @param {Registry} register
    * @returns SDK Client
    */
-  private initSDKClient(logger: Logger, register: Registry): SDKClient {
-    return new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), register, this.hbarLimiter);
+  private initSDKClient(logger: Logger, metrics: any): SDKClient {
+    return new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), this.hbarLimiter, metrics);
   }
 
   /**
@@ -280,5 +294,68 @@ export default class HAPIService {
    */
   public getTimeUntilReset() {
     return this.resetDuration - Date.now();
+  }
+
+  /**
+   * Initialize consensus node cost metrics
+   * @param {Registry} register
+   * @returns {Histogram} Consensus node cost metric
+   */
+  private initCostMetric(register: Registry) {
+    const metricHistogramCost = 'rpc_relay_consensusnode_response';
+    register.removeSingleMetric(metricHistogramCost);
+    return new Histogram({
+        name: metricHistogramCost,
+        help: 'Relay consensusnode mode type status cost histogram',
+        labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+        registers: [register]
+    });
+  }
+
+  /**
+   * Initialize consensus node gas metrics
+   * @param {Registry} register
+   * @returns {Histogram} Consensus node gas metric
+   */
+  private initGasMetric(register: Registry) {
+    const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
+    register.removeSingleMetric(metricHistogramGasFee);
+    return new Histogram({
+        name: metricHistogramGasFee,
+        help: 'Relay consensusnode mode type status gas fee histogram',
+        labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+        registers: [register]
+    });
+  }
+
+  /**
+   * Initialize operator account metrics
+   * @param {Client} clientMain
+   * @param {Logger} logger
+   * @param {Registry} register
+   * @returns {Gauge} Operator Metric
+   */
+  private initOperatorMetric(clientMain: Client, logger: Logger, register: Registry) {
+    const metricGaugeName = 'rpc_relay_operator_balance';
+    register.removeSingleMetric(metricGaugeName);
+    return new Gauge({
+        name: metricGaugeName,
+        help: 'Relay operator balance gauge',
+        labelNames: ['mode', 'type', 'accountId'],
+        registers: [register],
+        async collect() {
+            // Invoked when the registry collects its metrics' values.
+            // Allows for updated account balance tracking
+            try {
+                const accountBalance = await (new AccountBalanceQuery()
+                    .setAccountId(clientMain.operatorAccountId!))
+                    .execute(clientMain);
+                this.labels({ 'accountId': clientMain.operatorAccountId!.toString() })
+                    .set(accountBalance.hbars.toTinybars().toNumber());
+            } catch (e: any) {
+                logger.error(e, `Error collecting operator balance. Skipping balance set`);
+            }
+        },
+    });
   }
 }
