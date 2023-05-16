@@ -18,7 +18,7 @@ jobs:
         uses: helm/chart-testing-action@v2.4.0
 
       - name: Run lint
-        run:
+        run: |
           if [[ $(ct list-changed --config .github/ct.yaml) ]];
           then
             ct lint --config .github/ct.yaml
