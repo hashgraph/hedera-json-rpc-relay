@@ -455,6 +455,10 @@ export class SDKClient {
             if (sdkClientError.isGrpcTimeout()) {
                 throw predefined.REQUEST_TIMEOUT;
             }
+
+            if (sdkClientError.isInvalidTransactionBody()) {
+                this.logger.error(`${requestIdPrefix} Query object: ${query} Client object: ${client}`);
+            }
             throw sdkClientError;
         }
     };

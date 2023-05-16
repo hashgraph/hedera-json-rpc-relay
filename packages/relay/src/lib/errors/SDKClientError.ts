@@ -68,5 +68,9 @@ export class SDKClientError extends Error {
     // The SDK uses the same code for Grpc Timeout as INVALID_TRANSACTION_ID
     return this.statusCode === Status.InvalidTransactionId._code;
   }
+
+  public isInvalidTransactionBody(): boolean {
+    return this.statusCode === Status.InvalidTransactionBody._code;
+  }
 }
   
