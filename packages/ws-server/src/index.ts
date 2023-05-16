@@ -18,11 +18,13 @@
  *
  */
 
-import {app, httpApp} from './webSocketServer';
+import { app, httpApp } from './webSocketServer';
 
 async function main() {
   app.listen({ port: process.env.WEB_SOCKET_PORT || 8546 });
-  httpApp.listen({ port: process.env.WEB_SOCKET_METRICS_PORT || 8547 });
+  httpApp.listen({ port: process.env.WEB_SOCKET_HTTP_PORT || 8547 });
 }
 
-main();
+(async () => {
+  await main();
+})();

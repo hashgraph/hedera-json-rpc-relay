@@ -3,8 +3,13 @@ FROM node:18.16.0-bullseye-slim
 # Setup
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NODE_ENV production
+ENV HEALTHCHECK_PORT 7546
+
 EXPOSE 7546
-HEALTHCHECK --interval=10s --retries=3 --start-period=25s --timeout=2s CMD wget -q -O- http://localhost:7546/health/liveness
+EXPOSE 8546
+EXPOSE 8547
+
+HEALTHCHECK --interval=10s --retries=3 --start-period=25s --timeout=2s CMD wget -q -O- http://localhost:${HEALTHCHECK_PORT}/health/liveness
 WORKDIR /home/node/app/
 
 # Install and Build
@@ -31,4 +36,5 @@ RUN apt-get update && \
 USER node
 
 # Run
-ENTRYPOINT ["npm", "run", "start"]
+ENTRYPOINT ["npm", "run"]
+CMD ["start"]
