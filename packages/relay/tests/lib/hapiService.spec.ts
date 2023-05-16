@@ -39,8 +39,8 @@ describe('HAPI Service', async function () {
     const errorStatus = 50;
     
     this.beforeAll(() => {
-        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        const duration: number = 60000;
+        const total: number = 100000000;
         hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     });
 
