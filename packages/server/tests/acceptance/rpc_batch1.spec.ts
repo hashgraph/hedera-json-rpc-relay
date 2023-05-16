@@ -71,9 +71,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         this.beforeAll(async () => {
             requestId = Utils.generateRequestId();
 
-            accounts[0] = await servicesNode.createAliasAccount(10, null, requestId);
-            accounts[1] = await servicesNode.createAliasAccount(10, null, requestId);
-            accounts[2] = await servicesNode.createAliasAccount(40, null, requestId);
+            accounts[0] = await servicesNode.createAliasAccount(50, null, requestId);
+            accounts[1] = await servicesNode.createAliasAccount(50, null, requestId);
+            accounts[2] = await servicesNode.createAliasAccount(100, null, requestId);
             contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
@@ -148,7 +148,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
                 //empty params for get logs defaults to latest block, which doesn't have required logs, that's why we fetch the last 10
                 const logs = await relay.call('eth_getLogs', [{
-                    fromBlock: EthImpl.numberTo0x(tenBlocksBehindLatest)
+                    fromBlock: EthImpl.numberTo0x(tenBlocksBehindLatest),
+                    'address': [contractAddress, contractAddress2]
                 }], requestId);
 
                 expect(logs.length).to.be.greaterThan(0);
@@ -166,17 +167,20 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 expect(txIndexLogIndexMapping.length).to.equal(uniqueTxIndexLogIndexMapping.length);
 
                 log0Block = await relay.call('eth_getTransactionByHash', [logs[0].transactionHash], requestId);
+                expect(log0Block).to.exist;
                 expect(log0Block).to.have.property('blockNumber');
                 expect(log0Block.nonce).to.equal('0x0');
 
                 log4Block = await relay.call('eth_getTransactionByHash', [logs[4].transactionHash], requestId);
+                expect(log4Block).to.exist;
                 expect(log4Block).to.have.property('blockNumber');
                 expect(log4Block.nonce).to.equal('0x0');
             });
 
             it('should be able to use `fromBlock` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
-                    'fromBlock': log0Block.blockNumber
+                    'fromBlock': log0Block.blockNumber,
+                    'address': [contractAddress, contractAddress2]
                 }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
 
@@ -195,7 +199,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             it('should be able to use range of `fromBlock` and `toBlock` params', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': log0Block.blockNumber,
-                    'toBlock': log4Block.blockNumber
+                    'toBlock': log4Block.blockNumber,
+                    'address': [contractAddress, contractAddress2]
                 }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
 
@@ -238,7 +243,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
             it('should be able to use `blockHash` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
-                    'blockHash': log0Block.blockHash
+                    'blockHash': log0Block.blockHash,
+                    'address': [contractAddress, contractAddress2]
                 }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
 
@@ -249,7 +255,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
             it('should return empty result for  non-existing `blockHash`', async () => {
                 const logs = await relay.call('eth_getLogs', [{
-                    'blockHash': NON_EXISTING_BLOCK_HASH
+                    'blockHash': NON_EXISTING_BLOCK_HASH,
+                    'address': [contractAddress, contractAddress2]
                 }], requestId);
                 expect(logs).to.exist;
                 expect(logs.length).to.be.eq(0);
@@ -258,7 +265,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             it('should be able to use `topics` param', async () => {
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': log0Block.blockNumber,
-                    'toBlock': log4Block.blockNumber
+                    'toBlock': log4Block.blockNumber,
+                    'address': [contractAddress, contractAddress2]
                 }]);
                 expect(logs.length).to.be.greaterThan(0);
                 //using second log in array, because the first doesn't contain any topics
@@ -290,7 +298,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 }
                 const logs = await relay.call('eth_getLogs', [{
                     'fromBlock': EthImpl.numberTo0x(blocksBehindLatest),
-                    'toBlock': 'latest'
+                    'toBlock': 'latest',
+                    'address': [contractAddress, contractAddress2]
                 }], requestId);
                 expect(logs.length).to.be.greaterThan(2);
             })
@@ -867,11 +876,14 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const resBeforeCreation = await relay.call('eth_getTransactionCount', [hollowAccount.address, 'latest'], requestId);
                 expect(resBeforeCreation).to.be.equal('0x0');
 
+                const gasPrice = await relay.gasPrice(requestId);
                 const signedTxHollowAccountCreation = await accounts[2].wallet.signTransaction({
                     ...defaultLondonTransactionData,
-                    value: '5000000000000000000', // 5 HBARs
+                    value: '10000000000000000000', // 10 HBARs
                     to: hollowAccount.address,
-                    nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId)
+                    nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
                 });
                 const txHashHAC = await relay.call('eth_sendRawTransaction', [signedTxHollowAccountCreation], requestId);
                 await mirrorNode.get(`/contracts/results/${txHashHAC}`, requestId);
@@ -879,7 +891,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signTxFromHollowAccount = await hollowAccount.signTransaction({
                     ...defaultLondonTransactionData,
                     to: mirrorContract.evm_address,
-                    nonce: await relay.getAccountNonce(hollowAccount.address, requestId)
+                    nonce: await relay.getAccountNonce(hollowAccount.address, requestId),
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
                 });
                 const txHashHA = await relay.call('eth_sendRawTransaction', [signTxFromHollowAccount], requestId);
                 await mirrorNode.get(`/contracts/results/${txHashHA}`, requestId);
@@ -890,12 +904,17 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
             it('should execute "eth_getTransactionCount" for account with non-zero nonce', async function () {
                 const account = await servicesNode.createAliasAccount(10, null, requestId);
+
                 // Wait for account creation to propagate
                 await mirrorNode.get(`/accounts/${account.accountId}`, requestId);
+
+                const gasPrice = await relay.gasPrice(requestId);
                 const transaction = {
                     ...defaultLondonTransactionData,
                     to: mirrorContract.evm_address,
-                    nonce: await relay.getAccountNonce('0x' + account.address, requestId)
+                    nonce: await relay.getAccountNonce('0x' + account.address, requestId),
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
                 };
 
                 const signedTx = await account.wallet.signTransaction(transaction);
@@ -909,10 +928,13 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             });
 
             it('@release should execute "eth_getTransactionByHash" for existing transaction', async function () {
+                const gasPrice = await relay.gasPrice(requestId);
                 const transaction = {
                     ...defaultLondonTransactionData,
                     to: mirrorContract.evm_address,
-                    nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId)
+                    nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice,
                 };
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const transactionHash = await relay.sendRawTransaction(signedTx, requestId);

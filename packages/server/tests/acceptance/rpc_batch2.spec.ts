@@ -75,10 +75,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         this.beforeAll(async () => {
             requestId = Utils.generateRequestId();
 
-            accounts[0] = await servicesNode.createAliasAccount(15, null, requestId);
+            accounts[0] = await servicesNode.createAliasAccount(50, null, requestId);
             accounts[1] = await servicesNode.createAliasAccount(10, null, requestId);
             accounts[2] = await servicesNode.createAliasAccount(10, null, requestId);
-            accounts[3] = await servicesNode.createAliasAccount(50, relay.provider, requestId);
+            accounts[3] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
             contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
@@ -507,9 +507,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
             async function createNftHTSToken() {
                 const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[3].wallet);
+                const gasPrice = await relay.gasPrice();
                 const tx = await mainContract.createNonFungibleTokenPublic(accounts[3].wallet.address, {
-                    value: ethers.BigNumber.from('10000000000000000000'),
-                    gasLimit: 10000000
+                    value: ethers.BigNumber.from('50000000000000000000'),    // 50 Hbars
+                    gasLimit: 1000000,
+                    gasPrice: gasPrice
                 });
                 const {tokenAddress} = (await tx.wait()).events.filter(e => e.event = 'CreatedToken')[0].args;
 
