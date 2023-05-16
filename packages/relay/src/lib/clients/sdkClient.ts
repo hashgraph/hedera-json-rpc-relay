@@ -455,6 +455,11 @@ export class SDKClient {
             if (sdkClientError.isGrpcTimeout()) {
                 throw predefined.REQUEST_TIMEOUT;
             }
+
+            if (sdkClientError.isInvalidTransactionBody() && process.env.TRACE_LOG_INVALID_TRANSACTION_BODY) {
+                this.logger.error(`${requestIdPrefix} Query object on InvalidTransactionBody error:  ${JSON.stringify(query)}`);
+                this.logger.error(`${requestIdPrefix} Client object on InvalidTransactionBody error: ${JSON.stringify({...client, _timer: undefined})}`);
+            }
             throw sdkClientError;
         }
     };
