@@ -39,6 +39,7 @@ export default class HAPIService {
   private initialErrorCodes: number[];
   private initialResetDuration: number;
 
+  private hederaNetwork: string;
   private clientMain: Client;
 
   /**
@@ -66,8 +67,8 @@ export default class HAPIService {
 
     this.logger = logger;
 
-    const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
-    this.clientMain = this.initClient(logger, hederaNetwork);
+    this.hederaNetwork = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
+    this.clientMain = this.initClient(logger, this.hederaNetwork);
     this.client = this.initSDKClient(logger, register);
 
     const currentDateNow = Date.now();
@@ -143,6 +144,7 @@ export default class HAPIService {
       .labels(this.transactionCount.toString(), this.resetDuration.toString(), this.errorCodes.toString())
       .inc(1);
 
+    this.clientMain = this.initClient(this.logger, this.hederaNetwork);
     this.client = this.initSDKClient(this.logger, this.register);
     this.resetCounters();
   }
@@ -215,10 +217,10 @@ export default class HAPIService {
   }
 
   /**
-   * Return main client
+   * Return current main client instance
    * @returns Main Client
    */
-  public getSingletonSDKClient() {
+  public getMainClientInstance() {
     return this.clientMain;
   }
 

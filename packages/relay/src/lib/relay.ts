@@ -51,7 +51,7 @@ export class RelayImpl implements Relay {
       process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
     const hapiService = new HAPIService(logger, register);
-    this.clientMain = hapiService.getSingletonSDKClient();
+    this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain, chainId);
