@@ -949,12 +949,23 @@ export class EthImpl implements Eth {
   async getBlockTransactionCountByHash(hash: string, requestId?: string): Promise<string | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByHash(hash=${hash}, showDetails=%o)`);
-    return this.mirrorNodeClient
+
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_HASH}_${hash}`;
+    let cachedResponse = this.cache.get(cacheKey);
+    if (cachedResponse) {
+      this.logger.debug(`${requestIdPrefix} getBlockTransactionCountByHash returned cached response: ${cachedResponse}`);
+      return cachedResponse;
+    }
+
+    const transactionCount = await this.mirrorNodeClient
       .getBlock(hash, requestId)
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
       });
+
+    this.cache.set(cacheKey, transactionCount);
+    return transactionCount;
   }
 
   /**
@@ -965,12 +976,23 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByNumber(blockNum=${blockNumOrTag}, showDetails=%o)`);
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestId);
-    return this.mirrorNodeClient
+
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_NUMBER}_${blockNum}`;
+    let cachedResponse = this.cache.get(cacheKey);
+    if (cachedResponse) {
+      this.logger.debug(`${requestIdPrefix} getBlockTransactionCountByNumber returned cached response: ${cachedResponse}`);
+      return cachedResponse;
+    }
+
+    const transactionCount = await this.mirrorNodeClient
       .getBlock(blockNum, requestId)
       .then((block) => EthImpl.getTransactionCountFromBlockResponse(block))
       .catch((e: any) => {
         throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNum}`);
       });
+
+    this.cache.set(cacheKey, transactionCount);
+    return transactionCount;
   }
 
   /**

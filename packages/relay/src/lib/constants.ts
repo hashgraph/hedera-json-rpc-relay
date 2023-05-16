@@ -23,15 +23,17 @@ enum CACHE_KEY {
     ETH_BLOCK_NUMBER = 'eth_block_number',
     ETH_CALL = 'eth_call',
     ETH_GET_BALANCE = 'eth_get_balance',
+    ETH_GET_BLOCK_BY_HASH = 'eth_getBlockByHash',
     ETH_GET_BLOCK_BY_NUMBER = 'eth_getBlockByNumber',
+    ETH_GET_TRANSACTION_COUNT_BY_HASH = 'eth_getBlockTransactionCountByHash',
+    ETH_GET_TRANSACTION_COUNT_BY_NUMBER = 'eth_getBlockTransactionCountByNumber',
+    ETH_GET_TRANSACTION_RECEIPT = 'eth_getTransactionReceipt',
     FEE_HISTORY = 'fee_history',
     GAS_PRICE = 'gas_price',
     GET_BLOCK = 'getBlock',
     GET_CONTRACT_RESULT = 'getContractResult',
     GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee',
     RESOLVE_ENTITY_TYPE = 'resolveEntityType',
-    ETH_GET_BLOCK_BY_HASH = 'eth_getBlockByHash',
-    ETH_GET_TRANSACTION_RECEIPT = 'eth_getTransactionReceipt'
 }
 
 enum CACHE_TTL {
