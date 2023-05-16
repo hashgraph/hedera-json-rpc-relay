@@ -45,7 +45,7 @@ describe('SdkClient', async function () {
         const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
         const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
         hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-        sdkClient = new SDKClient(client, logger.child({ name: `consensus-node` }), hbarLimiter, undefined);
+        sdkClient = new SDKClient(client, logger.child({ name: `consensus-node` }), hbarLimiter, { costHistogram: undefined, gasHistogram: undefined });
     })
 
     describe('increaseCostAndRetryExecution', async () => {
