@@ -46,6 +46,11 @@ config:
   TIER_3_RATE_LIMIT: 400
   WEB_SOCKET_PORT: 8546
 
+# -- Extra environment variables from existing secrets or configmaps
+extraEnvFrom: []
+# - secretRef:
+#     name: "{{ .Release.Name }}-env"
+
 cronjob:
   enabled: false
   image:
