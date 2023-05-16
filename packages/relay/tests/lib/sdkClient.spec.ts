@@ -30,19 +30,22 @@ import pino from 'pino';
 import {AccountId, Client, ContractCallQuery, PrivateKey, TransactionId, Hbar, Status} from "@hashgraph/sdk";
 const logger = pino();
 import constants from '../../src/lib/constants';
+import HbarLimit from '../../src/lib/hbarlimiter';
 
 describe('SdkClient', async function () {
     this.timeout(20000);
-    let sdkClient, client;
+    let sdkClient, client, hbarLimiter;
 
     before(() => {
-        client = Client.forNetwork(JSON.parse(process.env.HEDERA_NETWORK));
+        client = Client.forNetwork(JSON.parse(process.env.HEDERA_NETWORK!));
         client = client.setOperator(
-            AccountId.fromString(process.env.OPERATOR_ID_MAIN),
-            PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
+            AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
+            PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN!)
         );
-
-        sdkClient = new SDKClient(client, logger.child({ name: `consensus-node` }), registry);
+        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+        sdkClient = new SDKClient(client, logger.child({ name: `consensus-node` }), registry, hbarLimiter);
     })
 
     describe('increaseCostAndRetryExecution', async () => {

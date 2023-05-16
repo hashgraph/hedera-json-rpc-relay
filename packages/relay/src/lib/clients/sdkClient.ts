@@ -102,7 +102,7 @@ export class SDKClient {
     private operatorAccountId;
 
     // populate with consensusnode requests via SDK
-    constructor(clientMain: Client, logger: Logger, register: Registry) {
+    constructor(clientMain: Client, logger: Logger, register: Registry, hbarLimiter: HbarLimit) {
         this.clientMain = clientMain;
 
         if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
@@ -155,9 +155,7 @@ export class SDKClient {
             },
         });
 
-        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
-        this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
+        this.hbarLimiter = hbarLimiter;
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: constants.CACHE_TTL.ONE_HOUR });
     }
 

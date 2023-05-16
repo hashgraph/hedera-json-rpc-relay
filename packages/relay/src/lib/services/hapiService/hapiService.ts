@@ -25,6 +25,7 @@ import { Logger } from 'pino';
 import { Registry, Counter } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import constants from '../../constants';
+import HbarLimit from '../../hbarlimiter';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -55,6 +56,12 @@ export default class HAPIService {
    * @private
    */
   private logger: Logger;
+
+  /**
+   * This limiter tracks hbar expenses and limits.
+   * @private
+   */
+  private hbarLimiter: HbarLimit;
   private readonly register: Registry;
   private clientResetCounter: Counter;
 
@@ -66,6 +73,10 @@ export default class HAPIService {
     dotenv.config({ path: findConfig('.env') || '' });
 
     this.logger = logger;
+
+    const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+    const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+    this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
 
     this.hederaNetwork = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
@@ -166,7 +177,7 @@ export default class HAPIService {
    * @returns SDK Client
    */
   private initSDKClient(logger: Logger, register: Registry): SDKClient {
-    return new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), register);
+    return new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), register, this.hbarLimiter);
   }
 
   /**
