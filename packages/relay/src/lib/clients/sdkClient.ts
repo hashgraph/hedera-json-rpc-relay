@@ -50,7 +50,6 @@ import {
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
-import { Gauge, Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
