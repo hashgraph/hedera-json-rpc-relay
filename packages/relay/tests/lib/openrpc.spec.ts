@@ -67,6 +67,7 @@ import {
     signedTransactionHash
 } from '../helpers';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
+import HbarLimit from '../../src/lib/hbarlimiter';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -109,7 +110,11 @@ describe("Open RPC Specification", function () {
         mock = new MockAdapter(instance, { onNoMatch: "throwException" });
         // @ts-ignore
         mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
-        clientServiceInstance = new ClientService(logger, registry);
+        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+
+        clientServiceInstance = new ClientService(logger, registry, hbarLimiter);
         sdkClientStub = sinon.createStubInstance(SDKClient);
         sinon.stub(clientServiceInstance, "getSDKClient").returns(sdkClientStub);
         // @ts-ignore

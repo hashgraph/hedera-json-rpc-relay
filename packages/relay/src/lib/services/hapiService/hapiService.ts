@@ -69,14 +69,11 @@ export default class HAPIService {
    * @param {Logger} logger
    * @param {Registry} register
    */
-  constructor(logger: Logger, register: Registry) {
+  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit) {
     dotenv.config({ path: findConfig('.env') || '' });
 
     this.logger = logger;
-
-    const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-    const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
-    this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
+    this.hbarLimiter = hbarLimiter;
 
     this.hederaNetwork = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);

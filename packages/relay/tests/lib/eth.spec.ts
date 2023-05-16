@@ -43,6 +43,7 @@ import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
+import HbarLimit from '../../src/lib/hbarlimiter';
 
 const LRU = require('lru-cache');
 
@@ -103,7 +104,11 @@ describe('Eth calls using MirrorNode', async function () {
     // @ts-ignore
     web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: "throwException" });
 
-    hapiServiceInstance = new HAPIService(logger, registry);
+    const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+    const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+
+    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter);
     sdkClientStub = sinon.createStubInstance(SDKClient);
     sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkClientStub);
 

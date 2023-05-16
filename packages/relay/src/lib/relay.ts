@@ -32,6 +32,7 @@ import { MirrorNodeClient } from './clients';
 import { Registry } from 'prom-client';
 import HAPIService from './services/hapiService/hapiService';
 import constants from './constants';
+import HbarLimit from './hbarlimiter';
 
 export class RelayImpl implements Relay {
   private readonly clientMain: Client;
@@ -50,7 +51,12 @@ export class RelayImpl implements Relay {
     const configuredChainId =
       process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
-    const hapiService = new HAPIService(logger, register);
+
+    const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+    const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
+
+    const hapiService = new HAPIService(logger, register, hbarLimiter);
     this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
