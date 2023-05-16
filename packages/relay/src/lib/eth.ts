@@ -168,7 +168,7 @@ export class EthImpl implements Eth {
   /* Temporary code duplication for a temporary HotFix workaround while the definitive  fix is implemented
   * Please remove initClient workaround, or better yet, do not let this be merged on MAIN, short-lived fix intended only for 0.23.1 version */
   private requestsPerSdkClient = 0;
-  private maxRequestsPerSdkClient = process.env.ETH_CALL_MAX_REQUEST_PER_SDK_INSTANCE || 50;
+  private maxRequestsPerSdkClient = parseInt(process.env.ETH_CALL_MAX_REQUEST_PER_SDK_INSTANCE!) || 50;
   private hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
   private ethSdkClient: SDKClient | undefined;
   private isInTest = typeof global.it === 'function';
@@ -184,7 +184,7 @@ export class EthImpl implements Eth {
 
     // if we have reached the max number of requests per sdk client instance, or if the sdk client instance is undefined, create a new one
     if (this.requestsPerSdkClient >= this.maxRequestsPerSdkClient || this.ethSdkClient == undefined) {
-      this.ethSdkClient = new SDKClient(this.hederaClient, this.logger, this.registry);
+      this.ethSdkClient = new SDKClient(SDKClient.initClient(this.logger, this.hederaNetwork), this.logger, this.registry);
       this.requestsPerSdkClient = 0;
       this.logger.debug(`Limit of requests per instance ${this.maxRequestsPerSdkClient} was reached. Created new SDK client instance`);
     }
