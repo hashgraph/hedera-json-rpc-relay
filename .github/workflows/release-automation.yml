@@ -4,18 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release Version (semver ie. 0.30.0):"
+        description: "Release Version (semver ie. 0.24.0):"
         type: string
         required: true
-
-env:
-  OWNER: hashgraph
-  PACKAGE_NAME: hedera-json-rpc-relay
-  REGISTRY: ghcr.io
 
 jobs:
   branch_bump_tag:
     runs-on: ubuntu-latest
+    env:
+      RELEASE_NOTES_FILENAME: release_notes
     outputs:
       create_pr: ${{ env.CREATE_PR }}
       next_version_snapshot: ${{ env.NEXT_VERSION_SNAPSHOT }}
@@ -34,7 +31,7 @@ jobs:
         run: |
           PREMINOR_VERSION=${{ steps.version_parser.outputs.inc-preminor }}
           NEXT_VERSION_SNAPSHOT=${PREMINOR_VERSION//-0/-SNAPSHOT}
-          RELEASE_BRANCH="release/${{ steps.version_parser.outputs.major }}.${{ steps.version_parser.outputs.minor }}"
+          RELEASE_BRANCH="test-release/${{ steps.version_parser.outputs.major }}.${{ steps.version_parser.outputs.minor }}"
           [[ -z "${{ steps.version_parser.outputs.prerelease }}" ]] && \
             VERSION=${{ steps.version_parser.outputs.release }} || \
             VERSION="${{ steps.version_parser.outputs.release }}-${{ steps.version_parser.outputs.prerelease }}"
