@@ -670,7 +670,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
 
-  it.only('"eth_blockNumber" should return the latest block number using cache', async function () {
+  it('"eth_blockNumber" should return the latest block number using cache', async function () {
     restMock.onGet('blocks?limit=1&order=desc').replyOnce(200, {
       blocks: [defaultBlock]
     });
