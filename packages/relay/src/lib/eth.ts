@@ -1163,14 +1163,9 @@ export class EthImpl implements Eth {
         gas,
         value,
         estimate: false
-      }
+      };
 
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
-
-      if(contractCallResponse === null) {
-        return predefined.CONTRACT_REVERT("Contract call failed: execution reverted");
-      }
-
       return contractCallResponse && contractCallResponse.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
     } catch (e: any) {
       // Temporary workaround until mirror node web3 module implements the support of precompiles
