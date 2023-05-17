@@ -1519,7 +1519,7 @@ export class EthImpl implements Eth {
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
 
-    if (contractResults?.results == null) {
+    if (contractResults == null) {
       // contract result not found
       return null;
     }
@@ -1529,7 +1529,7 @@ export class EthImpl implements Eth {
     const transactionObjects: Transaction[] = [];
     const transactionHashes: string[] = [];
 
-    for (const result of contractResults.results) {
+    for (const result of contractResults) {
       // depending on stage of contract execution revert the result.to value may be null
       if (!_.isNil(result.to)) {
         if(showDetails) {
@@ -1618,12 +1618,12 @@ export class EthImpl implements Eth {
   }
 
   private getTransactionFromContractResults(contractResults: any, requestId?: string) {
-    if (!contractResults || !contractResults.results || contractResults.results.length == 0) {
+    if (!contractResults || contractResults.length == 0) {
       // contract result not found
       return null;
     }
 
-    const contractResult = contractResults.results[0];
+    const contractResult = contractResults[0];
 
     return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp, requestId);
   }
