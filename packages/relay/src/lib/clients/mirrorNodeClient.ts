@@ -97,7 +97,7 @@ export class MirrorNodeClient {
         [MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_TOKENS_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, [400, 404]],
-        [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, []],
+        [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [400,404,415,429,500]],
         [MirrorNodeClient.GET_STATE_ENDPOINT, [400, 404]]
     ]);
 
@@ -228,6 +228,13 @@ export class MirrorNodeClient {
 
         this.logger.info(`Mirror Node client successfully configured to REST url: ${this.restUrl} and Web3 url: ${this.web3Url} `);
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: constants.CACHE_TTL.ONE_HOUR });
+
+        // set  up eth call  accepted error codes.
+        if(process.env.ETH_CALL_ACCEPTED_ERRORS) {
+            MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap
+                .set(MirrorNodeClient.CONTRACT_CALL_ENDPOINT, JSON.parse(process.env.ETH_CALL_ACCEPTED_ERRORS));
+        }
+
     }
 
     private buildUrl(baseUrl: string) {
