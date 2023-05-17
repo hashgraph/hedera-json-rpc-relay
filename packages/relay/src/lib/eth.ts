@@ -1505,7 +1505,7 @@ export class EthImpl implements Eth {
    * @param showDetails
    */
   private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: string ): Promise<Block | null> {
-    const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true);
+    const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true, requestId);
 
     if (blockResponse == null) return null;
 
