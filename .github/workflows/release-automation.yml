@@ -1,4 +1,4 @@
-name: Release Production Environment
+name: Release Branch Automation
 
 on:
   workflow_dispatch:
