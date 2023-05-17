@@ -116,7 +116,7 @@ jobs:
   create_snapshot_pr:
     name: Create snapshot PR
     runs-on: ubuntu-latest
-    needs: release
+    needs: branch_bump_tag
     if: ${{ needs.release.outputs.create_pr == 'true' }}
     env:
       NEXT_VERSION_SNAPSHOT: ${{ needs.release.outputs.next_version_snapshot }}
