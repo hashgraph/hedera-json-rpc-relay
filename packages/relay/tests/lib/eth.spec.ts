@@ -34,7 +34,8 @@ import {
   defaultFromLongZeroAddress,
   expectUnsupportedMethod,
   defaultErrorMessage,
-  buildCryptoTransferTransaction
+  buildCryptoTransferTransaction,
+  mockData
  } from '../helpers';
 
 import pino from 'pino';
@@ -3365,7 +3366,9 @@ describe('Eth calls using MirrorNode', async function () {
 
       const result = await ethImpl.call(callData, 'latest');
       sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
-      expect(result).to.equal("0x00");
+      expect(result).to.not.be.null;
+      expect(result.code).to.equal(-32603);
+      expect(result.name).to.equal("Internal error");
     });
     
     it('eth_call with no gas', async function () {
@@ -3417,6 +3420,36 @@ describe('Eth calls using MirrorNode', async function () {
       web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal("0x00");
+    });
+
+    it('eth_call with all fields but mirrorNode throws 429', async function () {
+      const callData = {
+        ...defaultCallData,
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimit
+      };
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(429, mockData.tooManyRequests);
+        const result = await ethImpl.call(callData, 'latest');
+        expect(result).to.be.not.null;
+        expect(result.code).to.eq(-32605);
+        expect(result.name).to.eq("IP Rate limit exceeded");
+    });
+
+    it('eth_call with all fields but mirrorNode throws 400', async function () {
+      const callData = {
+        ...defaultCallData,
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimit
+      };
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(400, mockData.contractReverted);
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.be.not.null;
+      expect(result.code).to.eq(-32008);
+      expect(result.name).to.eq("Contract revert executed");
     });
 
     it('eth_call with all fields but mirrorNode throws 504 (timeout) on pre-check', async function () {
@@ -3498,7 +3531,9 @@ describe('Eth calls using MirrorNode', async function () {
       sinon.reset();
       const result = await ethImpl.call(callData, 'latest');
       sinon.assert.notCalled(sdkClientStub.submitContractCallQueryWithRetry);
-      expect(result).to.equal("0x");
+      expect(result).to.not.be.null;
+      expect(result.code).to.eq(-32008);
+      expect(result.name).to.eq('Contract revert executed');
     });
 
     it('caps gas at 15_000_000', async function () {

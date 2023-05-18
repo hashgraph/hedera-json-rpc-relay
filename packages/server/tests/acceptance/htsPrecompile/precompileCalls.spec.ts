@@ -738,8 +738,12 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 data: CALLDATA_ALLOWANCE + NON_EXISTING_ACCOUNT.padStart(64, '0') + account2LongZero.replace('0x', '').padStart(64, '0')
             };
 
-            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-            expect(res).to.eq('0x'); // confirm no error
+            await relay.callFailing(
+                'eth_call',
+                [callData, 'latest'],
+                predefined.CONTRACT_REVERT(),
+                requestId
+            );
         });
 
 
@@ -751,8 +755,12 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 data: CALLDATA_ALLOWANCE + adminAccountLongZero.replace('0x', '').padStart(64, '0') + NON_EXISTING_ACCOUNT.padStart(64, '0')
             };
 
-            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-            expect(res).to.eq('0x'); // confirm no error
+            await relay.callFailing(
+                'eth_call',
+                [callData, 'latest'],
+                predefined.CONTRACT_REVERT(),
+                requestId
+            );
         });
     });
 });

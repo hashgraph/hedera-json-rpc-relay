@@ -348,8 +348,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                             data: '0x3ec4de3800000000000000000000000067d8d32e9bf1a9968a5ff53b87d777aa8ebbee69'
                         };
 
-                        const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                        expect(res).to.eq('0x'); // confirm no error
+                        await relay.callFailing('eth_call', [callData, 'latest'], predefined.CONTRACT_REVERT(), requestId);
                     });
 
                     it("007 'data' from request body with wrong encoded parameter", async function () {
@@ -424,8 +423,11 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: PURE_METHOD_CALL_DATA
             };
 
-            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-            expect(res).to.eq('0x'); // confirm no error
+            await relay.callFailing('eth_call', [callData, 'latest'], {
+                code: -32008,
+                message: PURE_METHOD_ERROR_MESSAGE,
+                data: PURE_METHOD_ERROR_DATA
+            }, requestId);
         });
 
         it('Returns revert message for view methods', async () => {
@@ -436,8 +438,11 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: VIEW_METHOD_CALL_DATA
             };
 
-            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-            expect(res).to.eq('0x'); // confirm no error
+            await relay.callFailing('eth_call', [callData, 'latest'], {
+                code: -32008,
+                message: VIEW_METHOD_ERROR_MESSAGE,
+                data: VIEW_METHOD_ERROR_DATA
+            }, requestId);
         });
 
         it('Returns revert reason in receipt for payable methods', async () => {
@@ -585,8 +590,11 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         data: pureMethodsData[i].data
                     };
 
-                    const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                    expect(res).to.eq('0x'); // confirm no error
+                    await relay.callFailing('eth_call', [callData, 'latest'], {
+                        code: -32008,
+                        message: pureMethodsData[i].message,
+                        data: pureMethodsData[i].errorData
+                    }, requestId);
                 });
             }
         });
