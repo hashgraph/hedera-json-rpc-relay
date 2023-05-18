@@ -20,15 +20,18 @@
 
 import {
     AccountBalanceQuery,
+    AccountCreateTransaction,
     AccountId,
     AccountInfoQuery,
     Client,
     ContractCreateTransaction,
     ContractExecuteTransaction,
     ContractFunctionParameters,
+    ContractId,
     FileCreateTransaction,
     Hbar,
     Key,
+    KeyList,
     PrivateKey,
     Query,
     TokenAssociateTransaction,
@@ -225,28 +228,15 @@ export default class ServicesClient {
         return { contractExecuteTimestamp, contractExecutedTransactionId };
     };
 
-    async createAliasAccount(initialBalance = 10, provider = null, requestId?: string): Promise<AliasAccount> {
+    async getAliasAccountInfo(accountId, privateKey: PrivateKey, provider = null, requestId?: string): Promise<AliasAccount> {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-        const privateKey = PrivateKey.generateECDSA();
-        const publicKey = privateKey.publicKey;
-        const aliasAccountId = publicKey.toAccountId(0, 0);
 
-        this.logger.trace(`${requestIdPrefix} Create new Eth compatible account w privateKey: ${privateKey}, alias: ${aliasAccountId.toString()} and balance ~${initialBalance} hb`);
-
-        const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
-            .addHbarTransfer(this._thisAccountId(), new Hbar(initialBalance).negated())
-            .addHbarTransfer(aliasAccountId, new Hbar(initialBalance))
-            .setTransactionMemo('Relay test crypto transfer'), requestId);
-
-        this.logger.debug(`${requestIdPrefix} Get ${aliasAccountId.toString()} receipt`);
-        await aliasCreationResponse?.getReceipt(this.client);
-
-        const balance = await this.executeQuery(new AccountBalanceQuery()
-            .setAccountId(aliasAccountId), requestId);
+        //@ts-ignore
+        const balance = await this.executeQuery(new AccountBalanceQuery().setAccountId(accountId), requestId);
         this.logger.info(`${requestIdPrefix} Balance of the new account: ${balance.toString()}`);
 
-        const accountInfo = await this.executeQuery(new AccountInfoQuery()
-            .setAccountId(aliasAccountId), requestId);
+        //@ts-ignore
+        const accountInfo = await this.executeQuery(new AccountInfoQuery().setAccountId(accountId), requestId);
         this.logger.info(`${requestIdPrefix} New account Info - accountId: ${accountInfo.accountId.toString()}, evmAddress: ${accountInfo.contractAccountId}`);
         const servicesClient = new ServicesClient(
             this.network,
@@ -264,13 +254,66 @@ export default class ServicesClient {
         }
 
         return new AliasAccount(
-            aliasAccountId,
+            accountId,
             accountInfo.accountId,
             accountInfo.contractAccountId,
             servicesClient,
             privateKey,
             wallet
         );
+    }
+
+    // Creates an account that has 2 keys - ECDSA and a contractId. This is required for calling contract methods that create HTS tokens.
+    // The contractId should be the id of the contract.
+    // The account should be created after the contract has been deployed.
+    async createAccountWithContractIdKey(contractIdString: string, initialBalance = 10, provider = null, requestId?: string) {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+        const privateKey = PrivateKey.generateECDSA();
+        const publicKey = privateKey.publicKey;
+        const contractId = ContractId.fromString(contractIdString);
+
+        const keys = [
+            publicKey,
+            contractId
+        ];
+
+        // Create a KeyList of both keys and specify that only 1 is required for signing transactions
+        const keyList = new KeyList(keys, 1);
+
+        this.logger.trace(`${requestIdPrefix} Create new Eth compatible account w ContractId key: ${contractIdString}, privateKey: ${privateKey}, alias: ${publicKey.toEvmAddress()} and balance ~${initialBalance} hb`);
+
+        const accountCreateTx = await (await (new AccountCreateTransaction()
+            .setInitialBalance(new Hbar(initialBalance))
+            .setKey(keyList)
+            .setAlias(publicKey.toEvmAddress())
+            .freezeWith(this.client)))
+            .sign(privateKey);
+
+        const txResult = await accountCreateTx.execute(this.client);
+        const receipt = await txResult.getReceipt(this.client);
+        const accountId = receipt.accountId;
+
+        return this.getAliasAccountInfo(accountId, privateKey, provider, requestId);
+    }
+
+
+    async createAliasAccount(initialBalance = 10, provider = null, requestId?: string): Promise<AliasAccount> {
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+        const privateKey = PrivateKey.generateECDSA();
+        const publicKey = privateKey.publicKey;
+        const aliasAccountId = publicKey.toAccountId(0, 0);
+
+        this.logger.trace(`${requestIdPrefix} Create new Eth compatible account w privateKey: ${privateKey}, alias: ${aliasAccountId.toString()} and balance ~${initialBalance} hb`);
+
+        const aliasCreationResponse = await this.executeTransaction(new TransferTransaction()
+            .addHbarTransfer(this._thisAccountId(), new Hbar(initialBalance).negated())
+            .addHbarTransfer(aliasAccountId, new Hbar(initialBalance))
+            .setTransactionMemo('Relay test crypto transfer'), requestId);
+
+        this.logger.debug(`${requestIdPrefix} Get ${aliasAccountId.toString()} receipt`);
+        await aliasCreationResponse?.getReceipt(this.client);
+
+        return this.getAliasAccountInfo(aliasAccountId, privateKey, provider, requestId);
     };
 
     async deployContract(contract, gas = 100_000, constructorParameters:Uint8Array = new Uint8Array(), initialBalance = 0) {

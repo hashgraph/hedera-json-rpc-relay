@@ -75,10 +75,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         this.beforeAll(async () => {
             requestId = Utils.generateRequestId();
 
-            accounts[0] = await servicesNode.createAliasAccount(50, null, requestId);
+            accounts[0] = await servicesNode.createAliasAccount(50, relay.provider, requestId);
             accounts[1] = await servicesNode.createAliasAccount(10, null, requestId);
             accounts[2] = await servicesNode.createAliasAccount(10, null, requestId);
-            accounts[3] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
+            accounts[3] = await servicesNode.createAliasAccount(10, relay.provider, requestId);
             contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
@@ -497,18 +497,18 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             let NftHTSTokenContractAddress: string;
             let redirectBytecode: string;
 
-            async function deploymainContract() {
-                const mainFactory = new ethers.ContractFactory(TokenCreateJson.abi, TokenCreateJson.bytecode, accounts[3].wallet);
+            async function deploymainContract(signer) {
+                const mainFactory = new ethers.ContractFactory(TokenCreateJson.abi, TokenCreateJson.bytecode, signer);
                 const mainContract = await mainFactory.deploy({gasLimit: 15000000});
                 const {contractAddress} = await mainContract.deployTransaction.wait();
 
                 return contractAddress;
             }
 
-            async function createNftHTSToken() {
-                const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[3].wallet);
+            async function createNftHTSToken(account) {
+                const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, account.wallet);
                 const gasPrice = await relay.gasPrice();
-                const tx = await mainContract.createNonFungibleTokenPublic(accounts[3].wallet.address, {
+                const tx = await mainContract.createNonFungibleTokenPublic(account.wallet.address, {
                     value: ethers.BigNumber.from('50000000000000000000'),    // 50 Hbars
                     gasLimit: 1000000,
                     gasPrice: gasPrice
@@ -520,10 +520,14 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
             before(async () => {
                 basicContract = await servicesNode.deployContract(basicContractJson);
-                mainContractAddress = await deploymainContract();
-                NftHTSTokenContractAddress = await createNftHTSToken();
+                mainContractAddress = await deploymainContract(accounts[0].wallet);
+
                 // Wait for creation to propagate
-                await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
+                const basicMirror = await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
+                const mainContractMirror = await mirrorNode.get(`/contracts/${mainContractAddress}`, requestId);
+
+                const accountWithContractIdKey = await servicesNode.createAccountWithContractIdKey(mainContractMirror.contract_id, 100, relay.provider, requestId);
+                NftHTSTokenContractAddress = await createNftHTSToken(accountWithContractIdKey);
             });
 
             it('should execute "eth_getCode" for hts token', async function () {
