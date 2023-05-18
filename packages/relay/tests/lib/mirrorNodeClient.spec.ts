@@ -60,8 +60,8 @@ describe('MirrorNodeClient', async function () {
   describe('handleError', async() => {
 
     const CONTRACT_CALL_ENDPOINT = 'contracts/call';
-    const nullResponseCodes = [400,404,415,429,500];
-    const errorRepsonseCodes = [501, 503];
+    const nullResponseCodes = [404,415,500];
+    const errorRepsonseCodes = [501, 503, 400, 429];
 
     for (const code of nullResponseCodes) {
       it(`returns null when ${code} is returned`, async () => {
@@ -81,7 +81,11 @@ describe('MirrorNodeClient', async function () {
           await mirrorNodeInstance.handleError(error, CONTRACT_CALL_ENDPOINT, CONTRACT_CALL_ENDPOINT, code, 'POST');
           expect.fail('should have thrown an error');
         } catch (e) {
-          expect(e.message).to.equal('test error');
+          if(code === 400) {
+            expect(e.message).to.equal('execution reverted: ');
+          } else {
+            expect(e.message).to.equal('test error');
+          }
         }
       });
     }

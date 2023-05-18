@@ -1168,18 +1168,30 @@ export class EthImpl implements Eth {
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
       return contractCallResponse && contractCallResponse.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
     } catch (e: any) {
-      // Temporary workaround until mirror node web3 module implements the support of precompiles
-      // If mirror node throws, rerun eth_call and force it to go through the Consensus network
-      if (e) {
-        const errorTypeMessage = e instanceof MirrorNodeClientError && (e.isNotSupported() || e.isNotSupportedSystemContractOperaton()) ? 'Unsupported' : 'Unhandled';
-        this.logger.trace(`${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node`);
-
-        return await this.callConsensusNode(call, gas, requestId);
-      } 
-      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
       if (e instanceof JsonRpcError) {
         return e;
       }
+      
+      if (e instanceof MirrorNodeClientError) {
+        if (e.isRateLimit()) {
+          return predefined.IP_RATE_LIMIT_EXCEEDED(e.errorMessage || `Rate limit exceeded on ${EthImpl.ethCall}`);
+        }
+
+        if (e.isContractReverted()) {
+          return predefined.CONTRACT_REVERT(e.errorMessage);
+        }
+
+        // Temporary workaround until mirror node web3 module implements the support of precompiles
+        // If mirror node throws, rerun eth_call and force it to go through the Consensus network
+        if (e.isNotSupported() || e.isNotSupportedSystemContractOperaton()) {
+          const errorTypeMessage = e.isNotSupported() || e.isNotSupportedSystemContractOperaton() ? 'Unsupported' : 'Unhandled';
+          this.logger.trace(`${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node`);
+          return await this.callConsensusNode(call, gas, requestId);
+        }
+      }
+
+      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
+
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }

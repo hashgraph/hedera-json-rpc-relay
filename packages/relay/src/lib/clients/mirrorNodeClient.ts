@@ -97,7 +97,7 @@ export class MirrorNodeClient {
         [MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_TOKENS_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, [400, 404]],
-        [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [400,404,415,429,500]],
+        [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [404, 415, 500]],
         [MirrorNodeClient.GET_STATE_ENDPOINT, [400, 404]]
     ]);
 
@@ -305,7 +305,7 @@ export class MirrorNodeClient {
         if (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1) {
             this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
             if(pathLabel  === MirrorNodeClient.CONTRACT_CALL_ENDPOINT) {
-                this.logger.warn(`${requestIdPrefix} [${method}] ${path} Error details: (StatusText: '${error.response.statusText}' Data: '${JSON.stringify(error.response.data)}'"')`);
+                this.logger.warn(`${requestIdPrefix} [${method}] ${path} Error details: ( StatusCode: '${effectiveStatusCode}', StatusText: '${error.response.statusText}', Data: '${JSON.stringify(error.response.data)}')`);
             }
             return null;
         }
