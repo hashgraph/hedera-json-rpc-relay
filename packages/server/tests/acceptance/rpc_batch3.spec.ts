@@ -348,7 +348,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                             data: '0x3ec4de3800000000000000000000000067d8d32e9bf1a9968a5ff53b87d777aa8ebbee69'
                         };
 
-                        // await relay.callFailing('eth_call', [callData, 'latest'], predefined.CONTRACT_REVERT(), requestId);
                         const res = await relay.call('eth_call', [callData, 'latest'], requestId);
                         expect(res).to.eq('0x'); // confirm no error
                     });
