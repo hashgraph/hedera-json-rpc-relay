@@ -166,6 +166,16 @@ const mockData = {
                 }
             ]
         }
+    },
+
+    tooManyRequests: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "Too Many Requests"
+                }
+            ]
+        }
     }
 };
 

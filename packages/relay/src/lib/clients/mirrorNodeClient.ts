@@ -97,7 +97,7 @@ export class MirrorNodeClient {
         [MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_TOKENS_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, [400, 404]],
-        [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [400,404,415,429,500]],
+        [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [404, 415, 500]],
         [MirrorNodeClient.GET_STATE_ENDPOINT, [400, 404]]
     ]);
 
