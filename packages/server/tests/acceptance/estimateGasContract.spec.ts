@@ -216,12 +216,12 @@ describe('EstimateGasContract tests', function() {
     expect(Number(estimateGasResponseN)).to.be.greaterThan(Number(estimateGasResponse));
   });
   it('#028 Execute reentrancy with transfer', async function() {
-    const tx = await contract.populateTransaction.reentrancyWithTransfer(randomAddress, '100000000');
+    const tx = await contract.populateTransaction.reentrancyWithTransfer(randomAddress, constants.TINYBAR_TO_WEIBAR_COEF);
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0x61a80);
   });
   it('#029 Execute reentrancy with call', async function() {
-    const tx = await contract.populateTransaction.reentrancyWithCall(randomAddress, '100000000');
+    const tx = await contract.populateTransaction.reentrancyWithCall(randomAddress, constants.TINYBAR_TO_WEIBAR_COEF);
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0xe4ba);
   });
