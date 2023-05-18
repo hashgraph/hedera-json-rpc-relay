@@ -425,12 +425,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: PURE_METHOD_CALL_DATA
             };
 
-            /*await relay.callFailing('eth_call', [callData, 'latest'], {
-                code: -32008,
-                message: PURE_METHOD_ERROR_MESSAGE,
-                data: PURE_METHOD_ERROR_DATA
-            }, requestId);*/
-
             const res = await relay.call('eth_call', [callData, 'latest'], requestId);
             expect(res).to.eq('0x'); // confirm no error
         });
@@ -442,12 +436,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 gas: EthImpl.numberTo0x(30000),
                 data: VIEW_METHOD_CALL_DATA
             };
-
-            /*await relay.callFailing('eth_call', [callData, 'latest'], {
-                code: -32008,
-                message: VIEW_METHOD_ERROR_MESSAGE,
-                data: VIEW_METHOD_ERROR_DATA
-            }, requestId);*/
 
             const res = await relay.call('eth_call', [callData, 'latest'], requestId);
             expect(res).to.eq('0x'); // confirm no error
@@ -597,12 +585,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         gas: EthImpl.numberTo0x(30000),
                         data: pureMethodsData[i].data
                     };
-
-                    /*await relay.callFailing('eth_call', [callData, 'latest'], {
-                        code: -32008,
-                        message: pureMethodsData[i].message,
-                        data: pureMethodsData[i].errorData
-                    }, requestId);*/
 
                     const res = await relay.call('eth_call', [callData, 'latest'], requestId);
                     expect(res).to.eq('0x'); // confirm no error

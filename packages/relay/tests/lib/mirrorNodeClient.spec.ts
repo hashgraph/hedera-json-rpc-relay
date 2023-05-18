@@ -31,7 +31,9 @@ import {mockData, random20BytesAddress} from './../helpers';
 const registry = new Registry();
 
 import pino from 'pino';
+import Constants from "../../src/lib/constants";
 const logger = pino();
+
 
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
@@ -48,11 +50,42 @@ describe('MirrorNodeClient', async function () {
       },
       timeout: 20 * 1000
     });
+    //  process.env.ETH_CALL_ACCEPTED_ERRORS =
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
   });
 
   beforeEach(() => {
     mock = new MockAdapter(instance);
+  });
+
+  describe('handleError', async() => {
+
+    const CONTRACT_CALL_ENDPOINT = 'contracts/call';
+    const nullResponseCodes = [400,404,415,429,500];
+    const errorRepsonseCodes = [501, 503];
+
+    for (const code of nullResponseCodes) {
+      it(`returns null when ${code} is returned`, async () => {
+        let error  = new Error('test error');
+        error["response"] = "test error";
+
+        const result = await mirrorNodeInstance.handleError(error, CONTRACT_CALL_ENDPOINT, CONTRACT_CALL_ENDPOINT,  code, 'POST');
+        expect(result).to.equal(null);
+      });
+    }
+
+    for (const code of errorRepsonseCodes) {
+      it(`throws an error when ${code} is returned`, async () => {
+        try {
+          let error  = new Error('test error');
+          error["response"] = "test error";
+          await mirrorNodeInstance.handleError(error, CONTRACT_CALL_ENDPOINT, CONTRACT_CALL_ENDPOINT, code, 'POST');
+          expect.fail('should have thrown an error');
+        } catch (e) {
+          expect(e.message).to.equal('test error');
+        }
+      });
+    }
   });
 
   it('Can extract the account number out of an account pagination next link url', async () => {
