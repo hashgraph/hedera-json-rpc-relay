@@ -1583,7 +1583,7 @@ export class EthImpl implements Eth {
       return null;
     }
   
-    if (blockNumberOrTag != null && blockNumberOrTag.length < 32 && !EthImpl.blockTagIsEarliestOrPending(blockNumberOrTag)) {
+    if (blockNumberOrTag != null && blockNumberOrTag.length < 32 && !EthImpl.blockTagIsEarliestOrPending(blockNumberOrTag) && !EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
       const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
       const latestBlock = latestBlockResponse.blocks[0];
       if (Number(blockNumberOrTag) > latestBlock.number + maxBlockRange) {
