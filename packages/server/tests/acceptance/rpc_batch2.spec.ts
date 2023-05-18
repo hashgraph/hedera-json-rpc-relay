@@ -75,7 +75,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         this.beforeAll(async () => {
             requestId = Utils.generateRequestId();
 
-            accounts[0] = await servicesNode.createAliasAccount(15, null, requestId);
+            accounts[0] = await servicesNode.createAliasAccount(40, null, requestId);
             accounts[1] = await servicesNode.createAliasAccount(10, null, requestId);
             accounts[2] = await servicesNode.createAliasAccount(10, null, requestId);
             accounts[3] = await servicesNode.createAliasAccount(50, relay.provider, requestId);
