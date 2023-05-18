@@ -305,7 +305,7 @@ export class MirrorNodeClient {
         if (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1) {
             this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
             if(pathLabel  === MirrorNodeClient.CONTRACT_CALL_ENDPOINT) {
-                this.logger.warn(`${requestIdPrefix} [${method}] ${path} Error details: (StatusText: '${error.response.statusText}' Data: '${JSON.stringify(error.response.data)}'"')`);
+                this.logger.warn(`${requestIdPrefix} [${method}] ${path} Error details: ( StatusCode: '${effectiveStatusCode}', StatusText: '${error.response.statusText}', Data: '${JSON.stringify(error.response.data)}')`);
             }
             return null;
         }
