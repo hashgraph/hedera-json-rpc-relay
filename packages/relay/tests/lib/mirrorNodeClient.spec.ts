@@ -50,7 +50,6 @@ describe('MirrorNodeClient', async function () {
       },
       timeout: 20 * 1000
     });
-    //  process.env.ETH_CALL_ACCEPTED_ERRORS =
     mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
   });
 
