@@ -1519,7 +1519,7 @@ export class EthImpl implements Eth {
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
 
-    if (contractResults.length === 0) {
+    if (contractResults == null) {
       // contract result not found
       return null;
     }
