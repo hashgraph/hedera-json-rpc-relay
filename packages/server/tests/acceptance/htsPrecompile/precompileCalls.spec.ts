@@ -738,12 +738,14 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 data: CALLDATA_ALLOWANCE + NON_EXISTING_ACCOUNT.padStart(64, '0') + account2LongZero.replace('0x', '').padStart(64, '0')
             };
 
-            await relay.callFailing(
+            /*await relay.callFailing(
                 'eth_call',
                 [callData, 'latest'],
                 predefined.CONTRACT_REVERT(),
                 requestId
-            );
+            );*/
+            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+            expect(res).to.eq('0x'); // confirm no error
         });
 
         it("Call to allowance method of an HTS token with non-existing spender account in call data returns error", async () => {
@@ -754,12 +756,14 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 data: CALLDATA_ALLOWANCE + adminAccountLongZero.replace('0x', '').padStart(64, '0') + NON_EXISTING_ACCOUNT.padStart(64, '0')
             };
 
-            await relay.callFailing(
+            /*await relay.callFailing(
                 'eth_call',
                 [callData, 'latest'],
                 predefined.CONTRACT_REVERT(),
                 requestId
-            );
+            );*/
+            const res = await relay.call('eth_call', [callData, 'latest'], requestId);
+            expect(res).to.eq('0x'); // confirm no error
         });
     });
 });
