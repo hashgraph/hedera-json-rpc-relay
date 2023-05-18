@@ -484,8 +484,8 @@ describe('MirrorNodeClient', async function () {
     expect(result).to.exist;
     expect(result.links).to.exist;
     expect(result.links.next).to.equal(null);
-    expect(result.results.length).to.gt(0);
-    const firstResult = result.results[0];
+    expect(result.length).to.gt(0);
+    const firstResult = result[0];
     expect(firstResult.contract_id).equal(detailedContractResult.contract_id);
     expect(firstResult.to).equal(detailedContractResult.to);
     expect(firstResult.v).equal(detailedContractResult.v);
