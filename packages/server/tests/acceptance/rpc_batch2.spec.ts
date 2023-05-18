@@ -75,10 +75,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         this.beforeAll(async () => {
             requestId = Utils.generateRequestId();
 
-            accounts[0] = await servicesNode.createAliasAccount(50, relay.provider, requestId);
+            accounts[0] = await servicesNode.createAliasAccount(15, null, requestId);
             accounts[1] = await servicesNode.createAliasAccount(10, null, requestId);
             accounts[2] = await servicesNode.createAliasAccount(10, null, requestId);
-            accounts[3] = await servicesNode.createAliasAccount(10, relay.provider, requestId);
+            accounts[3] = await servicesNode.createAliasAccount(50, relay.provider, requestId);
             contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
@@ -520,13 +520,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
             before(async () => {
                 basicContract = await servicesNode.deployContract(basicContractJson);
-                mainContractAddress = await deploymainContract(accounts[0].wallet);
+                mainContractAddress = await deploymainContract(accounts[3].wallet);
 
                 // Wait for creation to propagate
                 const basicMirror = await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
                 const mainContractMirror = await mirrorNode.get(`/contracts/${mainContractAddress}`, requestId);
 
-                const accountWithContractIdKey = await servicesNode.createAccountWithContractIdKey(mainContractMirror.contract_id, 100, relay.provider, requestId);
+                const accountWithContractIdKey = await servicesNode.createAccountWithContractIdKey(mainContractMirror.contract_id, 60, relay.provider, requestId);
                 NftHTSTokenContractAddress = await createNftHTSToken(accountWithContractIdKey);
             });
 
