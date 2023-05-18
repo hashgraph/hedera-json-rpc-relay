@@ -1191,7 +1191,7 @@ export class EthImpl implements Eth {
         gas,
         value,
         estimate: false
-      }
+      };
 
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
       return contractCallResponse?.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
