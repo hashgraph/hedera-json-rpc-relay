@@ -482,8 +482,7 @@ describe('MirrorNodeClient', async function () {
 
     const result = await mirrorNodeInstance.getContractResults();
     expect(result).to.exist;
-    expect(result.links).to.exist;
-    expect(result.links.next).to.equal(null);
+    expect(result.links).to.not.exist;
     expect(result.length).to.gt(0);
     const firstResult = result[0];
     expect(firstResult.contract_id).equal(detailedContractResult.contract_id);
