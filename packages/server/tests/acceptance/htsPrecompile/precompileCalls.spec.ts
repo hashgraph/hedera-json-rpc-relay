@@ -748,6 +748,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             expect(res).to.eq('0x'); // confirm no error
         });
 
+
         it("Call to allowance method of an HTS token with non-existing spender account in call data returns error", async () => {
             const callData = {
                 from: '0x' + accounts[0].address,
