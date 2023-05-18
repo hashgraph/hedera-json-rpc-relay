@@ -22,7 +22,7 @@
     },
     "devDependencies": {
         "@hashgraph/hedera-local": "^2.7.0",
-        "@hashgraph/sdk": "^2.24.0",
+        "@hashgraph/sdk": "^2.25.0",
         "@koa/cors": "^3.1.0",
         "@types/chai": "^4.3.0",
         "@types/cors": "^2.8.12",
