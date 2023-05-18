@@ -126,6 +126,9 @@ config:
   CONTRACT_QUERY_TIMEOUT_RETRIES: 3
   SUBSCRIPTIONS_ENABLED: false
   ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: false
+  HAPI_CLIENT_TRANSACTION_RESET: 50
+  HAPI_CLIENT_DURATION_RESET: 3600000
+  HAPI_CLIENT_ERROR_RESET: [50]
   
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:

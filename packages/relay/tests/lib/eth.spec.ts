@@ -19,7 +19,6 @@
  */
 
 import path from 'path';
-import axios from 'axios';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
@@ -43,6 +42,8 @@ import { Block, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
+import HbarLimit from '../../src/lib/hbarlimiter';
 
 const LRU = require('lru-cache');
 
@@ -78,7 +79,9 @@ const verifyBlockConstants = (block: Block) => {
 
 let restMock: MockAdapter, web3Mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
+let hapiServiceInstance: HAPIService;
 let sdkClientStub;
+let clientServiceStub;
 let cache;
 let mirrorNodeCache;
 
@@ -101,7 +104,14 @@ describe('Eth calls using MirrorNode', async function () {
     // @ts-ignore
     web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: "throwException" });
 
+    const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+    const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+
+    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter);
     sdkClientStub = sinon.createStubInstance(SDKClient);
+    sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkClientStub);
+
     cache = new LRU({
       max: constants.CACHE_MAX,
       ttl: constants.CACHE_TTL.ONE_HOUR
@@ -110,7 +120,7 @@ describe('Eth calls using MirrorNode', async function () {
     process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
     // @ts-ignore
-    ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', cache);
   });
 
   this.afterAll(() => {
@@ -3236,7 +3246,6 @@ describe('Eth calls using MirrorNode', async function () {
         await new Promise(r => setTimeout(r, 50));
       }
 
-      sinon.resetBehavior();
       await new Promise(r => setTimeout(r, 200));
       try {
         await ethImpl.call({
