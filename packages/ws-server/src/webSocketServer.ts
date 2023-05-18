@@ -23,15 +23,15 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import Koa from 'koa';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
+import KoaJsonRpc from "@hashgraph/json-rpc-server/dist/koaJsonRpc";
 import websockify from 'koa-websocket';
-import {Relay, RelayImpl, predefined, JsonRpcError} from '@hashgraph/json-rpc-relay';
-import {Registry, Counter} from 'prom-client';
+import { Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
+import { Registry, Counter } from 'prom-client';
 import pino from 'pino';
 
 import ConnectionLimiter from "./ConnectionLimiter";
 import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
-import {EthSubscribeLogsParamsObject} from "@hashgraph/json-rpc-server/dist/validator";
-import KoaJsonRpc from "@hashgraph/json-rpc-server/dist/koaJsonRpc";
+import { EthSubscribeLogsParamsObject } from "@hashgraph/json-rpc-server/dist/validator";
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -138,7 +138,7 @@ app.ws.use(async (ctx) => {
             ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
             return;
         }
-        const {method, params} = request;
+        const { method, params } = request;
         let response;
 
         logger.debug(`Received message from ${ctx.websocket.id}. Method: ${method}. Params: ${params}`);
@@ -161,7 +161,7 @@ app.ws.use(async (ctx) => {
                         return;
                     }
 
-                    if(!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
+                    if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
                         response = jsonResp(request.id, predefined.INVALID_PARAMETER("filters.address", 'Only one contract address is allowed'), undefined);
                     } else {
                         subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
@@ -179,7 +179,7 @@ app.ws.use(async (ctx) => {
 
                 limiter.incrementSubs(ctx);
 
-                if(subscriptionId) {
+                if (subscriptionId) {
                     response = jsonResp(request.id, null, subscriptionId);
                 }
             }

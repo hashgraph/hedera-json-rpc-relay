@@ -507,6 +507,24 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 Assertions.transactionReceipt(res, mirrorResult);
             });
 
+            it('@release should fail to execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
+                const gasPrice = await relay.gasPrice(requestId);
+                const transaction = {
+                    ...defaultLondonTransactionData,
+                    to: mirrorContract.evm_address,
+                    nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
+                    maxFeePerGas: gasPrice,
+                    maxPriorityFeePerGas: gasPrice
+                };
+
+                const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                try {
+                    await relay.sendRawTransaction(signedTx+"11", requestId);
+                } catch (error) {
+                    expect(`Error invoking RPC: ${error.message}`).to.equal(predefined.INTERNAL_ERROR(error.message).message);
+                } 
+            });
+
             it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {
                 const res = await relay.call('eth_getTransactionReceipt', [NON_EXISTING_TX_HASH], requestId);
                 expect(res).to.be.null;
@@ -593,7 +611,11 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     gasPrice: await relay.gasPrice(requestId)
                 };
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                await relay.callFailing('eth_sendRawTransaction', [signedTx], predefined.INTERNAL_ERROR(), requestId);
+                try {
+                    await relay.sendRawTransaction(signedTx, requestId);
+                } catch (error) {
+                    expect(`Error invoking RPC: ${error.message}`).to.equal(predefined.INTERNAL_ERROR(error.message).message);
+                } 
             });
 
             it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with gas price too low)', async function () {

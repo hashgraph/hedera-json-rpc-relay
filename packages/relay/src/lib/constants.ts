@@ -19,13 +19,21 @@
   */
 
 enum CACHE_KEY {
-    GAS_PRICE = 'gas_price',
-    FEE_HISTORY = 'fee_history',
-    GET_CONTRACT_RESULT = 'getContractResult',
+    ACCOUNT = 'account',
     ETH_BLOCK_NUMBER = 'eth_block_number',
+    ETH_CALL = 'eth_call',
     ETH_GET_BALANCE = 'eth_get_balance',
+    ETH_GET_BLOCK_BY_HASH = 'eth_getBlockByHash',
+    ETH_GET_BLOCK_BY_NUMBER = 'eth_getBlockByNumber',
+    ETH_GET_TRANSACTION_COUNT_BY_HASH = 'eth_getBlockTransactionCountByHash',
+    ETH_GET_TRANSACTION_COUNT_BY_NUMBER = 'eth_getBlockTransactionCountByNumber',
+    ETH_GET_TRANSACTION_RECEIPT = 'eth_getTransactionReceipt',
+    FEE_HISTORY = 'fee_history',
+    GAS_PRICE = 'gas_price',
+    GET_BLOCK = 'getBlock',
+    GET_CONTRACT_RESULT = 'getContractResult',
     GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee',
-    GET_BLOCK = 'getBlock'
+    RESOLVE_ENTITY_TYPE = 'resolveEntityType',
 }
 
 enum CACHE_TTL {
@@ -62,7 +70,7 @@ export default {
     ISTANBUL_TX_DATA_NON_ZERO_COST: 16,
     TX_BASE_COST: 21_000,
     TX_HOLLOW_ACCOUNT_CREATION_GAS: 587_000,
-    TX_DEFAULT_GAS: 400_000,
+    TX_DEFAULT_GAS_DEFAULT: 400_000,
     TX_CREATE_EXTRA: 32_000,
     TX_DATA_ZERO_COST: 4,
     REQUEST_ID_STRING: `Request ID: `,
@@ -71,6 +79,10 @@ export default {
     MIRROR_NODE_QUERY_LIMIT: 100,
     NEXT_LINK_PREFIX: '/api/v1/',
     QUERY_COST_INCREMENTATION_STEP: 1.1,
+
+    ETH_CALL_CACHE_TTL_DEFAULT: 200,
+    ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT: 1000,
+    ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT: 1000,
 
     TRANSACTION_ID_REGEX: /\d{1}\.\d{1}\.\d{1,10}\@\d{1,10}\.\d{1,9}/,
 

@@ -1,12 +1,27 @@
 version: "3.7"
 services:
   relay:
-    container_name:  hedera-jspn-rpc-relay
+    container_name: hedera-json-rpc-relay
     image: "ghcr.io/hashgraph/hedera-json-rpc-relay:main"
     restart: "unless-stopped"
     ports:
       - 7546:7546
-    pull_policy: always    
+    pull_policy: always
     tty: true
     volumes:
-      - ./.env.sample:/home/node/app/.env.sample
+      - ./.env:/home/node/app/.env
+  relay-ws:
+    container_name: hedera-json-rpc-relay-ws
+    image: "ghcr.io/hashgraph/hedera-json-rpc-relay:main"
+    command: start:ws
+    environment:
+      HEALTHCHECK_PORT: 8547
+      SUBSCRIPTIONS_ENABLED: true
+    restart: "unless-stopped"
+    ports:
+      - 8546:8546
+      - 8547:8547
+    pull_policy: always
+    tty: true
+    volumes:
+      - ./.env:/home/node/app/.env

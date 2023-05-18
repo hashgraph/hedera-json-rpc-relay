@@ -31,7 +31,8 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `HBAR_RATE_LIMIT_TINYBAR`  | "5000_000_000" | total hbar budget in tinybars.                                                                                                                                                                                      |
 | `HEDERA_NETWORK`           | ""             | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `previewnet`, `testnet`, `mainnet` or a map of network IPs -> node accountIds e.g. `{"127.0.0.1:50211":"0.0.3"}` |
 | `INPUT_SIZE_LIMIT`         | "1mb"          | The [koa-jsonrpc](https://github.com/Bitclimb/koa-jsonrpc) maximum size allowed for requests                                                                                                                        |
-| `OPERATOR_ID_MAIN`         | ""             | Operator account ID used to pay for transactions.                                                                                                                                                                   |
+| `MAX_BLOCK_RANGE`          | ""             | The maximum block number greater than the mirror node's latest block to query for                                  
+| `OPERATOR_ID_MAIN`         | ""             | Operator account ID used to pay for transactions.                                                                                                                                                                                |
 | `OPERATOR_KEY_MAIN`        | ""             | Operator private key used to sign transactions in hex encoded DER format.                                                                                                                                           |
 | `RATE_LIMIT_DISABLED`      | ""             | Flag to disable IP based rate limiting.                                                                                                                                                                             |
 | `SERVER_PORT`              | "7546"         | The RPC server port number to listen for requests on. Currently a static value defaulting to 7546. See [#955](https://github.com/hashgraph/hedera-json-rpc-relay/issues/955)                                        |
@@ -67,6 +68,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `TIER_1_RATE_LIMIT`                   | "100"         | Maximum restrictive request count limit used for expensive endpoints rate limiting.                                                                                                                                                                                                                    |
 | `TIER_2_RATE_LIMIT`                   | "800"         | Maximum moderate request count limit used for non expensive endpoints.                                                                                                                                                                                                                                 |
 | `TIER_3_RATE_LIMIT`                   | "1600"        | Maximum relaxed request count limit used for static return endpoints.                                                                                                                                                                                                                                  |
+| `TX_DEFAULT_GAS`                      | "400000"      | Default gas for transactions that do not specify gas.                                                                                                                                                                                                                                                  |
 
 ## WS-Server
 
@@ -80,7 +82,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `WS_CONNECTION_LIMIT`           | "10"     | Maximum amount of concurrent web socket connections allowed.                            |
 | `WS_POLLING_INTERVAL`           | "500"    | Time in ms in between each poll to mirror node while there are subscriptions.           |
 | `WEB_SOCKET_PORT`               | "8546"   | Port for the web socket connections                                                     |
-| `WEB_SOCKET_METRICS_PORT`       | "8547"   | Port for standard http server, used for metrics and health status endpoints             |
+| `WEB_SOCKET_HTTP_PORT`          | "8547"   | Port for standard http server, used for metrics and health status endpoints             |
 | `WS_SUBSCRIPTION_LIMIT`         | "10"     | Maximum amount of subscriptions per single connection                                   |
 | `WS_CONNECTION_LIMIT_PER_IP`    | "10"     | Maximum amount of connections from a single IP address                                  |
 | `WS_MULTIPLE_ADDRESSES_ENABLED` | "false"  | If enabled eth_subscribe will allow subscription to multiple contract address.          |
