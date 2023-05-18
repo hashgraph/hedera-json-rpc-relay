@@ -71,7 +71,6 @@ export default class HAPIService {
   private clientResetCounter: Counter;
   private consensusNodeClientHistogramCost: Histogram;
   private consensusNodeClientHistogramGasFee: Histogram;
-  private operatorAccountGauge: Gauge;
   private metrics: any;
 
   /**
@@ -87,11 +86,10 @@ export default class HAPIService {
     this.hederaNetwork = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
-    this.operatorAccountGauge = this.initOperatorMetric(this.clientMain, logger, register);
     this.consensusNodeClientHistogramCost = this.initCostMetric(register);
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
 
-    this.metrics = { operatorGauge: this.operatorAccountGauge, costHistogram: this.consensusNodeClientHistogramCost, gasHistogram: this.consensusNodeClientHistogramGasFee };
+    this.metrics = { costHistogram: this.consensusNodeClientHistogramCost, gasHistogram: this.consensusNodeClientHistogramGasFee };
     this.client = this.initSDKClient(logger, this.metrics);
 
     const currentDateNow = Date.now();
@@ -325,37 +323,6 @@ export default class HAPIService {
         help: 'Relay consensusnode mode type status gas fee histogram',
         labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
         registers: [register]
-    });
-  }
-
-  /**
-   * Initialize operator account metrics
-   * @param {Client} clientMain
-   * @param {Logger} logger
-   * @param {Registry} register
-   * @returns {Gauge} Operator Metric
-   */
-  private initOperatorMetric(clientMain: Client, logger: Logger, register: Registry) {
-    const metricGaugeName = 'rpc_relay_operator_balance';
-    register.removeSingleMetric(metricGaugeName);
-    return new Gauge({
-        name: metricGaugeName,
-        help: 'Relay operator balance gauge',
-        labelNames: ['mode', 'type', 'accountId'],
-        registers: [register],
-        async collect() {
-            // Invoked when the registry collects its metrics' values.
-            // Allows for updated account balance tracking
-            try {
-                const accountBalance = await (new AccountBalanceQuery()
-                    .setAccountId(clientMain.operatorAccountId!))
-                    .execute(clientMain);
-                this.labels({ 'accountId': clientMain.operatorAccountId!.toString() })
-                    .set(accountBalance.hbars.toTinybars().toNumber());
-            } catch (e: any) {
-                logger.error(e, `Error collecting operator balance. Skipping balance set`);
-            }
-        },
     });
   }
 }

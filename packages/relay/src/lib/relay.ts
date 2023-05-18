@@ -29,7 +29,7 @@ import { SubscriptionController } from './subscriptionController';
 import { Client } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { MirrorNodeClient } from './clients';
-import { Registry } from 'prom-client';
+import { Gauge, Registry } from 'prom-client';
 import HAPIService from './services/hapiService/hapiService';
 import constants from './constants';
 import HbarLimit from './hbarlimiter';
@@ -81,7 +81,39 @@ export class RelayImpl implements Relay {
       this.subImpl = new SubscriptionController(poller, logger, register);
     }
 
+    this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
     logger.info('Relay running with chainId=%s', chainId);
+  }
+
+  /**
+ * Initialize operator account metrics
+ * @param {Client} clientMain
+ * @param {MirrorNodeClient} mirrorNodeClient
+ * @param {Logger} logger
+ * @param {Registry} register
+ * @returns {Gauge} Operator Metric
+ */
+  private initOperatorMetric(clientMain: Client, mirrorNodeClient: MirrorNodeClient, logger: Logger, register: Registry) {
+    const metricGaugeName = 'rpc_relay_operator_balance';
+    register.removeSingleMetric(metricGaugeName);
+    return new Gauge({
+        name: metricGaugeName,
+        help: 'Relay operator balance gauge',
+        labelNames: ['mode', 'type', 'accountId'],
+        registers: [register],
+        async collect() {
+            // Invoked when the registry collects its metrics' values.
+            // Allows for updated account balance tracking
+            try {
+                const account = await mirrorNodeClient.getAccount(clientMain.operatorAccountId!.toString());
+                const accountBalance = account.balance?.balance;
+                this.labels({ 'accountId': clientMain.operatorAccountId!.toString() })
+                    .set(accountBalance.toNumber());
+            } catch (e: any) {
+                logger.error(e, `Error collecting operator balance. Skipping balance set`);
+            }
+        },
+    });
   }
 
   web3(): Web3 {
