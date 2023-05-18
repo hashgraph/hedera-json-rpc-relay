@@ -176,6 +176,18 @@ const mockData = {
                 }
             ]
         }
+    },
+
+    contractReverted: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "CONTRACT_REVERT_EXECUTED",
+                    "detail": "",
+                    "data": "0x"
+                }
+            ]
+        }
     }
 };
 

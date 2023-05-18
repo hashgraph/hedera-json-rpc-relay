@@ -3331,6 +3331,21 @@ describe('Eth calls using MirrorNode', async function () {
         expect(result.name).to.eq("IP Rate limit exceeded");
     });
 
+    it('eth_call with all fields but mirrorNode throws 400', async function () {
+      const callData = {
+        ...defaultCallData,
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimit
+      };
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(400, mockData.contractReverted);
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.be.not.null;
+      expect(result.code).to.eq(-32008);
+      expect(result.name).to.eq("Contract revert executed");
+    });
+
     it('eth_call with all fields but mirrorNode throws 504 (timeout) on pre-check', async function () {
 
       const timeoutAddress = "0x00000000000000000000000000000000000004e2";

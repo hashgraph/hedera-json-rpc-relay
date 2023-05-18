@@ -1174,7 +1174,11 @@ export class EthImpl implements Eth {
       
       if (e instanceof MirrorNodeClientError) {
         if (e.isRateLimit()) {
-          return predefined.IP_RATE_LIMIT_EXCEEDED(e.errorMessage || "eth_call");
+          return predefined.IP_RATE_LIMIT_EXCEEDED(e.errorMessage || `Rate limit exceeded on ${EthImpl.ethCall}`);
+        }
+
+        if (e.isContractReverted()) {
+          return predefined.CONTRACT_REVERT(e.errorMessage);
         }
 
         // Temporary workaround until mirror node web3 module implements the support of precompiles
