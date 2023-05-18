@@ -3389,18 +3389,10 @@ describe('Eth calls using MirrorNode', async function () {
           ]
         }
       });
-
-      sdkClientStub.submitContractCallQueryWithRetry.returns({
-            asBytes: function () {
-              return Uint8Array.of(0);
-            }
-          }
-      );
-
+      sinon.reset();
       const result = await ethImpl.call(callData, 'latest');
-
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, accountAddress1, 'eth_call');
-      expect(result).to.equal("0x00");
+      sinon.assert.notCalled(sdkClientStub.submitContractCallQueryWithRetry);
+      expect(result).to.equal("0x");
     });
 
     it('caps gas at 15_000_000', async function () {
