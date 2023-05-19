@@ -436,42 +436,54 @@ export class EthImpl implements Eth {
   async estimateGas(transaction: any, _blockParam: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
-    // this checks whether this is a transfer transaction and not a contract function execution
-    if (transaction && transaction.to && (!transaction.data || transaction.data === '0x')) {
-      const value = Number(transaction.value);
-      if (value > 0) {
-        const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${transaction.to}`;
-        let toAccount: object | null = this.cache.get(accountCacheKey);
-        if (!toAccount) {
-          toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
+    
+    let gas = EthImpl.gasTxBaseCost;
+    try {
+      const contractCallResponse = await this.mirrorNodeClient.postContractCall({
+        ...transaction,
+        estimate: true
+      }, requestId);
+      if (contractCallResponse?.result) {
+        // Workaround until mirror-node bugfix applied, currently mirror-node returns 21k for contract creation, which is wrong
+        if (!transaction.to && transaction.data !== '0x') {
+          gas = this.defaultGas;
+        } else {
+          gas = EthImpl.prepend0x(contractCallResponse.result);
         }
-
-        // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
-        if (toAccount) {
-          this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey}:${JSON.stringify(toAccount)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
-          this.cache.set(accountCacheKey, toAccount);
-
-          return EthImpl.gasTxBaseCost;
-        }
-
-        return EthImpl.gasTxHollowAccountCreation;
       }
+    } catch (e: any) {
+      this.logger.error(`${requestIdPrefix} Error raised while fetching estimateGas from mirror-node: ${JSON.stringify(e)}`);
 
-      return predefined.INVALID_PARAMETER(0, `Invalid 'value' field in transaction param. Value must be greater than 0`);
-    } else {
-      try {
-        const contractCallResponse = await this.mirrorNodeClient.postContractCall({
-          ...transaction,
-          estimate: true
-        }, requestId);
-        if (contractCallResponse?.result) {
-          return EthImpl.prepend0x(contractCallResponse.result);
+      // Handle Simple Transaction and Hollow account creation
+      if (transaction && transaction.to && (!transaction.data || transaction.data === '0x')){
+        const value = Number(transaction.value);
+        if (value > 0) {
+          const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${transaction.to}`;
+          let toAccount: object | null = this.cache.get(accountCacheKey);
+          if (!toAccount) {
+            toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
+          }
+  
+          // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
+          if (toAccount) {
+            this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey}:${JSON.stringify(toAccount)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
+            this.cache.set(accountCacheKey, toAccount);
+  
+            gas = EthImpl.gasTxBaseCost;
+          } else {
+            gas = EthImpl.gasTxHollowAccountCreation;
+          }
+        } else {
+          return predefined.INVALID_PARAMETER(0, `Invalid 'value' field in transaction param. Value must be greater than 0`);
         }
-      } catch (e: any) {
-        this.logger.error(e, `${requestIdPrefix} Error raised during estimateGas with: ${JSON.stringify(e)}`);
+      } else {
+        // Handle Contract Call or Contract Create
+        gas = this.defaultGas;
       }
-      return this.defaultGas;
     }
+    this.logger.error(`${requestIdPrefix} Returning predefined gas: ${gas}`);
+
+    return gas;
   }
 
   /**
