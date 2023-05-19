@@ -31,7 +31,9 @@ import {mockData, random20BytesAddress} from './../helpers';
 const registry = new Registry();
 
 import pino from 'pino';
+import Constants from "../../src/lib/constants";
 const logger = pino();
+
 
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
@@ -53,6 +55,40 @@ describe('MirrorNodeClient', async function () {
 
   beforeEach(() => {
     mock = new MockAdapter(instance);
+  });
+
+  describe('handleError', async() => {
+
+    const CONTRACT_CALL_ENDPOINT = 'contracts/call';
+    const nullResponseCodes = [404,415,500];
+    const errorRepsonseCodes = [501, 503, 400, 429];
+
+    for (const code of nullResponseCodes) {
+      it(`returns null when ${code} is returned`, async () => {
+        let error  = new Error('test error');
+        error["response"] = "test error";
+
+        const result = await mirrorNodeInstance.handleError(error, CONTRACT_CALL_ENDPOINT, CONTRACT_CALL_ENDPOINT,  code, 'POST');
+        expect(result).to.equal(null);
+      });
+    }
+
+    for (const code of errorRepsonseCodes) {
+      it(`throws an error when ${code} is returned`, async () => {
+        try {
+          let error  = new Error('test error');
+          error["response"] = "test error";
+          await mirrorNodeInstance.handleError(error, CONTRACT_CALL_ENDPOINT, CONTRACT_CALL_ENDPOINT, code, 'POST');
+          expect.fail('should have thrown an error');
+        } catch (e) {
+          if(code === 400) {
+            expect(e.message).to.equal('execution reverted: ');
+          } else {
+            expect(e.message).to.equal('test error');
+          }
+        }
+      });
+    }
   });
 
   it('Can extract the account number out of an account pagination next link url', async () => {
@@ -482,10 +518,9 @@ describe('MirrorNodeClient', async function () {
 
     const result = await mirrorNodeInstance.getContractResults();
     expect(result).to.exist;
-    expect(result.links).to.exist;
-    expect(result.links.next).to.equal(null);
-    expect(result.results.length).to.gt(0);
-    const firstResult = result.results[0];
+    expect(result.links).to.not.exist;
+    expect(result.length).to.gt(0);
+    const firstResult = result[0];
     expect(firstResult.contract_id).equal(detailedContractResult.contract_id);
     expect(firstResult.to).equal(detailedContractResult.to);
     expect(firstResult.v).equal(detailedContractResult.v);

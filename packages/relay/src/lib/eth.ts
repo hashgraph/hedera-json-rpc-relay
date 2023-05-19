@@ -24,7 +24,7 @@ import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import {BigNumber as BN} from "bignumber.js";
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
-import { MirrorNodeClient, SDKClient } from './clients';
+import { MirrorNodeClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
@@ -32,6 +32,7 @@ import constants from './constants';
 import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
 import crypto from 'crypto';
+import HAPIService from './services/hapiService/hapiService';
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -113,12 +114,11 @@ export class EthImpl implements Eth {
   private readonly cache;
 
   /**
-   * The sdk client use for connecting to both the consensus nodes and mirror node. The account
-   * associated with this client will pay for all operations on the main network.
+   * The client service which is responsible for client all logic related to initialization, reinitialization and error/transactions tracking.
    *
    * @private
    */
-  private readonly sdkClient: SDKClient;
+  private readonly hapiService: HAPIService;
 
   /**
    * The interface through which we interact with the mirror node
@@ -152,17 +152,17 @@ export class EthImpl implements Eth {
    * @param chain
    */
   constructor(
-    nodeClient: SDKClient,
+    hapiService: HAPIService,
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
     chain: string,
     cache?
   ) {
-    this.sdkClient = nodeClient;
+    this.hapiService = hapiService;
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient, nodeClient, logger, chain);
+    this.precheck = new Precheck(mirrorNodeClient, this.hapiService, logger, chain);
     this.cache = cache;
     if (!cache) this.cache = new LRU(this.options);
   }
@@ -336,7 +336,7 @@ export class EthImpl implements Eth {
       networkFees = {
         fees: [
           {
-            gas: await this.sdkClient.getTinyBarGasFee(callerName, requestId),
+            gas: await this.hapiService.getSDKClient().getTinyBarGasFee(callerName, requestId),
             'transaction_type': EthImpl.ethTxType
           }
         ]
@@ -851,7 +851,7 @@ export class EthImpl implements Eth {
         }
       }
 
-      const bytecode = await this.sdkClient.getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
+      const bytecode = await this.hapiService.getSDKClient().getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestId);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       if (e instanceof SDKClientError) {
@@ -861,6 +861,8 @@ export class EthImpl implements Eth {
           this.cache.set(cachedLabel, EthImpl.emptyHex);
           return EthImpl.emptyHex;
         }
+
+        this.hapiService.decrementErrorCounter(e.statusCode);
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}, err code: ${e.statusCode}`);
       } else {
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}`);
@@ -1037,7 +1039,7 @@ export class EthImpl implements Eth {
     try {
       const result = await this.mirrorNodeClient.resolveEntityType(address, [constants.TYPE_ACCOUNT, constants.TYPE_CONTRACT], requestId);
       if (result?.type === constants.TYPE_ACCOUNT) {
-        const accountInfo = await this.sdkClient.getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
+        const accountInfo = await this.hapiService.getSDKClient().getAccountInfo(result?.entity.account, EthImpl.ethGetTransactionCount, requestId);
         return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
       }
       else if (result?.type === constants.TYPE_CONTRACT) {
@@ -1049,6 +1051,10 @@ export class EthImpl implements Eth {
       this.logger.error(e, `${requestIdPrefix} Error raised during getTransactionCount for address ${address}, block number or tag ${blockNumOrTag}`);
       if (e instanceof JsonRpcError) {
         return e;
+      }
+
+      if (e instanceof SDKClientError) {
+        this.hapiService.decrementErrorCounter(e.statusCode);
       }
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
@@ -1078,11 +1084,11 @@ export class EthImpl implements Eth {
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     try {
-      const contractExecuteResponse = await this.sdkClient.submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
+      const contractExecuteResponse = await this.hapiService.getSDKClient().submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
 
       try {
         // Wait for the record from the execution.
-        const record = await this.sdkClient.executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
+        const record = await this.hapiService.getSDKClient().executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
         if (!record) {
           this.logger.warn(`${requestIdPrefix} No record retrieved`);
           throw predefined.INTERNAL_ERROR();
@@ -1108,6 +1114,10 @@ export class EthImpl implements Eth {
         `${requestIdPrefix} Failed to successfully submit sendRawTransaction for transaction ${transaction}`);
       if (e instanceof JsonRpcError) {
         return e;
+      }
+
+      if (e instanceof SDKClientError) {
+        this.hapiService.decrementErrorCounter(e.statusCode);
       }
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
@@ -1181,23 +1191,35 @@ export class EthImpl implements Eth {
         gas,
         value,
         estimate: false
-      }
+      };
 
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestId);
       return contractCallResponse?.result ? EthImpl.prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
     } catch (e: any) {
-      // Temporary workaround until mirror node web3 module implements the support of precompiles
-      // If mirror node throws, rerun eth_call and force it to go through the Consensus network
-      if (e) {
-        const errorTypeMessage = e instanceof MirrorNodeClientError && (e.isNotSupported() || e.isNotSupportedSystemContractOperaton()) ? 'Unsupported' : 'Unhandled';
-        this.logger.trace(`${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node`);
-
-        return await this.callConsensusNode(call, gas, requestId);
-      } 
-      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
       if (e instanceof JsonRpcError) {
         return e;
       }
+      
+      if (e instanceof MirrorNodeClientError) {
+        if (e.isRateLimit()) {
+          return predefined.IP_RATE_LIMIT_EXCEEDED(e.errorMessage || `Rate limit exceeded on ${EthImpl.ethCall}`);
+        }
+
+        if (e.isContractReverted()) {
+          return predefined.CONTRACT_REVERT(e.errorMessage);
+        }
+
+        // Temporary workaround until mirror node web3 module implements the support of precompiles
+        // If mirror node throws, rerun eth_call and force it to go through the Consensus network
+        if (e.isNotSupported() || e.isNotSupportedSystemContractOperaton()) {
+          const errorTypeMessage = e.isNotSupported() || e.isNotSupportedSystemContractOperaton() ? 'Unsupported' : 'Unhandled';
+          this.logger.trace(`${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node`);
+          return await this.callConsensusNode(call, gas, requestId);
+        }
+      }
+
+      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
+
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
@@ -1228,7 +1250,7 @@ export class EthImpl implements Eth {
         return cachedResponse;
       }
 
-      const contractCallResponse = await this.sdkClient.submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
+      const contractCallResponse = await this.hapiService.getSDKClient().submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
       const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
       this.cache.set(cacheKey, formattedCallReponse, { ttl: this.ethCallCacheTtl });
@@ -1237,6 +1259,10 @@ export class EthImpl implements Eth {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
       if (e instanceof JsonRpcError) {
         return e;
+      }
+
+      if (e instanceof SDKClientError) {
+        this.hapiService.decrementErrorCounter(e.statusCode);
       }
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
@@ -1519,7 +1545,7 @@ export class EthImpl implements Eth {
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
 
-    if (contractResults?.results == null) {
+    if (contractResults == null) {
       // contract result not found
       return null;
     }
@@ -1529,7 +1555,7 @@ export class EthImpl implements Eth {
     const transactionObjects: Transaction[] = [];
     const transactionHashes: string[] = [];
 
-    for (const result of contractResults.results) {
+    for (const result of contractResults) {
       // depending on stage of contract execution revert the result.to value may be null
       if (!_.isNil(result.to)) {
         if(showDetails) {
@@ -1619,12 +1645,12 @@ export class EthImpl implements Eth {
   }
 
   private getTransactionFromContractResults(contractResults: any, requestId?: string) {
-    if (!contractResults?.results || contractResults.results.length == 0) {
+    if (!contractResults || contractResults.length == 0) {
       // contract result not found
       return null;
     }
 
-    const contractResult = contractResults.results[0];
+    const contractResult = contractResults[0];
 
     return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp, requestId);
   }

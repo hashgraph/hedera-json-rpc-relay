@@ -50,7 +50,6 @@ import {
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
-import { Gauge, Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
@@ -79,12 +78,6 @@ export class SDKClient {
     private readonly logger: Logger;
 
     /**
-     * The metrics register used for metrics tracking.
-     * @private
-     */
-    private readonly register: Registry;
-
-    /**
      * This limiter tracks hbar expenses and limits.
      * @private
      */
@@ -99,10 +92,9 @@ export class SDKClient {
     private consensusNodeClientHistogramCost;
     private consensusNodeClientHistogramGasFee;
     private operatorAccountGauge;
-    private operatorAccountId;
 
     // populate with consensusnode requests via SDK
-    constructor(clientMain: Client, logger: Logger, register: Registry) {
+    constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any) {
         this.clientMain = clientMain;
 
         if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
@@ -112,52 +104,11 @@ export class SDKClient {
         }
 
         this.logger = logger;
-        this.register = register;
-        this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
+        this.consensusNodeClientHistogramCost = metrics.costHistogram;
+        this.consensusNodeClientHistogramGasFee = metrics.gasHistogram;
+        this.operatorAccountGauge = metrics.operatorGauge;
 
-        // clear and create metrics in registry
-        const metricHistogramCost = 'rpc_relay_consensusnode_response';
-        register.removeSingleMetric(metricHistogramCost);
-        this.consensusNodeClientHistogramCost = new Histogram({
-            name: metricHistogramCost,
-            help: 'Relay consensusnode mode type status cost histogram',
-            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-            registers: [register]
-        });
-        const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
-        register.removeSingleMetric(metricHistogramGasFee);
-        this.consensusNodeClientHistogramGasFee = new Histogram({
-            name: metricHistogramGasFee,
-            help: 'Relay consensusnode mode type status gas fee histogram',
-            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-            registers: [register]
-        });
-
-        const metricGaugeName = 'rpc_relay_operator_balance';
-        register.removeSingleMetric(metricGaugeName);
-        this.operatorAccountGauge = new Gauge({
-            name: metricGaugeName,
-            help: 'Relay operator balance gauge',
-            labelNames: ['mode', 'type', 'accountId'],
-            registers: [register],
-            async collect() {
-                // Invoked when the registry collects its metrics' values.
-                // Allows for updated account balance tracking
-                try {
-                    const accountBalance = await (new AccountBalanceQuery()
-                        .setAccountId(clientMain.operatorAccountId!))
-                        .execute(clientMain);
-                    this.labels({ 'accountId': clientMain.operatorAccountId!.toString() })
-                        .set(accountBalance.hbars.toTinybars().toNumber());
-                } catch (e: any) {
-                    logger.error(e, `Error collecting operator balance. Skipping balance set`);
-                }
-            },
-        });
-
-        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
-        this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
+        this.hbarLimiter = hbarLimiter;
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: constants.CACHE_TTL.ONE_HOUR });
     }
 

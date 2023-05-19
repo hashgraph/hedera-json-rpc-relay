@@ -31,6 +31,7 @@ export class MirrorNodeClientError extends Error {
 
     static statusCodes = {
       NOT_FOUND: 404,
+      TOO_MANY_REQUESTS: 429,
       NO_CONTENT: 204
     };
 
@@ -69,6 +70,10 @@ export class MirrorNodeClientError extends Error {
 
     public isEmpty(): boolean {
       return this.statusCode === MirrorNodeClientError.statusCodes.NO_CONTENT;
+    }
+
+    public isRateLimit(): boolean {
+      return this.statusCode === MirrorNodeClientError.statusCodes.TOO_MANY_REQUESTS;
     }
 
     public isNotSupportedSystemContractOperaton(): boolean {

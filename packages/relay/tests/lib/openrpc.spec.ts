@@ -66,6 +66,8 @@ import {
     defaultTxHash,
     signedTransactionHash
 } from '../helpers';
+import ClientService from '../../src/lib/services/hapiService/hapiService';
+import HbarLimit from '../../src/lib/hbarlimiter';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -77,6 +79,7 @@ const Relay = new RelayImpl(logger, registry);
 
 let mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
+let clientServiceInstance: ClientService;
 let sdkClientStub: any;
 
 
@@ -107,9 +110,15 @@ describe("Open RPC Specification", function () {
         mock = new MockAdapter(instance, { onNoMatch: "throwException" });
         // @ts-ignore
         mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
+        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+
+        clientServiceInstance = new ClientService(logger, registry, hbarLimiter);
         sdkClientStub = sinon.createStubInstance(SDKClient);
+        sinon.stub(clientServiceInstance, "getSDKClient").returns(sdkClientStub);
         // @ts-ignore
-        ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a');
+        ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a');
 
         // mocked data
         mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });

@@ -33,6 +33,8 @@ import MockAdapter from "axios-mock-adapter";
 import { ethers } from "ethers";
 import constants from '../../src/lib/constants';
 import { predefined } from '../../src';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
+import HbarLimit from '../../src/lib/hbarlimiter';
 const logger = pino();
 
 describe('Precheck', async function() {
@@ -52,7 +54,7 @@ describe('Precheck', async function() {
     const defaultGasPrice = 720_000_000_000;
     const defaultChainId = Number('0x12a');
     let sdkInstance;
-
+    let hapiServiceInstance: HAPIService;
     let precheck: Precheck;
     let mock: MockAdapter;
 
@@ -72,8 +74,14 @@ describe('Precheck', async function() {
 
         // @ts-ignore
         const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
+
+        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
+        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter);
         sdkInstance = sinon.createStubInstance(SDKClient);
-        precheck = new Precheck(mirrorNodeInstance, sdkInstance, logger, '0x12a');
+        sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkInstance);
+        precheck = new Precheck(mirrorNodeInstance, hapiServiceInstance, logger, '0x12a');
     });
 
     this.beforeEach(() => {
