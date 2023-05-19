@@ -925,6 +925,12 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.exist;
     if (result == null) return;
 
+    // check that we only made the expected number of requests with the expected urls
+    expect(restMock.history.get.length).equal(3);
+    expect(restMock.history.get[0].url).equal('blocks?limit=1&order=desc');
+    expect(restMock.history.get[1].url).equal('contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc');
+    expect(restMock.history.get[2].url).equal('network/fees');
+
     expect(result.number).equal(blockNumberHex);
   });
 
