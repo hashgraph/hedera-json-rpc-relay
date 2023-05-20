@@ -224,7 +224,12 @@ export const predefined = {
   }),
   'PAGINATION_MAX': (count: number) => new JsonRpcError({
     name: 'Mirror Node pagination count range too large',
-    code: -32000,
+    code: -32011,
     message: `Exceeded maximum mirror node pagination count: ${count}`
+  }),
+  'UNKNOWN_BLOCK': new JsonRpcError({
+    name: 'Unknown block',
+    code: -39012,
+    message: 'Unknown block'
   }),
 };

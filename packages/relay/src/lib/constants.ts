@@ -31,6 +31,7 @@ enum CACHE_KEY {
     FEE_HISTORY = 'fee_history',
     GAS_PRICE = 'gas_price',
     GET_BLOCK = 'getBlock',
+    GET_CONTRACT = 'getContract',
     GET_CONTRACT_RESULT = 'getContractResult',
     GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee',
     RESOLVE_ENTITY_TYPE = 'resolveEntityType',
@@ -84,6 +85,7 @@ export default {
     ETH_CALL_CACHE_TTL_DEFAULT: 200,
     ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT: 1000,
     ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT: 1000,
+    ETH_GET_TRANSACTION_COUNT_CACHE_TTL: 1500,
 
     TRANSACTION_ID_REGEX: /\d{1}\.\d{1}\.\d{1,10}\@\d{1,10}\.\d{1,9}/,
 
