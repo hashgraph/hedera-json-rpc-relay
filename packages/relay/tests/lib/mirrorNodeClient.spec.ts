@@ -32,10 +32,10 @@ const registry = new Registry();
 
 import pino from 'pino';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+import { predefined } from '../../src/lib/errors/JsonRpcError';
 const logger = pino();
 import { v4 as uuid } from 'uuid';
 import { formatRequestIdMessage } from '../../src/formatters';
-import { predefined } from '../../src';
 
 const limitOrderPostFix = '?order=desc&limit=1';
 
@@ -1024,7 +1024,8 @@ describe('MirrorNodeClient', async function () {
         await mirrorNodeInstance.getPaginatedResults(
           'results?page=0',
           'results',
-          'genericResults');        expect.fail('should have thrown an error');
+          'genericResults');
+        expect.fail('should have thrown an error');
       } catch (e) {
         const errorRef = predefined.PAGINATION_MAX(0); // reference error for all properties except message
         expect(e.message).to.equal(`Exceeded maximum mirror node pagination count: ${constants.MAX_MIRROR_NODE_PAGINATION}`);

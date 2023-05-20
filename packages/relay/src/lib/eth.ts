@@ -1991,11 +1991,11 @@ export class EthImpl implements Eth {
 
   private async getEthereumTransactionTypeCount(address: string, timestamp: any, requestId: string | undefined) {
     const ethereumTransactions = await this.mirrorNodeClient.getAccountEthereumTransactionsByTimestampPaginated(address, timestamp, requestId);
-    if (ethereumTransactions == null || ethereumTransactions.transactions == null || ethereumTransactions.transactions.length === 0) {
+    if (ethereumTransactions == null) {
       return 0;
     }
 
-    return ethereumTransactions.transactions.length;
+    return ethereumTransactions.length;
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
