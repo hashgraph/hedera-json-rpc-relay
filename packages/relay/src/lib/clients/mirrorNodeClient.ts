@@ -80,7 +80,7 @@ export class MirrorNodeClient {
     private static CONTRACT_CALL_ENDPOINT = 'contracts/call';
 
     private static ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
-    private static ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transaction_type';
+    private static ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
 
     static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([

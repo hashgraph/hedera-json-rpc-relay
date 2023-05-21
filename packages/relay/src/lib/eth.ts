@@ -56,6 +56,7 @@ interface LatestBlockNumberTimestamp {
 export class EthImpl implements Eth {
   static emptyHex = '0x';
   static zeroHex = '0x0';
+  static oneHex = '0x1';
   static zeroHex8Byte = '0x0000000000000000';
   static zeroHex32Byte = '0x0000000000000000000000000000000000000000000000000000000000000000';
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
@@ -1084,21 +1085,23 @@ export class EthImpl implements Eth {
         return EthImpl.zeroHex;
       } else if (EthImpl.blockTagIsLatestOrPending(blockNumOrTag)) {
         // if latest or pending, get latest ethereumNonce from mirror node account API
-        this.logger.trace(`*** ${requestIdPrefix} is latest`);
         nonceCount = await this.getAccountLatestEthereumNonce(address, requestId);
       } else if (blockNumOrTag === EthImpl.blockEarliest) {
         const contract = await this.mirrorNodeClient.isValidContract(address, requestId);
-        if (contract === null) {
+        if (contract) {
           // historical contract nonces unsupported until HIP 729 and mirror node historical account info is implemented
-          return predefined.UNSUPPORTED_OPERATION('retrieval of historical contract account nonces');
+          // Q: should we return the default 0x1 or an error here?
+          return EthImpl.oneHex;
+          // return predefined.UNSUPPORTED_OPERATION('retrieval of historical contract account nonces');
         }
 
         nonceCount = await this.getAccountNonceByTransactionCount(address, blockNumOrTag, true, requestId);
       } else if (!isNaN(blockNum)) {
         const contract = await this.mirrorNodeClient.isValidContract(address, requestId);
-        if (contract === null) {
+        if (contract) {
           // historical contract nonces unsupported until HIP 729 and mirror node historical account info is implemented
-          return predefined.UNSUPPORTED_OPERATION('retrieval of historical contract account nonces');
+          return EthImpl.oneHex;
+          // return predefined.UNSUPPORTED_OPERATION('retrieval of historical contract account nonces');
         }
 
         // if valid block number, get block timestamp
@@ -1937,15 +1940,25 @@ export class EthImpl implements Eth {
     return EthImpl.zeroHex;
   }
 
+  /**
+   * Returns the number of transactions sent from an address by searching for the ethereum transaction involving the address
+   * Remove when https://github.com/hashgraph/hedera-mirror-node/issues/5862 is implemented
+   * 
+   * @param address string
+   * @param blockNum string
+   * @param earliest flag if block is earliest
+   * @param requestId string
+   * @returns string
+   */
   private async getAccountNonceByTransactionCount(address: string, blockNum: any, earliest: boolean, requestId: string | undefined) {
-    const account = await this.mirrorNodeClient.getAccountsByAddress(address, requestId);
+    const account = await this.mirrorNodeClient.getAccount(address, requestId);
     if (account === null) {
       return EthImpl.zeroHex;
     }
 
-    // we don't support calculation of the nonce for accounts with 0 or more than 100 transactions
-    // q: why 0 again. Was this since contracts with 0 nonce are intisguishable from contract with nonces not exposed?
-    if (account.ethereum_nonce === 0 || account.ethereum_nonce > 100) {
+    // we don't support calculation of the nonce for accounts with more than 100 transactions
+    // q: should we drop this? If so we can just check for account existence
+    if (account.ethereum_nonce > 100) { // make configureable
       throw predefined.INTERNAL_ERROR('Searches for accounts with large nonces are not supported');
     }
 
@@ -1971,19 +1984,6 @@ export class EthImpl implements Eth {
         throw predefined.UNKNOWN_BLOCK;
       }
 
-      // check time diff between block and account details block timestamp
-      // Q: is this necessary as the count is done in asc order? Should we instead get the current nonce and subtract the count observed? 
-      const latestBlockTimestamp = Number(account.balance.timestamp.split('.')[0]);
-      const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
-      const timeDiff = latestBlockTimestamp - blockTimestamp;
-      if (timeDiff > 20) {
-        // we only support up to 10 blocks back, searches beyond this may be too costly
-        return predefined.INTERNAL_ERROR('Searches beyond 10 blocks are not supported');
-      } else if (timeDiff <= 20) { 
-        // if block is within recent range return current nonce count
-        return account.ethereum_nonce;
-      }
-
       endTimestamp = block.timestamp.to;
     }
 
@@ -1993,10 +1993,10 @@ export class EthImpl implements Eth {
   private async getEthereumTransactionTypeCount(address: string, timestamp: any, requestId: string | undefined) {
     const ethereumTransactions = await this.mirrorNodeClient.getAccountEthereumTransactionsByTimestampPaginated(address, timestamp, requestId);
     if (ethereumTransactions == null) {
-      return 0;
+      return EthImpl.zeroHex;
     }
 
-    return ethereumTransactions.length;
+    return EthImpl.numberTo0x(ethereumTransactions.length);
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
