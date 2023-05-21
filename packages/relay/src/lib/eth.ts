@@ -1084,6 +1084,7 @@ export class EthImpl implements Eth {
         return EthImpl.zeroHex;
       } else if (EthImpl.blockTagIsLatestOrPending(blockNumOrTag)) {
         // if latest or pending, get latest ethereumNonce from mirror node account API
+        this.logger.trace(`*** ${requestIdPrefix} is latest`);
         nonceCount = await this.getAccountLatestEthereumNonce(address, requestId);
       } else if (blockNumOrTag === EthImpl.blockEarliest) {
         const contract = await this.mirrorNodeClient.isValidContract(address, requestId);
@@ -1933,7 +1934,7 @@ export class EthImpl implements Eth {
       return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
     }
 
-    return null;
+    return EthImpl.zeroHex;
   }
 
   private async getAccountNonceByTransactionCount(address: string, blockNum: any, earliest: boolean, requestId: string | undefined) {

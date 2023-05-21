@@ -334,6 +334,7 @@ describe("Open RPC Specification", function () {
         mock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).reply(200, { account: contractAddress1 });
         const response = await ethImpl.getTransactionCount(contractAddress1, 'latest');
 
+        console.log(`*** response: ${JSON.stringify(response)}`);
         validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);
     });
 
