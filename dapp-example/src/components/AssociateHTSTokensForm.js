@@ -18,11 +18,11 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
 
     const htsTokenAssociate = useCallback(async () => {
       const contract = new ethers.Contract(bootstrapInfo.HTS_CONTRACT_ADDRESS, HederaTokenService.abi, signer);
-      // create a contract object for the token
+
       try {
         setIsLoading(true);
         setHtsTokenAssocaiteMsg('Loading...');
-        
+
         const tx = await contract.associateTokenPublic(await signer.getAddress(), htsTokenAddress, { gasLimit: 1_000_0000 });
         const receipt = await tx.wait();
 
