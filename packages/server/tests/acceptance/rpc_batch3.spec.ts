@@ -68,8 +68,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         requestId = Utils.generateRequestId();
 
-        accounts[0] = await servicesNode.createAliasAccount(30, null, requestId);
-        accounts[1] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
+        accounts[0] = await servicesNode.createAliasAccount(80, null, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(80, relay.provider, requestId);
 
         reverterContract = await servicesNode.deployContract(reverterContractJson);
         // Wait for creation to propagate
