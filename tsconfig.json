@@ -24,8 +24,9 @@
         "noImplicitAny": false,
         /* Type Checking */
         "declaration": true,
-        "strict": true
+        "strict": true,
         /* Enable all strict type-checking options. */
+        "typeRoots": ["./node_modules/@types", "./src/types"]
     },
     "include": [
         "src"
