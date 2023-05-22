@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { Button, TextField, Typography } from "@mui/material";
 import { ethers } from 'ethers';
 import HederaTokenService from '../contracts/HederaTokenService.json'
-// import IHRCabi from '../contracts/IHRC.json'
 import bootstrapInfo from '../contracts/.bootstrapInfo.json'
 
 const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
@@ -19,13 +18,10 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
 
     const htsTokenAssociate = useCallback(async () => {
       const contract = new ethers.Contract(bootstrapInfo.HTS_CONTRACT_ADDRESS, HederaTokenService.abi, signer);
-      // const IHRC = new ethers.utils.Interface(IHRCabi);
       // create a contract object for the token
       try {
         setIsLoading(true);
         setHtsTokenAssocaiteMsg('Loading...');
-        
-        // const hrcToken = new Contract(htsTokenAddress, IHRC, signer);
         
         const tx = await contract.associateTokenPublic(await signer.getAddress(), htsTokenAddress, { gasLimit: 1_000_0000 });
         const receipt = await tx.wait();
