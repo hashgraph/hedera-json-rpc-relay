@@ -49,6 +49,11 @@ config:
   HAPI_CLIENT_DURATION_RESET: 3600000
   HAPI_CLIENT_ERROR_RESET: [50]
 
+# -- Extra environment variables from existing secrets or configmaps
+extraEnvFrom: []
+# - secretRef:
+#     name: "{{ .Release.Name }}-env"
+
 cronjob:
   enabled: false
   image:
