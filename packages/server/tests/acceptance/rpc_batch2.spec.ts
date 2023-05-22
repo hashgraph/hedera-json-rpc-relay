@@ -120,12 +120,14 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             });
 
             it('@release should execute "eth_estimateGas" for contract call', async function () {
+                const expectedRes = `0x${(400000).toString(16)}`;
                 const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
                     to: mirrorContract.evm_address,
                     data: BASIC_CONTRACT_PING_CALL_DATA
                 }], requestId);
                 expect(res).to.contain('0x');
-                expect(res).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
+                // add alternative for the assert, because we get race condition in CI and constants is not initialized sometimes.
+                expect(res).to.equal(EthImpl.defaultTxGas || expectedRes);
             });
 
             it('@release should execute "eth_estimateGas" for existing account', async function () {
