@@ -35,7 +35,8 @@ import {
   expectUnsupportedMethod,
   defaultErrorMessage,
   buildCryptoTransferTransaction,
-  mockData
+  mockData,
+  signTransaction
  } from '../helpers';
 
 import pino from 'pino';
@@ -45,6 +46,8 @@ import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
+import { v4 as uuid } from 'uuid';
+import { ethers } from 'ethers';
 
 const LRU = require('lru-cache');
 
@@ -3794,6 +3797,21 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_sendRawTransaction', async function() {
+    const accountEndpoint = 'accounts/0x9eaee9E66efdb91bfDcF516b034e001cc535EB57';
+    const accountAddress = '0x9eaee9E66efdb91bfDcF516b034e001cc535EB57';
+    const gasPrice = '0xad78ebc5ac620000';
+    const value = '0x511617DE831B9E173';
+
+    this.beforeEach(()=> {
+      sinon.restore();
+      sdkClientStub = sinon.createStubInstance(SDKClient);
+      sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkClientStub);
+    });
+
+    this.afterEach(() => {
+      sinon.restore();
+    });    
+
     it('should return a predefined INTERNAL_ERROR instead of NUMERIC_FAULT as precheck exception', async function() {
       // tx with 'gasLimit: BigNumber { value: "30678687678687676876786786876876876000" }'
       const txHash = '0x02f881820128048459682f0086014fa0186f00901714801554cbe52dd95512bedddf68e09405fba803be258049a27b820088bab1cad205887185174876e80080c080a0cab3f53602000c9989be5787d0db637512acdd2ad187ce15ba83d10d9eae2571a07802515717a5a1c7d6fa7616183eb78307b4657d7462dbb9e9deca820dd28f62';
@@ -3809,6 +3827,30 @@ describe('Eth calls using MirrorNode', async function () {
       }
       expect(hasError).to.be.true;
     });
+
+    it('should return a computed hash if unable to retrieve EthereumHash from record due to contract revert', async function () {
+      restMock.onGet(accountEndpoint).reply(200, { account: accountAddress });
+    
+      const transaction = {
+        chainId: 0x12a,
+        to: accountAddress1,
+        from: accountAddress,
+        value,
+        gasPrice,
+        gasLimit: maxGasLimitHex,
+      };
+    
+      sdkClientStub.getAccountBalanceInTinyBar.returns(ethers.BigNumber.from('1000000000000000000000'));    
+      const signed = await signTransaction(transaction);
+      const id = uuid();
+    
+      restMock.onGet('network/fees').reply(200, defaultNetworkFees);
+      restMock.onGet('transactions/0.0.902-1684375868-230217103').reply(200, null);
+    
+      const resultingHash = await ethImpl.sendRawTransaction(signed, id);
+      expect(resultingHash).to.equal('0x720767603b7af0d096b51d24f485f28713299b16765a5736b913f29c3d970f49');
+    });    
+
   });
 
   describe('eth_getStorageAt', async function() {
