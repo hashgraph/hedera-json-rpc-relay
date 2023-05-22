@@ -55,13 +55,20 @@ describe('@erc20 Acceptance Tests', async function () {
         {testName: ERC20, expectedBytecode: ERC20MockJson.deployedBytecode},
         {testName: HTS}
     ];
+    
+    const gasOptions = async (gasLimit = 1_500_000) => {
+        return  {
+            gasLimit: gasLimit,
+            gasPrice: await relay.gasPrice(requestId)
+        };
+    }
 
     this.beforeAll(async () => {
         requestId = Utils.generateRequestId();
 
-        accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
-        accounts[1] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
-        accounts[2] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
+        accounts[0] = await servicesNode.createAliasAccount(60, relay.provider, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
+        accounts[2] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
 
         initialHolder = accounts[0].address;
         recipient = accounts[1].address;
@@ -162,7 +169,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                 });
 
                                 it ('@release contract owner transfers tokens', async function () {
-                                    tx = await contract.connect(tokenOwnerWallet).transfer(to, amount);
+                                    tx = await contract.connect(tokenOwnerWallet).transfer(to, amount, await gasOptions());
                                     // 5 seconds sleep to propagate the changes to mirror node
                                     await new Promise(r => setTimeout(r, 5000));
                                     const ownerBalance = await contract.balanceOf(tokenOwner);
@@ -180,7 +187,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                 });
 
                                 it ('other account transfers tokens back to owner', async function () {
-                                    tx = await contract.connect(toWallet).transfer(tokenOwner, amount);
+                                    tx = await contract.connect(toWallet).transfer(tokenOwner, amount, await gasOptions());
                                     // 5 seconds sleep to propagate the changes to mirror node
                                     await new Promise(r => setTimeout(r, 5000));
                                     const ownerBalance = await contract.balanceOf(tokenOwner);
@@ -193,7 +200,7 @@ describe('@erc20 Acceptance Tests', async function () {
                             describe('when the spender has enough allowance', function () {
                                 let tx, receipt;
                                 before(async function () {
-                                    tx = await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, {gasLimit: 1_000_000});
+                                    tx = await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, await gasOptions());
                                     receipt = await tx.wait();
                                     // 5 seconds sleep to propagate the changes to mirror node
                                     await new Promise(r => setTimeout(r, 5000));
@@ -218,7 +225,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     it('transfers the requested amount', async function () {
-                                        tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply, {gasLimit: 1_000_000});
+                                        tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply, await gasOptions());
                                         const receipt = await tx.wait();
                                         // 5 seconds sleep to propagate the changes to mirror node
                                         await new Promise(r => setTimeout(r, 5000));
@@ -246,7 +253,7 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                     beforeEach('reducing balance', async function () {
                                         amount = initialSupply;
-                                        await contract.transfer(to, 1);
+                                        await contract.transfer(to, 1, await gasOptions(1_500_000));
                                     });
 
                                     it('reverts', async function () {
@@ -266,7 +273,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                 });
 
                                 beforeEach(async function () {
-                                    await contract.approve(spender, allowance, {gasLimit: 1_000_000});
+                                    await contract.approve(spender, allowance, await gasOptions());
                                 });
 
                                 describe('when the token owner has enough balance', function () {
@@ -290,7 +297,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     beforeEach('reducing balance', async function () {
-                                        await contract.transfer(to, 2);
+                                        await contract.transfer(to, 2, await gasOptions(1_500_000));
                                     });
 
                                     it('reverts', async function () {
@@ -304,7 +311,7 @@ describe('@erc20 Acceptance Tests', async function () {
 
                             describe('@release when the spender has unlimited allowance', function () {
                                 beforeEach(async function () {
-                                    await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256, {gasLimit: 1_000_000});
+                                    await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256, await gasOptions());
                                     // 5 seconds sleep to propagate the changes to mirror node
                                     await new Promise(r => setTimeout(r, 5000));
                                 });
@@ -333,7 +340,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                 amount = initialSupply;
                                 to = ethers.constants.AddressZero;
                                 tokenOwnerWallet = accounts[0].wallet;
-                                await contract.connect(tokenOwnerWallet).approve(spender, amount, {gasLimit: 1_000_000});
+                                await contract.connect(tokenOwnerWallet).approve(spender, amount, await gasOptions(1_500_00));
                             });
 
                             it('reverts', async function () {
