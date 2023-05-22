@@ -3840,7 +3840,14 @@ describe('Eth calls using MirrorNode', async function () {
         gasLimit: maxGasLimitHex,
       };
     
-      sdkClientStub.getAccountBalanceInTinyBar.returns(ethers.BigNumber.from('1000000000000000000000'));    
+      sdkClientStub.getAccountBalanceInTinyBar.returns(ethers.BigNumber.from('1000000000000000000000'));  
+      sdkClientStub.executeGetTransactionRecord.throws(
+        new SDKClientError({
+          status: { _code: 33 },
+          message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
+        })
+      );
+        
       const signed = await signTransaction(transaction);
       const id = uuid();
     
