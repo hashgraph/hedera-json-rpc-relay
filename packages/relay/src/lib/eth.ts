@@ -1147,7 +1147,7 @@ export class EthImpl implements Eth {
       const transactionId = e.message.match(constants.TRANSACTION_ID_REGEX);
       if (transactionId) {
         const tx = await this.mirrorNodeClient.getTransactionById(transactionId[0], undefined, requestId);
-        if (tx.transactions.length > 1) {
+        if (tx?.transactions.length > 1) {
           const result = tx.transactions[1].result;
           this.logger.error(`${requestIdPrefix} Transaction failed with result: ${result}`);
         }
