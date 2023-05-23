@@ -470,7 +470,7 @@ export class MirrorNodeClient {
             MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT,
             requestId);
 
-        if(response != undefined && response.transaction_index != undefined && response.result === "SUCCESS") {
+        if(response != undefined && response.transaction_index != undefined && response.block_number != undefined && response.result === "SUCCESS") {
             this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(response)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
             this.cache.set(cacheKey, response);
         }
@@ -480,14 +480,14 @@ export class MirrorNodeClient {
 
     /**
      * In some very rare cases the /contracts/results api is called before all the data is saved in
-     * the mirror node DB and `transaction_index` is returned as `undefined`. A single re-fetch is sufficient to
+     * the mirror node DB and `transaction_index` or `block_number` is returned as `undefined`. A single re-fetch is sufficient to
      * resolve this problem.
      * @param transactionIdOrHash
      * @param requestId
      */
     public async getContractResultWithRetry(transactionIdOrHash: string, requestId?: string) {
         const contractResult = await this.getContractResult(transactionIdOrHash, requestId);
-        if (contractResult && typeof contractResult.transaction_index === 'undefined') {
+        if (contractResult && !(contractResult.transaction_index && contractResult.block_number)) {
             return this.getContractResult(transactionIdOrHash, requestId);
         }
         return contractResult;

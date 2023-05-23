@@ -4522,6 +4522,48 @@ describe('Eth', async function () {
       expect(result.transactionIndex).to.be.null;
     });
 
+    it('handles transactions with undefined block_number', async function () {
+      const detailedResultsWithNullNullableValues = {
+        ...defaultDetailedContractResultByHash,
+        block_number: undefined
+      };
+
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640511';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
+      const result = await ethImpl.getTransactionByHash(uniqueTxHash);
+      if (result == null) return;
+
+      expect(result).to.exist;
+      expect(result.blockNumber).to.be.null;
+    });
+
+    it('handles transactions with undefined transaction_index and block_number', async function () {
+      const detailedResultsWithNullNullableValues = {
+        ...defaultDetailedContractResultByHash,
+        block_number: undefined,
+        transaction_index: undefined
+      };
+
+      // fake unique hash so request dont re-use the cached value but the mock defined
+      const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52d1a53ec640511';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        evm_address: `${defaultTransaction.from}`
+      });
+      const result = await ethImpl.getTransactionByHash(uniqueTxHash);
+      if (result == null) return;
+
+      expect(result).to.exist;
+      expect(result.blockNumber).to.be.null;
+      expect(result.transactionIndex).to.be.null;
+    });
+
     it('returns reverted transactions', async function () {
       restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHashReverted);
       restMock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {

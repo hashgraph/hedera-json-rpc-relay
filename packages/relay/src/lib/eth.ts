@@ -1322,6 +1322,10 @@ export class EthImpl implements Eth {
       return null;
     }
 
+    if (!contractResult.block_number || !contractResult.transaction_index) {
+      this.logger.warn(`${requestIdPrefix} getTransactionByHash(hash=${hash}) mirror-node returned status 200 with missing properties in contract_results - block_number==${contractResult.block_number} and transaction_index==${contractResult.transaction_index}`);
+    }
+
     let fromAddress;
     if (contractResult.from) {
       fromAddress = contractResult.from.substring(0, 42);
@@ -1354,7 +1358,7 @@ export class EthImpl implements Eth {
     return new Transaction({
       accessList: undefined, // we don't support access lists, so punt for now
       blockHash: EthImpl.toHash32(contractResult.block_hash),
-      blockNumber: EthImpl.numberTo0x(contractResult.block_number),
+      blockNumber: EthImpl.nullableNumberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
       from: fromAddress,
       gas: EthImpl.nanOrNumberTo0x(contractResult.gas_used),
