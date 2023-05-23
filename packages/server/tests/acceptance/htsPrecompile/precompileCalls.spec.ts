@@ -63,7 +63,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     const accounts: AliasAccount[] = [];
     let requestId;
 
-    let IERC20Metadata, IERC20, IERC721Metadata, IERC721Enumerable, IERC721, IHederaTokenService, TokenManager;
+    let IERC20Metadata, IERC20, IERC721Metadata, IERC721Enumerable, IERC721, IHederaTokenService, TokenManager, TokenManagementSigner;
     let nftSerial, tokenAddress, nftAddress, htsImplAddress, htsImpl, adminAccountLongZero, account1LongZero, account2LongZero;
 
     let tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressNoFees,
@@ -213,6 +213,11 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         const TokenManagementContractFactory = new ethers.ContractFactory(TokenManagementContractJson.abi, TokenManagementContractJson.bytecode, accounts[0].wallet);
         TokenManager = await TokenManagementContractFactory.deploy(Constants.GAS.LIMIT_15_000_000);
         const rec7 = await htsImpl.deployTransaction.wait();
+
+        const tokenManagementMirror = await mirrorNode.get(`/contracts/${TokenManager.address}`, requestId);
+        accounts[3] = await servicesNode.createAccountWithContractIdKey(tokenManagementMirror.contract_id, 50, relay.provider, requestId);
+
+        TokenManagementSigner = TokenManager.connect(accounts[3].wallet);
 
         tokenAddresses = [tokenAddressNoFees, tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressFractionalFees, tokenAddressAllFees];
         nftAddresses = [nftAddress, nftAddressRoyaltyFees];
