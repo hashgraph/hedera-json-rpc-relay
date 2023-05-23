@@ -888,7 +888,7 @@ describe('MirrorNodeClient', async function () {
       const requestIdPrefix = formatRequestIdMessage(id);
 
       const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
-      expect(result).to.eq(MirrorNodeClientError.statusCodes.NOT_FOUND);
+      expect(result).to.be.null;
     });
 
     it('should get the state of an empty transaction when the contract reverts', async() => {
@@ -902,7 +902,7 @@ describe('MirrorNodeClient', async function () {
       const requestIdPrefix = formatRequestIdMessage(id);
 
       const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
-      expect(result).to.eq(MirrorNodeClientError.statusCodes.NO_CONTENT);
+      expect(result).to.be.null;
     });
 
     it('should get the state of a failed transaction when the contract reverts', async() => {

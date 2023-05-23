@@ -685,13 +685,13 @@ export class MirrorNodeClient {
 
               if(tx === null){
 
-                this.logger.error(`${requestIdPrefix} Transaction failed with null result: ${MirrorNodeClientError.statusCodes.NOT_FOUND}`);
-                return MirrorNodeClientError.statusCodes.NOT_FOUND;
+                this.logger.error(`${requestIdPrefix} Transaction failed with null result`);
+                return null;
 
               } else if(tx.length === 0){
 
-                this.logger.error(`${requestIdPrefix} Transaction failed with empty result: ${MirrorNodeClientError.statusCodes.NO_CONTENT}`);
-                return MirrorNodeClientError.statusCodes.NO_CONTENT;
+                this.logger.error(`${requestIdPrefix} Transaction failed with empty result`);
+                return null;
 
               } else if (tx?.transactions.length > 1) {
 
