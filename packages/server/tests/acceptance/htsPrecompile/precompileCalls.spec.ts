@@ -73,7 +73,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         requestId = Utils.generateRequestId();
 
         // create accounts
-        accounts[0] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
+        accounts[0] = await servicesNode.createAliasAccount(400, relay.provider, requestId);
         accounts[1] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
         accounts[2] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
 

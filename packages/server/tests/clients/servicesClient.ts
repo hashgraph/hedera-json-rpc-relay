@@ -409,7 +409,8 @@ export default class ServicesClient {
             .setTreasuryAccountId(AccountId.fromString(args.treasuryAccountId))
             .setInitialSupply(args.initialSupply)
             .setTransactionId(TransactionId.generate(AccountId.fromString(args.treasuryAccountId)))
-            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]]);
+            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]])
+            .setMaxTransactionFee(50);
 
         if (args.kyc) {
             transaction.setKycKey(args.adminPrivateKey);
@@ -452,6 +453,7 @@ export default class ServicesClient {
             .execute(htsClient);
 
         const receipt = await tokenCreate.getReceipt(this.client);
+        this.logger.info(`Created HTS token ${receipt.tokenId?.toString()}`);
         return {
             client: htsClient,
             receipt
@@ -482,7 +484,8 @@ export default class ServicesClient {
             .setMaxSupply(args.maxSupply)
             .setSupplyKey(args.adminPrivateKey)
             .setTransactionId(TransactionId.generate(AccountId.fromString(args.treasuryAccountId)))
-            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]]);
+            .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]])
+            .setMaxTransactionFee(50);
 
         if (args.customRoyaltyFees) {
             transaction.setCustomFees(
@@ -499,6 +502,7 @@ export default class ServicesClient {
 
 
         const receipt = await nftCreate.getReceipt(this.client);
+        this.logger.info(`Created NFT token ${receipt.tokenId?.toString()}`);
         return {
             client: htsClient,
             receipt
