@@ -1322,6 +1322,10 @@ export class EthImpl implements Eth {
       return null;
     }
 
+    if (!contractResult.block_number || !contractResult.transaction_index) {
+      this.logger.warn(`${requestIdPrefix} getTransactionByHash(hash=${hash}) mirror-node returned status 200 with missing properties in contract_results - block_number==${contractResult.block_number} and transaction_index==${contractResult.transaction_index}`);
+    }
+
     let fromAddress;
     if (contractResult.from) {
       fromAddress = contractResult.from.substring(0, 42);
