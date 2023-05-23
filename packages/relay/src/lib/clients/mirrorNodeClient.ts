@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import { Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
+import { SDKClientError } from '../errors/SDKClientError';
 const http = require('http');
 const https = require('https');
 const LRU = require('lru-cache');
@@ -668,6 +669,40 @@ export class MirrorNodeClient {
         MirrorNodeClient.GET_STATE_ENDPOINT,
         requestId);
     }
+
+    /**
+    * Check if transaction fail is because of contract revert and try to fetch and log the reason.
+    *
+    * @param e
+    * @param requestId
+    * @param requestIdPrefix
+    */
+    public async getContractRevertReasonFromTransaction(e: any, requestId: string | undefined, requestIdPrefix: string): Promise<any | undefined> {
+        if (e instanceof SDKClientError && e.isContractRevertExecuted()) {
+            const transactionId = e.message.match(constants.TRANSACTION_ID_REGEX);
+            if (transactionId) {
+              const tx = await this.getTransactionById(transactionId[0], undefined, requestId);
+
+              if(tx === null){
+
+                this.logger.error(`${requestIdPrefix} Transaction failed with null result`);
+                return null;
+
+              } else if(tx.length === 0){
+
+                this.logger.error(`${requestIdPrefix} Transaction failed with empty result`);
+                return null;
+
+              } else if (tx?.transactions.length > 1) {
+
+                const result = tx.transactions[1].result;
+                this.logger.error(`${requestIdPrefix} Transaction failed with result: ${result}`);
+                return result;
+
+              }
+            }
+        }
+    };
 
     getQueryParams(params: object) {
         let paramString = '';
