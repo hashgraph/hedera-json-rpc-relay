@@ -5,8 +5,8 @@
   "dependencies": {
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
-    "@hashgraph/hethers": "^1.2.2",
-    "@hashgraph/sdk": "2.18.5",
+    "@hashgraph/hethers": "^1.2.6",
+    "@hashgraph/sdk": "2.25.0",
     "@mui/material": "^5.8.3",
     "ethers": "^5.6.8",
     "react": "^18.1.0",
@@ -16,7 +16,7 @@
   "devDependencies": {
     "@synthetixio/synpress": "^3.0.5",
     "cypress": "^12.3.0",
-    "cypress-multi-reporters": "^1.6.2",
+    "cypress-multi-reporters": "^1.6.3",
     "cypress-wait-until": "^1.7.2",
     "env-cmd": "^10.1.0",
     "http-server": "^14.1.1",

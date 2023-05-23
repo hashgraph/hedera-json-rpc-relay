@@ -166,6 +166,28 @@ const mockData = {
                 }
             ]
         }
+    },
+
+    tooManyRequests: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "Too Many Requests"
+                }
+            ]
+        }
+    },
+
+    contractReverted: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "CONTRACT_REVERT_EXECUTED",
+                    "detail": "",
+                    "data": "0x"
+                }
+            ]
+        }
     }
 };
 
@@ -268,7 +290,7 @@ export const defaultContractResults = {
         }
     ],
     'links': {
-        'next': '/api/v1/contracts/results?limit=2&timestamp=lt:1653077542.701408897'
+        'next': null
     }
 };
 

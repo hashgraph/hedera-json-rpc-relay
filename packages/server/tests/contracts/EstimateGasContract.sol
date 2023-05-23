@@ -134,19 +134,19 @@ contract EstimateGasContract is Caller {
         }
     }
 
-    function callToInvalidContract(address invalidContract) public {
-        invalidContract.call(abi.encodeWithSignature("invalidFunction()"));
+    function callToInvalidContract(address _invalidContract) public {
+        _invalidContract.call(abi.encodeWithSignature("invalidFunction()"));
     }
 
-    function delegateCallToInvalidContract(address invalidContract) public {
-        invalidContract.delegatecall(abi.encodeWithSignature("invalidFunction()"));
+    function delegateCallToInvalidContract(address _invalidContract) public {
+        _invalidContract.delegatecall(abi.encodeWithSignature("invalidFunction()"));
     }
 
-    function staticCallToInvalidContract(address invalidContract) public view {
-        invalidContract.staticcall(abi.encodeWithSignature("invalidFunction()"));
+    function staticCallToInvalidContract(address _invalidContract) public view {
+        _invalidContract.staticcall(abi.encodeWithSignature("invalidFunction()"));
     }
 
-    function callCodeToInvalidContract(address invalidContract) public {
+    function callCodeToInvalidContract(address _invalidContract) public {
         bytes memory result;
         bool success;
 
@@ -155,12 +155,74 @@ contract EstimateGasContract is Caller {
             let x := mload(0x40)
             mstore(x, sig)
 
-            success := callcode(50000, invalidContract, 0, x, 0x4, x, 0x20)
+            success := callcode(50000, _invalidContract, 0, x, 0x4, x, 0x20)
 
             mstore(0x40, add(x, 0x20))
             mstore(result, x)
         }
     }
 
+    function callExternalFunctionNTimes(uint256 _n, address _contractAddress) external {
+        for (uint256 i = 0; i < _n; i++) {
+            _contractAddress.call(abi.encodeWithSignature("updateCounter(uint256)", i));
+        }
+    }
+
+    function delegatecallExternalFunctionNTimes(uint256 _n, address _contractAddress) external {
+        for (uint256 i = 0; i < _n; i++) {
+            _contractAddress.delegatecall(abi.encodeWithSignature("updateCounter(uint256)", i));
+        }
+    }
+
+    function delegatecallExternalViewFunctionNTimes(uint256 _n, address _contractAddress) external {
+        for (uint256 i = 0; i < _n; i++) {
+            _contractAddress.delegatecall(abi.encodeWithSignature("getAddress()"));
+        }
+    }
+
+    function updateStateNTimes(uint256 _n) external {
+        for (uint256 i = 0; i < _n; i++) {
+            counter = i;
+        }
+    }
+
+    function callExternalViewFunctionNTimes(uint256 _n, address _contractAddress) external {
+        for (uint256 i = 0; i < _n; i++) {
+            _contractAddress.call(abi.encodeWithSignature("getAddress()"));
+        }
+    }
+
+    function reentrancyWithTransfer(address _to, uint256 _amount) external {
+        payable(_to).transfer(_amount);
+    }
+
+    function reentrancyWithCall(address _to, uint256 _amount) external {
+        payable(_to).call{value : _amount}("");
+    }
+
+    function getGasLeft() external view returns (uint256) {
+        return gasleft();
+    }
+
+    function nestedCalls(uint256 _it, uint256 _n, address _contractAddress) external returns (uint256) {
+        if (_it < _n) {
+            (, bytes memory data) = _contractAddress.call(abi.encodeWithSignature("nestedCalls(uint256,uint256,address)", _it + 1, _n, _contractAddress));
+            return uint256(bytes32(data));
+        }
+        return _it;
+    }
+
     receive() external payable {}
+}
+
+contract ReentrancyHelper {
+    address externalContract;
+
+    constructor(address _externalContract) {
+        externalContract = _externalContract;
+    }
+
+    fallback() external payable {
+        address(externalContract).call(abi.encodeWithSignature("reentrancyWithCall(address,uint256)", address(this), 100000000));
+    }
 }

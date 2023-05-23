@@ -45,6 +45,14 @@ config:
   TIER_2_RATE_LIMIT: 200
   TIER_3_RATE_LIMIT: 400
   WEB_SOCKET_PORT: 8546
+  HAPI_CLIENT_TRANSACTION_RESET: 50
+  HAPI_CLIENT_DURATION_RESET: 3600000
+  HAPI_CLIENT_ERROR_RESET: [50]
+
+# -- Extra environment variables from existing secrets or configmaps
+extraEnvFrom: []
+# - secretRef:
+#     name: "{{ .Release.Name }}-env"
 
 cronjob:
   enabled: false

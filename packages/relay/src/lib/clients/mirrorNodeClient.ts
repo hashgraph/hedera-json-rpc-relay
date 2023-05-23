@@ -97,7 +97,7 @@ export class MirrorNodeClient {
         [MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_TOKENS_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, [400, 404]],
-        [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, []],
+        [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [404, 415, 500]],
         [MirrorNodeClient.GET_STATE_ENDPOINT, [400, 404]]
     ]);
 
@@ -228,6 +228,13 @@ export class MirrorNodeClient {
 
         this.logger.info(`Mirror Node client successfully configured to REST url: ${this.restUrl} and Web3 url: ${this.web3Url} `);
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: constants.CACHE_TTL.ONE_HOUR });
+
+        // set  up eth call  accepted error codes.
+        if(process.env.ETH_CALL_ACCEPTED_ERRORS) {
+            MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap
+                .set(MirrorNodeClient.CONTRACT_CALL_ENDPOINT, JSON.parse(process.env.ETH_CALL_ACCEPTED_ERRORS));
+        }
+
     }
 
     private buildUrl(baseUrl: string) {
@@ -297,6 +304,9 @@ export class MirrorNodeClient {
         const acceptedErrorResponses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
         if (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1) {
             this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
+            if(pathLabel  === MirrorNodeClient.CONTRACT_CALL_ENDPOINT) {
+                this.logger.warn(`${requestIdPrefix} [${method}] ${path} Error details: ( StatusCode: '${effectiveStatusCode}', StatusText: '${error.response.statusText}', Data: '${JSON.stringify(error.response.data)}')`);
+            }
             return null;
         }
 
@@ -488,9 +498,12 @@ export class MirrorNodeClient {
         this.setContractResultsParams(queryParamObject, contractResultsParams);
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.get(`${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
+        return this.getPaginatedResults(
+            `${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT,
-            requestId);
+            'results',
+            requestId
+        );
     }
 
     public async getContractResultsDetails(contractId: string, timestamp: string, requestId?: string) {
