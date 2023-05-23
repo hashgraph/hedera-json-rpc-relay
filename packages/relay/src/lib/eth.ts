@@ -1114,7 +1114,7 @@ export class EthImpl implements Eth {
         return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
       } catch (e) {
 
-        await this.extractContractRevertReason(e, requestId, requestIdPrefix);
+        await this.mirrorNodeClient.getContractRevertReasonFromTransaction(e, requestId, requestIdPrefix);
 
         this.logger.error(e,
           `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
@@ -1132,26 +1132,6 @@ export class EthImpl implements Eth {
         this.hapiService.decrementErrorCounter(e.statusCode);
       }
       return predefined.INTERNAL_ERROR(e.message.toString());
-    }
-  }
-
-  /**
-   * Check if transaction fail is because of contract revert and try to fetch and log the reason.
-   *
-   * @param e
-   * @param requestId
-   * @param requestIdPrefix
-   */
-  private async extractContractRevertReason(e: any, requestId: string | undefined, requestIdPrefix: string) {
-    if (e instanceof SDKClientError && e.isContractRevertExecuted()) {
-      const transactionId = e.message.match(constants.TRANSACTION_ID_REGEX);
-      if (transactionId) {
-        const tx = await this.mirrorNodeClient.getTransactionById(transactionId[0], undefined, requestId);
-        if (tx?.transactions.length > 1) {
-          const result = tx.transactions[1].result;
-          this.logger.error(`${requestIdPrefix} Transaction failed with result: ${result}`);
-        }
-      }
     }
   }
 

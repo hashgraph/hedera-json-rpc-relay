@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,11 @@ import {mockData, random20BytesAddress} from './../helpers';
 const registry = new Registry();
 
 import pino from 'pino';
-import Constants from "../../src/lib/constants";
+import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 const logger = pino();
+import { v4 as uuid } from 'uuid';
+import { formatRequestIdMessage } from '../../src/formatters';
+import { MirrorNodeClientError } from '../../src';
 
 
 describe('MirrorNodeClient', async function () {
@@ -873,7 +876,51 @@ describe('MirrorNodeClient', async function () {
       const transaction = await mirrorNodeInstance.getTransactionById(invalidTransactionId);
       expect(transaction).to.be.null;
     });
-  })
+
+    it('should get the state of a null transaction when the contract reverts', async() => {
+      const error = new SDKClientError({
+          status: { _code: 33 },
+          message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
+      });
+      mock.onGet('transactions/0.0.902-1684375868-230217103').reply(200, null);
+
+      const id = uuid();
+      const requestIdPrefix = formatRequestIdMessage(id);
+
+      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
+      expect(result).to.eq(MirrorNodeClientError.statusCodes.NOT_FOUND);
+    });
+
+    it('should get the state of an empty transaction when the contract reverts', async() => {
+      const error = new SDKClientError({
+          status: { _code: 33 },
+          message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
+      });
+      mock.onGet('transactions/0.0.902-1684375868-230217103').reply(200, []);
+
+      const id = uuid();
+      const requestIdPrefix = formatRequestIdMessage(id);
+
+      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
+      expect(result).to.eq(MirrorNodeClientError.statusCodes.NO_CONTENT);
+    });
+
+    it('should get the state of a failed transaction when the contract reverts', async() => {
+      const error = new SDKClientError({
+          status: { _code: 33 },
+          message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
+      });
+      mock.onGet('transactions/0.0.902-1684375868-230217103').reply(200, defaultTransaction);
+
+      const id = uuid();
+      const requestIdPrefix = formatRequestIdMessage(id);
+
+      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
+      expect(result).to.eq('INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE');
+    });
+
+
+  });
 
   describe('getPaginatedResults', async() => {
 
@@ -945,3 +992,4 @@ describe('MirrorNodeClient', async function () {
     });
   });
 });
+
