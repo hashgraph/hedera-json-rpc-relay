@@ -38,7 +38,10 @@ spec:
         - configMapRef:
             name: {{ include "json-rpc-relay.fullname" . }}
         - secretRef:
-            name: {{ include "json-rpc-relay.fullname" . }}  
+            name: {{ include "json-rpc-relay.fullname" . }}
+        {{- with .Values.extraEnvFrom }}
+          {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}

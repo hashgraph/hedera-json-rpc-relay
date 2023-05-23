@@ -37,12 +37,12 @@ describe('Test Core Hedera User Scenarios', function() {
 
     it('Second Transfer HBARs to hollow account', function() {
       cy.get('#sendHbarsToField').clear().type(hollowAccount.address);
-      cy.get('#sendHbarsAmountField').clear().type('30000000000000000000').trigger('change');
+      cy.get('#sendHbarsAmountField').clear().type('60000000000000000000').trigger('change');
       cy.get('#sendHbarsBtn').should('not.be.disabled').click();
       cy.confirmMetamaskTransaction();
 
       cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
-      cy.waitUntil(() => cy.get('#toBalanceAfterTransfer').should('have.text', ' Balance after transfer: 30.01 '));
+      cy.waitUntil(() => cy.get('#toBalanceAfterTransfer').should('have.text', ' Balance after transfer: 60.01 '));
     }).timeout(180000);
 
     it('Should switch to hollow account created via Transfer', function() {

@@ -59,9 +59,9 @@ describe('RPC Server Acceptance Tests', function () {
 
     let relayServer; // Relay Server
     let socketServer;
-    global.servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({name: `services-test-client`}));
-    global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({name: `mirror-node-test-client`}));
-    global.relay = new RelayClient(RELAY_URL, logger.child({name: `relay-test-client`}));
+    global.servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({ name: `services-test-client` }));
+    global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
+    global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
     global.relayServer = relayServer;
     global.socketServer = socketServer;
     global.logger = logger;
@@ -132,9 +132,9 @@ describe('RPC Server Acceptance Tests', function () {
 
     function runLocalHederaNetwork() {
         // set env variables for docker images until local-node is updated
-        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.37.0-alpha.0';
-        process.env['HAVEGED_IMAGE_TAG'] = '0.37.0-alpha.0';
-        process.env['MIRROR_IMAGE_TAG'] = '0.78.1';
+        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.38.0-alpha.2';
+        process.env['HAVEGED_IMAGE_TAG'] = '0.38.0-alpha.2';
+        process.env['MIRROR_IMAGE_TAG'] = '0.79.0-beta1';
 
         console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
@@ -150,10 +150,10 @@ describe('RPC Server Acceptance Tests', function () {
         // start local relay, stop relay instance in local
         shell.exec('docker stop json-rpc-relay');
         logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
-        relayServer = app.listen({port: process.env.SERVER_PORT});
+        relayServer = app.listen({ port: process.env.SERVER_PORT });
 
         if (process.env.TEST_WS_SERVER === 'true') {
-            global.socketServer = wsApp.listen({port: process.env.WEB_SOCKET_PORT || 8546});   
+            global.socketServer = wsApp.listen({ port: process.env.WEB_SOCKET_PORT || 8546 });
         }
     }
 
