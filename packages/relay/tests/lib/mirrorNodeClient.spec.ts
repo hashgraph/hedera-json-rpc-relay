@@ -856,6 +856,8 @@ describe('MirrorNodeClient', async function () {
       ]
     };
 
+    const transactionId = '0.0.902-1684375868-230217103';
+
     it('should be able to fetch transaction by transaction id', async() => {
       mock.onGet(`transactions/${defaultTransactionIdFormatted}`).reply(200, defaultTransaction);
       const transaction = await mirrorNodeInstance.getTransactionById(defaultTransactionId);
@@ -882,7 +884,7 @@ describe('MirrorNodeClient', async function () {
           status: { _code: 33 },
           message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
       });
-      mock.onGet('transactions/0.0.902-1684375868-230217103').reply(200, null);
+      mock.onGet(`transactions/${transactionId}`).reply(200, null);
 
       const id = uuid();
       const requestIdPrefix = formatRequestIdMessage(id);
@@ -896,7 +898,7 @@ describe('MirrorNodeClient', async function () {
           status: { _code: 33 },
           message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
       });
-      mock.onGet('transactions/0.0.902-1684375868-230217103').reply(200, []);
+      mock.onGet(`transactions/${transactionId}`).reply(200, []);
 
       const id = uuid();
       const requestIdPrefix = formatRequestIdMessage(id);
@@ -910,7 +912,7 @@ describe('MirrorNodeClient', async function () {
           status: { _code: 33 },
           message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
       });
-      mock.onGet('transactions/0.0.902-1684375868-230217103').reply(200, defaultTransaction);
+      mock.onGet(`transactions/${transactionId}`).reply(200, defaultTransaction);
 
       const id = uuid();
       const requestIdPrefix = formatRequestIdMessage(id);
