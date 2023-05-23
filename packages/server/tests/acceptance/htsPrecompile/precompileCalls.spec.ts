@@ -283,7 +283,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     //According to this ticket the following describe should be deleted after adaptations are applied -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131
     describe("Calling HTS token through HederaTokenService", async () => {
         //TODO remove this it when should be able to freeze and unfreeze token2 is implemented -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131 
-        it.only("Function with HederaTokenService.isFrozen(token, account) - using long zero address", async () => {
+        it("Function with HederaTokenService.isFrozen(token, account) - using long zero address", async () => {
             // freeze token
             const freezeTx = await TokenManagementSigner.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_1_000_000);
             const responseCodeFreeze = (await freezeTx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
