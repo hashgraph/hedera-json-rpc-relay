@@ -1354,7 +1354,7 @@ export class EthImpl implements Eth {
     return new Transaction({
       accessList: undefined, // we don't support access lists, so punt for now
       blockHash: EthImpl.toHash32(contractResult.block_hash),
-      blockNumber: EthImpl.numberTo0x(contractResult.block_number),
+      blockNumber: EthImpl.nullableNumberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
       from: fromAddress,
       gas: EthImpl.nanOrNumberTo0x(contractResult.gas_used),
