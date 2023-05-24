@@ -831,7 +831,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
     // check for static precompile cases first before consulting nodes
-    // this also account for environments where system entitites were not yet exposed to the mirror node
+    // this also account for environments where system entities were not yet exposed to the mirror node
     if (address === EthImpl.iHTSAddress) {
       this.logger.trace(`${requestIdPrefix} HTS precompile case, return ${EthImpl.invalidEVMInstruction} for byte code`);
       return EthImpl.invalidEVMInstruction;
@@ -1149,7 +1149,7 @@ export class EthImpl implements Eth {
     const to = await this.performCallChecks(call, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
-    let gas = this.getCappedBlockGasLimit(call.gas);
+    let gas = this.getCappedBlockGasLimit(call.gas, requestId);
     let value: string | null = EthImpl.toNullableBigNumber(call.value);
     
     try {
