@@ -104,6 +104,8 @@ export class EthImpl implements Eth {
   private readonly maxBlockRange = Number.parseInt(process.env.MAX_BLOCK_RANGE ?? constants.MAX_BLOCK_RANGE.toString());
   private readonly contractCallGasLimit = Number.parseInt(process.env.CONTRACT_CALL_GAS_LIMIT ?? constants.CONTRACT_CALL_GAS_LIMIT.toString());
   private readonly ethGetTransactionCountCacheTtl = Number.parseInt(process.env.ETH_GET_TRANSACTION_COUNT_CACHE_TTL ?? constants.ETH_GET_TRANSACTION_COUNT_CACHE_TTL.toString());
+  private readonly ethGetTransactionCountMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE ?? constants.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE.toString());
+  private readonly maxBlockRange = Number(process.env.MAX_BLOCK_RANGE ?? constants.MAX_BLOCK_RANGE.toString());
 
   /**
    * Configurable options used when initializing the cache.
@@ -1087,25 +1089,28 @@ export class EthImpl implements Eth {
         // if latest or pending, get latest ethereumNonce from mirror node account API
         nonceCount = await this.getAccountLatestEthereumNonce(address, requestId);
       } else if (blockNumOrTag === EthImpl.blockEarliest) {
-        const contract = await this.mirrorNodeClient.isValidContract(address, requestId);
-        if (contract) {
-          // historical contract nonces unsupported until HIP 729 and mirror node historical account info is implemented
-          // Q: should we return the default 0x1 or an error here?
-          return EthImpl.oneHex;
-          // return predefined.UNSUPPORTED_OPERATION('retrieval of historical contract account nonces');
+        const block = await this.mirrorNodeClient.getEarliestBlock(requestId);
+        if (block == null) {
+          throw predefined.INTERNAL_ERROR('No network blocks found');
         }
 
-        nonceCount = await this.getAccountNonceByTransactionCount(address, blockNumOrTag, true, requestId);
+        if (block.number <= 1) {
+          // if the earliest block is the genesis block or 1 , then the nonce is 0 as only system accounts are present
+          return EthImpl.zeroHex;
+        } 
+        
+        // note the mirror node may be a partial one, in which case there may be a valid block with number greater 1.
+        throw predefined.INTERNAL_ERROR(`Partial mirror node encountered, earliest block number is ${block.number}`);        
       } else if (!isNaN(blockNum)) {
         const contract = await this.mirrorNodeClient.isValidContract(address, requestId);
         if (contract) {
           // historical contract nonces unsupported until HIP 729 and mirror node historical account info is implemented
-          return EthImpl.oneHex;
-          // return predefined.UNSUPPORTED_OPERATION('retrieval of historical contract account nonces');
+          this.logger.warn(`${requestIdPrefix} retrieval of unsupported historical contract account nonces: ${address}`);
+          return EthImpl.zeroAddressHex;
         }
 
         // if valid block number, get block timestamp
-        nonceCount = await this.getAccountNonceByTransactionCount(address, blockNum, false, requestId);
+        nonceCount = await this.getAccountNonceByTransactionCount(address, blockNum, requestId);
       } else {
         // return a '-39001: Unknown block' error per api-spec
         return predefined.UNKNOWN_BLOCK;
@@ -1946,57 +1951,54 @@ export class EthImpl implements Eth {
    * 
    * @param address string
    * @param blockNum string
-   * @param earliest flag if block is earliest
    * @param requestId string
    * @returns string
    */
-  private async getAccountNonceByTransactionCount(address: string, blockNum: any, earliest: boolean, requestId: string | undefined) {
+  private async getAccountNonceByTransactionCount(address: string, blockNum: any, requestId: string | undefined) {
     const account = await this.mirrorNodeClient.getAccount(address, requestId);
     if (account === null) {
       return EthImpl.zeroHex;
     }
-
-    // we don't support calculation of the nonce for accounts with more than 100 transactions
-    // q: should we drop this? If so we can just check for account existence
-    if (account.ethereum_nonce > 100) { // make configureable
-      throw predefined.INTERNAL_ERROR('Searches for accounts with large nonces are not supported');
+    
+    // check current nonce value
+    const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
+    if (!mirrorAccount) {
+      throw predefined.NON_EXISTING_ACCOUNT(address);
     }
 
-    let endTimestamp;
-    if (earliest) {
-      // note the mirror node may be a partial one, in which case there may be a valid block with number greater 1.
-      const block = await this.mirrorNodeClient.getEarliestBlock(requestId);
-      if (block == null) {
-        throw predefined.INTERNAL_ERROR('No network blocks found');
-      }
-
-      if (block.number <= 1) {
-        // if the earliest block is the genesis block or 1 , then the nonce is 0 as only system accounts are present
-        return EthImpl.zeroHex;
-      }
-
-      endTimestamp = block.timestamp.to;
-    } else {
-      // if a valid block number, get the block timestamp and search for the all the ethereumtransaction within the time period
-      // should have a cache consideration here for the last timestamp of the last EthereumTransaction for the account
-      const block = await this.mirrorNodeClient.getBlock(blockNum, requestId); // consider caching error responses
-      if (block == null) {
-        throw predefined.UNKNOWN_BLOCK;
-      }
-
-      endTimestamp = block.timestamp.to;
-    }
-
-    return await this.getEthereumTransactionTypeCount(address, endTimestamp, requestId);
-  }
-
-  private async getEthereumTransactionTypeCount(address: string, timestamp: any, requestId: string | undefined) {
-    const ethereumTransactions = await this.mirrorNodeClient.getAccountEthereumTransactionsByTimestampPaginated(address, timestamp, requestId);
-    if (ethereumTransactions == null) {
+    if (mirrorAccount.ethereum_nonce === 0) {
       return EthImpl.zeroHex;
     }
 
-    return EthImpl.numberTo0x(ethereumTransactions.length);
+    const latestNonce = mirrorAccount.ethereum_nonce;
+
+    // check if block number is within reasonble range 
+    const latestBlockNumberString = await this.blockNumber(requestId);
+    const latestBlockNumber = parseInt(latestBlockNumberString);
+    if (blockNum < latestBlockNumber - this.ethGetTransactionCountMaxBlockRange) {
+      throw predefined.RANGE_TOO_LARGE(blockNum);
+    }
+
+    // if a valid block number, get the block timestamp and search for the all the ethereumtransaction within the time period
+    // should have a cache consideration here for the last timestamp of the last EthereumTransaction for the account
+    const block = await this.mirrorNodeClient.getBlock(blockNum, requestId); // consider caching error responses
+    if (block == null) {
+      throw predefined.UNKNOWN_BLOCK;
+    }  
+
+    let count = await this.getEthereumTransactionTypeCountInRange(address, block.timestamp.to, mirrorAccount.balance.timestamp, requestId);
+    count = Math.max(0, latestNonce - count);    
+
+    return EthImpl.numberTo0x(count);
+  }
+
+  private async getEthereumTransactionTypeCountInRange(address: string, fromTimestamp: any, toTimestamp: any, requestId: string | undefined) {
+    const ethereumTransactions = await this.mirrorNodeClient.getAccountEthereumTransactionsByTimestampPaginated(address, fromTimestamp, toTimestamp, requestId);
+    if (ethereumTransactions == null) {
+      return 0;
+    }
+
+    return ethereumTransactions.length;
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
