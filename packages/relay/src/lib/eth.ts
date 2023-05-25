@@ -1244,10 +1244,14 @@ export class EthImpl implements Eth {
       }
 
       const contractCallResponse = await this.hapiService.getSDKClient().submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestId);
-      const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
+      if (contractCallResponse) {
+        const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
-      this.cache.set(cacheKey, formattedCallReponse, { ttl: this.ethCallCacheTtl });
-      return formattedCallReponse;
+        this.cache.set(cacheKey, formattedCallReponse, { ttl: this.ethCallCacheTtl });
+        return formattedCallReponse;
+      }
+
+      return predefined.INTERNAL_ERROR(`Invalid contractCallResponse from consensus-node: ${JSON.stringify(contractCallResponse)}`);
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit contractCallQuery`);
       if (e instanceof JsonRpcError) {
