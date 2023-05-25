@@ -831,7 +831,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
     // check for static precompile cases first before consulting nodes
-    // this also account for environments where system entitites were not yet exposed to the mirror node
+    // this also account for environments where system entities were not yet exposed to the mirror node
     if (address === EthImpl.iHTSAddress) {
       this.logger.trace(`${requestIdPrefix} HTS precompile case, return ${EthImpl.invalidEVMInstruction} for byte code`);
       return EthImpl.invalidEVMInstruction;
@@ -1115,7 +1115,7 @@ export class EthImpl implements Eth {
         return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
       } catch (e) {
 
-        await this.extractContractRevertReason(e, requestId, requestIdPrefix);
+        await this.mirrorNodeClient.getContractRevertReasonFromTransaction(e, requestId, requestIdPrefix);
 
         this.logger.error(e,
           `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
@@ -1169,7 +1169,7 @@ export class EthImpl implements Eth {
     const to = await this.performCallChecks(call, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
-    let gas = this.getCappedBlockGasLimit(call.gas);
+    let gas = this.getCappedBlockGasLimit(call.gas, requestId);
     let value: string | null = EthImpl.toNullableBigNumber(call.value);
     
     try {
@@ -1322,6 +1322,10 @@ export class EthImpl implements Eth {
       return null;
     }
 
+    if (!contractResult.block_number || !contractResult.transaction_index) {
+      this.logger.warn(`${requestIdPrefix} getTransactionByHash(hash=${hash}) mirror-node returned status 200 with missing properties in contract_results - block_number==${contractResult.block_number} and transaction_index==${contractResult.transaction_index}`);
+    }
+
     let fromAddress;
     if (contractResult.from) {
       fromAddress = contractResult.from.substring(0, 42);
@@ -1354,7 +1358,7 @@ export class EthImpl implements Eth {
     return new Transaction({
       accessList: undefined, // we don't support access lists, so punt for now
       blockHash: EthImpl.toHash32(contractResult.block_hash),
-      blockNumber: EthImpl.numberTo0x(contractResult.block_number),
+      blockNumber: EthImpl.nullableNumberTo0x(contractResult.block_number),
       chainId: contractResult.chain_id,
       from: fromAddress,
       gas: EthImpl.nanOrNumberTo0x(contractResult.gas_used),

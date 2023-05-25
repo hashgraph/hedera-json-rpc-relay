@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,11 @@ import {mockData, random20BytesAddress} from './../helpers';
 const registry = new Registry();
 
 import pino from 'pino';
-import Constants from "../../src/lib/constants";
+import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 const logger = pino();
+import { v4 as uuid } from 'uuid';
+import { formatRequestIdMessage } from '../../src/formatters';
+import { MirrorNodeClientError } from '../../src';
 
 
 describe('MirrorNodeClient', async function () {
@@ -496,10 +499,10 @@ describe('MirrorNodeClient', async function () {
     expect(result.to).equal(detailedContractResult.to);
     expect(result.v).equal(detailedContractResult.v);
     expect(result.transaction_index).equal(detailedContractResult.transaction_index);
-    expect(mock.history.get.length).to.eq(1); // is called twice
+    expect(mock.history.get.length).to.eq(1); // is called once
   });
 
-  it('`getContractResultsWithRetry` by hash retries once', async () => {
+  it('`getContractResultsWithRetry` by hash retries once because of missing transaction_index', async () => {
     const hash = '0x2a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6397';
     mock.onGet(`contracts/results/${hash}`).replyOnce(200, {...detailedContractResult, transaction_index: undefined});
     mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
@@ -510,6 +513,35 @@ describe('MirrorNodeClient', async function () {
     expect(result.to).equal(detailedContractResult.to);
     expect(result.v).equal(detailedContractResult.v);
     expect(result.transaction_index).equal(detailedContractResult.transaction_index);
+    expect(mock.history.get.length).to.eq(2); // is called twice
+  });
+
+  it('`getContractResultsWithRetry` by hash retries once because of missing transaction_index and block_number', async () => {
+    const hash = '0x2a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
+    mock.onGet(`contracts/results/${hash}`).replyOnce(200, {...detailedContractResult, transaction_index: undefined, block_number: undefined});
+    mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
+
+    const result = await mirrorNodeInstance.getContractResultWithRetry(hash);
+    expect(result).to.exist;
+    expect(result.contract_id).equal(detailedContractResult.contract_id);
+    expect(result.to).equal(detailedContractResult.to);
+    expect(result.v).equal(detailedContractResult.v);
+    expect(result.transaction_index).equal(detailedContractResult.transaction_index);
+    expect(result.block_number).equal(detailedContractResult.block_number);
+    expect(mock.history.get.length).to.eq(2); // is called twice
+  });
+
+  it('`getContractResultsWithRetry` by hash retries once because of missing block_number', async () => {
+    const hash = '0x2a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb3391';
+    mock.onGet(`contracts/results/${hash}`).replyOnce(200, {...detailedContractResult, block_number: undefined});
+    mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
+
+    const result = await mirrorNodeInstance.getContractResultWithRetry(hash);
+    expect(result).to.exist;
+    expect(result.contract_id).equal(detailedContractResult.contract_id);
+    expect(result.to).equal(detailedContractResult.to);
+    expect(result.v).equal(detailedContractResult.v);
+    expect(result.block_number).equal(detailedContractResult.block_number);
     expect(mock.history.get.length).to.eq(2); // is called twice
   });
 
@@ -853,6 +885,8 @@ describe('MirrorNodeClient', async function () {
       ]
     };
 
+    const transactionId = '0.0.902-1684375868-230217103';
+
     it('should be able to fetch transaction by transaction id', async() => {
       mock.onGet(`transactions/${defaultTransactionIdFormatted}`).reply(200, defaultTransaction);
       const transaction = await mirrorNodeInstance.getTransactionById(defaultTransactionId);
@@ -873,7 +907,51 @@ describe('MirrorNodeClient', async function () {
       const transaction = await mirrorNodeInstance.getTransactionById(invalidTransactionId);
       expect(transaction).to.be.null;
     });
-  })
+
+    it('should get the state of a null transaction when the contract reverts', async() => {
+      const error = new SDKClientError({
+          status: { _code: 33 },
+          message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
+      });
+      mock.onGet(`transactions/${transactionId}`).reply(200, null);
+
+      const id = uuid();
+      const requestIdPrefix = formatRequestIdMessage(id);
+
+      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
+      expect(result).to.be.null;
+    });
+
+    it('should get the state of an empty transaction when the contract reverts', async() => {
+      const error = new SDKClientError({
+          status: { _code: 33 },
+          message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
+      });
+      mock.onGet(`transactions/${transactionId}`).reply(200, []);
+
+      const id = uuid();
+      const requestIdPrefix = formatRequestIdMessage(id);
+
+      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
+      expect(result).to.be.null;
+    });
+
+    it('should get the state of a failed transaction when the contract reverts', async() => {
+      const error = new SDKClientError({
+          status: { _code: 33 },
+          message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
+      });
+      mock.onGet(`transactions/${transactionId}`).reply(200, defaultTransaction);
+
+      const id = uuid();
+      const requestIdPrefix = formatRequestIdMessage(id);
+
+      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
+      expect(result).to.eq('INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE');
+    });
+
+
+  });
 
   describe('getPaginatedResults', async() => {
 
@@ -945,3 +1023,4 @@ describe('MirrorNodeClient', async function () {
     });
   });
 });
+
