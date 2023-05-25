@@ -3523,6 +3523,23 @@ describe('Eth calls using MirrorNode', async function () {
         expect(error.message).to.equal(`Invalid Contract Address: ${wrongContractAddress}. Expected length of 42 chars but was ${wrongContractAddress.length}.`);
       }
     });
+
+    it('eth_call throws internal error when consensus node times out and submitContractCallQueryWithRetry returns undefined', async function () {
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+
+      sdkClientStub.submitContractCallQueryWithRetry.returns(undefined);
+
+      const result = await ethImpl.call({
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": 50_000_000
+      }, 'latest');
+
+      expect(result).to.exist;
+      expect(result.code).to.equal(-32603);
+      expect(result.name).to.equal('Internal error');
+      expect(result.message).to.equal('Error invoking RPC: Invalid contractCallResponse from consensus-node: undefined');
+    });
   });
 
   describe('eth_call using mirror node', async function () {
