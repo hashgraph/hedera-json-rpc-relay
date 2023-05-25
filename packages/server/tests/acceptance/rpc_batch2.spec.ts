@@ -325,7 +325,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
         it('@release should execute "eth_getBalance" with block number in the last 15 minutes for account that has performed contract deploys/calls"', async function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, ['0x' + accounts[0].address, EthImpl.numberTo0x(blockNumberAtStartOfTests)], requestId);
-            const balanceAtBlock = mirrorAccount0AtStartOfTests.balance.balance * Constants.TINYBAR_TO_WEIBAR_COEF;
+            const balanceAtBlock = BigInt(mirrorAccount0AtStartOfTests.balance.balance) * BigInt(Constants.TINYBAR_TO_WEIBAR_COEF);
             expect(res).to.eq(`0x${balanceAtBlock.toString(16)}`);
         });
 
