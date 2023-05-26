@@ -158,24 +158,24 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   }
 
   it('should associate to a token', async function () {
-    const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, HTSTokenContractAddress, Constants.GAS.LIMIT_10_000_000);
+    const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, HTSTokenContractAddress, Constants.GAS.LIMIT_5_000_000);
     expect((await txCO.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
-    const txRWF = await mainContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, Constants.GAS.LIMIT_10_000_000);
+    const txRWF = await mainContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, Constants.GAS.LIMIT_5_000_000);
     expect((await txRWF.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
-    const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, Constants.GAS.LIMIT_10_000_000);
+    const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, Constants.GAS.LIMIT_5_000_000);
     expect((await txRWS.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
   });
 
   it('should associate to a nft', async function () {
-    const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, NftHTSTokenContractAddress, Constants.GAS.LIMIT_10_000_000);
+    const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, NftHTSTokenContractAddress, Constants.GAS.LIMIT_5_000_000);
     expect((await txCO.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
-    const txRWF = await mainContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, NftHTSTokenContractAddress, Constants.GAS.LIMIT_10_000_000);
+    const txRWF = await mainContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, NftHTSTokenContractAddress, Constants.GAS.LIMIT_5_000_000);
     expect((await txRWF.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
-    const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, NftHTSTokenContractAddress, Constants.GAS.LIMIT_10_000_000);
+    const txRWS = await mainContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, NftHTSTokenContractAddress, Constants.GAS.LIMIT_5_000_000);
     expect((await txRWS.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
   });
 
