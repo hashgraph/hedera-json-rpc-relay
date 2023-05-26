@@ -151,7 +151,7 @@ describe('Precheck', async function() {
             chainId: defaultChainId
         };
 
-        function testFailingGasLimitPrecheck(gasLimits, errorCode, errorMessage) {
+        function testFailingGasLimitPrecheck(gasLimits, errorCode) {
             for (const gasLimit of gasLimits) {
                 it(`should fail for gasLimit: ${gasLimit}`, async function () {
                     const tx = {
@@ -160,13 +160,16 @@ describe('Precheck', async function() {
                     };
                     const signed = await signTransaction(tx);
                     const parsedTx = ethers.utils.parseTransaction(signed);
+                    const message =  gasLimit > constants.BLOCK_GAS_LIMIT ? 
+                        `Transaction gas limit '${gasLimit}' exceeds block gas limit '${constants.BLOCK_GAS_LIMIT}'` :
+                        `Transaction gas limit provided '${gasLimit}' is insufficient of intrinsic gas required `;
                     try {
                         await precheck.gasLimit(parsedTx);
                         expectedError();
                     } catch (e: any) {
                         expect(e).to.exist;
                         expect(e.code).to.eq(errorCode);
-                        expect(e.message).to.eq(errorMessage);
+                        expect(e.message).to.contain(message);
                     }
                 });
             }
@@ -196,8 +199,8 @@ describe('Precheck', async function() {
         const highGasLimits = [20000000, 100000000, 999999999999];
 
         testPassingGasLimitPrecheck(validGasLimits);
-        testFailingGasLimitPrecheck(lowGasLimits, -32003, 'Intrinsic gas exceeds gas limit');
-        testFailingGasLimitPrecheck(highGasLimits, -32005, 'Transaction gas limit exceeds block gas limit');
+        testFailingGasLimitPrecheck(lowGasLimits, -32003);
+        testFailingGasLimitPrecheck(highGasLimits, -32005);
     });
 
     describe('gas price', async function() {
@@ -229,7 +232,8 @@ describe('Precheck', async function() {
             } catch (e: any) {
                 expect(e).to.exist;
                 expect(e.code).to.eq(-32009);
-                expect(e.message).to.eq('Gas price below configured minimum gas price');
+                expect(e.message).to.contains(`Gas price `);
+                expect(e.message).to.contains(` is below configured minimum gas price '${minGasPrice}`);
             }
         });
 
@@ -362,7 +366,7 @@ describe('Precheck', async function() {
                 await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
                 expectedError();
             } catch (e: any) {
-                expect(e).to.eql(predefined.NONCE_TOO_LOW);
+                expect(e).to.eql(predefined.NONCE_TOO_LOW(parsedTx.nonce, mirrorAccount.ethereum_nonce));
             }
         });
 

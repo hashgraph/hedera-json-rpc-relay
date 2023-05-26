@@ -168,8 +168,8 @@ describe('Eth calls using MirrorNode', async function () {
   const wrongContractAddress = '0x00000000000000000000000000000000055e';
   const contractTimestamp2 = '1653077542.701408897';
   const contractTimestamp3 = '1653088542.123456789';
-  const contractId1 = '0.0.5001';
-  const contractId2 = '0.0.5002';
+  const contractId1 = '0.0.1375';
+  const contractId2 = '0.0.1374';
   const gasUsedRatio = 0.5;
   const deployedBytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
   const mirrorNodeDeployedBytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100321234';
@@ -3334,6 +3334,194 @@ describe('Eth calls using MirrorNode', async function () {
     }
   });
 
+  describe('eth_call precheck failures', async function () {
+    it('eth_call with missing `to` field', async function() {
+      try {
+        await ethImpl.call({
+          "from": contractAddress1,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error: any) {
+        expect(error.message).to.equal(`Invalid Contract Address: ${undefined}.`);
+      }
+    });
+
+    it('eth_call with incorrect `to` field length', async function() {
+      try {
+        await ethImpl.call({
+          "from": contractAddress1,
+          "to": EthImpl.zeroHex,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error: any) {
+        expect(error.message).to.equal(`Invalid Contract Address: ${EthImpl.zeroHex}. Expected length of 42 chars but was 3.`);
+      }
+    });
+
+    it('eth_call with non account from field', async function () {
+
+      restMock.onGet(`accounts/${contractAddress1}`).reply(404);
+      restMock.onGet(`contracts/${contractAddress1}`).reply(200);
+
+      let  error;
+      try {
+        await ethImpl.call({
+          "from": contractAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      }  catch (e) {
+        error = e;
+      }
+      expect(error).to.be.not.null;
+      expect(error.message).to.equal(`Non Existing Account Address: ${contractAddress1}. Expected an Account Address.`);
+    });
+
+    it('gas exceeds limit', async function () {
+      restMock.onGet(`contracts/${accountAddress1}`).reply(404);
+      restMock.onGet(`accounts/${accountAddress1}`).reply(200, {
+        account: "0.0.1723",
+        evm_address: accountAddress1
+      });
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+
+      const excessiveGasLimit = '15000001';
+      try {
+        await ethImpl.call({
+          "from": accountAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": excessiveGasLimit
+        }, 'latest');
+      } catch (error) {
+        expect(error.code).to.equal(predefined.GAS_LIMIT_TOO_HIGH(excessiveGasLimit, constants.BLOCK_GAS_LIMIT).code);
+      }
+    });
+
+    it('block 0', async function () {
+      restMock.onGet(`contracts/${accountAddress1}`).reply(404);
+      restMock.onGet(`accounts/${accountAddress1}`).reply(200, {
+        account: "0.0.1723",
+        evm_address: accountAddress1
+      });
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+
+      const block = '0';
+      try {
+        await ethImpl.call({
+          "from": accountAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, block);
+      } catch (error) {
+        const predefineError = predefined.UNSUPPORTED_HISTORICAL_EXECUTION(block);
+        expect(error.code).to.equal(predefineError.code);
+        expect(error.name).to.equal(predefineError.name);
+        expect(error.message).to.equal(predefineError.message);
+      }
+    });
+
+    it('block 1', async function () {
+      restMock.onGet(`contracts/${accountAddress1}`).reply(404);
+      restMock.onGet(`accounts/${accountAddress1}`).reply(200, {
+        account: "0.0.1723",
+        evm_address: accountAddress1
+      });
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+
+      const block = '1';
+      try {
+        await ethImpl.call({
+          "from": accountAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, block);
+      } catch (error) {
+        const predefineError = predefined.UNSUPPORTED_HISTORICAL_EXECUTION(block);
+        expect(error.code).to.equal(predefineError.code);
+        expect(error.name).to.equal(predefineError.name);
+        expect(error.message).to.equal(predefineError.message);
+      }
+    });
+
+    it('block earliest', async function () {
+      restMock.onGet(`contracts/${accountAddress1}`).reply(404);
+      restMock.onGet(`accounts/${accountAddress1}`).reply(200, {
+        account: "0.0.1723",
+        evm_address: accountAddress1
+      });
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+
+      const block = 'earliest';
+      try {
+        await ethImpl.call({
+          "from": accountAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, block);
+      } catch (error) {
+        const predefineError = predefined.UNSUPPORTED_HISTORICAL_EXECUTION(block);
+        expect(error.code).to.equal(predefineError.code);
+        expect(error.name).to.equal(predefineError.name);
+        expect(error.message).to.equal(predefineError.message);
+      }
+    });
+
+    it('block 10 but not found', async function () {
+      restMock.onGet(`contracts/${accountAddress1}`).reply(404);
+      restMock.onGet(`accounts/${accountAddress1}`).reply(200, {
+        account: "0.0.1723",
+        evm_address: accountAddress1
+      });
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+      restMock.onGet(`blocks?limit=1&order=desc`).reply(404);
+
+      const block = '0x10';
+      try {
+        await ethImpl.call({
+          "from": accountAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, block);
+      } catch (error) {
+        const predefineError = predefined.RESOURCE_NOT_FOUND(`invalid block: ${block}`);
+        expect(error.code).to.equal(predefineError.code);
+        expect(error.name).to.equal(predefineError.name);
+        expect(error.message).to.equal(predefineError.message);
+      }
+    });
+
+    it('to field is not a contract or token', async function () {
+      restMock.onGet(`contracts/${accountAddress1}`).reply(404);
+      restMock.onGet(`accounts/${accountAddress1}`).reply(200, {
+        account: "0.0.1723",
+        evm_address: accountAddress1
+      });
+      restMock.onGet(`contracts/${contractAddress2}`).reply(404);
+      restMock.onGet(`tokens/${contractId2}`).reply(404);
+      try {
+        await ethImpl.call({
+          "from": accountAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error) {
+        const predefineError = predefined.NON_EXISTING_CONTRACT(contractAddress2);
+        expect(error.code).to.equal(predefineError.code);
+        expect(error.name).to.equal(predefineError.name);
+        expect(error.message).to.equal(predefineError.message);
+      }
+    });
+  });
+
   describe('eth_call using consensus node', async function () {
     let initialEthCallConesneusFF;
 
@@ -3461,24 +3649,23 @@ describe('Eth calls using MirrorNode', async function () {
 
     });
 
-    describe('with gas > 15_000_000', async function() {
-      it('caps gas at 15_000_000', async function () {
-        sdkClientStub.submitContractCallQueryWithRetry.returns({
-              asBytes: function () {
-                return Uint8Array.of(0);
-              }
-            }
-        );
+    describe('with gas > 15_000_000', async function() {      
+      it('eth_call throws gasLimit too high error when gas exceeds limit', async function () {
+        restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
-        const result = await ethImpl.call({
-          "from": accountAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": 50_000_000
-        }, 'latest');
+        sdkClientStub.submitContractCallQueryWithRetry.returns(undefined);
 
-        sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
-        expect(result).to.equal("0x00");
+        try {
+          await ethImpl.call({
+            "to": contractAddress2,
+            "data": contractCallData,
+            "gas": 50_000_000
+          }, 'latest');
+        } catch (error: any) {
+          expect(error.code).to.equal(-32005);
+          expect(error.name).to.equal('gasLimit too high');
+          expect(error.message).to.equal(`Transaction gas limit '50000000' exceeds block gas limit '${constants.BLOCK_GAS_LIMIT}'`);
+        }
       });
     });
 
@@ -3497,18 +3684,6 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result.name).to.equal('Contract revert executed');
       expect(result.message).to.equal('execution reverted: Set to revert');
       expect(result.data).to.equal(defaultErrorMessage);
-    });
-
-    it('eth_call with missing `to` field', async function() {
-      try {
-        await ethImpl.call({
-          "from": contractAddress1,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, 'latest');
-      } catch (error: any) {
-        expect(error.message).to.equal(`Invalid Contract Address: ${undefined}.`);
-      }
     });
 
     it('eth_call with wrong `to` field', async function() {
@@ -3532,7 +3707,7 @@ describe('Eth calls using MirrorNode', async function () {
       const result = await ethImpl.call({
         "to": contractAddress2,
         "data": contractCallData,
-        "gas": 50_000_000
+        "gas": 5_000_000
       }, 'latest');
 
       expect(result).to.exist;
@@ -3581,7 +3756,7 @@ describe('Eth calls using MirrorNode', async function () {
       );
 
       const result = await ethImpl.call(callData, 'latest');
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, 15_000_000, accountAddress1, 'eth_call');
+      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, accountAddress1, EthImpl.ethCall);
       expect(result).to.not.be.null;
       expect(result.code).to.equal(-32603);
       expect(result.name).to.equal("Internal error");
@@ -3750,19 +3925,6 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.not.be.null;
       expect(result.code).to.eq(-32008);
       expect(result.name).to.eq('Contract revert executed');
-    });
-
-    it('caps gas at 15_000_000', async function () {
-      const callData = {
-        ...defaultCallData,
-        "from": accountAddress1,
-        "to": contractAddress2,
-        "data": contractCallData,
-        "gas": 50_000_000
-      };
-      web3Mock.onPost('contracts/call', {...callData, estimate: false, gas: 15_000_000}).reply(200, {result: `0x00`});
-      const result = await ethImpl.call(callData, 'latest');
-      expect(result).to.equal("0x00");
     });
 
     it('SDK returns a precheck error', async function () {

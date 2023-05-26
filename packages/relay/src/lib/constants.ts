@@ -91,6 +91,9 @@ export default {
         mainnet: 0x127,
         testnet: 0x128,
         previewnet: 0x129,
-    }
+    },
+
+    // block ranges
+    MAX_BLOCK_RANGE: 5,
 };
 
