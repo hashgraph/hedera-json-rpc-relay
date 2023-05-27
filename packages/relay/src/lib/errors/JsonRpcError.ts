@@ -214,7 +214,12 @@ export const predefined = {
   }),
   'UNSUPPORTED_HISTORICAL_EXECUTION': (blockId: string) => new JsonRpcError({
     name: 'Unsupported historical block request',
-    code: -32000,
-    message: `Unsupported histoircal block identifier encounterd: ${blockId}`
+    code: -32609,
+    message: `Unsupported historical block identifier encountered: ${blockId}`
+  }),
+  'UNSUPPORTED_OPERATION': (message: string) => new JsonRpcError({
+    name: 'Unsupported operation',
+    code: -32610,
+    message: `Unsupported operation. ${message}`
   }),
 };

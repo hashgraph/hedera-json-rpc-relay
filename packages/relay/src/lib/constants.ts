@@ -67,6 +67,7 @@ export default {
     ORDER,
 
     BLOCK_GAS_LIMIT: 15_000_000,
+    CONTRACT_CALL_GAS_LIMIT: 15_000_000,
     ISTANBUL_TX_DATA_NON_ZERO_COST: 16,
     TX_BASE_COST: 21_000,
     TX_HOLLOW_ACCOUNT_CREATION_GAS: 587_000,
@@ -95,5 +96,6 @@ export default {
 
     // block ranges
     MAX_BLOCK_RANGE: 5,
+    BLOCK_HASH_REGEX: '^0[xX][a-fA-F0-9]',
 };
 

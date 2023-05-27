@@ -85,6 +85,8 @@ export class EthImpl implements Eth {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
+  static blockSafe = 'safe';
+  static blockFinalized = 'finalized';
   
   /**
    * Overrideable options used when initializing.
@@ -95,7 +97,8 @@ export class EthImpl implements Eth {
   private readonly ethCallCacheTtl = Number.parseInt(process.env.ETH_CALL_CACHE_TTL ?? constants.ETH_CALL_CACHE_TTL_DEFAULT.toString());
   private readonly ethBlockNumberCacheTtlMs = Number.parseInt(process.env.ETH_BLOCK_NUMBER_CACHE_TTL_MS ?? constants.ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT.toString());
   private readonly ethGetBalanceCacheTtlMs = Number.parseInt(process.env.ETH_GET_BALANCE_CACHE_TTL_MS ?? constants.ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT.toString());
-  private readonly maxBlockRange = Number(process.env.MAX_BLOCK_RANGE ?? constants.MAX_BLOCK_RANGE.toString());
+  private readonly maxBlockRange = Number.parseInt(process.env.MAX_BLOCK_RANGE ?? constants.MAX_BLOCK_RANGE.toString());
+  private readonly contractCallGasLimit = Number.parseInt(process.env.CONTRACT_CALL_GAS_LIMIT ?? constants.CONTRACT_CALL_GAS_LIMIT.toString());
 
   /**
    * Configurable options used when initializing the cache.
@@ -1279,7 +1282,7 @@ export class EthImpl implements Eth {
     }
 
     // If "From" is distinct from blank, we check is a valid account
-    if(call.from) {
+    if (call.from) {
       const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, [constants.TYPE_ACCOUNT], requestId);
       if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
         throw predefined.NON_EXISTING_ACCOUNT(call.from);
@@ -1287,28 +1290,37 @@ export class EthImpl implements Eth {
     }
 
     // verify gas is withing the allowed range
-    if (call.gas && call.gas > constants.BLOCK_GAS_LIMIT) {
+    if (call.gas && call.gas > this.contractCallGasLimit) {
       throw predefined.GAS_LIMIT_TOO_HIGH(call.gas, constants.BLOCK_GAS_LIMIT);
     }
 
-    // If "BlockParam" is distinct from blank, we check is a valid block number
-    if(blockParam) {
-      const blockNum = Number(blockParam);
-      if (blockNum === 0 || blockNum === 1 || EthImpl.blockTagIsEarliest(blockParam)) {
+    // verify blockParam formats for a valid block number
+    if (blockParam) {
+      if (EthImpl.isBlockHash(blockParam)) {
+        throw predefined.UNSUPPORTED_OPERATION(`BlockParam: ${blockParam} is not a supported eth_call block identifier`);
+      }
+  
+      if (EthImpl.blockTagIsEarliest(blockParam)) {
         throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockParam);
       }
-
-      if (!isNaN(blockNum)) {
+      
+      // numerical block number considerations
+      const blockNum = Number(blockParam);
+      if (!isNaN(blockNum) && !EthImpl.blockTagIsFinalized(blockParam)) {
+        if (blockNum === 0 || blockNum === 1) {
+          throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockNum.toString());
+        }
+  
         const block = await this.mirrorNodeClient.getLatestBlock(requestId);
         if(!block) {
-          throw predefined.RESOURCE_NOT_FOUND(`invalid block: ${blockParam}`);
+          throw predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
         }
-
+  
         const trailingBlockCount = block.number - blockNum;
         if(trailingBlockCount > this.maxBlockRange) {
           this.logger.warn(`${formatRequestIdMessage(requestId)} referenced block '${blockParam}' trails latest by ${trailingBlockCount}, max trailing count is ${this.maxBlockRange}. Throwable UNSUPPORTED_HISTORICAL_EXECUTION scenario.`);
-        }
-      }      
+        }   
+      }     
     }
 
     // Check "To" is a valid Contract or HTS Address
@@ -1520,8 +1532,16 @@ export class EthImpl implements Eth {
     return tag === EthImpl.blockEarliest;
   };
 
+  private static blockTagIsFinalized = (tag) => {
+    return tag === EthImpl.blockFinalized || tag === EthImpl.blockLatest || tag === EthImpl.blockPending || tag === EthImpl.blockSafe;
+  };
+
   private static blockTagIsEarliestOrPending = (tag) => {
     return tag == null || EthImpl.blockTagIsEarliest(tag) || tag === EthImpl.blockPending;
+  };   
+
+  private static isBlockHash = (blockHash) => {
+    return new RegExp(constants.BLOCK_HASH_REGEX + '{64}$').test(blockHash);
   };   
 
   /**
@@ -1644,7 +1664,7 @@ export class EthImpl implements Eth {
     if (blockNumberOrTag != null && blockNumberOrTag.length < 32 && !isNaN(blockNumber)) {
       const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
       const latestBlock = latestBlockResponse.blocks[0];
-      if (Number(blockNumberOrTag) > latestBlock.number + this.maxBlockRange) {
+      if (blockNumber > latestBlock.number + this.maxBlockRange) {
         return null;
       }
     }

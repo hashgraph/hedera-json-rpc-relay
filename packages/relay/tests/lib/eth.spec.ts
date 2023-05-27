@@ -3473,7 +3473,31 @@ describe('Eth calls using MirrorNode', async function () {
       }
     });
 
-    it('block 10 but not found', async function () {
+    it('block hash not supported', async function () {
+      restMock.onGet(`contracts/${accountAddress1}`).reply(404);
+      restMock.onGet(`accounts/${accountAddress1}`).reply(200, {
+        account: "0.0.1723",
+        evm_address: accountAddress1
+      });
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+      restMock.onGet(`blocks?limit=1&order=desc`).reply(202);
+
+      try {
+        await ethImpl.call({
+          "from": accountAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, blockHashTrimmed);
+      } catch (error) {
+        const predefineError = predefined.UNSUPPORTED_OPERATION(`BlockParam: ${blockHashTrimmed} is not a supported eth_call block identifier`);
+        expect(error.code).to.equal(predefineError.code);
+        expect(error.name).to.equal(predefineError.name);
+        expect(error.message).to.equal(predefineError.message);
+      }
+    });
+
+    it('latest block but not found for comparison', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
       restMock.onGet(`accounts/${accountAddress1}`).reply(200, {
         account: "0.0.1723",
@@ -3491,7 +3515,7 @@ describe('Eth calls using MirrorNode', async function () {
           "gas": maxGasLimitHex
         }, block);
       } catch (error) {
-        const predefineError = predefined.RESOURCE_NOT_FOUND(`invalid block: ${block}`);
+        const predefineError = predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
         expect(error.code).to.equal(predefineError.code);
         expect(error.name).to.equal(predefineError.name);
         expect(error.message).to.equal(predefineError.message);
