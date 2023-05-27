@@ -1294,34 +1294,8 @@ export class EthImpl implements Eth {
       throw predefined.GAS_LIMIT_TOO_HIGH(call.gas, constants.BLOCK_GAS_LIMIT);
     }
 
-    // verify blockParam formats for a valid block number
-    if (blockParam) {
-      if (EthImpl.isBlockHash(blockParam)) {
-        throw predefined.UNSUPPORTED_OPERATION(`BlockParam: ${blockParam} is not a supported eth_call block identifier`);
-      }
-  
-      if (EthImpl.blockTagIsEarliest(blockParam)) {
-        throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockParam);
-      }
-      
-      // numerical block number considerations
-      const blockNum = Number(blockParam);
-      if (!isNaN(blockNum) && !EthImpl.blockTagIsFinalized(blockParam)) {
-        if (blockNum === 0 || blockNum === 1) {
-          throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockNum.toString());
-        }
-  
-        const block = await this.mirrorNodeClient.getLatestBlock(requestId);
-        if(!block) {
-          throw predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
-        }
-  
-        const trailingBlockCount = block.number - blockNum;
-        if(trailingBlockCount > this.maxBlockRange) {
-          this.logger.warn(`${formatRequestIdMessage(requestId)} referenced block '${blockParam}' trails latest by ${trailingBlockCount}, max trailing count is ${this.maxBlockRange}. Throwable UNSUPPORTED_HISTORICAL_EXECUTION scenario.`);
-        }   
-      }     
-    }
+    // verify blockParam
+    this.performCallBlockParamChecks(blockParam, requestId);
 
     // Check "To" is a valid Contract or HTS Address
     const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT], requestId);
@@ -1330,6 +1304,39 @@ export class EthImpl implements Eth {
     }
 
     return toEntityType;
+  }
+
+  async performCallBlockParamChecks(blockParam: string | null, requestId?: string) {
+    if (!blockParam) {
+      return;
+    }
+
+    // verify blockParam formats for a valid block number
+    if (EthImpl.isBlockHash(blockParam)) {
+      throw predefined.UNSUPPORTED_OPERATION(`BlockParam: ${blockParam} is not a supported eth_call block identifier`);
+    }
+
+    if (EthImpl.blockTagIsEarliest(blockParam)) {
+      throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockParam);
+    }
+    
+    // numerical block number considerations
+    const blockNum = Number(blockParam);
+    if (!isNaN(blockNum) && !EthImpl.blockTagIsFinalized(blockParam)) {
+      if (blockNum === 0 || blockNum === 1) {
+        throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockNum.toString());
+      }
+
+      const block = await this.mirrorNodeClient.getLatestBlock(requestId);
+      if(!block) {
+        throw predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
+      }
+
+      const trailingBlockCount = block.number - blockNum;
+      if(trailingBlockCount > this.maxBlockRange) {
+        this.logger.warn(`${formatRequestIdMessage(requestId)} referenced block '${blockParam}' trails latest by ${trailingBlockCount}, max trailing count is ${this.maxBlockRange}. Throwable UNSUPPORTED_HISTORICAL_EXECUTION scenario.`);
+      }   
+    }
   }
 
   /**

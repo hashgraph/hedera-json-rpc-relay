@@ -69,9 +69,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         this.beforeAll(async () => {
             requestId = Utils.generateRequestId();
 
-            accounts[0] = await servicesNode.createAliasAccount(15, null, requestId);
-            accounts[1] = await servicesNode.createAliasAccount(15, null, requestId);
-            accounts[2] = await servicesNode.createAliasAccount(45, null, requestId);
+            accounts[0] = await servicesNode.createAliasAccount(50, null, requestId);
+            accounts[1] = await servicesNode.createAliasAccount(50, null, requestId);
+            accounts[2] = await servicesNode.createAliasAccount(100, null, requestId);
             contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
