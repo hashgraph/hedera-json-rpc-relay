@@ -92,7 +92,7 @@ export class ClientCache {
     }
 
     public set(key: string, value: any, ttl?: number, requestIdPrefix?: string): void {
-        const resolvedTtl = ttl || this.options.ttl;    
+        const resolvedTtl = ttl ?? this.options.ttl;    
         this.logger.trace(`${requestIdPrefix} caching ${key}:${JSON.stringify(value)} for ${resolvedTtl} ms`);
         this.cache.set(key, value, { ttl: resolvedTtl });
     }
