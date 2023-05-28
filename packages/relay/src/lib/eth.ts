@@ -1295,7 +1295,7 @@ export class EthImpl implements Eth {
     }
 
     // verify blockParam
-    this.performCallBlockParamChecks(blockParam, requestId);
+    await this.performCallBlockParamChecks(blockParam, requestId);
 
     // Check "To" is a valid Contract or HTS Address
     const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT], requestId);
