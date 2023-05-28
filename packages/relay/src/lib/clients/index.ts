@@ -18,5 +18,6 @@
  *
  */
 
-export * from './sdkClient';
+export * from './clientCache';
 export * from './mirrorNodeClient';
+export * from './sdkClient';
