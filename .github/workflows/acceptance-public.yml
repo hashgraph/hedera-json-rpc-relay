@@ -1,4 +1,4 @@
-name: Acceptance Tests
+name: Acceptance Tests on Public Network
 
 on:
   workflow_dispatch:
@@ -25,54 +25,81 @@ jobs:
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api_batch1
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
 
   api_batch_2:
     name: API Batch 2
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api_batch2
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
 
   api_batch3:
     name: API Batch 3
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api_batch3
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
 
   erc20:
     name: ERC20
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: erc20
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
 
   ratelimiter:
     name: Rate Limiter
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: ratelimiter
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
 
   tokencreate:
     name: Token Create
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: tokencreate
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
 
   tokenmanagement:
     name: Token Management
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: tokenmanagement
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
 
   htsprecompilev1:
     name: Precompile
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: htsprecompilev1
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
 
   precompilecalls:
     name: Precompile
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: precompile
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
 
   websocket:
     name: Websocket
@@ -80,3 +107,6 @@ jobs:
     with:
       testfilter: ws
       test_ws_server: true
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
