@@ -1,0 +1,82 @@
+name: Acceptance Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      operator_id:
+        description: 'The Account ID of the operator'
+        required: true
+        type: string
+      operator_key:
+        description: 'The ED25519 DER encoded private key of the operator'
+        required: true
+        type: string
+      network:
+        description: 'The public network to run the tests against'
+        required: true
+        type: choice
+        options:
+          - testnet
+          - previewnet
+
+jobs:
+  api_batch_1:
+    name: API Batch 1
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api_batch1
+
+  api_batch_2:
+    name: API Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api_batch2
+
+  api_batch3:
+    name: API Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api_batch3
+
+  erc20:
+    name: ERC20
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: erc20
+
+  ratelimiter:
+    name: Rate Limiter
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ratelimiter
+
+  tokencreate:
+    name: Token Create
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: tokencreate
+
+  tokenmanagement:
+    name: Token Management
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: tokenmanagement
+
+  htsprecompilev1:
+    name: Precompile
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: htsprecompilev1
+
+  precompilecalls:
+    name: Precompile
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: precompile
+
+  websocket:
+    name: Websocket
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws
+      test_ws_server: true
