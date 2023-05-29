@@ -95,12 +95,12 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         accounts[1] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
         accounts[2] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
 
-        TokenManagementSigner = TokenManager.connect(accounts[0].wallet);
-
         await new Promise(r => setTimeout(r, 5000));
         await mirrorNode.get(`/accounts/${accounts[0].accountId}`, requestId);
         await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);
         await mirrorNode.get(`/accounts/${accounts[2].accountId}`, requestId);
+
+        TokenManagementSigner = new ethers.Contract(TokenManager.address, TokenManagementContractJson.abi, accounts[0].wallet);
 
         // Create tokens
         const defaultTokenOptions = {
@@ -110,7 +110,8 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             initialSupply: INITIAL_SUPPLY,
             adminPrivateKey: accounts[0].privateKey,
             kyc: true,
-            freeze: true
+            freeze: true,
+            adminKeyList: accounts[0].keyList
         };
 
         const defaultNftOptions = {
@@ -492,7 +493,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(res.inheritAccountKey).to.eq(false);
                 expect(res.contractId).to.eq(ZERO_HEX);
                 expect(res.ed25519).to.eq(EMPTY_HEX);
-                expect(res.ECDSA_secp256k1).to.not.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
                 expect(res.delegatableContractId).to.eq(ZERO_HEX);
             });
 
@@ -502,7 +503,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(res.inheritAccountKey).to.eq(false);
                 expect(res.contractId).to.eq(ZERO_HEX);
                 expect(res.ed25519).to.eq(EMPTY_HEX);
-                expect(res.ECDSA_secp256k1).to.not.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
                 expect(res.delegatableContractId).to.eq(ZERO_HEX);
             });
 

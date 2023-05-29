@@ -228,7 +228,7 @@ export default class ServicesClient {
         return { contractExecuteTimestamp, contractExecutedTransactionId };
     };
 
-    async getAliasAccountInfo(accountId, privateKey: PrivateKey, provider = null, requestId?: string): Promise<AliasAccount> {
+    async getAliasAccountInfo(accountId, privateKey: PrivateKey, provider = null, requestId?: string, keyList?: null | KeyList): Promise<AliasAccount> {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
         //@ts-ignore
@@ -259,7 +259,8 @@ export default class ServicesClient {
             accountInfo.contractAccountId,
             servicesClient,
             privateKey,
-            wallet
+            wallet,
+            keyList
         );
     }
 
@@ -293,7 +294,7 @@ export default class ServicesClient {
         const receipt = await txResult.getReceipt(this.client);
         const accountId = receipt.accountId;
 
-        return this.getAliasAccountInfo(accountId, privateKey, provider, requestId);
+        return this.getAliasAccountInfo(accountId, privateKey, provider, requestId, keyList);
     }
 
 
@@ -392,6 +393,7 @@ export default class ServicesClient {
         customTokenFees: false,
         customRoyaltyFees: false,
         customFractionalFees: false,
+        adminKeyList: null,
     }) {
         const {} = args;
 
@@ -412,12 +414,14 @@ export default class ServicesClient {
             .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]])
             .setMaxTransactionFee(50);
 
+        const managementKey: KeyList | Key | null = args.adminKeyList || args.adminPrivateKey;
+
         if (args.kyc) {
-            transaction.setKycKey(args.adminPrivateKey);
+            transaction.setKycKey(managementKey);
         }
 
         if (args.freeze) {
-            transaction.setFreezeKey(args.adminPrivateKey);
+            transaction.setFreezeKey(managementKey);
         }
 
         const customFees = [];
@@ -606,14 +610,16 @@ export class AliasAccount {
     public readonly client: ServicesClient;
     public readonly privateKey: PrivateKey;
     public readonly wallet: ethers.Wallet;
+    public readonly keyList: KeyList | null;
 
-    constructor(_alias, _accountId, _address, _client, _privateKey, _wallet) {
+    constructor(_alias, _accountId, _address, _client, _privateKey, _wallet, keyList) {
         this.alias = _alias;
         this.accountId = _accountId;
         this.address = _address;
         this.client = _client;
         this.privateKey = _privateKey;
         this.wallet = _wallet;
+        this.keyList = keyList;
     }
 
 }
