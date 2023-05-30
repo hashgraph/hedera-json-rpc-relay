@@ -111,7 +111,7 @@ export class SDKClient {
 
         this.hbarLimiter = hbarLimiter;
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: constants.CACHE_TTL.ONE_HOUR });
-        this.maxChunks = Number(process.env.MAX_CHUNKS) || 20;
+        this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     }
 
     async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
