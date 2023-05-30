@@ -107,8 +107,8 @@ export class RelayImpl implements Relay {
             try {
                 const account = await mirrorNodeClient.getAccount(clientMain.operatorAccountId!.toString());
                 const accountBalance = account.balance?.balance;
-                this.labels({ 'accountId': clientMain.operatorAccountId!.toString() })
-                    .set(accountBalance.toNumber());
+                this.labels({ 'accountId': clientMain.operatorAccountId?.toString() })
+                    .set(accountBalance);
             } catch (e: any) {
                 logger.error(e, `Error collecting operator balance. Skipping balance set`);
             }
