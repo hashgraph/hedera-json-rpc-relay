@@ -11,7 +11,7 @@ jobs:
   setup-local-hedera:
     name: Dapp Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 35 # Set to 35 minutes for now
+    timeout-minutes: 40 # Set to 40 minutes for now
     permissions:
       contents: write
     steps:
