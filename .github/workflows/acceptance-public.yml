@@ -1,6 +1,8 @@
 name: Acceptance Tests on Public Network
 
 on:
+  pull_request:
+    branches: [ main, release/** ]
   workflow_dispatch:
     inputs:
       operator_id:
