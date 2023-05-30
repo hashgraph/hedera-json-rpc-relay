@@ -72,6 +72,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `TIER_2_RATE_LIMIT`                   | "800"         | Maximum moderate request count limit used for non expensive endpoints.                                                                                                                                                                                                                                 |
 | `TIER_3_RATE_LIMIT`                   | "1600"        | Maximum relaxed request count limit used for static return endpoints.                                                                                                                                                                                                                                  |
 | `TX_DEFAULT_GAS`                      | "400000"      | Default gas for transactions that do not specify gas.                                                                                                                                                                                                                                                  |
+| `FILE_APPEND_MAX_CHUNKS`                      | "20"      | Default maximum number of chunks for the `HAPI` `FileAppendTransaction` to use during contract creation submissions to consensus nodes as part of `eth_sendRawTransactionsaction`.                                                                                                                                                                                                                                                  |
 
 ## WS-Server
 
@@ -180,6 +181,7 @@ CONNECTION_LIMIT = 10
 CLIENT_TRANSACTION_RESET= 400000
 CLIENT_DURATION_RESET= 21600
 CLIENT_ERROR_RESET= 100
+MAX_CHUNKS=20
 ```
 
 > **_NOTE:_** Acceptance tests can be pointed at a remote locations (previewnet and testnet and custom environments). In this case configuration will require details for remote consensus node gRPC endpoints [previewnet / testnet](https://docs.hedera.com/hedera/networks/testnet/testnet-nodes) / [mainnet](https://docs.hedera.com/hedera/networks/mainnet/mainnet-nodes) and [Mirror Node REST API endpoints](https://docs.hedera.com/hedera/sdks-and-apis/rest-api), be sure to configure `HEDERA_NETWORK` and `MIRROR_NODE_URL` appropriately to point away from your local host and to valid deployed services. When pointing to previewnet and testnet, account Ids (`OPERATOR_ID_MAIN`) and private keys (`OPERATOR_KEY_MAIN`) for previewnet and tests may be obtained from the [Hedera Portal](http://portal.hedera.com).
