@@ -41,12 +41,12 @@ export class Precheck {
 
   public static parseTxIfNeeded(transaction: string | Transaction): Transaction {
     return typeof transaction === 'string'
-      ? ethers.utils.parseTransaction(transaction)
+      ? Transaction.from(transaction)
       : transaction;
   }
 
   value(tx: Transaction) {
-    if (tx.data === EthImpl.emptyHex && tx.value.lt(constants.TINYBAR_TO_WEIBAR_COEF)) {
+    if (tx.data === EthImpl.emptyHex && tx.value < constants.TINYBAR_TO_WEIBAR_COEF) {
       throw predefined.VALUE_TOO_LOW;
     }
   }
@@ -56,7 +56,7 @@ export class Precheck {
    * @param gasPrice
    */
   async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId?: string) {
-    
+
     this.gasLimit(parsedTx, requestId);
     const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
     await this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
@@ -110,16 +110,16 @@ export class Precheck {
    */
   gasPrice(tx: Transaction, gasPrice: number, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const minGasPrice = ethers.BigNumber.from(gasPrice);
-    const txGasPrice = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
-    const passes = txGasPrice.gte(minGasPrice);
+    const minGasPrice = BigInt(gasPrice);
+    const txGasPrice = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
+    const passes = txGasPrice >= minGasPrice;
 
     if (!passes) {
       if (process.env.GAS_PRICE_TINY_BAR_BUFFER) {
         // Check if failure is within buffer range (Often it's by 1 tinybar) as network gasprice calculation can change slightly.
         // e.g gasPrice=1450000000000, requiredGasPrice=1460000000000, in which case we should allow users to go through and let the network check
-        const txGasPriceWithBuffer = txGasPrice.add(ethers.BigNumber.from(process.env.GAS_PRICE_TINY_BAR_BUFFER));
-        if (txGasPriceWithBuffer.gte(minGasPrice)) {
+        const txGasPriceWithBuffer = txGasPrice + BigInt(process.env.GAS_PRICE_TINY_BAR_BUFFER);
+        if (txGasPriceWithBuffer >= minGasPrice) {
           return;
         }
       }
@@ -139,8 +139,8 @@ export class Precheck {
       passes: false,
       error: predefined.INSUFFICIENT_ACCOUNT_BALANCE
     };
-    const txGas = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
-    const txTotalValue = tx.value.add(txGas.mul(tx.gasLimit));
+    const txGas = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
+    const txTotalValue = tx.value + txGas * tx.gasLimit;
     let tinybars;
 
     const accountResponse: any = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
@@ -151,7 +151,7 @@ export class Precheck {
 
     try {
       tinybars = await this.sdkClient.getAccountBalanceInTinyBar(accountResponse.account, callerName, requestId);
-      result.passes = ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
+      result.passes = BigInt(tinybars.toString()) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF) >= txTotalValue;
     } catch (error: any) {
       this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);
       throw predefined.INTERNAL_ERROR('balance precheck');
@@ -168,10 +168,10 @@ export class Precheck {
    */
   gasLimit(tx: Transaction, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const gasLimit = tx.gasLimit.toNumber();
+    const gasLimit = Number(tx.gasLimit);
     const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
 
-    const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data, tx.to);
+    const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data, tx.to!);
 
 
     if (gasLimit > constants.BLOCK_GAS_LIMIT) {

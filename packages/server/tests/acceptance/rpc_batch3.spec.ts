@@ -43,7 +43,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
-    const ONE_TINYBAR = ethers.utils.parseUnits('1', 10).toHexString();
+    const ONE_TINYBAR = EthImpl.numberTo0x(10000000000);
 
 
     let reverterContract, reverterEvmAddress, requestId;
@@ -69,7 +69,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         requestId = Utils.generateRequestId();
 
         accounts[0] = await servicesNode.createAliasAccount(30, null, requestId);
-        accounts[1] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(40, relay.provider, requestId);
 
         reverterContract = await servicesNode.deployContract(reverterContractJson);
         // Wait for creation to propagate
@@ -91,7 +91,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('@release should execute "eth_call" request to Basic contract', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 gas: EthImpl.numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
@@ -103,7 +103,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should fail "eth_call" request without data field', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 gas: EthImpl.numberTo0x(30000)
             };
@@ -114,7 +114,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should fail "eth_call" for non-existing contract address', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: NON_EXISTING_ADDRESS,
                 gas: EthImpl.numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
@@ -147,7 +147,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should execute "eth_call" without gas field', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -159,7 +159,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should execute "eth_call" with correct block number', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -171,7 +171,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should execute "eth_call" with correct block hash object', async function () {
             const blockHash = '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3';
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -182,7 +182,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should execute "eth_call" with correct block number object', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -193,7 +193,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should fail to execute "eth_call" with wrong block tag', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -208,7 +208,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should fail to execute "eth_call" with wrong block number', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -223,7 +223,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should fail to execute "eth_call" with wrong block hash object', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -239,7 +239,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should fail to execute "eth_call" with wrong block number object', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -265,7 +265,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         const callerMirror = await mirrorNode.get(`/contracts/${callerContract.contractId}`, requestId);
                         callerAddress = `0x${callerContract.contractId.toSolidityAddress()}`;
                         defaultCallData = {
-                            from: `0x${activeAccount.address}`,
+                            from: activeAccount.address,
                             to: callerAddress,
                             gas: `0x7530`,
                         };
@@ -277,10 +277,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         activeAccount = accounts[1];
                         callerContract = await Utils.deployContractWithEthers([], callerContractJson, activeAccount.wallet, relay);
                         // Wait for creation to propagate
-                        const callerMirror = await mirrorNode.get(`/contracts/${callerContract.address}`, requestId);
+                        const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestId);
                         callerAddress = callerMirror.evm_address;
                         defaultCallData = {
-                            from: `0x${activeAccount.address}`,
+                            from: activeAccount.address,
                             to: callerAddress,
                             gas: `0x7530`,
                         };
@@ -309,7 +309,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         };
 
                         const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                        expect(res).to.eq(`0x${activeAccount.address.padStart(64, '0')}`);
+                        expect(res).to.eq(`0x${activeAccount.address.replace('0x', '').padStart(64, '0')}`);
                     });
 
                     it("003 Should call txOrigin", async function () {
@@ -319,7 +319,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         };
 
                         const res = await relay.call('eth_call', [callData, 'latest'], requestId);
-                        expect(res).to.eq(`0x${activeAccount.address.padStart(64, '0')}`);
+                        expect(res).to.eq(`0x${activeAccount.address.replace('0x', '').padStart(64, '0')}`);
                     });
 
                     it("004 Should call msgSig", async function () {
@@ -373,7 +373,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
                     it("009 should fail for missing 'to' field", async function () {
                         const callData = {
-                            from: `0x${accounts[0].address}`,
+                            from: accounts[0].address,
                             data: '0x0ec1551d'
                         };
 
@@ -417,7 +417,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     describe('Contract call reverts', async () => {
         it('Returns revert message for pure methods', async () => {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: reverterEvmAddress,
                 gas: EthImpl.numberTo0x(30000),
                 data: PURE_METHOD_CALL_DATA
@@ -432,7 +432,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('Returns revert message for view methods', async () => {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: reverterEvmAddress,
                 gas: EthImpl.numberTo0x(30000),
                 data: VIEW_METHOD_CALL_DATA
@@ -451,7 +451,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 gasLimit: EthImpl.numberTo0x(30000),
                 chainId: Number(CHAIN_ID),
                 to: reverterEvmAddress,
-                nonce: await relay.getAccountNonce('0x' + accounts[0].address, requestId),
+                nonce: await relay.getAccountNonce(accounts[0].address, requestId),
                 gasPrice: await relay.gasPrice(requestId),
                 data: PAYABLE_METHOD_CALL_DATA
             };
@@ -506,7 +506,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         gasLimit: EthImpl.numberTo0x(30000),
                         chainId: Number(CHAIN_ID),
                         to: reverterEvmAddress,
-                        nonce: await relay.getAccountNonce('0x' + accounts[0].address, requestId),
+                        nonce: await relay.getAccountNonce(accounts[0].address, requestId),
                         gasPrice: await relay.gasPrice(requestId),
                         data: payableMethodsData[i].data
                     };
@@ -584,7 +584,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             for (let i = 0; i < pureMethodsData.length; i++) {
                 it(`Pure method ${pureMethodsData[i].method} returns tx receipt`, async function () {
                     const callData = {
-                        from: '0x' + accounts[0].address,
+                        from: accounts[0].address,
                         to: reverterEvmAddress,
                         gas: EthImpl.numberTo0x(30000),
                         data: pureMethodsData[i].data
@@ -626,8 +626,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it("Function calling HederaTokenService.isToken(token)", async () => {
             const callData = {
-                from: '0x' + accounts[1].address,
-                to: htsImpl.address,
+                from: accounts[1].address,
+                to: htsImpl.target,
                 gas: EthImpl.numberTo0x(30000),
                 data: IS_TOKEN_ADDRESS_SIGNATURE + tokenAddress.replace('0x', '')
             };

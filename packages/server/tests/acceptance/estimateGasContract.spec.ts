@@ -31,18 +31,18 @@ describe('EstimateGasContract tests', function() {
   const { servicesNode, relay }: any = global;
 
   before(async function() {
-    signers[0] = await servicesNode.createAliasAccount(15, null, Utils.generateRequestId());
+    signers[0] = await servicesNode.createAliasAccount(15, relay.provider, Utils.generateRequestId());
 
     const contractReceipt = await servicesNode.deployContract(EstimateGasContractJson, 500_000);
-    contract = new ethers.Contract(contractReceipt.contractId.toSolidityAddress(), EstimateGasContractJson.abi, signers[0].wallet);
+    contract = new ethers.Contract(Utils.add0xPrefix(contractReceipt.contractId.toSolidityAddress()), EstimateGasContractJson.abi, signers[0].wallet);
 
     randomAddress = (ethers.Wallet.createRandom()).address;
   });
 
   const baseGasCheck = (response, expectedValue: number) => {
-    const gasValue = ethers.BigNumber.from(response);
+    const gasValue = Number(response);
     // handle deviation of 20%
-    expect(gasValue.toNumber()).to.be.lessThan(expectedValue * 1.2);
+    expect(gasValue).to.be.lessThan(expectedValue * 1.2);
   };
 
   const basicTests = [
@@ -101,35 +101,35 @@ describe('EstimateGasContract tests', function() {
   for (const test of basicTests) {
     it(test.name, async function() {
       baseGasCheck(await relay.call('eth_estimateGas', [
-        contract.populateTransaction[test.functionName]()
+        contract[test.functionName].populateTransaction()
       ]), test.expectedGas);
     });
   }
 
   it('#006 Function with .balance (uint256)', async function() {
-    const tx = await contract.populateTransaction.addressBalance(signers[0].address);
+    const tx = await contract.addressBalance.populateTransaction(signers[0].address);
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0x57ac);
   });
   it('#007 Function that accepts an argument and change contract slot information by updating global contract field with the passed argument', async function() {
-    const tx = await contract.populateTransaction.updateCounter(5644);
+    const tx = await contract.updateCounter.populateTransaction(5644);
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0x6a4e);
   });
   it('#008 Function that successfully deploys a new smart contract via CREATE op code', async function() {
-    const tx = await contract.populateTransaction.deployViaCreate();
+    const tx = await contract.deployViaCreate.populateTransaction();
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0xd48b);
   });
   it('#009 Function that successfully deploys a new smart contract via CREATE2 op code', async function() {
-    const tx = await contract.populateTransaction.deployViaCreate2();
+    const tx = await contract.deployViaCreate2.populateTransaction();
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0xdcc4);
   });
   it('#015 "data" from request body with wrong method signature', async function() {
     const estimateGasResponse = await relay.call('eth_estimateGas', [{
       data: '0xffffffff',
-      to: Utils.add0xPrefix(contract.address),
+      to: Utils.add0xPrefix(contract.target),
       from: Utils.add0xPrefix(signers[0].address)
     }]);
     baseGasCheck(estimateGasResponse, 0x61A80);
@@ -137,7 +137,7 @@ describe('EstimateGasContract tests', function() {
   it('#016 "data" from request body with wrong encoded parameter', async function() {
     const estimateGasResponse = await relay.call('eth_estimateGas', [{
       data: '0x3ec4de35',
-      to: Utils.add0xPrefix(contract.address),
+      to: Utils.add0xPrefix(contract.target),
       from: Utils.add0xPrefix(signers[0].address)
     }]);
     baseGasCheck(estimateGasResponse, 0x61A80);
@@ -145,7 +145,7 @@ describe('EstimateGasContract tests', function() {
   it('#017 non existing "from" from request body', async function() {
     const estimateGasResponse = await relay.call('eth_estimateGas', [{
       data: '0x0ec1551d',
-      to: Utils.add0xPrefix(contract.address),
+      to: Utils.add0xPrefix(contract.target),
       from: randomAddress
     }]);
     baseGasCheck(estimateGasResponse, 0x567d);
@@ -159,22 +159,22 @@ describe('EstimateGasContract tests', function() {
     baseGasCheck(estimateGasResponse, 0x61A80);
   });
   it('#019 Function that makes a call to a method to invalid smart contract', async function() {
-    const tx = await contract.populateTransaction.callToInvalidContract(randomAddress);
+    const tx = await contract.callToInvalidContract.populateTransaction(randomAddress);
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0x62de);
   });
   it('#020 Function that makes a delegate call to a method to invalid smart contract', async function() {
-    const tx = await contract.populateTransaction.delegateCallToInvalidContract(randomAddress);
+    const tx = await contract.delegateCallToInvalidContract.populateTransaction(randomAddress);
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0x6299);
   });
   it('#021 Function that makes a static call to a method to invalid smart contract', async function() {
-    const tx = await contract.populateTransaction.staticCallToInvalidContract(randomAddress);
+    const tx = await contract.staticCallToInvalidContract.populateTransaction(randomAddress);
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0x62dc);
   });
   it('#022 Function that makes a call code to a method to invalid smart contract', async function() {
-    const tx = await contract.populateTransaction.callCodeToInvalidContract(randomAddress);
+    const tx = await contract.callCodeToInvalidContract.populateTransaction(randomAddress);
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0x6187);
   });

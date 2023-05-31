@@ -20,8 +20,6 @@
 
 import { Eth } from '../index';
 import { Hbar, EthereumTransaction } from '@hashgraph/sdk';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import {BigNumber as BN} from "bignumber.js";
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
 import { MirrorNodeClient, SDKClient } from './clients';
@@ -481,7 +479,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} gasPrice()`);
     try {
-      let gasPrice: number | undefined = this.cache.get(constants.CACHE_KEY.GAS_PRICE);
+      let gasPrice: any = this.cache.get(constants.CACHE_KEY.GAS_PRICE);
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestId);
@@ -1414,15 +1412,15 @@ export class EthImpl implements Eth {
     return input.startsWith(EthImpl.emptyHex) ? input : EthImpl.emptyHex + input;
   }
 
-  static numberTo0x(input: number | BigNumber | BigInt): string {
+  static numberTo0x(input: number | BigInt): string {
     return EthImpl.emptyHex + input.toString(16);
   }
 
-  static nullableNumberTo0x(input: number | BigNumber): string | null {
+  static nullableNumberTo0x(input: number | BigInt): string | null {
     return input == null ? null : EthImpl.numberTo0x(input);
   }
 
-  static nanOrNumberTo0x(input: number | BigNumber): string {
+  static nanOrNumberTo0x(input: number | BigInt): string {
     // input == null assures to check against both null and undefined.
     // A reliable way for ECMAScript code to test if a value X is a NaN is an expression of the form X !== X.
     // The result will be true if and only if X is a NaN.
@@ -1435,7 +1433,7 @@ export class EthImpl implements Eth {
 
   static toNullableBigNumber(value: string): string | null {
     if (typeof value === 'string') {
-      return (new BN(value)).toString();
+      return BigInt(value).toString();
     }
 
     return null;

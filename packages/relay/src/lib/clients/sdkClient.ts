@@ -48,7 +48,6 @@ import {
     TransactionRecordQuery,
     Hbar,
 } from '@hashgraph/sdk';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
 import { Gauge, Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
@@ -166,12 +165,12 @@ export class SDKClient {
             .setAccountId(AccountId.fromString(account)), this.clientMain, callerName, account, requestId);
     }
 
-    async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
+    async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: string): Promise<BigInt> {
         const balance = await this.getAccountBalance(account, callerName, requestId);
-        return balance.hbars.to(HbarUnit.Tinybar);
+        return BigInt(balance.hbars.to(HbarUnit.Tinybar).toString());
     }
     
-    async getAccountBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
+    async getAccountBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigInt> {
         const balance = await this.getAccountBalance(account, callerName, requestId);
         return SDKClient.HbarToWeiBar(balance);
     }
@@ -191,7 +190,7 @@ export class SDKClient {
             .setContractId(ContractId.fromString(contract)), this.clientMain, callerName, contract, requestId);
     }
 
-    async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
+    async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigInt> {
         const balance = await this.getContractBalance(account, callerName, requestId);
         return SDKClient.HbarToWeiBar(balance);
     }
@@ -570,10 +569,8 @@ export class SDKClient {
             : input;
     }
 
-    private static HbarToWeiBar(balance: AccountBalance): BigNumber {
-        return balance.hbars
-        .to(HbarUnit.Tinybar)
-        .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
+    private static HbarToWeiBar(balance: AccountBalance): BigInt {
+        return BigInt(balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF).toString());
     }
 
     private createFile = async (callData: Uint8Array, client: Client, requestId?: string) => {

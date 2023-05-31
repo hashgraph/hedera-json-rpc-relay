@@ -25,7 +25,7 @@ chai.use(solidity);
 
 import { AliasAccount } from '../clients/servicesClient';
 import {Utils} from '../helpers/utils';
-import { ethers, BigNumber } from 'ethers';
+import { ethers } from 'ethers';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import Assertions from '../helpers/assertions';
 import { EthImpl } from "@hashgraph/json-rpc-relay/src/lib/eth";
@@ -46,7 +46,7 @@ describe('@erc20 Acceptance Tests', async function () {
 
     const name = Utils.randomString(10);
     const symbol = Utils.randomString(5);
-    const initialSupply = BigNumber.from(10000);
+    const initialSupply = 10000;
 
     const ERC20 = 'ERC20 Contract';
     const HTS = 'HTS token';
@@ -95,12 +95,12 @@ describe('@erc20 Acceptance Tests', async function () {
             });
 
             it('has 18 decimals', async function () {
-                expect(await contract.decimals()).to.be.equal(18);
+                expect(await contract.decimals()).to.be.equal(BigInt(18));
             });
 
             it('Relay can execute "eth_getCode" for ERC20 contract with evmAddress', async function () {
-                const res = await relay.call('eth_getCode', [contract.address, 'latest'], requestId);
-                const expectedBytecode = `${EthImpl.redirectBytecodePrefix}${contract.address.slice(2)}${EthImpl.redirectBytecodePostfix}`
+                const res = await relay.call('eth_getCode', [contract.target, 'latest'], requestId);
+                const expectedBytecode = `${EthImpl.redirectBytecodePrefix}${contract.target.slice(2)}${EthImpl.redirectBytecodePostfix}`
                 if (testTitles[i].testName !== HTS) {
                     expect(res).to.eq(testTitles[i].expectedBytecode);
                 } else {
@@ -161,7 +161,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                     amount = initialSupply;
                                 });
 
-                                it ('@release contract owner transfers tokens', async function () {
+                                it('@release contract owner transfers tokens', async function () {
                                     tx = await contract.connect(tokenOwnerWallet).transfer(to, amount);
                                     // 5 seconds sleep to propagate the changes to mirror node
                                     await new Promise(r => setTimeout(r, 5000));
@@ -173,10 +173,10 @@ describe('@erc20 Acceptance Tests', async function () {
                                 });
 
                                 it('emits a transfer event', async function () {
-                                    const transferEvent = (await tx.wait()).events.filter(e => e.event === 'Transfer')[0].args;
-                                    expect(transferEvent.from).to.eq(tokenOwnerWallet.address);
-                                    expect(transferEvent.to).to.eq(toWallet.address);
-                                    expect(transferEvent.value).to.eq(amount);
+                                    const transferEvent = (await tx.wait()).logs.filter(e => e.fragment.name === 'Transfer')[0].args;
+                                    expect(transferEvent[0]).to.eq(tokenOwnerWallet.address);
+                                    expect(transferEvent[1]).to.eq(toWallet.address);
+                                    expect(transferEvent[2]).to.eq(BigInt(amount));
                                 });
 
                                 it ('other account transfers tokens back to owner', async function () {
@@ -201,10 +201,10 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 it('emits an approval event', async function () {
                                     const allowance = await contract.allowance(tokenOwner, spender);
-                                    const approvalEvent = (await tx.wait()).events.filter(e => e.event === 'Approval')[0].args;
-                                    expect(approvalEvent.owner).to.eq(tokenOwnerWallet.address);
-                                    expect(approvalEvent.spender).to.eq(spenderWallet.address);
-                                    expect(approvalEvent.value).to.eq(allowance);
+                                    const approvalEvent = (await tx.wait()).logs.filter(e => e.fragment.name === 'Approval')[0].args;
+                                    expect(approvalEvent[0]).to.eq(tokenOwnerWallet.address);
+                                    expect(approvalEvent[1]).to.eq(spenderWallet.address);
+                                    expect(approvalEvent[2]).to.eq(allowance);
                                 });
 
                                 describe('when the token owner has enough balance', function () {
@@ -234,10 +234,10 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     it('emits a transfer event', async function () {
-                                        const transferEvent = (await tx.wait()).events.filter(e => e.event === 'Transfer')[0].args;
-                                        expect(transferEvent.from).to.eq(tokenOwnerWallet.address);
-                                        expect(transferEvent.to).to.eq(toWallet.address);
-                                        expect(transferEvent.value).to.eq(amount);
+                                        const transferEvent = (await tx.wait()).logs.filter(e => e.fragment.name === 'Transfer')[0].args;
+                                        expect(transferEvent[0]).to.eq(tokenOwnerWallet.address);
+                                        expect(transferEvent[1]).to.eq(toWallet.address);
+                                        expect(transferEvent[2]).to.eq(BigInt(amount));
                                     });
                                 });
 
@@ -262,7 +262,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                 let allowance;
 
                                 before(async function () {
-                                    allowance = initialSupply.sub(1);
+                                    allowance = initialSupply - 1;
                                 });
 
                                 beforeEach(async function () {
@@ -304,7 +304,7 @@ describe('@erc20 Acceptance Tests', async function () {
 
                             describe('@release when the spender has unlimited allowance', function () {
                                 beforeEach(async function () {
-                                    await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256, {gasLimit: 1_000_000});
+                                    await contract.connect(tokenOwnerWallet).approve(spender, ethers.MaxUint256, {gasLimit: 1_000_000});
                                     // 5 seconds sleep to propagate the changes to mirror node
                                     await new Promise(r => setTimeout(r, 5000));
                                 });
@@ -313,14 +313,14 @@ describe('@erc20 Acceptance Tests', async function () {
                                     it('does not decrease the spender allowance', async function () {
                                         await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
                                         const allowance = await contract.allowance(tokenOwner, spender);
-                                        expect(allowance.toString()).to.be.equal(ethers.constants.MaxUint256.toString());
+                                        expect(allowance.toString()).to.be.equal(ethers.MaxUint256.toString());
                                     });
                                 }
                                 else {
                                     it('decreases the spender allowance', async function () {
-                                        await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
+                                        await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1, {gasLimit: 200_000});
                                         const allowance = await contract.allowance(tokenOwner, spender);
-                                        expect(allowance.toString()).to.be.equal((initialSupply.toNumber() - 1).toString());
+                                        expect(allowance.toString()).to.be.equal((initialSupply - 1).toString());
                                     });
                                 }
                             });
@@ -331,7 +331,7 @@ describe('@erc20 Acceptance Tests', async function () {
 
                             beforeEach(async function () {
                                 amount = initialSupply;
-                                to = ethers.constants.AddressZero;
+                                to = ethers.ZeroAddress;
                                 tokenOwnerWallet = accounts[0].wallet;
                                 await contract.connect(tokenOwnerWallet).approve(spender, amount, {gasLimit: 1_000_000});
                             });
