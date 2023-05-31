@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app:  {{ template "json-rpc-relay-websocket.name" . }}
+    {{ include "json-rpc-relay-websocket.labels" . | nindent 4 }}
+  name: {{ include "json-rpc-relay-websocket.fullname" . }}
+  namespace: {{ include "json-rpc-relay-websocket.namespace" . }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "json-rpc-relay-websocket.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app:  {{ template "json-rpc-relay-websocket.name" . }}
+        {{- include "json-rpc-relay-websocket.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "json-rpc-relay-websocket.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        args: ["start:ws"]
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "json-rpc-relay-websocket.fullname" . }}
+        - secretRef:
+            name: {{ include "json-rpc-relay-websocket.fullname" . }}
+        {{- with .Values.extraEnvFrom }}
+          {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
+        ports: {{- toYaml .Values.ports | nindent 12 }}
+        livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
+        readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
+        resources: {{- toYaml .Values.resources | nindent 12 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
