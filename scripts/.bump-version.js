@@ -70,7 +70,7 @@ const helmChartRegex = 'version: \\d+\\.\\d+\\.\\d+(-\\w+)?';
 replace({
     regex: helmChartRegex,
     replacement: `version: ${newVersion}`,
-    paths: ['helm-chart/Chart.yaml'],
+    paths: ['charts/hedera-json-rpc-relay/Chart.yaml'],
     recursive: false,
     silent: false,
 });
@@ -79,7 +79,7 @@ const helmChartAppVersionRegex = 'appVersion: \"\\d+\\.\\d+\\.\\d+(-\\w+)?\"';
 replace({
     regex: helmChartAppVersionRegex,
     replacement: `appVersion: "${newVersion}"`,
-    paths: ['helm-chart/Chart.yaml'],
+    paths: ['charts/hedera-json-rpc-relay/Chart.yaml'],
     recursive: false,
     silent: false,
 });
