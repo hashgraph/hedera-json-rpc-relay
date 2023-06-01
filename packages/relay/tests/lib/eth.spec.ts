@@ -3551,7 +3551,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     before(() => {
       initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
     });
 
     after(() => {
