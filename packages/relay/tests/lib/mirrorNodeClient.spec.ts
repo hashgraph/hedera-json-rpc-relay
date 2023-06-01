@@ -135,6 +135,14 @@ describe('MirrorNodeClient', async function () {
     expect(extractedEvmAddress).to.eq(evmAddress);
   });
 
+  it('Can provide custom x-api-key header', async () => {
+    const exampleApiKey = 'abc123iAManAPIkey';
+    process.env.MIRROR_NODE_URL_HEADER_X_API_KEY = exampleApiKey;
+    const mirrorNodeInstanceOverridden = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry);
+    const axiosHeaders = mirrorNodeInstanceOverridden.getMirrorNodeRestInstance().defaults.headers.common;
+    expect(axiosHeaders).has.property('x-api-key');
+    expect(axiosHeaders['x-api-key']).to.eq(exampleApiKey);
+  });
 
   it('`getQueryParams` general', async () => {
     const queryParams = {

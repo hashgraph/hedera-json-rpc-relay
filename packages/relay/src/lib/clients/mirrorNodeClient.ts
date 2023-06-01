@@ -174,6 +174,12 @@ export class MirrorNodeClient {
                 timeout: mirrorNodeHttpSocketTimeout,
             }),
         });
+
+        // Custom headers
+        if (process.env.MIRROR_NODE_URL_HEADER_X_API_KEY) {
+            axiosClient.defaults.headers.common['x-api-key'] = process.env.MIRROR_NODE_URL_HEADER_X_API_KEY;
+        }
+
         //@ts-ignore
         axiosRetry(axiosClient, {
             retries: isDevMode ? mirrorNodeRetriesDevMode : mirrorNodeRetries,
