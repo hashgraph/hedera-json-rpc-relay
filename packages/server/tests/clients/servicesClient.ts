@@ -387,13 +387,12 @@ export default class ServicesClient {
         treasuryAccountId: '0.0.2',
         initialSupply: 5000,
         adminPrivateKey: this.DEFAULT_KEY,
-        kyc: false,
-        freeze: false,
+        kyc: null,
+        freeze: null,
         customHbarFees: false,
         customTokenFees: false,
         customRoyaltyFees: false,
-        customFractionalFees: false,
-        adminKeyList: null,
+        customFractionalFees: false
     }) {
         const {} = args;
 
@@ -414,14 +413,12 @@ export default class ServicesClient {
             .setNodeAccountIds([htsClient._network.getNodeAccountIdsForExecute()[0]])
             .setMaxTransactionFee(50);
 
-        const managementKey: KeyList | Key | null = args.adminKeyList || args.adminPrivateKey;
-
         if (args.kyc) {
-            transaction.setKycKey(managementKey);
+            transaction.setKycKey(args.kyc);
         }
 
         if (args.freeze) {
-            transaction.setFreezeKey(managementKey);
+            transaction.setFreezeKey(args.freeze);
         }
 
         const customFees = [];

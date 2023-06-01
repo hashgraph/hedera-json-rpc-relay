@@ -21,7 +21,7 @@
 // external resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
-import { AccountId, Hbar } from '@hashgraph/sdk';
+import { AccountId, Hbar, ContractId } from '@hashgraph/sdk';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../helpers/constants';
 
@@ -91,7 +91,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         const tokenManagementMirror = await mirrorNode.get(`/contracts/${TokenManager.address}`, requestId);
 
         // create accounts
-        accounts[0] = await servicesNode.createAccountWithContractIdKey(tokenManagementMirror.contract_id, 400, relay.provider, requestId);
+        accounts[0] = await servicesNode.createAliasAccount(400, relay.provider, requestId);
         accounts[1] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
         accounts[2] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
 
@@ -109,9 +109,8 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             treasuryAccountId: accounts[0].accountId.toString(),
             initialSupply: INITIAL_SUPPLY,
             adminPrivateKey: accounts[0].privateKey,
-            kyc: true,
-            freeze: true,
-            adminKeyList: accounts[0].keyList
+            kyc: accounts[0].privateKey,
+            freeze: ContractId.fromString(tokenManagementMirror.contract_id)
         };
 
         const defaultNftOptions = {
@@ -493,7 +492,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(res.inheritAccountKey).to.eq(false);
                 expect(res.contractId).to.eq(ZERO_HEX);
                 expect(res.ed25519).to.eq(EMPTY_HEX);
-                expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.not.eq(EMPTY_HEX);
                 expect(res.delegatableContractId).to.eq(ZERO_HEX);
             });
 
@@ -501,7 +500,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['FREEZE']);
                 expect(res).to.exist;
                 expect(res.inheritAccountKey).to.eq(false);
-                expect(res.contractId).to.eq(ZERO_HEX);
+                expect(res.contractId).to.not.eq(ZERO_HEX);
                 expect(res.ed25519).to.eq(EMPTY_HEX);
                 expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
                 expect(res.delegatableContractId).to.eq(ZERO_HEX);
