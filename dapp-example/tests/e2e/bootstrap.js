@@ -137,6 +137,20 @@ const deployAndFundContractTransferTx = async function(wallet) {
   return contractAddress;
 };
 
+const addContractIdToAccount = async function (accountId, contractId, privateKey, client) {
+  const accountUpdate = await (await (new HederaSDK.AccountUpdateTransaction()
+      .setAccountId(accountId)
+      .setKey(new HederaSDK.KeyList([
+        privateKey.publicKey,
+        contractId
+      ], 1))
+      .freezeWith(client))
+      .sign(privateKey))
+      .execute(client);
+
+  await accountUpdate.getReceipt(client);
+};
+
 (async () => {
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
   if (mainPrivateKeyString === '') {
@@ -160,8 +174,20 @@ const deployAndFundContractTransferTx = async function(wallet) {
   console.log(`Contract Transfer Tx Address: ${ContractTransferTxAddress}`);
   const HTSContractAddress = await deployHederaTokenService(mainWallet);
   console.log(`HTS Contract Address: ${HTSContractAddress}`);
-  const { tokenId, tokenAddress } = await createHTSToken();
-  const token2 = await createHTSToken();
+
+  // Get Contract id from evm address
+  const contractInfo = await (
+      new HederaSDK.ContractInfoQuery()
+          .setContractId(HederaSDK.ContractId.fromEvmAddress(0, 0, HTSContractAddress))
+  ).execute(client);
+  const HTSContractId = contractInfo.contractId;
+
+  // Allow the contract to manage the accounts
+  await addContractIdToAccount(mainAccountId, HTSContractId, HederaSDK.PrivateKey.fromString(process.env.PRIVATE_KEY), client);
+  await addContractIdToAccount(receiverAccountId, HTSContractId, HederaSDK.PrivateKey.fromString(process.env.RECEIVER_PRIVATE_KEY), client);
+
+  const { tokenId, tokenAddress } = await createHTSToken(HTSContractId);
+  const token2 = await createHTSToken(HTSContractId);
   fs.writeFileSync(path.resolve(__dirname + '../../../src/contracts/') + '/.bootstrapInfo.json',
     `{"HTS_ADDRESS":"${tokenAddress}", "HTS_SECOND_ADDRESS":"${token2.tokenAddress}", "HTS_CONTRACT_ADDRESS": "${HTSContractAddress}", "CONTRACT_TRANSFER_TX_ADDRESS": "${ContractTransferTxAddress}"}`);
 
