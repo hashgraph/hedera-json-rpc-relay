@@ -184,14 +184,14 @@ const addContractIdToAccount = async function (accountId, contractId, privateKey
   console.log(`HTS Contract ID: ${HTSContractId}`);
 
   // Allow the contract to manage the accounts
-  await addContractIdToAccount(mainAccountId, HTSContractId, HederaSDK.PrivateKey.fromString(mainPrivateKeyString), client);
+  await addContractIdToAccount(mainAccountId, HTSContractId, HederaSDK.PrivateKey.fromStringECDSA(mainPrivateKeyString), client);
   console.log(`Added contractId: ${HTSContractId} to main account`);
 
-  await addContractIdToAccount(receiverAccountId, HTSContractId, HederaSDK.PrivateKey.fromString(receiverPrivateKeyString), client);
+  await addContractIdToAccount(receiverAccountId, HTSContractId, HederaSDK.PrivateKey.fromStringECDSA(receiverPrivateKeyString), client);
   console.log(`Added contractId: ${HTSContractId} to receiver account`);
 
-  const { tokenId, tokenAddress } = await createHTSToken(HTSContractId);
-  const token2 = await createHTSToken(HTSContractId);
+  const { tokenId, tokenAddress } = await createHTSToken();
+  const token2 = await createHTSToken();
   fs.writeFileSync(path.resolve(__dirname + '../../../src/contracts/') + '/.bootstrapInfo.json',
     `{"HTS_ADDRESS":"${tokenAddress}", "HTS_SECOND_ADDRESS":"${token2.tokenAddress}", "HTS_CONTRACT_ADDRESS": "${HTSContractAddress}", "CONTRACT_TRANSFER_TX_ADDRESS": "${ContractTransferTxAddress}"}`);
 
