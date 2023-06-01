@@ -181,10 +181,14 @@ const addContractIdToAccount = async function (accountId, contractId, privateKey
           .setContractId(HederaSDK.ContractId.fromEvmAddress(0, 0, HTSContractAddress))
   ).execute(client);
   const HTSContractId = contractInfo.contractId;
+  console.log(`HTS Contract ID: ${HTSContractId}`);
 
   // Allow the contract to manage the accounts
   await addContractIdToAccount(mainAccountId, HTSContractId, HederaSDK.PrivateKey.fromString(mainPrivateKeyString), client);
+  console.log(`Added contractId: ${HTSContractId} to main account`);
+
   await addContractIdToAccount(receiverAccountId, HTSContractId, HederaSDK.PrivateKey.fromString(receiverPrivateKeyString), client);
+  console.log(`Added contractId: ${HTSContractId} to receiver account`);
 
   const { tokenId, tokenAddress } = await createHTSToken(HTSContractId);
   const token2 = await createHTSToken(HTSContractId);
