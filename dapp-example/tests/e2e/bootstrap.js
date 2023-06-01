@@ -183,8 +183,8 @@ const addContractIdToAccount = async function (accountId, contractId, privateKey
   const HTSContractId = contractInfo.contractId;
 
   // Allow the contract to manage the accounts
-  await addContractIdToAccount(mainAccountId, HTSContractId, HederaSDK.PrivateKey.fromString(process.env.PRIVATE_KEY), client);
-  await addContractIdToAccount(receiverAccountId, HTSContractId, HederaSDK.PrivateKey.fromString(process.env.RECEIVER_PRIVATE_KEY), client);
+  await addContractIdToAccount(mainAccountId, HTSContractId, HederaSDK.PrivateKey.fromString(mainPrivateKeyString), client);
+  await addContractIdToAccount(receiverAccountId, HTSContractId, HederaSDK.PrivateKey.fromString(receiverPrivateKeyString), client);
 
   const { tokenId, tokenAddress } = await createHTSToken(HTSContractId);
   const token2 = await createHTSToken(HTSContractId);
