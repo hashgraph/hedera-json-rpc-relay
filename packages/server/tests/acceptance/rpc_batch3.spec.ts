@@ -168,7 +168,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
 
-            const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, '0x1'], requestId);
+            const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, '0x10'], requestId);
             expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
         });
 

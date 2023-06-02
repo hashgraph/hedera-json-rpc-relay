@@ -41,20 +41,20 @@ export const predefined = {
     message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
     data: errorMessage
   }),
-  'GAS_LIMIT_TOO_HIGH': new JsonRpcError({
+  'GAS_LIMIT_TOO_HIGH': (gasLimit, maxGas) => new JsonRpcError({
     name: 'gasLimit too high',
     code: -32005,
-    message: 'Transaction gas limit exceeds block gas limit'
+    message: `Transaction gas limit '${gasLimit}' exceeds block gas limit '${maxGas}'`
   }),
-  'GAS_LIMIT_TOO_LOW': new JsonRpcError({
+  'GAS_LIMIT_TOO_LOW': (gasLimit, requiredGas) => new JsonRpcError({
     name: 'gasLimit too low',
     code: -32003,
-    message: 'Intrinsic gas exceeds gas limit'
+    message: `Transaction gas limit provided '${gasLimit}' is insufficient of intrinsic gas required '${requiredGas}'`
   }),
-  'GAS_PRICE_TOO_LOW': new JsonRpcError({
+  'GAS_PRICE_TOO_LOW': (gasPrice, minGasPrice) => new JsonRpcError({
     name: 'Gas price too low',
     code: -32009,
-    message: 'Gas price below configured minimum gas price'
+    message: `Gas price '${gasPrice}' is below configured minimum gas price '${minGasPrice}'`
   }),
   'HBAR_RATE_LIMIT_EXCEEDED': new JsonRpcError({
     name: 'HBAR Rate limit exceeded',
@@ -106,10 +106,10 @@ export const predefined = {
     code: -32602,
     message: `Missing value for required parameter ${index}`
   }),
-  'NONCE_TOO_LOW': new JsonRpcError({
+  'NONCE_TOO_LOW': (nonce, currentNonce) => new JsonRpcError({
     name: 'Nonce too low',
     code: 32001,
-    message: 'Nonce too low'
+    message: `Nonce too low. Provided nonce: ${currentNonce}, current nonce: ${nonce}`
   }),
   'NO_MINING_WORK': new JsonRpcError({
     name: 'No mining work',
@@ -211,5 +211,15 @@ export const predefined = {
     name: 'Exceeded maximum allowed subscriptions',
     code: -32608,
     message: 'Exceeded maximum allowed subscriptions'
-  })
+  }),
+  'UNSUPPORTED_HISTORICAL_EXECUTION': (blockId: string) => new JsonRpcError({
+    name: 'Unsupported historical block request',
+    code: -32609,
+    message: `Unsupported historical block identifier encountered: ${blockId}`
+  }),
+  'UNSUPPORTED_OPERATION': (message: string) => new JsonRpcError({
+    name: 'Unsupported operation',
+    code: -32610,
+    message: `Unsupported operation. ${message}`
+  }),
 };

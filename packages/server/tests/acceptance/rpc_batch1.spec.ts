@@ -34,6 +34,7 @@ import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
+import constants from '../../../relay/src/lib/constants';
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -56,6 +57,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     const INCORRECT_CHAIN_ID = 999;
     const GAS_PRICE_TOO_LOW = '0x1';
+    const GAS_PRICE_REF = '0x123456';
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10).toHexString();
 
     let blockNumberAtStartOfTests = 0;
@@ -596,7 +598,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId)
                 };
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                await relay.callFailing(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], predefined.GAS_PRICE_TOO_LOW, requestId);
+                await relay.callFailing(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], predefined.GAS_PRICE_TOO_LOW(GAS_PRICE_TOO_LOW, GAS_PRICE_REF), requestId);
             });
 
             it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
@@ -622,7 +624,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId)
                 };
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                await relay.callFailing(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], predefined.GAS_PRICE_TOO_LOW, requestId);
+                await relay.callFailing(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], predefined.GAS_PRICE_TOO_LOW(GAS_PRICE_TOO_LOW, GAS_PRICE_REF), requestId);
             });
 
             it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with insufficient balance)', async function () {
@@ -647,7 +649,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId)
                 };
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                await relay.callFailing(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], predefined.GAS_PRICE_TOO_LOW, requestId);
+                await relay.callFailing(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], predefined.GAS_PRICE_TOO_LOW(GAS_PRICE_TOO_LOW, GAS_PRICE_REF), requestId);
             });
 
             it('should fail "eth_sendRawTransaction" for London transactions (with insufficient balance)', async function () {
@@ -777,11 +779,12 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 });
 
                 it('should fail "eth_sendRawTransaction" for EIP155 transaction with not enough gas', async function () {
+                    const gasLimit = 100;
                     const transaction = {
                         ...default155TransactionData,
                         to: mirrorContract.evm_address,
                         nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
-                        gasLimit: 100,
+                        gasLimit: gasLimit,
                         gasPrice: await relay.gasPrice(requestId)
                     };
 
@@ -791,16 +794,17 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         Assertions.expectedError();
                     }
                     catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW);
+                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW(gasLimit, constants.BLOCK_GAS_LIMIT));
                     }
                 });
 
                 it('should fail "eth_sendRawTransaction" for EIP155 transaction with a too high gasLimit', async function () {
+                    const gasLimit = 999999999;
                     const transaction = {
                         ...default155TransactionData,
                         to: mirrorContract.evm_address,
                         nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
-                        gasLimit: 999999999,
+                        gasLimit: gasLimit,
                         gasPrice: await relay.gasPrice(requestId)
                     };
 
@@ -809,17 +813,18 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         await relay.sendRawTransaction(signedTx, requestId);
                         Assertions.expectedError();
                     } catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH);
+                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.BLOCK_GAS_LIMIT));
                     }
                 });
 
 
                 it('should fail "eth_sendRawTransaction" for London transaction with not enough gas', async function () {
+                    const gasLimit = 100;
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
                         nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
-                        gasLimit: 100
+                        gasLimit: gasLimit
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     try {
@@ -827,23 +832,24 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         Assertions.expectedError();
                     }
                     catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW);
+                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW(gasLimit, constants.BLOCK_GAS_LIMIT));
                     }
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transaction with a too high gasLimit', async function () {
+                    const gasLimit = 999999999;
                     const transaction = {
                         ...defaultLondonTransactionData,
                         to: mirrorContract.evm_address,
                         nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
-                        gasLimit: 999999999
+                        gasLimit: gasLimit
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     try {
                         await relay.sendRawTransaction(signedTx, requestId);
                         Assertions.expectedError();
                     } catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH);
+                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.BLOCK_GAS_LIMIT));
                     }
                 });
 
@@ -855,7 +861,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId)
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    await relay.callFailing(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], predefined.GAS_PRICE_TOO_LOW, requestId);
+                    await relay.callFailing(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], predefined.GAS_PRICE_TOO_LOW(GAS_PRICE_TOO_LOW, GAS_PRICE_REF), requestId);
                 });
             });
 
