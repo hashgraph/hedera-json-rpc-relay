@@ -441,7 +441,7 @@ export class EthImpl implements Eth {
   async estimateGas(transaction: any, _blockParam: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
-    
+
     let gas = EthImpl.gasTxBaseCost;
     try {
       const contractCallResponse = await this.mirrorNodeClient.postContractCall({
@@ -468,12 +468,12 @@ export class EthImpl implements Eth {
           if (!toAccount) {
             toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
           }
-  
+
           // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
           if (toAccount) {
             this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey}:${JSON.stringify(toAccount)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
             this.cache.set(accountCacheKey, toAccount);
-  
+
             gas = EthImpl.gasTxBaseCost;
           } else {
             gas = EthImpl.gasTxHollowAccountCreation;
@@ -1196,7 +1196,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      
+
       if (e instanceof MirrorNodeClientError) {
         if (e.isRateLimit()) {
           return predefined.IP_RATE_LIMIT_EXCEEDED(e.errorMessage || `Rate limit exceeded on ${EthImpl.ethCall}`);

@@ -119,4 +119,12 @@ export class Utils {
     static add0xPrefix = (num) => {
         return num.startsWith('0x') ? num : '0x' + num;
     };
+
+    static gasOptions = async (requestId, gasLimit = 1_500_000) => {
+        return  {
+            gasLimit: gasLimit,
+            gasPrice: await global.relay.gasPrice(requestId)
+        };
+    }
+
 }
