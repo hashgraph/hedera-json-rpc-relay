@@ -45,20 +45,22 @@ const unsubscribeAndCloseConnections = async (provider: ethers.providers.WebSock
     return result;
 };
 
-const createLogs = async (contract: ethers.Contract) => {
-    const tx1 = await contract.log0(10);
+const createLogs = async (contract: ethers.Contract, requestId) => {
+    const gasOptions = await Utils.gasOptions(requestId);
+
+    const tx1 = await contract.log0(10, gasOptions);
     const rec1 = await tx1.wait();
 
-    const tx2 = await contract.log1(1);
+    const tx2 = await contract.log1(1, gasOptions);
     const rec2 = await tx2.wait();
 
-    const tx3 = await contract.log2(1, 2);
+    const tx3 = await contract.log2(1, 2, gasOptions);
     const rec3 = await tx3.wait();
 
-    const tx4 = await contract.log3(10, 20, 31);
+    const tx4 = await contract.log3(10, 20, 31, gasOptions);
     const rec4 = await tx4.wait();
 
-    const tx5 = await contract.log4(11, 22, 33, 44);
+    const tx5 = await contract.log4(11, 22, 33, 44, gasOptions);
     const rec5 = await tx5.wait();
 
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -161,7 +163,7 @@ describe('@web-socket Acceptance Tests', async function() {
             });
 
             // perform an action on the SC that emits a Log1 event
-            await logContractSigner.log1(100);
+            await logContractSigner.log1(100, await Utils.gasOptions(requestId));
             // wait 1s to expect the message
             await new Promise(resolve => setTimeout(resolve, 4000));
 
@@ -198,8 +200,9 @@ describe('@web-socket Acceptance Tests', async function() {
             });
 
             //Generate the Logs.
-            await logContractSigner.log1(100);
-            await logContractSigner.log3(4, 6, 7);
+            const gasOptions = await Utils.gasOptions(requestId);
+            await logContractSigner.log1(100, gasOptions);
+            await logContractSigner.log3(4, 6, 7, gasOptions);
             // wait 2s to expect the message
             await new Promise(resolve => setTimeout(resolve, 3000));
 
@@ -258,20 +261,22 @@ describe('@web-socket Acceptance Tests', async function() {
             });
             await new Promise(resolve => setTimeout(resolve, 500)); // wait for subscription to be created
 
+            const gasOptions = await Utils.gasOptions(requestId, 500_000);
+
             // create event on contract 1
-            await logContractSigner.log1(100);
+            await logContractSigner.log1(100, gasOptions);
             await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
             expect("1: " + latestEventFromSubscription.params.result.address).to.be.eq("1: " + logContractSigner.address.toLowerCase());
             expect("1: " + latestEventFromSubscription.params.subscription).to.be.eq("1: " + subscriptionId);
 
             // create event on contract 2
-            await logContractSigner2.log1(200);
+            await logContractSigner2.log1(200, gasOptions);
             await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
             expect("2: " + latestEventFromSubscription.params.result.address).to.be.eq("2: " + logContractSigner2.address.toLowerCase());
             expect("2: " + latestEventFromSubscription.params.subscription).to.be.eq("2: " + subscriptionId);
 
             // create event on contract 3
-            await logContractSigner3.log1(300);
+            await logContractSigner3.log1(300, gasOptions);
             await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
             expect("3: " + latestEventFromSubscription.params.result.address).to.be.eq("3: " + logContractSigner3.address.toLowerCase());
             expect("3: " + latestEventFromSubscription.params.subscription).to.be.eq("3: " + subscriptionId);
@@ -526,7 +531,7 @@ describe('@web-socket Acceptance Tests', async function() {
             logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet, relay);
             logContractSigner3 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet, relay);
 
-            await createLogs(logContractSigner2);
+            await createLogs(logContractSigner2, requestId);
             const mirrorLogs = await mirrorNode.get(`/contracts/${logContractSigner2.address}/results/logs`, requestId);
 
             expect(mirrorLogs).to.exist;
@@ -585,7 +590,7 @@ describe('@web-socket Acceptance Tests', async function() {
 
             // Create logs from all deployed contracts
             for(let i = 0; i < cLen; i++) {
-                await createLogs(contracts[i]);
+                await createLogs(contracts[i], requestId);
             }
 
             await wsLogsProvider.destroy();
