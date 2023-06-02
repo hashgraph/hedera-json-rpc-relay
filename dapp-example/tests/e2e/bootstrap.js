@@ -4,6 +4,7 @@ const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const IHRC = require("../../src/contracts/IHRC.json");
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
@@ -183,12 +184,20 @@ const addContractIdToAccount = async function (accountId, contractId, privateKey
   const HTSContractId = contractInfo.contractId;
   console.log(`HTS Contract ID: ${HTSContractId}`);
 
-  // Allow the contract to manage the accounts
-  await addContractIdToAccount(mainAccountId, HTSContractId, HederaSDK.PrivateKey.fromStringECDSA(mainPrivateKeyString), client);
-  console.log(`Added contractId: ${HTSContractId} to main account`);
+  // // Allow the contract to manage the accounts
+  // await addContractIdToAccount(mainAccountId, HTSContractId, HederaSDK.PrivateKey.fromStringECDSA(mainPrivateKeyString), client);
+  // console.log(`Added contractId: ${HTSContractId} to main account`);
 
-  await addContractIdToAccount(receiverAccountId, HTSContractId, HederaSDK.PrivateKey.fromStringECDSA(receiverPrivateKeyString), client);
-  console.log(`Added contractId: ${HTSContractId} to receiver account`);
+  // await addContractIdToAccount(receiverAccountId, HTSContractId, HederaSDK.PrivateKey.fromStringECDSA(receiverPrivateKeyString), client);
+  // console.log(`Added contractId: ${HTSContractId} to receiver account`);
+
+  const mainTokenSigner = new ethers.Contract(HTSContractAddress, new ethers.utils.Interface(IHRC), mainWallet);
+  const receiverTokenSigner = new ethers.Contract(HTSContractAddress, new ethers.utils.Interface(IHRC), mainWallet);
+
+  const txAssociateMain = await mainTokenSigner.associate({ gasLimit: 10_000_000 });
+  const mainAssociateReceipt = await txAssociateMain.wait();
+  const txAssociateReceiver = await receiverTokenSigner.associate({ gasLimit: 10_000_000 });
+  const receiverAssociateReceipt = await txAssociateReceiver.wait();
 
   const { tokenId, tokenAddress } = await createHTSToken();
   const token2 = await createHTSToken();
