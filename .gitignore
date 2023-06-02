@@ -8,3 +8,4 @@ tsconfig.tsbuildinfo
 .devcontainer/
 **/**/coverage/
 **/**/.nyc_output/
+.DS_Store
