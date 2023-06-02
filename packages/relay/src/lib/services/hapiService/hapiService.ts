@@ -95,7 +95,7 @@ export default class HAPIService {
     const currentDateNow = Date.now();
     this.initialTransactionCount = parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!) || 0;
     this.initialResetDuration = parseInt(process.env.HAPI_CLIENT_DURATION_RESET!) || 0;
-    this.initialErrorCodes = JSON.parse(process.env.HAPI_CLIENT_ERROR_RESET || "[]");
+    this.initialErrorCodes = JSON.parse(process.env.HAPI_CLIENT_ERROR_RESET || "[50]");
 
     this.transactionCount = this.initialTransactionCount;
     this.resetDuration = currentDateNow + this.initialResetDuration;
