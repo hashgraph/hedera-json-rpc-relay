@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { Button, TextField, Typography } from "@mui/material";
 import { ethers } from 'ethers';
-import HederaTokenService from '../contracts/HederaTokenService.json'
 import bootstrapInfo from '../contracts/.bootstrapInfo.json'
+import IHRC from '../contracts/IHRC.json'
 
 const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -17,16 +17,17 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
     }, [chain, address])
 
     const htsTokenAssociate = useCallback(async () => {
-      const contract = new ethers.Contract(bootstrapInfo.HTS_CONTRACT_ADDRESS, HederaTokenService.abi, signer);
+      const IHRC = new ethers.utils.Interface(IHRC.abi);
+      const hrcToken = new ethers.Contract(htsTokenAddress, IHRC, signer);
 
       try {
         setIsLoading(true);
         setHtsTokenAssocaiteMsg('Loading...');
 
-        const tx = await contract.associateTokenPublic(await signer.getAddress(), htsTokenAddress, { gasLimit: 1_000_0000 });
-        const receipt = await tx.wait();
+        const txAssociate = await hrcToken.associate({ gasLimit: 1_000_0000 });
+        const receiptAssociate = await txAssociate.wait();
 
-        setHtsTokenAssocaiteMsg(receipt.events[0].args[0] == 22 ? 'Done' : 'There was an error.');
+        setHtsTokenAssocaiteMsg(receiptAssociate.events[0].args[0] == 22 ? 'Done' : 'There was an error.');
         setIsLoading(false);
 
       } catch (e) {
