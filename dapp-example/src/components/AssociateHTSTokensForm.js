@@ -17,8 +17,7 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
     }, [chain, address])
 
     const htsTokenAssociate = useCallback(async () => {
-      const IHRC = new ethers.utils.Interface(IHRC.abi);
-      const hrcToken = new ethers.Contract(htsTokenAddress, IHRC, signer);
+      const hrcToken = new ethers.Contract(htsTokenAddress, new ethers.utils.Interface(IHRC), signer);
 
       try {
         setIsLoading(true);
@@ -27,7 +26,7 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
         const txAssociate = await hrcToken.associate({ gasLimit: 1_000_0000 });
         const receiptAssociate = await txAssociate.wait();
 
-        setHtsTokenAssocaiteMsg(receiptAssociate.events[0].args[0] == 22 ? 'Done' : 'There was an error.');
+        setHtsTokenAssocaiteMsg(receiptAssociate.status === 1 ? 'Done' : 'There was an error.');
         setIsLoading(false);
 
       } catch (e) {
