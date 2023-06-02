@@ -21,7 +21,7 @@
 import path from 'path';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -30,6 +30,7 @@ import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import {
+  defaultCallData,
   defaultEvmAddress,
   defaultFromLongZeroAddress,
   expectUnsupportedMethod,
@@ -518,7 +519,7 @@ describe('Eth calls using MirrorNode', async function () {
     "links": {
       "next": null
     }
-  }
+  };
 
   const detailedContractResultNotFound = { "_status": { "messages": [{ "message": "No correlating transaction" }] } };
   const timeoutError = { "type": "Error", "message": "timeout of 10000ms exceeded" };
@@ -3335,6 +3336,20 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_call precheck failures', async function () {
+    let callConsensusNodeSpy: sinon.SinonSpy;
+    let callMirrorNodeSpy: sinon.SinonSpy;
+    let sandbox: sinon.SinonSandbox;
+
+    beforeEach(() => {
+      sandbox = sinon.createSandbox();
+      callConsensusNodeSpy = sandbox.spy(ethImpl, 'callConsensusNode'); 
+      callMirrorNodeSpy = sandbox.spy(ethImpl, 'callMirrorNode');
+    });
+
+    afterEach(() => {
+      sandbox.restore();
+    });
+
     it('eth_call with missing `to` field', async function() {
       try {
         await ethImpl.call({
@@ -3379,6 +3394,55 @@ describe('Eth calls using MirrorNode', async function () {
       expect(error).to.be.not.null;
       expect(error.message).to.equal(`Non Existing Account Address: ${contractAddress1}. Expected an Account Address.`);
     });
+
+    it('should execute "eth_call" against mirror node with a false ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
+      const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
+      restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
+      restMock.onGet(`accounts/${defaultCallData.from}`).reply(200, {
+          account: "0.0.1723",
+          evm_address: defaultCallData.from
+      });
+      restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);     
+      const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
+
+      assert(callMirrorNodeSpy.calledOnce);
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
+    });    
+
+    it('should execute "eth_call" against mirror node with an undefined ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
+      const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = void 0;
+      restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
+      restMock.onGet(`accounts/${defaultCallData.from}`).reply(200, {
+          account: "0.0.1723",
+          evm_address: defaultCallData.from
+      });
+      restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);     
+      const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
+
+      assert(callMirrorNodeSpy.calledOnce);
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
+    });
+    
+    it('should execute "eth_call" against mirror node with a ETH_CALL_DEFAULT_TO_CONSENSUS_NODE set to true', async function () {
+      const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
+      restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
+      restMock.onGet(`accounts/${defaultCallData.from}`).reply(200, {
+          account: "0.0.1723",
+          evm_address: defaultCallData.from
+      });
+      restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);     
+      const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
+
+      assert(callConsensusNodeSpy.calledOnce);
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
+    });    
+    
 
     it('gas exceeds limit', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
