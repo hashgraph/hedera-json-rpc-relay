@@ -54,10 +54,10 @@ extraEnvFrom: []
 # - secretRef:
 #     name: '{{ .Release.Name }}-env'
 
-#fullnameOverride: ''
+fullnameOverride: ''
 
-# global:
-#   namespaceOverride: ''
+global:
+  namespaceOverride: ''
 
 image:
   pullPolicy: IfNotPresent
