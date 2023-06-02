@@ -138,20 +138,6 @@ const deployAndFundContractTransferTx = async function(wallet) {
   return contractAddress;
 };
 
-const addContractIdToAccount = async function (accountId, contractId, privateKey, client) {
-  const accountUpdate = await (await (new HederaSDK.AccountUpdateTransaction()
-      .setAccountId(accountId)
-      .setKey(new HederaSDK.KeyList([
-        privateKey.publicKey,
-        contractId
-      ], 1))
-      .freezeWith(client))
-      .sign(privateKey))
-      .execute(client);
-
-  await accountUpdate.getReceipt(client);
-};
-
 (async () => {
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
   if (mainPrivateKeyString === '') {
@@ -183,21 +169,6 @@ const addContractIdToAccount = async function (accountId, contractId, privateKey
   ).execute(client);
   const HTSContractId = contractInfo.contractId;
   console.log(`HTS Contract ID: ${HTSContractId}`);
-
-  // // Allow the contract to manage the accounts
-  // await addContractIdToAccount(mainAccountId, HTSContractId, HederaSDK.PrivateKey.fromStringECDSA(mainPrivateKeyString), client);
-  // console.log(`Added contractId: ${HTSContractId} to main account`);
-
-  // await addContractIdToAccount(receiverAccountId, HTSContractId, HederaSDK.PrivateKey.fromStringECDSA(receiverPrivateKeyString), client);
-  // console.log(`Added contractId: ${HTSContractId} to receiver account`);
-
-  const mainTokenSigner = new ethers.Contract(HTSContractAddress, new ethers.utils.Interface(IHRC), mainWallet);
-  const receiverTokenSigner = new ethers.Contract(HTSContractAddress, new ethers.utils.Interface(IHRC), mainWallet);
-
-  const txAssociateMain = await mainTokenSigner.associate({ gasLimit: 10_000_000 });
-  const mainAssociateReceipt = await txAssociateMain.wait();
-  const txAssociateReceiver = await receiverTokenSigner.associate({ gasLimit: 10_000_000 });
-  const receiverAssociateReceipt = await txAssociateReceiver.wait();
 
   const { tokenId, tokenAddress } = await createHTSToken();
   const token2 = await createHTSToken();
