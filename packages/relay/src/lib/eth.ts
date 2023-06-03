@@ -105,7 +105,6 @@ export class EthImpl implements Eth {
   private readonly contractCallGasLimit = Number.parseInt(process.env.CONTRACT_CALL_GAS_LIMIT ?? constants.CONTRACT_CALL_GAS_LIMIT.toString());
   private readonly ethGetTransactionCountCacheTtl = Number.parseInt(process.env.ETH_GET_TRANSACTION_COUNT_CACHE_TTL ?? constants.ETH_GET_TRANSACTION_COUNT_CACHE_TTL.toString());
   private readonly ethGetTransactionCountMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE ?? constants.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE.toString());
-  private readonly maxBlockRange = Number(process.env.MAX_BLOCK_RANGE ?? constants.MAX_BLOCK_RANGE.toString());
 
   /**
    * Configurable options used when initializing the cache.
@@ -1597,10 +1596,6 @@ export class EthImpl implements Eth {
   private static blockTagIsFinalized = (tag) => {
     return tag === EthImpl.blockFinalized || tag === EthImpl.blockLatest || tag === EthImpl.blockPending || tag === EthImpl.blockSafe;
   };
-
-  private static blockTagIsEarliestOrPending = (tag) => {
-    return tag == null || EthImpl.blockTagIsEarliest(tag) || tag === EthImpl.blockPending;
-  };   
 
   private static isBlockHash = (blockHash) => {
     return new RegExp(constants.BLOCK_HASH_REGEX + '{64}$').test(blockHash);
