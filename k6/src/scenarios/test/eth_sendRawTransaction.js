@@ -29,12 +29,14 @@ const url = __ENV.RELAY_BASE_URL;
 const methodName = 'eth_sendRawTransaction';
 const {options, run} = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
-  .request((testParameters, iteration) => {
-      const lastValidSignedTrx = (parseInt(testParameters.signedTxs.length) >= parseInt(iteration)) ? iteration : testParameters.signedTxs.length-1;
-      return http.post(
+  .request((testParameters, iteration, vuIndex, iterationByVu) => {
+        if(vuIndex >= testParameters.wallets.length) return; // VU index is greater than the number of wallets
+        const  signedTxsByVu =  testParameters.wallets[vuIndex].signedTxs;
+        const lastValidSignedTrx = (parseInt(signedTxsByVu.length) >= parseInt(iterationByVu)) ? iterationByVu : signedTxsByVu.length-1;
+        return http.post(
           url,
-          getPayLoad(methodName, [testParameters.signedTxs[lastValidSignedTrx]]),
-          httpParams)
+          getPayLoad(methodName, [signedTxsByVu[lastValidSignedTrx]]),
+          httpParams);
       }
   )
   .check(methodName, (r) => isNonErrorResponse(r))
