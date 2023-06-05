@@ -50,13 +50,15 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
     const TIER_1_RATE_LIMIT = process.env.TIER_1_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_1;
+    const TIER_2_RATE_LIMIT = process.env.TIER_2_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_2;
+    const LIMIT_DURATION = process.env.LIMIT_DURATION || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
     describe('RPC Rate Limiter Acceptance Tests', () => {
         it('should throw rate limit exceeded error', async function () {
             let rateLimited = false;
             try {
                 //Currently chaindId is TIER 2 request per LIMIT_DURATION from env. We are trying to get an error for rate limit by exceeding this threshold
-                for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!) * 2; index++) {
+                for (let index = 0; index < TIER_2_RATE_LIMIT * 2; index++) {
                     await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
                     // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
                     await new Promise(r => setTimeout(r, 1));
@@ -69,20 +71,20 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             expect(rateLimited).to.be.true;
 
             // wait until rate limit is reset
-            await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION)));
+            await new Promise(r => setTimeout(r, LIMIT_DURATION));
         });
 
         it('should not throw rate limit exceeded error', async function () {
-            for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
+            for (let index = 0; index < TIER_2_RATE_LIMIT; index++) {
                 await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
                 // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
                 await new Promise(r => setTimeout(r, 1));
             }
 
             // wait until rate limit is reset
-            await new Promise(r => setTimeout(r, parseInt(process.env.LIMIT_DURATION)));
+            await new Promise(r => setTimeout(r, LIMIT_DURATION));
 
-            for (let index = 0; index < parseInt(process.env.TIER_2_RATE_LIMIT!); index++) {
+            for (let index = 0; index < TIER_2_RATE_LIMIT; index++) {
                 await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
                 // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
                 await new Promise(r => setTimeout(r, 1));

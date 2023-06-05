@@ -71,6 +71,8 @@ import HbarLimit from '../../src/lib/hbarlimiter';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
+import constants from '../../src/lib/constants';
+
 process.env.npm_package_version = "relay/0.0.1-SNAPSHOT";
 
 const logger = pino();

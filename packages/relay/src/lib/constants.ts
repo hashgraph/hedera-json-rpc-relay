@@ -101,7 +101,8 @@ export default {
     DEFAULT_RATE_LIMIT: {
         TIER_1: 100,
         TIER_2: 800,
-        TIER_3: 1600
+        TIER_3: 1600,
+        DURATION: 60000
     },
 
     HBAR_RATE_LIMIT_DURATION: parseInt(process.env.HBAR_RATE_LIMIT_DURATION || '80000'),
