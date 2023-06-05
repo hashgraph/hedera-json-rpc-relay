@@ -478,7 +478,7 @@ describe('@web-socket Acceptance Tests', async function() {
     describe('Connection TTL', async function () {
         this.beforeAll(async () => {
             // cache original ENV values
-            originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL;
+            originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL || '300000';
             process.env.WS_MAX_CONNECTION_TTL = '10000';
         });
         this.afterAll(async () => {
@@ -503,7 +503,7 @@ describe('@web-socket Acceptance Tests', async function() {
             })
 
             let closeEventHandled3 = false;
-            wsConn2._websocket.on('close', (code, message) => {
+            wsConn3._websocket.on('close', (code, message) => {
                 closeEventHandled3 = true;
                 expect(code).to.equal(WebSocketError.TTL_EXPIRED.code);
                 expect(message).to.equal(WebSocketError.TTL_EXPIRED.message);

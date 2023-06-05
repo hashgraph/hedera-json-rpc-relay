@@ -203,7 +203,7 @@ describe('Precheck', async function() {
         testFailingGasLimitPrecheck(highGasLimits, -32005);
     });
 
-    describe.only('gas price', async function() {
+    describe('gas price', async function() {
         let initialMinGasPriceBuffer;
         before(async () =>{
             initialMinGasPriceBuffer = constants.GAS_PRICE_TINY_BAR_BUFFER;
