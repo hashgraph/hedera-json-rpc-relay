@@ -31,6 +31,7 @@ import ERC20MockJson from '../../contracts/ERC20Mock.json';
 import ERC721MockJson from '../../contracts/ERC721Mock.json';
 import TokenCreateJson from '../../contracts/TokenCreateContract.json';
 import { Utils } from '../../helpers/utils';
+import relayConstants from '@hashgraph/json-rpc-relay/src/lib/constants';
 
 /**
  * Tests for:
@@ -175,7 +176,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
   it('should associate to a token with custom fees', async function () {
     //delay for hbar rate limiter to reset
-    await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
+    await new Promise(r => setTimeout(r, relayConstants.HBAR_RATE_LIMIT_DURATION));
 
     const mainContractOwner = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
     const txCO = await mainContractOwner.associateTokenPublic(mainContractAddress, HTSTokenWithCustomFeesContractAddress, Constants.GAS.LIMIT_10_000_000);

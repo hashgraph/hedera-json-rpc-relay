@@ -225,12 +225,14 @@ export default class HAPIService {
     }
 
     client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
-    client.setRequestTimeout(parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000'));
+
+    const SDK_REQUEST_TIMEOUT = parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000')
+    client.setRequestTimeout(SDK_REQUEST_TIMEOUT);
 
     logger.info(
       `SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${
         client.operatorAccountId
-      } with request timeout value: ${process.env.SDK_REQUEST_TIMEOUT}`
+      } with request timeout value: ${SDK_REQUEST_TIMEOUT}`
     );
 
     return client;

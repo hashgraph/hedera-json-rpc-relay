@@ -29,6 +29,8 @@ import RelayClient from '../clients/relayClient';
 import app from '../../dist/server';
 import {app as wsApp} from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
 import {Hbar} from "@hashgraph/sdk";
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
 
 const testLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -42,8 +44,6 @@ const testLogger = pino({
     }
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
-
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const USE_LOCAL_NODE = process.env.LOCAL_NODE || 'true';
 const NETWORK = process.env.HEDERA_NETWORK || '';
@@ -153,7 +153,7 @@ describe('RPC Server Acceptance Tests', function () {
         relayServer = app.listen({ port: process.env.SERVER_PORT });
 
         if (process.env.TEST_WS_SERVER === 'true') {
-            global.socketServer = wsApp.listen({ port: process.env.WEB_SOCKET_PORT || 8546 });
+            global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT || 8546 });
         }
     }
 

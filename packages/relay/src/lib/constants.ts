@@ -91,6 +91,18 @@ export default {
         mainnet: 0x127,
         testnet: 0x128,
         previewnet: 0x129,
-    }
+    },
+
+    DEFAULT_RATE_LIMIT: {
+        TIER_1: 100,
+        TIER_2: 800,
+        TIER_3: 1600
+    },
+
+    HBAR_RATE_LIMIT_DURATION: parseInt(process.env.HBAR_RATE_LIMIT_DURATION || '80000'),
+    HBAR_RATE_LIMIT_TINYBAR: parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR || '11000000000'),
+    GAS_PRICE_TINY_BAR_BUFFER: parseInt(process.env.GAS_PRICE_TINY_BAR_BUFFER || '10000000000'),
+    WEB_SOCKET_PORT: process.env.WEB_SOCKET_PORT || 8546,
+    WEB_SOCKET_HTTP_PORT: process.env.WEB_SOCKET_HTTP_PORT || 8547
 };
 

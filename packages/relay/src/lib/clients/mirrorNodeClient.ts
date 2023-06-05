@@ -144,10 +144,10 @@ export class MirrorNodeClient {
         const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '100');
         const mirrorNodeHttpSocketTimeout = parseInt(process.env.MIRROR_NODE_HTTP_SOCKET_TIMEOUT || '60000');
         const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
-        const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES!) || 3;
-        const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE!) || 5;
-        const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 250;
-        const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE!) || 200;
+        const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '3');
+        const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE || '5');
+        const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
+        const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
         const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES) : [404]; // by default we should only retry on 404 errors
 
         const axiosClient: AxiosInstance = Axios.create({
@@ -734,7 +734,7 @@ export class MirrorNodeClient {
             this.setQueryParam(queryParamObject, 'limit', limitOrderParams.limit);
             this.setQueryParam(queryParamObject, 'order', limitOrderParams.order);
         } else {
-            this.setQueryParam(queryParamObject, 'limit', parseInt(process.env.MIRROR_NODE_LIMIT_PARAM!) || 100);
+            this.setQueryParam(queryParamObject, 'limit', parseInt(process.env.MIRROR_NODE_LIMIT_PARAM || '100'));
             this.setQueryParam(queryParamObject, 'order', constants.ORDER.ASC);
         }
     }

@@ -52,8 +52,8 @@ export class RelayImpl implements Relay {
       process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
 
-    const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-    const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+    const duration = constants.HBAR_RATE_LIMIT_DURATION;
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
 
     const hapiService = new HAPIService(logger, register, hbarLimiter);

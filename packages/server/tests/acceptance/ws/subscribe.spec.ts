@@ -20,7 +20,7 @@
 
 // external resources
 import { solidity } from "ethereum-waffle";
-import chai, {assert, expect} from "chai";
+import chai, {expect} from "chai";
 import WebSocket from 'ws';
 chai.use(solidity);
 
@@ -29,9 +29,10 @@ import assertions from '../../helpers/assertions';
 import {AliasAccount} from "../../clients/servicesClient";
 import {predefined, WebSocketError} from '../../../../../packages/relay';
 import { ethers } from "ethers";
+import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
 const LogContractJson = require('../../contracts/Logs.json');
 
-const WS_RELAY_URL = `ws://localhost:${process.env.WEB_SOCKET_PORT}`;
+const WS_RELAY_URL = `ws://localhost:${constants.WEB_SOCKET_PORT}`;
 
 const establishConnection = async () => {
     const provider = await new ethers.providers.WebSocketProvider(WS_RELAY_URL);
@@ -170,11 +171,11 @@ describe('@web-socket Acceptance Tests', async function() {
 
         it('Multiple ws connections and multiple subscriptions per connection', async function () {
             const wsConn1 = new ethers.providers.WebSocketProvider(
-                `ws://localhost:${process.env.WEB_SOCKET_PORT}`
+                `ws://localhost:${constants.WEB_SOCKET_PORT}`
             );
 
             const wsConn2 = new ethers.providers.WebSocketProvider(
-                `ws://localhost:${process.env.WEB_SOCKET_PORT}`
+                `ws://localhost:${constants.WEB_SOCKET_PORT}`
             );
 
             // using WS providers with LoggerContract

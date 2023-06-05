@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       operator_key:
-        description: 'The ED25519 DER encoded private key of the operator'
+        description: 'The ED25519 or ECDSA  DER encoded private key of the operator'
         required: true
         type: string
       network:

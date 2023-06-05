@@ -117,10 +117,10 @@ export class Precheck {
     const passes = txGasPrice.gte(minGasPrice);
 
     if (!passes) {
-      if (process.env.GAS_PRICE_TINY_BAR_BUFFER) {
+      if (constants.GAS_PRICE_TINY_BAR_BUFFER) {
         // Check if failure is within buffer range (Often it's by 1 tinybar) as network gasprice calculation can change slightly.
         // e.g gasPrice=1450000000000, requiredGasPrice=1460000000000, in which case we should allow users to go through and let the network check
-        const txGasPriceWithBuffer = txGasPrice.add(ethers.BigNumber.from(process.env.GAS_PRICE_TINY_BAR_BUFFER));
+        const txGasPriceWithBuffer = txGasPrice.add(ethers.BigNumber.from(constants.GAS_PRICE_TINY_BAR_BUFFER));
         if (txGasPriceWithBuffer.gte(minGasPrice)) {
           return;
         }
