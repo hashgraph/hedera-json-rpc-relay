@@ -72,8 +72,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         requestId = Utils.generateRequestId();
 
-        accounts[0] = await servicesNode.createAliasAccount(30, null, requestId);
-        accounts[1] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
+        accounts[0] = await servicesNode.createAliasAccount(80, null, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(80, relay.provider, requestId);
 
         reverterContract = await servicesNode.deployContract(reverterContractJson);
         // Wait for creation to propagate
@@ -168,7 +168,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
 
-            const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, '0x1'], requestId);
+            const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, '0x10'], requestId);
             expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
         });
 

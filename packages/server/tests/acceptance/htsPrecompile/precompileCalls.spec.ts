@@ -21,7 +21,7 @@
 // external resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
-import { AccountId, Hbar } from '@hashgraph/sdk';
+import { AccountId, Hbar, ContractId } from '@hashgraph/sdk';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../helpers/constants';
 
@@ -63,7 +63,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     const accounts: AliasAccount[] = [];
     let requestId;
 
-    let IERC20Metadata, IERC20, IERC721Metadata, IERC721Enumerable, IERC721, IHederaTokenService, TokenManager;
+    let IERC20Metadata, IERC20, IERC721Metadata, IERC721Enumerable, IERC721, IHederaTokenService, TokenManager, TokenManagementSigner;
     let nftSerial, tokenAddress, nftAddress, htsImplAddress, htsImpl, adminAccountLongZero, account1LongZero, account2LongZero;
 
     let tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressNoFees,
@@ -74,7 +74,24 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         requestId = Utils.generateRequestId();
 
         // create accounts
-        accounts[0] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
+        const contractDeployer = await servicesNode.createAliasAccount(100, relay.provider, requestId);
+
+        // Deploy a contract implementing HederaTokenService
+        const HederaTokenServiceImplFactory = new ethers.ContractFactory(HederaTokenServiceImplJson.abi, HederaTokenServiceImplJson.bytecode, contractDeployer.wallet);
+        htsImpl = await HederaTokenServiceImplFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
+
+        const rec0 = await htsImpl.deployTransaction.wait();
+        htsImplAddress = rec0.contractAddress;
+
+        // Deploy the Token Management contract
+        const TokenManagementContractFactory = new ethers.ContractFactory(TokenManagementContractJson.abi, TokenManagementContractJson.bytecode, contractDeployer.wallet);
+        TokenManager = await TokenManagementContractFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
+        await htsImpl.deployTransaction.wait();
+
+        const tokenManagementMirror = await mirrorNode.get(`/contracts/${TokenManager.address}`, requestId);
+
+        // create accounts
+        accounts[0] = await servicesNode.createAliasAccount(400, relay.provider, requestId);
         accounts[1] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
         accounts[2] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
 
@@ -83,6 +100,8 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);
         await mirrorNode.get(`/accounts/${accounts[2].accountId}`, requestId);
 
+        TokenManagementSigner = new ethers.Contract(TokenManager.address, TokenManagementContractJson.abi, accounts[0].wallet);
+
         // Create tokens
         const defaultTokenOptions = {
             tokenName: TOKEN_NAME,
@@ -90,8 +109,8 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             treasuryAccountId: accounts[0].accountId.toString(),
             initialSupply: INITIAL_SUPPLY,
             adminPrivateKey: accounts[0].privateKey,
-            kyc: true,
-            freeze: true
+            kyc: accounts[0].privateKey,
+            freeze: ContractId.fromString(tokenManagementMirror.contract_id)
         };
 
         const defaultNftOptions = {
@@ -202,18 +221,6 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         const rec5 = await IERC721.connect(accounts[1].wallet).setApprovalForAll(accounts[0].address, true, Constants.GAS.LIMIT_1_000_000);
         await rec5.wait();
 
-        // Deploy a contract implementing HederaTokenService
-        const HederaTokenServiceImplFactory = new ethers.ContractFactory(HederaTokenServiceImplJson.abi, HederaTokenServiceImplJson.bytecode, accounts[0].wallet);
-        htsImpl = await HederaTokenServiceImplFactory.deploy(Constants.GAS.LIMIT_15_000_000);
-
-        const rec6 = await htsImpl.deployTransaction.wait();
-        htsImplAddress = rec6.contractAddress;
-
-        // Deploy the Token Management contract
-        const TokenManagementContractFactory = new ethers.ContractFactory(TokenManagementContractJson.abi, TokenManagementContractJson.bytecode, accounts[0].wallet);
-        TokenManager = await TokenManagementContractFactory.deploy(Constants.GAS.LIMIT_15_000_000);
-        const rec7 = await htsImpl.deployTransaction.wait();
-
         tokenAddresses = [tokenAddressNoFees, tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressFractionalFees, tokenAddressAllFees];
         nftAddresses = [nftAddress, nftAddressRoyaltyFees];
 
@@ -278,7 +285,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         //TODO remove this it when should be able to freeze and unfreeze token2 is implemented -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131 
         it("Function with HederaTokenService.isFrozen(token, account) - using long zero address", async () => {
             // freeze token
-            const freezeTx = await TokenManager.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_1_000_000);
+            const freezeTx = await TokenManagementSigner.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_1_000_000);
             const responseCodeFreeze = (await freezeTx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
             expect(responseCodeFreeze).to.equal(TX_SUCCESS_CODE);
 
@@ -286,7 +293,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             expect(isFrozen).to.eq(true);
 
             // unfreeze token
-            const unfreezeTx = await TokenManager.unfreezeTokenPublic(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_1_000_000);
+            const unfreezeTx = await TokenManagementSigner.unfreezeTokenPublic(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_1_000_000);
             const responseCodeUnfreeze = (await unfreezeTx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
             expect(responseCodeUnfreeze).to.equal(TX_SUCCESS_CODE);
         });
@@ -493,9 +500,9 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['FREEZE']);
                 expect(res).to.exist;
                 expect(res.inheritAccountKey).to.eq(false);
-                expect(res.contractId).to.eq(ZERO_HEX);
+                expect(res.contractId).to.not.eq(ZERO_HEX);
                 expect(res.ed25519).to.eq(EMPTY_HEX);
-                expect(res.ECDSA_secp256k1).to.not.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
                 expect(res.delegatableContractId).to.eq(ZERO_HEX);
             });
 

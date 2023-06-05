@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,6 +92,7 @@ export class SDKClient {
     private consensusNodeClientHistogramCost;
     private consensusNodeClientHistogramGasFee;
     private operatorAccountGauge;
+    private maxChunks;
 
     // populate with consensusnode requests via SDK
     constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any) {
@@ -110,6 +111,7 @@ export class SDKClient {
 
         this.hbarLimiter = hbarLimiter;
         this.cache = new LRU({ max: constants.CACHE_MAX, ttl: constants.CACHE_TTL.ONE_HOUR });
+        this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     }
 
     async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
@@ -554,6 +556,7 @@ export class SDKClient {
                         hexedCallData.substring(4096, hexedCallData.length)
                     )
                     .setChunkSize(4096)
+                    .setMaxChunks(this.maxChunks)
                     .execute(client)
             ).getReceipt(client);
         }

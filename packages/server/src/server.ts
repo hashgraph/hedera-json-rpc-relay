@@ -657,4 +657,12 @@ app.getKoaApp().use(async (ctx, next) => {
   }
 });
 
+process.on('unhandledRejection', (reason, p) => {
+  logger.error(`Unhandled Rejection at: Promise: ${JSON.stringify(p)}, reason: ${reason}`);
+});
+
+process.on('uncaughtException', (err) => {
+  logger.error(err, 'Uncaught Exception!');
+});
+
 export default app.getKoaApp();

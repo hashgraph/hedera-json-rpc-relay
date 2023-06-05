@@ -34,7 +34,7 @@ import { Utils } from '../helpers/utils';
 
 describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
-  const { servicesNode, relay }: any = global;
+  const { servicesNode, relay, mirrorNode }: any = global;
 
   const TX_SUCCESS_CODE = 22;
 
@@ -52,14 +52,17 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
 
-    accounts[0] = await servicesNode.createAliasAccount(70, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(25, relay.provider, requestId);
-    accounts[2] = await servicesNode.createAliasAccount(25, relay.provider, requestId);
+    const contractDeployer = await servicesNode.createAliasAccount(50, relay.provider, requestId);
+    BaseHTSContractAddress = await deployBaseHTSContract(contractDeployer.wallet);
+    const contractMirror = await mirrorNode.get(`/contracts/${BaseHTSContractAddress}`, requestId);
 
-    // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
+    accounts[0] = await servicesNode.createAccountWithContractIdKey(contractMirror.contract_id,70, relay.provider, requestId);
+    accounts[1] = await servicesNode.createAccountWithContractIdKey(contractMirror.contract_id,25, relay.provider, requestId);
+    accounts[2] = await servicesNode.createAccountWithContractIdKey(contractMirror.contract_id,25, relay.provider, requestId);
+
+    // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise(r => setTimeout(r, 5000));
 
-    BaseHTSContractAddress = await deployBaseHTSContract();
     baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
     baseHTSContractOwner = baseHTSContract;
@@ -71,8 +74,8 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
     requestId = Utils.generateRequestId();
   });
 
-  async function deployBaseHTSContract() {
-    const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, accounts[0].wallet);
+  async function deployBaseHTSContract(signer) {
+    const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, signer);
     const baseHTS = await baseHTSFactory.deploy(Constants.GAS.LIMIT_10_000_000);
     const { contractAddress } = await baseHTS.deployTransaction.wait();
 

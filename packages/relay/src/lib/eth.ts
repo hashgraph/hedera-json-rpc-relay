@@ -85,6 +85,8 @@ export class EthImpl implements Eth {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
+  static blockSafe = 'safe';
+  static blockFinalized = 'finalized';
   
   /**
    * Overrideable options used when initializing.
@@ -95,6 +97,8 @@ export class EthImpl implements Eth {
   private readonly ethCallCacheTtl = Number.parseInt(process.env.ETH_CALL_CACHE_TTL ?? constants.ETH_CALL_CACHE_TTL_DEFAULT.toString());
   private readonly ethBlockNumberCacheTtlMs = Number.parseInt(process.env.ETH_BLOCK_NUMBER_CACHE_TTL_MS ?? constants.ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT.toString());
   private readonly ethGetBalanceCacheTtlMs = Number.parseInt(process.env.ETH_GET_BALANCE_CACHE_TTL_MS ?? constants.ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT.toString());
+  private readonly maxBlockRange = Number.parseInt(process.env.MAX_BLOCK_RANGE ?? constants.MAX_BLOCK_RANGE.toString());
+  private readonly contractCallGasLimit = Number.parseInt(process.env.CONTRACT_CALL_GAS_LIMIT ?? constants.CONTRACT_CALL_GAS_LIMIT.toString());
 
   /**
    * Configurable options used when initializing the cache.
@@ -437,7 +441,7 @@ export class EthImpl implements Eth {
   async estimateGas(transaction: any, _blockParam: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
-    
+
     let gas = EthImpl.gasTxBaseCost;
     try {
       const contractCallResponse = await this.mirrorNodeClient.postContractCall({
@@ -464,12 +468,12 @@ export class EthImpl implements Eth {
           if (!toAccount) {
             toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
           }
-  
+
           // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
           if (toAccount) {
             this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey}:${JSON.stringify(toAccount)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
             this.cache.set(accountCacheKey, toAccount);
-  
+
             gas = EthImpl.gasTxBaseCost;
           } else {
             gas = EthImpl.gasTxHollowAccountCreation;
@@ -1146,7 +1150,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    const to = await this.performCallChecks(call, requestId);
+    const to = await this.performCallChecks(call, blockParam, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
     let gas = this.getCappedBlockGasLimit(call.gas, requestId);
@@ -1154,7 +1158,7 @@ export class EthImpl implements Eth {
     
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-      if (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false') {
+      if ((process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'undefined') || (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false')) {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
         return await this.callMirrorNode(call, to, gas, value, requestId);
@@ -1192,7 +1196,7 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
-      
+
       if (e instanceof MirrorNodeClientError) {
         if (e.isRateLimit()) {
           return predefined.IP_RATE_LIMIT_EXCEEDED(e.errorMessage || `Rate limit exceeded on ${EthImpl.ethCall}`);
@@ -1271,19 +1275,28 @@ export class EthImpl implements Eth {
    * @param call
    * @param requestId
    */
-  async performCallChecks(call: any, requestId?: string) {
+  async performCallChecks(call: any, blockParam: string | null, requestId?: string) {
     // The "to" address must always be 42 chars.
     if (!call.to || call.to.length != 42) {
       throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
 
     // If "From" is distinct from blank, we check is a valid account
-    if(call.from) {
+    if (call.from) {
       const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, [constants.TYPE_ACCOUNT], requestId);
       if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
         throw predefined.NON_EXISTING_ACCOUNT(call.from);
       }
     }
+
+    // verify gas is withing the allowed range
+    if (call.gas && call.gas > this.contractCallGasLimit) {
+      throw predefined.GAS_LIMIT_TOO_HIGH(call.gas, constants.BLOCK_GAS_LIMIT);
+    }
+
+    // verify blockParam
+    await this.performCallBlockParamChecks(blockParam, requestId);
+
     // Check "To" is a valid Contract or HTS Address
     const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT], requestId);
     if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
@@ -1291,6 +1304,39 @@ export class EthImpl implements Eth {
     }
 
     return toEntityType;
+  }
+
+  async performCallBlockParamChecks(blockParam: string | null, requestId?: string) {
+    if (!blockParam) {
+      return;
+    }
+
+    // verify blockParam formats for a valid block number
+    if (EthImpl.isBlockHash(blockParam)) {
+      throw predefined.UNSUPPORTED_OPERATION(`BlockParam: ${blockParam} is not a supported eth_call block identifier`);
+    }
+
+    if (EthImpl.blockTagIsEarliest(blockParam)) {
+      throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockParam);
+    }
+    
+    // numerical block number considerations
+    const blockNum = Number(blockParam);
+    if (!isNaN(blockNum) && !EthImpl.blockTagIsFinalized(blockParam)) {
+      if (blockNum === 0 || blockNum === 1) {
+        throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockNum.toString());
+      }
+
+      const block = await this.mirrorNodeClient.getLatestBlock(requestId);
+      if(!block) {
+        throw predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
+      }
+
+      const trailingBlockCount = block.number - blockNum;
+      if(trailingBlockCount > this.maxBlockRange) {
+        this.logger.warn(`${formatRequestIdMessage(requestId)} referenced block '${blockParam}' trails latest by ${trailingBlockCount}, max trailing count is ${this.maxBlockRange}. Throwable UNSUPPORTED_HISTORICAL_EXECUTION scenario.`);
+      }   
+    }
   }
 
   /**
@@ -1489,8 +1535,20 @@ export class EthImpl implements Eth {
     return tag == null || tag === EthImpl.blockLatest || tag === EthImpl.blockPending;
   };
 
+  private static blockTagIsEarliest = (tag) => {
+    return tag === EthImpl.blockEarliest;
+  };
+
+  private static blockTagIsFinalized = (tag) => {
+    return tag === EthImpl.blockFinalized || tag === EthImpl.blockLatest || tag === EthImpl.blockPending || tag === EthImpl.blockSafe;
+  };
+
   private static blockTagIsEarliestOrPending = (tag) => {
-    return tag == null || tag === EthImpl.blockEarliest || tag === EthImpl.blockPending;
+    return tag == null || EthImpl.blockTagIsEarliest(tag) || tag === EthImpl.blockPending;
+  };   
+
+  private static isBlockHash = (blockHash) => {
+    return new RegExp(constants.BLOCK_HASH_REGEX + '{64}$').test(blockHash);
   };   
 
   /**
@@ -1605,7 +1663,6 @@ export class EthImpl implements Eth {
    * @param returnLatest
    */
   private async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestId?: string | undefined): Promise<any | null> {
-    const maxBlockRange = Number(process.env.MAX_BLOCK_RANGE) || 5;
     if (!returnLatest && EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
       return null;
     }
@@ -1614,7 +1671,7 @@ export class EthImpl implements Eth {
     if (blockNumberOrTag != null && blockNumberOrTag.length < 32 && !isNaN(blockNumber)) {
       const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
       const latestBlock = latestBlockResponse.blocks[0];
-      if (Number(blockNumberOrTag) > latestBlock.number + maxBlockRange) {
+      if (blockNumber > latestBlock.number + this.maxBlockRange) {
         return null;
       }
     }

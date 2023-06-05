@@ -89,7 +89,7 @@ export class Precheck {
 
     // @ts-ignore
     if (accountInfoNonce > tx.nonce) {
-      throw predefined.NONCE_TOO_LOW;
+      throw predefined.NONCE_TOO_LOW(tx.nonce, accountInfoNonce);
     }
   }
 
@@ -127,7 +127,7 @@ export class Precheck {
       }
 
       this.logger.trace(`${requestIdPrefix} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`, JSON.stringify(tx), txGasPrice, minGasPrice);
-      throw predefined.GAS_PRICE_TOO_LOW;
+      throw predefined.GAS_PRICE_TOO_LOW(txGasPrice, minGasPrice);
     }
   }
 
@@ -181,10 +181,10 @@ export class Precheck {
 
     if (gasLimit > constants.BLOCK_GAS_LIMIT) {
       this.logger.trace(`${requestIdPrefix} ${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`, JSON.stringify(tx), gasLimit, constants.BLOCK_GAS_LIMIT);
-      throw predefined.GAS_LIMIT_TOO_HIGH;
+      throw predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.BLOCK_GAS_LIMIT);
     } else if (gasLimit < intrinsicGasCost) {
       this.logger.trace(`${requestIdPrefix} ${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`, JSON.stringify(tx), gasLimit, intrinsicGasCost);
-      throw predefined.GAS_LIMIT_TOO_LOW;
+      throw predefined.GAS_LIMIT_TOO_LOW(gasLimit, intrinsicGasCost);
     }
   }
 

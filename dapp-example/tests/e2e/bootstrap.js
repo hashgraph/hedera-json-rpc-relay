@@ -4,6 +4,7 @@ const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const IHRC = require("../../src/contracts/IHRC.json");
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
@@ -160,6 +161,15 @@ const deployAndFundContractTransferTx = async function(wallet) {
   console.log(`Contract Transfer Tx Address: ${ContractTransferTxAddress}`);
   const HTSContractAddress = await deployHederaTokenService(mainWallet);
   console.log(`HTS Contract Address: ${HTSContractAddress}`);
+
+  // Get Contract id from evm address
+  const contractInfo = await (
+      new HederaSDK.ContractInfoQuery()
+          .setContractId(HederaSDK.ContractId.fromEvmAddress(0, 0, HTSContractAddress))
+  ).execute(client);
+  const HTSContractId = contractInfo.contractId;
+  console.log(`HTS Contract ID: ${HTSContractId}`);
+
   const { tokenId, tokenAddress } = await createHTSToken();
   const token2 = await createHTSToken();
   fs.writeFileSync(path.resolve(__dirname + '../../../src/contracts/') + '/.bootstrapInfo.json',
