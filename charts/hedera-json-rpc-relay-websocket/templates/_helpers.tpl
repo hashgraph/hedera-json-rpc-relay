@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "json-rpc-relay-websocket.name" -}}
+{{- define "json-rpc-relay-ws.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "json-rpc-relay-websocket.fullname" -}}
+{{- define "json-rpc-relay-ws.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "json-rpc-relay-websocket.chart" -}}
+{{- define "json-rpc-relay-ws.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "json-rpc-relay-websocket.labels" -}}
-helm.sh/chart: {{ include "json-rpc-relay-websocket.chart" . }}
-{{ include "json-rpc-relay-websocket.selectorLabels" . }}
+{{- define "json-rpc-relay-ws.labels" -}}
+helm.sh/chart: {{ include "json-rpc-relay-ws.chart" . }}
+{{ include "json-rpc-relay-ws.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,7 +45,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Namespace
 */}}
-{{- define "json-rpc-relay-websocket.namespace" -}}
+{{- define "json-rpc-relay-ws.namespace" -}}
 {{- if .Values.namespaceOverride -}}
 {{- .Values.namespaceOverride -}}
 {{- else -}}
@@ -56,17 +56,17 @@ Namespace
 {{/*
 Selector labels
 */}}
-{{- define "json-rpc-relay-websocket.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "json-rpc-relay-websocket.name" . }}
+{{- define "json-rpc-relay-ws.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "json-rpc-relay-ws.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "json-rpc-relay-websocket.serviceAccountName" -}}
+{{- define "json-rpc-relay-ws.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "json-rpc-relay-websocket.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "json-rpc-relay-ws.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

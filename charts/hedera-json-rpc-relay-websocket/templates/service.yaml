@@ -5,9 +5,9 @@ metadata:
   annotations:
 {{ toYaml .Values.service.annotations | nindent 4 }}
 {{- end }}
-  name: {{ include "json-rpc-relay-websocket.fullname" . }}
+  name: {{ include "json-rpc-relay-ws.fullname" . }}
   labels:
-    {{- include "json-rpc-relay-websocket.labels" . | nindent 4 }}
+    {{- include "json-rpc-relay-ws.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -18,5 +18,5 @@ spec:
       name: {{ $port.name }}
     {{- end }}
   selector:
-    app: {{ template "json-rpc-relay-websocket.name" . }}  
-    {{- include "json-rpc-relay-websocket.selectorLabels" . | nindent 4 }}
+    app: {{ template "json-rpc-relay-ws.name" . }}  
+    {{- include "json-rpc-relay-ws.selectorLabels" . | nindent 4 }}

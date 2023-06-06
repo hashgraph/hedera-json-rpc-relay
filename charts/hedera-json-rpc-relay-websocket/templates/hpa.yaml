@@ -2,14 +2,14 @@
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "json-rpc-relay-websocket.fullname" . }}
+  name: {{ include "json-rpc-relay-ws.fullname" . }}
   labels:
-    {{- include "json-rpc-relay-websocket.labels" . | nindent 4 }}
+    {{- include "json-rpc-relay-ws.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "json-rpc-relay-websocket.fullname" . }}
+    name: {{ include "json-rpc-relay-ws.fullname" . }}
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:

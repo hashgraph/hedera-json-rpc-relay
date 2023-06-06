@@ -2,17 +2,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app:  {{ template "json-rpc-relay-websocket.name" . }}
-    {{ include "json-rpc-relay-websocket.labels" . | nindent 4 }}
-  name: {{ include "json-rpc-relay-websocket.fullname" . }}
-  namespace: {{ include "json-rpc-relay-websocket.namespace" . }}
+    app:  {{ template "json-rpc-relay-ws.name" . }}
+    {{ include "json-rpc-relay-ws.labels" . | nindent 4 }}
+  name: {{ include "json-rpc-relay-ws.fullname" . }}
+  namespace: {{ include "json-rpc-relay-ws.namespace" . }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "json-rpc-relay-websocket.selectorLabels" . | nindent 6 }}
+      {{- include "json-rpc-relay-ws.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -20,14 +20,14 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        app:  {{ template "json-rpc-relay-websocket.name" . }}
-        {{- include "json-rpc-relay-websocket.selectorLabels" . | nindent 8 }}
+        app:  {{ template "json-rpc-relay-ws.name" . }}
+        {{- include "json-rpc-relay-ws.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "json-rpc-relay-websocket.serviceAccountName" . }}
+      serviceAccountName: {{ include "json-rpc-relay-ws.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -37,9 +37,9 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         envFrom:
         - configMapRef:
-            name: {{ include "json-rpc-relay-websocket.fullname" . }}
+            name: {{ include "json-rpc-relay-ws.fullname" . }}
         - secretRef:
-            name: {{ include "json-rpc-relay-websocket.fullname" . }}
+            name: {{ include "json-rpc-relay-ws.fullname" . }}
         {{- with .Values.extraEnvFrom }}
           {{- tpl (toYaml .) $ | nindent 8 }}
         {{- end }}

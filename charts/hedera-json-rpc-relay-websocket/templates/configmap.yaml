@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "json-rpc-relay-websocket.fullname" . }}
+  name: {{ include "json-rpc-relay-ws.fullname" . }}
   labels:
-    app:  {{ template "json-rpc-relay-websocket.name" . }}
-    {{ include "json-rpc-relay-websocket.labels" . | nindent 4 }}
+    app:  {{ template "json-rpc-relay-ws.name" . }}
+    {{ include "json-rpc-relay-ws.labels" . | nindent 4 }}
 data:
   CHAIN_ID: {{ .Values.config.CHAIN_ID | quote }}
   DEV_MODE: {{ .Values.config.DEV_MODE | quote }}
