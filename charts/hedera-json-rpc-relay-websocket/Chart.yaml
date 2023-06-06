@@ -22,4 +22,4 @@ name: json-rpc-relay-websocket
 sources:
   - https://github.com/hashgraph/hedera-json-rpc-relay
 type: application
-version: 0.25.0-SNAPSHOT
+version: 0.26.0-SNAPSHOT
