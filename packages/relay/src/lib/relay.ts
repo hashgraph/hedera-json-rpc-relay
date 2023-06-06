@@ -20,6 +20,7 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
+dotenv.config({ path: findConfig('.env') || '' });
 import { Relay, Eth, Net, Web3, Subs } from '../index';
 import { Web3Impl } from './web3';
 import { NetImpl } from './net';
@@ -43,7 +44,6 @@ export class RelayImpl implements Relay {
   private readonly subImpl?: Subs;
 
   constructor(logger: Logger, register: Registry) {
-    dotenv.config({ path: findConfig('.env') || '' });
     logger.info('Configurations successfully loaded');
 
     const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
