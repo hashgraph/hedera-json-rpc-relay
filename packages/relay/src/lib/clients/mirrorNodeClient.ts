@@ -364,7 +364,7 @@ export class MirrorNodeClient {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_TRANSACTION_TYPE_PROPERTY, MirrorNodeClient.ETHEREUM_TRANSACTION_TYPE);
         this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_TIMESTAMP_PROPERTY, `lte:${timestampTo}`);
-        this.setLimitOrderParams(queryParamObject, this.getLimitOrderQueryParam(2, constants.ORDER.DESC)); // get latest 2 transactions to infer for single case
+        this.setLimitOrderParams(queryParamObject, this.getLimitOrderQueryParam(numberOfTransactions, constants.ORDER.DESC)); // get latest 2 transactions to infer for single case
         const queryParams = this.getQueryParams(queryParamObject);
 
         return this.get(
@@ -651,10 +651,14 @@ export class MirrorNodeClient {
             return cachedResponse;
         }
 
-        const block = await this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.DESC), requestId);
-        this.cache.set(cachedLabel, block, {ttl: constants.CACHE_TTL.ONE_DAY});
+        const blocks = await this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.ASC), requestId);
+        if (blocks && blocks.blocks.length > 0) {
+            const block = blocks.blocks[0];
+            this.cache.set(cachedLabel, block, {ttl: constants.CACHE_TTL.ONE_DAY});       
+            return block;     
+        }
 
-        return block;
+        return null;
     }
 
     public async getLatestBlock(requestId?: string) {

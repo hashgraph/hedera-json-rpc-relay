@@ -136,6 +136,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   this.beforeEach(() => {
     // reset cache and restMock
+    mirrorNodeCache.clear();
     cache.clear();
     restMock.reset();
   });
@@ -4317,6 +4318,98 @@ describe('Eth calls using MirrorNode', async function () {
       }
       expect(hasError).to.be.true;
     });
+  });
+
+  describe('eth_getTransactionCount', async() => {
+
+    const evmAddress = '0x305a8e76ac38fc088132fb780b2171950ff023f7';
+    const blockNumber = 123456;
+    const blockNumberHex = EthImpl.numberTo0x(blockNumber);
+
+
+    const accountPath = `accounts/${mockData.account.evm_address}?order=desc&limit=1`;
+    const contractPath = `contracts/${mockData.account.evm_address}`;
+    const blockPath = `blocks?limit=1&order=asc`;
+
+    it('should return 0x0 nonce for no block consideration with not found acoount', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(accountPath).reply(404, mockData.notFound);
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, null);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.zeroHex);
+    });
+
+    it('should return latest nonce for no block consideration but valid account', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(accountPath).reply(200, mockData.account);
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, null);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.numberTo0x(mockData.account.ethereum_nonce));
+    });
+
+    it('should return 0x0 nonce for block 0 consideration', async() => {
+      restMock.onGet(accountPath).reply(200, mockData.account);
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, '0');
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.zeroHex);
+    });
+
+    it('should return 0x0 nonce for block 1 consideration', async() => {
+      restMock.onGet(accountPath).reply(200, mockData.account);
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, '1');
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.zeroHex);
+    });
+
+    it('should return latest nonce for latest block', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(accountPath).reply(200, mockData.account);
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockLatest);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.numberTo0x(mockData.account.ethereum_nonce));
+    });
+
+    it('should return latest nonce for pending block', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(accountPath).reply(200, mockData.account);
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockPending);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.numberTo0x(mockData.account.ethereum_nonce));
+    });
+
+    it('should return 0x0 nonce for earliest block with valid block', async() => {
+      restMock.onGet(blockPath).reply(200, { blocks: [mockData.blocks.blocks[0]]});
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockEarliest);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.zeroHex);
+    });
+
+    it('@test should throw error for earliest block with invalid block', async() => {
+      restMock.onGet(blockPath).reply(200, { blocks: []});
+      let hasError = false;
+      try {
+        expect(await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockEarliest)).to.throw();
+      } catch (error) {
+        hasError = true;
+        expect(error).to.exist;
+        expect(error.message).to.equal(`Error invoking RPC: No network blocks found`);
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('should throw error for earliest block with non 0 or 1 block', async() => {
+      restMock.onGet(blockPath).reply(200, { blocks: [mockData.blocks.blocks[2]]});
+      let hasError = false;
+      try {
+        expect(await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockEarliest)).to.throw();
+      } catch (error) {
+        hasError = true;
+        expect(error).to.exist;
+        expect(error.message).to.equal(`Error invoking RPC: Partial mirror node encountered, earliest block number is ${mockData.blocks.blocks[2].number}`);
+      }
+      expect(hasError).to.be.true;
+    });
+    
   });
 });
 

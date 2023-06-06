@@ -1068,7 +1068,7 @@ export class EthImpl implements Eth {
    * @param address
    * @param blockNumOrTag
    */
-  async getTransactionCount(address: string, blockNumOrTag: string, requestId?: string): Promise<string | JsonRpcError> {
+  async getTransactionCount(address: string, blockNumOrTag: string | null, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} getTransactionCount(address=${address}, blockNumOrTag=${blockNumOrTag})`);
 
@@ -1950,11 +1950,6 @@ export class EthImpl implements Eth {
    * @returns string
    */
   private async getAcccountNonceFromContractResult(address: string, blockNum: any, requestId: string | undefined) {
-    const account = await this.mirrorNodeClient.getAccount(address, requestId);
-    if (account === null) {
-      return EthImpl.zeroHex;
-    }
-
     // get block timestamp for blockNum
     const block = await this.mirrorNodeClient.getBlock(blockNum, requestId); // consider caching error responses
     if (block == null) {
@@ -1962,7 +1957,7 @@ export class EthImpl implements Eth {
     }  
 
     // get the latest 2 ethereum transactions for the account
-    let ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestamp(account, block.timestamp, 2, requestId);
+    let ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestamp(address, block.timestamp, 2, requestId);
     if (ethereumTransactions == null || ethereumTransactions.transactions.length === 0) {
       return EthImpl.zeroHex;
     }
@@ -1979,7 +1974,7 @@ export class EthImpl implements Eth {
       throw predefined.RESOURCE_NOT_FOUND(`Failed to retrieve contract results for transaction ${ethereumTransactions.transactions[0].transaction_id}`);
     }
 
-    return EthImpl.numberTo0x(transactionResult.nonce);
+    return EthImpl.numberTo0x(transactionResult.nonce + 1); // + 1 because nonce is zero based
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
