@@ -43,7 +43,7 @@ import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
-import constants from '../../../../packages/relay/src/lib/constants';
+import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
 
 const INTERNAL_ERROR = "INTERNAL ERROR";
 const INVALID_PARAMS_ERROR = "INVALID PARAMS ERROR";
