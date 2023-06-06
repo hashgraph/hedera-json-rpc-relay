@@ -360,6 +360,20 @@ export class MirrorNodeClient {
             requestId);
     }
 
+    public async getAccountLatestEthereumTransactionsByTimestamp(idOrAliasOrEvmAddress: string, timestampTo: string, numberOfTransactions: number = 1, requestId?: string) {
+        const queryParamObject = {};
+        this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_TRANSACTION_TYPE_PROPERTY, MirrorNodeClient.ETHEREUM_TRANSACTION_TYPE);
+        this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_TIMESTAMP_PROPERTY, `lte:${timestampTo}`);
+        this.setLimitOrderParams(queryParamObject, this.getLimitOrderQueryParam(2, constants.ORDER.DESC)); // get latest 2 transactions to infer for single case
+        const queryParams = this.getQueryParams(queryParamObject);
+
+        return this.get(
+            `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}${queryParams}`,
+            MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
+            requestId
+        );
+    }
+
     public async getAccountPageLimit(idOrAliasOrEvmAddress: string, requestId?: string) {
         return this.get(`${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?limit=${constants.MIRROR_NODE_QUERY_LIMIT}`,
             MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,

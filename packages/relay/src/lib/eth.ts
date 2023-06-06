@@ -1109,7 +1109,7 @@ export class EthImpl implements Eth {
         }
 
         // if valid block number, get block timestamp
-        nonceCount = await this.getAccountNonceByTransactionCount(address, blockNum, requestId);
+        nonceCount = await this.getAcccountNonceFromContractResult(address, blockNum, requestId);
       } else {
         // return a '-39001: Unknown block' error per api-spec
         return predefined.UNKNOWN_BLOCK;
@@ -1949,51 +1949,37 @@ export class EthImpl implements Eth {
    * @param requestId string
    * @returns string
    */
-  private async getAccountNonceByTransactionCount(address: string, blockNum: any, requestId: string | undefined) {
+  private async getAcccountNonceFromContractResult(address: string, blockNum: any, requestId: string | undefined) {
     const account = await this.mirrorNodeClient.getAccount(address, requestId);
     if (account === null) {
       return EthImpl.zeroHex;
     }
-    
-    // check current nonce value
-    const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
-    if (!mirrorAccount) {
-      throw predefined.NON_EXISTING_ACCOUNT(address);
-    }
 
-    if (mirrorAccount.ethereum_nonce === 0) {
-      return EthImpl.zeroHex;
-    }
-
-    const latestNonce = mirrorAccount.ethereum_nonce;
-
-    // check if block number is within reasonble range 
-    const latestBlockNumberString = await this.blockNumber(requestId);
-    const latestBlockNumber = parseInt(latestBlockNumberString);
-    if (blockNum < latestBlockNumber - this.ethGetTransactionCountMaxBlockRange) {
-      throw predefined.RANGE_TOO_LARGE(blockNum);
-    }
-
-    // if a valid block number, get the block timestamp and search for the all the ethereumtransaction within the time period
-    // should have a cache consideration here for the last timestamp of the last EthereumTransaction for the account
+    // get block timestamp for blockNum
     const block = await this.mirrorNodeClient.getBlock(blockNum, requestId); // consider caching error responses
     if (block == null) {
       throw predefined.UNKNOWN_BLOCK;
     }  
 
-    let count = await this.getEthereumTransactionTypeCountInRange(address, block.timestamp.to, mirrorAccount.balance.timestamp, requestId);
-    count = Math.max(0, latestNonce - count);    
-
-    return EthImpl.numberTo0x(count);
-  }
-
-  private async getEthereumTransactionTypeCountInRange(address: string, fromTimestamp: any, toTimestamp: any, requestId: string | undefined) {
-    const ethereumTransactions = await this.mirrorNodeClient.getAccountEthereumTransactionsByTimestampPaginated(address, fromTimestamp, toTimestamp, requestId);
-    if (ethereumTransactions == null) {
-      return 0;
+    // get the latest 2 ethereum transactions for the account
+    let ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestamp(account, block.timestamp, 2, requestId);
+    if (ethereumTransactions == null || ethereumTransactions.transactions.length === 0) {
+      return EthImpl.zeroHex;
     }
 
-    return ethereumTransactions.length;
+    // if only 1 transaction is returned when asking for 2, then the account has only sent 1 transaction
+    // minor optimization to save a call to getContractResult as many accounts serve a single use
+    if (ethereumTransactions.transactions.length === 1) {
+      return EthImpl.oneHex;
+    }
+
+    // get the transaction result for the latest transaction
+    const transactionResult = await this.mirrorNodeClient.getContractResult(ethereumTransactions.transactions[0].transaction_id, requestId);
+    if (transactionResult == null) {
+      throw predefined.RESOURCE_NOT_FOUND(`Failed to retrieve contract results for transaction ${ethereumTransactions.transactions[0].transaction_id}`);
+    }
+
+    return EthImpl.numberTo0x(transactionResult.nonce);
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
