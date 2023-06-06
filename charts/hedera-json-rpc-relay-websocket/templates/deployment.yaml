@@ -38,8 +38,6 @@ spec:
         envFrom:
         - configMapRef:
             name: {{ include "json-rpc-relay-ws.fullname" . }}
-        - secretRef:
-            name: {{ include "json-rpc-relay-ws.fullname" . }}
         {{- with .Values.extraEnvFrom }}
           {{- tpl (toYaml .) $ | nindent 8 }}
         {{- end }}
