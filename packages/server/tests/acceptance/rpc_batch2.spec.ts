@@ -109,6 +109,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     });
 
     describe('eth_estimateGas', async function () {
+        let basicContract;
+
+        this.beforeAll(async () => {
+            basicContract = await servicesNode.deployContract(basicContractJson);
+        });
+
+
         it('@release should execute "eth_estimateGas"', async function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{}], requestId);
             expect(res).to.contain('0x');
@@ -119,11 +126,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         it('@release should execute "eth_estimateGas" for contract call', async function() {
             const expectedRes = `0x${(400000).toString(16)}`;
             const estimatedGas = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
-                to: mirrorContract.evm_address,
+                to: basicContract.evm_address,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             }], requestId);
             expect(estimatedGas).to.contain('0x');
-            expect(Number(estimatedGas)).to.be.gt(0);
+            expect(estimatedGas).to.equal(EthImpl.defaultTxGas || expectedRes);
         });
 
         it('@release should execute "eth_estimateGas" for existing account', async function() {
