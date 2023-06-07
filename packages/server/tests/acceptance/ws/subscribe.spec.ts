@@ -29,7 +29,7 @@ import assertions from '../../helpers/assertions';
 import {AliasAccount} from "../../clients/servicesClient";
 import {predefined, WebSocketError} from '../../../../../packages/relay';
 import { ethers } from "ethers";
-import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
+import constants from '@hashgraph/json-rpc-relay/src/dist/lib/constants';
 const LogContractJson = require('../../contracts/Logs.json');
 
 const WS_RELAY_URL = `ws://localhost:${constants.WEB_SOCKET_PORT}`;

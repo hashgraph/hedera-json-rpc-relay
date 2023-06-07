@@ -31,7 +31,7 @@ import { ethers } from 'ethers';
 import ERC20MockJson from '../../contracts/ERC20Mock.json';
 import TokenManagementJson from '../../contracts/TokenManagementContract.json';
 import { Utils } from '../../helpers/utils';
-import relayConstants from '@hashgraph/json-rpc-relay/src/lib/constants';
+import relayConstants from '@hashgraph/json-rpc-relay/src/dist/lib/constants';
 
 /**
  * Tests for:
