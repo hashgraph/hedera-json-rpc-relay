@@ -130,7 +130,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 data: BASIC_CONTRACT_PING_CALL_DATA
             }], requestId);
             expect(estimatedGas).to.contain('0x');
-            expect(estimatedGas).to.equal(EthImpl.defaultTxGas || expectedRes);
+            expect(estimatedGas).to.equal(expectedRes);
         });
 
         it('@release should execute "eth_estimateGas" for existing account', async function() {
