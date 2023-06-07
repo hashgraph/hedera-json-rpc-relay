@@ -1900,35 +1900,11 @@ export class EthImpl implements Eth {
     return logs;
   }
 
-  private async getEthereumNonceFromConsensusNode(address: string, requestId?: string) {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    try {
-      const id = await this.mirrorNodeClient.getContractId(address, requestId);
-      if (id) {
-        const accountInfo = await this.hapiService.getSDKClient().getAccountInfo(id, EthImpl.ethGetTransactionCount, requestId);
-        return EthImpl.numberTo0x(Number(accountInfo.ethereumNonce));
-      }
-
-      return EthImpl.zeroHex;
-    } catch (e: any) {
-      this.logger.error(e, `${requestIdPrefix} Error raised during getTransactionCount for address ${address}`);
-      if (e instanceof JsonRpcError) {
-        throw e;
-      }
-
-      if (e instanceof SDKClientError) {
-        this.hapiService.decrementErrorCounter(e.statusCode);
-      }
-      
-      throw predefined.INTERNAL_ERROR(e.message.toString());
-    }
-  }
-
   private async getAccountLatestEthereumNonce(address: string, requestId?: string) {
     // check if address is a valid contract then get ethereumNonce from consensus node until HIP 729 is implemented
     const validContract = await this.mirrorNodeClient.isValidContract(address, requestId);
     if (validContract)  {
-      return this.getEthereumNonceFromConsensusNode(address, requestId);
+      return EthImpl.oneHex;
     } 
     
     // get latest ethereumNonce from mirror node account API
