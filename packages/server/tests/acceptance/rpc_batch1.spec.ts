@@ -875,14 +875,14 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 expect(res).to.be.equal('0x0');
             });
 
-            it('@release should execute "eth_getTransactionCount" contract', async function () {
+            it('@release should execute "eth_getTransactionCount" historic', async function () {
                 const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorContract.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
-                expect(res).to.be.equal('0x1');
+                expect(res).to.be.equal('0x0');
             });
 
-            it('@release should execute "eth_getTransactionCount" contract historic', async function () {
+            it('@release should execute "eth_getTransactionCount" contract latest', async function () {
                 const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorContract.evm_address, EthImpl.blockLatest], requestId);
-                expect(res).to.be.equal('0x0');
+                expect(res).to.be.equal('1');
             });
 
             it('@release should execute "eth_getTransactionCount" for account with id converted to evm_address', async function () {
@@ -890,12 +890,12 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 expect(res).to.be.equal('0x0');
             });
 
-            it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address', async function () {
+            it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address historic', async function () {
                 const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(contractId.toString()), EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
                 expect(res).to.be.equal('0x0');
             });
 
-            it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address historic', async function () {
+            it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address latest', async function () {
                 const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(contractId.toString()), EthImpl.blockLatest], requestId);
                 expect(res).to.be.equal('0x1');
             });
