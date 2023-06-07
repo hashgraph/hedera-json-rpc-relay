@@ -30,7 +30,7 @@ import app from '../../dist/server';
 import {app as wsApp} from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
 import {Hbar} from "@hashgraph/sdk";
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 const testLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -53,6 +53,7 @@ const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 let startOperatorBalance: Hbar;
+global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -80,7 +81,7 @@ describe('RPC Server Acceptance Tests', function () {
             runLocalHederaNetwork();
         }
 
-        if (RELAY_URL === LOCAL_RELAY_URL) {
+        if (global.relayIsLocal) {
             runLocalRelay();
         }
 
