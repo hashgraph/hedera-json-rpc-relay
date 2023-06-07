@@ -31,6 +31,8 @@ jobs:
 
   api_batch_2:
     name: API Batch 2
+    if: ${{ always() }}
+    needs: api_batch_1
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api_batch2
@@ -40,6 +42,8 @@ jobs:
 
   api_batch3:
     name: API Batch 3
+    if: ${{ always() }}
+    needs: api_batch_2
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api_batch3
@@ -49,6 +53,8 @@ jobs:
 
   erc20:
     name: ERC20
+    if: ${{ always() }}
+    needs: api_batch_3
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: erc20
@@ -58,6 +64,8 @@ jobs:
 
   ratelimiter:
     name: Rate Limiter
+    if: ${{ always() }}
+    needs: erc20
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: ratelimiter
@@ -67,6 +75,8 @@ jobs:
 
   tokencreate:
     name: Token Create
+    if: ${{ always() }}
+    needs: ratelimiter
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: tokencreate
@@ -76,6 +86,8 @@ jobs:
 
   tokenmanagement:
     name: Token Management
+    if: ${{ always() }}
+    needs: tokencreate
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: tokenmanagement
@@ -85,6 +97,8 @@ jobs:
 
   htsprecompilev1:
     name: Precompile
+    if: ${{ always() }}
+    needs: tokenmanagement
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: htsprecompilev1
@@ -93,7 +107,9 @@ jobs:
       operator_key: ${{ inputs.operator_key }}
 
   precompilecalls:
-    name: Precompile
+    name: Precompile Calls
+    if: ${{ always() }}
+    needs: htsprecompilev1
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: precompile
@@ -103,6 +119,8 @@ jobs:
 
   websocket:
     name: Websocket
+    if: ${{ always() }}
+    needs: precompilecalls
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: ws
