@@ -14,8 +14,8 @@
     "react-scripts": "5.0.1"
   },
   "devDependencies": {
-    "@synthetixio/synpress": "^3.0.5",
-    "cypress": "^12.3.0",
+    "@synthetixio/synpress": "^3.7.1",
+    "cypress": "^12.13.0",
     "cypress-multi-reporters": "^1.6.3",
     "cypress-wait-until": "^1.7.2",
     "env-cmd": "^10.1.0",
