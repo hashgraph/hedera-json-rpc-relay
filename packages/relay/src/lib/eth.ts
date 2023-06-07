@@ -1105,7 +1105,7 @@ export class EthImpl implements Eth {
         if (contract) {
           // historical contract nonces unsupported until HIP 729 and mirror node historical account info is implemented
           this.logger.warn(`${requestIdPrefix} retrieval of unsupported historical contract account nonces: ${address}`);
-          return EthImpl.zeroAddressHex;
+          return EthImpl.zeroHex;
         }
 
         // if valid block number, get block timestamp
