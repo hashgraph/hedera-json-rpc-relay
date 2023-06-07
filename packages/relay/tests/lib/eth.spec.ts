@@ -3782,7 +3782,6 @@ describe('Eth calls using MirrorNode', async function () {
         evm_address: accountAddress1
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
-
       sdkClientStub.submitContractCallQueryWithRetry.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
 
       const result = await ethImpl.call({
@@ -4097,7 +4096,6 @@ describe('Eth calls using MirrorNode', async function () {
         evm_address: accountAddress1
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
-
       // FIXME this probably is not the real behaviour
       web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {
         result: predefined.CONTRACT_REVERT(defaultErrorMessage).data
