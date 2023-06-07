@@ -1950,7 +1950,7 @@ export class EthImpl implements Eth {
       throw predefined.RESOURCE_NOT_FOUND(`Failed to retrieve contract results for transaction ${ethereumTransactions.transactions[0].transaction_id}`);
     }
 
-    return EthImpl.numberTo0x(transactionResult.nonce + 1); // + 1 because nonce is zero based
+    return EthImpl.numberTo0x(transactionResult.nonce);
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
