@@ -40,7 +40,7 @@ jobs:
       operator_id: ${{ inputs.operator_id }}
       operator_key: ${{ inputs.operator_key }}
 
-  api_batch3:
+  api_batch_3:
     name: API Batch 3
     if: ${{ always() }}
     needs: api_batch_2
