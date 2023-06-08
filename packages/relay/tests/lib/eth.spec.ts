@@ -4319,15 +4319,15 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_getTransactionCount', async() => {
-
-    const evmAddress = '0x305a8e76ac38fc088132fb780b2171950ff023f7';
-    const blockNumber = 123456;
+    const blockNumber = mockData.blocks.blocks[2].number;
     const blockNumberHex = EthImpl.numberTo0x(blockNumber);
-
+    const transactionId = '0.0.1078@1686183420.196506746';
 
     const accountPath = `accounts/${mockData.account.evm_address}?order=desc&limit=1`;
     const contractPath = `contracts/${mockData.account.evm_address}`;
-    const blockPath = `blocks?limit=1&order=asc`;
+    const contractResultsPath = `contracts/results/${transactionId}`;
+    const earliestBlockPath = `blocks?limit=1&order=asc`;
+    const blockPath = `blocks/${blockNumber}`;
 
     it('should return 0x0 nonce for no block consideration with not found acoount', async() => {
       restMock.onGet(contractPath).reply(404, mockData.notFound);
@@ -4376,14 +4376,14 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('should return 0x0 nonce for earliest block with valid block', async() => {
-      restMock.onGet(blockPath).reply(200, { blocks: [mockData.blocks.blocks[0]]});
+      restMock.onGet(earliestBlockPath).reply(200, { blocks: [mockData.blocks.blocks[0]]});
       const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockEarliest);
       expect(nonce).to.exist;
       expect(nonce).to.equal(EthImpl.zeroHex);
     });
 
-    it('@test should throw error for earliest block with invalid block', async() => {
-      restMock.onGet(blockPath).reply(200, { blocks: []});
+    it('should throw error for earliest block with invalid block', async() => {
+      restMock.onGet(earliestBlockPath).reply(200, { blocks: []});
       let hasError = false;
       try {
         expect(await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockEarliest)).to.throw();
@@ -4396,7 +4396,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('should throw error for earliest block with non 0 or 1 block', async() => {
-      restMock.onGet(blockPath).reply(200, { blocks: [mockData.blocks.blocks[2]]});
+      restMock.onGet(earliestBlockPath).reply(200, { blocks: [mockData.blocks.blocks[2]]});
       let hasError = false;
       try {
         expect(await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockEarliest)).to.throw();
@@ -4408,6 +4408,107 @@ describe('Eth calls using MirrorNode', async function () {
       expect(hasError).to.be.true;
     });
     
+    it('should zero nonce for contract nonce request on historical numerical block', async() => {
+      restMock.onGet(contractPath).reply(200, mockData.contract);
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.zeroHex);
+    });
+    
+    it('should throw error for account historical numerical block tag with missing block', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(blockPath).reply(404, mockData.notFound);
+      let hasError = false;
+      try {
+        expect(await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex)).to.throw();
+      } catch (error) {
+        hasError = true;
+        expect(error).to.exist;
+        expect(error.message).to.equal(`Unknown block`);
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('should return 0x0 nonce for historical numerical block with no ethereum transactions found', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(blockPath).reply(200,  mockData.blocks.blocks[2]);
+
+      const transactionPath = (addresss, num) => `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
+      restMock.onGet(transactionPath(mockData.account.evm_address, 2)).reply(200, { transactions: [] });
+
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.zeroHex);
+    });
+
+    it('should return 0x1 nonce for historical numerical block with a single ethereum transactions found', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(blockPath).reply(200,  mockData.blocks.blocks[2]);
+
+      const transactionPath = (addresss, num) => `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
+      restMock.onGet(transactionPath(mockData.account.evm_address, 2)).reply(200, { transactions: [{}] });
+
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.oneHex);
+    });
+
+    it('should throw for historical numerical block with a missing contracts results', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(blockPath).reply(200,  mockData.blocks.blocks[2]);
+
+      const transactionPath = (addresss, num) => `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
+      restMock.onGet(transactionPath(mockData.account.evm_address, 2)).reply(200, { transactions: [{transaction_id: transactionId}, {}] });
+      restMock.onGet(contractResultsPath).reply(404, mockData.notFound);
+
+      let hasError = false;
+      try {
+        expect(await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex)).to.throw();
+      } catch (error) {
+        hasError = true;
+        expect(error).to.exist;
+        expect(error.message).to.equal(`Requested resource not found. Failed to retrieve contract results for transaction ${transactionId}`);
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('should return valid nonce for historical numerical block', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(blockPath).reply(200,  mockData.blocks.blocks[2]);
+
+      const transactionPath = (addresss, num) => `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
+      restMock.onGet(transactionPath(mockData.account.evm_address, 2)).reply(200, { transactions: [{transaction_id: transactionId}, {}] });
+      const mirrorNonce = 9;
+      restMock.onGet(contractResultsPath).reply(200, {nonce: mirrorNonce});
+
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.numberTo0x(mirrorNonce + 1));
+    });
+
+    it('should throw for -1 invalid block tag', async() => {
+      let hasError = false;
+      try {
+        expect(await ethImpl.getTransactionCount(mockData.account.evm_address, '-1')).to.throw();
+      } catch (error) {
+        hasError = true;
+        expect(error).to.exist;
+        expect(error.message).to.equal(`Unknown block`);
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('should throw for invalid block tag', async() => {
+      let hasError = false;
+      try {
+        expect(await ethImpl.getTransactionCount(mockData.account.evm_address, 'notablock')).to.throw();
+      } catch (error) {
+        hasError = true;
+        expect(error).to.exist;
+        expect(error.message).to.equal(`Unknown block`);
+      }
+      expect(hasError).to.be.true;
+    });
   });
 });
 
