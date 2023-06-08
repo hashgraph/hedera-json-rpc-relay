@@ -1105,18 +1105,22 @@ export class EthImpl implements Eth {
 
       try {
         // Wait for the record from the execution.
-        const record = await this.hapiService.getSDKClient().executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
+        let txId = contractExecuteResponse.transactionId.toString();
+        txId = txId.replace('@', '-');
+        txId = txId.replace(/\.(?=[^\.]*$)/, '-');
+
+        const record = await this.mirrorNodeClient.getContractResult(txId, requestId);
         if (!record) {
           this.logger.warn(`${requestIdPrefix} No record retrieved`);
           throw predefined.INTERNAL_ERROR();
         }
 
-        if (record.ethereumHash == null) {
+        if (record.hash == null) {
           this.logger.error(`${requestIdPrefix} The ethereumHash can never be null for an ethereum transaction, and yet it was!!`);
           throw predefined.INTERNAL_ERROR();
         }
 
-        return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
+        return record.hash;
       } catch (e) {
 
         await this.mirrorNodeClient.getContractRevertReasonFromTransaction(e, requestId, requestIdPrefix);
