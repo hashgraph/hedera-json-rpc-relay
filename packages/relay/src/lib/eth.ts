@@ -1122,6 +1122,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${nonceCount} for ${this.ethGetTransactionCountCacheTtl} ms`);
     const cacheTtl = blockNumOrTag === EthImpl.blockEarliest || !isNaN(blockNum) ? constants.CACHE_TTL.ONE_DAY : this.ethGetTransactionCountCacheTtl; // cache historical values longer as they don't change
     this.cache.set(cacheKey, nonceCount, { ttl: cacheTtl }); 
+
     return nonceCount;
   }
 
