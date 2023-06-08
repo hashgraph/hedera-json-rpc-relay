@@ -1088,32 +1088,9 @@ export class EthImpl implements Eth {
         // if latest or pending, get latest ethereumNonce from mirror node account API
         nonceCount = await this.getAccountLatestEthereumNonce(address, requestId);
       } else if (blockNumOrTag === EthImpl.blockEarliest) {
-        const block = await this.mirrorNodeClient.getEarliestBlock(requestId);
-        if (block == null) {
-          throw predefined.INTERNAL_ERROR('No network blocks found');
-        }
-
-        if (block.number <= 1) {
-          // if the earliest block is the genesis block or 1 , then the nonce is 0 as only system accounts are present
-          return EthImpl.zeroHex;
-        } 
-        
-        // note the mirror node may be a partial one, in which case there may be a valid block with number greater 1.
-        throw predefined.INTERNAL_ERROR(`Partial mirror node encountered, earliest block number is ${block.number}`);        
+        nonceCount = await this.getAccountNonceForEarliestBlock(requestId);    
       } else if (!isNaN(blockNum)) {
-        if (blockNum < 0) {
-          throw predefined.UNKNOWN_BLOCK;
-        }
-
-        const contract = await this.mirrorNodeClient.isValidContract(address, requestId);
-        if (contract) {
-          // historical contract nonces unsupported until HIP 729 and mirror node historical account info is implemented
-          this.logger.warn(`${requestIdPrefix} retrieval of unsupported historical contract account nonces: ${address}`);
-          return EthImpl.zeroHex;
-        }
-
-        // if valid block number, get block timestamp
-        nonceCount = await this.getAcccountNonceFromContractResult(address, blockNum, requestId);
+        nonceCount = await this.getAccountNonceForHistoricBlock(address, blockNum, requestId);
       } else {
         // return a '-39001: Unknown block' error per api-spec
         throw predefined.UNKNOWN_BLOCK;
@@ -1914,7 +1891,7 @@ export class EthImpl implements Eth {
     
     // get latest ethereumNonce from mirror node account API
     const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
-    if (mirrorAccount && mirrorAccount.ethereum_nonce) {
+    if (mirrorAccount?.ethereum_nonce) {
       return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
     }
 
@@ -1956,6 +1933,38 @@ export class EthImpl implements Eth {
     }
 
     return EthImpl.numberTo0x(transactionResult.nonce + 1); // nonce is 0 indexed
+  }
+
+  private async getAccountNonceForEarliestBlock(requestId?: string): Promise<string> {
+    const block = await this.mirrorNodeClient.getEarliestBlock(requestId);
+    if (block == null) {
+      throw predefined.INTERNAL_ERROR('No network blocks found');
+    }
+
+    if (block.number <= 1) {
+      // if the earliest block is the genesis block or 1 , then the nonce is 0 as only system accounts are present
+      return EthImpl.zeroHex;
+    } 
+    
+    // note the mirror node may be a partial one, in which case there may be a valid block with number greater 1.
+    throw predefined.INTERNAL_ERROR(`Partial mirror node encountered, earliest block number is ${block.number}`);   
+  }
+
+  private async getAccountNonceForHistoricBlock(address: string, blockNum: number, requestId?: string): Promise<string> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    if (blockNum < 0) {
+      throw predefined.UNKNOWN_BLOCK;
+    }
+
+    const contract = await this.mirrorNodeClient.isValidContract(address, requestId);
+    if (contract) {
+      // historical contract nonces unsupported until HIP 729 and mirror node historical account info is implemented
+      this.logger.warn(`${requestIdPrefix} retrieval of unsupported historical contract account nonces: ${address}`);
+      return EthImpl.zeroHex;
+    }
+
+    // if valid block number, get block timestamp
+    return await this.getAcccountNonceFromContractResult(address, blockNum, requestId);
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
