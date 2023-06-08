@@ -49,6 +49,7 @@ import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { v4 as uuid } from 'uuid';
 import { ethers } from 'ethers';
+import { TransactionId } from '@hashgraph/sdk';
 
 const LRU = require('lru-cache');
 
@@ -4067,8 +4068,11 @@ describe('Eth calls using MirrorNode', async function () {
     const accountEndpoint = 'accounts/0x9eaee9E66efdb91bfDcF516b034e001cc535EB57';
     const accountAddress = '0x9eaee9E66efdb91bfDcF516b034e001cc535EB57';
     const gasPrice = '0xad78ebc5ac620000';
+    const transactionIdServicesFormat = '0.0.902@1684375868.230217103';
     const transactionId = '0.0.902-1684375868-230217103';
     const value = '0x511617DE831B9E173';
+    const contractResultEndpoint = `contracts/results/${transactionId}`;
+    const ethereumHash = '0x720767603b7af0d096b51d24f485f28713299b16765a5736b913f29c3d970f49';
 
     this.beforeEach(()=> {
       sinon.restore();
@@ -4115,8 +4119,33 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`transactions/${transactionId}`).reply(200, null);
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, id);
-      expect(resultingHash).to.equal('0x720767603b7af0d096b51d24f485f28713299b16765a5736b913f29c3d970f49');
+      expect(resultingHash).to.equal(ethereumHash);
     });
+
+    it('should return hash from ContractResult mirror node api', async function () {
+      restMock.onGet(accountEndpoint).reply(200, { account: accountAddress });
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+      const transaction = {
+        chainId: 0x12a,
+        to: accountAddress1,
+        from: accountAddress,
+        value,
+        gasPrice,
+        gasLimit: maxGasLimitHex,
+      };
+
+      sdkClientStub.getAccountBalanceInTinyBar.returns(ethers.BigNumber.from('1000000000000000000000'));
+      sdkClientStub.submitEthereumTransaction.returns({transactionId: TransactionId.fromString(transactionIdServicesFormat)});
+      const signed = await signTransaction(transaction);
+      const id = uuid();
+
+      restMock.onGet('network/fees').reply(200, defaultNetworkFees);
+      // restMock.onGet(`transactions/${transactionId}`).reply(200, null);
+
+      const resultingHash = await ethImpl.sendRawTransaction(signed, id);
+      expect(resultingHash).to.equal(ethereumHash);
+    });
+
   });
 
   describe('eth_getStorageAt', async function() {
