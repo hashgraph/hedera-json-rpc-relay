@@ -33,6 +33,8 @@ import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
+import {Registry, Histogram} from "prom-client";
+
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -150,6 +152,18 @@ export class EthImpl implements Eth {
   private readonly chain: string;
 
   /**
+   * The histogram used to track the number of active eth_call requests.
+   * @private
+   */
+  private ethCallHistogram: Histogram;
+
+  /**
+   * The histogram used to track the number of active eth_call requests.
+   * @private
+   */
+  private ethSendRawTransactionHistogram: Histogram;
+
+  /**
    * Create a new Eth implementation.
    * @param nodeClient
    * @param mirrorNodeClient
@@ -161,6 +175,7 @@ export class EthImpl implements Eth {
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
     chain: string,
+    registry: Registry,
     cache?
   ) {
     this.hapiService = hapiService;
@@ -170,6 +185,29 @@ export class EthImpl implements Eth {
     this.precheck = new Precheck(mirrorNodeClient, this.hapiService, logger, chain);
     this.cache = cache;
     if (!cache) this.cache = new LRU(this.options);
+
+    this.ethCallHistogram = this.initEthCallHistogram(registry);
+    this.ethSendRawTransactionHistogram = this.initEthSendRawTransactionHistogram(registry);
+  }
+
+  private initEthCallHistogram(register: Registry) {
+    register.removeSingleMetric(EthImpl.ethCall);
+    return new Histogram({
+      name: EthImpl.ethCall,
+      help: `Relay ${EthImpl.ethCall} function`,
+      labelNames: ['function'],
+      registers: [register]
+    });
+  }
+
+  private initEthSendRawTransactionHistogram(register: Registry) {
+    register.removeSingleMetric(EthImpl.ethSendRawTransaction);
+    return new Histogram({
+      name: EthImpl.ethSendRawTransaction,
+      help: `Relay ${EthImpl.ethSendRawTransaction} function`,
+      labelNames: ['function'],
+      registers: [register]
+    });
   }
 
   /**
@@ -1084,6 +1122,8 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.ethSendRawTransactionHistogram.labels(transaction.substring(0,10)).observe(1);
+
     let interactingEntity = '';
     let originatingAddress = '';
     try {
@@ -1150,11 +1190,13 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
+    this.ethCallHistogram.labels(call.data.substring(0,10)).observe(1);
+
     const to = await this.performCallChecks(call, blockParam, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
-    let gas = this.getCappedBlockGasLimit(call.gas, requestId);
-    let value: string | null = EthImpl.toNullableBigNumber(call.value);
+    const gas = this.getCappedBlockGasLimit(call.gas, requestId);
+    const value: string | null = EthImpl.toNullableBigNumber(call.value);
     
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
