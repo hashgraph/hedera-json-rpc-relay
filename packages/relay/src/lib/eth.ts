@@ -1101,6 +1101,10 @@ export class EthImpl implements Eth {
         // note the mirror node may be a partial one, in which case there may be a valid block with number greater 1.
         throw predefined.INTERNAL_ERROR(`Partial mirror node encountered, earliest block number is ${block.number}`);        
       } else if (!isNaN(blockNum)) {
+        if (blockNum < 0) {
+          throw predefined.UNKNOWN_BLOCK;
+        }
+
         const contract = await this.mirrorNodeClient.isValidContract(address, requestId);
         if (contract) {
           // historical contract nonces unsupported until HIP 729 and mirror node historical account info is implemented
@@ -1112,7 +1116,7 @@ export class EthImpl implements Eth {
         nonceCount = await this.getAcccountNonceFromContractResult(address, blockNum, requestId);
       } else {
         // return a '-39001: Unknown block' error per api-spec
-        return predefined.UNKNOWN_BLOCK;
+        throw predefined.UNKNOWN_BLOCK;
       }
     } else {
       // if no block consideration, get latest ethereumNonce from mirror node if account or from concensus node is contract until HIP 729 is implemented
