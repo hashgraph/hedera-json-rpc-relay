@@ -1406,7 +1406,7 @@ export class EthImpl implements Eth {
       return null;
     }
 
-    if (!contractResult.block_number || !contractResult.transaction_index) {
+    if (!contractResult.block_number || (!contractResult.transaction_index && contractResult.transaction_index !== 0)) {
       this.logger.warn(`${requestIdPrefix} getTransactionByHash(hash=${hash}) mirror-node returned status 200 with missing properties in contract_results - block_number==${contractResult.block_number} and transaction_index==${contractResult.transaction_index}`);
     }
 
@@ -1933,7 +1933,7 @@ export class EthImpl implements Eth {
     }  
 
     // get the latest 2 ethereum transactions for the account
-    let ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestamp(address, block.timestamp, 2, requestId);
+    let ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestamp(address, block.timestamp.to, 2, requestId);
     if (ethereumTransactions == null || ethereumTransactions.transactions.length === 0) {
       return EthImpl.zeroHex;
     }
@@ -1950,7 +1950,7 @@ export class EthImpl implements Eth {
       throw predefined.RESOURCE_NOT_FOUND(`Failed to retrieve contract results for transaction ${ethereumTransactions.transactions[0].transaction_id}`);
     }
 
-    return EthImpl.numberTo0x(transactionResult.nonce);
+    return EthImpl.numberTo0x(transactionResult.nonce + 1); // nonce is 0 indexed
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestId?: string): Promise<Log[]> {
