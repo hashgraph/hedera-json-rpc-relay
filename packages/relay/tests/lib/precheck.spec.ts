@@ -338,6 +338,22 @@ describe('Precheck', async function() {
             const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
             expect(result).to.not.exist;
         });
+
+        it('should preserve JsonRpcError if thrown', async function() {
+            mock.onGet(mirrorAccountsPath).reply(200, {
+                account: accountId
+            });
+
+            sdkInstance.getAccountBalanceInTinyBar.throws(predefined.HBAR_RATE_LIMIT_EXCEEDED);
+            try {
+                await precheck.balance(parsedTransaction, 'sendRawTransaction');
+                expectedError();
+            } catch(e: any) {
+                expect(e).to.exist;
+                expect(e.code).to.eq(predefined.HBAR_RATE_LIMIT_EXCEEDED.code);
+                expect(e.message).to.eq(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+            }
+        });
     });
 
     describe('nonce', async function() {
