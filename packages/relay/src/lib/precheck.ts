@@ -18,7 +18,7 @@
  *
  */
 
-import { predefined } from './errors/JsonRpcError';
+import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { MirrorNodeClient } from './clients';
 import { EthImpl } from './eth';
 import { Logger } from 'pino';
@@ -159,7 +159,13 @@ export class Precheck {
       if (error instanceof SDKClientError) {
         this.hapiService.decrementErrorCounter(error.statusCode);
       }
-      throw predefined.INTERNAL_ERROR('balance precheck');
+      
+      if (error instanceof JsonRpcError) {
+        // preserve original error
+        throw error;
+      } else {
+        throw predefined.INTERNAL_ERROR(`balance precheck: ${error.message}`);
+      }
     }
 
     if (!result.passes) {
