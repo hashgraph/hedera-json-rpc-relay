@@ -29,7 +29,7 @@ import axios from 'axios';
 import sinon from 'sinon';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { RelayImpl } from '../../../../packages/relay';
+import { RelayImpl } from '../../src/lib/relay';
 import { Registry } from 'prom-client';
 
 import { EthImpl } from '../../src/lib/eth';
@@ -82,6 +82,7 @@ let mirrorNodeInstance: MirrorNodeClient;
 let clientServiceInstance: ClientService;
 let sdkClientStub: any;
 
+const limitOrderPostFix = '?order=desc&limit=1';
 
 describe("Open RPC Specification", function () {
 
@@ -139,9 +140,9 @@ describe("Open RPC Specification", function () {
         mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, defaultDetailedContractResults3);
         mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, null);
         mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, { account: contractAddress1 });
-        mock.onGet(`accounts/${contractAddress3}`).reply(200, { account: contractAddress3 });
+        mock.onGet(`accounts/${contractAddress3}${limitOrderPostFix}`).reply(200, { account: contractAddress3 });
         mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
-        mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        mock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
             from: `${defaultEvmAddress}`
           });
         for (const log of defaultLogs.logs) {
@@ -200,7 +201,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_estimateGas"', async function () {
-        mock.onGet(`accounts/undefined`).reply(404);
+        mock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
         const response = await ethImpl.estimateGas({}, null);
 
         validateResponseSchema(methodsResponseSchema.eth_estimateGas, response);
@@ -328,7 +329,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionCount"', async function () {
-        mock.onGet(`accounts/${contractAddress1}`).reply(200, { account: contractAddress1 });
+        mock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).reply(200, { account: contractAddress1 });
         const response = await ethImpl.getTransactionCount(contractAddress1, 'latest');
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);
