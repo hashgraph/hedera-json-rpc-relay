@@ -326,14 +326,19 @@ export class MirrorNodeClient {
         throw mirrorError;
     }
 
-    async getPaginatedResults(url: string, pathLabel: string, resultProperty: string, requestId?: string, results = [], page = 1) {
+    async getPaginatedResults(url: string, pathLabel: string, resultProperty: string, requestId?: string, results = [], page = 1, pageMax: number = constants.MAX_MIRROR_NODE_PAGINATION) {
         const result = await this.get(url, pathLabel, requestId);
 
         if (result && result[resultProperty]) {
             results = results.concat(result[resultProperty]);
         }
 
-        if (result && result.links?.next && page < constants.MAX_MIRROR_NODE_PAGINATION) {
+        if (page === pageMax) {
+            // max page reached
+            throw predefined.RANGE_TOO_LARGE(pageMax);
+        }
+
+        if (result?.links?.next && page < pageMax) {
             page++;
             const next = result.links.next.replace(constants.NEXT_LINK_PREFIX, "");
             return this.getPaginatedResults(next, pathLabel, resultProperty, requestId, results, page);

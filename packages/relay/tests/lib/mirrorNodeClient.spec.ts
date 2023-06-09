@@ -35,6 +35,7 @@ import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 const logger = pino();
 import { v4 as uuid } from 'uuid';
 import { formatRequestIdMessage } from '../../src/formatters';
+import { predefined } from '../../src';
 
 const limitOrderPostFix = '?order=desc&limit=1';
 
@@ -1017,16 +1018,19 @@ describe('MirrorNodeClient', async function () {
 
     it('stops paginating when it reaches MAX_MIRROR_NODE_PAGINATION', async () => {
       const pages = constants.MAX_MIRROR_NODE_PAGINATION * 2;
-      const mockedResults = mockPages(pages);
+      mockPages(pages);
 
-      const results = await mirrorNodeInstance.getPaginatedResults(
+      try {
+        await mirrorNodeInstance.getPaginatedResults(
           'results?page=0',
           'results',
-          'genericResults');
-
-      expect(results).to.exist;
-      expect(results.length).to.eq(constants.MAX_MIRROR_NODE_PAGINATION);
-      expect(results).to.deep.equal(mockedResults.slice(0, constants.MAX_MIRROR_NODE_PAGINATION));
+          'genericResults');        expect.fail('should have thrown an error');
+      } catch (e) {
+        const errorRef = predefined.RANGE_TOO_LARGE(0); // reference error for all properties except message
+        expect(e.message).to.equal(`Exceeded maximum block range: ${constants.MAX_MIRROR_NODE_PAGINATION}`);
+        expect(e.code).to.equal(errorRef.code);
+        expect(e.name).to.equal(errorRef.name);
+      }
     });
   });
 });
