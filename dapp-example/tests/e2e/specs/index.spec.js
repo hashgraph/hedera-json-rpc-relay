@@ -85,6 +85,12 @@ describe('Test Core Hedera User Scenarios', function() {
   });
 
   function mandatoryTests() {
+
+    beforeEach(() => {
+      cy.visit('http://localhost:3000');
+      cy.contains('Connect Account').click();
+    });
+
     it('Show alias', function() {
       cy.get('#showAliasBtn').should('not.be.disabled').click();
       cy.confirmMetamaskSignatureRequest();
