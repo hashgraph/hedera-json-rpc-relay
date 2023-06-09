@@ -74,8 +74,6 @@ async function getSignedTxs(wallet, greeterContracts, gasPrice, gasLimit, chainI
         const contractFactory = new ethers.ContractFactory(Greeter.abi, Greeter.bytecode, mainWallet);
         console.log(`Deploying Greeter SC  ${i}`);
         const contract = await contractFactory.deploy("Hey World!");
-        // const receipt = await contract.deployTransaction.wait();
-        // const contractAddress = receipt.contractAddress;
         const contractAddress = contract.address;
         console.log(`Greeter SC Address: ${contractAddress}`);
         smartContracts.push(contractAddress);
