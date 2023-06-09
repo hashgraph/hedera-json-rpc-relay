@@ -30,13 +30,14 @@ import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
-import { formatRequestIdMessage } from '../formatters';
+import {formatRequestIdMessage, formatTransactionId} from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
 const asm = require('@ethersproject/asm');
+import { Transaction as EthersTransaction } from 'ethers';
 interface LatestBlockNumberTimestamp {
   blockNumber: string;
   timeStampTo: string;
@@ -1086,8 +1087,9 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let interactingEntity = '';
     let originatingAddress = '';
+    let parsedTx: EthersTransaction;
     try {
-      const parsedTx = Precheck.parseTxIfNeeded(transaction);
+      parsedTx = Precheck.parseTxIfNeeded(transaction);
       interactingEntity = parsedTx.to ? parsedTx.to.toString() : '';
       originatingAddress = parsedTx.from ? parsedTx.from.toString() : '';
       this.logger.trace(`${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
@@ -1106,12 +1108,22 @@ export class EthImpl implements Eth {
       try {
         // Wait for the record from the execution.
         let txId = contractExecuteResponse.transactionId.toString();
-        txId = txId.replace('@', '-');
-        txId = txId.replace(/\.(?=[^\.]*$)/, '-');
+        const formattedId = formatTransactionId(txId);
 
-        const record = await this.mirrorNodeClient.getContractResult(txId, requestId);
+        // TODO Find a better way to wait for the tx to propagate to mirror node. Preferably without increasing the default retry settings
+        await this.mirrorNodeClient.getContractResult(formattedId || "", requestId);
+
+        const record = await this.mirrorNodeClient.getContractResult(formattedId || "", requestId);
         if (!record) {
           this.logger.warn(`${requestIdPrefix} No record retrieved`);
+          const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestId);
+          if (tx.transactions?.length) {
+            const result = tx.transactions[0].result;
+            if (result === 'WRONG_NONCE') {
+              const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestId)
+              throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountInfo.ethereumNonce);
+            }
+          }
           throw predefined.INTERNAL_ERROR();
         }
 
@@ -1122,6 +1134,9 @@ export class EthImpl implements Eth {
 
         return record.hash;
       } catch (e) {
+        if (e instanceof JsonRpcError) {
+          return e;
+        }
 
         await this.mirrorNodeClient.getContractRevertReasonFromTransaction(e, requestId, requestIdPrefix);
 

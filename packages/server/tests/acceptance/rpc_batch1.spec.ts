@@ -863,6 +863,60 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     await relay.callFailing(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], predefined.GAS_PRICE_TOO_LOW(GAS_PRICE_TOO_LOW, GAS_PRICE_REF), requestId);
                 });
+
+                it('@release fail "eth_getTransactionReceipt" on precheck with wrong nonce error when sending a tx with the same nonce twice', async function () {
+                    const nonce = await relay.getAccountNonce('0x' + accounts[2].address, requestId);
+
+                    const transaction = {
+                        ...default155TransactionData,
+                        to: mirrorContract.evm_address,
+                        nonce: nonce,
+                        gasPrice: await relay.gasPrice(requestId)
+                    };
+
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                    const txHash1 = await relay.sendRawTransaction(signedTx, requestId);
+                    const mirrorResult = await mirrorNode.get(`/contracts/results/${txHash1}`, requestId);
+                    const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [txHash1], requestId);
+                    Assertions.transactionReceipt(res, mirrorResult);
+
+                    await relay.callFailing(
+                        RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION,
+                        [signedTx],
+                        predefined.NONCE_TOO_LOW(nonce + 1, nonce), requestId
+                    );
+                });
+
+                it('@release fail "eth_getTransactionReceipt" on submitting with wrong nonce error when sending a tx with the same nonce twice', async function () {
+                    const nonce = await relay.getAccountNonce('0x' + accounts[2].address, requestId);
+
+                    const transaction1 = {
+                        ...default155TransactionData,
+                        to: mirrorContract.evm_address,
+                        nonce: nonce,
+                        gasPrice: await relay.gasPrice(requestId)
+                    };
+
+                    const signedTx1 = await accounts[2].wallet.signTransaction(transaction1);
+
+                    await Promise.all([
+                        Promise.allSettled([
+                            relay.sendRawTransaction(signedTx1, requestId),
+                            relay.sendRawTransaction(signedTx1, requestId)
+                        ])
+                            .then((values) => {
+                                const fulfilled = values.find(obj => obj.status === 'fulfilled');
+                                const rejected = values.find(obj => obj.status === 'rejected');
+
+                                expect(fulfilled).to.exist;
+                                expect(fulfilled).to.have.property('value');
+                                expect(rejected).to.exist;
+                                expect(rejected).to.have.property('reason');
+
+                                Assertions.jsonRpcError(rejected.reason, predefined.NONCE_TOO_LOW(nonce + 1, nonce))
+                            })
+                    ]);
+                });
             });
 
             it('@release should execute "eth_getTransactionCount" primary', async function () {
