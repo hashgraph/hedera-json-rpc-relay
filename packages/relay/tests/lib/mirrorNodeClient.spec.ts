@@ -1026,8 +1026,8 @@ describe('MirrorNodeClient', async function () {
           'results',
           'genericResults');        expect.fail('should have thrown an error');
       } catch (e) {
-        const errorRef = predefined.RANGE_TOO_LARGE(0); // reference error for all properties except message
-        expect(e.message).to.equal(`Exceeded maximum block range: ${constants.MAX_MIRROR_NODE_PAGINATION}`);
+        const errorRef = predefined.PAGINATION_MAX(0); // reference error for all properties except message
+        expect(e.message).to.equal(`Exceeded maximum mirror node pagination count: ${constants.MAX_MIRROR_NODE_PAGINATION}`);
         expect(e.code).to.equal(errorRef.code);
         expect(e.name).to.equal(errorRef.name);
       }
