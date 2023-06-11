@@ -127,7 +127,7 @@ describe('Eth calls using MirrorNode', async function () {
     process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
     // @ts-ignore
-    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', cache);
+    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cache);
   });
 
   this.afterAll(() => {
@@ -3225,7 +3225,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas empty call returns transfer cost with overridden default gas', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cache);
     restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({}, null);
     expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
@@ -3240,7 +3240,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas empty input transfer cost with overridden default gas', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cache);
     restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({ data: "" }, null);
     expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
@@ -3255,7 +3255,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas zero input returns transfer cost with overridden default gas', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', cache);
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cache);
     restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({ data: "0x" }, null);
     expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
@@ -4326,7 +4326,7 @@ describe('Eth', async function () {
   let ethImpl: EthImpl;
   this.beforeAll(() => {
     // @ts-ignore
-    ethImpl = new EthImpl(null, mirrorNodeInstance, logger);
+    ethImpl = new EthImpl(null, mirrorNodeInstance, logger, "0x12a", registry);
   });
 
   const contractEvmAddress = '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9';

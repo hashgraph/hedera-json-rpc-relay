@@ -1194,8 +1194,10 @@ export class EthImpl implements Eth {
     const currentDate: Date = new Date(currentTimestamp);
     const dateString: string = currentDate.toLocaleString();
 
-    this.ethCallHistogram.labels(dateString, call.data.substring(0,10)).observe(1);
-
+    if("data" in call){
+      this.ethCallHistogram.labels(dateString, call.data.substring(0,10)).observe(1);
+    }
+    
     const to = await this.performCallChecks(call, blockParam, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
