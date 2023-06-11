@@ -37,6 +37,8 @@ import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 const logger = pino();
 
+const limitOrderPostFix = '?order=desc&limit=1';
+
 describe('Precheck', async function() {
 
     const txWithMatchingChainId = '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad';
@@ -247,7 +249,7 @@ describe('Precheck', async function() {
         // sending 2 hbars
         const transaction = '0x02f876820128078459682f0086018a4c7747008252089443cb701defe8fc6ed04d7bddf949618e3c575fe1881bc16d674ec8000080c001a0b8c604e08c15a7acc8c898a1bbcc41befcd0d120b64041d1086381c7fc2a5339a062eabec286592a7283c90ce90d97f9f8cf9f6c0cef4998022660e7573c046a46';
         const parsedTransaction = ethers.utils.parseTransaction(transaction);
-        const mirrorAccountsPath = 'accounts/0xF8A44f9a4E4c452D25F5aE0F5d7970Ac9522a3C8';
+        const mirrorAccountsPath = `accounts/0xF8A44f9a4E4c452D25F5aE0F5d7970Ac9522a3C8${limitOrderPostFix}`;
         const accountId = '0.1.2';
 
         it('should not pass for 1 hbar', async function() {
@@ -336,6 +338,22 @@ describe('Precheck', async function() {
             const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
             expect(result).to.not.exist;
         });
+
+        it('should preserve JsonRpcError if thrown', async function() {
+            mock.onGet(mirrorAccountsPath).reply(200, {
+                account: accountId
+            });
+
+            sdkInstance.getAccountBalanceInTinyBar.throws(predefined.HBAR_RATE_LIMIT_EXCEEDED);
+            try {
+                await precheck.balance(parsedTransaction, 'sendRawTransaction');
+                expectedError();
+            } catch(e: any) {
+                expect(e).to.exist;
+                expect(e.code).to.eq(predefined.HBAR_RATE_LIMIT_EXCEEDED.code);
+                expect(e.message).to.eq(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+            }
+        });
     });
 
     describe('nonce', async function() {
@@ -359,7 +377,7 @@ describe('Precheck', async function() {
             const signed = await signTransaction(tx);
             const parsedTx = ethers.utils.parseTransaction(signed);
 
-            mock.onGet(`accounts/${parsedTx.from}`).reply(200, mirrorAccount);
+            mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
 
 
             try {
@@ -378,7 +396,7 @@ describe('Precheck', async function() {
             const signed = await signTransaction(tx);
             const parsedTx = ethers.utils.parseTransaction(signed);
 
-            mock.onGet(`accounts/${parsedTx.from}`).reply(200, mirrorAccount);
+            mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
 
             await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
         });
@@ -403,7 +421,7 @@ describe('Precheck', async function() {
         };
 
         it(`should fail for missing account`, async function () {
-            mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(404, mockData.notFound);
+            mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(404, mockData.notFound);
 
 
             try {
@@ -418,7 +436,7 @@ describe('Precheck', async function() {
         });
 
         it(`should not fail for matched account`, async function () {
-            mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(200, mirrorAccount);
+            mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(200, mirrorAccount);
             const account = await precheck.verifyAccount(parsedTx);
 
 

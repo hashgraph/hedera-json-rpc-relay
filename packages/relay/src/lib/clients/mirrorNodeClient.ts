@@ -57,7 +57,7 @@ export interface IContractLogsResultsParams {
 }
 
 export class MirrorNodeClient {
-    private static GET_ACCOUNTS_ENDPOINT = 'accounts/';
+    private static GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
     private static GET_BALANCE_ENDPOINT = 'balances';
     private static GET_BLOCK_ENDPOINT = 'blocks/';
     private static GET_BLOCKS_ENDPOINT = 'blocks';
@@ -80,10 +80,9 @@ export class MirrorNodeClient {
     private static CONTRACT_CALL_ENDPOINT = 'contracts/call';
 
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
-    private static CONTRACT_STATE_PROPERTY = 'state';
 
     static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
-        [MirrorNodeClient.GET_ACCOUNTS_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_BALANCE_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_BLOCK_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_BLOCKS_ENDPOINT, [400, 404]],
@@ -327,14 +326,19 @@ export class MirrorNodeClient {
         throw mirrorError;
     }
 
-    async getPaginatedResults(url: string, pathLabel: string, resultProperty: string, requestId?: string, results = [], page = 1) {
+    async getPaginatedResults(url: string, pathLabel: string, resultProperty: string, requestId?: string, results = [], page = 1, pageMax: number = constants.MAX_MIRROR_NODE_PAGINATION) {
         const result = await this.get(url, pathLabel, requestId);
 
         if (result && result[resultProperty]) {
             results = results.concat(result[resultProperty]);
         }
 
-        if (result && result.links?.next && page < constants.MAX_MIRROR_NODE_PAGINATION) {
+        if (page === pageMax) {
+            // max page reached
+            throw predefined.RANGE_TOO_LARGE(pageMax);
+        }
+
+        if (result?.links?.next && page < pageMax) {
             page++;
             const next = result.links.next.replace(constants.NEXT_LINK_PREFIX, "");
             return this.getPaginatedResults(next, pathLabel, resultProperty, requestId, results, page);
@@ -344,21 +348,15 @@ export class MirrorNodeClient {
         }
     }
 
-    public async getAccountLatestTransactionByAddress(idOrAliasOrEvmAddress: string, requestId?: string): Promise<object> {
-        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?order=desc&limit=1`,
-            MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
-            requestId);
-    }
-
     public async getAccount(idOrAliasOrEvmAddress: string, requestId?: string) {
-        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}`,
-            MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
+        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?order=desc&limit=1`,
+            MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
             requestId);
     }
 
     public async getAccountPageLimit(idOrAliasOrEvmAddress: string, requestId?: string) {
-        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${idOrAliasOrEvmAddress}?limit=${constants.MIRROR_NODE_QUERY_LIMIT}`,
-            MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
+        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?limit=${constants.MIRROR_NODE_QUERY_LIMIT}`,
+            MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
             requestId);
     }
     /*******************************************************************************
@@ -375,8 +373,8 @@ export class MirrorNodeClient {
         const queryParams = this.getQueryParams(queryParamObject);
 
         return this.getPaginatedResults(
-            `${MirrorNodeClient.GET_ACCOUNTS_ENDPOINT}${accountId}${queryParams}`,
-            MirrorNodeClient.GET_ACCOUNTS_ENDPOINT,
+            `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${accountId}${queryParams}`,
+            MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
             'transactions',
             requestId
         );
