@@ -195,7 +195,7 @@ export class EthImpl implements Eth {
     return new Histogram({
       name: EthImpl.ethCall,
       help: `Relay ${EthImpl.ethCall} function`,
-      labelNames: ['function'],
+      labelNames: ['time', 'function'],
       registers: [register]
     });
   }
@@ -1190,7 +1190,11 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    this.ethCallHistogram.labels(call.data.substring(0,10)).observe(1);
+    const currentTimestamp: number = Date.now();
+    const currentDate: Date = new Date(currentTimestamp);
+    const dateString: string = currentDate.toLocaleString();
+
+    this.ethCallHistogram.labels(dateString, call.data.substring(0,10)).observe(1);
 
     const to = await this.performCallChecks(call, blockParam, requestId);
 
