@@ -1,5 +1,5 @@
 import { Transfer as TransferEvent } from "../generated/ExampleERC721/ExampleERC721";
-import { ERC721, Transfer } from "../generated/schema";
+import { HTSNFT, Transfer } from "../generated/schema";
 
 // Schema:
 // id: ID! # String
@@ -7,15 +7,15 @@ import { ERC721, Transfer } from "../generated/schema";
 // transfers: [Transfer!]! @derivedFrom(field: "token") # One-to-many relationship with reverse lookup
 // type: TokenType!
 export function handleTransfer(event: TransferEvent): void {
-  let token = ERC721.load(
+  let token = HTSNFT.load(
     event.address.toHexString() + "-" + event.params.tokenId.toString()
   );
 
   if (!token) {
-    token = new ERC721(
+    token = new HTSNFT(
       event.address.toHexString() + "-" + event.params.tokenId.toString()
     );
-    token.type = "ERC721";
+    token.type = "HTSNFT";
     token.tokenId = event.params.tokenId;
     token.owner = event.params.to;
     token.save();

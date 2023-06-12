@@ -7,8 +7,8 @@ import {
   afterAll
 } from "matchstick-as/assembly/index"
 import { Address, BigInt } from "@graphprotocol/graph-ts"
-import { handleApproval } from "../src/example-erc-20"
-import { createApprovalEvent } from "./example-erc-20-utils"
+import { handleExampleHTSNFTApproval } from "../src/example-htsnft"
+import { createExampleHTSNFTApprovalEvent } from "./example-htsnft-utils"
 
 // Tests structure (matchstick-as >=0.5.0)
 // https://thegraph.com/docs/en/developer/matchstick/#tests-structure-0-5-0
@@ -16,12 +16,16 @@ import { createApprovalEvent } from "./example-erc-20-utils"
 describe("Describe entity assertions", () => {
   beforeAll(() => {
     let owner = Address.fromString("0x0000000000000000000000000000000000000001")
-    let spender = Address.fromString(
+    let approved = Address.fromString(
       "0x0000000000000000000000000000000000000001"
     )
-    let value = BigInt.fromI32(234)
-    let newApprovalEvent = createApprovalEvent(owner, spender, value)
-    handleApproval(newApprovalEvent)
+    let tokenId = BigInt.fromI32(234)
+    let newExampleHTSNFTApprovalEvent = createExampleHTSNFTApprovalEvent(
+      owner,
+      approved,
+      tokenId
+    )
+    handleExampleHTSNFTApproval(newExampleHTSNFTApprovalEvent)
   })
 
   afterAll(() => {
@@ -31,26 +35,26 @@ describe("Describe entity assertions", () => {
   // For more test scenarios, see:
   // https://thegraph.com/docs/en/developer/matchstick/#write-a-unit-test
 
-  test("Approval created and stored", () => {
-    assert.entityCount("Approval", 1)
+  test("ExampleHTSNFTApproval created and stored", () => {
+    assert.entityCount("ExampleHTSNFTApproval", 1)
 
     // 0xa16081f360e3847006db660bae1c6d1b2e17ec2a is the default address used in newMockEvent() function
     assert.fieldEquals(
-      "Approval",
+      "ExampleHTSNFTApproval",
       "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
       "owner",
       "0x0000000000000000000000000000000000000001"
     )
     assert.fieldEquals(
-      "Approval",
+      "ExampleHTSNFTApproval",
       "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "spender",
+      "approved",
       "0x0000000000000000000000000000000000000001"
     )
     assert.fieldEquals(
-      "Approval",
+      "ExampleHTSNFTApproval",
       "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "value",
+      "tokenId",
       "234"
     )
 

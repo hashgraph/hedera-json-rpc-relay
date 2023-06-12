@@ -14,7 +14,7 @@ export async function transferERC20(receiver: string, hre: any) {
   const ERC20 = await hre.ethers.getContractFactory("ExampleERC20");
   const erc20 = ERC20.attach(networks.local.ExampleERC20.address);
 
-  const tx = await erc20.connect(wallet).transfer(recipient.address, 1);
+  const tx = await erc20.connect(wallet).transfer(recipient.address, 1, {gasLimit: 500_000});
 
   const receipt = await tx.wait();
 
