@@ -33,7 +33,7 @@ import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
-import {Registry, Histogram} from "prom-client";
+import {Counter, Registry} from "prom-client";
 
 const LRU = require('lru-cache');
 const _ = require('lodash');
@@ -152,16 +152,10 @@ export class EthImpl implements Eth {
   private readonly chain: string;
 
   /**
-   * The histogram used to track the number of active eth_call requests.
+   * The counter used to track the number of active eth_call requests.
    * @private
    */
-  private ethCallHistogram: Histogram;
-
-  /**
-   * The histogram used to track the number of active eth_call requests.
-   * @private
-   */
-  private ethSendRawTransactionHistogram: Histogram;
+  private counter: Counter;
 
   /**
    * Create a new Eth implementation.
@@ -186,26 +180,15 @@ export class EthImpl implements Eth {
     this.cache = cache;
     if (!cache) this.cache = new LRU(this.options);
 
-    this.ethCallHistogram = this.initEthCallHistogram(registry);
-    this.ethSendRawTransactionHistogram = this.initEthSendRawTransactionHistogram(registry);
+    this.counter = this.initCounter(registry);
   }
 
-  private initEthCallHistogram(register: Registry) {
+  private initCounter(register: Registry) {
     register.removeSingleMetric(EthImpl.ethCall);
-    return new Histogram({
+    return new Counter({
       name: EthImpl.ethCall,
       help: `Relay ${EthImpl.ethCall} function`,
-      labelNames: ['time', 'function'],
-      registers: [register]
-    });
-  }
-
-  private initEthSendRawTransactionHistogram(register: Registry) {
-    register.removeSingleMetric(EthImpl.ethSendRawTransaction);
-    return new Histogram({
-      name: EthImpl.ethSendRawTransaction,
-      help: `Relay ${EthImpl.ethSendRawTransaction} function`,
-      labelNames: ['function'],
+      labelNames: ['method', 'function'],
       registers: [register]
     });
   }
@@ -1122,7 +1105,7 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    this.ethSendRawTransactionHistogram.labels(transaction.substring(0,10)).observe(1);
+    this.counter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0,10)).inc();
 
     let interactingEntity = '';
     let originatingAddress = '';
@@ -1190,12 +1173,8 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    const currentTimestamp: number = Date.now();
-    const currentDate: Date = new Date(currentTimestamp);
-    const dateString: string = currentDate.toLocaleString();
-
     if("data" in call){
-      this.ethCallHistogram.labels(dateString, call.data.substring(0,10)).observe(1);
+      this.counter.labels(EthImpl.ethCall, call.data.substring(0,10)).inc();
     }
     
     const to = await this.performCallChecks(call, blockParam, requestId);
@@ -1288,7 +1267,7 @@ export class EthImpl implements Eth {
       }
 
       const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:.${call.to}.${data}`;
-      let cachedResponse = this.cache.get(cacheKey);
+      const cachedResponse = this.cache.get(cacheKey);
 
       if (cachedResponse != undefined) {
         this.logger.debug(`${requestIdPrefix} eth_call returned cached response: ${cachedResponse}`);
