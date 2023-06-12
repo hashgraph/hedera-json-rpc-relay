@@ -129,7 +129,9 @@ export class MirrorNodeClient {
     private mirrorResponseHistogram;
 
     private readonly cache;
-    static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;    
+    static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;   
+    
+    static mirrorNodeContractResultsPageMax = parseInt(process.env.MIRROR_NODE_CONTRACT_RESULTS_PG_MAX!) || 25;
 
     protected createAxiosClient(
         baseUrl: string
@@ -335,13 +337,13 @@ export class MirrorNodeClient {
 
         if (page === pageMax) {
             // max page reached
-            throw predefined.RANGE_TOO_LARGE(pageMax);
+            throw predefined.PAGINATION_MAX(pageMax);
         }
 
         if (result?.links?.next && page < pageMax) {
             page++;
             const next = result.links.next.replace(constants.NEXT_LINK_PREFIX, "");
-            return this.getPaginatedResults(next, pathLabel, resultProperty, requestId, results, page);
+            return this.getPaginatedResults(next, pathLabel, resultProperty, requestId, results, page, pageMax);
         }
         else {
             return results;
@@ -507,7 +509,10 @@ export class MirrorNodeClient {
             `${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT,
             'results',
-            requestId
+            requestId,
+            [],
+            1,
+            MirrorNodeClient.mirrorNodeContractResultsPageMax
         );
     }
 
