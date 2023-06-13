@@ -95,7 +95,6 @@ export default class KoaJsonRpc {
       let body, result;
 
       this.requestId = ctx.state.reqId;
-      const requestIdPrefix =  formatRequestIdMessage(this.requestId);
       
       if (this.token) {
         const headerToken = ctx.get('authorization').split(' ').pop();
@@ -174,9 +173,5 @@ export default class KoaJsonRpc {
 
   getRequestId(): string {
     return this.requestId;
-  }
-
-  getStartTimestamp(): number {
-    return this.startTimestamp;
   }
 }

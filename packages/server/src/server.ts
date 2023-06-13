@@ -185,8 +185,6 @@ app.getKoaApp().use(async (ctx, next) => {
 });
 
 const logAndHandleResponse = async (methodName: any, methodParams: any, methodFunction: any) => {
-  let ms;
-
   const requestId = app.getRequestId();
   const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
 
