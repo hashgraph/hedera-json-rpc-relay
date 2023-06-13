@@ -1100,8 +1100,8 @@ export class EthImpl implements Eth {
       nonceCount = await this.getAccountLatestEthereumNonce(address, requestId);
     }
 
-    this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${nonceCount} for ${this.ethGetTransactionCountCacheTtl} ms`);
     const cacheTtl = blockNumOrTag === EthImpl.blockEarliest || !isNaN(blockNum) ? constants.CACHE_TTL.ONE_DAY : this.ethGetTransactionCountCacheTtl; // cache historical values longer as they don't change
+    this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${nonceCount} for ${cacheTtl} ms`);
     this.cache.set(cacheKey, nonceCount, { ttl: cacheTtl }); 
 
     return nonceCount;
