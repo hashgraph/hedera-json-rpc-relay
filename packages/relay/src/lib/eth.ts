@@ -152,7 +152,7 @@ export class EthImpl implements Eth {
   private readonly chain: string;
 
   /**
-   * The counter used to track the number of active eth_call requests.
+   * The counter used to track the number of active contract execution requests.
    * @private
    */
   private counter: Counter;
@@ -184,9 +184,10 @@ export class EthImpl implements Eth {
   }
 
   private initCounter(register: Registry) {
-    register.removeSingleMetric(EthImpl.ethCall);
+    const metricCounterName = 'rpc_relay_eth_executions';
+    register.removeSingleMetric(metricCounterName);
     return new Counter({
-      name: EthImpl.ethCall,
+      name: metricCounterName,
       help: `Relay ${EthImpl.ethCall} function`,
       labelNames: ['method', 'function'],
       registers: [register]
@@ -462,6 +463,10 @@ export class EthImpl implements Eth {
   async estimateGas(transaction: any, _blockParam: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
+
+    if ("data" in transaction){
+      this.counter.labels('eth_estimateGas', transaction.data.substring(0,10)).inc();
+    }
 
     let gas = EthImpl.gasTxBaseCost;
     try {
@@ -1173,7 +1178,7 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    if("data" in call){
+    if ("data" in call){
       this.counter.labels(EthImpl.ethCall, call.data.substring(0,10)).inc();
     }
     
