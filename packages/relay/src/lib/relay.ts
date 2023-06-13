@@ -74,7 +74,8 @@ export class RelayImpl implements Relay {
       hapiService,
       this.mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
-      chainId);
+      chainId,
+      register,);
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
       const poller = new Poller(this.ethImpl, logger, register);
