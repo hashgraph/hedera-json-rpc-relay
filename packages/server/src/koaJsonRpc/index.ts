@@ -26,7 +26,6 @@ import parse from 'co-body';
 import dotenv from 'dotenv';
 import path from 'path';
 import { Logger } from 'pino';
-import { formatRequestIdMessage } from '../formatters';
 
 import {
   ParseError,
