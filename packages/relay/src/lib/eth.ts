@@ -76,6 +76,7 @@ export class EthImpl implements Eth {
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
+  static ethEstimateGas = 'eth_estimateGas';
   static ethGasPrice = 'eth_gasPrice';
   static ethGetBalance = 'eth_getBalance';
   static ethGetCode = 'eth_getCode';
@@ -188,7 +189,7 @@ export class EthImpl implements Eth {
     register.removeSingleMetric(metricCounterName);
     return new Counter({
       name: metricCounterName,
-      help: `Relay ${EthImpl.ethCall} function`,
+      help: `Relay ${metricCounterName} function`,
       labelNames: ['method', 'function'],
       registers: [register]
     });
@@ -465,7 +466,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
 
     if ("data" in transaction){
-      this.counter.labels('eth_estimateGas', transaction.data.substring(0,10)).inc();
+      this.counter.labels(EthImpl.ethEstimateGas, transaction.data.substring(0,10)).inc();
     }
 
     let gas = EthImpl.gasTxBaseCost;
