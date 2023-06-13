@@ -1096,7 +1096,7 @@ export class EthImpl implements Eth {
         throw predefined.UNKNOWN_BLOCK;
       }
     } else {
-      // if no block consideration, get latest ethereumNonce from mirror node if account or from concensus node is contract until HIP 729 is implemented
+      // if no block consideration, get latest ethereumNonce from mirror node if account or from consensus node is contract until HIP 729 is implemented
       nonceCount = await this.getAccountLatestEthereumNonce(address, requestId);
     }
 
