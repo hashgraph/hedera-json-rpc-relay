@@ -33,6 +33,8 @@ import { Precheck } from './precheck';
 import { formatRequestIdMessage } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
+import {Counter, Registry} from "prom-client";
+
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -74,6 +76,7 @@ export class EthImpl implements Eth {
 
   // endpoint metric callerNames
   static ethCall = 'eth_call';
+  static ethEstimateGas = 'eth_estimateGas';
   static ethGasPrice = 'eth_gasPrice';
   static ethGetBalance = 'eth_getBalance';
   static ethGetCode = 'eth_getCode';
@@ -150,6 +153,12 @@ export class EthImpl implements Eth {
   private readonly chain: string;
 
   /**
+   * The counter used to track the number of active contract execution requests.
+   * @private
+   */
+  private counter: Counter;
+
+  /**
    * Create a new Eth implementation.
    * @param nodeClient
    * @param mirrorNodeClient
@@ -161,6 +170,7 @@ export class EthImpl implements Eth {
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
     chain: string,
+    registry: Registry,
     cache?
   ) {
     this.hapiService = hapiService;
@@ -170,6 +180,19 @@ export class EthImpl implements Eth {
     this.precheck = new Precheck(mirrorNodeClient, this.hapiService, logger, chain);
     this.cache = cache;
     if (!cache) this.cache = new LRU(this.options);
+
+    this.counter = this.initCounter(registry);
+  }
+
+  private initCounter(register: Registry) {
+    const metricCounterName = 'rpc_relay_eth_executions';
+    register.removeSingleMetric(metricCounterName);
+    return new Counter({
+      name: metricCounterName,
+      help: `Relay ${metricCounterName} function`,
+      labelNames: ['method', 'function'],
+      registers: [register]
+    });
   }
 
   /**
@@ -441,6 +464,10 @@ export class EthImpl implements Eth {
   async estimateGas(transaction: any, _blockParam: string | null, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
+
+    if ("data" in transaction){
+      this.counter.labels(EthImpl.ethEstimateGas, transaction.data.substring(0,10)).inc();
+    }
 
     let gas = EthImpl.gasTxBaseCost;
     try {
@@ -1084,6 +1111,8 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.counter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0,10)).inc();
+
     let interactingEntity = '';
     let originatingAddress = '';
     try {
@@ -1150,11 +1179,15 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
+    if ("data" in call){
+      this.counter.labels(EthImpl.ethCall, call.data.substring(0,10)).inc();
+    }
+    
     const to = await this.performCallChecks(call, blockParam, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
-    let gas = this.getCappedBlockGasLimit(call.gas, requestId);
-    let value: string | null = EthImpl.toNullableBigNumber(call.value);
+    const gas = this.getCappedBlockGasLimit(call.gas, requestId);
+    const value: string | null = EthImpl.toNullableBigNumber(call.value);
     
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
@@ -1240,7 +1273,7 @@ export class EthImpl implements Eth {
       }
 
       const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:.${call.to}.${data}`;
-      let cachedResponse = this.cache.get(cacheKey);
+      const cachedResponse = this.cache.get(cacheKey);
 
       if (cachedResponse != undefined) {
         this.logger.debug(`${requestIdPrefix} eth_call returned cached response: ${cachedResponse}`);
