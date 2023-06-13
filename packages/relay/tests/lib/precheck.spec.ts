@@ -77,8 +77,8 @@ describe('Precheck', async function() {
         // @ts-ignore
         const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
 
-        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        const duration = constants.HBAR_RATE_LIMIT_DURATION;
+        const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
         hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter);
         sdkInstance = sinon.createStubInstance(SDKClient);
@@ -208,7 +208,7 @@ describe('Precheck', async function() {
     describe('gas price', async function() {
         let initialMinGasPriceBuffer;
         before(async () =>{
-            initialMinGasPriceBuffer = process.env.GAS_PRICE_TINY_BAR_BUFFER;
+            initialMinGasPriceBuffer = constants.GAS_PRICE_TINY_BAR_BUFFER;
             process.env.GAS_PRICE_TINY_BAR_BUFFER = '10000000000'; // 1 tinybar
         })
 
@@ -240,7 +240,7 @@ describe('Precheck', async function() {
         });
 
         it('should pass for gas price not enough but within buffer', async function() {
-            const adjustedGasPrice = parsedTxGasPrice + Number(process.env.GAS_PRICE_TINY_BAR_BUFFER);
+            const adjustedGasPrice = parsedTxGasPrice + Number(constants.GAS_PRICE_TINY_BAR_BUFFER);
             precheck.gasPrice(parsedTxWithMatchingChainId, adjustedGasPrice);
         });
     });

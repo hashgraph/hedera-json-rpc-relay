@@ -31,6 +31,7 @@ import { ethers } from 'ethers';
 import ERC20MockJson from '../../contracts/ERC20Mock.json';
 import TokenManagementJson from '../../contracts/TokenManagementContract.json';
 import { Utils } from '../../helpers/utils';
+import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 /**
  * Tests for:
@@ -141,7 +142,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
 
     before(async function () {
       //delay for hbar rate limiter to reset
-      await new Promise(r => setTimeout(r, parseInt(process.env.HBAR_RATE_LIMIT_DURATION!)));
+      await new Promise(r => setTimeout(r, relayConstants.HBAR_RATE_LIMIT_DURATION));
 
       // Create token and nft contracts
       tokenAddress = await createHTSToken();

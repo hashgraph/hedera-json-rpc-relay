@@ -129,7 +129,9 @@ export class MirrorNodeClient {
     private mirrorResponseHistogram;
 
     private readonly cache;
-    static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;    
+    static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;   
+    
+    static mirrorNodeContractResultsPageMax = parseInt(process.env.MIRROR_NODE_CONTRACT_RESULTS_PG_MAX!) || 25;
 
     protected createAxiosClient(
         baseUrl: string
@@ -143,10 +145,10 @@ export class MirrorNodeClient {
         const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '100');
         const mirrorNodeHttpSocketTimeout = parseInt(process.env.MIRROR_NODE_HTTP_SOCKET_TIMEOUT || '60000');
         const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
-        const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES!) || 3;
-        const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE!) || 5;
-        const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY!) || 250;
-        const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE!) || 200;
+        const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '3');
+        const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE || '5');
+        const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
+        const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
         const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES) : [404]; // by default we should only retry on 404 errors
 
         const axiosClient: AxiosInstance = Axios.create({
@@ -335,13 +337,13 @@ export class MirrorNodeClient {
 
         if (page === pageMax) {
             // max page reached
-            throw predefined.RANGE_TOO_LARGE(pageMax);
+            throw predefined.PAGINATION_MAX(pageMax);
         }
 
         if (result?.links?.next && page < pageMax) {
             page++;
             const next = result.links.next.replace(constants.NEXT_LINK_PREFIX, "");
-            return this.getPaginatedResults(next, pathLabel, resultProperty, requestId, results, page);
+            return this.getPaginatedResults(next, pathLabel, resultProperty, requestId, results, page, pageMax);
         }
         else {
             return results;
@@ -507,7 +509,10 @@ export class MirrorNodeClient {
             `${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT,
             'results',
-            requestId
+            requestId,
+            [],
+            1,
+            MirrorNodeClient.mirrorNodeContractResultsPageMax
         );
     }
 
@@ -738,7 +743,7 @@ export class MirrorNodeClient {
             this.setQueryParam(queryParamObject, 'limit', limitOrderParams.limit);
             this.setQueryParam(queryParamObject, 'order', limitOrderParams.order);
         } else {
-            this.setQueryParam(queryParamObject, 'limit', parseInt(process.env.MIRROR_NODE_LIMIT_PARAM!) || 100);
+            this.setQueryParam(queryParamObject, 'limit', parseInt(process.env.MIRROR_NODE_LIMIT_PARAM || '100'));
             this.setQueryParam(queryParamObject, 'order', constants.ORDER.ASC);
         }
     }

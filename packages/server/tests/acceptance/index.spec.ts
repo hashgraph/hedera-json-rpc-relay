@@ -29,6 +29,8 @@ import RelayClient from '../clients/relayClient';
 import app from '../../dist/server';
 import {app as wsApp} from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
 import {Hbar} from "@hashgraph/sdk";
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 const testLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -43,8 +45,6 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-
 const USE_LOCAL_NODE = process.env.LOCAL_NODE || 'true';
 const NETWORK = process.env.HEDERA_NETWORK || '';
 const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
@@ -53,6 +53,7 @@ const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 let startOperatorBalance: Hbar;
+global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -80,7 +81,7 @@ describe('RPC Server Acceptance Tests', function () {
             runLocalHederaNetwork();
         }
 
-        if (RELAY_URL === LOCAL_RELAY_URL) {
+        if (global.relayIsLocal) {
             runLocalRelay();
         }
 
@@ -149,11 +150,11 @@ describe('RPC Server Acceptance Tests', function () {
     function runLocalRelay() {
         // start local relay, stop relay instance in local
         shell.exec('docker stop json-rpc-relay');
-        logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
-        relayServer = app.listen({ port: process.env.SERVER_PORT });
+        logger.info(`Start relay on port ${constants}`);
+        relayServer = app.listen({ port: constants.RELAY_PORT });
 
         if (process.env.TEST_WS_SERVER === 'true') {
-            global.socketServer = wsApp.listen({ port: process.env.WEB_SOCKET_PORT || 8546 });
+            global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
         }
     }
 

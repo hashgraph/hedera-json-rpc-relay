@@ -43,6 +43,8 @@ import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
+import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
+
 const INTERNAL_ERROR = "INTERNAL ERROR";
 const INVALID_PARAMS_ERROR = "INVALID PARAMS ERROR";
 const INVALID_REQUEST = "INVALID REQUEST";
@@ -67,7 +69,7 @@ export default class KoaJsonRpc {
     this.koaApp = new Koa();
     this.requestId = '';
     this.limit = '1mb';
-    this.duration = parseInt(process.env.LIMIT_DURATION!) || 60000;
+    this.duration = process.env.LIMIT_DURATION ? parseInt(process.env.LIMIT_DURATION) : constants.DEFAULT_RATE_LIMIT.DURATION;
     this.registry = Object.create(null);
     this.registryTotal = Object.create(null);
     this.methodConfig = methodConfiguration;
