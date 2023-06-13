@@ -71,6 +71,8 @@ import HbarLimit from '../../src/lib/hbarlimiter';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
+import constants from '../../src/lib/constants';
+
 process.env.npm_package_version = "relay/0.0.1-SNAPSHOT";
 
 const logger = pino();
@@ -111,8 +113,8 @@ describe("Open RPC Specification", function () {
         mock = new MockAdapter(instance, { onNoMatch: "throwException" });
         // @ts-ignore
         mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
-        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        const duration = constants.HBAR_RATE_LIMIT_DURATION;
+        const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
 
         clientServiceInstance = new ClientService(logger, registry, hbarLimiter);

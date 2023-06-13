@@ -20,6 +20,7 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
+dotenv.config({ path: findConfig('.env') || '' });
 import { Relay, Eth, Net, Web3, Subs } from '../index';
 import { Web3Impl } from './web3';
 import { NetImpl } from './net';
@@ -43,7 +44,6 @@ export class RelayImpl implements Relay {
   private readonly subImpl?: Subs;
 
   constructor(logger: Logger, register: Registry) {
-    dotenv.config({ path: findConfig('.env') || '' });
     logger.info('Configurations successfully loaded');
 
     const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
@@ -52,8 +52,8 @@ export class RelayImpl implements Relay {
       process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
 
-    const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-    const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+    const duration = constants.HBAR_RATE_LIMIT_DURATION;
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
 
     const hapiService = new HAPIService(logger, register, hbarLimiter);
