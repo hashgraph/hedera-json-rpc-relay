@@ -222,4 +222,9 @@ export const predefined = {
     code: -32610,
     message: `Unsupported operation. ${message}`
   }),
+  'PAGINATION_MAX': (count: number) => new JsonRpcError({
+    name: 'Mirror Node pagination count range too large',
+    code: -32000,
+    message: `Exceeded maximum mirror node pagination count: ${count}`
+  }),
 };

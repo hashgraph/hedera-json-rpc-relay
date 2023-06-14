@@ -532,25 +532,28 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 });
             }
 
-            describe('DEV_MODE = true', async function () {
-                before(async () => {
-                    process.env.DEV_MODE = 'true';
-                });
-
-                after(async () => {
-                    process.env.DEV_MODE = 'false';
-                });
-
-                for (let i = 0; i < payableMethodsData.length; i++) {
-                    it(`Payable method ${payableMethodsData[i].method} throws an error`, async function () {
-                        await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [hashes[i]], {
-                            code: -32008,
-                            message: payableMethodsData[i].message,
-                            data: payableMethodsData[i].errorData
-                        }, requestId);
+            // skip this test if using a remote relay since updating the env vars would not affect it
+            if (global.relayIsLocal) {
+                describe('DEV_MODE = true', async function () {
+                    before(async () => {
+                        process.env.DEV_MODE = 'true';
                     });
-                }
-            });
+
+                    after(async () => {
+                        process.env.DEV_MODE = 'false';
+                    });
+
+                    for (let i = 0; i < payableMethodsData.length; i++) {
+                        it(`Payable method ${payableMethodsData[i].method} throws an error`, async function () {
+                            await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [hashes[i]], {
+                                code: -32008,
+                                message: payableMethodsData[i].message,
+                                data: payableMethodsData[i].errorData
+                            }, requestId);
+                        });
+                    }
+                });
+            }
         });
 
         describe('eth_call for reverted pure contract calls', async function () {

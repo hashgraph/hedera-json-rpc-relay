@@ -18,24 +18,38 @@ the [official documentation](https://k6.io/docs/getting-started/installation/) t
 The tests are organized in files matching their method.
 You can run the tests of an API as a test suite, you can also run tests one at a time.
 
-### Test Suite
 
-To run a test suite, use the following commands:
-```shell
-npm run prep-and-run
-```
+### Test Prepare
+The test suite requires a set of signed transactions to be used on the `eth_sendRawTransaction` test.
+Also needs a deployed set of smart contracts (minimum 1) to be used on the `eth_call`, `eth_getCode` test.
+Also needs a set of wallets to be used on the `eth_getBalance`, `eth_getTransactionCount`,  tests. 
+For the above reasons the `prep.js` script is provided to generate the required files for the tests to run.
+There are some environment variables that can be used to configure the test suite, see below.
 
+The script will generate the following files: `.smartContractParams.json` with the deployed smart contracts addresses and the wallets addresses and signed transactions to be used on the tests.
+
+All the smart contracts deployed by the prepare script are of the same kind (Greeter), since used randomly, need to have the same parameter on data when calling `eth_call`
+
+To generate these, you can run the following command:
 #### Only Run Prepare
 ```shell
 npm run prep
 ```
 
+### Test Suite
+
+To run a test suite, use the following commands:
 #### Only Run K6 Tests
 ```shell
 npm run k6
 ```
 
-#### Environment Variables
+To run the prepare script and the test suite, use the following command:
+```shell
+npm run prep-and-run
+```
+
+### Environment Variables
 | Parameter | Description                                                                                                                                                                                                                                                                                                                                                                      | Default Value | Required |
 |-------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|----------|
 | PRIVATE_KEY | The Private Key (ECDSA) to use when preparing the tests and signing the txs                                                                                                                                                                                                                                                                                                      |               | true     |
@@ -50,8 +64,10 @@ npm run k6
 | FILTER_TEST | Test or Tests to be run, separated by comma without blanks ie: `FILTER_TEST=eth_call`, `FILTER_TEST=eth_call,eth_chainId,eth_sendRawTransaction`                                                                                                                                                                                                                                 | *             | false |
 | DEBUG_MODE | If true, both the prep script and the k6 tests will produce useful logging to debug                                                                                                                                                                                                                                                                                              | false         | false |
 | SIGNED_TXS | Amount of signed Txs to generate by the prep script, to be used on eth_sendRawTransaction Tests                                                                                                                                                                                                                                                                                  | 10            | false |
-| TEST_TYPE | Type of test to run, either `performance` or `load`                                                                                                                                                                                                                                                                                                                             | performance   | false |
-
+| TEST_TYPE | Type of test to run, either `performance` or `load`                                                                                                                                                                                                                                                                                                                              | performance   | false |
+ | SMART_CONTRACTS_AMOUNT | Amount of smart contracts to deploy by the prep script, to be used on eth_call, eth_getCode and eth_sendRawTransaction Tests                                                                                                                                                                                                                                                     | 1             | false |
+ | WALLETS_AMOUNT | Amount of wallets to generate by the prep script, to be used on eth_getBalance and eth_getTransactionCount, eth_call and other Tests                                                                                                                                                                                                                                             | 1             | false |
+ 
 
 
 #### Full Suite Test

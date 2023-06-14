@@ -19,10 +19,11 @@
  */
 
 import { app, httpApp } from './webSocketServer';
+import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
 
 async function main() {
-  app.listen({ port: process.env.WEB_SOCKET_PORT || 8546 });
-  httpApp.listen({ port: process.env.WEB_SOCKET_HTTP_PORT || 8547 });
+  app.listen({ port: constants.WEB_SOCKET_PORT });
+  httpApp.listen({ port: constants.WEB_SOCKET_HTTP_PORT });
 }
 
 (async () => {

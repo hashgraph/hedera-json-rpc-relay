@@ -35,7 +35,9 @@ import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 const logger = pino();
 import { v4 as uuid } from 'uuid';
 import { formatRequestIdMessage } from '../../src/formatters';
+import { predefined } from '../../src';
 
+const limitOrderPostFix = '?order=desc&limit=1';
 
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
@@ -240,10 +242,9 @@ describe('MirrorNodeClient', async function () {
     }
   });
 
-  // move following methods to eth.spec.ts once it starts using mirrorNodeClient
-  it('`getAccountLatestTransactionByAddress` works', async () => {
+  it('`getAccount` works', async () => {
     const alias = 'HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA';
-    mock.onGet(`accounts/${alias}?order=desc&limit=1`).reply(200, {
+    mock.onGet(`accounts/${alias}${limitOrderPostFix}`).reply(200, {
       'transactions': [
         {
           'nonce': 3,
@@ -254,7 +255,7 @@ describe('MirrorNodeClient', async function () {
       }
     });
 
-    const result = await mirrorNodeInstance.getAccountLatestTransactionByAddress(alias);
+    const result = await mirrorNodeInstance.getAccount(alias);
     expect(result).to.exist;
     expect(result.links).to.exist;
     expect(result.links.next).to.equal(null);
@@ -361,7 +362,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getAccount`', async () => {
-    mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(200, mockData.account);
+    mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(200, mockData.account);
 
     const result = await mirrorNodeInstance.getAccount(mockData.accountEvmAddress);
     expect(result).to.exist;
@@ -370,7 +371,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`getAccount` not found', async () => {
     const evmAddress = '0x00000000000000000000000000000000000003f6';
-    mock.onGet(`accounts/${evmAddress}`).reply(404, mockData.notFound);
+    mock.onGet(`accounts/${evmAddress}${limitOrderPostFix}`).reply(404, mockData.notFound);
 
     const result = await mirrorNodeInstance.getAccount(evmAddress);
     expect(result).to.be.null;
@@ -386,7 +387,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`getTokenById` not found', async () => {
     const tokenId = '0.0.132';
-    mock.onGet(`accounts/${tokenId}`).reply(404, mockData.notFound);
+    mock.onGet(`accounts/${tokenId}${limitOrderPostFix}`).reply(404, mockData.notFound);
 
     const result = await mirrorNodeInstance.getTokenById(tokenId);
     expect(result).to.be.null;
@@ -769,7 +770,7 @@ describe('MirrorNodeClient', async function () {
     const notFoundAddress = random20BytesAddress();
     it('returns `contract` when CONTRACTS endpoint returns a result', async() => {
       mock.onGet(`contracts/${mockData.contractEvmAddress}`).reply(200, mockData.contract);
-      mock.onGet(`accounts/${mockData.contractEvmAddress}`).reply(200, mockData.account);
+      mock.onGet(`accounts/${mockData.contractEvmAddress}${limitOrderPostFix}`).reply(200, mockData.account);
       mock.onGet(`tokens/${mockData.contractEvmAddress}`).reply(404, mockData.notFound);
 
       const entityType = await mirrorNodeInstance.resolveEntityType(mockData.contractEvmAddress);
@@ -783,7 +784,7 @@ describe('MirrorNodeClient', async function () {
 
     it('returns `account` when CONTRACTS and TOKENS endpoint returns 404 and ACCOUNTS endpoint returns a result', async() => {
       mock.onGet(`contracts/${mockData.accountEvmAddress}`).reply(404, mockData.notFound);
-      mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(200, mockData.account);
+      mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(200, mockData.account);
       mock.onGet(`tokens/${mockData.tokenId}`).reply(404, mockData.notFound);
 
       const entityType = await mirrorNodeInstance.resolveEntityType(mockData.accountEvmAddress);
@@ -797,7 +798,7 @@ describe('MirrorNodeClient', async function () {
 
     it('returns `token` when CONTRACTS and ACCOUNTS endpoints returns 404 and TOKEN endpoint returns a result', async() => {
       mock.onGet(`contracts/${notFoundAddress}`).reply(404, mockData.notFound);
-      mock.onGet(`accounts/${notFoundAddress}`).reply(404, mockData.notFound);
+      mock.onGet(`accounts/${notFoundAddress}${limitOrderPostFix}`).reply(404, mockData.notFound);
       mock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
 
       const entityType = await mirrorNodeInstance.resolveEntityType(mockData.tokenLongZero);
@@ -810,7 +811,7 @@ describe('MirrorNodeClient', async function () {
 
     it('returns null when CONTRACTS and ACCOUNTS endpoints return 404', async() => {
       mock.onGet(`contracts/${notFoundAddress}`).reply(404, mockData.notFound);
-      mock.onGet(`accounts/${notFoundAddress}`).reply(404, mockData.notFound);
+      mock.onGet(`accounts/${notFoundAddress}${limitOrderPostFix}`).reply(404, mockData.notFound);
       mock.onGet(`tokens/${notFoundAddress}`).reply(404, mockData.notFound);
 
       const entityType = await mirrorNodeInstance.resolveEntityType(notFoundAddress);
@@ -1017,16 +1018,19 @@ describe('MirrorNodeClient', async function () {
 
     it('stops paginating when it reaches MAX_MIRROR_NODE_PAGINATION', async () => {
       const pages = constants.MAX_MIRROR_NODE_PAGINATION * 2;
-      const mockedResults = mockPages(pages);
+      mockPages(pages);
 
-      const results = await mirrorNodeInstance.getPaginatedResults(
+      try {
+        await mirrorNodeInstance.getPaginatedResults(
           'results?page=0',
           'results',
-          'genericResults');
-
-      expect(results).to.exist;
-      expect(results.length).to.eq(constants.MAX_MIRROR_NODE_PAGINATION);
-      expect(results).to.deep.equal(mockedResults.slice(0, constants.MAX_MIRROR_NODE_PAGINATION));
+          'genericResults');        expect.fail('should have thrown an error');
+      } catch (e) {
+        const errorRef = predefined.PAGINATION_MAX(0); // reference error for all properties except message
+        expect(e.message).to.equal(`Exceeded maximum mirror node pagination count: ${constants.MAX_MIRROR_NODE_PAGINATION}`);
+        expect(e.code).to.equal(errorRef.code);
+        expect(e.name).to.equal(errorRef.name);
+      }
     });
   });
 

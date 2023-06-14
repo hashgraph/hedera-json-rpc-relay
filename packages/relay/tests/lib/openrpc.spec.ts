@@ -29,7 +29,7 @@ import axios from 'axios';
 import sinon from 'sinon';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { RelayImpl } from '../../../../packages/relay';
+import { RelayImpl } from '../../src/lib/relay';
 import { Registry } from 'prom-client';
 
 import { EthImpl } from '../../src/lib/eth';
@@ -71,6 +71,8 @@ import HbarLimit from '../../src/lib/hbarlimiter';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
+import constants from '../../src/lib/constants';
+
 process.env.npm_package_version = "relay/0.0.1-SNAPSHOT";
 
 const logger = pino();
@@ -82,6 +84,7 @@ let mirrorNodeInstance: MirrorNodeClient;
 let clientServiceInstance: ClientService;
 let sdkClientStub: any;
 
+const limitOrderPostFix = '?order=desc&limit=1';
 
 describe("Open RPC Specification", function () {
 
@@ -110,15 +113,15 @@ describe("Open RPC Specification", function () {
         mock = new MockAdapter(instance, { onNoMatch: "throwException" });
         // @ts-ignore
         mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
-        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
+        const duration = constants.HBAR_RATE_LIMIT_DURATION;
+        const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
 
         clientServiceInstance = new ClientService(logger, registry, hbarLimiter);
         sdkClientStub = sinon.createStubInstance(SDKClient);
         sinon.stub(clientServiceInstance, "getSDKClient").returns(sdkClientStub);
         // @ts-ignore
-        ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a');
+        ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a', registry);
 
         // mocked data
         mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
@@ -139,9 +142,9 @@ describe("Open RPC Specification", function () {
         mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, defaultDetailedContractResults3);
         mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, null);
         mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, { account: contractAddress1 });
-        mock.onGet(`accounts/${contractAddress3}`).reply(200, { account: contractAddress3 });
+        mock.onGet(`accounts/${contractAddress3}${limitOrderPostFix}`).reply(200, { account: contractAddress3 });
         mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
-        mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+        mock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
             from: `${defaultEvmAddress}`
           });
         for (const log of defaultLogs.logs) {
@@ -200,7 +203,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_estimateGas"', async function () {
-        mock.onGet(`accounts/undefined`).reply(404);
+        mock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
         const response = await ethImpl.estimateGas({}, null);
 
         validateResponseSchema(methodsResponseSchema.eth_estimateGas, response);
@@ -328,7 +331,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionCount"', async function () {
-        mock.onGet(`accounts/${contractAddress1}`).reply(200, { account: contractAddress1 });
+        mock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).reply(200, { account: contractAddress1 });
         const response = await ethImpl.getTransactionCount(contractAddress1, 'latest');
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);
