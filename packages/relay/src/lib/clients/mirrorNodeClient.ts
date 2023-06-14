@@ -841,4 +841,20 @@ export class MirrorNodeClient {
     public getMirrorNodeWeb3Instance(){
         return this.web3Client;
     }
+
+    /**
+     * This method is intended to be used in cases when the default axios-retry settings do not provide
+     * enough time for the expected data to be propagated to the Mirror node.
+     * It provides a way to have an extended retry logic only in specific places
+     */
+    public async repeatedRequest(methodName: string, args: any[], repeatCount: number, requestId?: string) {
+        let result;
+        for (let i = 0; i < repeatCount; i++) {
+            result = await this[methodName](...args, requestId);
+            if (result) {
+                break;
+            }
+        }
+        return result;
+    }
 }

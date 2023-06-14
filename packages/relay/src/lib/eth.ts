@@ -1102,6 +1102,8 @@ export class EthImpl implements Eth {
     }
 
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
+    const computedHash = EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+
     try {
       const contractExecuteResponse = await this.hapiService.getSDKClient().submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
 
@@ -1109,11 +1111,7 @@ export class EthImpl implements Eth {
         // Wait for the record from the execution.
         let txId = contractExecuteResponse.transactionId.toString();
         const formattedId = formatTransactionId(txId);
-
-        // TODO Find a better way to wait for the tx to propagate to mirror node. Preferably without increasing the default retry settings
-        await this.mirrorNodeClient.getContractResult(formattedId || "", requestId);
-
-        const record = await this.mirrorNodeClient.getContractResult(formattedId || "", requestId);
+        const  record = await this.mirrorNodeClient.repeatedRequest('getContractResult', [formattedId], 3, requestId);
         if (!record) {
           this.logger.warn(`${requestIdPrefix} No record retrieved`);
           const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestId);
@@ -1143,7 +1141,7 @@ export class EthImpl implements Eth {
         this.logger.error(e,
           `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
         //Return computed hash if unable to retrieve EthereumHash from record due to error
-        return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+        return computedHash;
       }
     } catch (e: any) {
       this.logger.error(e,
