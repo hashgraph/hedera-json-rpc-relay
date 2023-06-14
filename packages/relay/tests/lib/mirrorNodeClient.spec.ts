@@ -1035,8 +1035,10 @@ describe('MirrorNodeClient', async function () {
   });
 
   describe('repeatedRequest', async() => {
+    const uri = `accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`;
+
     it('if the method returns an immediate result it is called only once', async () => {
-      mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(200, mockData.account);
+      mock.onGet(uri).reply(200, mockData.account);
 
       const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
       expect(result).to.exist;
@@ -1046,10 +1048,8 @@ describe('MirrorNodeClient', async function () {
     });
 
     it('method is repeated until a result is found', async () => {
-      const uri = `accounts/${mockData.accountEvmAddress}`;
-
       // Return data on the second call
-      mock.onGet(uri).replyOnce(404, null)
+      mock.onGet(uri).replyOnce(404, mockData.notFound)
           .onGet(uri).reply(200, mockData.account)
 
       const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
@@ -1066,12 +1066,10 @@ describe('MirrorNodeClient', async function () {
     });
 
     it('method is not repeated more times than the limit', async () => {
-      const uri = `accounts/${mockData.accountEvmAddress}`;
-
       // Return data on the fourth call
-      mock.onGet(uri).replyOnce(404, null)
-          .onGet(uri).replyOnce(404, null)
-          .onGet(uri).replyOnce(404, null)
+      mock.onGet(uri).replyOnce(404, mockData.notFound)
+          .onGet(uri).replyOnce(404, mockData.notFound)
+          .onGet(uri).replyOnce(404, mockData.notFound)
           .onGet(uri).reply(200, mockData.account)
 
       const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
