@@ -99,6 +99,7 @@ export class EthImpl implements Eth {
   private readonly ethGetBalanceCacheTtlMs = Number.parseInt(process.env.ETH_GET_BALANCE_CACHE_TTL_MS ?? constants.ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT.toString());
   private readonly maxBlockRange = Number.parseInt(process.env.MAX_BLOCK_RANGE ?? constants.MAX_BLOCK_RANGE.toString());
   private readonly contractCallGasLimit = Number.parseInt(process.env.CONTRACT_CALL_GAS_LIMIT ?? constants.CONTRACT_CALL_GAS_LIMIT.toString());
+  private readonly ethGetTransactionCountMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE ?? constants.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE.toString());
 
   /**
    * Configurable options used when initializing the cache.
@@ -946,7 +947,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByHash(hash=${hash}, showDetails=%o)`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_HASH}_${hash}`;
-    let cachedResponse = this.cache.get(cacheKey);
+    const cachedResponse = this.cache.get(cacheKey);
     if (cachedResponse) {
       this.logger.debug(`${requestIdPrefix} getBlockTransactionCountByHash returned cached response: ${cachedResponse}`);
       return cachedResponse;
@@ -973,7 +974,7 @@ export class EthImpl implements Eth {
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestId);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_NUMBER}_${blockNum}`;
-    let cachedResponse = this.cache.get(cacheKey);
+    const cachedResponse = this.cache.get(cacheKey);
     if (cachedResponse) {
       this.logger.debug(`${requestIdPrefix} getBlockTransactionCountByNumber returned cached response: ${cachedResponse}`);
       return cachedResponse;
@@ -1153,8 +1154,8 @@ export class EthImpl implements Eth {
     const to = await this.performCallChecks(call, blockParam, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
-    let gas = this.getCappedBlockGasLimit(call.gas, requestId);
-    let value: string | null = EthImpl.toNullableBigNumber(call.value);
+    const gas = this.getCappedBlockGasLimit(call.gas, requestId);
+    const value: string | null = EthImpl.toNullableBigNumber(call.value);
     
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
@@ -1618,6 +1619,11 @@ export class EthImpl implements Eth {
       // depending on stage of contract execution revert the result.to value may be null
       if (!_.isNil(result.to)) {
         if(showDetails) {
+          // check the size of the block before querying for transaction details
+          if (blockResponse.count >= this.ethGetTransactionCountMaxBlockRange) {
+            throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
+          }
+
           const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
           if (transaction !== null) {
             transactionObjects.push(transaction);
