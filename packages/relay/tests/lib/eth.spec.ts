@@ -4213,7 +4213,6 @@ describe('Eth calls using MirrorNode', async function () {
       const id = uuid();
 
       restMock.onGet('network/fees').reply(200, defaultNetworkFees);
-      // restMock.onGet(`transactions/${transactionId}`).reply(200, null);
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, id);
       expect(resultingHash).to.equal(ethereumHash);

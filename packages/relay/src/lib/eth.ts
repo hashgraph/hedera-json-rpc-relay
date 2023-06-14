@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { Hbar, EthereumTransaction } from '@hashgraph/sdk';
+import { Hbar } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import {BigNumber as BN} from "bignumber.js";
 import { Logger } from 'pino';
@@ -1119,8 +1119,8 @@ export class EthImpl implements Eth {
     let parsedTx: EthersTransaction;
     try {
       parsedTx = Precheck.parseTxIfNeeded(transaction);
-      interactingEntity = parsedTx.to ? parsedTx.to.toString() : '';
-      originatingAddress = parsedTx.from ? parsedTx.from.toString() : '';
+      interactingEntity = parsedTx.to?.toString() || '';
+      originatingAddress = parsedTx.from?.toString() || '';
       this.logger.trace(`${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
 
       const gasPrice = Number(await this.gasPrice(requestId));
@@ -1133,45 +1133,33 @@ export class EthImpl implements Eth {
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     const computedHash = EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
 
+    let txSubmitted = false;
     try {
       const contractExecuteResponse = await this.hapiService.getSDKClient().submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
-
-      try {
-        // Wait for the record from the execution.
-        let txId = contractExecuteResponse.transactionId.toString();
-        const formattedId = formatTransactionId(txId);
-        const  record = await this.mirrorNodeClient.repeatedRequest('getContractResult', [formattedId], 3, requestId);
-        if (!record) {
-          this.logger.warn(`${requestIdPrefix} No record retrieved`);
-          const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestId);
-          if (tx.transactions?.length) {
-            const result = tx.transactions[0].result;
-            if (result === 'WRONG_NONCE') {
-              const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestId)
-              throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountInfo.ethereumNonce);
-            }
+      txSubmitted = true;
+      // Wait for the record from the execution.
+      let txId = contractExecuteResponse.transactionId.toString();
+      const formattedId = formatTransactionId(txId);
+      const  record = await this.mirrorNodeClient.repeatedRequest('getContractResult', [formattedId], 3, requestId);
+      if (!record) {
+        this.logger.warn(`${requestIdPrefix} No record retrieved`);
+        const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestId);
+        if (tx.transactions?.length) {
+          const result = tx.transactions[0].result;
+          if (result === 'WRONG_NONCE') {
+            const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestId)
+            throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountInfo.ethereumNonce);
           }
-          throw predefined.INTERNAL_ERROR();
         }
-
-        if (record.hash == null) {
-          this.logger.error(`${requestIdPrefix} The ethereumHash can never be null for an ethereum transaction, and yet it was!!`);
-          throw predefined.INTERNAL_ERROR();
-        }
-
-        return record.hash;
-      } catch (e) {
-        if (e instanceof JsonRpcError) {
-          return e;
-        }
-
-        await this.mirrorNodeClient.getContractRevertReasonFromTransaction(e, requestId, requestIdPrefix);
-
-        this.logger.error(e,
-          `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
-        //Return computed hash if unable to retrieve EthereumHash from record due to error
-        return computedHash;
+        throw predefined.INTERNAL_ERROR();
       }
+
+      if (record.hash == null) {
+        this.logger.error(`${requestIdPrefix} The ethereumHash can never be null for an ethereum transaction, and yet it was!!`);
+        throw predefined.INTERNAL_ERROR();
+      }
+
+      return record.hash;
     } catch (e: any) {
       this.logger.error(e,
         `${requestIdPrefix} Failed to successfully submit sendRawTransaction for transaction ${transaction}`);
@@ -1182,7 +1170,17 @@ export class EthImpl implements Eth {
       if (e instanceof SDKClientError) {
         this.hapiService.decrementErrorCounter(e.statusCode);
       }
-      return predefined.INTERNAL_ERROR(e.message.toString());
+
+      if (!txSubmitted) {
+        return predefined.INTERNAL_ERROR(e.message.toString());
+      }
+
+      await this.mirrorNodeClient.getContractRevertReasonFromTransaction(e, requestId, requestIdPrefix);
+
+      this.logger.error(e,
+          `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
+      //Return computed hash if unable to retrieve EthereumHash from record due to error
+      return computedHash;
     }
   }
 
