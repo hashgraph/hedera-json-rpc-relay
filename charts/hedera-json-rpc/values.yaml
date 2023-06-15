@@ -15,4 +15,3 @@ relay:
 
 ws:
   enabled: false
-  
