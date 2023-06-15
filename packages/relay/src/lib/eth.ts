@@ -1620,7 +1620,7 @@ export class EthImpl implements Eth {
       if (!_.isNil(result.to)) {
         if(showDetails) {
           // check the size of the block before querying for transaction details
-          if (blockResponse.count >= this.ethGetTransactionCountMaxBlockRange) {
+          if (contractResults.length >= this.ethGetTransactionCountMaxBlockRange) {
             throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
           }
 

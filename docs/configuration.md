@@ -56,7 +56,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `ETH_CALL_DEFAULT_TO_CONSENSUS_NODE ` | "false"       | Flag to set if eth_call logic should first query the mirror node.                                                                                                             
 | `ETH_GET_LOGS_BLOCK_RANGE_LIMIT`      | "1000"        | The maximum block number range to consider during an eth_getLogs call.                                                                                  
 
-| `ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE`      | "1000"   | The maximum number of transactions to return when running eth_getBlockByHash with transaction objects set to true call.
+| `ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE`      | "100"   | The maximum number of transactions to return when running eth_getBlockByHash or eth_getBlockByNumber with transaction objects set to true call.
 |
 
 | `FEE_HISTORY_MAX_RESULTS`             | "10"          | The maximum number of results to returns as part of `eth_feeHistory`.                                                                                                                                                                                                                                  |
