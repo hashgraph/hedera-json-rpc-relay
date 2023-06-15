@@ -1955,6 +1955,16 @@ export class EthImpl implements Eth {
       throw predefined.UNKNOWN_BLOCK;
     }
 
+    // check if on latest block, if so get latest ethereumNonce from mirror node account API
+    const blockResponse = await this.mirrorNodeClient.getLatestBlock(requestId); // consider caching error responses
+    if (blockResponse == null || blockResponse.blocks.length === 0) {
+      throw predefined.UNKNOWN_BLOCK;
+    }
+
+    if (blockResponse.blocks[0].number - blockNum <= 1) {
+      return this.getAccountLatestEthereumNonce(address, requestId);
+    }
+
     const contract = await this.mirrorNodeClient.isValidContract(address, requestId);
     if (contract) {
       // historical contract nonces unsupported until HIP 729 and mirror node historical account info is implemented

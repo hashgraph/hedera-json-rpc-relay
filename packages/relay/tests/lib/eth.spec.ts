@@ -689,6 +689,8 @@ describe('Eth calls using MirrorNode', async function () {
 
 
   it('"eth_blockNumber" should return the latest block number using cache', async function () {
+    cache.clear();
+    mirrorNodeCache.clear();
     restMock.onGet('blocks?limit=1&order=desc').replyOnce(200, {
       blocks: [defaultBlock]
     });
@@ -3058,6 +3060,8 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_feeHistory with fixed fees using cache', async function () {
+      cache.clear();
+      mirrorNodeCache.clear();
       const latestBlockNumber = 20;
       const latestBlock = {...defaultBlock, number: latestBlockNumber};
       restMock.onGet('blocks?limit=1&order=desc').replyOnce(200, {blocks: [latestBlock]});
@@ -4328,6 +4332,15 @@ describe('Eth calls using MirrorNode', async function () {
     const contractResultsPath = `contracts/results/${transactionId}`;
     const earliestBlockPath = `blocks?limit=1&order=asc`;
     const blockPath = `blocks/${blockNumber}`;
+    const latestBlockPath = `blocks?limit=1&order=desc`;
+
+    this.beforeEach(() => {
+      restMock.onGet(latestBlockPath).reply(202, { blocks: [{
+          ...mockData.blocks.blocks[2],
+          number: blockNumber + 2
+        }
+      ]});
+    });
 
     it('should return 0x0 nonce for no block consideration with not found acoount', async() => {
       restMock.onGet(contractPath).reply(404, mockData.notFound);
@@ -4427,6 +4440,35 @@ describe('Eth calls using MirrorNode', async function () {
         expect(error.message).to.equal(`Unknown block`);
       }
       expect(hasError).to.be.true;
+    });
+
+    it('should throw error for account historical numerical block tag with error on latest block', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(blockPath).reply(404, mockData.notFound);
+      restMock.onGet(latestBlockPath).reply(404, mockData.notFound);
+      let hasError = false;
+      try {
+        expect(await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex)).to.throw();
+      } catch (error) {
+        hasError = true;
+        expect(error).to.exist;
+        expect(error.message).to.equal(`Unknown block`);
+      }
+      expect(hasError).to.be.true;
+    });
+
+    it('should return valid nonce for historical numerical block close to latest', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(latestBlockPath).reply(202, { blocks: [{
+          ...mockData.blocks.blocks[2],
+          number: blockNumber + 1
+        }
+      ]});
+      restMock.onGet(accountPath).reply(200, mockData.account);
+
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.numberTo0x(mockData.account.ethereum_nonce));
     });
 
     it('should return 0x0 nonce for historical numerical block with no ethereum transactions found', async() => {
