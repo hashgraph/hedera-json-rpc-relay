@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 
 describe('Test Core Hedera User Scenarios', function() {
   this.timeout(180000);
+  const retries = 2;
 
   const testTimeoutMs = 45000;
   const retries = 2;
