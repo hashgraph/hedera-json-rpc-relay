@@ -3,8 +3,8 @@
 # Declare variables to be passed into your templates.
 
 global:
-  hostname: ""
-  namespaceOverride: ""
+  hostname: ''
+  namespaceOverride: ''
 
 labels: {}
 
@@ -15,3 +15,4 @@ relay:
 
 ws:
   enabled: false
+  
