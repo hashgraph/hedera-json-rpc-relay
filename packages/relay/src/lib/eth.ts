@@ -758,7 +758,7 @@ export class EthImpl implements Eth {
 
     let blockNumber = null;
     let balanceFound = false;
-    let weibars: BigInt = BigInt(0);
+    let weibars = BigInt(0);
     const mirrorAccount = await this.mirrorNodeClient.getAccountPageLimit(account, requestId);
 
     try {
