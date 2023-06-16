@@ -1931,6 +1931,12 @@ export class EthImpl implements Eth {
       throw predefined.RESOURCE_NOT_FOUND(`Failed to retrieve contract results for transaction ${ethereumTransactions.transactions[0].transaction_id}`);
     }
 
+    if (transactionResult.address !== address) {
+      const requestIdPrefix = formatRequestIdMessage(requestId);
+      this.logger.warn(`${requestIdPrefix} eth_transactionCount from a historical block was requested where address was not sender, returning latest value as best effort.`);
+      return await this.getAccountLatestEthereumNonce(address, requestId);
+    }
+
     return EthImpl.numberTo0x(transactionResult.nonce + 1); // nonce is 0 indexed
   }
 
@@ -1961,7 +1967,7 @@ export class EthImpl implements Eth {
       throw predefined.UNKNOWN_BLOCK;
     }
 
-    if (blockResponse.blocks[0].number - blockNum <= 1) {
+    if (blockResponse.blocks[0].number - blockNum <= this.maxBlockRange) {
       return this.getAccountLatestEthereumNonce(address, requestId);
     }
 
