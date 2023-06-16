@@ -4,7 +4,6 @@ import { ethers } from 'ethers';
 
 describe('Test Core Hedera User Scenarios', function() {
   this.timeout(180000);
-  const retries = 2;
 
   const testTimeoutMs = 45000;
   const retries = 2;
@@ -32,7 +31,7 @@ describe('Test Core Hedera User Scenarios', function() {
   describe('Tests with normal account', function() {
     mandatoryTests();
 
-    it('Deploy contract', { retries: retries }, function() {
+    it('Deploy contract', function() {
 
       // deploy the contract
       cy.get('#btnDeployContract').should('not.be.disabled').click();
