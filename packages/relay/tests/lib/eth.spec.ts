@@ -4521,18 +4521,36 @@ describe('Eth calls using MirrorNode', async function () {
       expect(hasError).to.be.true;
     });
 
+    it('should return valid nonce for historical numerical block when contract result sender is not address', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(blockPath).reply(200,  mockData.blocks.blocks[2]);
+
+      const transactionPath = (addresss, num) => `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
+      restMock.onGet(transactionPath(mockData.account.evm_address, 2)).reply(200, { transactions: [{transaction_id: transactionId}, {}] });
+      restMock.onGet(contractResultsPath).reply(200, {address: mockData.contract.evm_address});
+      restMock.onGet(accountPath).reply(200, mockData.account);
+
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.numberTo0x(mockData.account.ethereum_nonce));
+    });
+
     it('should return valid nonce for historical numerical block', async() => {
       restMock.onGet(contractPath).reply(404, mockData.notFound);
       restMock.onGet(blockPath).reply(200,  mockData.blocks.blocks[2]);
 
       const transactionPath = (addresss, num) => `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
       restMock.onGet(transactionPath(mockData.account.evm_address, 2)).reply(200, { transactions: [{transaction_id: transactionId}, {}] });
-      const mirrorNonce = 9;
-      restMock.onGet(contractResultsPath).reply(200, {nonce: mirrorNonce});
+      restMock.onGet(contractResultsPath).reply(200, {address: mockData.account.evm_address, nonce: mockData.account.ethereum_nonce - 1});
+      restMock.onGet(latestBlockPath).reply(202, { blocks: [{
+          ...mockData.blocks.blocks[2],
+          number: blockNumber + constants.MAX_BLOCK_RANGE + 1 // ensure latest block is out of range
+        }
+      ]});
 
       const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex);
       expect(nonce).to.exist;
-      expect(nonce).to.equal(EthImpl.numberTo0x(mirrorNonce + 1));
+      expect(nonce).to.equal(EthImpl.numberTo0x(mockData.account.ethereum_nonce));
     });
 
     it('should throw for -1 invalid block tag', async() => {

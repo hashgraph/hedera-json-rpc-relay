@@ -1933,7 +1933,7 @@ export class EthImpl implements Eth {
 
     if (transactionResult.address !== address) {
       const requestIdPrefix = formatRequestIdMessage(requestId);
-      this.logger.warn(`${requestIdPrefix} eth_transactionCount from a historical block was requested where address was not sender, returning latest value as best effort.`);
+      this.logger.warn(`${requestIdPrefix} eth_transactionCount for a historical block was requested where address: ${address} was not sender: ${transactionResult.address}, returning latest value as best effort.`);
       return await this.getAccountLatestEthereumNonce(address, requestId);
     }
 
