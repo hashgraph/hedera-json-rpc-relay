@@ -14,4 +14,4 @@ relay:
   enabled: true
 
 ws:
-  enabled: true
+  enabled: false
