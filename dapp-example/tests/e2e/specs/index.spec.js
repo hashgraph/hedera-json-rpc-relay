@@ -4,12 +4,19 @@ import { ethers } from 'ethers';
 
 describe('Test Core Hedera User Scenarios', function() {
   this.timeout(180000);
-
   const testTimeoutMs = 45000;
   const retries = 2;
   const hollowAccount1 = ethers.Wallet.createRandom();
   const hollowAccount2 = ethers.Wallet.createRandom();
 
+<<<<<<< HEAD
+  const testTimeoutMs = 45000;
+  const retries = 2;
+  const hollowAccount1 = ethers.Wallet.createRandom();
+  const hollowAccount2 = ethers.Wallet.createRandom();
+
+=======
+>>>>>>> 0ee1cb00 (Simiplify dapps tests)
   before(() => {
     cy.visit('http://localhost:3000');
     cy.contains('Connect Account').click();
@@ -31,7 +38,7 @@ describe('Test Core Hedera User Scenarios', function() {
   describe('Tests with normal account', function() {
     mandatoryTests();
 
-    it('Deploy contract', function() {
+    it('Deploy contract', { retries: retries }, function() {
 
       // deploy the contract
       cy.get('#btnDeployContract').should('not.be.disabled').click();
