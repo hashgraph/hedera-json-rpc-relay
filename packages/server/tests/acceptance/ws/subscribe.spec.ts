@@ -456,9 +456,9 @@ describe('@web-socket Acceptance Tests', async function() {
             // Return ENV variables to their original value
             process.env.WS_CONNECTION_LIMIT = originalWsMaxConnectionLimit;
 
-            providers.forEach(async (provider: ethers.providers.WebSocketProvider) => {
-                provider.destroy();
-            });
+            for (const provider of providers) {
+                await provider.destroy();
+            }
 
             await new Promise(resolve => setTimeout(resolve, 1000));
 

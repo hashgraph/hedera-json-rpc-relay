@@ -4291,7 +4291,6 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('eth_getStorageAt should return EthImpl.zeroHex32Byte when slot wrong', async function () {
       const wrongSlot = "0x0000000000000000000000000000000000000000000000000000000000001101";
-      defaultDetailedContractResultsNullStateChange;
       restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
       restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
       restMock.onGet(`contracts/${contractAddress1}/state?timestamp=${defaultBlock.timestamp.to}&slot=${wrongSlot}&limit=100&order=desc`).reply(200, defaultContractStateEmptyArray);
@@ -4302,7 +4301,6 @@ describe('Eth calls using MirrorNode', async function () {
 
     
     it('eth_getStorageAt should return old state when passing older block number', async function () {
-      defaultDetailedContractResultsNullStateChange;
       restMock.onGet(`blocks/${blockNumber}`).reply(200, olderBlock);
       restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
       restMock.onGet(`contracts/${contractAddress1}/state?timestamp=${olderBlock.timestamp.to}&slot=${defaultOlderContractState.state[0].slot}&limit=100&order=desc`).reply(200, defaultOlderContractState);
