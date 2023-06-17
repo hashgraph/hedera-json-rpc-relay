@@ -55,7 +55,6 @@ jobs:
         if: always()
         uses: jwalton/gh-docker-logs@v2
         with:
-          images: 'hedera-json-rpc-relay'
           dest: './logs'
 
       - name: Tar logs
