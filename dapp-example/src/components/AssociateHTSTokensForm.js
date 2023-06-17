@@ -12,7 +12,7 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
     // clear state vars on a chain or address have changed
     useEffect(() => {
         setIsLoading(false);
-        setHtsTokenAddress(bootstrapInfo.HTS_SECOND_ADDRESS);
+        setHtsTokenAddress('');
         setHtsTokenAssocaiteMsg(null);
     }, [chain, address])
 
@@ -41,7 +41,7 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
             <Typography variant="h5" sx={{ textDecoration: 'underline' }}> Associate HTS Tokens </Typography>
             <br />
             <TextField
-                id="htsTokenAddressField"
+                id="htsTokenAssociateAddressField"
                 fullWidth
                 label="Token address"
                 sx={{ m: 1 }}
