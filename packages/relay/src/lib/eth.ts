@@ -1914,7 +1914,7 @@ export class EthImpl implements Eth {
     }  
 
     // get the latest 2 ethereum transactions for the account
-    let ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestamp(address, block.timestamp.to, 2, requestId);
+    const ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestamp(address, block.timestamp.to, 2, requestId);
     if (ethereumTransactions == null || ethereumTransactions.transactions.length === 0) {
       return EthImpl.zeroHex;
     }
