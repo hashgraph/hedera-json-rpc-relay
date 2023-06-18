@@ -26,7 +26,7 @@ import { Registry } from 'prom-client';
 import sinon from 'sinon';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '../../src/lib/relay';
-import { predefined } from '../../src/lib/errors/JsonRpcError';
+import { JsonRpcError, predefined } from '../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import {
@@ -88,7 +88,6 @@ let restMock: MockAdapter, web3Mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
 let sdkClientStub;
-let clientServiceStub;
 let cache;
 let mirrorNodeCache;
 
@@ -96,6 +95,7 @@ describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
 
   let ethImpl: EthImpl;
+  let ethImplLowTransactionCount: EthImpl;
   const ethFeeHistoryValue = process.env.ETH_FEE_HISTORY_FIXED || 'true';
 
   this.beforeAll(() => {
@@ -510,12 +510,6 @@ describe('Eth calls using MirrorNode', async function () {
     }
   };
 
-  const defaultDetailedContractResultsEmptyArrayStateChange = {
-    ...defaultDetailedContractResults, ...{
-      'state_changes' : []
-    }
-  };
-
   const defaultContractStateEmptyArray = {
     "state": [],
     "links": {
@@ -524,7 +518,6 @@ describe('Eth calls using MirrorNode', async function () {
   };
 
   const detailedContractResultNotFound = { "_status": { "messages": [{ "message": "No correlating transaction" }] } };
-  const timeoutError = { "type": "Error", "message": "timeout of 10000ms exceeded" };
 
   const defaultDetailedContractResultsWithNullNullableValues = {
     ...defaultDetailedContractResults,
@@ -1563,6 +1556,58 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.equal(null);
+  });
+
+  describe('Block transaction count', async function () { 
+    let currentMaxBlockRange: number;
+
+    this.afterEach(() => {
+      process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
+    });
+  
+    this.beforeEach(() => {
+      currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
+      process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
+      ethImplLowTransactionCount = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cache);
+    });
+
+    it('eth_getBlockByHash with greater number of transactions than the ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', async function () {
+      // mirror node request mocks
+      restMock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
+      restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResults);
+      restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
+      restMock.onGet('network/fees').reply(200, defaultNetworkFees);
+  
+      try{
+        await ethImplLowTransactionCount.getBlockByHash(blockHash, true);
+      } catch(e) {
+        expect(e).to.be.an.instanceof(JsonRpcError);
+        expect(e.code).to.equal(-32000);
+        expect(e.message).to.equal(`Exceeded max transactions that can be returned in a block: 77`);
+        expect(e.name).to.equal('Block size too large');
+      }
+    });   
+      
+    it('eth_getBlockByNumber with greater number of transactions than the ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', async function () {
+      // mirror node request mocks
+      restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
+      restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResults);
+      restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
+      restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
+      restMock.onGet('network/fees').reply(200, defaultNetworkFees);
+      
+      try{
+        await ethImplLowTransactionCount.getBlockByNumber(EthImpl.numberTo0x(blockNumber), true);
+      } catch(e) {
+        expect(e).to.be.an.instanceof(JsonRpcError);
+        expect(e.code).to.equal(-32000);
+        expect(e.message).to.equal(`Exceeded max transactions that can be returned in a block: 77`);
+        expect(e.name).to.equal('Block size too large');
+      }
+    });    
+
   });
 
   describe('eth_getBalance', async function() {

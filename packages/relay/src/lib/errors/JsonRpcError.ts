@@ -227,4 +227,9 @@ export const predefined = {
     code: -32000,
     message: `Exceeded maximum mirror node pagination count: ${count}`
   }),
+  'MAX_BLOCK_SIZE': (count: number) => new JsonRpcError({
+    name: 'Block size too large',
+    code: -32000,
+    message: `Exceeded max transactions that can be returned in a block: ${count}`
+  }),
 };
