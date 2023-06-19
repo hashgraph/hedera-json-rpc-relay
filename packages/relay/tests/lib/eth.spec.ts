@@ -41,8 +41,8 @@ import {
   ethCallFailing,
   validateHash,
   assertTransactionReceipt,
-  assertTransaction
- } from '../helpers';
+  assertTransaction, ethGetLogsFailing
+} from '../helpers';
 
 import pino from 'pino';
 import { Block, Transaction } from '../../src/lib/model';
@@ -816,7 +816,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -844,7 +844,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -885,7 +885,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -915,7 +915,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), true);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -949,7 +949,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), true);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -976,7 +976,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), true);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -1017,7 +1017,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByNumber('latest', false);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // check that we only made the expected number of requests with the expected urls
     expect(restMock.history.get.length).equal(3);
@@ -1040,7 +1040,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByNumber('latest', false);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     expect(result.number).equal(blockNumberHex);
   });
@@ -1055,7 +1055,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByNumber('pending', false);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     expect(result.number).equal(blockNumberHex);
   });
@@ -1070,7 +1070,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByNumber('earliest', false);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     expect(result.number).equal(blockNumberHex);
   });
@@ -1090,7 +1090,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByNumber('0xdeadc0de', false);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     expect(result.number).equal(blockNumberHex);
   });
@@ -1105,7 +1105,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByHash(blockHash, false);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -1133,7 +1133,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByHash(blockHash, false);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -1159,7 +1159,7 @@ describe('Eth calls using MirrorNode', async function () {
     for (let i = 0; i < 3; i++) {
       const result = await ethImpl.getBlockByHash(blockHash, false);
       expect(result).to.exist;
-      if (result == null) return;
+      expect(result).to.not.be.null;
       expect(result.hash).equal(blockHashTrimmed);
       expect(result.number).equal(blockNumberHex);
       verifyBlockConstants(result);
@@ -1176,7 +1176,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -1204,7 +1204,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -1229,7 +1229,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.hash).equal(blockHashTrimmed);
@@ -1385,7 +1385,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.blockHash).equal(blockHashTrimmed);
@@ -1401,7 +1401,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.value).equal("0x0");
@@ -1452,7 +1452,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('latest', EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.blockHash).equal(blockHashTrimmed);
@@ -1469,7 +1469,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('pending', EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.blockHash).equal(blockHashTrimmed);
@@ -1485,7 +1485,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('earliest', EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.blockHash).equal(blockHashTrimmed);
@@ -1502,7 +1502,7 @@ describe('Eth calls using MirrorNode', async function () {
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('0xdeadc0de' +
       '', EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.blockHash).equal(blockHashTrimmed);
@@ -1517,7 +1517,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
     const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
-    if (result == null) return;
+    expect(result).to.not.be.null;
 
     // verify aggregated info
     expect(result.blockHash).equal(blockHashTrimmed);
@@ -2325,26 +2325,28 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`blocks/${blockHash}`).timeout();
       restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogs);
 
-      try {
-        await ethImpl.getLogs(blockHash, null, null, null, null);
-        expect(true).to.eq(false);
-      } catch (error: any) {
-        expect(error.statusCode).to.equal(504);
-        expect(error.message).to.eq("timeout of 10000ms exceeded");
-      }
+      await ethGetLogsFailing(
+          ethImpl,
+        [blockHash, null, null, null, null],
+        (error) => {
+          expect(error.statusCode).to.equal(504);
+          expect(error.message).to.eq("timeout of 10000ms exceeded");
+        }
+      );
     });
 
     it('address filter timeouts and throws the expected error', async function () {
       restMock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
       restMock.onGet(`contracts/${contractAddress1}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).timeout();
 
-      try {
-        await ethImpl.getLogs(null, null, null, contractAddress1, null);
-        expect(true).to.eq(false);
-      } catch (error: any) {
-        expect(error.statusCode).to.equal(504);
-        expect(error.message).to.eq("timeout of 10000ms exceeded");
-      }
+      await ethGetLogsFailing(
+          ethImpl,
+          [null, null, null, contractAddress1, null],
+          (error) => {
+            expect(error.statusCode).to.equal(504);
+            expect(error.message).to.eq("timeout of 10000ms exceeded");
+          }
+      );
     });
 
     it('error when retrieving logs', async function () {
@@ -2613,16 +2615,15 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [latestBlock]});
       restMock.onGet('blocks/5').reply(200, {blocks: [defaultBlock]});
 
-      let hasError = false;
-      try {
-        await ethImpl.getLogs(null, null, '0x5', null, null);
-      } catch (e: any) {
-        hasError = true;
-        expect(e.code).to.equal(-32011);
-        expect(e.name).to.equal('Missing fromBlock parameter');
-        expect(e.message).to.equal('Provided toBlock parameter without specifying fromBlock');
-      }
-      expect(hasError).to.be.true;
+      await ethGetLogsFailing(
+          ethImpl,
+          [null, null, '0x5', null, null],
+          (error) => {
+            expect(error.code).to.equal(-32011);
+            expect(error.name).to.equal('Missing fromBlock parameter');
+            expect(error.message).to.equal('Provided toBlock parameter without specifying fromBlock');
+          }
+      );
     });
 
     it('with block tag', async function () {
@@ -2661,11 +2662,13 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet('blocks/1').reply(200, fromBlock);
       restMock.onGet('blocks/1003').reply(200, toBlock);
 
-      try {
-        await ethImpl.getLogs(null, '0x1', '0x3eb', null, null);
-      } catch (error: any) {
-        expect(error.message).to.equal('Exceeded maximum block range: 1000');
-      }
+      await ethGetLogsFailing(
+          ethImpl,
+          [null, '0x1', '0x3eb', null, null],
+          (error) => {
+            expect(error.message).to.equal('Exceeded maximum block range: 1000');
+          }
+      );
     });
 
     it('with topics filter', async function () {
@@ -4189,7 +4192,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const result = await ethImpl.getStorageAt(contractAddress1, '0x101', EthImpl.numberTo0x(blockNumber));
       expect(result).to.exist;
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
@@ -4204,7 +4207,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const result = await ethImpl.getStorageAt(contractAddress1, '0x0000101', EthImpl.numberTo0x(blockNumber));
       expect(result).to.exist;
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
@@ -4219,7 +4222,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot, EthImpl.numberTo0x(blockNumber));
       expect(result).to.exist;
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
@@ -4232,7 +4235,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const result = await ethImpl.getStorageAt(contractAddress1, defaultCurrentContractState.state[0].slot, "latest");
       expect(result).to.exist;
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       // verify slot value
       expect(result).equal(defaultCurrentContractState.state[0].value);
@@ -4246,7 +4249,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const result = await ethImpl.getStorageAt(contractAddress1, defaultDetailedContractResults.state_changes[0].slot);
       expect(result).to.exist;
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       // verify slot value
       expect(result).equal(defaultCurrentContractState.state[0].value);
@@ -4729,28 +4732,11 @@ describe('Eth', async function () {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
-      if (result == null) return;
-
-      expect(result).to.exist;
-      expect(result.accessList).to.eq(defaultTransaction.accessList);
-      expect(result.blockHash).to.eq(defaultTransaction.blockHash);
-      expect(result.blockNumber).to.eq(defaultTransaction.blockNumber);
-      expect(result.chainId).to.eq(defaultTransaction.chainId);
-      expect(result.from).to.eq(defaultTransaction.from);
-      expect(result.gas).to.eq(defaultTransaction.gas);
-      expect(result.gasPrice).to.eq(defaultTransaction.gasPrice);
-      expect(result.hash).to.eq(defaultTransaction.hash);
-      expect(result.input).to.eq(defaultTransaction.input);
-      expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
-      expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
-      expect(result.nonce).to.eq(EthImpl.numberTo0x(defaultTransaction.nonce));
-      expect(result.r).to.be.null;
-      expect(result.s).to.be.null;
-      expect(result.to).to.eq(defaultTransaction.to);
-      expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
-      expect(result.type).to.eq(EthImpl.numberTo0x(defaultTransaction.type));
-      expect(result.v).to.eq(EthImpl.numberTo0x(defaultTransaction.v));
-      expect(result.value).to.eq(defaultTransaction.value);
+      assertTransaction(result, {
+        ...defaultTransaction,
+        r: null,
+        s: null
+      })
     });
 
     it('handles transactions with null gas_used', async function () {
@@ -4768,7 +4754,7 @@ describe('Eth', async function () {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       expect(result).to.exist;
       expect(result.gas).to.eq('0x0');
@@ -4789,7 +4775,7 @@ describe('Eth', async function () {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       expect(result).to.exist;
       expect(result.value).to.eq('0x0');
@@ -4810,7 +4796,7 @@ describe('Eth', async function () {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       expect(result).to.exist;
       expect(result.v).to.eq('0x0');
@@ -4830,7 +4816,7 @@ describe('Eth', async function () {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       expect(result).to.exist;
       expect(result.transactionIndex).to.be.null;
@@ -4850,7 +4836,7 @@ describe('Eth', async function () {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       expect(result).to.exist;
       expect(result.blockNumber).to.be.null;
@@ -4871,7 +4857,7 @@ describe('Eth', async function () {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
-      if (result == null) return;
+      expect(result).to.not.be.null;
 
       expect(result).to.exist;
       expect(result.blockNumber).to.be.null;
@@ -4885,29 +4871,7 @@ describe('Eth', async function () {
       });
 
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
-
-      expect(result).to.exist;
-      if (result == null) return;
-
-      expect(result.accessList).to.eq(defaultTransaction.accessList);
-      expect(result.blockHash).to.eq(defaultTransaction.blockHash);
-      expect(result.blockNumber).to.eq(defaultTransaction.blockNumber);
-      expect(result.chainId).to.eq(defaultTransaction.chainId);
-      expect(result.from).to.eq(defaultTransaction.from);
-      expect(result.gas).to.eq(defaultTransaction.gas);
-      expect(result.gasPrice).to.eq(defaultTransaction.gasPrice);
-      expect(result.hash).to.eq(defaultTransaction.hash);
-      expect(result.input).to.eq(defaultTransaction.input);
-      expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
-      expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
-      expect(result.nonce).to.eq(EthImpl.numberTo0x(defaultTransaction.nonce));
-      expect(result.r).to.eq(defaultTransaction.r);
-      expect(result.s).to.eq(defaultTransaction.s);
-      expect(result.to).to.eq(defaultTransaction.to);
-      expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
-      expect(result.type).to.eq(EthImpl.numberTo0x(defaultTransaction.type));
-      expect(result.v).to.eq(EthImpl.numberTo0x(defaultTransaction.v));
-      expect(result.value).to.eq(defaultTransaction.value);
+      assertTransaction(result, defaultTransaction);
     });
 
     it('throws error for reverted transactions when DEV_MODE=true', async function () {

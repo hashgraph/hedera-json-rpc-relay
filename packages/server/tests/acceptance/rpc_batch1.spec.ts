@@ -33,7 +33,7 @@ import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
-import Address from '../../tests/helpers/constants';
+const Address = RelayCalls;
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds

@@ -59,12 +59,24 @@ export const ethCallFailing = async (ethImpl, args, block, assertFunc) => {
     expect(hasError).to.eq(true);
 }
 
+export const ethGetLogsFailing = async (ethImpl, args, assertFunc) => {
+    let hasError = false;
+    try {
+        await ethImpl.getLogs(...args);
+        expect(true).to.eq(false);
+    } catch (error: any) {
+        hasError = true;
+        assertFunc(error);
+    }
+    expect(hasError).to.eq(true);
+}
+
 export const validateHash = (hash: string, len?: number) => {
     let regex;
     if (len && len > 0) {
         regex = new RegExp(`^0x[a-f0-9]{${len}}$`);
     } else {
-        regex = new RegExp(`^0x[a-f0-9]*$`);
+        regex = /^0x[a-f0-9]*$/;
     }
 
     return !!regex.exec(hash);
