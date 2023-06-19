@@ -37,7 +37,11 @@ import {
   defaultErrorMessage,
   buildCryptoTransferTransaction,
   mockData,
-  signTransaction
+  signTransaction,
+  ethCallFailing,
+  validateHash,
+  assertTransactionReceipt,
+  assertTransaction
  } from '../helpers';
 
 import pino from 'pino';
@@ -56,17 +60,6 @@ const LRU = require('lru-cache');
 const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
-
-const validateHash = (hash: string, len?: number) => {
-  let regex;
-  if (len && len > 0) {
-    regex = /^0x[a-f0-9]{${len}}$/;
-  } else {
-    regex = /^0x[a-f0-9]*$/;
-  }
-
-  return !!regex.exec(regex);
-};
 
 const verifyBlockConstants = (block: Block) => {
   expect(block.gasLimit).equal(EthImpl.numberTo0x(15000000));
@@ -92,6 +85,40 @@ let sdkClientStub;
 let clientServiceStub;
 let cache;
 let mirrorNodeCache;
+let defaultLogs, defaultDetailedContractResults, defaultDetailedContractResults2, defaultDetailedContractResults3;
+
+
+const expectLogData = (res, log, tx) => {
+  expect(res.address).to.eq(log.address);
+  expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
+  expect(res.blockHash.length).to.eq(66);
+  expect(res.blockNumber).to.eq(EthImpl.numberTo0x(tx.block_number));
+  expect(res.data).to.eq(log.data);
+  expect(res.logIndex).to.eq(EthImpl.numberTo0x(log.index));
+  expect(res.removed).to.eq(false);
+  expect(res.topics).to.exist;
+  expect(res.topics).to.deep.eq(log.topics);
+  expect(res.transactionHash).to.eq(tx.hash);
+  expect(res.transactionHash.length).to.eq(66);
+  expect(res.transactionIndex).to.eq(EthImpl.numberTo0x(tx.transaction_index));
+};
+
+const expectLogData1 = (res) => {
+  expectLogData(res, defaultLogs.logs[0], defaultDetailedContractResults);
+};
+
+const expectLogData2 = (res) => {
+  expectLogData(res, defaultLogs.logs[1], defaultDetailedContractResults);
+};
+
+const expectLogData3 = (res) => {
+  expectLogData(res, defaultLogs.logs[2], defaultDetailedContractResults2);
+};
+
+const expectLogData4 = (res) => {
+  expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3);
+};
+
 
 describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
@@ -414,11 +441,11 @@ describe('Eth calls using MirrorNode', async function () {
   ];
 
   const defaultLogsList = defaultLogs1.concat(defaultLogs2).concat(defaultLogs3);
-  const defaultLogs = {
+  defaultLogs = {
     "logs": defaultLogsList
   };
 
-  const defaultDetailedContractResults = {
+  defaultDetailedContractResults = {
     'access_list': '0x',
     'amount': 2000000000,
     'block_gas_used': 50000000,
@@ -484,7 +511,7 @@ describe('Eth calls using MirrorNode', async function () {
     ]
   };
 
-  const defaultDetailedContractResults2 = {
+  defaultDetailedContractResults2 = {
     ...defaultDetailedContractResults, ...{
       'timestamp': contractTimestamp2,
       'block_hash': blockHash2,
@@ -494,7 +521,7 @@ describe('Eth calls using MirrorNode', async function () {
     }
   };
 
-  const defaultDetailedContractResults3 = {
+  defaultDetailedContractResults3 = {
     ...defaultDetailedContractResults, ...{
       'timestamp': contractTimestamp3,
       'block_hash': blockHash3,
@@ -2290,37 +2317,6 @@ describe('Eth calls using MirrorNode', async function () {
       },
     };
 
-    const expectLogData = (res, log, tx) => {
-      expect(res.address).to.eq(log.address);
-      expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
-      expect(res.blockHash.length).to.eq(66);
-      expect(res.blockNumber).to.eq(EthImpl.numberTo0x(tx.block_number));
-      expect(res.data).to.eq(log.data);
-      expect(res.logIndex).to.eq(EthImpl.numberTo0x(log.index));
-      expect(res.removed).to.eq(false);
-      expect(res.topics).to.exist;
-      expect(res.topics).to.deep.eq(log.topics);
-      expect(res.transactionHash).to.eq(tx.hash);
-      expect(res.transactionHash.length).to.eq(66);
-      expect(res.transactionIndex).to.eq(EthImpl.numberTo0x(tx.transaction_index));
-    };
-
-    const expectLogData1 = (res) => {
-      expectLogData(res, defaultLogs.logs[0], defaultDetailedContractResults);
-    };
-
-    const expectLogData2 = (res) => {
-      expectLogData(res, defaultLogs.logs[1], defaultDetailedContractResults);
-    };
-
-    const expectLogData3 = (res) => {
-      expectLogData(res, defaultLogs.logs[2], defaultDetailedContractResults2);
-    };
-
-    const expectLogData4 = (res) => {
-      expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3);
-    };
-
     it('blockHash filter timeouts and throws the expected error', async function () {
       const filteredLogs = {
         logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
@@ -3339,28 +3335,24 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_call with missing `to` field', async function() {
-      try {
-        await ethImpl.call({
-          "from": contractAddress1,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, 'latest');
-      } catch (error: any) {
+      await ethCallFailing(ethImpl, {
+        "from": contractAddress1,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest', (error) => {
         expect(error.message).to.equal(`Invalid Contract Address: ${undefined}.`);
-      }
+      })
     });
 
     it('eth_call with incorrect `to` field length', async function() {
-      try {
-        await ethImpl.call({
-          "from": contractAddress1,
-          "to": EthImpl.zeroHex,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, 'latest');
-      } catch (error: any) {
+      await ethCallFailing(ethImpl, {
+        "from": contractAddress1,
+        "to": EthImpl.zeroHex,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest', (error) => {
         expect(error.message).to.equal(`Invalid Contract Address: ${EthImpl.zeroHex}. Expected length of 42 chars but was 3.`);
-      }
+      })
     });
 
     it('eth_call with non account from field', async function () {
@@ -3368,19 +3360,15 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).reply(404);
       restMock.onGet(`contracts/${contractAddress1}`).reply(200);
 
-      let  error;
-      try {
-        await ethImpl.call({
-          "from": contractAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, 'latest');
-      }  catch (e) {
-        error = e;
-      }
-      expect(error).to.be.not.null;
-      expect(error.message).to.equal(`Non Existing Account Address: ${contractAddress1}. Expected an Account Address.`);
+      await ethCallFailing(ethImpl, {
+        "from": contractAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest', (error) => {
+        expect(error).to.be.not.null;
+        expect(error.message).to.equal(`Non Existing Account Address: ${contractAddress1}. Expected an Account Address.`);
+      })
     });
 
     it('should execute "eth_call" against mirror node with a false ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
@@ -3441,16 +3429,15 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
       const excessiveGasLimit = '15000001';
-      try {
-        await ethImpl.call({
-          "from": accountAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": excessiveGasLimit
-        }, 'latest');
-      } catch (error) {
+      await ethCallFailing(ethImpl, {
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": excessiveGasLimit
+      }, 'latest', (error) => {
+        expect(error).to.be.not.null;
         expect(error.code).to.equal(predefined.GAS_LIMIT_TOO_HIGH(excessiveGasLimit, constants.BLOCK_GAS_LIMIT).code);
-      }
+      })
     });
 
     it('block 0', async function () {
@@ -3462,19 +3449,17 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
       const block = '0';
-      try {
-        await ethImpl.call({
-          "from": accountAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, block);
-      } catch (error) {
+      await ethCallFailing(ethImpl, {
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, block, (error) => {
         const predefineError = predefined.UNSUPPORTED_HISTORICAL_EXECUTION(block);
         expect(error.code).to.equal(predefineError.code);
         expect(error.name).to.equal(predefineError.name);
         expect(error.message).to.equal(predefineError.message);
-      }
+      })
     });
 
     it('block 1', async function () {
@@ -3486,19 +3471,17 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
       const block = '1';
-      try {
-        await ethImpl.call({
-          "from": accountAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, block);
-      } catch (error) {
+      await ethCallFailing(ethImpl, {
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, block, (error) => {
         const predefineError = predefined.UNSUPPORTED_HISTORICAL_EXECUTION(block);
         expect(error.code).to.equal(predefineError.code);
         expect(error.name).to.equal(predefineError.name);
         expect(error.message).to.equal(predefineError.message);
-      }
+      })
     });
 
     it('block earliest', async function () {
@@ -3510,19 +3493,17 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
       const block = 'earliest';
-      try {
-        await ethImpl.call({
-          "from": accountAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, block);
-      } catch (error) {
+      await ethCallFailing(ethImpl, {
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, block, (error) => {
         const predefineError = predefined.UNSUPPORTED_HISTORICAL_EXECUTION(block);
         expect(error.code).to.equal(predefineError.code);
         expect(error.name).to.equal(predefineError.name);
         expect(error.message).to.equal(predefineError.message);
-      }
+      })
     });
 
     it('block hash not supported', async function () {
@@ -3534,19 +3515,17 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
       restMock.onGet(`blocks?limit=1&order=desc`).reply(202);
 
-      try {
-        await ethImpl.call({
-          "from": accountAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, blockHashTrimmed);
-      } catch (error) {
+      await ethCallFailing(ethImpl, {
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, blockHashTrimmed, (error) => {
         const predefineError = predefined.UNSUPPORTED_OPERATION(`BlockParam: ${blockHashTrimmed} is not a supported eth_call block identifier`);
         expect(error.code).to.equal(predefineError.code);
         expect(error.name).to.equal(predefineError.name);
         expect(error.message).to.equal(predefineError.message);
-      }
+      })
     });
 
     it('latest block but not found for comparison', async function () {
@@ -3559,19 +3538,17 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`blocks?limit=1&order=desc`).reply(404);
 
       const block = '0x10';
-      try {
-        await ethImpl.call({
-          "from": accountAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, block);
-      } catch (error) {
+      await ethCallFailing(ethImpl, {
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, block, (error) => {
         const predefineError = predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
         expect(error.code).to.equal(predefineError.code);
         expect(error.name).to.equal(predefineError.name);
         expect(error.message).to.equal(predefineError.message);
-      }
+      })
     });
 
     it('to field is not a contract or token', async function () {
@@ -3582,19 +3559,18 @@ describe('Eth calls using MirrorNode', async function () {
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(404);
       restMock.onGet(`tokens/${contractId2}`).reply(404);
-      try {
-        await ethImpl.call({
-          "from": accountAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, 'latest');
-      } catch (error) {
+
+      await ethCallFailing(ethImpl, {
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest', (error) => {
         const predefineError = predefined.NON_EXISTING_CONTRACT(contractAddress2);
         expect(error.code).to.equal(predefineError.code);
         expect(error.name).to.equal(predefineError.name);
         expect(error.message).to.equal(predefineError.message);
-      }
+      })
     });
   });
 
@@ -4567,38 +4543,7 @@ describe('Eth', async function () {
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
       // Assert the data format
-      expect(receipt).to.exist;
-      if (receipt == null) return;
-
-      expect(validateHash(receipt.transactionHash, 64)).to.eq(true);
-      expect(validateHash(receipt.blockHash, 64)).to.eq(true);
-      expect(validateHash(receipt.from, 40)).to.eq(true);
-      if (receipt.contractAddress) {
-        expect(validateHash(receipt.contractAddress, 40)).to.eq(true);
-      }
-      if (receipt.to) {
-        expect(validateHash(receipt.to, 40)).to.eq(true);
-      }
-      expect(validateHash(receipt.logsBloom, 512)).to.eq(true);
-      if (receipt.root) {
-        expect(validateHash(receipt.root, 64)).to.eq(true);
-      }
-
-      expect(receipt.transactionHash).to.exist;
-      expect(receipt.transactionHash).to.eq(defaultReceipt.transactionHash);
-      expect(receipt.transactionIndex).to.exist;
-      expect(receipt.blockHash).to.eq(defaultReceipt.blockHash);
-      expect(receipt.blockNumber).to.eq(defaultReceipt.blockNumber);
-      expect(receipt.from).to.eq(defaultReceipt.from);
-      expect(receipt.to).to.eq(defaultReceipt.to);
-      expect(receipt.cumulativeGasUsed).to.eq(defaultReceipt.cumulativeGasUsed);
-      expect(receipt.gasUsed).to.eq(defaultReceipt.gasUsed);
-      expect(receipt.contractAddress).to.eq(defaultReceipt.contractAddress);
-      expect(receipt.logs).to.deep.eq(defaultReceipt.logs);
-      expect(receipt.logsBloom).to.eq(defaultReceipt.logsBloom);
-      expect(receipt.root).to.eq(defaultReceipt.root);
-      expect(receipt.status).to.eq(defaultReceipt.status);
-      expect(receipt.effectiveGasPrice).to.eq(defaultReceipt.effectiveGasPrice);
+      assertTransactionReceipt(receipt, defaultReceipt);
     });
 
     it('valid receipt on match should hit cache', async function() {
@@ -4765,29 +4710,7 @@ describe('Eth', async function () {
       });
 
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
-
-      expect(result).to.exist;
-      if (result == null) return;
-
-      expect(result.accessList).to.eq(defaultTransaction.accessList);
-      expect(result.blockHash).to.eq(defaultTransaction.blockHash);
-      expect(result.blockNumber).to.eq(defaultTransaction.blockNumber);
-      expect(result.chainId).to.eq(defaultTransaction.chainId);
-      expect(result.from).to.eq(defaultTransaction.from);
-      expect(result.gas).to.eq(defaultTransaction.gas);
-      expect(result.gasPrice).to.eq(defaultTransaction.gasPrice);
-      expect(result.hash).to.eq(defaultTransaction.hash);
-      expect(result.input).to.eq(defaultTransaction.input);
-      expect(result.maxFeePerGas).to.eq(defaultTransaction.maxFeePerGas);
-      expect(result.maxPriorityFeePerGas).to.eq(defaultTransaction.maxPriorityFeePerGas);
-      expect(result.nonce).to.eq(EthImpl.numberTo0x(defaultTransaction.nonce));
-      expect(result.r).to.eq(defaultTransaction.r);
-      expect(result.s).to.eq(defaultTransaction.s);
-      expect(result.to).to.eq(defaultTransaction.to);
-      expect(result.transactionIndex).to.eq(defaultTransaction.transactionIndex);
-      expect(result.type).to.eq(EthImpl.numberTo0x(defaultTransaction.type));
-      expect(result.v).to.eq(EthImpl.numberTo0x(defaultTransaction.v));
-      expect(result.value).to.eq(defaultTransaction.value);
+      assertTransaction(result, defaultTransaction);
     });
 
     it('returns correct transaction for existing hash w no sigs', async function () {

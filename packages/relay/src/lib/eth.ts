@@ -1105,15 +1105,8 @@ export class EthImpl implements Eth {
     }
   }
 
-  /**
-   * Submits a transaction to the network for execution.
-   *
-   * @param transaction
-   */
-  async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
+  async parseRawTxAndPrecheck(transaction: string, requestId?: string){
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    this.counter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0,10)).inc();
-
     let interactingEntity = '';
     let originatingAddress = '';
     let parsedTx: EthersTransaction;
@@ -1125,11 +1118,23 @@ export class EthImpl implements Eth {
 
       const gasPrice = Number(await this.gasPrice(requestId));
       await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestId);
+      return parsedTx;
     } catch (e: any) {
       this.logger.warn(`${requestIdPrefix} Error on precheck sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
       throw this.genericErrorHandler(e);
     }
+  }
 
+  /**
+   * Submits a transaction to the network for execution.
+   *
+   * @param transaction
+   */
+  async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.counter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0,10)).inc();
+
+    const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestId);
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     const computedHash = EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
 
