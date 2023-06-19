@@ -34,7 +34,6 @@ import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
-import constants from '../../../relay/src/lib/constants';
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -59,9 +58,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     const GAS_PRICE_TOO_LOW = '0x1';
     const GAS_PRICE_REF = '0x123456';
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10).toHexString();
-
-    let blockNumberAtStartOfTests = 0;
-    let mirrorAccount0AtStartOfTests;
 
     describe('RPC Server Acceptance Tests', function () {
         this.timeout(240 * 1000); // 240 seconds
@@ -96,9 +92,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             mirrorPrimaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`, requestId)).accounts[0];
             mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`, requestId)).accounts[0];
 
-            const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
-            blockNumberAtStartOfTests = latestBlock.number;
-            mirrorAccount0AtStartOfTests = await mirrorNode.get(`/accounts/${accounts[0].accountId}`, requestId);
         });
 
         this.beforeEach(async () => {
@@ -107,7 +100,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         describe('eth_getLogs', () => {
 
-            let log0Block, log4Block, contractAddress, contractAddress2, latestBlock, tenBlocksBehindLatest, log0, log4, log5;
+            let log0Block, log4Block, contractAddress, contractAddress2, latestBlock, tenBlocksBehindLatest;
 
             before(async () => {
                 const logsContract = await servicesNode.deployContract(logsContractJson);
@@ -124,7 +117,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 contractAddress2 = mirrorNodeResp2.evm_address;
 
                 const params = new ContractFunctionParameters().addUint256(1);
-                log0 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params, 75000, requestId);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params, 75000, requestId);
                 await accounts[1].client.executeContractCall(logsContract.contractId, 'log1', params, 75000, requestId);
 
                 params.addUint256(1);
@@ -134,8 +127,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 await accounts[1].client.executeContractCall(logsContract.contractId, 'log3', params, 75000, requestId);
 
                 params.addUint256(1);
-                log4 = await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params, 75000, requestId);
-                log5 = await accounts[1].client.executeContractCall(logsContract2.contractId, 'log4', params, 75000, requestId);
+                await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params, 75000, requestId);
+                await accounts[1].client.executeContractCall(logsContract2.contractId, 'log4', params, 75000, requestId);
 
                 await new Promise(r => setTimeout(r, 5000));
                 latestBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
@@ -314,8 +307,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const timestampQuery = `timestamp=gte:${mirrorBlock.timestamp.from}&timestamp=lte:${mirrorBlock.timestamp.to}`;
                 mirrorContractResults = (await mirrorNode.get(`/contracts/results?${timestampQuery}`, requestId)).results;
 
-                for (let i = 0; i < mirrorContractResults.length; i++) {
-                    const res = mirrorContractResults[i];
+                for ( let res of mirrorContractResults ) {
                     mirrorTransactions.push((await mirrorNode.get(`/contracts/${res.contract_id}/results/${res.timestamp}`, requestId)));
                 }
 
@@ -480,7 +472,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const mirrorResult = await mirrorNode.get(`/contracts/results/${legacyTxHash}`, requestId);
 
                 const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [legacyTxHash], requestId);
-                // FIXME here we must assert that the alias address is the `from` / `to` and not the `0x` prefixed one
                 Assertions.transactionReceipt(res, mirrorResult);
             });
 
@@ -501,7 +492,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
                 const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [transactionHash], requestId);
-                // FIXME here we must assert that the alias address is the `from` / `to` and not the `0x` prefixed one
                 Assertions.transactionReceipt(res, mirrorResult);
             });
 
@@ -794,7 +784,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         Assertions.expectedError();
                     }
                     catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW(gasLimit, constants.BLOCK_GAS_LIMIT));
+                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.BLOCK_GAS_LIMIT));
                     }
                 });
 
@@ -813,7 +803,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         await relay.sendRawTransaction(signedTx, requestId);
                         Assertions.expectedError();
                     } catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.BLOCK_GAS_LIMIT));
+                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT));
                     }
                 });
 
@@ -832,7 +822,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         Assertions.expectedError();
                     }
                     catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW(gasLimit, constants.BLOCK_GAS_LIMIT));
+                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.BLOCK_GAS_LIMIT));
                     }
                 });
 
@@ -849,7 +839,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         await relay.sendRawTransaction(signedTx, requestId);
                         Assertions.expectedError();
                     } catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.BLOCK_GAS_LIMIT));
+                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT));
                     }
                 });
 

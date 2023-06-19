@@ -60,12 +60,12 @@ const Relay = new RelayImpl(logger, registry);
 const validateHash = (hash: string, len?: number) => {
   let regex;
   if (len && len > 0) {
-    regex = new RegExp(`^0x[a-f0-9]{${len}}$`);
+    regex = /^0x[a-f0-9]{${len}}$/;
   } else {
-    regex = new RegExp(`^0x[a-f0-9]*$`);
+    regex = /^0x[a-f0-9]*$/;
   }
 
-  return !!hash.match(regex);
+  return !!regex.exec(regex);
 };
 
 const verifyBlockConstants = (block: Block) => {
@@ -513,7 +513,6 @@ describe('Eth calls using MirrorNode', async function () {
   };
 
   const detailedContractResultNotFound = { "_status": { "messages": [{ "message": "No correlating transaction" }] } };
-  const timeoutError = { "type": "Error", "message": "timeout of 10000ms exceeded" };
 
   const defaultDetailedContractResultsWithNullNullableValues = {
     ...defaultDetailedContractResults,
@@ -1751,7 +1750,6 @@ describe('Eth calls using MirrorNode', async function () {
       const timestamp4 = 1651561386;
 
       const hexBalance1 = EthImpl.numberTo0x(BigInt(balance1) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
-      const hexBalance2 = EthImpl.numberTo0x(BigInt(balance2) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
       const hexBalance3 = EthImpl.numberTo0x(BigInt(balance3) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
 
       const latestBlock = Object.assign({}, defaultBlock, {
@@ -2164,7 +2162,6 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     describe('Calculate balance at block timestamp', async function() {
-      const balance1 = 99960581131;
       const timestamp1 = 1651550386;
 
       it('Given a blockNumber, return the account balance at that blocknumber, with transactions that debit the account balance', async () => {
@@ -2446,7 +2443,7 @@ describe('Eth calls using MirrorNode', async function () {
       });
       //setting mirror node limit to 2 for this test only
       process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
-      const result = await ethImpl.getLogs(null, null, null, null, null, undefined);
+      const result = await ethImpl.getLogs(null, null, null, null, null);
       //resetting mirror node limit to 100
       process.env['MIRROR_NODE_LIMIT_PARAM'] = '100';
       expect(result).to.exist;
@@ -3395,8 +3392,8 @@ describe('Eth calls using MirrorNode', async function () {
           account: "0.0.1723",
           evm_address: defaultCallData.from
       });
-      restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);     
-      const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
+      restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);
+      await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
 
       assert(callMirrorNodeSpy.calledOnce);
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
@@ -3411,8 +3408,8 @@ describe('Eth calls using MirrorNode', async function () {
           account: "0.0.1723",
           evm_address: defaultCallData.from
       });
-      restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);     
-      const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
+      restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);
+      await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
 
       assert(callMirrorNodeSpy.calledOnce);
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
@@ -3428,7 +3425,7 @@ describe('Eth calls using MirrorNode', async function () {
           evm_address: defaultCallData.from
       });
       restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);     
-      const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
+      await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
 
       assert(callConsensusNodeSpy.calledOnce);
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
@@ -3995,7 +3992,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       let  error;
       try {
-        const result = await ethImpl.call(callData, 'latest');
+        await ethImpl.call(callData, 'latest');
       }  catch (e) {
         error = e;
       }
@@ -4086,7 +4083,6 @@ describe('Eth calls using MirrorNode', async function () {
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
-      // FIXME this probably is not the real behaviour
       web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {
         result: predefined.CONTRACT_REVERT(defaultErrorMessage).data
       });
@@ -4460,13 +4456,13 @@ describe('Eth', async function () {
 
 
   it('should execute "eth_chainId"', async function () {
-    const chainId = await Relay.eth().chainId();
+    const chainId = Relay.eth().chainId();
 
     expect(chainId).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
   });
 
   it('should execute "eth_accounts"', async function () {
-    const accounts = await Relay.eth().accounts();
+    const accounts = Relay.eth().accounts();
 
     expect(accounts).to.be.an('Array');
     expect(accounts.length).to.be.equal(0);
@@ -4513,7 +4509,7 @@ describe('Eth', async function () {
   });
 
   it('should execute "eth_getWork"', async function () {
-    const result = await Relay.eth().getWork();
+    const result = Relay.eth().getWork();
     expect(result).to.have.property('code');
     expect(result.code).to.be.equal(-32601);
     expect(result).to.have.property('name');
@@ -5004,7 +5000,7 @@ describe('Eth', async function () {
       });
 
       try {
-        const result = await ethImpl.getTransactionByHash(uniqueTxHash);
+        await ethImpl.getTransactionByHash(uniqueTxHash);
         expect(true).to.eq(false);
       }
       catch(error) {

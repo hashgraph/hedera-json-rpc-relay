@@ -49,7 +49,6 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
     const ONE_TINYBAR = ethers.utils.parseUnits('1', 10);
-    const TIER_1_RATE_LIMIT = process.env.TIER_1_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_1;
     const TIER_2_RATE_LIMIT = process.env.TIER_2_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_2;
     const LIMIT_DURATION = process.env.LIMIT_DURATION || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
@@ -106,8 +105,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
             contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
             const params = new ContractFunctionParameters().addUint256(1);
-            contractExecuteTimestamp = (await accounts[0].client
-                .executeContractCall(contractId, 'createChild', params, 75000, requestId)).contractExecuteTimestamp;
+            await accounts[0].client.executeContractCall(contractId, 'createChild', params, 75000, requestId);
 
             // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
             await new Promise(r => setTimeout(r, 5000));

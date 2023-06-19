@@ -207,7 +207,6 @@ describe('MirrorNodeClient', async function () {
       }
     });
 
-    // const customMirrorNodeInstance = new MirrorNodeClient('', logger.child({ name: `mirror-node`}), instance);
     const result = await mirrorNodeInstance.get('accounts');
     expect(result).to.exist;
     expect(result.links).to.exist;
