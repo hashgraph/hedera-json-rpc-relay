@@ -41,7 +41,13 @@ import {
   ethCallFailing,
   validateHash,
   assertTransactionReceipt,
-  assertTransaction, ethGetLogsFailing
+  assertTransaction, ethGetLogsFailing,
+  defaultDetailedContractResults,
+  defaultLogs1,
+  defaultLogs2,
+  defaultLogs3,
+  defaultLogs4,
+  defaultContractResults
 } from '../helpers';
 
 import pino from 'pino';
@@ -85,7 +91,7 @@ let sdkClientStub;
 let clientServiceStub;
 let cache;
 let mirrorNodeCache;
-let defaultLogs, defaultDetailedContractResults, defaultDetailedContractResults2, defaultDetailedContractResults3;
+let defaultLogs, defaultDetailedContractResults2, defaultDetailedContractResults3;
 
 
 const expectLogData = (res, log, tx) => {
@@ -271,44 +277,6 @@ describe('Eth calls using MirrorNode', async function () {
         }
       }
     ]
-  };  
-
-  const defaultContractResults = {
-    'results': [
-      {
-        'amount': 1,
-        'bloom': '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-        'call_result': '0x6080604052600436106100385760003560e01c80632b6adf431461003c5780633d99e80d1461010f5780634bfdab701461015257610038565b5b5b005b61010d600480360360408110156100535760006000fd5b81019080803563ffffffff169060200190929190803590602001906401000000008111156100815760006000fd5b8201836020820111156100945760006000fd5b803590602001918460018302840111640100000000831117156100b75760006000fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f8201169050808301925050505050505090909192909091929050505061018a565b005b34801561011c5760006000fd5b50610150600480360360208110156101345760006000fd5b81019080803563ffffffff169060200190929190505050610292565b005b34801561015f5760006000fd5b506101686102b7565b604051808263ffffffff1663ffffffff16815260200191505060405180910390f35b60008263ffffffff166effffffffffffffffffffffffffffff1690508073ffffffffffffffffffffffffffffffffffffffff166108fc60019081150290604051600060405180830381858888f193505050501580156101ee573d600060003e3d6000fd5b507f930f628a0950173c55b8f7d31636aa82e481f09d70191adc38b8c8cd186a0ad7826040518080602001828103825283818151815260200191508051906020019080838360005b838110156102525780820151818401525b602081019050610236565b50505050905090810190601f16801561027f5780820380516001836020036101000a031916815260200191505b509250505060405180910390a1505b5050565b80600060006101000a81548163ffffffff021916908363ffffffff1602179055505b50565b6000600060009054906101000a900463ffffffff1690506102d3565b9056fea265627a7a723158201b51cf608b8b7e2c5d36bd8733f2213b669e5d1cfa53b67f52a7e878d1d7bb0164736f6c634300050b0032',
-        'contract_id': '0.0.1375',
-        'created_contract_ids': ['0.0.1375'],
-        'error_message': null,
-        'from': '0x0000000000000000000000000000000000000557',
-        'function_parameters': '0x',
-        'gas_limit': maxGasLimit,
-        'gas_used': gasUsed1,
-        'hash': contractHash1,
-        'timestamp': `${contractTimestamp1}`,
-        'to': `${contractAddress1}`
-      },
-      {
-        'amount': 0,
-        'bloom': '0x00000000000000000000000000000000000000000000000000000000000000040000000000000000000001000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000',
-        'call_result': '0x',
-        'contract_id': '0.0.1374',
-        'created_contract_ids': [],
-        'error_message': null,
-        'from': '0x0000000000000000000000000000000000000557',
-        'function_parameters': '0x2b6adf430000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000084865792c204d6121000000000000000000000000000000000000000000000000',
-        'gas_limit': maxGasLimit - 1000,
-        'gas_used': gasUsed2,
-        'hash': contractHash2,
-        'timestamp': `${contractTimestamp2}`,
-        'to': `${contractAddress2}`
-      }
-    ],
-    'links': {
-      'next': null
-    }
   };
 
   const defaultContractResultsRevert = {
@@ -353,76 +321,7 @@ describe('Eth calls using MirrorNode', async function () {
     null
   ];
 
-  const logBloom1 = '0x1111';
-  const logBloom2 = '0x2222';
-  const logBloom3 = '0x3333';
   const logBloom4 = '0x4444';
-
-  const defaultLogs1 = [
-    {
-      "address": "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
-      "bloom": logBloom1,
-      "contract_id": contractId1,
-      "data": "0x",
-      "index": 0,
-      "topics": defaultLogTopics,
-      "root_contract_id": "0.0.34806097",
-      "timestamp": contractTimestamp1,
-      "block_hash": blockHash,
-      "block_number": blockNumber,
-      "transaction_hash": contractHash1,
-      "transaction_index": 1
-    },
-    {
-      "address": "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
-      "bloom": logBloom2,
-      "contract_id": contractId1,
-      "data": "0x",
-      "index": 1,
-      "topics": defaultLogTopics,
-      "root_contract_id": "0.0.34806097",
-      "timestamp": contractTimestamp1,
-      "block_hash": blockHash,
-      "block_number": blockNumber,
-      "transaction_hash": contractHash1,
-      "transaction_index": 1
-    }
-  ];
-
-  const defaultLogs2 = [
-    {
-      "address": "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
-      "bloom": logBloom3,
-      "contract_id": contractId1,
-      "data": "0x",
-      "index": 0,
-      "topics": [],
-      "root_contract_id": "0.0.34806097",
-      "timestamp": contractTimestamp2,
-      "block_hash": blockHash2,
-      "block_number": blockNumber2,
-      "transaction_hash": contractHash2,
-      "transaction_index": 1
-    }
-  ];
-
-  const defaultLogs3 = [
-    {
-      "address": "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
-      "bloom": logBloom4,
-      "contract_id": contractId2,
-      "data": "0x",
-      "index": 0,
-      "topics": [],
-      "root_contract_id": "0.0.34806097",
-      "timestamp": contractTimestamp3,
-      "block_hash": blockHash3 ,
-      "block_number": blockNumber3,
-      "transaction_hash": contractHash3,
-      "transaction_index": 1
-    }
-  ];
-
   const defaultLogs4 = [
     {
       "address": "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
@@ -443,48 +342,6 @@ describe('Eth calls using MirrorNode', async function () {
   const defaultLogsList = defaultLogs1.concat(defaultLogs2).concat(defaultLogs3);
   defaultLogs = {
     "logs": defaultLogsList
-  };
-
-  defaultDetailedContractResults = {
-    'access_list': '0x',
-    'amount': 2000000000,
-    'block_gas_used': 50000000,
-    'block_hash': blockHash,
-    'block_number': blockNumber,
-    'bloom': '0x0505',
-    'call_result': '0x0606',
-    'chain_id': '0x',
-    'contract_id': contractId1,
-    'created_contract_ids': ['0.0.7001'],
-    'error_message': null,
-    'from': '0x0000000000000000000000000000000000001f41',
-    'function_parameters': '0x0707',
-    'gas_limit': 1000000,
-    'gas_price': '0x4a817c80',
-    'gas_used': 123,
-    'hash': contractHash1,
-    'logs': defaultLogs1,
-    'max_fee_per_gas': '0x',
-    'max_priority_fee_per_gas': '0x',
-    'nonce': 1,
-    'r': '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
-    'result': 'SUCCESS',
-    's': '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
-    'state_changes': [
-      {
-        'address': contractAddress1,
-        'contract_id': contractId1,
-        'slot': '0x0000000000000000000000000000000000000000000000000000000000000101',
-        'value_read': '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
-        'value_written': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
-      }
-    ],
-    'status': '0x1',
-    'timestamp': contractTimestamp1,
-    'to': contractAddress1,
-    'transaction_index': 1,
-    'type': 2,
-    'v': 1
   };
 
   const defaultCurrentContractState = {
@@ -2456,7 +2313,10 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('Should return evm address if contract has one', async function () {
       const filteredLogs = {
-        logs: [defaultLogs.logs[0]]
+        logs: [{
+          ...defaultLogs.logs[0],
+          address: defaultEvmAddress
+        }]
       };
 
       restMock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
