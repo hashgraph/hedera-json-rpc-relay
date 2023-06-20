@@ -5,7 +5,12 @@ import { ethers } from 'ethers';
 describe('Test Core Hedera User Scenarios', function() {
   this.timeout(180000);
 
-  it('Connects with Metamask', function() {
+  const testTimeoutMs = 45000;
+  const retries = 2;
+  const hollowAccount1 = ethers.Wallet.createRandom();
+  const hollowAccount2 = ethers.Wallet.createRandom();
+
+  before(() => {
     cy.visit('http://localhost:3000');
     cy.contains('Connect Account').click();
     cy.acceptMetamaskAccess().should('be.true');
@@ -16,88 +21,17 @@ describe('Test Core Hedera User Scenarios', function() {
     cy.get('#btnDeployContract').should('not.be.disabled');
     cy.get('#btnReadGreeting').should('not.be.disabled');
     cy.get('#btnUpdateGreeting').should('not.be.disabled');
-  }).timeout(180000);
+  });
+
+  beforeEach(() => {
+    cy.visit('http://localhost:3000');
+    cy.contains('Connect Account').click();
+  });
 
   describe('Tests with normal account', function() {
     mandatoryTests();
-  });
 
-  describe('Tests with hollow account created via TX', function() {
-    let hollowAccount = ethers.Wallet.createRandom();
-
-    it('Transfer HBARs to hollow account', function() {
-      cy.get('#sendHbarsToField').clear().type(hollowAccount.address);
-      cy.get('#sendHbarsAmountField').clear().type('10000000000000000').trigger('change');
-      cy.get('#sendHbarsBtn').should('not.be.disabled').click();
-      cy.confirmMetamaskTransaction();
-
-      cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
-      cy.waitUntil(() => cy.get('#toBalanceAfterTransfer').should('have.text', ' Balance after transfer: 0.01 '));
-    }).timeout(180000);
-
-    it('Second Transfer HBARs to hollow account', function() {
-      cy.get('#sendHbarsToField').clear().type(hollowAccount.address);
-      cy.get('#sendHbarsAmountField').clear().type('60000000000000000000').trigger('change');
-      cy.get('#sendHbarsBtn').should('not.be.disabled').click();
-      cy.confirmMetamaskTransaction();
-
-      cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
-      cy.waitUntil(() => cy.get('#toBalanceAfterTransfer').should('have.text', ' Balance after transfer: 60.01 '));
-    }).timeout(180000);
-
-    it('Should switch to hollow account created via Transfer', function() {
-      cy.disconnectMetamaskWalletFromAllDapps();
-      cy.importMetamaskAccount(hollowAccount._signingKey().privateKey);
-      cy.switchMetamaskAccount(3);
-
-      cy.visit('http://localhost:3000');
-      cy.contains('Connect Account').click();
-      cy.acceptMetamaskAccess().should('be.true');
-      cy.switchToCypressWindow();
-    });
-
-    mandatoryTests();
-  });
-
-  describe('Tests with hollow account created via Contract', function() {
-    let hollowAccount = ethers.Wallet.createRandom();
-
-    it('Transfer HBARs to hollow account via contract', function() {
-      cy.get('#hollowAccountAddressField').clear().type(hollowAccount.address);
-      cy.get('#activateHollowAccountBtn').should('not.be.disabled').click();
-      cy.confirmMetamaskTransaction();
-
-      cy.waitUntil(() => cy.get('#activateHollowAccountMsg').should('have.text', ' Done '));
-    }).timeout(180000);
-
-    it('Should switch to hollow account created via Contract', function() {
-      cy.disconnectMetamaskWalletFromAllDapps();
-      cy.importMetamaskAccount(hollowAccount._signingKey().privateKey);
-      cy.switchMetamaskAccount(4);
-
-      cy.visit('http://localhost:3000');
-      cy.contains('Connect Account').click();
-      cy.acceptMetamaskAccess().should('be.true');
-      cy.switchToCypressWindow();
-    });
-
-    mandatoryTests();
-  });
-
-  function mandatoryTests() {
-
-    beforeEach(() => {
-      cy.visit('http://localhost:3000');
-      cy.contains('Connect Account').click();
-    });
-
-    it('Show alias', function() {
-      cy.get('#showAliasBtn').should('not.be.disabled').click();
-      cy.confirmMetamaskSignatureRequest();
-      cy.waitUntil(() => cy.get('#aliasField').invoke('text').should('have.length', 66));
-    }).timeout(180000);
-
-    it('Deploy contract', function() {
+    it('Deploy contract', { retries: retries }, function() {
 
       // deploy the contract
       cy.get('#btnDeployContract').should('not.be.disabled').click();
@@ -116,34 +50,97 @@ describe('Test Core Hedera User Scenarios', function() {
       // test the updated msg
       cy.get('#btnReadGreeting').should('not.be.disabled').click();
       cy.waitUntil(() => cy.get('#contractViewMsg').should('have.text', ' Result: updated_text '));
-    }).timeout(180000);
+    }).timeout(testTimeoutMs);
 
-    it('Transfer HTS token', function() {
-
+    it('Create hollow account 1 via HTS Transfer transaction', { retries: retries }, function() {
       // test the HTS transfer
-      cy.get('#htsTokenAddressField').type(bootstrapInfo.HTS_ADDRESS);
-      cy.get('#htsReceiverAddressField').type('0x54C51b7637BF6fE9709e1e0EBc8b2Ca6a24b0f0A');
+      console.log(`Transfering 1000 '${bootstrapInfo.HTS_ADDRESS}' HTS tokens to ${hollowAccount1}`)
+      cy.get('#htsTokenAddressField').clear().type(bootstrapInfo.HTS_ADDRESS).trigger('change');
+      cy.get('#htsReceiverAddressField').type(hollowAccount1.address);
       cy.get('#htsTokenAmountField').clear().type(1000).trigger('change');
       cy.get('#htsTokenTransferBtn').should('not.be.disabled').click();
       cy.confirmMetamaskTransaction();
 
       cy.waitUntil(() => cy.get('#htsTokenMsg').should('have.text', ' Done '));
-    }).timeout(180000);
+    }).timeout(testTimeoutMs);
 
-    it('Transfer HBARs', function() {
-      cy.get('#sendHbarsToField').clear().type('0x54C51b7637BF6fE9709e1e0EBc8b2Ca6a24b0f0A');
+    it('Transfer HBARs to hollow account 1', { retries: retries }, function() {
+      cy.get('#sendHbarsToField').clear().type(hollowAccount1.address);
       cy.get('#sendHbarsAmountField').clear().type('10000000000000000').trigger('change');
       cy.get('#sendHbarsBtn').should('not.be.disabled').click();
       cy.confirmMetamaskTransaction();
 
       cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
-    }).timeout(180000);
+      cy.waitUntil(() => cy.get('#toBalanceAfterTransfer').should('have.text', ' Balance after transfer: 0.01 '));
+    }).timeout(testTimeoutMs);
 
-    it('Associate HTS', function() {
-      cy.get('#htsTokenAssociateBtn').should('not.be.disabled').click();
+    it('Second Transfer HBARs to hollow account 1', { retries: retries }, function() {
+      cy.get('#sendHbarsToField').clear().type(hollowAccount1.address);
+      cy.get('#sendHbarsAmountField').clear().type('60000000000000000000').trigger('change');
+      cy.get('#sendHbarsBtn').should('not.be.disabled').click();
       cy.confirmMetamaskTransaction();
 
-      cy.waitUntil(() => cy.get('#htsTokenAssociateMsg').should('have.text', ' Done '));
-    }).timeout(180000);
+      cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
+      cy.waitUntil(() => cy.get('#toBalanceAfterTransfer').should('have.text', ' Balance after transfer: 60.01 '));
+    }).timeout(testTimeoutMs);
+    
+    it('Create hollow account 2 via HBARs transfer transaction in contract', { retries: retries }, function() {
+      cy.get('#hollowAccountAddressField').clear().type(hollowAccount2.address);
+      cy.get('#activateHollowAccountBtn').should('not.be.disabled').click();
+      cy.confirmMetamaskTransaction();
+
+      cy.waitUntil(() => cy.get('#activateHollowAccountMsg').should('have.text', ' Done '));
+    }).timeout(testTimeoutMs);
+  });
+
+  describe('Tests with hollow account created via TX', function() {
+    mandatoryTests(hollowAccount1._signingKey().privateKey, 3, true);
+  });
+
+  describe('Tests with hollow account created via Contract', function() {
+    mandatoryTests(hollowAccount2._signingKey().privateKey, 4, true);
+  });
+
+  function mandatoryTests(pkToImport = null, accountNumber = 1, shouldAssociateWithHTS = false) {
+
+    if (pkToImport) {
+      it('Should switch to hollow account', { retries: retries }, function() {
+        cy.disconnectMetamaskWalletFromAllDapps();
+        cy.importMetamaskAccount(pkToImport);
+        cy.switchMetamaskAccount(accountNumber);
+  
+        cy.visit('http://localhost:3000');
+        cy.contains('Connect Account').click();
+        cy.acceptMetamaskAccess().should('be.true');
+        cy.switchToCypressWindow();
+      });
+    }
+
+    it('Show alias', { retries: retries }, function() {
+      cy.get('#showAliasBtn').should('not.be.disabled').click();
+      cy.confirmMetamaskSignatureRequest();
+      cy.waitUntil(() => cy.get('#aliasField').invoke('text').should('have.length', 66));
+    }).timeout(testTimeoutMs);
+
+    const randomHollowAccountAddress = ethers.Wallet.createRandom().address;
+    it('Transfer HBARs', { retries: retries }, function() {
+      cy.get('#sendHbarsToField').clear().type(randomHollowAccountAddress);
+      cy.get('#sendHbarsAmountField').clear().type('10000000000000000').trigger('change');
+      cy.get('#sendHbarsBtn').should('not.be.disabled').click();
+      cy.confirmMetamaskTransaction();
+
+      cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
+    }).timeout(testTimeoutMs);
+
+    if (shouldAssociateWithHTS) {
+      it('Associate auto created account with HTS token 2', { retries: retries }, function() {
+        console.log(`Associate with ${bootstrapInfo.HTS_SECOND_ADDRESS}`);
+        cy.get('#htsTokenAssociateAddressField').clear().type(bootstrapInfo.HTS_SECOND_ADDRESS).trigger('change');
+        cy.get('#htsTokenAssociateBtn').should('not.be.disabled').click();
+        cy.confirmMetamaskTransaction();
+  
+        cy.waitUntil(() => cy.get('#htsTokenAssociateMsg').should('have.text', ' Done '));
+      }).timeout(testTimeoutMs);
+    }
   }
 });
