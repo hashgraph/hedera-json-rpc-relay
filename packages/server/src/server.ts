@@ -60,7 +60,7 @@ const methodResponseHistogram = new Histogram({
   help: 'JSON RPC method statusCode latency histogram',
   labelNames: ['method', 'statusCode'],
   registers: [register],
-  buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 40000, 50000, 60000] // ms (milliseconds)
+  buckets: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 40000, 50000, 60000] // ms (milliseconds)
 });
 
 /**
