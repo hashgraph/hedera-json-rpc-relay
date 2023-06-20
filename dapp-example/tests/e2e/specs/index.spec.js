@@ -4,10 +4,6 @@ import { ethers } from 'ethers';
 
 describe('Test Core Hedera User Scenarios', function() {
   this.timeout(180000);
-  const testTimeoutMs = 45000;
-  const retries = 2;
-  const hollowAccount1 = ethers.Wallet.createRandom();
-  const hollowAccount2 = ethers.Wallet.createRandom();
 
   const testTimeoutMs = 45000;
   const retries = 2;
