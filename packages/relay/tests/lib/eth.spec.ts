@@ -92,8 +92,6 @@ let clientServiceStub;
 let cache;
 let mirrorNodeCache;
 
-// FIXME change file to trigger sonar cloud
-
 describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
 
