@@ -1360,12 +1360,12 @@ export class EthImpl implements Eth {
         throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockNum.toString());
       }
 
-      const block = await this.mirrorNodeClient.getLatestBlock(requestId);
-      if(!block) {
+      const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestId);
+      if(!latestBlockResponse || latestBlockResponse.blocks.length === 0) {
         throw predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
       }
 
-      const trailingBlockCount = block.number - blockNum;
+      const trailingBlockCount = latestBlockResponse.blocks[0].number - blockNum;
       if(trailingBlockCount > this.maxBlockRange) {
         this.logger.warn(`${formatRequestIdMessage(requestId)} referenced block '${blockParam}' trails latest by ${trailingBlockCount}, max trailing count is ${this.maxBlockRange}. Throwable UNSUPPORTED_HISTORICAL_EXECUTION scenario.`);
       }   
