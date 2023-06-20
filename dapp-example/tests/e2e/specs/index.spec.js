@@ -9,14 +9,11 @@ describe('Test Core Hedera User Scenarios', function() {
   const hollowAccount1 = ethers.Wallet.createRandom();
   const hollowAccount2 = ethers.Wallet.createRandom();
 
-<<<<<<< HEAD
   const testTimeoutMs = 45000;
   const retries = 2;
   const hollowAccount1 = ethers.Wallet.createRandom();
   const hollowAccount2 = ethers.Wallet.createRandom();
 
-=======
->>>>>>> 0ee1cb00 (Simiplify dapps tests)
   before(() => {
     cy.visit('http://localhost:3000');
     cy.contains('Connect Account').click();
