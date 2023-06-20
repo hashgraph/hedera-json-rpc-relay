@@ -242,7 +242,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       expect(await HTSTokenContract.balanceOf(accounts[2].wallet.address)).to.be.equal(0);
 
       //Give approval for account[2] to use HTSTokens which are owned by mainContract
-      await mainContract.approvePublic(HTSTokenContractAddress, accounts[2].wallet.address, amount, Constants.GAS.LIMIT_1_000_000);
+      const approvalTx = await mainContract.approvePublic(HTSTokenContractAddress, accounts[2].wallet.address, amount, Constants.GAS.LIMIT_1_000_000);
+      const responseCodeApproval = (await approvalTx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
+      expect(responseCodeApproval).to.equal(TX_SUCCESS_CODE);
 
       //Check if approval was given
       const txAfter = await mainContract.allowancePublic(HTSTokenContractAddress, mainContractAddress, accounts[2].wallet.address);

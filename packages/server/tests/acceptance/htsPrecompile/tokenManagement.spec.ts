@@ -473,25 +473,27 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
 
     it('should be able to pause fungible token', async () => {
       const txTokenInfoBefore = await mainContract.getTokenInfoPublic(HTSTokenContractAddress);
-      const txPause = await mainContract.pauseTokenPublic(HTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
-      const txTokenInfoAfter = await mainContract.getTokenInfoPublic(HTSTokenContractAddress);
-
-      const pauseResponse = (await txPause.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.PausedToken)[0].args;
       const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenInfo)[0].args.tokenInfo;
+
+      const txPause = await mainContract.pauseTokenPublic(HTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
+      const pauseResponse = (await txPause.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.PausedToken)[0].args;
+
+      const txTokenInfoAfter = await mainContract.getTokenInfoPublic(HTSTokenContractAddress);
       const { pauseStatus: pauseStatusAfter } = (await txTokenInfoAfter.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenInfo)[0].args.tokenInfo;
 
-      expect(pauseResponse.paused).to.equal(true);
       expect(pauseStatusBefore).to.equal(false);
+      expect(pauseResponse.paused).to.equal(true);
       expect(pauseStatusAfter).to.equal(true);
     });
 
     it('should be able to unpause fungible token', async () => {
       const txTokenInfoBefore = await mainContract.getTokenInfoPublic(HTSTokenContractAddress);
-      const txPause = await mainContract.unpauseTokenPublic(HTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
-      const txTokenInfoAfter = await mainContract.getTokenInfoPublic(HTSTokenContractAddress);
-
-      const unpauseResponse = (await txPause.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.UnpausedToken)[0].args;
       const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenInfo)[0].args.tokenInfo;
+
+      const txPause = await mainContract.unpauseTokenPublic(HTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
+      const unpauseResponse = (await txPause.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.UnpausedToken)[0].args;
+
+      const txTokenInfoAfter = await mainContract.getTokenInfoPublic(HTSTokenContractAddress);
       const { pauseStatus: pauseStatusAfter } = (await txTokenInfoAfter.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenInfo)[0].args.tokenInfo;
 
       expect(unpauseResponse.unpaused).to.equal(true);
@@ -501,11 +503,12 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
 
     it('should be able to pause non fungible token', async () => {
       const txTokenInfoBefore = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress);
-      const txPause = await mainContract.pauseTokenPublic(NftHTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
-      const txTokenInfoAfter = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress);
-
-      const pauseResponse = (await txPause.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.PausedToken)[0].args;
       const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenInfo)[0].args.tokenInfo;
+
+      const txPause = await mainContract.pauseTokenPublic(NftHTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
+      const pauseResponse = (await txPause.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.PausedToken)[0].args;
+
+      const txTokenInfoAfter = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress);
       const { pauseStatus: pauseStatusAfter } = (await txTokenInfoAfter.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenInfo)[0].args.tokenInfo;
 
       expect(pauseResponse.paused).to.equal(true);
@@ -517,11 +520,12 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       const mainContract = new ethers.Contract(mainContractAddress, TokenManagementJson.abi, accounts[0].wallet);
 
       const txTokenInfoBefore = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress);
-      const txPause = await mainContract.unpauseTokenPublic(NftHTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
-      const txTokenInfoAfter = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress);
-
-      const unpauseResponse = (await txPause.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.UnpausedToken)[0].args;
       const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenInfo)[0].args.tokenInfo;
+
+      const txPause = await mainContract.unpauseTokenPublic(NftHTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
+      const unpauseResponse = (await txPause.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.UnpausedToken)[0].args;
+
+      const txTokenInfoAfter = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress);
       const { pauseStatus: pauseStatusAfter } = (await txTokenInfoAfter.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenInfo)[0].args.tokenInfo;
 
       expect(unpauseResponse.unpaused).to.equal(true);
