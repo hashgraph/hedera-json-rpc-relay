@@ -3618,6 +3618,7 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`blocks?limit=1&order=desc`).reply(404);
 
       const block = '0x10';
+      let errorEncountered = false;
       try {
         await ethImpl.call({
           "from": accountAddress1,
@@ -3626,11 +3627,14 @@ describe('Eth calls using MirrorNode', async function () {
           "gas": maxGasLimitHex
         }, block);
       } catch (error) {
+        errorEncountered = true;
         const predefineError = predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
         expect(error.code).to.equal(predefineError.code);
         expect(error.name).to.equal(predefineError.name);
         expect(error.message).to.equal(predefineError.message);
       }
+
+      expect(errorEncountered).to.equal(true);
     });
 
     it('to field is not a contract or token', async function () {
