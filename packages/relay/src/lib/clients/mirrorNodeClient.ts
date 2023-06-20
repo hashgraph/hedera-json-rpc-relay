@@ -79,6 +79,8 @@ export class MirrorNodeClient {
     private static GET_TRANSACTIONS_ENDPOINT = 'transactions';
     private static CONTRACT_CALL_ENDPOINT = 'contracts/call';
 
+    private static ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
+    private static ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
 
     static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
@@ -100,6 +102,8 @@ export class MirrorNodeClient {
         [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [404, 415, 500]],
         [MirrorNodeClient.GET_STATE_ENDPOINT, [400, 404]]
     ]);
+
+    private static ETHEREUM_TRANSACTION_TYPE = 'ETHEREUMTRANSACTION';
 
     private static ORDER = {
         ASC: 'asc',
@@ -356,6 +360,20 @@ export class MirrorNodeClient {
             requestId);
     }
 
+    public async getAccountLatestEthereumTransactionsByTimestamp(idOrAliasOrEvmAddress: string, timestampTo: string, numberOfTransactions: number = 1, requestId?: string) {
+        const queryParamObject = {};
+        this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_TRANSACTION_TYPE_PROPERTY, MirrorNodeClient.ETHEREUM_TRANSACTION_TYPE);
+        this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_TIMESTAMP_PROPERTY, `lte:${timestampTo}`);
+        this.setLimitOrderParams(queryParamObject, this.getLimitOrderQueryParam(numberOfTransactions, constants.ORDER.DESC)); // get latest 2 transactions to infer for single case
+        const queryParams = this.getQueryParams(queryParamObject);
+
+        return this.get(
+            `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}${queryParams}`,
+            MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
+            requestId
+        );
+    }
+
     public async getAccountPageLimit(idOrAliasOrEvmAddress: string, requestId?: string) {
         return this.get(`${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?limit=${constants.MIRROR_NODE_QUERY_LIMIT}`,
             MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
@@ -403,7 +421,6 @@ export class MirrorNodeClient {
             return String(accountId);
         }
     }
-
 
     public async getTransactionsForAccount(accountId: string, timestampFrom: string, timestampTo: string, requestId?: string) {
         const queryParamObject = {};
@@ -460,6 +477,40 @@ export class MirrorNodeClient {
         return this.get(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`,
             MirrorNodeClient.GET_CONTRACT_ENDPOINT,
             requestId);
+    }
+
+    public async isValidContract(contractIdOrAddress: string, requestId?: string) {
+        const cachedLabel = `${constants.CACHE_KEY.GET_CONTRACT}.valid.${contractIdOrAddress}`;
+        const cachedResponse: any = this.cache.get(cachedLabel);
+        if (cachedResponse != undefined) {
+            return cachedResponse;
+        }
+
+        const contract = await this.getContractId(contractIdOrAddress, requestId);
+        const valid = contract != null;
+
+        this.cache.set(cachedLabel, valid, {ttl: constants.CACHE_TTL.ONE_DAY});
+        return valid;
+    }
+
+    public async getContractId(contractIdOrAddress: string, requestId?: string) {
+        const cachedLabel = `${constants.CACHE_KEY.GET_CONTRACT}.id.${contractIdOrAddress}`;
+        const cachedResponse: any = this.cache.get(cachedLabel);
+        if (cachedResponse != undefined) {
+            return cachedResponse;
+        }
+
+        const contract = await this.get(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`,
+            MirrorNodeClient.GET_CONTRACT_ENDPOINT,
+            requestId);
+
+        if (contract != null) {
+            const id = contract.contract_id;
+            this.cache.set(cachedLabel, id, {ttl: constants.CACHE_TTL.ONE_DAY});
+            return id;
+        }
+
+        return null;
     }
 
     public async getContractResult(transactionIdOrHash: string, requestId?: string) {
@@ -593,6 +644,22 @@ export class MirrorNodeClient {
         );
     }
 
+    public async getEarliestBlock(requestId?: string) {
+        const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.earliest`;
+        const cachedResponse: any = this.cache.get(cachedLabel);
+        if (cachedResponse != undefined) {
+            return cachedResponse;
+        }
+
+        const blocks = await this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.ASC), requestId);
+        if (blocks && blocks.blocks.length > 0) {
+            const block = blocks.blocks[0];
+            this.cache.set(cachedLabel, block, {ttl: constants.CACHE_TTL.ONE_DAY});       
+            return block;     
+        }
+
+        return null;
+    }
 
     public async getLatestBlock(requestId?: string) {
         return this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.DESC), requestId);
