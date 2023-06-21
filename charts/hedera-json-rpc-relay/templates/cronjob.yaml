@@ -59,17 +59,8 @@ spec:
               image: "{{ .Values.cronjob.image.repository }}:{{ .Values.cronjob.image.tag }}"
               imagePullPolicy: {{ .Values.cronjob.image.pullPolicy }}
               command: 
-                - newman
-                - run
-                - postman.json
-                - --env-var 
-                - baseUrl=http://{{ include "json-rpc-relay.fullname" . }}:{{ .Values.service.port }}
-              volumeMounts:
-              - name: config-json
-                mountPath: "/"
-                readOnly: true
-          volumes:
-            - name: config-json
-              emptyDir: {}                          
+                - /bin/sh
+                - -c
+                - wget https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/charts/hedera-json-rpc-relay/postman.json ; newman run postman.json --env-var baseUrl=http://{{ include "json-rpc-relay.fullname" . }}:{{ .Values.service.port }}                     
 {{- end }}
             
