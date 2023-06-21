@@ -50,19 +50,19 @@ const createLogs = async (contract: ethers.Contract, requestId) => {
     const gasOptions = await Utils.gasOptions(requestId);
 
     const tx1 = await contract.log0(10, gasOptions);
-    const rec1 = await tx1.wait();
+    await tx1.wait();
 
     const tx2 = await contract.log1(1, gasOptions);
-    const rec2 = await tx2.wait();
+    await tx2.wait();
 
     const tx3 = await contract.log2(1, 2, gasOptions);
-    const rec3 = await tx3.wait();
+    await tx3.wait();
 
     const tx4 = await contract.log3(10, 20, 31, gasOptions);
-    const rec4 = await tx4.wait();
+    await tx4.wait();
 
     const tx5 = await contract.log4(11, 22, 33, 44, gasOptions);
-    const rec5 = await tx5.wait();
+    await tx5.wait();
 
     await new Promise(resolve => setTimeout(resolve, 2000));
 };
@@ -202,8 +202,10 @@ describe('@web-socket Acceptance Tests', async function() {
 
             //Generate the Logs.
             const gasOptions = await Utils.gasOptions(requestId);
-            await logContractSigner.log1(100, gasOptions);
-            await logContractSigner.log3(4, 6, 7, gasOptions);
+            const tx1 = await logContractSigner.log1(100, gasOptions);
+            await tx1.wait();
+            const tx2 = await logContractSigner.log3(4, 6, 7, gasOptions);
+            await tx2.wait();
             // wait 2s to expect the message
             await new Promise(resolve => setTimeout(resolve, 3000));
 
@@ -267,19 +269,22 @@ describe('@web-socket Acceptance Tests', async function() {
                 const gasOptions = await Utils.gasOptions(requestId, 500_000);
 
                 // create event on contract 1
-                await logContractSigner.log1(100, gasOptions);
+                const tx1 = await logContractSigner.log1(100, gasOptions);
+                await tx1.wait();
                 await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
                 expect("1: " + latestEventFromSubscription.params.result.address).to.be.eq("1: " + logContractSigner.address.toLowerCase());
                 expect("1: " + latestEventFromSubscription.params.subscription).to.be.eq("1: " + subscriptionId);
 
                 // create event on contract 2
-                await logContractSigner2.log1(200, gasOptions);
+                const tx2 = await logContractSigner2.log1(200, gasOptions);
+                await tx2.wait();
                 await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
                 expect("2: " + latestEventFromSubscription.params.result.address).to.be.eq("2: " + logContractSigner2.address.toLowerCase());
                 expect("2: " + latestEventFromSubscription.params.subscription).to.be.eq("2: " + subscriptionId);
 
                 // create event on contract 3
-                await logContractSigner3.log1(300, gasOptions);
+                const tx3 = await logContractSigner3.log1(300, gasOptions);
+                await tx3.wait();
                 await new Promise(resolve => setTimeout(resolve, 2000)); // wait for event to be received
                 expect("3: " + latestEventFromSubscription.params.result.address).to.be.eq("3: " + logContractSigner3.address.toLowerCase());
                 expect("3: " + latestEventFromSubscription.params.subscription).to.be.eq("3: " + subscriptionId);
@@ -294,7 +299,6 @@ describe('@web-socket Acceptance Tests', async function() {
         }
 
         it('Subscribe to multiple contracts on same subscription Should fail with INVALID_PARAMETER due to feature flag disabled', async function () {
-            const originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED; // cache original value
             process.env.WS_MULTIPLE_ADDRESSES_ENABLED = "false"; // disable feature flag
             const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
             const addressCollection = [logContractSigner.address, logContractSigner2.address];
@@ -452,9 +456,9 @@ describe('@web-socket Acceptance Tests', async function() {
             // Return ENV variables to their original value
             process.env.WS_CONNECTION_LIMIT = originalWsMaxConnectionLimit;
 
-            providers.forEach(async (provider: ethers.providers.WebSocketProvider) => {
-                provider.destroy();
-            });
+            for (const provider of providers) {
+                await provider.destroy();
+            }
 
             await new Promise(resolve => setTimeout(resolve, 1000));
 

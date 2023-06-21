@@ -155,7 +155,7 @@ const mockData = {
             "tokens": []
         },
         "deleted": false,
-        "ethereum_nonce": null,
+        "ethereum_nonce": 7,
         "evm_address": "0x00000000000000000000000000000000000003f6",
         "expiry_timestamp": null,
         "key": {
@@ -169,6 +169,49 @@ const mockData = {
         "links": {
             "next": null
         }
+    },
+
+    blocks: {
+        blocks: [
+            {
+                "count":17,
+                "hapi_version":
+                "0.38.10",
+                "hash":"0xa1bff58c8980be6f08e357d78a2eeea35f57408907695d0a4e9f6bdc5ad361be717e0a89f4d4eab7c79da926d466f184",
+                "name":"2023-06-06T03_26_52.041881845Z.rcd.gz",
+                "number":0,
+                "previous_hash":"0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "size":5496,
+                "timestamp":{"from":"1686022012.041881845","to":"1686022013.882529003"},
+                "gas_used":0,
+                "logs_bloom":"0x"
+            },
+            {
+                "count":33,
+                "hapi_version":"0.38.10",
+                "hash":"0x88fbc1805d2193f45de7974259d5bde32e5a9afb071dbc9c325d4635fee1bbba3e7f99e3c3ce866dfbca7379b4535813",
+                "name":"2023-06-06T03_26_50.010262867Z.rcd.gz",
+                "number":1,
+                "previous_hash":"0xa1bff58c8980be6f08e357d78a2eeea35f57408907695d0a4e9f6bdc5ad361be717e0a89f4d4eab7c79da926d466f184",
+                "size":7068,
+                "timestamp":{"from":"1686022010.010262867","to":"1686022011.869509167"},
+                "gas_used":0,
+                "logs_bloom":"0x"
+            },
+            {
+                "count":33,
+                "hapi_version":"0.38.10",
+                "hash":"0xcf703d42a6d55555cc8c24cb0c615115a8ab82ec29db3e3e58573263c4e2ec11d097fba3f5896dbfc7fb35081bb325df",
+                "name":"2023-06-06T03_26_55.010262867Z.rcd.gz",
+                "number":2,
+                "previous_hash":"0x88fbc1805d2193f45de7974259d5bde32e5a9afb071dbc9c325d4635fee1bbba3e7f99e3c3ce866dfbca7379b4535813",
+                "size":7068,
+                "timestamp":{"from":"1686022010.010262867","to":"1686022011.869509167"},
+                "gas_used":0,
+                "logs_bloom":"0x"
+            }
+        ],
+        "links":{"next":null}
     },
 
     contractEvmAddress: '0000000000000000000000000000000000001f41',

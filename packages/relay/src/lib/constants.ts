@@ -27,10 +27,12 @@ enum CACHE_KEY {
     ETH_GET_BLOCK_BY_NUMBER = 'eth_getBlockByNumber',
     ETH_GET_TRANSACTION_COUNT_BY_HASH = 'eth_getBlockTransactionCountByHash',
     ETH_GET_TRANSACTION_COUNT_BY_NUMBER = 'eth_getBlockTransactionCountByNumber',
+    ETH_GET_TRANSACTION_COUNT = 'eth_getTransactionCount',
     ETH_GET_TRANSACTION_RECEIPT = 'eth_getTransactionReceipt',
     FEE_HISTORY = 'fee_history',
     GAS_PRICE = 'gas_price',
     GET_BLOCK = 'getBlock',
+    GET_CONTRACT = 'getContract',
     GET_CONTRACT_RESULT = 'getContractResult',
     GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee',
     RESOLVE_ENTITY_TYPE = 'resolveEntityType',
@@ -84,6 +86,7 @@ export default {
     ETH_CALL_CACHE_TTL_DEFAULT: 200,
     ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT: 1000,
     ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT: 1000,
+    ETH_GET_TRANSACTION_COUNT_CACHE_TTL: 500,
 
     TRANSACTION_ID_REGEX: /\d{1}\.\d{1}\.\d{1,10}\@\d{1,10}\.\d{1,9}/,
 
@@ -95,8 +98,9 @@ export default {
     },
 
     // block ranges
-    MAX_BLOCK_RANGE: 5,
     BLOCK_HASH_REGEX: '^0[xX][a-fA-F0-9]',
+    ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1500,
+    MAX_BLOCK_RANGE: 5,
 
     DEFAULT_RATE_LIMIT: {
         TIER_1: 100,

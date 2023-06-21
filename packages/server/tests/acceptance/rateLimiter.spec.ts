@@ -154,6 +154,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                     const signedTx = await accounts[1].wallet.signTransaction(transaction);
                     await relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId);
                 } catch (error) {
+                    Assertions.jsonRpcError(error, predefined.HBAR_RATE_LIMIT_EXCEEDED);
                     rateLimit = true;
                 }
 

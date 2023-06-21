@@ -32,10 +32,10 @@ const registry = new Registry();
 
 import pino from 'pino';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+import { predefined } from '../../src/lib/errors/JsonRpcError';
 const logger = pino();
 import { v4 as uuid } from 'uuid';
 import { formatRequestIdMessage } from '../../src/formatters';
-import { predefined } from '../../src';
 
 const limitOrderPostFix = '?order=desc&limit=1';
 
@@ -59,6 +59,7 @@ describe('MirrorNodeClient', async function () {
 
   beforeEach(() => {
     mock = new MockAdapter(instance);
+    mirrorNodeInstance.cache.clear();
   });
 
   describe('handleError', async() => {
@@ -1023,7 +1024,8 @@ describe('MirrorNodeClient', async function () {
         await mirrorNodeInstance.getPaginatedResults(
           'results?page=0',
           'results',
-          'genericResults');        expect.fail('should have thrown an error');
+          'genericResults');
+        expect.fail('should have thrown an error');
       } catch (e) {
         const errorRef = predefined.PAGINATION_MAX(0); // reference error for all properties except message
         expect(e.message).to.equal(`Exceeded maximum mirror node pagination count: ${constants.MAX_MIRROR_NODE_PAGINATION}`);
@@ -1074,6 +1076,171 @@ describe('MirrorNodeClient', async function () {
       const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
       expect(result).to.be.null;
       expect(mock.history.get.length).to.eq(3); // is called three times
+    });
+  });
+
+  describe('getAccountLatestEthereumTransactionsByTimestamp', async() => {
+    const evmAddress = '0x305a8e76ac38fc088132fb780b2171950ff023f7';
+    const timestamp = '1686019921.957394003';
+    const transactionPath = (addresss, num) => `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${timestamp}&limit=${num}&order=desc`;
+    const defaultTransaction = {
+      transactions: [
+        {
+          bytes: null,
+          charged_tx_fee: 56800000,
+          consensus_timestamp: '1681130077.127938923',
+          entity_id: null,
+          max_fee: '1080000000',
+          memo_base64: '',
+          name: 'ETHEREUMTRANSACTION',
+          node: '0.0.3',
+          nonce: 0,
+          parent_consensus_timestamp: null,
+          result: 'CONTRACT_REVERT_EXECUTED',
+          scheduled: false,
+          staking_reward_transfers: [],
+          transaction_hash: 'uUHtwzFBlpHzp20OCJtjk4m6yFi93TZem7pKYrjgaF0v383um84g/Jo+uP2IrRd7',
+          transaction_id: '0.0.2-1681130064-409933500',
+          transfers: [],
+          valid_duration_seconds: '120',
+          valid_start_timestamp: '1681130064.409933500'
+        },
+        {
+          bytes: null,
+          charged_tx_fee: 0,
+          consensus_timestamp: '1681130077.127938924',
+          entity_id: null,
+          max_fee: '0',
+          memo_base64: '',
+          name: 'TOKENCREATION',
+          node: null,
+          nonce: 1,
+          parent_consensus_timestamp: '1681130077.127938923',
+          result: 'INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE',
+          scheduled: false,
+          staking_reward_transfers: [],
+          transaction_hash: 'EkQUvik9b4QUvymTNX90ybTz1SNobpQ5huQmMCKkP3fjOxirLT0nRel+w4bweXyX',
+          transaction_id: '0.0.2-1681130064-409933500',
+          transfers: [],
+          valid_duration_seconds: null,
+          valid_start_timestamp: '1681130064.409933500'
+        }
+      ]
+    };
+
+    it('should fail to fetch transaction by non existing account', async() => {
+      mock.onGet(transactionPath(evmAddress, 1)).reply(404, mockData.notFound);
+      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(evmAddress, timestamp);
+      expect(transactions).to.be.null;
+    });
+
+    it('should be able to fetch empty ethereum transactions for an account', async() => {
+      mock.onGet(transactionPath(evmAddress, 1)).reply(200, { transactions: [] });
+      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(evmAddress, timestamp);
+      expect(transactions).to.exist;
+      expect(transactions.transactions.length).to.equal(0);
+    });
+
+    it('should be able to fetch single ethereum transactions for an account', async() => {
+      mock.onGet(transactionPath(evmAddress, 1)).reply(200, { transactions: [defaultTransaction.transactions[0]] });
+      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(evmAddress, timestamp);
+      expect(transactions).to.exist;
+      expect(transactions.transactions.length).to.equal(1);
+    });
+
+    it('should be able to fetch ethereum transactions for an account', async() => {
+      mock.onGet(transactionPath(evmAddress, 2)).reply(200, defaultTransaction);
+      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(evmAddress, timestamp, 2);
+      expect(transactions).to.exist;
+      expect(transactions.transactions.length).to.equal(2);
+    });
+  });
+
+  describe('isValidContract', async() => {
+    const evmAddress = '0x305a8e76ac38fc088132fb780b2171950ff023f7';
+    const contractPath = `contracts/${evmAddress}`;
+
+    it('should return false for contract for non existing contract', async() => {
+      mock.onGet(contractPath).reply(404, mockData.notFound);
+      const isValid = await mirrorNodeInstance.isValidContract(evmAddress);
+      expect(isValid).to.be.false;
+    });
+
+    it('should return valid for contract for existing contract', async() => {
+      mock.onGet(contractPath).reply(200, mockData.contract);
+      const isValid = await mirrorNodeInstance.isValidContract(evmAddress);
+      expect(isValid).to.be.true;
+    });
+
+    it('should return valid for contract from cache on additional calls', async() => {
+      mock.onGet(contractPath).reply(200, mockData.contract);
+      let isValid = await mirrorNodeInstance.isValidContract(evmAddress);
+      expect(isValid).to.be.true;
+
+      // verify that the cache is used
+      mock.onGet(contractPath).reply(404, mockData.notFound);
+      isValid = await mirrorNodeInstance.isValidContract(evmAddress);
+      expect(isValid).to.be.true;
+    });
+  });
+
+  describe('getContractId', async() => {
+    const evmAddress = '0x305a8e76ac38fc088132fb780b2171950ff023f7';
+    const contractPath = `contracts/${evmAddress}`;
+
+    it('should fail to fetch contract for non existing contract', async() => {
+      mock.onGet(contractPath).reply(404, mockData.notFound);
+      const id = await mirrorNodeInstance.getContractId(evmAddress);
+      expect(id).to.not.exist;
+    });
+
+    it('should fetch id for existing contract', async() => {
+      mock.onGet(contractPath).reply(200, mockData.contract);
+      const id = await mirrorNodeInstance.getContractId(evmAddress);
+      expect(id).to.exist;
+      expect(id).to.be.equal(mockData.contract.contract_id);
+    });
+
+    it('should fetch contract for existing contract from cache on additional calls', async() => {
+      mock.onGet(contractPath).reply(200, mockData.contract);
+      let id = await mirrorNodeInstance.getContractId(evmAddress);
+      expect(id).to.exist;
+      expect(id).to.be.equal(mockData.contract.contract_id);
+
+      // verify that the cache is used
+      mock.onGet(contractPath).reply(404, mockData.notFound);
+      expect(id).to.exist;
+      expect(id).to.be.equal(mockData.contract.contract_id);
+    });
+  });
+
+  describe('getEarliestBlock', async() => {
+    const blockPath = `blocks?limit=1&order=asc`;
+
+    it('should fail to fetch blocks for empty network', async() => {
+      mock.onGet(blockPath).reply(404, mockData.notFound);
+      const earlierBlock = await mirrorNodeInstance.getEarliestBlock();
+      expect(earlierBlock).to.not.exist;
+    });
+
+    it('should fetch block for existing valid network', async() => {
+      mock.onGet(blockPath).reply(200, { blocks: [mockData.blocks.blocks[0]] });
+      const earlierBlock = await mirrorNodeInstance.getEarliestBlock();
+      expect(earlierBlock).to.exist;
+      expect(earlierBlock.name).to.be.equal(mockData.blocks.blocks[0].name);
+    });
+
+    it('should fetch block for valid network from cache on additional calls', async() => {
+      mock.onGet(blockPath).reply(200, { blocks: [mockData.blocks.blocks[0]] });
+      let earlierBlock = await mirrorNodeInstance.getEarliestBlock();
+      expect(earlierBlock).to.exist;
+      expect(earlierBlock.name).to.be.equal(mockData.blocks.blocks[0].name);
+
+      // verify that the cache is used
+      mock.onGet(blockPath).reply(404, mockData.notFound);
+      earlierBlock = await mirrorNodeInstance.getEarliestBlock();
+      expect(earlierBlock).to.exist;
+      expect(earlierBlock.name).to.be.equal(mockData.blocks.blocks[0].name);
     });
   });
 });
