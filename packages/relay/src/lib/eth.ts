@@ -467,8 +467,8 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
 
-    if (transaction?.data?.length >= 10)
-      this.ethExecutionsCounter.labels(EthImpl.ethEstimateGas, transaction.data.substring(0,10)).inc();
+    if (transaction?.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+      this.ethExecutionsCounter.labels(EthImpl.ethEstimateGas, transaction.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
 
 
     let gas = EthImpl.gasTxBaseCost;
@@ -1113,8 +1113,8 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    if(transaction?.length >= 10)
-      this.ethExecutionsCounter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0,10)).inc();
+    if(transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+      this.ethExecutionsCounter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
 
     let interactingEntity = '';
     let originatingAddress = '';
@@ -1182,8 +1182,8 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    if (call.data?.length >= 10)
-      this.ethExecutionsCounter.labels(EthImpl.ethCall, call.data.substring(0,10)).inc();
+    if (call.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+      this.ethExecutionsCounter.labels(EthImpl.ethCall, call.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
 
     
     const to = await this.performCallChecks(call, blockParam, requestId);

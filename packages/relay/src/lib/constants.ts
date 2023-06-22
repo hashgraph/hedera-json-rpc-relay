@@ -115,6 +115,8 @@ export default {
     WEB_SOCKET_PORT: process.env.WEB_SOCKET_PORT || 8546,
     WEB_SOCKET_HTTP_PORT: process.env.WEB_SOCKET_HTTP_PORT || 8547,
 
-    RELAY_PORT: process.env.SERVER_PORT || 7546
+    RELAY_PORT: process.env.SERVER_PORT || 7546,
+
+    FUNCTION_SELECTOR_CHAR_LENGTH: 10
 };
 
