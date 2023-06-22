@@ -27,6 +27,7 @@ import { ethers, Transaction } from 'ethers';
 import { formatRequestIdMessage } from '../formatters';
 import HAPIService from './services/hapiService/hapiService';
 import { SDKClientError } from './errors/SDKClientError';
+import {MirrorNodeClientError} from "./errors/MirrorNodeClientError";
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
@@ -145,10 +146,14 @@ export class Precheck {
     const txTotalValue = tx.value.add(txGas.mul(tx.gasLimit));
     let tinybars;
 
-    const accountResponse: any = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
-    if (accountResponse == null) {
-      this.logger.trace(`${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(tx)}, totalValue=${txTotalValue})`);
-      throw predefined.RESOURCE_NOT_FOUND(`tx.from '${tx.from}'.`);
+    let accountResponse: any;
+    try {
+      accountResponse = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
+    } catch (error) {
+      if(error instanceof MirrorNodeClientError && error.statusCode === 404) {
+        this.logger.trace(`${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(tx)}, totalValue=${txTotalValue})`);
+        throw predefined.RESOURCE_NOT_FOUND(`tx.from '${tx.from}'.`);
+      }
     }
 
     try {

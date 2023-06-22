@@ -373,9 +373,12 @@ describe('MirrorNodeClient', async function () {
   it('`getAccount` not found', async () => {
     const evmAddress = '0x00000000000000000000000000000000000003f6';
     mock.onGet(`accounts/${evmAddress}${limitOrderPostFix}`).reply(404, mockData.notFound);
+    try {
+      await mirrorNodeInstance.getAccount(evmAddress);
+    } catch (error) {
+        expect(error.statusCode).equal(404);
+    }
 
-    const result = await mirrorNodeInstance.getAccount(evmAddress);
-    expect(result).to.be.null;
   });
 
   it('`getTokenById`', async () => {

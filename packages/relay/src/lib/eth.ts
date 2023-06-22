@@ -496,7 +496,7 @@ export class EthImpl implements Eth {
           const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${transaction.to}`;
           let toAccount: object | null = this.cache.get(accountCacheKey);
           if (!toAccount) {
-            toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestId);
+            toAccount = await this.getAccountOrNull(transaction.to, requestId);
           }
 
           // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
@@ -520,6 +520,31 @@ export class EthImpl implements Eth {
 
     return gas;
   }
+
+  /**
+   * Gets the account data using the mirror node and handles the potential 404 error and returns null instead.
+   * */
+    async getAccountOrNull(address: string, requestId?: string) {
+      let account;
+      try {
+        account = await this.mirrorNodeClient.getAccount(address, requestId);
+      } catch (error: any) {
+        if(error instanceof MirrorNodeClientError) {
+          if(error.statusCode == 404){
+            return null;
+
+          } else if(error.statusCode == 400){
+            this.logger.debug(`${formatRequestIdMessage(requestId)} Got Invalid Parameter when trying to fetch account from mirror node: ${JSON.stringify(error)}`);
+            throw predefined.INVALID_PARAMETER(address, `Invalid 'address' field in transaction param. Address must be a valid 20 bytes hex string`);
+          }
+        } else {
+          this.logger.error(`${formatRequestIdMessage(requestId)} Unexpected error raised while fetching account from mirror-node: ${JSON.stringify(error)}`);
+          throw error;
+        }
+      }
+
+      return account;
+    }
 
   /**
    * Gets the current gas price of the network.
@@ -761,7 +786,16 @@ export class EthImpl implements Eth {
     let blockNumber = null;
     let balanceFound = false;
     let weibars = BigInt(0);
-    const mirrorAccount = await this.mirrorNodeClient.getAccountPageLimit(account, requestId);
+    let mirrorAccount;
+    try {
+      mirrorAccount = await this.mirrorNodeClient.getAccountPageLimit(account, requestId);
+    } catch (error) {
+      if(error instanceof MirrorNodeClientError && error.statusCode === 404) {
+        mirrorAccount = null;
+      } else {
+        throw error;
+      }
+    }
 
     try {
       if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
@@ -1088,7 +1122,7 @@ export class EthImpl implements Eth {
         // if latest or pending, get latest ethereumNonce from mirror node account API
         nonceCount = await this.getAccountLatestEthereumNonce(address, requestId);
       } else if (blockNumOrTag === EthImpl.blockEarliest) {
-        nonceCount = await this.getAccountNonceForEarliestBlock(requestId);    
+        nonceCount = await this.getAccountNonceForEarliestBlock(requestId);
       } else if (!isNaN(blockNum)) {
         nonceCount = await this.getAccountNonceForHistoricBlock(address, blockNum, requestId);
       } else {
@@ -1102,7 +1136,7 @@ export class EthImpl implements Eth {
 
     const cacheTtl = blockNumOrTag === EthImpl.blockEarliest || !isNaN(blockNum) ? constants.CACHE_TTL.ONE_DAY : this.ethGetTransactionCountCacheTtl; // cache historical values longer as they don't change
     this.logger.trace(`${requestIdPrefix} caching ${cacheKey}:${nonceCount} for ${cacheTtl} ms`);
-    this.cache.set(cacheKey, nonceCount, { ttl: cacheTtl }); 
+    this.cache.set(cacheKey, nonceCount, { ttl: cacheTtl });
 
     return nonceCount;
   }
@@ -1400,7 +1434,7 @@ export class EthImpl implements Eth {
       const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${fromAddress}`;
       let accountResult: any | null = this.cache.get(accountCacheKey);
       if (!accountResult) {
-        accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
+        accountResult = await this.getAccountOrNull(fromAddress, requestId);
         if (accountResult) {
           this.logger.trace(`${requestIdPrefix} caching ${accountCacheKey}:${JSON.stringify(accountResult)} for ${constants.CACHE_TTL.ONE_HOUR} ms`);
           this.cache.set(accountCacheKey, accountResult);
@@ -1893,10 +1927,10 @@ export class EthImpl implements Eth {
     const validContract = await this.mirrorNodeClient.isValidContract(address, requestId);
     if (validContract)  {
       return EthImpl.oneHex;
-    } 
-    
+    }
+
     // get latest ethereumNonce from mirror node account API
-    const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
+    const mirrorAccount = await this.getAccountOrNull(address, requestId);
     if (mirrorAccount?.ethereum_nonce) {
       return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
     }
@@ -1907,7 +1941,7 @@ export class EthImpl implements Eth {
   /**
    * Returns the number of transactions sent from an address by searching for the ethereum transaction involving the address
    * Remove when https://github.com/hashgraph/hedera-mirror-node/issues/5862 is implemented
-   * 
+   *
    * @param address string
    * @param blockNum string
    * @param requestId string
@@ -1918,7 +1952,7 @@ export class EthImpl implements Eth {
     const block = await this.mirrorNodeClient.getBlock(blockNum, requestId); // consider caching error responses
     if (block == null) {
       throw predefined.UNKNOWN_BLOCK;
-    }  
+    }
 
     // get the latest 2 ethereum transactions for the account
     const ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestamp(address, block.timestamp.to, 2, requestId);
@@ -1956,10 +1990,10 @@ export class EthImpl implements Eth {
     if (block.number <= 1) {
       // if the earliest block is the genesis block or 1 , then the nonce is 0 as only system accounts are present
       return EthImpl.zeroHex;
-    } 
-    
+    }
+
     // note the mirror node may be a partial one, in which case there may be a valid block with number greater 1.
-    throw predefined.INTERNAL_ERROR(`Partial mirror node encountered, earliest block number is ${block.number}`);   
+    throw predefined.INTERNAL_ERROR(`Partial mirror node encountered, earliest block number is ${block.number}`);
   }
 
   private async getAccountNonceForHistoricBlock(address: string, blockNum: number, requestId?: string): Promise<string> {

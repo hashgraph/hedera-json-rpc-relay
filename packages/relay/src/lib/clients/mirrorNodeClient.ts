@@ -84,7 +84,7 @@ export class MirrorNodeClient {
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
 
     static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
-        [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, []],
         [MirrorNodeClient.GET_BALANCE_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_BLOCK_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_BLOCKS_ENDPOINT, [400, 404]],
@@ -325,7 +325,8 @@ export class MirrorNodeClient {
         this.logger.error(new Error(error.message), `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
 
         // we only need contract revert errors here as it's not the same as not supported
-        if (mirrorError.isContractReverted() && !mirrorError.isNotSupported() && !mirrorError.isNotSupportedSystemContractOperaton()) {
+        // Contract Revert error is valid only for contract calls
+        if (pathLabel == MirrorNodeClient.CONTRACT_CALL_ENDPOINT && mirrorError.isContractReverted() && !mirrorError.isNotSupported() && !mirrorError.isNotSupportedSystemContractOperaton()) {
             throw predefined.CONTRACT_REVERT(mirrorError.errorMessage);
         }
 

@@ -3407,6 +3407,45 @@ describe('Eth calls using MirrorNode', async function () {
     });
   });
 
+  describe('getAccountOrNull helper', async function () {
+    it('getAccountOrNull with no account found', async function () {
+      restMock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).reply(404);
+      const account = await ethImpl.getAccountOrNull(contractAddress1);
+      expect(account).to.be.null;
+    });
+
+    it('getAccountOrNull with account found', async function () {
+      restMock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).replyOnce(200, defaultContract);
+      const account = await ethImpl.getAccountOrNull(contractAddress1);
+      expect(account).to.deep.equal(defaultContract);
+    });
+
+    it('getAccountOrNull with invalid parameter throws error', async function () {
+      const invalidAddress = "0x123";
+      restMock.onGet(`accounts/${invalidAddress}${limitOrderPostFix}`).reply(400);
+      let errorRaised = false;
+      try {
+        await ethImpl.getAccountOrNull(invalidAddress);
+      } catch (error: any) {
+        errorRaised = true;
+        expect(error.message).to.equal(`Invalid parameter ${invalidAddress}: Invalid 'address' field in transaction param. Address must be a valid 20 bytes hex string`);
+      }
+      expect(errorRaised).to.be.true;
+    });
+
+    it('getAccountOrNull with valid parameter throws unexpected error', async function () {
+        restMock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).replyOnce(500, { error: 'unexpected error' });
+        let errorRaised = false;
+        try {
+            await ethImpl.getAccountOrNull(contractAddress1);
+        }
+        catch (error: any) {
+            errorRaised = true;
+            expect(error.message).to.equal(`Request failed with status code 500`);
+        }
+    });
+  });
+
   describe('eth_call precheck failures', async function () {
     let callConsensusNodeSpy: sinon.SinonSpy;
     let callMirrorNodeSpy: sinon.SinonSpy;
