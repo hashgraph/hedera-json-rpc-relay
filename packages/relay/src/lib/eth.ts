@@ -156,10 +156,10 @@ export class EthImpl implements Eth {
   private readonly chain: string;
 
   /**
-   * The counter used to track the number of active contract execution requests.
+   * The ethExecutionsCounter used to track the number of active contract execution requests.
    * @private
    */
-  private counter: Counter;
+  private ethExecutionsCounter: Counter;
 
   /**
    * Create a new Eth implementation.
@@ -184,10 +184,10 @@ export class EthImpl implements Eth {
     this.cache = cache;
     if (!cache) this.cache = new LRU(this.options);
 
-    this.counter = this.initCounter(registry);
+    this.ethExecutionsCounter = this.initEthExecutionCounter(registry);
   }
 
-  private initCounter(register: Registry) {
+  private initEthExecutionCounter(register: Registry) {
     const metricCounterName = 'rpc_relay_eth_executions';
     register.removeSingleMetric(metricCounterName);
     return new Counter({
@@ -468,9 +468,9 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
 
-    if ("data" in transaction){
-      this.counter.labels(EthImpl.ethEstimateGas, transaction.data.substring(0,10)).inc();
-    }
+    if (transaction?.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+      this.ethExecutionsCounter.labels(EthImpl.ethEstimateGas, transaction.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
+
 
     let gas = EthImpl.gasTxBaseCost;
     try {
@@ -1114,7 +1114,8 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    this.counter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0,10)).inc();
+    if(transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+      this.ethExecutionsCounter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
 
     let interactingEntity = '';
     let originatingAddress = '';
@@ -1182,9 +1183,9 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    if ("data" in call){
-      this.counter.labels(EthImpl.ethCall, call.data.substring(0,10)).inc();
-    }
+    if (call.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+      this.ethExecutionsCounter.labels(EthImpl.ethCall, call.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
+
     
     const to = await this.performCallChecks(call, blockParam, requestId);
 
