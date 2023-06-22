@@ -237,9 +237,4 @@ export const predefined = {
     code: -39012,
     message: 'Unknown block'
   }),
-  'MAX_BLOCK_SIZE': (count: number) => new JsonRpcError({
-    name: 'Block size too large',
-    code: -32000,
-    message: `Exceeded max transactions that can be returned in a block: ${count}`
-  }),
 };
