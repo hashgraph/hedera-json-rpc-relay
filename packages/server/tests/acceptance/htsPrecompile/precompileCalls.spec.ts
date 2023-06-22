@@ -571,7 +571,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             await relay.callFailing(
                 Constants.ETH_ENDPOINTS.ETH_CALL,
                 [callData, 'latest'],
-                predefined.NON_EXISTING_ACCOUNT('0x' + NON_EXISTING_ACCOUNT),
+                predefined.CONTRACT_REVERT(),
                 requestId
             );
         });
