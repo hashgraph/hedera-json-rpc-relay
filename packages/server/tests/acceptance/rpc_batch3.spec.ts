@@ -116,15 +116,15 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             expect(res).to.eq('0x'); // confirm no error
         });
 
-        it('should fail "eth_call" for non-existing contract address', async function () {
+        it('"eth_call" for non-existing contract address returns 0x', async function () {
             const callData = {
                 from: '0x' + accounts[0].address,
                 to: Address.NON_EXISTING_ADDRESS,
                 gas: EthImpl.numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
-
-            await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], predefined.NON_EXISTING_CONTRACT(Address.NON_EXISTING_ADDRESS), requestId);
+            const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+            expect(res).to.eq('0x'); // confirm no error
         });
 
         it('should execute "eth_call" without from field', async function () {
