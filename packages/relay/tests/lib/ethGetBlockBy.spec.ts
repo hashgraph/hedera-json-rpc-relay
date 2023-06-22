@@ -23,16 +23,13 @@ import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import sinon from 'sinon';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-import { RelayImpl } from '../../src/lib/relay';
 import { JsonRpcError, predefined } from '../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 import pino from 'pino';
 import constants from '../../src/lib/constants';
-import { SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 
@@ -44,7 +41,6 @@ const registry = new Registry();
 let restMock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
-let sdkClientStub;
 let cache;
 let mirrorNodeCache;
 

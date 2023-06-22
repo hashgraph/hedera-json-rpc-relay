@@ -1628,7 +1628,6 @@ export class EthImpl implements Eth {
    * @param showDetails
    */
   private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: string ): Promise<Block | null> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
     const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true, requestId);
 
     if (blockResponse == null) return null;
@@ -1653,24 +1652,7 @@ export class EthImpl implements Eth {
       throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
     }
 
-    for (let i = 0; i < contractResults.length; i+= this.ethGetBlockByResultsBatchSize) {
-      if (showDetails) {
-        await Promise.all(contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(async result => {
-          // depending on stage of contract execution revert the result.to value may be null
-          if (result.to != null) {
-            const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
-            if (transaction !== null) {
-              transactionObjects.push(transaction);
-            }
-          }
-        })).catch((err) => {
-          this.logger.error(err, `${requestIdPrefix} Error encountered on results ${i} -> ${i + this.ethGetBlockByResultsBatchSize} of contract results retrieval from Mirror Node`);
-          throw predefined.INTERNAL_ERROR('Error encountered on contract results retrieval from Mirror Node');
-        });
-      } else {
-        transactionHashes.push(...contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(result => result.hash));
-      }
-    }
+    await this.batchGetAndPopulateContractResults(contractResults, showDetails, transactionObjects, transactionHashes, requestId);
 
     const blockHash = EthImpl.toHash32(blockResponse.hash);
     const transactionArray = showDetails ? transactionObjects : transactionHashes;
@@ -1698,6 +1680,42 @@ export class EthImpl implements Eth {
       uncles: [],
     });
   }
+
+  /**
+   * Gets the transaction details for the block given the restried contract results.
+   * If showDetails is set to false simply populate the transactionHashes array with the transaction hash
+   * If showDetails is set to true subsequently batch call mirror node for additional transaction details
+   * @param contractResults
+   * @param showDetails
+   * @param transactionObjects
+   * @param transactionHashes
+   * @param requestId
+   */
+  private async batchGetAndPopulateContractResults(contractResults: any[], showDetails: boolean, transactionObjects: Transaction[], transactionHashes: string[], requestId?: string): Promise<void> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    let batchCount = 1;
+    for (let i = 0; i < contractResults.length; i+= this.ethGetBlockByResultsBatchSize) {
+      if (showDetails) {
+        this.logger.trace(`${requestIdPrefix} Batch ${i} of size ${this.ethGetBlockByResultsBatchSize} to retrieve detailed contract results from Mirror Node`);
+        await Promise.all(contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(async result => {
+          // depending on stage of contract execution revert the result.to value may be null
+          if (result.to != null) {
+            const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
+            if (transaction !== null) {
+              transactionObjects.push(transaction);
+            }
+          }
+        })).catch((err) => {
+          this.logger.error(err, `${requestIdPrefix} Error encountered on results ${i} -> ${i + this.ethGetBlockByResultsBatchSize} of contract results retrieval from Mirror Node`);
+          throw predefined.INTERNAL_ERROR('Error encountered on contract results retrieval from Mirror Node');
+        });
+        batchCount++;
+      } else {
+        transactionHashes.push(...contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(result => result.hash));
+      }
+    }
+  }
+
 
   /**
    * returns the block response
