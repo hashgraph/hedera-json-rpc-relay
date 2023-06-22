@@ -1628,6 +1628,7 @@ export class EthImpl implements Eth {
    * @param showDetails
    */
   private async getBlock(blockHashOrNumber: string, showDetails: boolean, requestId?: string ): Promise<Block | null> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true, requestId);
 
     if (blockResponse == null) return null;
@@ -1654,15 +1655,18 @@ export class EthImpl implements Eth {
 
     for (let i = 0; i < contractResults.length; i+= this.ethGetBlockByResultsBatchSize) {
       if (showDetails) {
-        Promise.all(contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(async result => {
+        await Promise.all(contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(async result => {
           // depending on stage of contract execution revert the result.to value may be null
-          if (!_.isNil(result.to)) {
+          if (result.to != null) {
             const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
             if (transaction !== null) {
               transactionObjects.push(transaction);
             }
           }
-        }));
+        })).catch((err) => {
+          this.logger.error(err, `${requestIdPrefix} Error encountered on results ${i} -> ${i + this.ethGetBlockByResultsBatchSize} of contract results retrieval from Mirror Node`);
+          throw predefined.INTERNAL_ERROR('Error encountered on contract results retrieval from Mirror Node');
+        });
       } else {
         transactionHashes.push(...contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(result => result.hash));
       }
