@@ -98,9 +98,9 @@ export default {
     },
 
     // block ranges
-    BLOCK_HASH_REGEX: '^0[xX][a-fA-F0-9]',
-    ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1500,
     MAX_BLOCK_RANGE: 5,
+    ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 100,
+    BLOCK_HASH_REGEX: '^0[xX][a-fA-F0-9]',
 
     DEFAULT_RATE_LIMIT: {
         TIER_1: 100,
@@ -108,6 +108,7 @@ export default {
         TIER_3: 1600,
         DURATION: 60000
     },
+
 
     HBAR_RATE_LIMIT_DURATION: parseInt(process.env.HBAR_RATE_LIMIT_DURATION || '80000'),
     HBAR_RATE_LIMIT_TINYBAR: parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR || '11000000000'),
