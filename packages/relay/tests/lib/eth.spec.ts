@@ -3447,26 +3447,6 @@ describe('Eth calls using MirrorNode', async function () {
       }
     });
 
-    it('eth_call with non account from field', async function () {
-
-      restMock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).reply(404);
-      restMock.onGet(`contracts/${contractAddress1}`).reply(200);
-
-      let  error;
-      try {
-        await ethImpl.call({
-          "from": contractAddress1,
-          "to": contractAddress2,
-          "data": contractCallData,
-          "gas": maxGasLimitHex
-        }, 'latest');
-      }  catch (e) {
-        error = e;
-      }
-      expect(error).to.be.not.null;
-      expect(error.message).to.equal(`Non Existing Account Address: ${contractAddress1}. Expected an Account Address.`);
-    });
-
     it('should execute "eth_call" against mirror node with a false ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
       const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
 
@@ -3746,23 +3726,35 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.equal("0x00");
     });
 
-    it('eth_call with no from address', async function () {
-      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
-      sdkClientStub.submitContractCallQueryWithRetry.returns({
-            asBytes: function () {
-              return Uint8Array.of(0);
-            }
-          }
-      );
-
-      const result = await ethImpl.call({
+    it('eth_call with no "from" address', async function () {
+      const callData = {
+        ...defaultCallData,
+        "from": undefined,
         "to": contractAddress2,
         "data": contractCallData,
-        "gas": maxGasLimitHex
-      }, 'latest');
+        "gas": maxGasLimit
+      };
 
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, undefined, 'eth_call');
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+
+      const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal("0x00");
+    });
+
+    it('eth_call with wrong "from" address', async function () {
+      const callData = {
+        ...defaultCallData,
+        "from": "0x0000000000000000000000000000000000000000",
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimit
+      };
+
+      const result = await ethImpl.call(callData, 'latest');
+
+      expect(result.name).to.equal("Non Existing Account Address");
+      expect(result.code).to.equal(-32014);
+      expect(result.message).to.equal(`Non Existing Account Address: ${callData.from}. Expected an Account Address.`);
     });
 
     it('eth_call with all fields', async function () {
@@ -4059,32 +4051,6 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.be.not.null;
       expect(result.code).to.eq(-32008);
       expect(result.name).to.eq("Contract revert executed");
-    });
-
-    it('eth_call with all fields but mirrorNode throws 504 (timeout) on pre-check', async function () {
-
-      const timeoutAddress = "0x00000000000000000000000000000000000004e2";
-      const timeoutContract  =  "0x00000000000000000000000000000000000004e3";
-      restMock.onGet(`contracts/${timeoutAddress}`).reply(504);
-      restMock.onGet(`accounts/${timeoutContract}`).reply(504);
-
-      const callData = {
-        ...defaultCallData,
-        "from": timeoutAddress,
-        "to": timeoutContract,
-        "data": contractCallData,
-        "gas": maxGasLimit
-      };
-      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {result: `0x00`});
-
-      let  error;
-      try {
-        const result = await ethImpl.call(callData, 'latest');
-      }  catch (e) {
-        error = e;
-      }
-      expect(error).to.be.not.null;
-      expect(error.message).to.equal("Non Existing Account Address: 0x00000000000000000000000000000000000004e2. Expected an Account Address.");
     });
 
     it('eth_call with all fields, but mirror node throws NOT_SUPPORTED', async function () {

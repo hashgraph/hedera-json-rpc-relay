@@ -1189,7 +1189,7 @@ export class EthImpl implements Eth {
       this.ethExecutionsCounter.labels(EthImpl.ethCall, call.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
 
     
-    const to = await this.performCallChecks(call, blockParam, requestId);
+    await this.performCallChecks(call, blockParam, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
     const gas = this.getCappedBlockGasLimit(call.gas, requestId);
@@ -1200,7 +1200,7 @@ export class EthImpl implements Eth {
       if ((process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'undefined') || (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false')) {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
-        return await this.callMirrorNode(call, to, gas, value, requestId);
+        return await this.callMirrorNode(call, gas, value, requestId);
       }
       
       return await this.callConsensusNode(call, gas, requestId);
@@ -1213,14 +1213,9 @@ export class EthImpl implements Eth {
     }
   }
 
-  async callMirrorNode(call: any, to: any, gas: number, value: string | null, requestId?: string): Promise<string | JsonRpcError> {
+  async callMirrorNode(call: any, gas: number, value: string | null, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     try {
-      if (to?.type === constants.TYPE_CONTRACT && to?.entity.runtime_bytecode === EthImpl.emptyHex) {
-        this.logger.trace(`${requestIdPrefix} Contract runtime_bytecode equals to 0x and mirror-node will return 0x as well, retrying with consensus node`);
-        throw new MirrorNodeClientError({ message: "Empty Response" }, MirrorNodeClientError.statusCodes.NO_CONTENT);
-      }
-
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`, call.to, gas, call.data, call.from);
       const callData = {
         ...call,
@@ -1271,7 +1266,21 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     // Execute the call and get the response
     this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using consensus-node.`, call.to, gas, call.data, call.from);
-    
+
+    // If "From" is distinct from blank, we check is a valid account
+    if (call.from) {
+      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, [constants.TYPE_ACCOUNT], requestId);
+      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
+        throw predefined.NON_EXISTING_ACCOUNT(call.from);
+      }
+    }
+
+    // Check "To" is a valid Contract or HTS Address
+    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT], requestId);
+    if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
+      throw predefined.NON_EXISTING_CONTRACT(call.to);
+    }
+
     try {
       let data = call.data;
       if (data) {
@@ -1320,14 +1329,6 @@ export class EthImpl implements Eth {
       throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
 
-    // If "From" is distinct from blank, we check is a valid account
-    if (call.from) {
-      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, [constants.TYPE_ACCOUNT], requestId);
-      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
-        throw predefined.NON_EXISTING_ACCOUNT(call.from);
-      }
-    }
-
     // verify gas is withing the allowed range
     if (call.gas && call.gas > this.contractCallGasLimit) {
       throw predefined.GAS_LIMIT_TOO_HIGH(call.gas, constants.BLOCK_GAS_LIMIT);
@@ -1335,14 +1336,6 @@ export class EthImpl implements Eth {
 
     // verify blockParam
     await this.performCallBlockParamChecks(blockParam, requestId);
-
-    // Check "To" is a valid Contract or HTS Address
-    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT], requestId);
-    if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
-      throw predefined.NON_EXISTING_CONTRACT(call.to);
-    }
-
-    return toEntityType;
   }
 
   async performCallBlockParamChecks(blockParam: string | null, requestId?: string) {

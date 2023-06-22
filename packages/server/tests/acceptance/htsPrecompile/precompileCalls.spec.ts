@@ -41,6 +41,7 @@ import TokenManagementContractJson from '../../contracts/TokenManagementContract
 import { predefined } from '../../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../../helpers/utils';
 import { EthImpl } from "@hashgraph/json-rpc-relay/dist/lib/eth";
+import RelayCall from "../../helpers/constants";
 
 describe('@precompile-calls Tests for eth_call with HTS', async function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -544,7 +545,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         const CALLDATA_ALLOWANCE = '0xdd62ed3e';
         const NON_EXISTING_ACCOUNT = '123abc123abc123abc123abc123abc123abc123a';
 
-        it("Call to non-existing HTS token returns error", async () => {
+        it("Call to non-existing HTS token returns 0x", async () => {
             const callData = {
                 from: '0x' + accounts[0].address,
                 to: '0x' + NON_EXISTING_ACCOUNT,
@@ -552,12 +553,8 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 data: CALLDATA_BALANCE_OF + accounts[0].address
             };
 
-            await relay.callFailing(
-                Constants.ETH_ENDPOINTS.ETH_CALL,
-                [callData, 'latest'],
-                predefined.NON_EXISTING_CONTRACT('0x' + NON_EXISTING_ACCOUNT),
-                requestId
-            );
+            const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+            expect(res).to.eq('0x'); // confirm no error
         });
 
         it("Call to HTS token from non-existing account returns error", async () => {
@@ -571,7 +568,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             await relay.callFailing(
                 Constants.ETH_ENDPOINTS.ETH_CALL,
                 [callData, 'latest'],
-                predefined.NON_EXISTING_ACCOUNT('0x' + NON_EXISTING_ACCOUNT),
+                predefined.CONTRACT_REVERT(),
                 requestId
             );
         });
