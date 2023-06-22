@@ -105,6 +105,7 @@ export class EthImpl implements Eth {
   private readonly contractCallGasLimit = Number.parseInt(process.env.CONTRACT_CALL_GAS_LIMIT ?? constants.CONTRACT_CALL_GAS_LIMIT.toString());
   private readonly ethGetTransactionCountMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE ?? constants.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE.toString());
   private readonly ethGetTransactionCountCacheTtl = Number.parseInt(process.env.ETH_GET_TRANSACTION_COUNT_CACHE_TTL ?? constants.ETH_GET_TRANSACTION_COUNT_CACHE_TTL.toString());
+  private readonly ethGetBlockByResultsBatchSize = Number.parseInt(process.env.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE ?? constants.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE.toString());
 
   /**
    * Configurable options used when initializing the cache.
@@ -1647,22 +1648,23 @@ export class EthImpl implements Eth {
     const transactionObjects: Transaction[] = [];
     const transactionHashes: string[] = [];
 
-    for (const result of contractResults) {
-      // depending on stage of contract execution revert the result.to value may be null
-      if (!_.isNil(result.to)) {
-        if(showDetails) {
-          // check the size of the block before querying for transaction details
-          if (contractResults.length >= this.ethGetTransactionCountMaxBlockRange) {
-            throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
-          }
+    if (showDetails && contractResults.length >= this.ethGetTransactionCountMaxBlockRange) {
+      throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
+    }
 
-          const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
-          if (transaction !== null) {
-            transactionObjects.push(transaction);
+    for (let i = 0; i < contractResults.length; i+= this.ethGetBlockByResultsBatchSize) {
+      if (showDetails) {
+        Promise.all(contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(async result => {
+          // depending on stage of contract execution revert the result.to value may be null
+          if (!_.isNil(result.to)) {
+            const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
+            if (transaction !== null) {
+              transactionObjects.push(transaction);
+            }
           }
-        } else {
-          transactionHashes.push(result.hash);
-        }
+        }));
+      } else {
+        transactionHashes.push(...contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(result => result.hash));
       }
     }
 
