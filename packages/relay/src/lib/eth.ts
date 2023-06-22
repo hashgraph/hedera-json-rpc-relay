@@ -105,6 +105,7 @@ export class EthImpl implements Eth {
   private readonly contractCallGasLimit = Number.parseInt(process.env.CONTRACT_CALL_GAS_LIMIT ?? constants.CONTRACT_CALL_GAS_LIMIT.toString());
   private readonly ethGetTransactionCountMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE ?? constants.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE.toString());
   private readonly ethGetTransactionCountCacheTtl = Number.parseInt(process.env.ETH_GET_TRANSACTION_COUNT_CACHE_TTL ?? constants.ETH_GET_TRANSACTION_COUNT_CACHE_TTL.toString());
+  private readonly ethGetBlockByResultsBatchSize = Number.parseInt(process.env.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE ?? constants.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE.toString());
 
   /**
    * Configurable options used when initializing the cache.
@@ -1647,24 +1648,11 @@ export class EthImpl implements Eth {
     const transactionObjects: Transaction[] = [];
     const transactionHashes: string[] = [];
 
-    for (const result of contractResults) {
-      // depending on stage of contract execution revert the result.to value may be null
-      if (!_.isNil(result.to)) {
-        if(showDetails) {
-          // check the size of the block before querying for transaction details
-          if (contractResults.length >= this.ethGetTransactionCountMaxBlockRange) {
-            throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
-          }
-
-          const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
-          if (transaction !== null) {
-            transactionObjects.push(transaction);
-          }
-        } else {
-          transactionHashes.push(result.hash);
-        }
-      }
+    if (showDetails && contractResults.length >= this.ethGetTransactionCountMaxBlockRange) {
+      throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
     }
+
+    await this.batchGetAndPopulateContractResults(contractResults, showDetails, transactionObjects, transactionHashes, requestId);
 
     const blockHash = EthImpl.toHash32(blockResponse.hash);
     const transactionArray = showDetails ? transactionObjects : transactionHashes;
@@ -1692,6 +1680,42 @@ export class EthImpl implements Eth {
       uncles: [],
     });
   }
+
+  /**
+   * Gets the transaction details for the block given the restried contract results.
+   * If showDetails is set to false simply populate the transactionHashes array with the transaction hash
+   * If showDetails is set to true subsequently batch call mirror node for additional transaction details
+   * @param contractResults
+   * @param showDetails
+   * @param transactionObjects
+   * @param transactionHashes
+   * @param requestId
+   */
+  private async batchGetAndPopulateContractResults(contractResults: any[], showDetails: boolean, transactionObjects: Transaction[], transactionHashes: string[], requestId?: string): Promise<void> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    let batchCount = 1;
+    for (let i = 0; i < contractResults.length; i+= this.ethGetBlockByResultsBatchSize) {
+      if (showDetails) {
+        this.logger.trace(`${requestIdPrefix} Batch ${i} of size ${this.ethGetBlockByResultsBatchSize} to retrieve detailed contract results from Mirror Node`);
+        await Promise.all(contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(async result => {
+          // depending on stage of contract execution revert the result.to value may be null
+          if (result.to != null) {
+            const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
+            if (transaction !== null) {
+              transactionObjects.push(transaction);
+            }
+          }
+        })).catch((err) => {
+          this.logger.error(err, `${requestIdPrefix} Error encountered on results ${i} -> ${i + this.ethGetBlockByResultsBatchSize} of contract results retrieval from Mirror Node`);
+          throw predefined.INTERNAL_ERROR('Error encountered on contract results retrieval from Mirror Node');
+        });
+        batchCount++;
+      } else {
+        transactionHashes.push(...contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(result => result.hash));
+      }
+    }
+  }
+
 
   /**
    * returns the block response
