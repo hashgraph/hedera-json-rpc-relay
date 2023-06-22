@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { Button, TextField, Typography } from "@mui/material";
 import { ethers } from 'ethers';
-import bootstrapInfo from '../contracts/.bootstrapInfo.json'
 import IHRC from '../contracts/IHRC.json'
 
 const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
@@ -12,7 +11,7 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
     // clear state vars on a chain or address have changed
     useEffect(() => {
         setIsLoading(false);
-        setHtsTokenAddress(bootstrapInfo.HTS_SECOND_ADDRESS);
+        setHtsTokenAddress('');
         setHtsTokenAssocaiteMsg(null);
     }, [chain, address])
 
@@ -41,7 +40,7 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
             <Typography variant="h5" sx={{ textDecoration: 'underline' }}> Associate HTS Tokens </Typography>
             <br />
             <TextField
-                id="htsTokenAddressField"
+                id="htsTokenAssociateAddressField"
                 fullWidth
                 label="Token address"
                 sx={{ m: 1 }}

@@ -109,7 +109,7 @@ export const predefined = {
   'NONCE_TOO_LOW': (nonce, currentNonce) => new JsonRpcError({
     name: 'Nonce too low',
     code: 32001,
-    message: `Nonce too low. Provided nonce: ${currentNonce}, current nonce: ${nonce}`
+    message: `Nonce too low. Provided nonce: ${nonce}, current nonce: ${currentNonce}`
   }),
   'NO_MINING_WORK': new JsonRpcError({
     name: 'No mining work',
@@ -224,7 +224,17 @@ export const predefined = {
   }),
   'PAGINATION_MAX': (count: number) => new JsonRpcError({
     name: 'Mirror Node pagination count range too large',
-    code: -32000,
+    code: -32011,
     message: `Exceeded maximum mirror node pagination count: ${count}`
+  }),
+  'MAX_BLOCK_SIZE': (count: number) => new JsonRpcError({
+    name: 'Block size too large',
+    code: -32000,
+    message: `Exceeded max transactions that can be returned in a block: ${count}`
+  }),
+  'UNKNOWN_BLOCK': new JsonRpcError({
+    name: 'Unknown block',
+    code: -39012,
+    message: 'Unknown block'
   }),
 };
