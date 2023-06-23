@@ -82,6 +82,7 @@ export class MirrorNodeClient {
     private static ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
     private static ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
+    private readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
 
     static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
         [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [400, 404]],
@@ -910,5 +911,24 @@ export class MirrorNodeClient {
 
     public getMirrorNodeWeb3Instance(){
         return this.web3Client;
+    }
+
+    /**
+     * This method is intended to be used in cases when the default axios-retry settings do not provide
+     * enough time for the expected data to be propagated to the Mirror node.
+     * It provides a way to have an extended retry logic only in specific places
+     */
+    public async repeatedRequest(methodName: string, args: any[], repeatCount: number, requestId?: string) {
+        let result;
+        for (let i = 0; i < repeatCount; i++) {
+            result = await this[methodName](...args, requestId);
+            if (result) {
+                break;
+            }
+
+            // Backoff before repeating request
+            await new Promise(r => setTimeout(r, this.MIRROR_NODE_RETRY_DELAY));
+        }
+        return result;
     }
 }
