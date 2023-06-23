@@ -1114,9 +1114,8 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let interactingEntity = '';
     let originatingAddress = '';
-    let parsedTx: EthersTransaction;
     try {
-      parsedTx = Precheck.parseTxIfNeeded(transaction);
+      let parsedTx = Precheck.parseTxIfNeeded(transaction);
       interactingEntity = parsedTx.to?.toString() || '';
       originatingAddress = parsedTx.from?.toString() || '';
       this.logger.trace(`${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
@@ -1128,6 +1127,30 @@ export class EthImpl implements Eth {
       this.logger.warn(`${requestIdPrefix} Error on precheck sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
       throw this.genericErrorHandler(e);
     }
+  }
+
+  async sendRawTransactionErrorHandler(e, transaction, transactionBuffer, txSubmitted, requestId) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.error(e,
+        `${requestIdPrefix} Failed to successfully submit sendRawTransaction for transaction ${transaction}`);
+    if (e instanceof JsonRpcError) {
+      return e;
+    }
+
+    if (e instanceof SDKClientError) {
+      this.hapiService.decrementErrorCounter(e.statusCode);
+    }
+
+    if (!txSubmitted) {
+      return predefined.INTERNAL_ERROR(e.message.toString());
+    }
+
+    await this.mirrorNodeClient.getContractRevertReasonFromTransaction(e, requestId, requestIdPrefix);
+
+    this.logger.error(e,
+        `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
+    //Return computed hash if unable to retrieve EthereumHash from record due to error
+    return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
   }
 
   /**
@@ -1162,9 +1185,8 @@ export class EthImpl implements Eth {
             if (parsedTx.nonce > accountNonce) {
               throw predefined.NONCE_TOO_HIGH(parsedTx.nonce, accountNonce);
             }
-            else {
-              throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountNonce);
-            }
+
+            throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountNonce);
           }
         }
         throw predefined.INTERNAL_ERROR();
@@ -1177,26 +1199,7 @@ export class EthImpl implements Eth {
 
       return record.hash;
     } catch (e: any) {
-      this.logger.error(e,
-        `${requestIdPrefix} Failed to successfully submit sendRawTransaction for transaction ${transaction}`);
-      if (e instanceof JsonRpcError) {
-        return e;
-      }
-
-      if (e instanceof SDKClientError) {
-        this.hapiService.decrementErrorCounter(e.statusCode);
-      }
-
-      if (!txSubmitted) {
-        return predefined.INTERNAL_ERROR(e.message.toString());
-      }
-
-      await this.mirrorNodeClient.getContractRevertReasonFromTransaction(e, requestId, requestIdPrefix);
-
-      this.logger.error(e,
-          `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
-      //Return computed hash if unable to retrieve EthereumHash from record due to error
-      return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+      return this.sendRawTransactionErrorHandler(e, transaction, transactionBuffer, txSubmitted, requestId);
     }
   }
 
