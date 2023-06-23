@@ -40,7 +40,6 @@ const _ = require('lodash');
 const createHash = require('keccak');
 const asm = require('@ethersproject/asm');
 import { Transaction as EthersTransaction } from 'ethers';
-import { proto } from "@hashgraph/proto/lib/proto";
 
 interface LatestBlockNumberTimestamp {
   blockNumber: string;
@@ -1181,7 +1180,7 @@ export class EthImpl implements Eth {
         const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestId);
         if (tx.transactions?.length) {
           const result = tx.transactions[0].result;
-          if (result === proto.ResponseCodeEnum[proto.ResponseCodeEnum.WRONG_NONCE]) {
+          if (result === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
             const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestId);
             const accountNonce = accountInfo.ethereum_nonce;
             if (parsedTx.nonce > accountNonce) {
