@@ -104,7 +104,9 @@ export class EthImpl implements Eth {
   private readonly ethGetBalanceCacheTtlMs = Number.parseInt(process.env.ETH_GET_BALANCE_CACHE_TTL_MS ?? constants.ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT.toString());
   private readonly maxBlockRange = Number.parseInt(process.env.MAX_BLOCK_RANGE ?? constants.MAX_BLOCK_RANGE.toString());
   private readonly contractCallGasLimit = Number.parseInt(process.env.CONTRACT_CALL_GAS_LIMIT ?? constants.CONTRACT_CALL_GAS_LIMIT.toString());
+  private readonly ethGetTransactionCountMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE ?? constants.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE.toString());
   private readonly ethGetTransactionCountCacheTtl = Number.parseInt(process.env.ETH_GET_TRANSACTION_COUNT_CACHE_TTL ?? constants.ETH_GET_TRANSACTION_COUNT_CACHE_TTL.toString());
+  private readonly ethGetBlockByResultsBatchSize = Number.parseInt(process.env.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE ?? constants.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE.toString());
 
   /**
    * Configurable options used when initializing the cache.
@@ -156,10 +158,10 @@ export class EthImpl implements Eth {
   private readonly chain: string;
 
   /**
-   * The counter used to track the number of active contract execution requests.
+   * The ethExecutionsCounter used to track the number of active contract execution requests.
    * @private
    */
-  private counter: Counter;
+  private ethExecutionsCounter: Counter;
 
   /**
    * Create a new Eth implementation.
@@ -184,10 +186,10 @@ export class EthImpl implements Eth {
     this.cache = cache;
     if (!cache) this.cache = new LRU(this.options);
 
-    this.counter = this.initCounter(registry);
+    this.ethExecutionsCounter = this.initEthExecutionCounter(registry);
   }
 
-  private initCounter(register: Registry) {
+  private initEthExecutionCounter(register: Registry) {
     const metricCounterName = 'rpc_relay_eth_executions';
     register.removeSingleMetric(metricCounterName);
     return new Counter({
@@ -468,9 +470,9 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`);
 
-    if ("data" in transaction){
-      this.counter.labels(EthImpl.ethEstimateGas, transaction.data.substring(0,10)).inc();
-    }
+    if (transaction?.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+      this.ethExecutionsCounter.labels(EthImpl.ethEstimateGas, transaction.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
+
 
     let gas = EthImpl.gasTxBaseCost;
     try {
@@ -760,8 +762,8 @@ export class EthImpl implements Eth {
 
     let blockNumber = null;
     let balanceFound = false;
-    let weibars: BigInt = BigInt(0);
-    const mirrorAccount = await this.mirrorNodeClient.getAccountPageLimit(account, requestId);
+    let weibars = BigInt(0);
+    let mirrorAccount;
 
     try {
       if (!EthImpl.blockTagIsLatestOrPending(blockNumberOrTag)) {
@@ -770,66 +772,69 @@ export class EthImpl implements Eth {
           blockNumber = block.number;
 
           // A blockNumberOrTag has been provided. If it is `latest` or `pending` retrieve the balance from /accounts/{account.id}
-          if (mirrorAccount) {
-            // If the parsed blockNumber is the same as the one from the latest block retrieve the balance from /accounts/{account.id}
-            if (latestBlock && block.number !== latestBlock.blockNumber) {
-              const latestTimestamp = Number(latestBlock.timeStampTo.split('.')[0]);
-              const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
-              const timeDiff = latestTimestamp - blockTimestamp;
-              // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
-              if (timeDiff < constants.BALANCES_UPDATE_INTERVAL) {
-                let currentBalance = 0;
-                let balanceFromTxs = 0;
-                if (mirrorAccount.balance) {
-                  currentBalance = mirrorAccount.balance.balance;
-                }
-
-                // The balance in the account is real time, so we simply subtract the transactions to the block.timestamp.to to get a block relevant balance.
-                // needs to be updated below.
-                const nextPage: string = mirrorAccount.links.next;
-
-                if(nextPage) {
-                  // If we have a pagination link that falls within the block.timestamp.to, we need to paginate to get the transactions for the block.timestamp.to
-                  const nextPageParams = new URLSearchParams(nextPage.split('?')[1]);
-                  const nextPageTimeMarker = nextPageParams.get('timestamp');
-                  if (nextPageTimeMarker && nextPageTimeMarker?.split(':')[1] >= block.timestamp.to) {
-                    // If nextPageTimeMarker is greater than the block.timestamp.to, then we need to paginate to get the transactions for the block.timestamp.to
-                    const pagedTransactions = await this.mirrorNodeClient.getAccountPaginated(nextPage, requestId);
-                    mirrorAccount.transactions = mirrorAccount.transactions.concat(pagedTransactions);
-                  }
-                  // If nextPageTimeMarker is less than the block.timestamp.to, then just run the getBalanceAtBlockTimestamp function in this case as well.
-                }
-
-                balanceFromTxs = this.getBalanceAtBlockTimestamp(
-                  mirrorAccount.account,
-                  mirrorAccount.transactions,
-                  block.timestamp.to
-                );
-
-                balanceFound = true;
-                weibars = BigInt(currentBalance - balanceFromTxs) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+          // If the parsed blockNumber is the same as the one from the latest block retrieve the balance from /accounts/{account.id}
+          if (latestBlock && block.number !== latestBlock.blockNumber) {
+            const latestTimestamp = Number(latestBlock.timeStampTo.split('.')[0]);
+            const blockTimestamp = Number(block.timestamp.from.split('.')[0]);
+            const timeDiff = latestTimestamp - blockTimestamp;
+            // The block is NOT from the last 15 minutes, use /balances rest API
+            if (timeDiff > constants.BALANCES_UPDATE_INTERVAL) {
+              const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(
+                account,
+                block.timestamp.from,
+                requestId
+              );
+              balanceFound = true;
+              if (balance.balances?.length) {
+                weibars = BigInt(balance.balances[0].balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+              }
+            }
+            // The block is from the last 15 minutes, therefore the historical balance hasn't been imported in the Mirror Node yet
+            else {
+              let currentBalance = 0;
+              let balanceFromTxs = 0;
+              mirrorAccount = await this.mirrorNodeClient.getAccountPageLimit(account, requestId);
+              if (mirrorAccount.balance) {
+                currentBalance = mirrorAccount.balance.balance;
               }
 
-              // The block is NOT from the last 15 minutes, use /balances rest API
-              else {
-                const balance = await this.mirrorNodeClient.getBalanceAtTimestamp(
-                  mirrorAccount.account,
-                  block.timestamp.from,
-                  requestId
-                );
-                balanceFound = true;
-                if (balance.balances?.length) {
-                  weibars = BigInt(balance.balances[0].balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+              // The balance in the account is real time, so we simply subtract the transactions to the block.timestamp.to to get a block relevant balance.
+              // needs to be updated below.
+              const nextPage: string = mirrorAccount.links.next;
+
+              if (nextPage) {
+                // If we have a pagination link that falls within the block.timestamp.to, we need to paginate to get the transactions for the block.timestamp.to
+                const nextPageParams = new URLSearchParams(nextPage.split('?')[1]);
+                const nextPageTimeMarker = nextPageParams.get('timestamp');
+                // If nextPageTimeMarker is greater than the block.timestamp.to, then we need to paginate to get the transactions for the block.timestamp.to
+                if (nextPageTimeMarker && nextPageTimeMarker?.split(':')[1] >= block.timestamp.to) {
+                  const pagedTransactions = await this.mirrorNodeClient.getAccountPaginated(nextPage, requestId);
+                  mirrorAccount.transactions = mirrorAccount.transactions.concat(pagedTransactions);
                 }
+                // If nextPageTimeMarker is less than the block.timestamp.to, then just run the getBalanceAtBlockTimestamp function in this case as well.
               }
+
+              balanceFromTxs = this.getBalanceAtBlockTimestamp(
+                mirrorAccount.account,
+                mirrorAccount.transactions,
+                block.timestamp.to
+              );
+
+              balanceFound = true;
+              weibars = BigInt(currentBalance - balanceFromTxs) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
             }
           }
         }
       }
 
-      if (!balanceFound && mirrorAccount?.balance) {
-        balanceFound = true;
-        weibars = BigInt(mirrorAccount.balance.balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+      if (!balanceFound && !mirrorAccount) {
+        // If no balance and no account, then we need to make a request to the mirror node for the account.
+        mirrorAccount = await this.mirrorNodeClient.getAccountPageLimit(account, requestId);
+        // Test if exists here
+        if(mirrorAccount !== null && mirrorAccount !== undefined) {
+          balanceFound = true;
+          weibars = BigInt(mirrorAccount.balance.balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+        }
       }
 
       if (!balanceFound) {
@@ -844,9 +849,7 @@ export class EthImpl implements Eth {
       // save in cache the current balance for the account and blockNumberOrTag
       this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), { ttl: this.ethGetBalanceCacheTtlMs });
       this.logger.trace(
-        `${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(cachedBalance)} for ${
-          this.ethGetBalanceCacheTtlMs
-        } ms`
+        `${requestIdPrefix} caching ${cacheKey}:${JSON.stringify(cachedBalance)} for ${this.ethGetBalanceCacheTtlMs} ms`
       );
 
       return EthImpl.numberTo0x(weibars);
@@ -976,7 +979,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByHash(hash=${hash}, showDetails=%o)`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_HASH}_${hash}`;
-    let cachedResponse = this.cache.get(cacheKey);
+    const cachedResponse = this.cache.get(cacheKey);
     if (cachedResponse) {
       this.logger.debug(`${requestIdPrefix} getBlockTransactionCountByHash returned cached response: ${cachedResponse}`);
       return cachedResponse;
@@ -1003,7 +1006,7 @@ export class EthImpl implements Eth {
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestId);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_NUMBER}_${blockNum}`;
-    let cachedResponse = this.cache.get(cacheKey);
+    const cachedResponse = this.cache.get(cacheKey);
     if (cachedResponse) {
       this.logger.debug(`${requestIdPrefix} getBlockTransactionCountByNumber returned cached response: ${cachedResponse}`);
       return cachedResponse;
@@ -1109,6 +1112,9 @@ export class EthImpl implements Eth {
 
   async parseRawTxAndPrecheck(transaction: string, requestId?: string){
     const requestIdPrefix = formatRequestIdMessage(requestId);
+    if(transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+      this.ethExecutionsCounter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
+
     let interactingEntity = '';
     let originatingAddress = '';
     let parsedTx: EthersTransaction;
@@ -1201,11 +1207,11 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} call(hash=${JSON.stringify(call)}, blockParam=${blockParam})`, call, blockParam);
 
-    if ("data" in call){
-      this.counter.labels(EthImpl.ethCall, call.data.substring(0,10)).inc();
-    }
+    if (call.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+      this.ethExecutionsCounter.labels(EthImpl.ethCall, call.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
+
     
-    const to = await this.performCallChecks(call, blockParam, requestId);
+    await this.performCallChecks(call, blockParam, requestId);
 
     // Get a reasonable value for "gas" if it is not specified.
     const gas = this.getCappedBlockGasLimit(call.gas, requestId);
@@ -1216,7 +1222,7 @@ export class EthImpl implements Eth {
       if ((process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'undefined') || (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false')) {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
-        return await this.callMirrorNode(call, to, gas, value, requestId);
+        return await this.callMirrorNode(call, gas, value, requestId);
       }
       
       return await this.callConsensusNode(call, gas, requestId);
@@ -1229,14 +1235,9 @@ export class EthImpl implements Eth {
     }
   }
 
-  async callMirrorNode(call: any, to: any, gas: number, value: string | null, requestId?: string): Promise<string | JsonRpcError> {
+  async callMirrorNode(call: any, gas: number, value: string | null, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     try {
-      if (to?.type === constants.TYPE_CONTRACT && to?.entity.runtime_bytecode === EthImpl.emptyHex) {
-        this.logger.trace(`${requestIdPrefix} Contract runtime_bytecode equals to 0x and mirror-node will return 0x as well, retrying with consensus node`);
-        throw new MirrorNodeClientError({ message: "Empty Response" }, MirrorNodeClientError.statusCodes.NO_CONTENT);
-      }
-
       this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`, call.to, gas, call.data, call.from);
       const callData = {
         ...call,
@@ -1287,7 +1288,21 @@ export class EthImpl implements Eth {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     // Execute the call and get the response
     this.logger.debug(`${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using consensus-node.`, call.to, gas, call.data, call.from);
-    
+
+    // If "From" is distinct from blank, we check is a valid account
+    if (call.from) {
+      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, [constants.TYPE_ACCOUNT], requestId);
+      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
+        throw predefined.NON_EXISTING_ACCOUNT(call.from);
+      }
+    }
+
+    // Check "To" is a valid Contract or HTS Address
+    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT], requestId);
+    if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
+      throw predefined.NON_EXISTING_CONTRACT(call.to);
+    }
+
     try {
       let data = call.data;
       if (data) {
@@ -1336,14 +1351,6 @@ export class EthImpl implements Eth {
       throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
 
-    // If "From" is distinct from blank, we check is a valid account
-    if (call.from) {
-      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(call.from, [constants.TYPE_ACCOUNT], requestId);
-      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
-        throw predefined.NON_EXISTING_ACCOUNT(call.from);
-      }
-    }
-
     // verify gas is withing the allowed range
     if (call.gas && call.gas > this.contractCallGasLimit) {
       throw predefined.GAS_LIMIT_TOO_HIGH(call.gas, constants.BLOCK_GAS_LIMIT);
@@ -1351,14 +1358,6 @@ export class EthImpl implements Eth {
 
     // verify blockParam
     await this.performCallBlockParamChecks(blockParam, requestId);
-
-    // Check "To" is a valid Contract or HTS Address
-    const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT], requestId);
-    if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
-      throw predefined.NON_EXISTING_CONTRACT(call.to);
-    }
-
-    return toEntityType;
   }
 
   async performCallBlockParamChecks(blockParam: string | null, requestId?: string) {
@@ -1665,19 +1664,11 @@ export class EthImpl implements Eth {
     const transactionObjects: Transaction[] = [];
     const transactionHashes: string[] = [];
 
-    for (const result of contractResults) {
-      // depending on stage of contract execution revert the result.to value may be null
-      if (!_.isNil(result.to)) {
-        if(showDetails) {
-          const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
-          if (transaction !== null) {
-            transactionObjects.push(transaction);
-          }
-        } else {
-          transactionHashes.push(result.hash);
-        }
-      }
+    if (showDetails && contractResults.length >= this.ethGetTransactionCountMaxBlockRange) {
+      throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
     }
+
+    await this.batchGetAndPopulateContractResults(contractResults, showDetails, transactionObjects, transactionHashes, requestId);
 
     const blockHash = EthImpl.toHash32(blockResponse.hash);
     const transactionArray = showDetails ? transactionObjects : transactionHashes;
@@ -1705,6 +1696,42 @@ export class EthImpl implements Eth {
       uncles: [],
     });
   }
+
+  /**
+   * Gets the transaction details for the block given the restried contract results.
+   * If showDetails is set to false simply populate the transactionHashes array with the transaction hash
+   * If showDetails is set to true subsequently batch call mirror node for additional transaction details
+   * @param contractResults
+   * @param showDetails
+   * @param transactionObjects
+   * @param transactionHashes
+   * @param requestId
+   */
+  private async batchGetAndPopulateContractResults(contractResults: any[], showDetails: boolean, transactionObjects: Transaction[], transactionHashes: string[], requestId?: string): Promise<void> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    let batchCount = 1;
+    for (let i = 0; i < contractResults.length; i+= this.ethGetBlockByResultsBatchSize) {
+      if (showDetails) {
+        this.logger.trace(`${requestIdPrefix} Batch ${i} of size ${this.ethGetBlockByResultsBatchSize} to retrieve detailed contract results from Mirror Node`);
+        await Promise.all(contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(async result => {
+          // depending on stage of contract execution revert the result.to value may be null
+          if (result.to != null) {
+            const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
+            if (transaction !== null) {
+              transactionObjects.push(transaction);
+            }
+          }
+        })).catch((err) => {
+          this.logger.error(err, `${requestIdPrefix} Error encountered on results ${i} -> ${i + this.ethGetBlockByResultsBatchSize} of contract results retrieval from Mirror Node`);
+          throw predefined.INTERNAL_ERROR('Error encountered on contract results retrieval from Mirror Node');
+        });
+        batchCount++;
+      } else {
+        transactionHashes.push(...contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(result => result.hash));
+      }
+    }
+  }
+
 
   /**
    * returns the block response
