@@ -924,6 +924,10 @@ export class MirrorNodeClient {
             if (result) {
                 break;
             }
+
+            // Backoff before repeating request
+            const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
+            await new Promise(r => setTimeout(r, mirrorNodeRetryDelay));
         }
         return result;
     }

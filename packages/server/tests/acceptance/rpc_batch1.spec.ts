@@ -877,6 +877,25 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     );
                 });
 
+                it('@release fail "eth_getTransactionReceipt" on precheck with wrong nonce error when sending a tx with a higher nonce', async function () {
+                    const nonce = await relay.getAccountNonce('0x' + accounts[2].address, requestId);
+
+                    const transaction = {
+                        ...default155TransactionData,
+                        to: mirrorContract.evm_address,
+                        nonce: nonce + 100,
+                        gasPrice: await relay.gasPrice(requestId)
+                    };
+
+                    const signedTx = await accounts[2].wallet.signTransaction(transaction);
+
+                    await relay.callFailing(
+                        RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION,
+                        [signedTx],
+                        predefined.NONCE_TOO_HIGH(nonce + 100, nonce), requestId
+                    );
+                });
+
                 it('@release fail "eth_getTransactionReceipt" on submitting with wrong nonce error when sending a tx with the same nonce twice', async function () {
                     const nonce = await relay.getAccountNonce('0x' + accounts[2].address, requestId);
 

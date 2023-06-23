@@ -1112,9 +1112,6 @@ export class EthImpl implements Eth {
 
   async parseRawTxAndPrecheck(transaction: string, requestId?: string){
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    if(transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
-      this.ethExecutionsCounter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
-
     let interactingEntity = '';
     let originatingAddress = '';
     let parsedTx: EthersTransaction;
@@ -1140,11 +1137,11 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    this.counter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0,10)).inc();
+    if(transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+      this.ethExecutionsCounter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
 
     const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestId);
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
-    const computedHash = EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
 
     let txSubmitted = false;
     try {
@@ -1161,7 +1158,13 @@ export class EthImpl implements Eth {
           const result = tx.transactions[0].result;
           if (result === 'WRONG_NONCE') {
             const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestId)
-            throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountInfo.ethereumNonce);
+            const accountNonce = accountInfo.ethereum_nonce;
+            if (parsedTx.nonce > accountNonce) {
+              throw predefined.NONCE_TOO_HIGH(parsedTx.nonce, accountNonce);
+            }
+            else {
+              throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountNonce);
+            }
           }
         }
         throw predefined.INTERNAL_ERROR();
@@ -1193,7 +1196,7 @@ export class EthImpl implements Eth {
       this.logger.error(e,
           `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
       //Return computed hash if unable to retrieve EthereumHash from record due to error
-      return computedHash;
+      return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
     }
   }
 
