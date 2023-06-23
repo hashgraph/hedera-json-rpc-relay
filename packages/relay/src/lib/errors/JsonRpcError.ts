@@ -61,11 +61,6 @@ export const predefined = {
     code: -32606,
     message: 'HBAR Rate limit exceeded'
   }),
-  'INCORRECT_NONCE': new JsonRpcError({
-    name: 'Incorrect nonce',
-    code: -32006,
-    message: 'Incorrect nonce'
-  }),
   'INSUFFICIENT_ACCOUNT_BALANCE': new JsonRpcError({
     name: 'Insufficient account balance',
     code: -32000,

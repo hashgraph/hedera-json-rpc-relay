@@ -82,6 +82,7 @@ export class MirrorNodeClient {
     private static ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
     private static ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
     private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
+    private readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
 
     static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
         [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [400, 404]],
@@ -926,8 +927,7 @@ export class MirrorNodeClient {
             }
 
             // Backoff before repeating request
-            const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
-            await new Promise(r => setTimeout(r, mirrorNodeRetryDelay));
+            await new Promise(r => setTimeout(r, this.MIRROR_NODE_RETRY_DELAY));
         }
         return result;
     }

@@ -40,6 +40,8 @@ const _ = require('lodash');
 const createHash = require('keccak');
 const asm = require('@ethersproject/asm');
 import { Transaction as EthersTransaction } from 'ethers';
+import { proto } from "@hashgraph/proto/lib/proto";
+
 interface LatestBlockNumberTimestamp {
   blockNumber: string;
   timeStampTo: string;
@@ -107,7 +109,7 @@ export class EthImpl implements Eth {
   private readonly ethGetTransactionCountMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE ?? constants.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE.toString());
   private readonly ethGetTransactionCountCacheTtl = Number.parseInt(process.env.ETH_GET_TRANSACTION_COUNT_CACHE_TTL ?? constants.ETH_GET_TRANSACTION_COUNT_CACHE_TTL.toString());
   private readonly ethGetBlockByResultsBatchSize = Number.parseInt(process.env.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE ?? constants.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE.toString());
-
+  private readonly MirrorNodeGetContractResultRetries = Number.parseInt(process.env.MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES ?? constants.MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES.toString());
   /**
    * Configurable options used when initializing the cache.
    *
@@ -1173,14 +1175,14 @@ export class EthImpl implements Eth {
       // Wait for the record from the execution.
       let txId = contractExecuteResponse.transactionId.toString();
       const formattedId = formatTransactionId(txId);
-      const  record = await this.mirrorNodeClient.repeatedRequest('getContractResult', [formattedId], 3, requestId);
+      const  record = await this.mirrorNodeClient.repeatedRequest(this.mirrorNodeClient.getContractResult.name, [formattedId], this.MirrorNodeGetContractResultRetries, requestId);
       if (!record) {
         this.logger.warn(`${requestIdPrefix} No record retrieved`);
         const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestId);
         if (tx.transactions?.length) {
           const result = tx.transactions[0].result;
-          if (result === 'WRONG_NONCE') {
-            const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestId)
+          if (result === proto.ResponseCodeEnum[proto.ResponseCodeEnum.WRONG_NONCE]) {
+            const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestId);
             const accountNonce = accountInfo.ethereum_nonce;
             if (parsedTx.nonce > accountNonce) {
               throw predefined.NONCE_TOO_HIGH(parsedTx.nonce, accountNonce);
@@ -1189,7 +1191,7 @@ export class EthImpl implements Eth {
             throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountNonce);
           }
         }
-        throw predefined.INTERNAL_ERROR();
+        throw predefined.INTERNAL_ERROR(`No matching record found for transaction id ${txId}`);
       }
 
       if (record.hash == null) {
