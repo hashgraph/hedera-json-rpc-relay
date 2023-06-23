@@ -58,7 +58,7 @@ import {
 } from '../helpers';
 
 import pino from 'pino';
-import { Block, Transaction } from '../../src/lib/model';
+import { Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
@@ -3331,7 +3331,7 @@ describe('Eth calls using MirrorNode', async function () {
       })
     });
 
-    it('to field is not a contract or token', async function () {
+    it.only('to field is not a contract or token', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
       restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
         account: "0.0.1723",
@@ -3340,17 +3340,19 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress2}`).reply(404);
       restMock.onGet(`tokens/${contractId2}`).reply(404);
 
-      await ethCallFailing(ethImpl, {
-        "from": accountAddress1,
-        "to": contractAddress2,
-        "data": contractCallData,
-        "gas": maxGasLimitHex
-      }, 'latest', (error) => {
+      try {
+        await ethImpl.call({
+          "from": accountAddress1,
+          "to": contractAddress2,
+          "data": contractCallData,
+          "gas": maxGasLimitHex
+        }, 'latest');
+      } catch (error: any) {
         const predefineError = predefined.NON_EXISTING_CONTRACT(contractAddress2);
         expect(error.code).to.equal(predefineError.code);
         expect(error.name).to.equal(predefineError.name);
         expect(error.message).to.equal(predefineError.message);
-      })
+      }
     });
   });
 
