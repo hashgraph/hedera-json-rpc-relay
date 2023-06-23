@@ -3331,7 +3331,7 @@ describe('Eth calls using MirrorNode', async function () {
       })
     });
 
-    it.only('to field is not a contract or token', async function () {
+    it('to field is not a contract or token', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
       restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
         account: "0.0.1723",
