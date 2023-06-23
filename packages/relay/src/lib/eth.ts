@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { Hbar, EthereumTransaction } from '@hashgraph/sdk';
+import { Hbar } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import {BigNumber as BN} from "bignumber.js";
 import { Logger } from 'pino';
@@ -30,7 +30,7 @@ import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
-import { formatRequestIdMessage } from '../formatters';
+import {formatRequestIdMessage, formatTransactionId} from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
 import {Counter, Registry} from "prom-client";
@@ -39,6 +39,8 @@ const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
 const asm = require('@ethersproject/asm');
+import { Transaction as EthersTransaction } from 'ethers';
+
 interface LatestBlockNumberTimestamp {
   blockNumber: string;
   timeStampTo: string;
@@ -106,7 +108,7 @@ export class EthImpl implements Eth {
   private readonly ethGetTransactionCountMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE ?? constants.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE.toString());
   private readonly ethGetTransactionCountCacheTtl = Number.parseInt(process.env.ETH_GET_TRANSACTION_COUNT_CACHE_TTL ?? constants.ETH_GET_TRANSACTION_COUNT_CACHE_TTL.toString());
   private readonly ethGetBlockByResultsBatchSize = Number.parseInt(process.env.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE ?? constants.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE.toString());
-
+  private readonly MirrorNodeGetContractResultRetries = Number.parseInt(process.env.MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES ?? constants.MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES.toString());
   /**
    * Configurable options used when initializing the cache.
    *
@@ -1109,6 +1111,49 @@ export class EthImpl implements Eth {
     return nonceCount;
   }
 
+  async parseRawTxAndPrecheck(transaction: string, requestId?: string): Promise<EthersTransaction>{
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    let interactingEntity = '';
+    let originatingAddress = '';
+    try {
+      let parsedTx = Precheck.parseTxIfNeeded(transaction);
+      interactingEntity = parsedTx.to?.toString() || '';
+      originatingAddress = parsedTx.from?.toString() || '';
+      this.logger.trace(`${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
+
+      const gasPrice = Number(await this.gasPrice(requestId));
+      await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestId);
+      return parsedTx;
+    } catch (e: any) {
+      this.logger.warn(`${requestIdPrefix} Error on precheck sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
+      throw this.genericErrorHandler(e);
+    }
+  }
+
+  async sendRawTransactionErrorHandler(e, transaction, transactionBuffer, txSubmitted, requestId) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.error(e,
+        `${requestIdPrefix} Failed to successfully submit sendRawTransaction for transaction ${transaction}`);
+    if (e instanceof JsonRpcError) {
+      return e;
+    }
+
+    if (e instanceof SDKClientError) {
+      this.hapiService.decrementErrorCounter(e.statusCode);
+    }
+
+    if (!txSubmitted) {
+      return predefined.INTERNAL_ERROR(e.message.toString());
+    }
+
+    await this.mirrorNodeClient.getContractRevertReasonFromTransaction(e, requestId, requestIdPrefix);
+
+    this.logger.error(e,
+        `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
+    //Return computed hash if unable to retrieve EthereumHash from record due to error
+    return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+  }
+
   /**
    * Submits a transaction to the network for execution.
    *
@@ -1119,59 +1164,43 @@ export class EthImpl implements Eth {
     if(transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter.labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
 
-    let interactingEntity = '';
-    let originatingAddress = '';
-    try {
-      const parsedTx = Precheck.parseTxIfNeeded(transaction);
-      interactingEntity = parsedTx.to ? parsedTx.to.toString() : '';
-      originatingAddress = parsedTx.from ? parsedTx.from.toString() : '';
-      this.logger.trace(`${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
-
-      const gasPrice = Number(await this.gasPrice(requestId));
-      await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestId);
-    } catch (e: any) {
-      this.logger.warn(`${requestIdPrefix} Error on precheck sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
-      throw this.genericErrorHandler(e);
-    }
-
+    const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestId);
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
+
+    let txSubmitted = false;
     try {
       const contractExecuteResponse = await this.hapiService.getSDKClient().submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestId);
+      txSubmitted = true;
+      // Wait for the record from the execution.
+      let txId = contractExecuteResponse.transactionId.toString();
+      const formattedId = formatTransactionId(txId);
+      const  record = await this.mirrorNodeClient.repeatedRequest(this.mirrorNodeClient.getContractResult.name, [formattedId], this.MirrorNodeGetContractResultRetries, requestId);
+      if (!record) {
+        this.logger.warn(`${requestIdPrefix} No record retrieved`);
+        const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestId);
+        if (tx.transactions?.length) {
+          const result = tx.transactions[0].result;
+          if (result === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
+            const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestId);
+            const accountNonce = accountInfo.ethereum_nonce;
+            if (parsedTx.nonce > accountNonce) {
+              throw predefined.NONCE_TOO_HIGH(parsedTx.nonce, accountNonce);
+            }
 
-      try {
-        // Wait for the record from the execution.
-        const record = await this.hapiService.getSDKClient().executeGetTransactionRecord(contractExecuteResponse, EthereumTransaction.name, EthImpl.ethSendRawTransaction, interactingEntity, requestId);
-        if (!record) {
-          this.logger.warn(`${requestIdPrefix} No record retrieved`);
-          throw predefined.INTERNAL_ERROR();
+            throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountNonce);
+          }
         }
-
-        if (record.ethereumHash == null) {
-          this.logger.error(`${requestIdPrefix} The ethereumHash can never be null for an ethereum transaction, and yet it was!!`);
-          throw predefined.INTERNAL_ERROR();
-        }
-
-        return  EthImpl.prepend0x(Buffer.from(record.ethereumHash).toString('hex'));
-      } catch (e) {
-
-        await this.mirrorNodeClient.getContractRevertReasonFromTransaction(e, requestId, requestIdPrefix);
-
-        this.logger.error(e,
-          `${requestIdPrefix} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`);
-        //Return computed hash if unable to retrieve EthereumHash from record due to error
-        return EthImpl.prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+        throw predefined.INTERNAL_ERROR(`No matching record found for transaction id ${txId}`);
       }
+
+      if (record.hash == null) {
+        this.logger.error(`${requestIdPrefix} The ethereumHash can never be null for an ethereum transaction, and yet it was!!`);
+        throw predefined.INTERNAL_ERROR();
+      }
+
+      return record.hash;
     } catch (e: any) {
-      this.logger.error(e,
-        `${requestIdPrefix} Failed to successfully submit sendRawTransaction for transaction ${transaction}`);
-      if (e instanceof JsonRpcError) {
-        return e;
-      }
-
-      if (e instanceof SDKClientError) {
-        this.hapiService.decrementErrorCounter(e.statusCode);
-      }
-      return predefined.INTERNAL_ERROR(e.message.toString());
+      return this.sendRawTransactionErrorHandler(e, transaction, transactionBuffer, txSubmitted, requestId);
     }
   }
 

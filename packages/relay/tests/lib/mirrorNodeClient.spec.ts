@@ -208,7 +208,6 @@ describe('MirrorNodeClient', async function () {
       }
     });
 
-    // const customMirrorNodeInstance = new MirrorNodeClient('', logger.child({ name: `mirror-node`}), instance);
     const result = await mirrorNodeInstance.get('accounts');
     expect(result).to.exist;
     expect(result.links).to.exist;
@@ -1033,6 +1032,50 @@ describe('MirrorNodeClient', async function () {
         expect(e.code).to.equal(errorRef.code);
         expect(e.name).to.equal(errorRef.name);
       }
+    });
+  });
+
+  describe('repeatedRequest', async() => {
+    const uri = `accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`;
+
+    it('if the method returns an immediate result it is called only once', async () => {
+      mock.onGet(uri).reply(200, mockData.account);
+
+      const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
+      expect(result).to.exist;
+      expect(result.account).equal('0.0.1014');
+
+      expect(mock.history.get.length).to.eq(1); // is called once
+    });
+
+    it('method is repeated until a result is found', async () => {
+      // Return data on the second call
+      mock.onGet(uri).replyOnce(404, mockData.notFound)
+          .onGet(uri).reply(200, mockData.account)
+
+      const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
+      expect(result).to.exist;
+      expect(result.account).equal('0.0.1014');
+
+      expect(mock.history.get.length).to.eq(2); // is called twice
+    });
+
+    it('method is repeated the specified number of times if no result is found', async () => {
+      const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
+      expect(result).to.be.null;
+      expect(mock.history.get.length).to.eq(3); // is called three times
+    });
+
+    it('method is not repeated more times than the limit', async () => {
+      // Return data on the fourth call
+      mock.onGet(uri).replyOnce(404, mockData.notFound)
+          .onGet(uri).replyOnce(404, mockData.notFound)
+          .onGet(uri).replyOnce(404, mockData.notFound)
+          .onGet(uri).reply(200, mockData.account)
+
+      const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
+      expect(result).to.be.null;
+      expect(mock.history.get.length).to.eq(3); // is called three times
     });
   });
 
