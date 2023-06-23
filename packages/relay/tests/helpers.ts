@@ -21,6 +21,8 @@
 import { expect } from "chai";
 import { ethers } from 'ethers';
 import crypto from 'crypto';
+import {EthImpl} from "../src/lib/eth";
+import {Block, Transaction} from "../src/lib/model";
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -46,6 +48,173 @@ const signTransaction = async (transaction, key = defaultPrivateKey) => {
 const random20BytesAddress = (addHexPrefix = true) => {
     return (addHexPrefix ? '0x' : '') + crypto.randomBytes(20).toString('hex');
 };
+
+export const ethCallFailing = async (ethImpl, args, block, assertFunc) => {
+    let hasError = false;
+    try {
+        await ethImpl.call(args, block);
+    } catch (error: any) {
+        hasError = true;
+        assertFunc(error);
+    }
+    expect(hasError).to.eq(true);
+}
+
+export const ethGetLogsFailing = async (ethImpl, args, assertFunc) => {
+    let hasError = false;
+    try {
+        await ethImpl.getLogs(...args);
+        expect(true).to.eq(false);
+    } catch (error: any) {
+        hasError = true;
+        assertFunc(error);
+    }
+    expect(hasError).to.eq(true);
+}
+
+export const validateHash = (hash: string, len?: number) => {
+    let regex;
+    if (len && len > 0) {
+        regex = new RegExp(`^0x[a-f0-9]{${len}}$`);
+    } else {
+        regex = /^0x[a-f0-9]*$/;
+    }
+
+    return !!regex.exec(hash);
+};
+
+export const assertTransactionReceipt = (receipt, expectedReceipt) => {
+    expect(receipt).to.exist;
+    if (receipt == null) return;
+
+    expect(validateHash(receipt.transactionHash, 64)).to.eq(true);
+    expect(validateHash(receipt.blockHash, 64)).to.eq(true);
+    expect(validateHash(receipt.from, 40)).to.eq(true);
+    if (receipt.contractAddress) {
+        expect(validateHash(receipt.contractAddress, 40)).to.eq(true);
+    }
+    if (receipt.to) {
+        expect(validateHash(receipt.to, 40)).to.eq(true);
+    }
+    expect(validateHash(receipt.logsBloom, 512)).to.eq(true);
+    if (receipt.root) {
+        expect(validateHash(receipt.root, 64)).to.eq(true);
+    }
+
+    expect(receipt.transactionHash).to.exist;
+    expect(receipt.transactionHash).to.eq(expectedReceipt.transactionHash);
+    expect(receipt.transactionIndex).to.exist;
+    expect(receipt.blockHash).to.eq(expectedReceipt.blockHash);
+    expect(receipt.blockNumber).to.eq(expectedReceipt.blockNumber);
+    expect(receipt.from).to.eq(expectedReceipt.from);
+    expect(receipt.to).to.eq(expectedReceipt.to);
+    expect(receipt.cumulativeGasUsed).to.eq(expectedReceipt.cumulativeGasUsed);
+    expect(receipt.gasUsed).to.eq(expectedReceipt.gasUsed);
+    expect(receipt.contractAddress).to.eq(expectedReceipt.contractAddress);
+    expect(receipt.logs).to.deep.eq(expectedReceipt.logs);
+    expect(receipt.logsBloom).to.eq(expectedReceipt.logsBloom);
+    expect(receipt.root).to.eq(expectedReceipt.root);
+    expect(receipt.status).to.eq(expectedReceipt.status);
+    expect(receipt.effectiveGasPrice).to.eq(expectedReceipt.effectiveGasPrice);
+}
+
+export const assertTransaction = (tx, expectedTx) => {
+
+    expect(tx).to.exist;
+    if (tx == null) return;
+
+    expect(tx.accessList).to.eq(expectedTx.accessList);
+    expect(tx.blockHash).to.eq(expectedTx.blockHash);
+    expect(tx.blockNumber).to.eq(expectedTx.blockNumber);
+    expect(tx.chainId).to.eq(expectedTx.chainId);
+    expect(tx.from).to.eq(expectedTx.from);
+    expect(tx.gas).to.eq(expectedTx.gas);
+    expect(tx.gasPrice).to.eq(expectedTx.gasPrice);
+    expect(tx.hash).to.eq(expectedTx.hash);
+    expect(tx.input).to.eq(expectedTx.input);
+    expect(tx.maxFeePerGas).to.eq(expectedTx.maxFeePerGas);
+    expect(tx.maxPriorityFeePerGas).to.eq(expectedTx.maxPriorityFeePerGas);
+    expect(tx.nonce).to.eq(EthImpl.numberTo0x(expectedTx.nonce));
+    expect(tx.r).to.eq(expectedTx.r);
+    expect(tx.s).to.eq(expectedTx.s);
+    expect(tx.to).to.eq(expectedTx.to);
+    expect(tx.transactionIndex).to.eq(expectedTx.transactionIndex);
+    expect(tx.type).to.eq(EthImpl.numberTo0x(expectedTx.type));
+    expect(tx.v).to.eq(EthImpl.numberTo0x(expectedTx.v));
+    expect(tx.value).to.eq(expectedTx.value);
+}
+
+export const assertBlock = (block, expectedBlock, txDetails = false) => {
+    expect(block).to.exist;
+    expect(block).to.not.be.null;
+
+    // verify aggregated info
+    expect(block.hash).equal(expectedBlock.hash);
+    expect(block.gasUsed).equal(expectedBlock.gasUsed);
+    expect(block.number).equal(expectedBlock.number);
+    expect(block.parentHash).equal(expectedBlock.parentHash);
+    expect(block.timestamp).equal(expectedBlock.timestamp);
+    expect(block.transactions.length).equal(expectedBlock.transactions.length);
+    for (let i = 0; i < expectedBlock.transactions.length; i++) {
+        if (!txDetails) {
+            expect(block.transactions[i] as string).equal(expectedBlock.transactions[i]);
+        }
+        else {
+            expect((block.transactions[i] as Transaction).hash).equal(expectedBlock.transactions[i]);
+        }
+    }
+
+    // verify expected constants
+    verifyBlockConstants(block);
+}
+
+export const verifyBlockConstants = (block: Block) => {
+    expect(block.gasLimit).equal(EthImpl.numberTo0x(15000000));
+    expect(block.baseFeePerGas).equal('0x84b6a5c400');
+    expect(block.difficulty).equal(EthImpl.zeroHex);
+    expect(block.extraData).equal(EthImpl.emptyHex);
+    expect(block.miner).equal(EthImpl.zeroAddressHex);
+    expect(block.mixHash).equal(EthImpl.zeroHex32Byte);
+    expect(block.nonce).equal(EthImpl.zeroHex8Byte);
+    expect(block.receiptsRoot).equal(EthImpl.zeroHex32Byte);
+    expect(block.sha3Uncles).equal(EthImpl.emptyArrayHex);
+    expect(block.stateRoot).equal(EthImpl.zeroHex32Byte);
+    expect(block.totalDifficulty).equal(EthImpl.zeroHex);
+    expect(block.uncles).to.deep.equal([]);
+};
+
+
+export const expectLogData = (res, log, tx) => {
+    expect(res.address).to.eq(log.address);
+    expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
+    expect(res.blockHash.length).to.eq(66);
+    expect(res.blockNumber).to.eq(EthImpl.numberTo0x(tx.block_number));
+    expect(res.data).to.eq(log.data);
+    expect(res.logIndex).to.eq(EthImpl.numberTo0x(log.index));
+    expect(res.removed).to.eq(false);
+    expect(res.topics).to.exist;
+    expect(res.topics).to.deep.eq(log.topics);
+    expect(res.transactionHash).to.eq(tx.hash);
+    expect(res.transactionHash.length).to.eq(66);
+    expect(res.transactionIndex).to.eq(EthImpl.numberTo0x(tx.transaction_index));
+};
+
+export const expectLogData1 = (res) => {
+    expectLogData(res, defaultLogs.logs[0], defaultDetailedContractResults);
+};
+
+export const expectLogData2 = (res) => {
+    expectLogData(res, defaultLogs.logs[1], defaultDetailedContractResults);
+};
+
+export const expectLogData3 = (res) => {
+    expectLogData(res, defaultLogs.logs[2], defaultDetailedContractResults2);
+};
+
+export const expectLogData4 = (res) => {
+    expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3);
+};
+
 
 const mockData = {
     accountEvmAddress: '0x00000000000000000000000000000000000003f6',
@@ -504,7 +673,7 @@ export const defaultNetworkFees = {
 };
 
 export const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
-export const defaultTransaction = {
+export const expectedTx = {
     "accessList": undefined,
     "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "blockNumber": "0x11",
