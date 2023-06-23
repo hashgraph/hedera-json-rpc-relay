@@ -22,6 +22,7 @@ import { expect } from "chai";
 import { ethers } from 'ethers';
 import crypto from 'crypto';
 import {EthImpl} from "../src/lib/eth";
+import {Block, Transaction} from "../src/lib/model";
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -142,6 +143,78 @@ export const assertTransaction = (tx, expectedTx) => {
     expect(tx.v).to.eq(EthImpl.numberTo0x(expectedTx.v));
     expect(tx.value).to.eq(expectedTx.value);
 }
+
+export const assertBlock = (block, expectedBlock, txDetails = false) => {
+    expect(block).to.exist;
+    expect(block).to.not.be.null;
+
+    // verify aggregated info
+    expect(block.hash).equal(expectedBlock.hash);
+    expect(block.gasUsed).equal(expectedBlock.gasUsed);
+    expect(block.number).equal(expectedBlock.number);
+    expect(block.parentHash).equal(expectedBlock.parentHash);
+    expect(block.timestamp).equal(expectedBlock.timestamp);
+    expect(block.transactions.length).equal(expectedBlock.transactions.length);
+    for (let i = 0; i < expectedBlock.transactions.length; i++) {
+        if (!txDetails) {
+            expect(block.transactions[i] as string).equal(expectedBlock.transactions[i]);
+        }
+        else {
+            expect((block.transactions[i] as Transaction).hash).equal(expectedBlock.transactions[i]);
+        }
+    }
+
+    // verify expected constants
+    verifyBlockConstants(block);
+}
+
+export const verifyBlockConstants = (block: Block) => {
+    expect(block.gasLimit).equal(EthImpl.numberTo0x(15000000));
+    expect(block.baseFeePerGas).equal('0x84b6a5c400');
+    expect(block.difficulty).equal(EthImpl.zeroHex);
+    expect(block.extraData).equal(EthImpl.emptyHex);
+    expect(block.miner).equal(EthImpl.zeroAddressHex);
+    expect(block.mixHash).equal(EthImpl.zeroHex32Byte);
+    expect(block.nonce).equal(EthImpl.zeroHex8Byte);
+    expect(block.receiptsRoot).equal(EthImpl.zeroHex32Byte);
+    expect(block.sha3Uncles).equal(EthImpl.emptyArrayHex);
+    expect(block.stateRoot).equal(EthImpl.zeroHex32Byte);
+    expect(block.totalDifficulty).equal(EthImpl.zeroHex);
+    expect(block.uncles).to.deep.equal([]);
+};
+
+
+export const expectLogData = (res, log, tx) => {
+    expect(res.address).to.eq(log.address);
+    expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
+    expect(res.blockHash.length).to.eq(66);
+    expect(res.blockNumber).to.eq(EthImpl.numberTo0x(tx.block_number));
+    expect(res.data).to.eq(log.data);
+    expect(res.logIndex).to.eq(EthImpl.numberTo0x(log.index));
+    expect(res.removed).to.eq(false);
+    expect(res.topics).to.exist;
+    expect(res.topics).to.deep.eq(log.topics);
+    expect(res.transactionHash).to.eq(tx.hash);
+    expect(res.transactionHash.length).to.eq(66);
+    expect(res.transactionIndex).to.eq(EthImpl.numberTo0x(tx.transaction_index));
+};
+
+export const expectLogData1 = (res) => {
+    expectLogData(res, defaultLogs.logs[0], defaultDetailedContractResults);
+};
+
+export const expectLogData2 = (res) => {
+    expectLogData(res, defaultLogs.logs[1], defaultDetailedContractResults);
+};
+
+export const expectLogData3 = (res) => {
+    expectLogData(res, defaultLogs.logs[2], defaultDetailedContractResults2);
+};
+
+export const expectLogData4 = (res) => {
+    expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3);
+};
+
 
 const mockData = {
     accountEvmAddress: '0x00000000000000000000000000000000000003f6',

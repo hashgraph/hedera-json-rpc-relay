@@ -41,13 +41,20 @@ import {
   ethCallFailing,
   validateHash,
   assertTransactionReceipt,
-  assertTransaction, ethGetLogsFailing,
+  assertTransaction,
+  assertBlock,
+  ethGetLogsFailing,
   defaultDetailedContractResults,
   defaultLogs1,
   defaultLogs2,
   defaultLogs3,
-  defaultLogs4,
-  defaultContractResults
+  defaultContractResults,
+  verifyBlockConstants,
+  expectLogData,
+  expectLogData1,
+  expectLogData2,
+  expectLogData3,
+  expectLogData4
 } from '../helpers';
 
 import pino from 'pino';
@@ -67,21 +74,6 @@ const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
 
-const verifyBlockConstants = (block: Block) => {
-  expect(block.gasLimit).equal(EthImpl.numberTo0x(15000000));
-  expect(block.baseFeePerGas).equal('0x84b6a5c400');
-  expect(block.difficulty).equal(EthImpl.zeroHex);
-  expect(block.extraData).equal(EthImpl.emptyHex);
-  expect(block.miner).equal(EthImpl.zeroAddressHex);
-  expect(block.mixHash).equal(EthImpl.zeroHex32Byte);
-  expect(block.nonce).equal(EthImpl.zeroHex8Byte);
-  expect(block.receiptsRoot).equal(EthImpl.zeroHex32Byte);
-  expect(block.sha3Uncles).equal(EthImpl.emptyArrayHex);
-  expect(block.stateRoot).equal(EthImpl.zeroHex32Byte);
-  expect(block.totalDifficulty).equal(EthImpl.zeroHex);
-  expect(block.uncles).to.deep.equal([]);
-};
-
 const limitOrderPostFix = '?order=desc&limit=1';
 
 let restMock: MockAdapter, web3Mock: MockAdapter;
@@ -91,38 +83,6 @@ let sdkClientStub;
 let cache;
 let mirrorNodeCache;
 let defaultLogs, defaultDetailedContractResults2, defaultDetailedContractResults3;
-
-
-const expectLogData = (res, log, tx) => {
-  expect(res.address).to.eq(log.address);
-  expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
-  expect(res.blockHash.length).to.eq(66);
-  expect(res.blockNumber).to.eq(EthImpl.numberTo0x(tx.block_number));
-  expect(res.data).to.eq(log.data);
-  expect(res.logIndex).to.eq(EthImpl.numberTo0x(log.index));
-  expect(res.removed).to.eq(false);
-  expect(res.topics).to.exist;
-  expect(res.topics).to.deep.eq(log.topics);
-  expect(res.transactionHash).to.eq(tx.hash);
-  expect(res.transactionHash.length).to.eq(66);
-  expect(res.transactionIndex).to.eq(EthImpl.numberTo0x(tx.transaction_index));
-};
-
-const expectLogData1 = (res) => {
-  expectLogData(res, defaultLogs.logs[0], defaultDetailedContractResults);
-};
-
-const expectLogData2 = (res) => {
-  expectLogData(res, defaultLogs.logs[1], defaultDetailedContractResults);
-};
-
-const expectLogData3 = (res) => {
-  expectLogData(res, defaultLogs.logs[2], defaultDetailedContractResults2);
-};
-
-const expectLogData4 = (res) => {
-  expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3);
-};
 
 
 describe('Eth calls using MirrorNode', async function () {
@@ -486,73 +446,7 @@ describe('Eth calls using MirrorNode', async function () {
     "runtime_bytecode": "0x"
   };
 
-  const defaultHTSToken =
-    {
-      "admin_key": null,
-      "auto_renew_account": "0.1.2",
-      "auto_renew_period": null,
-      "created_timestamp": "1234567890.000000001",
-      "deleted": false,
-      "decimals": 0,
-      "expiry_timestamp": null,
-      "freeze_default": false,
-      "freeze_key": {
-        "_type": "ProtobufEncoded",
-        "key": 10101
-      },
-      "initial_supply": 0,
-      "kyc_key": {
-        "_type": "ProtobufEncoded",
-        "key": 10101
-      },
-      "max_supply": 9223372036854776000,
-      "memo": "token memo",
-      "modified_timestamp": "1234567890.000000001",
-      "name": "Token name",
-      "pause_key": {
-        "_type": "ProtobufEncoded",
-        "key": 10101
-      },
-      "pause_status": "UNPAUSED",
-      "supply_key": {
-        "_type": "ProtobufEncoded",
-        "key": 10101
-      },
-      "supply_type": "INFINITE",
-      "symbol": "ORIGINALRDKSE",
-      "token_id": "0.0.48014385",
-      "total_supply": 1000000,
-      "treasury_account_id": "0.1.2",
-      "type": "NON_FUNGIBLE_UNIQUE",
-      "wipe_key": {
-        "_type": "ProtobufEncoded",
-        "key": 10101
-      },
-      "custom_fees": {
-        "created_timestamp": "1234567890.000000001",
-        "fixed_fees": [
-          {
-            "amount": 100,
-            "collector_account_id": "0.1.5",
-            "denominating_token_id": "0.10.6"
-          }
-        ],
-        "royalty_fees": [
-          {
-            "amount": {
-              "numerator": 15,
-              "denominator": 37
-            },
-            "collector_account_id": "0.1.6",
-            "fallback_fee": {
-              "amount": 100,
-              "denominating_token_id": "0.10.7"
-            }
-          }
-        ]
-      }
-    };
-
+  const defaultHTSToken = mockData.token;
 
   this.afterEach(() => {
     restMock.resetHandlers();
@@ -680,21 +574,15 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
 
-    // verify aggregated info
-    expect(result.hash).equal(blockHashTrimmed);
-    expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.number).equal(blockNumberHex);
-    expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(blockTimestampHex);
-    expect(result.transactions.length).equal(2);
-    expect((result.transactions[0] as string)).equal(contractHash1);
-    expect((result.transactions[1] as string)).equal(contractHash2);
-
-    // verify expected constants
-    verifyBlockConstants(result);
+    assertBlock(result, {
+      hash: blockHashTrimmed,
+      gasUsed: totalGasUsed,
+      number: blockNumberHex,
+      parentHash: blockHashPreviousTrimmed,
+      timestamp: blockTimestampHex,
+      transactions: [contractHash1, contractHash2]
+    })
   });
 
   it('eth_getBlockByNumber with match paginated', async function () {
@@ -708,21 +596,15 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
 
-    // verify aggregated info
-    expect(result.hash).equal(blockHashTrimmed);
-    expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.number).equal(blockNumberHex);
-    expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(blockTimestampHex);
-    expect(result.transactions.length).equal(2);
-    expect((result.transactions[0] as string)).equal(contractHash1);
-    expect((result.transactions[1] as string)).equal(contractHash2);
-
-    // verify expected constants
-    verifyBlockConstants(result);
+    assertBlock(result, {
+      hash: blockHashTrimmed,
+      gasUsed: totalGasUsed,
+      number: blockNumberHex,
+      parentHash: blockHashPreviousTrimmed,
+      timestamp: blockTimestampHex,
+      transactions: [contractHash1, contractHash2]
+    })
   });
 
   it('eth_getBlockByNumber should return cached result', async function() {
@@ -969,21 +851,14 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, false);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
-    // verify aggregated info
-    expect(result.hash).equal(blockHashTrimmed);
-    expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.number).equal(blockNumberHex);
-    expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(blockTimestampHex);
-    expect(result.transactions.length).equal(2);
-    expect((result.transactions[0] as string)).equal(contractHash1);
-    expect((result.transactions[1] as string)).equal(contractHash2);
-
-    // verify expected constants
-    verifyBlockConstants(result);
+    assertBlock(result, {
+      hash: blockHashTrimmed,
+      gasUsed: totalGasUsed,
+      number: blockNumberHex,
+      parentHash: blockHashPreviousTrimmed,
+      timestamp: blockTimestampHex,
+      transactions: [contractHash1, contractHash2]
+    })
   });
 
   it('eth_getBlockByHash with match paginated', async function () {
@@ -997,21 +872,14 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, false);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
-    // verify aggregated info
-    expect(result.hash).equal(blockHashTrimmed);
-    expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.number).equal(blockNumberHex);
-    expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(blockTimestampHex);
-    expect(result.transactions.length).equal(2);
-    expect((result.transactions[0] as string)).equal(contractHash1);
-    expect((result.transactions[1] as string)).equal(contractHash2);
-
-    // verify expected constants
-    verifyBlockConstants(result);
+    assertBlock(result, {
+      hash: blockHashTrimmed,
+      gasUsed: totalGasUsed,
+      number: blockNumberHex,
+      parentHash: blockHashPreviousTrimmed,
+      timestamp: blockTimestampHex,
+      transactions: [contractHash1, contractHash2]
+    })
   });
 
   it('eth_getBlockByHash should hit cache', async function() {
@@ -1040,21 +908,15 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
 
-    // verify aggregated info
-    expect(result.hash).equal(blockHashTrimmed);
-    expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.number).equal(blockNumberHex);
-    expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(blockTimestampHex);
-    expect(result.transactions.length).equal(2);
-    expect((result.transactions[0] as Transaction).hash).equal(contractHash1);
-    expect((result.transactions[1] as Transaction).hash).equal(contractHash1);
-
-    // verify expected constants
-    verifyBlockConstants(result);
+    assertBlock(result, {
+      hash: blockHashTrimmed,
+      gasUsed: totalGasUsed,
+      number: blockNumberHex,
+      timestamp: blockTimestampHex,
+      parentHash: blockHashPreviousTrimmed,
+      transactions: [contractHash1, contractHash1]
+    }, true)
   });
 
   it('eth_getBlockByHash with match and details paginated', async function () {
@@ -1068,21 +930,14 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
-    // verify aggregated info
-    expect(result.hash).equal(blockHashTrimmed);
-    expect(result.gasUsed).equal(totalGasUsed);
-    expect(result.number).equal(blockNumberHex);
-    expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(blockTimestampHex);
-    expect(result.transactions.length).equal(2);
-    expect((result.transactions[0] as Transaction).hash).equal(contractHash1);
-    expect((result.transactions[1] as Transaction).hash).equal(contractHash1);
-
-    // verify expected constants
-    verifyBlockConstants(result);
+    assertBlock(result, {
+      hash: blockHashTrimmed,
+      gasUsed: totalGasUsed,
+      number: blockNumberHex,
+      parentHash: blockHashPreviousTrimmed,
+      timestamp: blockTimestampHex,
+      transactions: [contractHash1, contractHash1]
+    }, true)
   });
 
   it('eth_getBlockByHash with block match and contract revert', async function () {
@@ -1093,19 +948,14 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
-    // verify aggregated info
-    expect(result.hash).equal(blockHashTrimmed);
-    expect(result.gasUsed).equal(EthImpl.numberTo0x(gasUsed1));
-    expect(result.number).equal(blockNumberHex);
-    expect(result.parentHash).equal(blockHashPreviousTrimmed);
-    expect(result.timestamp).equal(blockTimestampHex);
-    expect(result.transactions.length).equal(0);
-
-    // verify expected constants
-    verifyBlockConstants(result);
+    assertBlock(result, {
+      hash: blockHashTrimmed,
+      gasUsed: EthImpl.numberTo0x(gasUsed1),
+      number: blockNumberHex,
+      parentHash: blockHashPreviousTrimmed,
+      timestamp: blockTimestampHex,
+      transactions: []
+    })
   });
 
   it('eth_getBlockByHash with no match', async function () {

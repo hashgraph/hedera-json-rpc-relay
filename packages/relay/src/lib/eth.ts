@@ -1110,7 +1110,7 @@ export class EthImpl implements Eth {
     return nonceCount;
   }
 
-  async parseRawTxAndPrecheck(transaction: string, requestId?: string){
+  async parseRawTxAndPrecheck(transaction: string, requestId?: string): Promise<EthersTransaction>{
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let interactingEntity = '';
     let originatingAddress = '';
