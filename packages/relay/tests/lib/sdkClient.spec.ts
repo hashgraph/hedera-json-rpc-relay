@@ -37,7 +37,13 @@ describe('SdkClient', async function () {
     let sdkClient, client, hbarLimiter;
 
     before(() => {
-        client = Client.forNetwork(JSON.parse(process.env.HEDERA_NETWORK!));
+        const hederaNetwork = process.env.HEDERA_NETWORK!;
+        if (hederaNetwork in constants.CHAIN_IDS) {
+          client = Client.forName(hederaNetwork);
+        } else {
+          client = Client.forNetwork(JSON.parse(hederaNetwork));
+        }
+        
         client = client.setOperator(
             AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
             PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN!)

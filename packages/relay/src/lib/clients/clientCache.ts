@@ -61,6 +61,7 @@ export class ClientCache {
         this.cache = new LRU(this.options);
         this.logger = logger;
         this.register = register;
+
         const cacheSizeCollect = () => {
             this.purgeStale();
             this.cacheKeyCounter.set(this.cache.size);
@@ -82,8 +83,13 @@ export class ClientCache {
     public get(key: string, callingMethod?: string, requestIdPrefix?: string): any {
         let value = this.cache.get(key);
         if (value) {
-            this.logger.trace(`${requestIdPrefix} returning cached value ${key}:${JSON.stringify(value)}`);
-            this.cacheKeyCounter.labels(key, callingMethod).inc(1);
+            if (callingMethod) {
+                this.cacheKeyCounter.labels(key, callingMethod).inc(1);
+            } else {
+                this.cacheKeyCounter.labels(key, null).inc(1);
+            }
+
+            this.logger.trace(`${requestIdPrefix} returning cached value ${key}:${JSON.stringify(value)} on ${callingMethod} call`);
             return value;
         }
 
