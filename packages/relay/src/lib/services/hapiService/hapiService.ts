@@ -26,6 +26,7 @@ import { Registry, Counter, Gauge, Histogram } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import constants from '../../constants';
 import HbarLimit from '../../hbarlimiter';
+import { ClientCache } from '../../clients';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -72,12 +73,13 @@ export default class HAPIService {
   private consensusNodeClientHistogramCost: Histogram;
   private consensusNodeClientHistogramGasFee: Histogram;
   private metrics: any;
+  private readonly cache: ClientCache;
 
   /**
    * @param {Logger} logger
    * @param {Registry} register
    */
-  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit) {
+  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit, clientCache) {
     dotenv.config({ path: findConfig('.env') || '' });
 
     this.logger = logger;
@@ -118,6 +120,7 @@ export default class HAPIService {
       registers: [register],
       labelNames: ['transactions', 'duration', 'errors'],
     });
+    this.cache = clientCache;
   }
 
   /**
@@ -186,7 +189,7 @@ export default class HAPIService {
    * @returns SDK Client
    */
   private initSDKClient(logger: Logger, metrics: any): SDKClient {
-    return new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), this.hbarLimiter, metrics);
+    return new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), this.hbarLimiter, metrics, this.cache);
   }
 
   /**

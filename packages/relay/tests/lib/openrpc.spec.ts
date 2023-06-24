@@ -117,7 +117,7 @@ describe("Open RPC Specification", function () {
         const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
 
-        clientServiceInstance = new ClientService(logger, registry, hbarLimiter);
+        clientServiceInstance = new ClientService(logger, registry, hbarLimiter, clientCache);
         sdkClientStub = sinon.createStubInstance(SDKClient);
         sinon.stub(clientServiceInstance, "getSDKClient").returns(sdkClientStub);
         // @ts-ignore

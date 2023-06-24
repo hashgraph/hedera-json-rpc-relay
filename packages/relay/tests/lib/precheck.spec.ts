@@ -80,7 +80,8 @@ describe('Precheck', async function() {
         const duration = constants.HBAR_RATE_LIMIT_DURATION;
         const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter);
+        const clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
+        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, clientCache);
         sdkInstance = sinon.createStubInstance(SDKClient);
         sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkInstance);
         precheck = new Precheck(mirrorNodeInstance, hapiServiceInstance, logger, '0x12a');

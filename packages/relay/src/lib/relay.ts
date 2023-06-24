@@ -57,13 +57,12 @@ export class RelayImpl implements Relay {
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
 
-    const hapiService = new HAPIService(logger, register, hbarLimiter);
+    this.clientCache = new ClientCache(logger.child({ name: 'client-cache' }), register);
+    const hapiService = new HAPIService(logger, register, hbarLimiter, this.clientCache);
     this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain, chainId);
-
-    this.clientCache = new ClientCache(logger.child({ name: 'client-cache' }), register);
 
     this.mirrorNodeClient = new MirrorNodeClient(
       process.env.MIRROR_NODE_URL || '',

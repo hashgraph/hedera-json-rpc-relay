@@ -32,6 +32,7 @@ import pino from 'pino';
 import constants from '../../src/lib/constants';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
+import { ClientCache } from '../../src/lib/clients';
 
 const LRU = require('lru-cache');
 
@@ -255,8 +256,9 @@ describe('eth_getBlockBy', async function () {
         const duration = constants.HBAR_RATE_LIMIT_DURATION;
         const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-    
-        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter);
+        const clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
+        
+        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, clientCache);
     
         cache = new LRU({
           max: constants.CACHE_MAX,
