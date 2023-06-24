@@ -92,6 +92,7 @@ export default class HAPIService {
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
 
     this.metrics = { costHistogram: this.consensusNodeClientHistogramCost, gasHistogram: this.consensusNodeClientHistogramGasFee };
+    this.cache = clientCache;
     this.client = this.initSDKClient(logger, this.metrics);
 
     const currentDateNow = Date.now();
@@ -120,7 +121,6 @@ export default class HAPIService {
       registers: [register],
       labelNames: ['transactions', 'duration', 'errors'],
     });
-    this.cache = clientCache;
   }
 
   /**

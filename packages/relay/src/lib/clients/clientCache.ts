@@ -56,7 +56,7 @@ export class ClientCache {
      */
     private readonly register: Registry;
     private cacheKeyCounter;
-    
+
     public constructor(logger: Logger, register: Registry) {
         this.cache = new LRU(this.options);
         this.logger = logger;
