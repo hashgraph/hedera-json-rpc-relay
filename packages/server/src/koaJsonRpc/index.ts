@@ -64,6 +64,7 @@ export default class KoaJsonRpc {
   private koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
   private requestId: string;
   private logger: Logger;
+  private startTimestamp!: number;
   private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == 'true';
 
   constructor(logger: Logger, register: Registry, opts?) {
@@ -119,20 +120,15 @@ export default class KoaJsonRpc {
       if (
         body.jsonrpc !== '2.0' ||
         !hasOwnProperty(body, 'method') ||
+        this.hasInvalidReqestId(body) ||
         !hasOwnProperty(body, 'id') ||
         ctx.request.method !== 'POST'
       ) {
-        this.logger.warn(`Invalid request, requestIdIsOptional: ${this.requestIdIsOptional}, process.env.REQUEST_ID_IS_OPTIONAL: ${process.env.REQUEST_ID_IS_OPTIONAL}, body.jsonrpc: ${body.jsonrpc}, body[method]: ${body.method}, body[id]: ${body.id}, ctx.request.method: ${ctx.request.method}`);
-        if (this.requestIdIsOptional && !hasOwnProperty(body, 'id'))
-        {          
-          // If the request is invalid, we still want to return a valid JSON-RPC response, default id to 0
-          body.id = '0';
-        } else {
-          ctx.body = jsonResp(body.id || null, new InvalidRequest(), undefined);
-          ctx.status = 400;
-          ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
-          return;
-        }
+        ctx.body = jsonResp(body.id || null, new InvalidRequest(), undefined);
+        ctx.status = 400;
+        ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
+        this.logger.warn(`[${this.getRequestId()}] Invalid request, body.jsonrpc: ${body.jsonrpc}, body[method]: ${body.method}, body[id]: ${body.id}, ctx.request.method: ${ctx.request.method}`);
+        return;
       }
 
       if (!this.registry[body.method]) {
@@ -181,5 +177,18 @@ export default class KoaJsonRpc {
 
   getRequestId(): string {
     return this.requestId;
+  }
+
+  hasInvalidReqestId(body): boolean {
+    const hasId = hasOwnProperty(body, 'id');
+    if (this.requestIdIsOptional && !hasId)
+    {          
+      // If the request is invalid, we still want to return a valid JSON-RPC response, default id to 0
+      body.id = '0';
+      this.logger.warn(`[${this.getRequestId()}] Optional JSON-RPC 2.0 request id encountered. Will continue and default id to 0 in response`);
+      return false;
+    }
+
+    return !hasId;
   }
 }
