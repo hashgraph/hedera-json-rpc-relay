@@ -24,18 +24,19 @@ These properties are noted below and should be custom set per deployment.
 The following table lists the available properties along with their default values for the [Server package](/packages/server/).
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
-| Name                       | Default        | Description                                                                                                                                                                                                         |
-| -------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CHAIN_ID`                 | ""             | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively.                                   |
-| `HBAR_RATE_LIMIT_DURATION` | "60000"        | hbar budget limit duration. This creates a timestamp, which resets all limits, when it's reached. Default is to 60000 (1 minute).                                                                                   |
-| `HBAR_RATE_LIMIT_TINYBAR`  | "5000_000_000" | total hbar budget in tinybars.                                                                                                                                                                                      |
-| `HEDERA_NETWORK`           | ""             | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `previewnet`, `testnet`, `mainnet` or a map of network IPs -> node accountIds e.g. `{"127.0.0.1:50211":"0.0.3"}` |
-| `INPUT_SIZE_LIMIT`         | "1mb"          | The [koa-jsonrpc](https://github.com/Bitclimb/koa-jsonrpc) maximum size allowed for requests                                                                                                                        |
-| `MAX_BLOCK_RANGE`          | ""             | The maximum block number greater than the mirror node's latest block to query for                                  
-| `OPERATOR_ID_MAIN`         | ""             | Operator account ID used to pay for transactions. In `S.R.N` format, e.g. `0.0.1001`. |
-| `OPERATOR_KEY_MAIN`        | ""             | Operator private key used to sign transactions in hex encoded DER format. This may be either an ED22519 private key or an ECDSA private key. The private key must be associated with/used to derive `OPERATOR_ID_MAIN`. |
-| `RATE_LIMIT_DISABLED`      | ""             | Flag to disable IP based rate limiting.                                                                                                                                                                             |
-| `SERVER_PORT`              | "7546"         | The RPC server port number to listen for requests on. Currently a static value defaulting to 7546. See [#955](https://github.com/hashgraph/hedera-json-rpc-relay/issues/955)                                        |
+| Name                          | Default        | Description                                                                                                                                  |
+| ----------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CHAIN_ID`                    | ""             | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively.                                   |
+| `HBAR_RATE_LIMIT_DURATION`    | "60000"        | hbar budget limit duration. This creates a timestamp, which resets all limits, when it's reached. Default is to 60000 (1 minute).                                                                                   |
+| `HBAR_RATE_LIMIT_TINYBAR`     | "5000_000_000" | total hbar budget in tinybars.                                                                                                                                                                                      |
+| `HEDERA_NETWORK`              | ""             | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `previewnet`, `testnet`, `mainnet` or a map of network IPs -> node accountIds e.g. `{"127.0.0.1:50211":"0.0.3"}` |
+| `INPUT_SIZE_LIMIT`            | "1mb"          | The [koa-jsonrpc](https://github.com/Bitclimb/koa-jsonrpc) maximum size allowed for requests                                                                                                                        |
+| `MAX_BLOCK_RANGE`             | ""             | The maximum block number greater than the mirror node's latest block to query for                                  
+| `OPERATOR_ID_MAIN`            | ""             | Operator account ID used to pay for transactions. In `S.R.N` format, e.g. `0.0.1001`. |
+| `OPERATOR_KEY_MAIN`           | ""             | Operator private key used to sign transactions in hex encoded DER format. This may be either an ED22519 private key or an ECDSA private key. The private key must be associated with/used to derive `OPERATOR_ID_MAIN`. |
+| `RATE_LIMIT_DISABLED`         | ""             | Flag to disable IP based rate limiting.                                                                                                                                                                             |
+| `REQUEST_ID_IS_OPTIONAL`      | ""    | Flag to set it the JSON RPC request id field in the body should be optional. Note, this breaks the API spec and is not advised and is provided for test purposes only where some wallets may be non compliant |  
+| `SERVER_PORT`                 | "7546"         | The RPC server port number to listen for requests on. Currently a static value defaulting to 7546. See [#955](https://github.com/hashgraph/hedera-json-rpc-relay/issues/955)                                        |
 
 ## Relay
 
