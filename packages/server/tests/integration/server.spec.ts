@@ -55,6 +55,52 @@ describe('RPC Server', async function() {
     expect(res.data.result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
   });
 
+  it('validates enforcement of request id', async function() {
+    try {
+      await this.testClient.post('/', {
+        'jsonrpc': '2.0',
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
+        'params': [null]
+      });
+
+      Assertions.expectedError();
+    } catch (error) {
+      BaseTest.invalidRequestSpecError(error.response, -32600, `Invalid Request`);
+    }
+  });
+
+  xit('supports optionality of request id when configured', async function() {
+
+    const app2 = require('../../src/server').default;
+    const port = `1${process.env.E2E_SERVER_PORT}`;
+    const testServer2 = app2.listen(port);
+    const testClient2 = BaseTest.createTestClient(port);
+
+    try {
+      process.env.REQUEST_ID_IS_OPTIONAL = 'true';
+      const response = await testClient2.post('/', {
+        'jsonrpc': '2.0',
+        'method': RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
+        'params': [null]
+      });
+
+      expect(response.status).to.eq(200);
+      expect(response.statusText).to.eq('OK');
+      expect(response, "Default response: Should have 'data' property").to.have.property('data');
+      expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
+      expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
+      expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
+      expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
+      expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
+      expect(response.data.result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+    } catch (error) {
+      expect(true, `Unexpected error: ${error.message}`).to.eq(false);
+    }
+    
+    process.env.REQUEST_ID_IS_OPTIONAL = 'false';
+    testServer2.close();
+  });
+
   it('should execute "eth_accounts"', async function() {
     const res = await this.testClient.post('/', {
       'id': '2',
@@ -1709,9 +1755,9 @@ describe('RPC Server', async function() {
 });
 
 class BaseTest {
-  static createTestClient() {
+  static createTestClient(port = process.env.E2E_SERVER_PORT) {
     return Axios.create({
-      baseURL: 'http://localhost:' + process.env.E2E_SERVER_PORT,
+      baseURL: 'http://localhost:' + port,
       responseType: 'json' as const,
       headers: {
         'Content-Type': 'application/json'
@@ -1765,5 +1811,18 @@ class BaseTest {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
     this.errorResponseChecks(response, code, message);
+  }
+
+  static invalidRequestSpecError(response: any, code: number, message: string) {
+    expect(response.status).to.eq(400);
+    expect(response.statusText).to.eq('Bad Request');
+    expect(response, "Default response: Should have 'data' property").to.have.property('data');
+    expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
+    expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
+    expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
+    expect(response.data.error, "Error response: 'data.error' should have 'code' property").to.have.property('code');
+    expect(response.data.error.code, "Error response: 'data.error.code' should equal passed 'code' value").to.be.equal(code);
+    expect(response.data.error, "Error response: 'error' should have 'message' property").to.have.property('message');
+    expect(response.data.error.message.endsWith(message), "Error response: 'data.error.message' should end with passed 'message' value").to.be.true;
   }
 }
