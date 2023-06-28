@@ -65,6 +65,7 @@ export class MirrorNodeClient {
     private static ADDRESS_PLACEHOLDER = '{address}';
     private static TIMESTAMP_PLACEHOLDER = '{timestamp}';
     private static CONTRACT_ID_PLACEHOLDER = '{contractId}';
+    private static TRANSACTION_ID_PLACEHOLDER = '{transactionId}';
     private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
     private static GET_CONTRACT_RESULTS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT =
         `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
@@ -73,12 +74,13 @@ export class MirrorNodeClient {
     private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
     private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
     private static GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
-    private static GET_STATE_ENDPOINT = '/state';
+    private static CONTRACT_ADDRESS_STATE_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/state`;
     private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
     private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
     private static GET_NETWORK_FEES_ENDPOINT = 'network/fees';
     private static GET_TOKENS_ENDPOINT = 'tokens';
     private static GET_TRANSACTIONS_ENDPOINT = 'transactions';
+    private static GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID = `transactions/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}`;
     private static CONTRACT_CALL_ENDPOINT = 'contracts/call';
 
     private static ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
@@ -103,7 +105,7 @@ export class MirrorNodeClient {
         [MirrorNodeClient.GET_TOKENS_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, [400, 404]],
         [MirrorNodeClient.CONTRACT_CALL_ENDPOINT, [404, 415, 500]],
-        [MirrorNodeClient.GET_STATE_ENDPOINT, [400, 404]]
+        [MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT, [400, 404]]
     ]);
 
     private static ETHEREUM_TRANSACTION_TYPE = 'ETHEREUMTRANSACTION';
@@ -726,9 +728,10 @@ export class MirrorNodeClient {
         this.setQueryParam(queryParamObject, 'slot', slot);
         this.setLimitOrderParams(queryParamObject, limitOrderParams);
         const queryParams = this.getQueryParams(queryParamObject);
-
-        return this.get(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${address}${MirrorNodeClient.GET_STATE_ENDPOINT}${queryParams}`,
-        MirrorNodeClient.GET_STATE_ENDPOINT,
+        const apiEndpoint = MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT
+            .replace(MirrorNodeClient.ADDRESS_PLACEHOLDER, address);
+        return this.get(`${apiEndpoint}${queryParams}`,
+        MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT,
         requestId);
     }
 
@@ -744,8 +747,10 @@ export class MirrorNodeClient {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, 'nonce', nonce);
         const queryParams = this.getQueryParams(queryParamObject);
-        return this.get(`${MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT}/${formattedId}${queryParams}`,
-        MirrorNodeClient.GET_STATE_ENDPOINT,
+        const apiEndpoint = MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID
+            .replace(MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER, formattedId);
+        return this.get(`${apiEndpoint}${queryParams}`,
+        MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID,
         requestId);
     }
 
