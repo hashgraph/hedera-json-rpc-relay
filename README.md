@@ -35,12 +35,11 @@ We also recommend installing the "prettier" plugin in IntelliJ.
 
 From the root of the project workspace:
 
-1. Run `npm install`. This will create and populate `node_modules`.
-2. Run `npm run setup`. This will link the `node_modules` to the packages, and the packages together.
-3. Run `npm run build`. This will clean and compile the relay library and the server.
-4. Run `npm run start`. This will start the server on port `7546`.
+1. Run `npm install`. This will create populate and link `node_modules`.
+2. Run `npm run build`. This will clean and compile the relay library and the server.
+3. Run `npm run start`. This will start the server on port `7546`.
 
-Alternatively, after `npm run setup`, from within the IDE, you should see the `Start Relay Microservice`
+Alternatively, after `npm install`, from within the IDE, you should see the `Start Relay Microservice`
 run configuration. You should be able to just run that configuration, and it should start the server on port `7546`.
 
 ## Testing
@@ -56,12 +55,12 @@ newman run packages/server/tests/postman.json --env-var baseUrl=http://localhost
 
 To enable Postman test to run via helm deployment add
 
-````
+```
 test:
   enabled: true
   schedule: '@daily' #How often to run the Postman test
   baseUrl: "http://127.0.0.1:7546" # Relay URL to run the test against
-````
+```
 
 ### Acceptance Tests
 
@@ -77,12 +76,11 @@ Note: Read more about `DEV_MODE` which provides optimal local and developer test
 
 The following table highlights some initial configuration values to consider
 
-| Config     | Default | Description                                                                                                                                                                      |
-| ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CHAIN_ID` | `0x12a` | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively |
-| `HEDERA_NETWORK` | `` | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER` |
-| `MIRROR_NODE_URL` | `` | The Mirror Node API endpoint. Official endpoints are Previewnet (https://previewnet.mirrornode.hedera.com/v1/api), Testnet (https://testnet.mirrornode.hedera.com/v1/api), Mainnet (https://mainnet-public.mirrornode.hedera.com/v1/api). See [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api) |
-
+| Config            | Default | Description                                                                                                                                                                                                                                                                                                                 |
+| ----------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CHAIN_ID`        | `0x12a` | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively                                                                                                                                            |
+| `HEDERA_NETWORK`  | ``      | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`                                                                                                                                                                            |
+| `MIRROR_NODE_URL` | ``      | The Mirror Node API endpoint. Official endpoints are Previewnet (https://previewnet.mirrornode.hedera.com/v1/api), Testnet (https://testnet.mirrornode.hedera.com/v1/api), Mainnet (https://mainnet-public.mirrornode.hedera.com/v1/api). See [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api) |
 
 #### Run
 
@@ -99,10 +97,13 @@ The Relay supports Docker image building and Docker Compose container management
 > **_NOTE:_** docker compose is for development purposes only.
 
 ### Bumping version
+
 In order to bump version for all packages and files altogether there is an npm task called 'bump-version' that needs a parameter called `semver` and optional parameter `snapshot` with the version to bump and boolean respectively:
+
 ```
 npm run bump-version --semver=0.21.0-rc1 --snapshot=true
 ```
+
 `snapshot` parameter is `false` by default.
 
 ### Image Build (optional)
