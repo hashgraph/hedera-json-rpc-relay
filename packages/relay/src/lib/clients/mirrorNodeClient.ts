@@ -133,8 +133,6 @@ export class MirrorNodeClient {
     private readonly register: Registry;
 
     private mirrorResponseHistogram;
-    private operatorAccountGauge;
-    private operatorAccount;
 
     private readonly cache: ClientCache;
     static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;   
@@ -233,31 +231,13 @@ export class MirrorNodeClient {
 
         // clear and create metric in registry
         const metricHistogramName = 'rpc_relay_mirror_response';
-        register.removeSingleMetric(metricHistogramName);
+        this.register.removeSingleMetric(metricHistogramName);
         this.mirrorResponseHistogram = new Histogram({
             name: metricHistogramName,
             help: 'Mirror node response method statusCode latency histogram',
             labelNames: ['method', 'statusCode'],
             registers: [register],
             buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000] // ms (milliseconds)
-        });
-
-        this.operatorAccount = process.env.OPERATOR_ID_MAIN?.trim() || '0.0.relayer';
-        const operatororBalanceCollect = async () => {
-            const account = await this.getAccount(this.operatorAccount);
-            this.operatorAccountGauge.labels({ 'accountId': this.operatorAccount }).set(account.balance.balance);
-        };
-
-        const metricGaugeName = 'rpc_relay_operator_balance';
-        register.removeSingleMetric(metricGaugeName);
-        this.operatorAccountGauge = new Gauge({
-            name: metricGaugeName,
-            help: 'Relay operator balance gauge',
-            labelNames: ['mode', 'type', 'accountId'],
-            registers: [register],
-            async collect() {
-                operatororBalanceCollect();
-            },
         });
 
         this.logger.info(`Mirror Node client successfully configured to REST url: ${this.restUrl} and Web3 url: ${this.web3Url} `);
