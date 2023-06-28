@@ -66,7 +66,8 @@ export class MirrorNodeClient {
     private static TIMESTAMP_PLACEHOLDER = '{timestamp}';
     private static CONTRACT_ID_PLACEHOLDER = '{contractId}';
     private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
-    private static GET_CONTRACT_RESULTS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`
+    private static GET_CONTRACT_RESULTS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT =
+        `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
     private static GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT =
         `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
     private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
