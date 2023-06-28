@@ -67,7 +67,7 @@ export class MirrorNodeClient {
     private static CONTRACT_ID_PLACEHOLDER = '{contractId}';
     private static TRANSACTION_ID_PLACEHOLDER = '{transactionId}';
     private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
-    private static GET_CONTRACT_RESULTS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT =
+    private static GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT =
         `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
     private static GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT =
         `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
@@ -96,6 +96,7 @@ export class MirrorNodeClient {
         [MirrorNodeClient.GET_CONTRACT_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT, [206, 400, 404]],
         [MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT, [400, 404]],
@@ -593,8 +594,9 @@ export class MirrorNodeClient {
     }
 
     public async getContractResultsByAddressAndTimestamp(contractIdOrAddress: string, timestamp: string, requestId?: string) {
-        return this.get(`${MirrorNodeClient.getContractResultsByAddressPath(contractIdOrAddress)}/${timestamp}`,
-            MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT,
+        const apiPath = MirrorNodeClient.getContractResultsByAddressAndTimestampPath(contractIdOrAddress, timestamp);
+        return this.get(apiPath,
+            MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT,
             requestId);
     }
 
@@ -695,6 +697,12 @@ export class MirrorNodeClient {
 
     private static getContractResultsByAddressPath(address: string) {
         return MirrorNodeClient.GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT.replace(MirrorNodeClient.ADDRESS_PLACEHOLDER, address);
+    }
+
+    private static getContractResultsByAddressAndTimestampPath(address: string, timestamp: string) {
+        return MirrorNodeClient.GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT
+            .replace(MirrorNodeClient.ADDRESS_PLACEHOLDER, address)
+            .replace(MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);
     }
 
     public getContractResultsDetailsByContractIdAndTimestamp(contractId: string, timestamp: string) {
