@@ -1,0 +1,21 @@
+Hedera JSON RPC {{ .Chart.AppVersion }} successfully installed.
+
+{{- if and .Values.relay.enabled }}
+To access the relay API
+{{- if contains "LoadBalancer" .Values.relay.service.type }}
+  relay_IP="$(kubectl get "service/{{ .Release.Name }}-relay" -n {{ include "json-rpc-relay.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+{{- else if contains "ClusterIP" .Values.relay.service.type }}
+  kubectl port-forward "service/{{ .Release.Name }}-relay" -n {{ include "json-rpc-relay.namespace" . }} {{ .Values.relay.service.port }}:7546 &
+{{- end }}
+  curl -sL -H "Content-Type: application/json" -X POST -d '{"jsonrpc":"2.0","id":"2","method":"eth_chainId","params":[null]}' "http://${relay_IP:-127.0.0.1}:{{.Values.relay.service.port}}/api"
+{{- end }}
+
+{{- if and .Values.ws.enabled }}
+To access the ws API
+{{- if contains "LoadBalancer" .Values.ws.service.type }}
+  ws_IP="$(kubectl get "service/{{ .Release.Name }}-ws" -n {{ include "json-rpc-relay-ws.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+{{- else if contains "ClusterIP" .Values.ws.service.type }}
+  kubectl port-forward "service/{{ .Release.Name }}-ws" -n {{ include "json-rpc-relay-ws.namespace" . }} {{ .Values.ws.service.port }}:7546 &
+{{- end }}
+  wscat -c wss://http://${ws_IP:-127.0.0.1}:{{.Values.ws.service.port}}/ws
+{{- end }}

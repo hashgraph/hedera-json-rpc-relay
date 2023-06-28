@@ -1,0 +1,20 @@
+# Default values for json-rpc-relay in CI. Configured to testnet
+relay:
+  config:
+    CHAIN_ID: '0x128'
+    HEDERA_NETWORK: 'testnet'
+    MIRROR_NODE_URL: 'https://testnet.mirrornode.hedera.com'
+
+  image:
+    registry: registry:5001
+    tag: test
+
+ws:
+  config:
+    CHAIN_ID: '0x128'
+    HEDERA_NETWORK: 'testnet'
+    MIRROR_NODE_URL: 'https://testnet.mirrornode.hedera.com'
+
+  image:
+    registry: registry:5001
+    tag: test

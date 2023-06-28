@@ -1,4 +1,4 @@
-# Default values for json-rpc-relay in CI. Configured to testnet
+# Default values for json-rpc-relay-websocket in CI. Configured to testnet
 config:
   CHAIN_ID: '0x128'
   HEDERA_NETWORK: 'testnet'
