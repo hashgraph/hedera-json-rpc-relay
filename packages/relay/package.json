@@ -30,7 +30,7 @@
         "@ethersproject/asm": "^5.7.0",
         "@hashgraph/sdk": "^2.24.2",
         "@keyvhq/core": "^1.6.9",
-        "axios": "^0.26.1",
+        "axios": "^0.27.2",
         "buffer": "^6.0.3",
         "dotenv": "^16.0.0",
         "ethers": "^5.6.8",
