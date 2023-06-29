@@ -1,0 +1,9 @@
+dependencies:
+- name: hedera-json-rpc-relay
+  repository: file://../hedera-json-rpc-relay
+  version: 0.27.0-SNAPSHOT
+- name: hedera-json-rpc-relay-websocket
+  repository: file://../hedera-json-rpc-relay-websocket
+  version: 0.27.0-SNAPSHOT
+digest: sha256:fc644630ccf4794ce141ebb54ec7e171cb15262c04698b65981cc18521d22960
+generated: "2023-06-27T15:29:24.16666-06:00"
