@@ -60,7 +60,7 @@ import {
 import pino from 'pino';
 import { Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
-import { SDKClient } from '../../src/lib/clients';
+import { ClientCache, SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
@@ -80,10 +80,10 @@ let restMock: MockAdapter, web3Mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
 let sdkClientStub;
-let cache;
 let mirrorNodeCache;
 let defaultLogs, defaultDetailedContractResults2, defaultDetailedContractResults3;
 
+let clientCache;
 
 describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
@@ -93,8 +93,9 @@ describe('Eth calls using MirrorNode', async function () {
   const ethFeeHistoryValue = process.env.ETH_FEE_HISTORY_FIXED || 'true';
 
   this.beforeAll(() => {
+    clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
     // @ts-ignore
-    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry);
+    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache);
 
     // @ts-ignore
     mirrorNodeCache = mirrorNodeInstance.cache;
@@ -109,19 +110,14 @@ describe('Eth calls using MirrorNode', async function () {
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
 
-    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter);
+    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, clientCache);
     sdkClientStub = sinon.createStubInstance(SDKClient);
     sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkClientStub);
-
-    cache = new LRU({
-      max: constants.CACHE_MAX,
-      ttl: constants.CACHE_TTL.ONE_HOUR
-    });
 
     process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
     // @ts-ignore
-    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cache);
+    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
   });
 
   this.afterAll(() => {
@@ -131,7 +127,7 @@ describe('Eth calls using MirrorNode', async function () {
   this.beforeEach(() => {
     // reset cache and restMock
     mirrorNodeCache.clear();
-    cache.clear();
+    clientCache.clear();
     restMock.reset();
   });
 
@@ -477,7 +473,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(blockNumber2).to.be.eq(blockNumber);
 
     // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
-    cache.clear();
+    clientCache.clear();
     // Third call should return new number using mirror node
     const newBlockNumber = 7;
     restMock.onGet('blocks?limit=1&order=desc').reply(200, {
@@ -1305,7 +1301,7 @@ describe('Eth calls using MirrorNode', async function () {
     this.beforeEach(() => {
       currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
       process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
-      ethImplLowTransactionCount = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cache);
+      ethImplLowTransactionCount = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
     });
 
     it('eth_getBlockByHash with greater number of transactions than the ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', async function () {
@@ -1399,7 +1395,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
       // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
-      cache.clear();
+      clientCache.clear();
 
       const resBalanceNew = await ethImpl.getBalance(contractAddress1, null);
       expect(newBalanceHex).to.equal(resBalanceNew);
@@ -2723,7 +2719,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     this.beforeEach(function () {
       mirrorNodeCache.clear();
-      cache.clear();
+      clientCache.clear();
       restMock.reset();
       restMock.onGet(`network/fees`).reply(200, defaultNetworkFees);
     });
@@ -3001,7 +2997,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas empty call returns transfer cost with overridden default gas', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cache);
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
     restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({}, null);
     expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
@@ -3016,7 +3012,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas empty input transfer cost with overridden default gas', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cache);
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
     restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({ data: "" }, null);
     expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
@@ -3031,7 +3027,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas zero input returns transfer cost with overridden default gas', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cache);
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
     restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({ data: "0x" }, null);
     expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
@@ -4323,7 +4319,7 @@ describe('Eth', async function () {
   let ethImpl: EthImpl;
   this.beforeAll(() => {
     // @ts-ignore
-    ethImpl = new EthImpl(null, mirrorNodeInstance, logger, "0x12a", registry);
+    ethImpl = new EthImpl(null, mirrorNodeInstance, logger, "0x12a", registry, clientCache);
   });
 
   const contractEvmAddress = '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9';
