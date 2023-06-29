@@ -270,7 +270,7 @@ export class EthImpl implements Eth {
         if (!feeHistory) {
           feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestId);
           if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
-            this.cache.set(cacheKey, feeHistory);
+            this.cache.set(cacheKey, feeHistory, undefined, requestId);
           }
         }
       }
@@ -412,7 +412,7 @@ export class EthImpl implements Eth {
     if (Array.isArray(blocks) && blocks.length > 0) {
       const currentBlock = EthImpl.numberTo0x(blocks[0].number);
       // save the latest block number in cache
-      this.cache.set(cacheKey, currentBlock,this.ethBlockNumberCacheTtlMs);
+      this.cache.set(cacheKey, currentBlock,this.ethBlockNumberCacheTtlMs, requestId);
 
       return currentBlock;
     }
@@ -436,7 +436,7 @@ export class EthImpl implements Eth {
       const timestamp = blocks[0].timestamp.to;
       const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp };
       // save the latest block number in cache
-      this.cache.set(cacheKey, currentBlock, this.ethBlockNumberCacheTtlMs);
+      this.cache.set(cacheKey, currentBlock, this.ethBlockNumberCacheTtlMs, requestId);
 
       return blockTimeStamp;
     }
@@ -496,7 +496,7 @@ export class EthImpl implements Eth {
 
           // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
           if (toAccount) {
-            this.cache.set(accountCacheKey, toAccount);
+            this.cache.set(accountCacheKey, toAccount, undefined, requestId);
 
             gas = EthImpl.gasTxBaseCost;
           } else {
@@ -527,7 +527,7 @@ export class EthImpl implements Eth {
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestId);
         // fees should not change so often we are safe with 1 day instead of 1 hour
-        this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_DAY);
+        this.cache.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, constants.CACHE_TTL.ONE_DAY, requestId);
       }
 
       return EthImpl.numberTo0x(gasPrice);
@@ -838,7 +838,7 @@ export class EthImpl implements Eth {
       }
 
       // save in cache the current balance for the account and blockNumberOrTag
-      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), this.ethGetBalanceCacheTtlMs);
+      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), this.ethGetBalanceCacheTtlMs, requestId);
 
       return EthImpl.numberTo0x(weibars);
     } catch (error: any) {
@@ -882,7 +882,7 @@ export class EthImpl implements Eth {
             const opcodes = asm.disassemble(result?.entity.runtime_bytecode);
             const hasProhibitedOpcode = opcodes.filter(opcode => prohibitedOpcodes.indexOf(opcode.opcode.mnemonic) > -1).length > 0;
             if (!hasProhibitedOpcode) {
-              this.cache.set(cachedLabel, result?.entity.runtime_bytecode);
+              this.cache.set(cachedLabel, result?.entity.runtime_bytecode, undefined, requestId);
               return result?.entity.runtime_bytecode;
             }
           }
@@ -896,7 +896,7 @@ export class EthImpl implements Eth {
         // handle INVALID_CONTRACT_ID or CONTRACT_DELETED
         if (e.isInvalidContractId() || e.isContractDeleted()) {
           this.logger.debug(`${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.statusCode}`);
-          this.cache.set(cachedLabel, EthImpl.emptyHex);
+          this.cache.set(cachedLabel, EthImpl.emptyHex, undefined, requestId);
           return EthImpl.emptyHex;
         }
 
@@ -926,7 +926,7 @@ export class EthImpl implements Eth {
       block = await this.getBlock(hash, showDetails, requestId).catch((e: any) => {
         throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
       });
-      this.cache.set(cacheKey, block);
+      this.cache.set(cacheKey, block, undefined, requestId);
     }
 
     return block;
@@ -949,7 +949,7 @@ export class EthImpl implements Eth {
       });
 
       if (blockNumOrTag != EthImpl.blockLatest && blockNumOrTag != EthImpl.blockPending) {
-        this.cache.set(cacheKey, block);
+        this.cache.set(cacheKey, block, undefined, requestId);
       }
     }
 
@@ -979,7 +979,7 @@ export class EthImpl implements Eth {
         throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
       });
 
-    this.cache.set(cacheKey, transactionCount);
+    this.cache.set(cacheKey, transactionCount, undefined, requestId);
     return transactionCount;
   }
 
@@ -1006,7 +1006,7 @@ export class EthImpl implements Eth {
         throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNum}`);
       });
 
-    this.cache.set(cacheKey, transactionCount);
+    this.cache.set(cacheKey, transactionCount, undefined, requestId);
     return transactionCount;
   }
 
@@ -1091,7 +1091,7 @@ export class EthImpl implements Eth {
     }
 
     const cacheTtl = blockNumOrTag === EthImpl.blockEarliest || !isNaN(blockNum) ? constants.CACHE_TTL.ONE_DAY : this.ethGetTransactionCountCacheTtl; // cache historical values longer as they don't change
-    this.cache.set(cacheKey, nonceCount, cacheTtl); 
+    this.cache.set(cacheKey, nonceCount, cacheTtl, requestId); 
 
     return nonceCount;
   }
@@ -1313,7 +1313,7 @@ export class EthImpl implements Eth {
       if (contractCallResponse) {
         const formattedCallReponse = EthImpl.prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
-        this.cache.set(cacheKey, formattedCallReponse, this.ethCallCacheTtl);
+        this.cache.set(cacheKey, formattedCallReponse, this.ethCallCacheTtl, requestId);
         return formattedCallReponse;
       }
 
@@ -1411,7 +1411,7 @@ export class EthImpl implements Eth {
       if (!accountResult) {
         accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestId);
         if (accountResult) {
-          this.cache.set(accountCacheKey, accountResult);
+          this.cache.set(accountCacheKey, accountResult, undefined, requestId);
         }
       }
 
@@ -1518,7 +1518,7 @@ export class EthImpl implements Eth {
 
       this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
 
-      this.cache.set(cacheKey, receipt);
+      this.cache.set(cacheKey, receipt, undefined, requestId);
       return receipt;
     }
   }

@@ -465,7 +465,7 @@ export class MirrorNodeClient {
           MirrorNodeClient.GET_BLOCK_ENDPOINT,
           requestId);
 
-        this.cache.set(cachedLabel, block);
+        this.cache.set(cachedLabel, block, undefined, requestId);
         return block;
     }
 
@@ -496,7 +496,7 @@ export class MirrorNodeClient {
         const contract = await this.getContractId(contractIdOrAddress, requestId);
         const valid = contract != null;
 
-        this.cache.set(cachedLabel, valid, constants.CACHE_TTL.ONE_DAY);
+        this.cache.set(cachedLabel, valid, constants.CACHE_TTL.ONE_DAY, requestId);
         return valid;
     }
 
@@ -513,7 +513,7 @@ export class MirrorNodeClient {
 
         if (contract != null) {
             const id = contract.contract_id;
-            this.cache.set(cachedLabel, id, constants.CACHE_TTL.ONE_DAY);
+            this.cache.set(cachedLabel, id, constants.CACHE_TTL.ONE_DAY, requestId);
             return id;
         }
 
@@ -533,7 +533,7 @@ export class MirrorNodeClient {
             requestId);
 
         if(response != undefined && response.transaction_index != undefined && response.block_number != undefined && response.result === "SUCCESS") {
-            this.cache.set(cacheKey, response, constants.CACHE_TTL.ONE_HOUR);
+            this.cache.set(cacheKey, response, constants.CACHE_TTL.ONE_HOUR, requestId);
         }
 
         return response;
@@ -658,7 +658,7 @@ export class MirrorNodeClient {
         const blocks = await this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.ASC), requestId);
         if (blocks && blocks.blocks.length > 0) {
             const block = blocks.blocks[0];
-            this.cache.set(cachedLabel, block, constants.CACHE_TTL.ONE_DAY);       
+            this.cache.set(cachedLabel, block, constants.CACHE_TTL.ONE_DAY, requestId);       
             return block;     
         }
 
@@ -871,7 +871,7 @@ export class MirrorNodeClient {
                     type: constants.TYPE_CONTRACT,
                     entity: contract
                 };
-                this.cache.set(cachedLabel, response);
+                this.cache.set(cachedLabel, response, undefined, requestId);
                 return response;
             }
         }
@@ -912,7 +912,7 @@ export class MirrorNodeClient {
             type,
             entity: data.value
         };
-        this.cache.set(cachedLabel, response);
+        this.cache.set(cachedLabel, response, undefined, requestId);
         return response;
     }
 

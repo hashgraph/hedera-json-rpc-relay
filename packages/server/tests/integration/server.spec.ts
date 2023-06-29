@@ -1776,6 +1776,13 @@ class BaseTest {
     expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
     expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
     expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
+    expect(response, "Default response should have 'headers' property").to.have.property('headers');
+    
+    // ensure cors headers are set
+    expect(response.headers, "Default response: headers should have 'access-control-allow-origin' property").to.have.property('access-control-allow-origin');
+    expect(response.headers['access-control-allow-origin'], "Default response: 'headers[access-control-allow-origin]' should equal '*'").to.be.equal('*');
+    expect(response.headers, "Default response: headers should have 'access-control-allow-methods' property").to.have.property('access-control-allow-methods');
+    expect(response.headers['access-control-allow-methods'], "Default response: 'headers[access-control-allow-methods]' should equal 'GET,HEAD,PUT,POST,DELETE'").to.be.equal('GET,HEAD,PUT,POST,DELETE');
   }
 
   static errorResponseChecks(response, code, message, name?) {
