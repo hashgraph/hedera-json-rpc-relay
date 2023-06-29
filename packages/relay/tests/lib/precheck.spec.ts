@@ -27,7 +27,7 @@ import sinon from 'sinon';
 import pino from 'pino';
 import { Precheck } from "../../src/lib/precheck";
 import { expectedError, mockData, signTransaction } from "../helpers";
-import { MirrorNodeClient, SDKClient } from "../../src/lib/clients";
+import { ClientCache, MirrorNodeClient, SDKClient } from "../../src/lib/clients";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { ethers } from "ethers";
@@ -73,14 +73,15 @@ describe('Precheck', async function() {
 
         // @ts-ignore
         mock = new MockAdapter(instance, { onNoMatch: "throwException" });
-
+        
         // @ts-ignore
-        const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
+        const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, new ClientCache(logger.child({ name: `cache` }), registry), instance);
 
         const duration = constants.HBAR_RATE_LIMIT_DURATION;
         const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter);
+        const clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
+        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, clientCache);
         sdkInstance = sinon.createStubInstance(SDKClient);
         sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkInstance);
         precheck = new Precheck(mirrorNodeInstance, hapiServiceInstance, logger, '0x12a');
