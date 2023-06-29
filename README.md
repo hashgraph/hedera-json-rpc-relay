@@ -170,7 +170,7 @@ Where result returns a valid hexadecimal number
 
 ### Helm Chart
 
-This repos `helm-chart` directory contains the templates and values to deploy Hedera's json-rpc relay to a K8s cluster. This directory is packaged and distributed via helm repo.
+This repos `charts` directory contains the templates and values to deploy Hedera's json-rpc relay to a K8s cluster. This directory is packaged and distributed via helm repo.
 To get started, first install the helm repo:
 
 ```
@@ -181,7 +181,7 @@ helm repo update
 now install the helm chart:
 
 ```
-helm install [RELEASE_NAME] hedera-json-rpc-relay/hedera-json-rpc-relay -f /path/to/values.yaml
+helm install [RELEASE_NAME] charts/hedera-json-rpc -f /path/to/values.yaml
 ```
 
 To see the values that have been deployed:
@@ -193,7 +193,7 @@ helm show values hedera-json-rpc-relay
 Deploy an installation with custom values file:
 
 ```
-helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./helm-chart --debug
+helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./charts --debug
 ```
 
 ##### Deploy Helm Chart locally on minikube
@@ -211,7 +211,7 @@ helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./helm-cha
   --docker-email=$GH_EMAIL
   ```
 
-3. Deploy this helm-chart with the addtional [environment/minikube.yaml](environment/minikube.yaml) file
+3. Deploy this helm chart with the addtional [environment/minikube.yaml](environment/minikube.yaml) file
 
 ```
 helm upgrade -f environments/minkube.yaml jrpc-test ./
