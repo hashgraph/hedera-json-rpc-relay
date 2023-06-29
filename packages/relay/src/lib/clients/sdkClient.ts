@@ -55,6 +55,7 @@ import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
+import { ClientCache } from './clientCache';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -87,7 +88,7 @@ export class SDKClient {
      * LRU cache container.
      * @private
      */
-    private readonly cache;
+    private readonly cache: ClientCache;
 
     private consensusNodeClientHistogramCost;
     private consensusNodeClientHistogramGasFee;
@@ -95,7 +96,7 @@ export class SDKClient {
     private maxChunks;
 
     // populate with consensusnode requests via SDK
-    constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any) {
+    constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, clientCache: ClientCache) {
         this.clientMain = clientMain;
 
         if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
@@ -110,7 +111,7 @@ export class SDKClient {
         this.operatorAccountGauge = metrics.operatorGauge;
 
         this.hbarLimiter = hbarLimiter;
-        this.cache = new LRU({ max: constants.CACHE_MAX, ttl: constants.CACHE_TTL.ONE_HOUR });
+        this.cache = clientCache;
         this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     }
 
@@ -163,7 +164,7 @@ export class SDKClient {
 
     async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
         const cachedResponse: number | undefined = this.cache.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE);
-        if (cachedResponse != undefined) {
+        if (cachedResponse) {
             return cachedResponse;
         }
 

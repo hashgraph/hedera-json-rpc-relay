@@ -33,6 +33,7 @@ const registry = new Registry();
 import pino from 'pino';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
+import { ClientCache } from '../../src/lib/clients';
 const logger = pino();
 import { v4 as uuid } from 'uuid';
 import { formatRequestIdMessage } from '../../src/formatters';
@@ -54,7 +55,7 @@ describe('MirrorNodeClient', async function () {
       },
       timeout: 20 * 1000
     });
-    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
+    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, new ClientCache(logger.child({ name: `cache` }), registry), instance);
   });
 
   beforeEach(() => {
@@ -118,7 +119,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`restUrl` is exposed and correct', async () => {
     const domain = process.env.MIRROR_NODE_URL.replace(/^https?:\/\//, "");
-    const prodMirrorNodeInstance = new MirrorNodeClient(domain, logger.child({ name: `mirror-node` }), registry);
+    const prodMirrorNodeInstance = new MirrorNodeClient(domain, logger.child({ name: `mirror-node` }), registry, new ClientCache(logger.child({ name: `cache` }), registry));
     expect(prodMirrorNodeInstance.restUrl).to.eq(`https://${domain}/api/v1/`);
   });
 
