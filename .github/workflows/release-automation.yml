@@ -28,7 +28,7 @@ jobs:
         uses: madhead/semver-utils@latest
         with:
           lenient: false
-          version: '0.24.0-alpha0'
+          version: '0.27.0-alpha0'
 
       - name: Set Release Environment Variables
         run: |
@@ -60,8 +60,8 @@ jobs:
           git_commit_gpgsign: true
           git_tag_gpgsign: true
           git_user_signingkey: true
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          gpg_private_key: ${{ secrets.GPG_KEY_CONTENTS }}
+          passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
       
       - name: Create and Switch to Release Branch
         run: |
@@ -111,7 +111,7 @@ jobs:
           omitBody: ${{ steps.milestone.outputs.milestone_id == '' }}
           prerelease: ${{ steps.version_parser.outputs.prerelease != '' }}
           tag: ${{ env.RELEASE_TAG }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
 
   create_snapshot_pr:
     name: Create snapshot PR
@@ -135,8 +135,8 @@ jobs:
           git_commit_gpgsign: true
           git_tag_gpgsign: true
           git_user_signingkey: true
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          gpg_private_key: ${{ secrets.GPG_KEY_CONTENTS }}
+          passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
 
       - name: Reset main to release branch
         run: |
