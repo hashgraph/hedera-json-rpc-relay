@@ -527,6 +527,10 @@ export class EthImpl implements Eth {
         // Handle Contract Call or Contract Create
         gas = this.defaultGas;
       }
+
+      if (e instanceof JsonRpcError) {
+        return e;
+      }   
     }
     this.logger.error(`${requestIdPrefix} Returning predefined gas: ${gas}`);
 
