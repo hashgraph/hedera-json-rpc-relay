@@ -28,7 +28,7 @@ jobs:
         uses: madhead/semver-utils@latest
         with:
           lenient: false
-          version: '0.27.0-alpha0'
+          version: '0.27.0-alpha1'
 
       - name: Set Release Environment Variables
         run: |
@@ -88,6 +88,14 @@ jobs:
       - name: Bump Versions
         run: npm run bump-version --semver=${{ env.VERSION }}
 
+      - name: Create Release Notes
+        if: ${{ steps.milestone.outputs.milestone_id != '' }}
+        uses: Decathlon/release-notes-generator-action@v3.1.6
+        env:
+          FILENAME: ${{ env.RELEASE_NOTES_FILENAME }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          MILESTONE_NUMBER: ${{ steps.milestone.outputs.milestone_id }}
+
       - name: Commit and Tag
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
@@ -114,10 +122,10 @@ jobs:
     name: Create snapshot PR
     runs-on: ubuntu-latest
     needs: branch_bump_tag
-    if: ${{ needs.release.outputs.create_pr == 'true' }}
+    if: ${{ needs.branch_bump_tag.outputs.create_pr == 'true' }}
     env:
-      NEXT_VERSION_SNAPSHOT: ${{ needs.release.outputs.next_version_snapshot }}
-      RELEASE_BRANCH: ${{ needs.release.outputs.release_branch }}
+      NEXT_VERSION_SNAPSHOT: ${{ needs.branch_bump_tag.outputs.next_version_snapshot }}
+      RELEASE_BRANCH: ${{ needs.branch_bump_tag.outputs.release_branch }}
 
     steps:
       - name: Checkout Repository
@@ -162,5 +170,5 @@ jobs:
           author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           delete-branch: true
           signoff: true
-          title: ${{ needs.release.outputs.pr_title }}
+          title: ${{ needs.branch_bump_tag.outputs.pr_title }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
