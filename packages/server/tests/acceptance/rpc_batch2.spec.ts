@@ -31,13 +31,14 @@ import TokenCreateJson from '../contracts/TokenCreateContract.json';
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
 import storageContractJson from '../contracts/Storage.json';
-import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../../../packages/relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
+import { error } from 'console';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -178,87 +179,56 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         });
 
         it('should not be able to execute "eth_estimateGas" with no transaction object', async function () {
-            try {
-                await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                const err = JSON.parse(error.body);
-                expect(error).to.not.be.null;
-                expect(err.error.name).to.be.equal('Missing required parameters');
-                expect(err.error.message.endsWith('Missing value for required parameter 0')).to.be.true;
-            }
+            const errorMessage = 'Missing value for required parameter 0';
+            await expect(relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [], requestId)).to.be.rejectedWith('Missing required parameters').and.eventually.have.property('message').that.include(errorMessage);
         });
 
         it('should not be able to execute "eth_estimateGas" with wrong from field', async function () {
-            try {
-                await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
-                    from: '0x114f60009ee6b84861c0cdae8829751e517b',
+            const from = '0x114f60009ee6b84861c0cdae8829751e517b';
+            const errorMessage = `Invalid parameter 'from' for TransactionObject: Expected 0x prefixed string representing the address (20 bytes), value: ${from}`;
+            await expect(relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
+                    from: from,
                     to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
                     value: '0xa688906bd8b00000',
                     gas: '0xd97010',
                     accessList: []
-                }], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                const err = JSON.parse(error.body);
-                expect(error).to.not.be.null;
-                expect(err.error.name).to.be.equal('Invalid parameter');
-                expect(err.error.message.endsWith(`Invalid parameter 'from' for TransactionObject: Expected 0x prefixed string representing the address (20 bytes), value: 0x114f60009ee6b84861c0cdae8829751e517b`)).to.be.true;
-            }
+                }], requestId)).to.be.rejectedWith('Invalid parameter').and.eventually.have.property('message').that.include(errorMessage);
         });
 
         it('should not be able to execute "eth_estimateGas" with wrong to field', async function () {
-            try {
-                await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
-                    from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
-                    to: '0xae410f34f7487e2cd03396499cebb09b79f45',
-                    value: '0xa688906bd8b00000',
-                    gas: '0xd97010',
-                    accessList: []
-                }], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                const err = JSON.parse(error.body);
-                expect(error).to.not.be.null;
-                expect(err.error.name).to.be.equal('Invalid parameter');
-                expect(err.error.message.endsWith(`Invalid parameter 'to' for TransactionObject: Expected 0x prefixed string representing the address (20 bytes), value: 0xae410f34f7487e2cd03396499cebb09b79f45`)).to.be.true;
-            }
+            const to = '0xae410f34f7487e2cd03396499cebb09b79f45';
+            const errorMessage = `Invalid parameter 'to' for TransactionObject: Expected 0x prefixed string representing the address (20 bytes), value: ${to}`;
+            await expect(relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
+                from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
+                to: to,
+                value: '0xa688906bd8b00000',
+                gas: '0xd97010',
+                accessList: []
+            }], requestId)).to.be.rejectedWith('Invalid parameter').and.eventually.have.property('message').that.include(errorMessage);
         });
 
         it('should not be able to execute "eth_estimateGas" with wrong value field', async function () {
-            try {
-                await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
-                    from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
-                    to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
-                    value: '123',
-                    gas: '0xd97010',
-                    accessList: []
-                }], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                const err = JSON.parse(error.body);
-                expect(error).to.not.be.null;
-                expect(err.error.name).to.be.equal('Invalid parameter');
-                expect(err.error.message.endsWith(`Invalid parameter 'value' for TransactionObject: Expected 0x prefixed hexadecimal value, value: 123`)).to.be.true;
-            }
+            const value = '123';
+            const errorMessage = `Invalid parameter 'value' for TransactionObject: Expected 0x prefixed hexadecimal value, value: ${value}`;
+            await expect(relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
+                from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
+                to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
+                value: value,
+                gas: '0xd97010',
+                accessList: []
+            }], requestId)).to.be.rejectedWith('Invalid parameter').and.eventually.have.property('message').that.include(errorMessage);
         });
 
         it('should not be able to execute "eth_estimateGas" with wrong gas field', async function () {
-            try {
-                await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
-                    from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
-                    to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
-                    value: '0xa688906bd8b00000',
-                    gas: '123',
-                    accessList: []
-                }], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                const err = JSON.parse(error.body);
-                expect(error).to.not.be.null;
-                expect(err.error.name).to.be.equal('Invalid parameter');
-                expect(err.error.message.endsWith(`Invalid parameter 'gas' for TransactionObject: Expected 0x prefixed hexadecimal value, value: 123`)).to.be.true;
-            }
+            const gas = '123';
+            const errorMessage = `Invalid parameter 'gas' for TransactionObject: Expected 0x prefixed hexadecimal value, value: ${gas}`;
+            await expect(relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
+                from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
+                to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
+                value: '0xa688906bd8b00000',
+                gas: gas,
+                accessList: []
+            }], requestId)).to.be.rejectedWith('Invalid parameter').and.eventually.have.property('message').that.include(errorMessage);
         });
     });
 
@@ -272,13 +242,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 expect(Number(res)).to.be.gt(0);
             }
         });
-    })
+    });
 
     describe('eth_getBalance', async function () {
         let getBalanceContractId;
         before(async function () {
             getBalanceContractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
-        })
+        });
 
         it('@release should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {
             const account = await servicesNode.createAliasAccount(10, null, requestId);
@@ -539,7 +509,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
         it('should execute "eth_getCode" for hts token', async function () {
             const tokenAddress = NftHTSTokenContractAddress.slice(2);
-            redirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${tokenAddress}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`
+            redirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${tokenAddress}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`;
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, [NftHTSTokenContractAddress, 'latest'], requestId);
             expect(res).to.equal(redirectBytecode);
         });
@@ -782,15 +752,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             });
 
             it('should call eth_feeHistory with newest block > latest', async function () {
-                let latestBlock;
                 const blocksAhead = 10;
-                try {
-                    latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
-                    const newestBlockNumberHex = ethers.utils.hexValue(latestBlock.number + blocksAhead);
-                    await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY, ['0x1', newestBlockNumberHex, null], requestId);
-                } catch (error) {
-                    Assertions.jsonRpcError(error, predefined.REQUEST_BEYOND_HEAD_BLOCK(latestBlock.number + blocksAhead, latestBlock.number));
-                }
+
+                const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
+                const errorType = predefined.REQUEST_BEYOND_HEAD_BLOCK(latestBlock.number + blocksAhead, latestBlock.number);
+                const newestBlockNumberHex = ethers.utils.hexValue(latestBlock.number + blocksAhead);
+
+                await expect(relay.call(RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY, ['0x1', newestBlockNumberHex, null], requestId)).to.be.rejectedWith(errorType);
             });
 
             it('should call eth_feeHistory with zero block count', async function () {
