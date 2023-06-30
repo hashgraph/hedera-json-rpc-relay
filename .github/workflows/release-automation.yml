@@ -79,9 +79,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lerna Bootstrap
-        run: npm run setup
-
       - name: Install pnpm
         run: npm install -g pnpm
 
@@ -145,9 +142,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Lerna Bootstrap
-        run: npm run setup
 
       - name: Install pnpm
         run: npm install -g pnpm
