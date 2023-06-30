@@ -28,7 +28,7 @@ jobs:
         uses: madhead/semver-utils@latest
         with:
           lenient: false
-          version: '0.27.0-alpha1'
+          version: '0.27.0-alpha2'
 
       - name: Set Release Environment Variables
         run: |
@@ -171,4 +171,4 @@ jobs:
           delete-branch: true
           signoff: true
           title: ${{ needs.branch_bump_tag.outputs.pr_title }}
-          token: ${{ secrets.HEDERA_BOT_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
