@@ -3039,8 +3039,8 @@ describe('Eth calls using MirrorNode', async function () {
       data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
     };
     const id = uuid();
-    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, predefined.CONTRACT_REVERT);
-    const contractRevert= new JsonRpcError( {name: 'Contract revert executed', code: -32008, message: 'execution reverted: '});
+    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, predefined.CONTRACT_REVERT('solidity require failed!'));
+    const contractRevert = predefined.CONTRACT_REVERT('solidity require failed!');
     const result: any = await ethImpl.estimateGas(transaction, id);
 
     expect(result.code).to.equal(contractRevert.code);
