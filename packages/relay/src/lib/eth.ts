@@ -502,11 +502,6 @@ export class EthImpl implements Eth {
       }
     } catch (e: any) {
       this.logger.error(`${requestIdPrefix} Error raised while fetching estimateGas from mirror-node: ${JSON.stringify(e)}`);
-      
-      // execute reverted: with no message comes from a contract deployment
-      if ((e.statusCode != 501) && (e instanceof JsonRpcError) && (e.message === EthImpl.executionReverted)) {
-        return e;
-      }   
 
       // Handle Simple Transaction and Hollow account creation
       if (transaction && transaction.to && (!transaction.data || transaction.data === '0x')){
@@ -530,6 +525,10 @@ export class EthImpl implements Eth {
           return predefined.INVALID_PARAMETER(0, `Invalid 'value' field in transaction param. Value must be greater than 0`);
         }
       } else {
+        // execute reverted: with no message comes from a contract deployment
+        if ((e.statusCode != 501) && (e instanceof JsonRpcError) && (e.message === EthImpl.executionReverted)) {
+          return e;
+        }         
         // Handle Contract Call or Contract Create
         gas = this.defaultGas;
       }
