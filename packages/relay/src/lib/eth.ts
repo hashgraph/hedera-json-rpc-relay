@@ -502,6 +502,11 @@ export class EthImpl implements Eth {
       }
     } catch (e: any) {
       this.logger.error(`${requestIdPrefix} Error raised while fetching estimateGas from mirror-node: ${JSON.stringify(e)}`);
+      
+      // execute reverted: with no message comes from a contract deployment
+      if ((e.statusCode != 501) && (e instanceof JsonRpcError) && (e.message === EthImpl.executionReverted)) {
+        return e;
+      }   
 
       // Handle Simple Transaction and Hollow account creation
       if (transaction && transaction.to && (!transaction.data || transaction.data === '0x')){
@@ -528,11 +533,6 @@ export class EthImpl implements Eth {
         // Handle Contract Call or Contract Create
         gas = this.defaultGas;
       }
-
-      // execute reverted: with no message comes from a contract deployment
-      if ((e.statusCode != 501) && (e instanceof JsonRpcError) && (e.message === EthImpl.executionReverted)) {
-        return e;
-      }   
     }
     this.logger.error(`${requestIdPrefix} Returning predefined gas: ${gas}`);
 
