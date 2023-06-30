@@ -179,7 +179,7 @@ export class SDKClient {
                 const exchangeRates = await this.getExchangeRate(callerName, requestId);
                 const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
-                this.cache.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars);
+                this.cache.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, undefined, requestId);
                 return tinyBars;
             }
         }
