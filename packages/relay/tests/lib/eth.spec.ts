@@ -3043,7 +3043,7 @@ describe('Eth calls using MirrorNode', async function () {
       "_status": {
         "messages": [
           {
-            "data": "0x3000",
+            "data": "solidity require failed!",
             "detail": "Generic detailed error message",
             "message": "Generic error message"
           }
@@ -3051,7 +3051,7 @@ describe('Eth calls using MirrorNode', async function () {
       }
     });
 
-    const contractRevert = predefined.CONTRACT_REVERT("0x3000");
+    const contractRevert = predefined.CONTRACT_REVERT("solidity require failed!");
     const result: any = await ethImpl.estimateGas(transaction, id);
 
     expect(result.code).to.equal(contractRevert.code);
