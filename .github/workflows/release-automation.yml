@@ -51,7 +51,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: main
-          token: ${{ secrets.HEDERA_BOT_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Import GPG Key
         id: gpg_importer
