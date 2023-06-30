@@ -192,7 +192,7 @@ helm show values hedera-json-rpc-relay
 Deploy an installation with custom values file:
 
 ```
-helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./charts --debug
+helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./charts/hedera-json-rpc --debug
 ```
 
 ##### Deploy Helm Chart locally on minikube
