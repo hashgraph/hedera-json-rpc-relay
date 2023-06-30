@@ -81,14 +81,12 @@ describe('Formatters', () => {
 
     describe('parseNumericEnvVar', () => {
         before(() => {
-            // process.env.TEST_ONLY_ENV_VAR_UNDEFINED = undefined;
             process.env.TEST_ONLY_ENV_VAR_EMPTYSTRING = '';
             process.env.TEST_ONLY_ENV_VAR_NONNUMERICSTRING = 'foobar';
             process.env.TEST_ONLY_ENV_VAR_NUMERICSTRING = '12345';
         });
 
         after(() => {
-            // process.env.TEST_ONLY_ENV_VAR_UNDEFINED = undefined;
             process.env.TEST_ONLY_ENV_VAR_EMPTYSTRING = undefined;
             process.env.TEST_ONLY_ENV_VAR_NONNUMERICSTRING = undefined;
             process.env.TEST_ONLY_ENV_VAR_NUMERICSTRING = undefined;
