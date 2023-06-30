@@ -120,17 +120,7 @@ export class EthImpl implements Eth {
   private readonly MirrorNodeGetContractResultRetries =
     parseNumericEnvVar('MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES', 'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES');
 
-  // private readonly defaultGas = EthImpl.numberTo0x(Number.parseInt(process.env.TX_DEFAULT_GAS ?? constants.TX_DEFAULT_GAS_DEFAULT.toString()));
-  // private readonly ethCallCacheTtl = Number.parseInt(process.env.ETH_CALL_CACHE_TTL ?? constants.ETH_CALL_CACHE_TTL_DEFAULT.toString());
-  // private readonly ethBlockNumberCacheTtlMs = Number.parseInt(process.env.ETH_BLOCK_NUMBER_CACHE_TTL_MS ?? constants.ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT.toString());
-  // private readonly ethGetBalanceCacheTtlMs = Number.parseInt(process.env.ETH_GET_BALANCE_CACHE_TTL_MS ?? constants.ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT.toString());
-  // private readonly maxBlockRange = Number.parseInt(process.env.MAX_BLOCK_RANGE ?? constants.MAX_BLOCK_RANGE.toString());
-  // private readonly contractCallGasLimit = Number.parseInt(process.env.CONTRACT_CALL_GAS_LIMIT ?? constants.CONTRACT_CALL_GAS_LIMIT.toString());
-  // private readonly ethGetTransactionCountMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE ?? constants.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE.toString());
-  // private readonly ethGetTransactionCountCacheTtl = Number.parseInt(process.env.ETH_GET_TRANSACTION_COUNT_CACHE_TTL ?? constants.ETH_GET_TRANSACTION_COUNT_CACHE_TTL.toString());
-  // private readonly ethGetBlockByResultsBatchSize = Number.parseInt(process.env.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE ?? constants.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE.toString());
-  // private readonly MirrorNodeGetContractResultRetries = Number.parseInt(process.env.MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES ?? constants.MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES.toString());
-  /**
+    /**
    * Configurable options used when initializing the cache.
    *
    * @private

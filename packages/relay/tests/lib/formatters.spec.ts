@@ -19,7 +19,8 @@
  */
 
 import { expect } from 'chai';
-import { hexToASCII, decodeErrorMessage, formatTransactionId } from '../../src/formatters';
+import { hexToASCII, decodeErrorMessage, formatTransactionId, parseNumericEnvVar } from '../../src/formatters';
+import constants from '../../src/lib/constants';
 
 describe('Formatters', () => {
     describe('hexToASCII', () => {
@@ -76,5 +77,73 @@ describe('Formatters', () => {
         it('should return null', () => {
             expect(formatTransactionId(invalidInputTimestamp)).to.eq(null);
         })
-    })
+    });
+
+    describe('parseNumericEnvVar', () => {
+        before(() => {
+            // process.env.TEST_ONLY_ENV_VAR_UNDEFINED = undefined;
+            process.env.TEST_ONLY_ENV_VAR_EMPTYSTRING = '';
+            process.env.TEST_ONLY_ENV_VAR_NONNUMERICSTRING = 'foobar';
+            process.env.TEST_ONLY_ENV_VAR_NUMERICSTRING = '12345';
+        });
+
+        after(() => {
+            // process.env.TEST_ONLY_ENV_VAR_UNDEFINED = undefined;
+            process.env.TEST_ONLY_ENV_VAR_EMPTYSTRING = undefined;
+            process.env.TEST_ONLY_ENV_VAR_NONNUMERICSTRING = undefined;
+            process.env.TEST_ONLY_ENV_VAR_NUMERICSTRING = undefined;
+        });
+
+        it('should use default value when env var is undefined', () => {
+            const value =
+                parseNumericEnvVar('TEST_ONLY_ENV_VAR_UNDEFINED', 'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT');
+            expect(isNaN(value)).to.equal(false, 'should not be NaN');
+            expect(value).to.equal(constants.ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT);
+        });
+
+        it('should use default value when env var is empty string', () => {
+            const value =
+                parseNumericEnvVar('TEST_ONLY_ENV_VAR_EMPTYSTRING', 'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT');
+            expect(isNaN(value)).to.equal(false, 'should not be NaN');
+            expect(value).to.equal(constants.ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT);
+        });
+
+        it('should use default value when env var is non-numeric string', () => {
+            const value =
+                parseNumericEnvVar('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', 'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT');
+            expect(isNaN(value)).to.equal(false, 'should not be NaN');
+            expect(value).to.equal(constants.ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT);
+        });
+
+        it('should throw when env var is any non-parseable value and constant is any non-parseable value', () => {
+            let value: any = undefined;
+            expect(function () {
+                value = parseNumericEnvVar('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', 'TYPE_ACCOUNT');
+            }).to.throw(
+                Error,
+                "Unable to parse numeric env var: 'TEST_ONLY_ENV_VAR_NONNUMERICSTRING', constant: 'TYPE_ACCOUNT'",
+                'throws when unable to parse both',
+            );
+            expect(value).to.be.undefined;
+        });
+
+        it('should throw when env var is any non-parseable value and constant does not exist', () => {
+            let value: any = undefined;
+            expect(function () {
+                value = parseNumericEnvVar('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', 'FOO_BAR');
+            }).to.throw(
+                Error,
+                "Unable to parse numeric env var: 'TEST_ONLY_ENV_VAR_NONNUMERICSTRING', constant: 'FOO_BAR'",
+                'throws when unable to parse both',
+            );
+            expect(value).to.be.undefined;
+        });
+
+        it('should use specified value when env var is numeric string', () => {
+            const value =
+                parseNumericEnvVar('TEST_ONLY_ENV_VAR_NUMERICSTRING', 'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT');
+            expect(isNaN(value)).to.equal(false, 'should not be NaN');
+            expect(value).to.equal(12345);
+        });
+    });
 });
