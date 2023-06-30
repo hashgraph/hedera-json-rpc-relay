@@ -7,9 +7,6 @@ on:
         description: "Release Version (semver ie. 0.24.0):"
         type: string
         required: true
-  push:
-    branches:
-      - '903-automate-branch-tag'
 
 jobs:
   branch_bump_tag:
@@ -28,13 +25,13 @@ jobs:
         uses: madhead/semver-utils@latest
         with:
           lenient: false
-          version: '0.27.0-alpha3'
+          version: ${{ github.event.inputs.version }}
 
       - name: Set Release Environment Variables
         run: |
           PREMINOR_VERSION=${{ steps.version_parser.outputs.inc-preminor }}
           NEXT_VERSION_SNAPSHOT=${PREMINOR_VERSION//-0/-SNAPSHOT}
-          RELEASE_BRANCH="test-release/${{ steps.version_parser.outputs.major }}.${{ steps.version_parser.outputs.minor }}"
+          RELEASE_BRANCH="release/${{ steps.version_parser.outputs.major }}.${{ steps.version_parser.outputs.minor }}"
           [[ -z "${{ steps.version_parser.outputs.prerelease }}" ]] && \
             VERSION=${{ steps.version_parser.outputs.release }} || \
             VERSION="${{ steps.version_parser.outputs.release }}-${{ steps.version_parser.outputs.prerelease }}"
