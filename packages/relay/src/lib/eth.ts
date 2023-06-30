@@ -93,6 +93,7 @@ export class EthImpl implements Eth {
   static ethGetTransactionCountByNumber = 'eth_GetTransactionCountByNumber';
   static ethGetTransactionReceipt = 'eth_GetTransactionReceipt';
   static ethSendRawTransaction = 'eth_sendRawTransaction';
+  static executionReverted = 'execution reverted: ';
 
   // block constants
   static blockLatest = 'latest';
@@ -528,7 +529,8 @@ export class EthImpl implements Eth {
         gas = this.defaultGas;
       }
 
-      if (e instanceof JsonRpcError) {
+      // execute reverted: with no message comes from a contract deployment
+      if ((e.statusCode != 501) && (e instanceof JsonRpcError) && (e.message === EthImpl.executionReverted)) {
         return e;
       }   
     }
