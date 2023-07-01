@@ -30,7 +30,6 @@ import { SDKClientError } from '../errors/SDKClientError';
 import { ClientCache } from './clientCache';
 const http = require('http');
 const https = require('https');
-const LRU = require('lru-cache');
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
