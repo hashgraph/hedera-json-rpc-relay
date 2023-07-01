@@ -3737,6 +3737,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.be.not.null;
       expect(result.code).to.eq(-32008);
       expect(result.name).to.eq("Contract revert executed");
+      expect(result.message).to.contain(mockData.contractReverted._status.messages[0].message);
     });
 
     it('eth_call with all fields, but mirror node throws NOT_SUPPORTED', async function () {
@@ -3753,15 +3754,7 @@ describe('Eth calls using MirrorNode', async function () {
         evm_address: accountAddress1
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
-      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(501, {
-        '_status': {
-          'messages': [
-            {
-              'message': 'Precompile not supported'
-            }
-          ]
-        }
-      });
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(501, mockData.notSupported);
 
       sdkClientStub.submitContractCallQueryWithRetry.returns({
             asBytes: function () {
@@ -3790,21 +3783,14 @@ describe('Eth calls using MirrorNode', async function () {
         evm_address: accountAddress1
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
-      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(400, {
-        '_status': {
-          'messages': [
-            {
-              'message': 'Contract reverted execution'
-            }
-          ]
-        }
-      });
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(400, mockData.contractReverted);
       sinon.reset();
       const result = await ethImpl.call(callData, 'latest');
       sinon.assert.notCalled(sdkClientStub.submitContractCallQueryWithRetry);
       expect(result).to.not.be.null;
       expect(result.code).to.eq(-32008);
       expect(result.name).to.eq('Contract revert executed');
+      expect(result.message).to.contain(mockData.contractReverted._status.messages[0].message);
     });
 
     it('SDK returns a precheck error', async function () {

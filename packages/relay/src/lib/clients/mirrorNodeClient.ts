@@ -331,11 +331,6 @@ export class MirrorNodeClient {
 
         this.logger.error(new Error(error.message), `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
 
-        // we only need contract revert errors here as it's not the same as not supported
-        if (mirrorError.isContractReverted() && !mirrorError.isNotSupported() && !mirrorError.isNotSupportedSystemContractOperaton()) {
-            throw predefined.CONTRACT_REVERT(mirrorError.errorMessage);
-        }
-
         throw mirrorError;
     }
 

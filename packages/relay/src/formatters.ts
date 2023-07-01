@@ -48,6 +48,10 @@ function hexToASCII(str: string): string {
  */
 const decodeErrorMessage = (message?: string): string => {
     if (!message) return '';
+
+    // If the message does not start with 0x, it is not an error message, return it as is
+    if (!message.includes('0x')) return message;
+
     message = message.replace(/^0x/, "");   // Remove the starting 0x
     const strLen = parseInt(message.slice(8 + 64, 8 + 128), 16);  // Get the length of the readable text
     const resultCodeHex = message.slice(8 + 128, 8 + 128 + strLen * 2); // Extract the hex of the text
