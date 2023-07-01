@@ -412,6 +412,18 @@ const mockData = {
                 }
             ]
         }
+    },
+
+    notSuported: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "Auto account creation is not supported.",
+                    "detail": "",
+                    "data": ""
+                }
+            ]
+        }
     }
 };
 

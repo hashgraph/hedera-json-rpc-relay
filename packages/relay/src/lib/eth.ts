@@ -1271,17 +1271,19 @@ export class EthImpl implements Eth {
       if (e instanceof MirrorNodeClientError) {
         if (e.isRateLimit()) {
           return predefined.IP_RATE_LIMIT_EXCEEDED(e.data || `Rate limit exceeded on ${EthImpl.ethCall}`);
+          return predefined.IP_RATE_LIMIT_EXCEEDED(e.data || `Rate limit exceeded on ${EthImpl.ethCall}`);
         }
 
         if (e.isContractReverted()) {
-          this.logger.trace(`${requestIdPrefix} mirror node eth_call request encoutered contract revert. message: ${e.message}, details: ${e.detail}, data: ${e.data}`);
-          return predefined.CONTRACT_REVERT(e.detail || e.message, e.data);
+          this.logger.trace(`${requestIdPrefix} mirror node eth_call request encoutered contract revert. details: ${e.detail}, data: ${e.data}`);
+          return predefined.CONTRACT_REVERT(e.message);
         }
 
         // Temporary workaround until mirror node web3 module implements the support of precompiles
         // If mirror node throws, rerun eth_call and force it to go through the Consensus network
         if (e.isNotSupported() || e.isNotSupportedSystemContractOperaton()) {
           const errorTypeMessage = e.isNotSupported() || e.isNotSupportedSystemContractOperaton() ? 'Unsupported' : 'Unhandled';
+          this.logger.trace(`${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node. details: ${e.detail}, data: ${e.data}`);
           this.logger.trace(`${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node. details: ${e.detail}, data: ${e.data}`);
           return await this.callConsensusNode(call, gas, requestId);
         }
