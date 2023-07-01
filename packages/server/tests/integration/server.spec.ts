@@ -18,15 +18,15 @@
  *
  */
 
-import { expect } from 'chai';
 import Axios from 'axios';
-import path from 'path';
+import { expect } from 'chai';
 import dotenv from 'dotenv';
-dotenv.config({ path: path.resolve(__dirname, './test.env') });
+import path from 'path';
+import Assertions from '../helpers/assertions';
 import app from '../../src/server';
 import { Validator } from '../../src/validator';
-import Assertions from '../helpers/assertions';
 import RelayCalls from '../../tests/helpers/constants';
+dotenv.config({ path: path.resolve(__dirname, './test.env') });
 
 const MISSING_PARAM_ERROR = "Missing value for required parameter";
 

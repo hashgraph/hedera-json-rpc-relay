@@ -55,7 +55,7 @@ export class ClientCache {
      * @private
      */
     private readonly register: Registry;
-    private cacheKeyCounter;
+    private cacheKeyGauge: Gauge<string>;
 
     public constructor(logger: Logger, register: Registry) {
         this.cache = new LRU(this.options);
@@ -64,12 +64,12 @@ export class ClientCache {
 
         const cacheSizeCollect = () => {
             this.purgeStale();
-            this.cacheKeyCounter.set(this.cache.size);
+            this.cacheKeyGauge.set(this.cache.size);
         };
 
         const metricCounterName = 'rpc_relay_cache';
         register.removeSingleMetric(metricCounterName);
-        this.cacheKeyCounter = new Gauge({
+        this.cacheKeyGauge = new Gauge({
             name: metricCounterName,
             help: 'Relay cache gauge',
             labelNames: ['key', 'method'],
@@ -84,9 +84,9 @@ export class ClientCache {
         let value = this.cache.get(key);
         if (value) {
             if (callingMethod) {
-                this.cacheKeyCounter.labels(key, callingMethod).inc(1);
+                this.cacheKeyGauge.labels(key, callingMethod).inc(1);
             } else {
-                this.cacheKeyCounter.labels(key, null).inc(1);
+                this.cacheKeyGauge.labels(key, '').inc(1);
             }
 
             this.logger.trace(`${requestIdPrefix} returning cached value ${key}:${JSON.stringify(value)} on ${callingMethod} call`);
