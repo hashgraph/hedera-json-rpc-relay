@@ -1750,6 +1750,13 @@ describe('RPC Server', async function() {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}, value: 123`);
         }
       });
+
+      it('should execute HTTP OPTIONS cors preflight check', async function() {
+        const response = await this.testClient.options('/');
+    
+        BaseTest.validResponseCheck(response, {status: 204, statusText: 'No Content'});
+        BaseTest.validCorsCheck(response);
+      });
     });
   });
 });
@@ -1767,9 +1774,22 @@ class BaseTest {
     });
   }
 
+  static validResponseCheck(response, options:any = {status: 200, statusText: 'OK'}) {
+    expect(response.status).to.eq(options.status);
+    expect(response.statusText).to.eq(options.statusText);
+  }
+
+  static validCorsCheck(response) {    
+    // ensure cors headers are set
+    expect(response.headers, "Default response: headers should have 'access-control-allow-origin' property").to.have.property('access-control-allow-origin');
+    expect(response.headers['access-control-allow-origin'], "Default response: 'headers[access-control-allow-origin]' should equal '*'").to.be.equal('*');
+    expect(response.headers, "Default response: headers should have 'access-control-allow-methods' property").to.have.property('access-control-allow-methods');
+    expect(response.headers['access-control-allow-methods'], "Default response: 'headers[access-control-allow-methods]' should equal 'GET,HEAD,PUT,POST,DELETE'").to.be.equal('GET,HEAD,PUT,POST,DELETE');
+  }
+
   static defaultResponseChecks(response) {
-    expect(response.status).to.eq(200);
-    expect(response.statusText).to.eq('OK');
+    BaseTest.validResponseCheck(response);
+    BaseTest.validCorsCheck(response);
     expect(response, "Default response: Should have 'data' property").to.have.property('data');
     expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
     expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
@@ -1777,12 +1797,6 @@ class BaseTest {
     expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
     expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
     expect(response, "Default response should have 'headers' property").to.have.property('headers');
-    
-    // ensure cors headers are set
-    expect(response.headers, "Default response: headers should have 'access-control-allow-origin' property").to.have.property('access-control-allow-origin');
-    expect(response.headers['access-control-allow-origin'], "Default response: 'headers[access-control-allow-origin]' should equal '*'").to.be.equal('*');
-    expect(response.headers, "Default response: headers should have 'access-control-allow-methods' property").to.have.property('access-control-allow-methods');
-    expect(response.headers['access-control-allow-methods'], "Default response: 'headers[access-control-allow-methods]' should equal 'GET,HEAD,PUT,POST,DELETE'").to.be.equal('GET,HEAD,PUT,POST,DELETE');
   }
 
   static errorResponseChecks(response, code, message, name?) {
