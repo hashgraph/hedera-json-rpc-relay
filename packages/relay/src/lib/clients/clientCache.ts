@@ -19,7 +19,7 @@
  */
 
 import { Logger } from "pino";
-import { Counter, Registry } from "prom-client";
+import { Gauge, Registry } from "prom-client";
 import constants from "../constants";
 
 const LRU = require('lru-cache');
@@ -69,9 +69,9 @@ export class ClientCache {
 
         const metricCounterName = 'rpc_relay_cache';
         register.removeSingleMetric(metricCounterName);
-        this.cacheKeyCounter = new Counter({
+        this.cacheKeyCounter = new Gauge({
             name: metricCounterName,
-            help: 'Relay cache counter',
+            help: 'Relay cache gauge',
             labelNames: ['key', 'method'],
             registers: [register],
             async collect() {

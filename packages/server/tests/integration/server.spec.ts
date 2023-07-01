@@ -1757,6 +1757,31 @@ describe('RPC Server', async function() {
         BaseTest.validResponseCheck(response, {status: 204, statusText: 'No Content'});
         BaseTest.validCorsCheck(response);
       });
+
+      it('should execute metrics collection', async function() {
+        const response = await this.testClient.get('/metrics');
+
+        expect(response.status).to.eq(200);
+        expect(response.statusText).to.eq('OK');
+      });
+
+      it('should execute successful health readiness check', async function() {
+        const response = await this.testClient.get('/health/readiness');
+
+        expect(response.status).to.eq(200);
+        expect(response.statusText).to.eq('OK');
+        expect(response, "Default response: Should have 'data' property").to.have.property('data');
+        expect(response.data, "Default response: 'data' should equal 'OK'").to.be.equal('OK');
+      });
+
+      it('should execute successful health liveness check', async function() {
+        const response = await this.testClient.get('/health/readiness');
+
+        expect(response.status).to.eq(200);
+        expect(response.statusText).to.eq('OK');
+        expect(response, "Default response: Should have 'data' property").to.have.property('data');
+        expect(response.data, "Default response: 'data' should equal 'OK'").to.be.equal('OK');
+      });
     });
   });
 });
