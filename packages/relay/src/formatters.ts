@@ -65,4 +65,25 @@ const formatTransactionId = (transactionId: string): string | null => {
     return `${payer}-${timestamp}`;
 }
 
-export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId };
+/**
+ * Reads a value loaded up from the `.env` file, and converts it to a number.
+ * If it is not set in `.env` or set as an empty string or other non-numeric
+ * value, it uses the default value specified in constants.
+ * @param envVarName The name of the env var to read in from the `.env` file
+ * @param constantName The name of the constant to use as a fallback when the
+ *   specified env var is invalid
+ * @throws An error if both the env var and constant are invalid
+ */
+const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): number => {
+    let value: number = Number.parseInt((process.env[envVarName] ?? ''), 10);
+    if (!isNaN(value)) {
+        return value;
+    }
+    value = Number.parseInt((constants[fallbackConstantKey] ?? '').toString());
+    if (isNaN(value)) {
+        throw new Error(`Unable to parse numeric env var: '${envVarName}', constant: '${fallbackConstantKey}'`);
+    }
+    return value;
+}
+
+export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId, parseNumericEnvVar };

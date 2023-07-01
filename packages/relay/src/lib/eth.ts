@@ -21,7 +21,7 @@
 import { Eth } from '../index';
 import { Hbar } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import {BigNumber as BN} from "bignumber.js";
+import { BigNumber as BN } from "bignumber.js";
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
 import { ClientCache, MirrorNodeClient } from './clients';
@@ -30,10 +30,10 @@ import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
-import {formatRequestIdMessage, formatTransactionId} from '../formatters';
+import { formatRequestIdMessage, formatTransactionId, parseNumericEnvVar } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
-import {Counter, Registry} from "prom-client";
+import { Counter, Registry } from "prom-client";
 
 const LRU = require('lru-cache');
 const _ = require('lodash');
@@ -99,17 +99,28 @@ export class EthImpl implements Eth {
    *
    * @private
    */
-  private readonly defaultGas = EthImpl.numberTo0x(Number.parseInt(process.env.TX_DEFAULT_GAS ?? constants.TX_DEFAULT_GAS_DEFAULT.toString()));
-  private readonly ethCallCacheTtl = Number.parseInt(process.env.ETH_CALL_CACHE_TTL ?? constants.ETH_CALL_CACHE_TTL_DEFAULT.toString());
-  private readonly ethBlockNumberCacheTtlMs = Number.parseInt(process.env.ETH_BLOCK_NUMBER_CACHE_TTL_MS ?? constants.ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT.toString());
-  private readonly ethGetBalanceCacheTtlMs = Number.parseInt(process.env.ETH_GET_BALANCE_CACHE_TTL_MS ?? constants.ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT.toString());
-  private readonly maxBlockRange = Number.parseInt(process.env.MAX_BLOCK_RANGE ?? constants.MAX_BLOCK_RANGE.toString());
-  private readonly contractCallGasLimit = Number.parseInt(process.env.CONTRACT_CALL_GAS_LIMIT ?? constants.CONTRACT_CALL_GAS_LIMIT.toString());
-  private readonly ethGetTransactionCountMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE ?? constants.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE.toString());
-  private readonly ethGetTransactionCountCacheTtl = Number.parseInt(process.env.ETH_GET_TRANSACTION_COUNT_CACHE_TTL ?? constants.ETH_GET_TRANSACTION_COUNT_CACHE_TTL.toString());
-  private readonly ethGetBlockByResultsBatchSize = Number.parseInt(process.env.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE ?? constants.ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE.toString());
-  private readonly MirrorNodeGetContractResultRetries = Number.parseInt(process.env.MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES ?? constants.MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES.toString());
-  /**
+  private readonly defaultGas = EthImpl.numberTo0x(
+    parseNumericEnvVar('TX_DEFAULT_GAS', 'TX_DEFAULT_GAS_DEFAULT'));
+  private readonly ethCallCacheTtl =
+    parseNumericEnvVar('ETH_CALL_CACHE_TTL', 'ETH_CALL_CACHE_TTL_DEFAULT');
+  private readonly ethBlockNumberCacheTtlMs =
+    parseNumericEnvVar('ETH_BLOCK_NUMBER_CACHE_TTL_MS', 'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT');
+  private readonly ethGetBalanceCacheTtlMs =
+    parseNumericEnvVar('ETH_GET_BALANCE_CACHE_TTL_MS', 'ETH_GET_BALANCE_CACHE_TTL_MS_DEFAULT');
+  private readonly maxBlockRange =
+    parseNumericEnvVar('MAX_BLOCK_RANGE', 'MAX_BLOCK_RANGE');
+  private readonly contractCallGasLimit =
+    parseNumericEnvVar('CONTRACT_CALL_GAS_LIMIT', 'CONTRACT_CALL_GAS_LIMIT');
+  private readonly ethGetTransactionCountMaxBlockRange =
+    parseNumericEnvVar('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', 'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE');
+  private readonly ethGetTransactionCountCacheTtl =
+    parseNumericEnvVar('ETH_GET_TRANSACTION_COUNT_CACHE_TTL', 'ETH_GET_TRANSACTION_COUNT_CACHE_TTL');
+  private readonly ethGetBlockByResultsBatchSize =
+    parseNumericEnvVar('ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE', 'ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE');
+  private readonly MirrorNodeGetContractResultRetries =
+    parseNumericEnvVar('MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES', 'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES');
+
+    /**
    * Configurable options used when initializing the cache.
    *
    * @private
