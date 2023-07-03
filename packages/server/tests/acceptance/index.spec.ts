@@ -17,18 +17,22 @@
  * limitations under the License.
  *
  */
-
+import chai from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';
 import shell from 'shelljs';
 import pino from 'pino';
+import chaiAsPromised from 'chai-as-promised';
+
+chai.use(chaiAsPromised);
+
 import fs from 'fs';
 import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
 import app from '../../dist/server';
-import {app as wsApp} from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
-import {Hbar} from "@hashgraph/sdk";
+import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
+import { Hbar } from "@hashgraph/sdk";
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
@@ -77,13 +81,13 @@ describe('RPC Server Acceptance Tests', function () {
         logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
         logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
-        if (USE_LOCAL_NODE === 'true') {
-            runLocalHederaNetwork();
-        }
+        // if (USE_LOCAL_NODE === 'true') {
+        //     runLocalHederaNetwork();
+        // }
 
-        if (global.relayIsLocal) {
-            runLocalRelay();
-        }
+        // if (global.relayIsLocal) {
+        //     runLocalRelay();
+        // }
 
         // cache start balance
         startOperatorBalance = await global.servicesNode.getOperatorBalance();
@@ -95,17 +99,17 @@ describe('RPC Server Acceptance Tests', function () {
         logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
 
 
-        if (USE_LOCAL_NODE === 'true') {
-            // stop local-node
-            logger.info('Shutdown local node');
-            shell.exec('hedera stop');
-        }
+        // if (USE_LOCAL_NODE === 'true') {
+        //     // stop local-node
+        //     logger.info('Shutdown local node');
+        //     shell.exec('hedera stop');
+        // }
 
         // stop relay
-        logger.info('Stop relay');
-        if (relayServer !== undefined) {
-            relayServer.close();
-        }
+        // logger.info('Stop relay');
+        // if (relayServer !== undefined) {
+        //     relayServer.close();
+        // }
 
         if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
             socketServer.close();

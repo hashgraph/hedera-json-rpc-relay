@@ -19,16 +19,13 @@
  */
 
 // external resources
-import chai from 'chai';
 import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { AliasAccount } from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
 import { ContractFunctionParameters } from '@hashgraph/sdk';
-import chaiAsPromised from 'chai-as-promised';
 
-chai.use(chaiAsPromised);
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';

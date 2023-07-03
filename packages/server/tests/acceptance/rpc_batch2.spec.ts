@@ -31,14 +31,13 @@ import TokenCreateJson from '../contracts/TokenCreateContract.json';
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
 import storageContractJson from '../contracts/Storage.json';
-import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../../../packages/relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
-import { error } from 'console';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
