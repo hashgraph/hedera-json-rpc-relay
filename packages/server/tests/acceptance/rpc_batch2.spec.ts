@@ -496,7 +496,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
         before(async () => {
             basicContract = await servicesNode.deployContract(basicContractJson);
-            mainContractAddress = await deploymainContract(accounts[3].wallet);
+            mainContractAddress = await deploymainContract();
 
             // Wait for creation to propagate
             const basicMirror = await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
