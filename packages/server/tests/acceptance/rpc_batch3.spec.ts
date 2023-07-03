@@ -62,6 +62,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const PAYABLE_METHOD_ERROR_DATA = '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013526576657274526561736f6e50617961626c6500000000000000000000000000';
     const PURE_METHOD_ERROR_MESSAGE = 'execution reverted: RevertReasonPure';
     const VIEW_METHOD_ERROR_MESSAGE = 'execution reverted: RevertReasonView';
+    const errorMessagePrefixedStr = 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"';
 
     beforeEach(async () => {
         requestId = Utils.generateRequestId();
@@ -189,7 +190,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
-            const errorType = predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: newest');
+            const errorType = predefined.INVALID_PARAMETER(1, `${errorMessagePrefixedStr}, value: newest`);
 
             await expect(relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'newest'], requestId)).to.be.rejectedWith(errorType);
         });
@@ -200,7 +201,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
-            const errorType = predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123');
+            const errorType = predefined.INVALID_PARAMETER(1, `${errorMessagePrefixedStr}, value: 123`);
 
             await expect(relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, '123'], requestId)).to.be.rejectedWith(errorType);
         });
@@ -222,7 +223,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
-            const errorType = predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123');
+            const errorType = predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, `${errorMessagePrefixedStr}, value: 123`);
 
             await expect(relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId)).to.be.rejectedWith(errorType);
         });
