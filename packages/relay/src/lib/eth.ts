@@ -526,7 +526,7 @@ export class EthImpl implements Eth {
         }
       } else {
         // execute reverted: with no message comes from a contract deployment
-        if ((e.statusCode != 501) && (e instanceof JsonRpcError) && (e.message === EthImpl.executionReverted)) {
+        if (e instanceof JsonRpcError && e.message !== EthImpl.executionReverted) {
           return e;
         }         
         // Handle Contract Call or Contract Create
