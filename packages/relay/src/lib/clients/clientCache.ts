@@ -81,13 +81,9 @@ export class ClientCache {
     }
 
     public get(key: string, callingMethod?: string, requestIdPrefix?: string): any {
-        let value = this.cache.get(key);
+        const value = this.cache.get(key);
         if (value) {
-            if (callingMethod) {
-                this.cacheKeyGauge.labels(key, callingMethod).inc(1);
-            } else {
-                this.cacheKeyGauge.labels(key, '').inc(1);
-            }
+            this.cacheKeyGauge.labels(key, callingMethod || '').inc(1);
 
             this.logger.trace(`${requestIdPrefix} returning cached value ${key}:${JSON.stringify(value)} on ${callingMethod} call`);
             return value;
