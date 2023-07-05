@@ -4893,7 +4893,7 @@ describe('Eth', async function () {
         expect(true).to.eq(false);
       }
       catch(error) {
-        expect(error).to.deep.equal(predefined.CONTRACT_REVERT(defaultDetailedContractResultByHashReverted.error_message));
+        expect(error).to.deep.equal(predefined.CONTRACT_REVERT(defaultDetailedContractResultByHashReverted.error_message, defaultDetailedContractResultByHashReverted.error_message));
       }
 
       process.env.DEV_MODE = initialDevModeValue;
