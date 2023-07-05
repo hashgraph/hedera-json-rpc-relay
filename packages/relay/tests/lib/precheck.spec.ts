@@ -237,7 +237,6 @@ describe('Precheck', async function() {
         // sending 2 hbars
         const transaction = '0x02f876820128078459682f0086018a4c7747008252089443cb701defe8fc6ed04d7bddf949618e3c575fe1881bc16d674ec8000080c001a0b8c604e08c15a7acc8c898a1bbcc41befcd0d120b64041d1086381c7fc2a5339a062eabec286592a7283c90ce90d97f9f8cf9f6c0cef4998022660e7573c046a46';
         const parsedTransaction = ethers.utils.parseTransaction(transaction);
-        const mirrorAccountsPath = `accounts/0xF8A44f9a4E4c452D25F5aE0F5d7970Ac9522a3C8${limitOrderPostFix}`;
         const accountId = '0.1.2';
 
         it('should not pass for 1 hbar', async function() {

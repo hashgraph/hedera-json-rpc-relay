@@ -65,7 +65,6 @@ import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { v4 as uuid } from 'uuid';
-import { ethers } from 'ethers';
 import { Hbar, HbarUnit, TransactionId } from '@hashgraph/sdk';
 
 const LRU = require('lru-cache');
