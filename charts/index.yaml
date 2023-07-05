@@ -28,7 +28,7 @@ entries:
     type: application
     urls:
     - hedera-json-rpc-relay-0.26.0-SNAPSHOT.tgz
-    version: 0.26.0-SNAPSHOT
+    version: 0.26.0
   - apiVersion: v2
     appVersion: 0.24.0-SNAPSHOT
     created: "2023-06-29T16:46:38.748183-06:00"
@@ -56,7 +56,7 @@ entries:
     type: application
     urls:
     - hedera-json-rpc-relay-0.24.0-SNAPSHOT.tgz
-    version: 0.24.0-SNAPSHOT
+    version: 0.24.0
   - apiVersion: v2
     appVersion: 0.23.5
     created: "2023-06-29T16:46:38.74735-06:00"
@@ -126,5 +126,5 @@ entries:
     type: application
     urls:
     - json-rpc-relay-websocket-0.26.0-SNAPSHOT.tgz
-    version: 0.26.0-SNAPSHOT
+    version: 0.26.0
 generated: "2023-06-29T16:46:38.745383-06:00"
