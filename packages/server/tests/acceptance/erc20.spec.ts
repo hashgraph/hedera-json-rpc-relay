@@ -39,6 +39,7 @@ describe('@erc20 Acceptance Tests', async function () {
     // cached entities
     const accounts: AliasAccount[] = [];
     let initialHolder;
+    let recipient;
     let anotherAccount;
     let requestId;
 
