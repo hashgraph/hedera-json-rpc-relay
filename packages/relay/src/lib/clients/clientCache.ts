@@ -19,7 +19,7 @@
  */
 
 import { Logger } from "pino";
-import { Counter, Registry } from "prom-client";
+import { Gauge, Registry } from "prom-client";
 import constants from "../constants";
 
 const LRU = require('lru-cache');
@@ -55,7 +55,7 @@ export class ClientCache {
      * @private
      */
     private readonly register: Registry;
-    private cacheKeyCounter;
+    private cacheKeyGauge: Gauge<string>;
 
     public constructor(logger: Logger, register: Registry) {
         this.cache = new LRU(this.options);
@@ -64,14 +64,14 @@ export class ClientCache {
 
         const cacheSizeCollect = () => {
             this.purgeStale();
-            this.cacheKeyCounter.set(this.cache.size);
+            this.cacheKeyGauge.set(this.cache.size);
         };
 
         const metricCounterName = 'rpc_relay_cache';
         register.removeSingleMetric(metricCounterName);
-        this.cacheKeyCounter = new Counter({
+        this.cacheKeyGauge = new Gauge({
             name: metricCounterName,
-            help: 'Relay cache counter',
+            help: 'Relay cache gauge',
             labelNames: ['key', 'method'],
             registers: [register],
             async collect() {
@@ -81,13 +81,9 @@ export class ClientCache {
     }
 
     public get(key: string, callingMethod?: string, requestIdPrefix?: string): any {
-        let value = this.cache.get(key);
+        const value = this.cache.get(key);
         if (value) {
-            if (callingMethod) {
-                this.cacheKeyCounter.labels(key, callingMethod).inc(1);
-            } else {
-                this.cacheKeyCounter.labels(key, null).inc(1);
-            }
+            this.cacheKeyGauge.labels(key, callingMethod || '').inc(1);
 
             this.logger.trace(`${requestIdPrefix} returning cached value ${key}:${JSON.stringify(value)} on ${callingMethod} call`);
             return value;
