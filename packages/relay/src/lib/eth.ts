@@ -1427,7 +1427,7 @@ export class EthImpl implements Eth {
     const sSig = contractResult.s === null ? null : contractResult.s.substring(0, 66);
 
     if (process.env.DEV_MODE && process.env.DEV_MODE === 'true' && contractResult.result === 'CONTRACT_REVERT_EXECUTED') {
-      const err = predefined.CONTRACT_REVERT(contractResult.error_message);
+      const err = predefined.CONTRACT_REVERT(contractResult.error_message, contractResult.error_message);
       throw err;
     }
 
