@@ -3547,7 +3547,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result.code).to.equal(-32008);
       expect(result.name).to.equal('Contract revert executed');
       expect(result.message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
-      expect(result.data).to.equal(defaultErrorMessageText);
+      expect(result.data).to.equal(defaultErrorMessageHex);
     });
 
     it('eth_call with wrong `to` field', async function() {
@@ -3827,7 +3827,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result.code).to.eq(-32008);
       expect(result.name).to.eq('Contract revert executed');
       expect(result.message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
-      expect(result.data).to.equal(defaultErrorMessageText);
+      expect(result.data).to.equal(defaultErrorMessageHex);
     });
 
     it('eth_call with missing `to` field', async function() {
