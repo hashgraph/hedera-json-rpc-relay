@@ -396,7 +396,7 @@ const mockData = {
                 {
                     "message": "CONTRACT_REVERT_EXECUTED",
                     "detail": "",
-                    "data": "0x"
+                    "data": ""
                 }
             ]
         }
