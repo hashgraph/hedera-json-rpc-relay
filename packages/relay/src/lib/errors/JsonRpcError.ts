@@ -35,11 +35,11 @@ export class JsonRpcError {
 }
 
 export const predefined = {
-  'CONTRACT_REVERT': (errorMessage?: string) => new JsonRpcError({
+  'CONTRACT_REVERT': (errorMessage?: string, data?: string) => new JsonRpcError({
     name: 'Contract revert executed',
     code: -32008,
-    message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
-    data: errorMessage
+    message: `execution reverted: ${errorMessage}`,
+    data: decodeErrorMessage(data)
   }),
   'GAS_LIMIT_TOO_HIGH': (gasLimit, maxGas) => new JsonRpcError({
     name: 'gasLimit too high',

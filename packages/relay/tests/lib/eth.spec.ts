@@ -34,7 +34,7 @@ import {
   defaultEvmAddress,
   defaultFromLongZeroAddress,
   expectUnsupportedMethod,
-  defaultErrorMessage,
+  defaultErrorMessageHex,
   buildCryptoTransferTransaction,
   mockData,
   signTransaction,
@@ -54,7 +54,8 @@ import {
   expectLogData1,
   expectLogData2,
   expectLogData3,
-  expectLogData4
+  expectLogData4,
+  defaultErrorMessageText
 } from '../helpers';
 
 import pino from 'pino';
@@ -3533,7 +3534,7 @@ describe('Eth calls using MirrorNode', async function () {
         evm_address: accountAddress1
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
-      sdkClientStub.submitContractCallQueryWithRetry.throws(predefined.CONTRACT_REVERT(defaultErrorMessage));
+      sdkClientStub.submitContractCallQueryWithRetry.throws(predefined.CONTRACT_REVERT(defaultErrorMessageText, defaultErrorMessageHex));
 
       const result = await ethImpl.call({
         "from": accountAddress1,
@@ -3545,8 +3546,8 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.exist;
       expect(result.code).to.equal(-32008);
       expect(result.name).to.equal('Contract revert executed');
-      expect(result.message).to.equal('execution reverted: Set to revert');
-      expect(result.data).to.equal(defaultErrorMessage);
+      expect(result.message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
+      expect(result.data).to.equal(defaultErrorMessageText);
     });
 
     it('eth_call with wrong `to` field', async function() {
@@ -3808,14 +3809,25 @@ describe('Eth calls using MirrorNode', async function () {
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
-      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(200, {
-        result: predefined.CONTRACT_REVERT(defaultErrorMessage).data
-      });
+      web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(400, {
+        "_status": {
+            "messages": [
+                {
+                    "message": "",
+                    "detail": defaultErrorMessageText,
+                    "data": defaultErrorMessageHex
+                }
+            ]
+        }
+    });
 
       const result = await ethImpl.call(callData, 'latest');
 
       expect(result).to.exist;
-      expect(result).to.equal(predefined.CONTRACT_REVERT(defaultErrorMessage).data);
+      expect(result.code).to.eq(-32008);
+      expect(result.name).to.eq('Contract revert executed');
+      expect(result.message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
+      expect(result.data).to.equal(defaultErrorMessageText);
     });
 
     it('eth_call with missing `to` field', async function() {
@@ -4609,7 +4621,7 @@ describe('Eth', async function () {
     it('Adds a revertReason field for receipts with errorMessage', async function() {
       const receiptWithErrorMessage = {
         ...defaultDetailedContractResultByHash,
-        error_message: defaultErrorMessage
+        error_message: defaultErrorMessageHex
       };
 
       // fake unique hash so request dont re-use the cached value but the mock defined
@@ -4620,7 +4632,7 @@ describe('Eth', async function () {
       const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
 
       expect(receipt).to.exist;
-      expect(receipt.revertReason).to.eq(defaultErrorMessage);
+      expect(receipt.revertReason).to.eq(defaultErrorMessageHex);
     });
 
     it('handles empty gas_used', async function () {
