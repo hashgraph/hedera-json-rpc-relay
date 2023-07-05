@@ -23,18 +23,15 @@ import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 const registry = new Registry();
 
-import sinon from 'sinon';
 import pino from 'pino';
 import { Precheck } from "../../src/lib/precheck";
 import { expectedError, mockData, signTransaction } from "../helpers";
-import { ClientCache, MirrorNodeClient, SDKClient } from "../../src/lib/clients";
+import { ClientCache, MirrorNodeClient } from "../../src/lib/clients";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { ethers } from "ethers";
 import constants from '../../src/lib/constants';
 import { predefined } from '../../src';
-import HAPIService from '../../src/lib/services/hapiService/hapiService';
-import HbarLimit from '../../src/lib/hbarlimiter';
 const logger = pino();
 
 const limitOrderPostFix = '?order=desc&limit=1';
@@ -55,8 +52,6 @@ describe('Precheck', async function() {
     const oneTinyBar = ethers.utils.parseUnits('1', 10);
     const defaultGasPrice = 720_000_000_000;
     const defaultChainId = Number('0x12a');
-    let sdkInstance;
-    let hapiServiceInstance: HAPIService;
     let precheck: Precheck;
     let mock: MockAdapter;
 
@@ -76,15 +71,7 @@ describe('Precheck', async function() {
         
         // @ts-ignore
         const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, new ClientCache(logger.child({ name: `cache` }), registry), instance);
-
-        const duration = constants.HBAR_RATE_LIMIT_DURATION;
-        const total = constants.HBAR_RATE_LIMIT_TINYBAR;
-        const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-        const clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
-        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, clientCache);
-        sdkInstance = sinon.createStubInstance(SDKClient);
-        sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkInstance);
-        precheck = new Precheck(mirrorNodeInstance, hapiServiceInstance, logger, '0x12a');
+        precheck = new Precheck(mirrorNodeInstance, logger, '0x12a');
     });
 
     this.beforeEach(() => {
@@ -254,13 +241,15 @@ describe('Precheck', async function() {
         const accountId = '0.1.2';
 
         it('should not pass for 1 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(1, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
 
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(1, HbarUnit.Hbar).to(HbarUnit.Tinybar));
             try {
-                await precheck.balance(parsedTransaction, 'sendRawTransaction');
+                await precheck.balance(parsedTransaction, account);
                 expectedError();
             } catch(e: any) {
                 expect(e).to.exist;
@@ -270,18 +259,10 @@ describe('Precheck', async function() {
         });
 
         it('should not pass for no account found', async function() {
-            mock.onGet(mirrorAccountsPath).reply(404, {
-                "_status": {
-                    "messages": [
-                        {
-                            "message": "Not found"
-                        }
-                    ]
-                }
-            });
+            const account = null;
 
             try {
-                await precheck.balance(parsedTransaction, 'sendRawTransaction');
+                await precheck.balance(parsedTransaction, account);
                 expectedError();
             } catch(e: any) {
                 expect(e).to.exist;
@@ -291,69 +272,63 @@ describe('Precheck', async function() {
         });
 
         it('should pass for 10 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
-            
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(10, HbarUnit.Hbar).to(HbarUnit.Tinybar));
-            const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(10, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
+
+            const result = await precheck.balance(parsedTransaction, account);
             expect(result).to.not.exist;
         });
 
         it('should pass for 100 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
-            
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(100, HbarUnit.Hbar).to(HbarUnit.Tinybar));
-            const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(100, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
+
+            const result = await precheck.balance(parsedTransaction, account);
             expect(result).to.not.exist;
         });
 
         it('should pass for 10000 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(10_000, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
             
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(10_000, HbarUnit.Hbar).to(HbarUnit.Tinybar));
-            const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
+            const result = await precheck.balance(parsedTransaction, account);
             expect(result).to.not.exist;
         });
 
         it('should pass for 100000 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(100_000, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
             
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(100_000, HbarUnit.Hbar).to(HbarUnit.Tinybar));
-            const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
+            const result = await precheck.balance(parsedTransaction, account);
             expect(result).to.not.exist;
         });
 
         it('should pass for 50_000_000_000 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(50_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
             
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(50_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar));
-            const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
+            const result = await precheck.balance(parsedTransaction, account);
             expect(result).to.not.exist;
-        });
-
-        it('should preserve JsonRpcError if thrown', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
-
-            sdkInstance.getAccountBalanceInTinyBar.throws(predefined.HBAR_RATE_LIMIT_EXCEEDED);
-            try {
-                await precheck.balance(parsedTransaction, 'sendRawTransaction');
-                expectedError();
-            } catch(e: any) {
-                expect(e).to.exist;
-                expect(e.code).to.eq(predefined.HBAR_RATE_LIMIT_EXCEEDED.code);
-                expect(e.message).to.eq(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
-            }
         });
     });
 

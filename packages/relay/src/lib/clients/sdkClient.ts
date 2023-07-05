@@ -550,16 +550,14 @@ export class SDKClient {
         );
 
         if (fileId && callData.length > 4096) {
-            await (
-                await new FileAppendTransaction()
-                    .setFileId(fileId)
-                    .setContents(
-                        hexedCallData.substring(4096, hexedCallData.length)
-                    )
-                    .setChunkSize(4096)
-                    .setMaxChunks(this.maxChunks)
-                    .execute(client)
-            ).getReceipt(client);
+            await new FileAppendTransaction()
+                .setFileId(fileId)
+                .setContents(
+                    hexedCallData.substring(4096, hexedCallData.length)
+                )
+                .setChunkSize(4096)
+                .setMaxChunks(this.maxChunks)
+                .execute(client);
         }
 
         // Ensure that the calldata file is not empty

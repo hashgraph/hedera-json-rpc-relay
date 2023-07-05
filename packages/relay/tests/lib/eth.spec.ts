@@ -66,7 +66,7 @@ import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { v4 as uuid } from 'uuid';
 import { ethers } from 'ethers';
-import { TransactionId } from '@hashgraph/sdk';
+import { Hbar, HbarUnit, TransactionId } from '@hashgraph/sdk';
 
 const LRU = require('lru-cache');
 
@@ -3897,7 +3897,13 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('should return a computed hash if unable to retrieve EthereumHash from record due to contract revert', async function () {
-      restMock.onGet(accountEndpoint).reply(200, { account: accountAddress });
+      restMock.onGet(accountEndpoint).reply(200, { 
+        account: accountAddress,
+        balance: {
+          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+        }
+      });
+
       const transaction = {
         chainId: 0x12a,
         to: accountAddress1,
@@ -3907,7 +3913,6 @@ describe('Eth calls using MirrorNode', async function () {
         gasLimit: maxGasLimitHex,
       };
 
-      sdkClientStub.getAccountBalanceInTinyBar.returns(ethers.BigNumber.from('1000000000000000000000'));    
       const signed = await signTransaction(transaction);
       const id = uuid();
 
@@ -3919,7 +3924,13 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('should return hash from ContractResult mirror node api', async function () {
-      restMock.onGet(accountEndpoint).reply(200, { account: accountAddress });
+      restMock.onGet(accountEndpoint).reply(200, { 
+        account: accountAddress,
+        balance: {
+          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+        }
+      });
+
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
       const transaction = {
         chainId: 0x12a,
@@ -3930,7 +3941,6 @@ describe('Eth calls using MirrorNode', async function () {
         gasLimit: maxGasLimitHex,
       };
 
-      sdkClientStub.getAccountBalanceInTinyBar.returns(ethers.BigNumber.from('1000000000000000000000'));
       sdkClientStub.submitEthereumTransaction.returns({transactionId: TransactionId.fromString(transactionIdServicesFormat)});
       const signed = await signTransaction(transaction);
       const id = uuid();
