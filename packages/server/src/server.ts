@@ -48,8 +48,6 @@ const app = new KoaJsonRpc(logger.child({ name: 'koa-rpc' }), register, {
   limit: process.env.INPUT_SIZE_LIMIT ? process.env.INPUT_SIZE_LIMIT + 'mb' : null
 });
 
-const responseSuccessStatusCode = '200';
-const responseInternalErrorCode = '-32603';
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
 
 // clear and create metric in registry
@@ -62,6 +60,9 @@ const methodResponseHistogram = new Histogram({
   registers: [register],
   buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 40000, 50000, 60000] // ms (milliseconds)
 });
+
+// set cors
+app.getKoaApp().use(cors());
 
 /**
  * middleware for non POST request timing
@@ -146,6 +147,13 @@ app.getKoaApp().use(async (ctx, next) => {
   if (ctx.method === 'POST') {
     await next();
   }
+
+  if (ctx.method === 'OPTIONS') {
+    // support CORS preflight
+    ctx.status = 200;
+  }
+
+  logger.warn(`skipping HTTP method: [${ctx.method}], url: ${ctx.url}, status: ${ctx.status}`);
 });
 
 app.getKoaApp().use(async (ctx, next) => {
@@ -644,8 +652,6 @@ app.useRpc('eth_protocolVersion', async () => {
 app.useRpc('eth_coinbase', async () => {
   return logAndHandleResponse('eth_coinbase', [], (requestId) => relay.eth().coinbase(requestId));
 });
-
-app.getKoaApp().use(cors());
 
 const rpcApp = app.rpcApp();
 
