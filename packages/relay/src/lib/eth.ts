@@ -194,7 +194,7 @@ export class EthImpl implements Eth {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient, this.hapiService, logger, chain);
+    this.precheck = new Precheck(mirrorNodeClient, logger, chain);
     this.cache = clientCache;
 
     this.ethExecutionsCounter = this.initEthExecutionCounter(registry);

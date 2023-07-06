@@ -23,22 +23,18 @@ import { MirrorNodeClient } from './clients';
 import { EthImpl } from './eth';
 import { Logger } from 'pino';
 import constants from './constants';
-import { ethers, Transaction } from 'ethers';
+import { BigNumber, ethers, Transaction } from 'ethers';
 import { formatRequestIdMessage } from '../formatters';
-import HAPIService from './services/hapiService/hapiService';
-import { SDKClientError } from './errors/SDKClientError';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
-  private hapiService: HAPIService;
   private readonly chain: string;
   private readonly logger: Logger;
 
-  constructor(mirrorNodeClient: MirrorNodeClient, hapiService: HAPIService, logger: Logger, chainId: string) {
+  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, chainId: string) {
     this.mirrorNodeClient = mirrorNodeClient;
-    this.hapiService = hapiService;
-    this.chain = chainId;
     this.logger = logger;
+    this.chain = chainId;
   }
 
   public static parseTxIfNeeded(transaction: string | Transaction): Transaction {
@@ -65,7 +61,7 @@ export class Precheck {
     this.chainId(parsedTx, requestId);
     this.value(parsedTx);
     this.gasPrice(parsedTx, gasPrice, requestId);
-    await this.balance(parsedTx, EthImpl.ethSendRawTransaction, requestId);
+    await this.balance(parsedTx, mirrorAccountInfo, requestId);
   }
 
   async verifyAccount(tx: Transaction, requestId?: string) {
@@ -135,7 +131,7 @@ export class Precheck {
    * @param tx
    * @param callerName
    */
-  async balance(tx: Transaction, callerName: string, requestId?: string) {
+  async balance(tx: Transaction, account: any, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const result = {
       passes: false,
@@ -143,23 +139,18 @@ export class Precheck {
     };
     const txGas = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
     const txTotalValue = tx.value.add(txGas.mul(tx.gasLimit));
-    let tinybars;
+    let tinybars: BigNumber;
 
-    const accountResponse: any = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
-    if (accountResponse == null) {
+    if (account == null) {
       this.logger.trace(`${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(tx)}, totalValue=${txTotalValue})`);
       throw predefined.RESOURCE_NOT_FOUND(`tx.from '${tx.from}'.`);
     }
 
     try {
-      tinybars = await this.hapiService.getSDKClient().getAccountBalanceInTinyBar(accountResponse.account, callerName, requestId);
-      result.passes = ethers.BigNumber.from(tinybars.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF).gte(txTotalValue);
+      tinybars = ethers.BigNumber.from(account.balance.balance.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF);
+      result.passes = tinybars.gte(txTotalValue);
     } catch (error: any) {
       this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);
-      if (error instanceof SDKClientError) {
-        this.hapiService.decrementErrorCounter(error.statusCode);
-      }
-      
       if (error instanceof JsonRpcError) {
         // preserve original error
         throw error;
