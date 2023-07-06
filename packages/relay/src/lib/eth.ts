@@ -1432,8 +1432,8 @@ export class EthImpl implements Eth {
       }
     }
 
-    const maxPriorityFee = contractResult.max_priority_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_priority_fee_per_gas;
-    const maxFee = contractResult.max_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_fee_per_gas;
+    const maxPriorityFee = contractResult.max_priority_fee_per_gas === EthImpl.emptyHex ? null : contractResult.max_priority_fee_per_gas;
+    const maxFee = contractResult.max_fee_per_gas === EthImpl.emptyHex ? null : contractResult.max_fee_per_gas;
     const rSig = contractResult.r === null ? null : contractResult.r.substring(0, 66);
     const sSig = contractResult.s === null ? null : contractResult.s.substring(0, 66);
 
