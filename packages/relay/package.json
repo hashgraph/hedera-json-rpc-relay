@@ -28,7 +28,7 @@
     },
     "dependencies": {
         "@ethersproject/asm": "^5.7.0",
-        "@hashgraph/sdk": "^2.24.2",
+        "@hashgraph/sdk": "^2.29.0",
         "@keyvhq/core": "^1.6.9",
         "axios": "^1.4.0",
         "buffer": "^6.0.3",

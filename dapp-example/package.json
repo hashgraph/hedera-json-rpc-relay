@@ -6,7 +6,7 @@
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.11.0",
     "@hashgraph/hethers": "^1.2.6",
-    "@hashgraph/sdk": "2.25.0",
+    "@hashgraph/sdk": "^2.29.0",
     "@mui/material": "^5.13.6",
     "ethers": "^5.6.8",
     "react": "^18.1.0",
