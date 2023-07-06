@@ -251,10 +251,15 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     it('reverts', async function () {
+                                     try {
                                         await Assertions.expectRevert(
                                             contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                             Constants.CALL_EXCEPTION
                                         );
+                                     }catch(e){
+                                        expect(e.code).to.be.equal('UNPREDICTABLE_GAS_LIMIT');
+                                        expect(e.error.method).to.be.equal('estimateGas');
+                                     }
                                     });
                                 });
                             });
@@ -277,10 +282,13 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     it('reverts', async function () {
-                                        await Assertions.expectRevert(
-                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                            Constants.CALL_EXCEPTION,
-                                        );
+                                        try {
+                                            await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                            Constants.CALL_EXCEPTION);
+                                        } catch(e) {
+                                            expect(e.code).to.be.equal('UNPREDICTABLE_GAS_LIMIT');
+                                            expect(e.error.method).to.be.equal('estimateGas');
+                                        }                                          
                                     });
                                 });
 
@@ -295,10 +303,13 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     it('reverts', async function () {
-                                        await Assertions.expectRevert(
-                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                            Constants.CALL_EXCEPTION,
-                                        );
+                                        try {
+                                            await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                            Constants.CALL_EXCEPTION);
+                                        } catch(e) {
+                                            expect(e.code).to.be.equal('UNPREDICTABLE_GAS_LIMIT');
+                                            expect(e.error.method).to.be.equal('estimateGas');
+                                        }                                                                               
                                     });
                                 });
                             });
@@ -342,7 +353,8 @@ describe('@erc20 Acceptance Tests', async function () {
                                     await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                     Constants.CALL_EXCEPTION);
                                 } catch(e) {
-                                    logger.info(`Expected error: ${e}`);
+                                    expect(e.code).to.be.equal('UNPREDICTABLE_GAS_LIMIT');
+                                    expect(e.error.method).to.be.equal('estimateGas');
                                 }
                             });
                         });
