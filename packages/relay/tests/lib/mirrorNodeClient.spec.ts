@@ -87,11 +87,7 @@ describe('MirrorNodeClient', async function () {
           await mirrorNodeInstance.handleError(error, CONTRACT_CALL_ENDPOINT, CONTRACT_CALL_ENDPOINT, code, 'POST');
           expect.fail('should have thrown an error');
         } catch (e) {
-          if(code === 400) {
-            expect(e.message).to.equal('execution reverted: ');
-          } else {
-            expect(e.message).to.equal('test error');
-          }
+          expect(e.message).to.equal('test error');
         }
       });
     }

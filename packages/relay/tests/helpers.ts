@@ -396,7 +396,19 @@ const mockData = {
                 {
                     "message": "CONTRACT_REVERT_EXECUTED",
                     "detail": "",
-                    "data": "0x"
+                    "data": ""
+                }
+            ]
+        }
+    },
+
+    notSuported: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "Auto account creation is not supported.",
+                    "detail": "",
+                    "data": ""
                 }
             ]
         }
@@ -790,4 +802,5 @@ export const defaultCallData = {
     "value": null
 };
 
-export const defaultErrorMessage = '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';
+export const defaultErrorMessageText = 'Set to revert';
+export const defaultErrorMessageHex = '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';
