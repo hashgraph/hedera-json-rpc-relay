@@ -1189,7 +1189,6 @@ export class EthImpl implements Eth {
 
     
     await this.performCallChecks(call, blockParam, requestIdPrefix);
-    const selector = call.data ? call.data.slice(0, 10) : '';
 
     // Get a reasonable value for "gas" if it is not specified.
     const gas = this.getCappedBlockGasLimit(call.gas, requestIdPrefix);
@@ -1205,7 +1204,7 @@ export class EthImpl implements Eth {
       
       return await this.callConsensusNode(call, gas, requestIdPrefix);
     } catch (e: any) {
-      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call on contract: '${call.to}' with selector: '${selector}'`);
+      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
       if (e instanceof JsonRpcError) {
         return e;
       }

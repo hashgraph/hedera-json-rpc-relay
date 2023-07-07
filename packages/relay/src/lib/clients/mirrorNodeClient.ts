@@ -22,7 +22,7 @@ import Axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { MirrorNodeClientError } from './../errors/MirrorNodeClientError';
 import { Logger } from "pino";
 import constants from './../constants';
-import { Gauge, Histogram, Registry } from 'prom-client';
+import { Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
