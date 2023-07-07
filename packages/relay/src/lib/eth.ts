@@ -76,7 +76,7 @@ export class EthImpl implements Eth {
   static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
   static iHTSAddress = '0x0000000000000000000000000000000000000167';
   static invalidEVMInstruction = '0xfe';
-  static errorContractReverted = 'Error: CONTRACT_REVERT_EXECUTED';
+  static errorContractReverted = 'CONTRACT_REVERT_EXECUTED';
 
   // endpoint callerNames
   static ethBlockByNumber = 'eth_blockNumber';
@@ -527,7 +527,7 @@ export class EthImpl implements Eth {
         }
       } else {
         // execute reverted: with no message comes from a contract deployment
-        if (e.stack.substring(0, 31) === EthImpl.errorContractReverted) {
+        if (e.message === EthImpl.errorContractReverted) {
           return predefined.CONTRACT_REVERT(e.detail, e.data);
         }      
         // Handle Contract Call or Contract Create
