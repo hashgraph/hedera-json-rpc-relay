@@ -45,7 +45,7 @@ const mainLogger = pino({
     }
 });
 
-const logger = mainLogger.child({ name: 'rpc-server' });
+const logger = mainLogger.child({ name: 'rpc-ws-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 const limiter = new ConnectionLimiter(logger, register);
@@ -87,7 +87,7 @@ function getMultipleAddressesEnabled() {
 }
 
 async function validateIsContractAddress(address, requestId) {
-    const isContract = await mirrorNodeClient.resolveEntityType(address, [constants.TYPE_CONTRACT], requestId);
+    const isContract = await mirrorNodeClient.isValidContract(address, requestId)
     if (!isContract) {
         throw new JsonRpcError(predefined.INVALID_PARAMETER(`filters.address`, `${address} is not a valid contract type or does not exists`), requestId);
     }
@@ -134,14 +134,14 @@ app.ws.use(async (ctx) => {
         try {
             request = JSON.parse(msg.toString('ascii'));
         } catch (e) {
-            logger.error(`Could not decode message from connection ${ctx.websocket.id}: ${e}`);
+            logger.error(`${ctx.websocket.id}: Could not decode message from connection, message: ${msg}, error: ${e}`);
             ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
             return;
         }
         const { method, params } = request;
         let response;
 
-        logger.debug(`Received message from ${ctx.websocket.id}. Method: ${method}. Params: ${params}`);
+        logger.debug(`Received message from ${ctx.websocket.id}. Method: ${method}. Params: ${JSON.stringify(params)}`);
 
         methodsCounter.labels(method).inc();
         methodsCounterByIp.labels(ctx.request.ip, method).inc();
