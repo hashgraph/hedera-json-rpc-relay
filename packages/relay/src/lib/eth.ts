@@ -1932,19 +1932,49 @@ export class EthImpl implements Eth {
   }
 
   private async getAccountLatestEthereumNonce(address: string, requestId?: string) {
-    // check if address is a valid contract then get ethereumNonce from consensus node until HIP 729 is implemented
-    const validContract = await this.mirrorNodeClient.isValidContract(address, requestId);
-    if (validContract)  {
+    const cachedLabel = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${address}`;
+    const cachedResponse: { type: string, entity: any } | undefined = this.cache.get(cachedLabel);
+    let entityResult: { type: string, entity: any } | undefined | null;
+    if (cachedResponse) {
+      entityResult = cachedResponse;
+      if (entityResult.type === constants.TYPE_ACCOUNT) {
+        entityResult.entity = await this.mirrorNodeClient.getAccount(address, requestId);
+        return EthImpl.numberTo0x(entityResult.entity.ethereum_nonce);
+      }
+    }
+    else {
+      entityResult = await this.mirrorNodeClient.resolveEntityType(
+          address,
+          [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT],
+          requestId
+      );
+    }
+
+    if (entityResult?.type === constants.TYPE_CONTRACT) {
       return EthImpl.oneHex;
-    } 
-    
-    // get latest ethereumNonce from mirror node account API
-    const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
-    if (mirrorAccount?.ethereum_nonce) {
-      return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
+    }
+    else if (entityResult?.type === constants.TYPE_ACCOUNT) {
+      return EthImpl.numberTo0x(entityResult.entity.ethereum_nonce);
     }
 
     return EthImpl.zeroHex;
+
+    //////////////////////////////
+
+    // // check if address is a valid contract then get ethereumNonce from consensus node until HIP 729 is implemented
+    // const validContract = await this.mirrorNodeClient.isValidContract(address, requestId);
+    // if (validContract)  {
+    //   return EthImpl.oneHex;
+    // }
+    //
+    // // get latest ethereumNonce from mirror node account API
+    // const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
+    // if (mirrorAccount?.ethereum_nonce) {
+    //   return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
+    // }
+    //
+    // return EthImpl.zeroHex;
+
   }
 
   /**
