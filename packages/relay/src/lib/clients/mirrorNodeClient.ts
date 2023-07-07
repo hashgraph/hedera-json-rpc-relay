@@ -118,6 +118,17 @@ export class MirrorNodeClient {
 
     private static unknownServerErrorHttpStatusCode = 567;
 
+    // The following constants are used in requests objects
+    private static X_API_KEY = 'x-api-key';
+    private static FORWARD_SLASH = '/';
+    private static HTTPS_PREFIX = 'https://';
+    private static API_V1_POST_FIX = 'api/v1/';
+    private static EMPTY_STRING = '';
+    private static REQUEST_PREFIX_SEPARATOR = ': ';
+    private static REQUEST_PREFIX_TRAILING_BRACKET = ']';
+    private static HTTP_GET = 'GET';
+    private static REQUESTID_LABEL = 'requestId';
+
     /**
      * The logger used for logging all output from this class.
      * @private
@@ -188,7 +199,7 @@ export class MirrorNodeClient {
 
         // Custom headers
         if (process.env.MIRROR_NODE_URL_HEADER_X_API_KEY) {
-            axiosClient.defaults.headers.common['x-api-key'] = process.env.MIRROR_NODE_URL_HEADER_X_API_KEY;
+            axiosClient.defaults.headers.common[MirrorNodeClient.X_API_KEY] = process.env.MIRROR_NODE_URL_HEADER_X_API_KEY;
         }
 
         //@ts-ignore
@@ -196,6 +207,7 @@ export class MirrorNodeClient {
             retries: isDevMode ? mirrorNodeRetriesDevMode : mirrorNodeRetries,
             retryDelay: (retryCount, error) => {
                 const request = error?.request?._header;
+                // extract request id from request header. Request is located in 4th element separated by new line
                 const requestId = request ? request.split('\n')[3].substring(11,47) : '';
                 const requestIdPrefix = formatRequestIdMessage(requestId);
                 const delay = isDevMode ? mirrorNodeRetryDelayDevMode || 200 : mirrorNodeRetryDelay * retryCount;
@@ -257,19 +269,20 @@ export class MirrorNodeClient {
 
     private buildUrl(baseUrl: string) {
         if (!baseUrl.match(/^https?:\/\//)) {
-            baseUrl = `https://${baseUrl}`;
+            baseUrl = `${MirrorNodeClient.HTTPS_PREFIX}${baseUrl}`;
         }
 
         if (!baseUrl.match(/\/$/)) {
-            baseUrl = `${baseUrl}/`;
+            baseUrl = `${baseUrl}${MirrorNodeClient.FORWARD_SLASH}`;
         }
 
-        return `${baseUrl}api/v1/`;
+        return `${baseUrl}${MirrorNodeClient.API_V1_POST_FIX}`;
     }
 
     private async request(path: string, pathLabel: string, method: REQUEST_METHODS, data?: any, requestIdPrefix?: string): Promise<any> {
         const start = Date.now();
-        const requestId = requestIdPrefix?.split(': ')[1] || '';
+        // extract request id from prefix and remove trailing ']' character
+        const requestId = requestIdPrefix?.split(MirrorNodeClient.REQUEST_PREFIX_SEPARATOR)[1].replace(MirrorNodeClient.REQUEST_PREFIX_TRAILING_BRACKET, MirrorNodeClient.EMPTY_STRING) || MirrorNodeClient.EMPTY_STRING;
         let ms;
         const controller = new AbortController();
         try {
@@ -277,12 +290,12 @@ export class MirrorNodeClient {
 
             const axiosRequestConfig: AxiosRequestConfig = {
                 headers:{
-                    'requestId': requestId
+                    [MirrorNodeClient.REQUESTID_LABEL]: requestId
                 },
                 signal: controller.signal
             };
 
-            if (method === 'GET') {
+            if (method === MirrorNodeClient.HTTP_GET) {
                 response = await this.restClient.get(path, axiosRequestConfig);
             }
             else {
