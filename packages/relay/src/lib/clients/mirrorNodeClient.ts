@@ -759,11 +759,11 @@ export class MirrorNodeClient {
     * @param requestId
     * @param requestIdPrefix
     */
-    public async getContractRevertReasonFromTransaction(e: any, requestId: string | undefined, requestIdPrefix: string): Promise<any | undefined> {
+    public async getContractRevertReasonFromTransaction(e: any, requestIdPrefix: string): Promise<any | undefined> {
         if (e instanceof SDKClientError && e.isContractRevertExecuted()) {
             const transactionId = e.message.match(constants.TRANSACTION_ID_REGEX);
             if (transactionId) {
-              const tx = await this.getTransactionById(transactionId[0], undefined, requestId);
+              const tx = await this.getTransactionById(transactionId[0], undefined, requestIdPrefix);
 
               if(tx === null){
 
