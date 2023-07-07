@@ -23,7 +23,6 @@ RUN apt-get update && \
     chown -R node:node . && \
     rm -rf /var/lib/apt/lists/*
 
-RUN npm install pnpm
 RUN npm run build
 
 # Install OS updates
