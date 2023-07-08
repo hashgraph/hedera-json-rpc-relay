@@ -157,6 +157,7 @@ app.ws.use(async (ctx) => {
                         await validateSubscribeEthLogsParams(filters, request.id);
                     } catch (error) {
                         response = jsonResp(request.id, error, undefined);
+                        logger.error(error, `Encountered error on ${ctx.websocket.id}, method: ${method}, params: ${params}`);
                         ctx.websocket.send(JSON.stringify(response));
                         return;
                     }
