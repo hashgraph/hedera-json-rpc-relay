@@ -28,6 +28,7 @@ import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
 import { SDKClientError } from '../errors/SDKClientError';
 import { ClientCache } from './clientCache';
+
 const http = require('http');
 const https = require('https');
 
@@ -314,7 +315,7 @@ export class MirrorNodeClient {
             // always abort the request on failure as the axios call can hang until the parent code/stack times out (might be a few minutes in a server-side applications)
             controller.abort();
 
-            this.handleError(error, path, pathLabel, effectiveStatusCode, method, requestId);
+            this.handleError(error, path, pathLabel, effectiveStatusCode, method, requestIdPrefix);
         }
 
         return null;
