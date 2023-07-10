@@ -439,7 +439,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: PAYABLE_METHOD_CALL_DATA
             };
             const signedTx = await accounts[0].wallet.signTransaction(transaction);
-            const transactionHash = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId);
+            const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
             // Wait until receipt is available in mirror node
             await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
@@ -494,7 +494,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         data: payableMethodsData[i].data
                     };
                     const signedTx = await accounts[0].wallet.signTransaction(transaction);
-                    const hash = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId);
+                    const hash = await relay.sendRawTransaction(signedTx, requestId);
                     hashes.push(hash);
 
                     // Wait until receipt is available in mirror node
