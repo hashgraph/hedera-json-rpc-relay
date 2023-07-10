@@ -35,7 +35,7 @@ export class ClientCache {
         max: Number.parseInt(process.env.CACHE_MAX ?? constants.CACHE_MAX.toString()),
         // Max time to live in ms, for items before they are considered stale.
         ttl: Number.parseInt(process.env.CACHE_TTL ?? constants.CACHE_TTL.ONE_HOUR.toString()),
-    }
+    };
 
     /**
      * The LRU cache used for caching items from requests.
