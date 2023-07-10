@@ -368,12 +368,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                 amount = initialSupply;
                                 to = ethers.constants.AddressZero;
                                 tokenOwnerWallet = accounts[2].wallet;
-                                const balance = await contract.balanceOf(tokenOwner);
-                                console.log('balance', balance.toString());
-
                                 await contract.connect(tokenOwnerWallet).approve(spender, amount, await Utils.gasOptions(requestId, 1_500_000));
-                                // const balance = await contract.balanceOf(tokenOwner);
-                                // console.log('balance', balance.toString());
                             });
 
                             it('reverts', async function () {
