@@ -1958,23 +1958,6 @@ export class EthImpl implements Eth {
     }
 
     return EthImpl.zeroHex;
-
-    //////////////////////////////
-
-    // // check if address is a valid contract then get ethereumNonce from consensus node until HIP 729 is implemented
-    // const validContract = await this.mirrorNodeClient.isValidContract(address, requestId);
-    // if (validContract)  {
-    //   return EthImpl.oneHex;
-    // }
-    //
-    // // get latest ethereumNonce from mirror node account API
-    // const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestId);
-    // if (mirrorAccount?.ethereum_nonce) {
-    //   return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
-    // }
-    //
-    // return EthImpl.zeroHex;
-
   }
 
   /**

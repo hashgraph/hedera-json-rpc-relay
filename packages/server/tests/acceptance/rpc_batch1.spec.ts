@@ -894,7 +894,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 });
             });
 
-            describe.only('eth_getTransactionCount', async function () {
+            describe('eth_getTransactionCount', async function () {
                 it('@release should execute "eth_getTransactionCount" primary', async function () {
                     const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorPrimaryAccount.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
                     expect(res).to.be.equal('0x0');
