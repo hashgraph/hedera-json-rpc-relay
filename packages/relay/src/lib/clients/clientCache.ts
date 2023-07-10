@@ -86,7 +86,7 @@ export class ClientCache {
     public get(key: string, callingMethod: string, requestIdPrefix?: string): any {
         const value = this.cache.get(key);
         if (value !== undefined) {
-            this.cacheKeyGauge.labels(key, ClientCache.getCacheLabel, callingMethod || '').inc(1);
+            this.cacheKeyGauge.labels('', ClientCache.getCacheLabel, callingMethod || '').inc(1);
             this.logger.trace(`${requestIdPrefix} returning cached value ${key}:${JSON.stringify(value)} on ${callingMethod} call`);
             return value;
         }
@@ -98,7 +98,7 @@ export class ClientCache {
         const resolvedTtl = ttl ?? this.options.ttl;    
         this.logger.trace(`${requestIdPrefix} caching ${key}:${JSON.stringify(value)} for ${resolvedTtl} ms`);
         this.cache.set(key, value, { ttl: resolvedTtl });
-        this.cacheKeyGauge.labels(key, ClientCache.setCacheLabel, callingMethod || '').inc(1);
+        this.cacheKeyGauge.labels('', ClientCache.setCacheLabel, callingMethod || '').inc(1);
     }
 
     public purgeStale(): void {
