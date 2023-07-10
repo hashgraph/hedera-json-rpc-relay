@@ -94,7 +94,6 @@ export class EthImpl implements Eth {
   static ethGetTransactionCountByNumber = 'eth_GetTransactionCountByNumber';
   static ethGetTransactionReceipt = 'eth_GetTransactionReceipt';
   static ethSendRawTransaction = 'eth_sendRawTransaction';
-  static executionReverted = 'execution reverted: ';
 
   // block constants
   static blockLatest = 'latest';
