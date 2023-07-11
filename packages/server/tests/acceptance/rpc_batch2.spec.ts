@@ -757,8 +757,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
                 const errorType = predefined.REQUEST_BEYOND_HEAD_BLOCK(latestBlock.number + blocksAhead, latestBlock.number);
                 const newestBlockNumberHex = ethers.utils.hexValue(latestBlock.number + blocksAhead);
+                const args = [RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY, ['0x1', newestBlockNumberHex, null], requestId];
 
-                await expect(relay.call(RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY, ['0x1', newestBlockNumberHex, null], requestId)).to.be.rejectedWith(errorType);
+                await Assertions.assertRejection(errorType, relay.call, args, true);
             });
 
             it('should call eth_feeHistory with zero block count', async function () {
