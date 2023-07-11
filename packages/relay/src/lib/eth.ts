@@ -1277,7 +1277,7 @@ export class EthImpl implements Eth {
         }
 
         if (e.isContractReverted()) {
-          this.logger.trace(`${requestIdPrefix} mirror node eth_call request encoutered contract revert. details: ${e.message}, ${e.detail}, data: ${e.data}`);
+          this.logger.trace(`${requestIdPrefix} mirror node eth_call request encountered contract revert. message: ${e.message}, details: ${e.detail}, data: ${e.data}`);
           return predefined.CONTRACT_REVERT(e.message + e.detail, e.data);
         }
 
