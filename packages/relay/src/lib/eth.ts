@@ -740,7 +740,7 @@ export class EthImpl implements Eth {
     // check cache first
     // create a key for the cache
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTag}`;
-    const cachedBalance = this.cache.get(cacheKey, EthImpl.ethGetBalance);
+    let cachedBalance = this.cache.get(cacheKey, EthImpl.ethGetBalance);
     if (cachedBalance) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
       return cachedBalance;
@@ -833,7 +833,8 @@ export class EthImpl implements Eth {
       }
 
       // save in cache the current balance for the account and blockNumberOrTag
-      this.cache.set(cacheKey, EthImpl.numberTo0x(weibars), EthImpl.ethGetBalance, this.ethGetBalanceCacheTtlMs, requestIdPrefix);
+      cachedBalance = EthImpl.numberTo0x(weibars);
+      this.cache.set(cacheKey, cachedBalance, EthImpl.ethGetBalance, this.ethGetBalanceCacheTtlMs, requestIdPrefix);
 
       return cachedBalance;
     } catch (error: any) {
@@ -1883,9 +1884,9 @@ export class EthImpl implements Eth {
     }
   }
 
-  private async getLogsByAddress(address: string | [string], params: any, requestId) {
+  private async getLogsByAddress(address: string | [string], params: any, requestIdPrefix) {
     const addresses = Array.isArray(address) ? address : [address];
-    const logPromises = addresses.map(addr => this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestId));
+    const logPromises = addresses.map(addr => this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestIdPrefix));
 
     const logResults = await Promise.all(logPromises);
     const logs = logResults.flatMap(logResult => logResult ? logResult : [] );
