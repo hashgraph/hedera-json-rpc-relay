@@ -258,7 +258,7 @@ export class SDKClient {
                 const sdkClientError = new SDKClientError(e, e.message);
                 if (sdkClientError.isTimeoutExceeded()) {
                     const delay = retries * 1000;
-                    this.logger.trace(`${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay}ms ...`);
+                    this.logger.trace(`${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`);
                     retries++;
                     await new Promise(r => setTimeout(r, delay));
                     continue;

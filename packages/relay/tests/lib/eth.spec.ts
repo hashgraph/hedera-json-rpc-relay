@@ -55,7 +55,8 @@ import {
   expectLogData2,
   expectLogData3,
   expectLogData4,
-  defaultErrorMessageText
+  defaultErrorMessageText,
+  getRequestId,
 } from '../helpers';
 
 import pino from 'pino';
@@ -1359,7 +1360,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      const resBalance = await ethImpl.getBalance(contractAddress1, null);
+      const resBalance = await ethImpl.getBalance(contractAddress1, null, getRequestId());
       expect(resBalance).to.equal(defHexBalance);
     });
 
@@ -1376,7 +1377,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      const resBalance = await ethImpl.getBalance(contractAddress1, null);
+      const resBalance = await ethImpl.getBalance(contractAddress1, null, getRequestId());
       expect(resBalance).to.equal(defHexBalance);
 
       // next call should use cache
@@ -1397,7 +1398,7 @@ describe('Eth calls using MirrorNode', async function () {
       // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
       clientCache.clear();
 
-      const resBalanceNew = await ethImpl.getBalance(contractAddress1, null);
+      const resBalanceNew = await ethImpl.getBalance(contractAddress1, null, getRequestId());
       expect(newBalanceHex).to.equal(resBalanceNew);
     });
 
@@ -1419,7 +1420,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      const resBalance = await ethImpl.getBalance(contractAddress1, blockNumber);
+      const resBalance = await ethImpl.getBalance(contractAddress1, blockNumber, getRequestId());
       expect(resBalance).to.equal(defHexBalance);
     });
 
@@ -1441,7 +1442,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      const resBalance = await ethImpl.getBalance(contractAddress1, blockNumber);
+      const resBalance = await ethImpl.getBalance(contractAddress1, blockNumber, getRequestId());
       expect(resBalance).to.equal(defHexBalance);
     });
 
@@ -1458,7 +1459,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      const resBalance = await ethImpl.getBalance(contractAddress1, null);
+      const resBalance = await ethImpl.getBalance(contractAddress1, null, getRequestId());
       expect(resBalance).to.equal(EthImpl.zeroHex);
     });
 
@@ -1475,7 +1476,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      const resNoCache = await ethImpl.getBalance(contractAddress1, null);
+      const resNoCache = await ethImpl.getBalance(contractAddress1, null, getRequestId());
 
       restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, {
         _status: {
@@ -1483,7 +1484,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      const resCached = await ethImpl.getBalance(contractAddress1, null);
+      const resCached = await ethImpl.getBalance(contractAddress1, null, getRequestId());
       expect(resNoCache).to.equal(defHexBalance);
       expect(resCached).to.equal(defHexBalance);
     });
@@ -1517,7 +1518,7 @@ describe('Eth calls using MirrorNode', async function () {
         }       
       });
 
-      const resNoCache = await ethImpl.getBalance(contractAddress1, blockNumber);
+      const resNoCache = await ethImpl.getBalance(contractAddress1, blockNumber, getRequestId());
 
       restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, {
         _status: {
@@ -1525,7 +1526,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      const resCached = await ethImpl.getBalance(contractAddress1, blockNumber);
+      const resCached = await ethImpl.getBalance(contractAddress1, blockNumber, getRequestId());
       expect(resNoCache).to.equal(defHexBalance);
       expect(resCached).to.equal(defHexBalance);
     });    
@@ -1633,17 +1634,17 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       it('latest', async () => {
-        const resBalance = await ethImpl.getBalance(contractId1, 'latest');
+        const resBalance = await ethImpl.getBalance(contractId1, 'latest', getRequestId());
         expect(resBalance).to.equal(hexBalance3);
       });
 
       it('earliest', async () => {
-        const resBalance = await ethImpl.getBalance(contractId1, 'earliest');
+        const resBalance = await ethImpl.getBalance(contractId1, 'earliest', getRequestId());
         expect(resBalance).to.equal('0x0');
       });
 
       it('pending', async () => {
-        const resBalance = await ethImpl.getBalance(contractId1, 'pending');
+        const resBalance = await ethImpl.getBalance(contractId1, 'pending', getRequestId());
         expect(resBalance).to.equal(hexBalance3);
       });
 
@@ -1675,7 +1676,7 @@ describe('Eth calls using MirrorNode', async function () {
           }          
         });
  
-        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const resBalance = await ethImpl.getBalance(contractId1, '2', getRequestId());
         const historicalBalance = EthImpl.numberTo0x(BigInt(balance3) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
       });
@@ -1690,7 +1691,7 @@ describe('Eth calls using MirrorNode', async function () {
           transactions: []
         });
 
-        const resBalance = await ethImpl.getBalance(contractId1, '1');
+        const resBalance = await ethImpl.getBalance(contractId1, '1', getRequestId());
         expect(resBalance).to.equal(hexBalance1);
       });
 
@@ -1720,7 +1721,7 @@ describe('Eth calls using MirrorNode', async function () {
           }         
         });
 
-        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const resBalance = await ethImpl.getBalance(contractId1, '2', getRequestId());
         const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 - 175) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
       });
@@ -1750,7 +1751,7 @@ describe('Eth calls using MirrorNode', async function () {
           }            
         });
  
-        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const resBalance = await ethImpl.getBalance(contractId1, '2', getRequestId());
         const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 + 175) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
       });
@@ -1781,7 +1782,7 @@ describe('Eth calls using MirrorNode', async function () {
           }              
         });
 
-        const resBalance = await ethImpl.getBalance(contractId1, '2');
+        const resBalance = await ethImpl.getBalance(contractId1, '2', getRequestId());
         const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 + 65) * TINYBAR_TO_WEIBAR_COEF_BIGINT)
         expect(resBalance).to.equal(historicalBalance);
 
@@ -1824,7 +1825,7 @@ describe('Eth calls using MirrorNode', async function () {
           blocks: [latestBlock]
         });
       
-        const resBalance = await ethImpl.getBalance(contractId1, '1');
+        const resBalance = await ethImpl.getBalance(contractId1, '1', getRequestId());
         const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 - 230) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
       });
@@ -1882,7 +1883,7 @@ describe('Eth calls using MirrorNode', async function () {
           blocks: [latestBlock]
         });
       
-        const resBalance = await ethImpl.getBalance(contractId1, '1');
+        const resBalance = await ethImpl.getBalance(contractId1, '1', getRequestId());
         const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 - 480) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);        
       });
@@ -1940,13 +1941,13 @@ describe('Eth calls using MirrorNode', async function () {
           blocks: [latestBlock]
         });
       
-        const resBalance = await ethImpl.getBalance(contractId1, '1');
+        const resBalance = await ethImpl.getBalance(contractId1, '1', getRequestId());
         const historicalBalance = EthImpl.numberTo0x(BigInt(balance3 - 80) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);        
       });      
 
       it('blockNumber is the same as the latest block', async () => {
-        const resBalance = await ethImpl.getBalance(contractId1, '3');
+        const resBalance = await ethImpl.getBalance(contractId1, '3', getRequestId());
         expect(resBalance).to.equal(hexBalance3);
       });
     });
@@ -3911,12 +3912,11 @@ describe('Eth calls using MirrorNode', async function () {
       };
 
       const signed = await signTransaction(transaction);
-      const id = uuid();
 
       restMock.onGet('network/fees').reply(200, defaultNetworkFees);
       restMock.onGet(`transactions/${transactionId}`).reply(200, null);
 
-      const resultingHash = await ethImpl.sendRawTransaction(signed, id);
+      const resultingHash = await ethImpl.sendRawTransaction(signed, getRequestId());
       expect(resultingHash).to.equal(ethereumHash);
     });
 
@@ -3940,11 +3940,10 @@ describe('Eth calls using MirrorNode', async function () {
 
       sdkClientStub.submitEthereumTransaction.returns({transactionId: TransactionId.fromString(transactionIdServicesFormat)});
       const signed = await signTransaction(transaction);
-      const id = uuid();
 
       restMock.onGet('network/fees').reply(200, defaultNetworkFees);
 
-      const resultingHash = await ethImpl.sendRawTransaction(signed, id);
+      const resultingHash = await ethImpl.sendRawTransaction(signed, getRequestId());
       expect(resultingHash).to.equal(ethereumHash);
     });
 

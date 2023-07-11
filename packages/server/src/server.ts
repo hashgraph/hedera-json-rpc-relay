@@ -146,14 +146,12 @@ app.getKoaApp().use(async (ctx, next) => {
 app.getKoaApp().use(async (ctx, next) => {
   if (ctx.method === 'POST') {
     await next();
-  }
-
-  if (ctx.method === 'OPTIONS') {
+  } else if (ctx.method === 'OPTIONS') {
     // support CORS preflight
     ctx.status = 200;
+  } else {
+    logger.warn(`skipping HTTP method: [${ctx.method}], url: ${ctx.url}, status: ${ctx.status}`);
   }
-
-  logger.warn(`skipping HTTP method: [${ctx.method}], url: ${ctx.url}, status: ${ctx.status}`);
 });
 
 app.getKoaApp().use(async (ctx, next) => {
