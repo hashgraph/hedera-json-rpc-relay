@@ -100,6 +100,9 @@ describe('@web-socket Acceptance Tests', async function() {
 
         // cache original ENV values
         originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED;
+
+        // allow mirror node a 5 full record stream write windows (5 sec) and a buffer to persist setup details
+        await new Promise(r => setTimeout(r, 5000));
     });
 
     this.beforeEach(async () => {
@@ -112,13 +115,15 @@ describe('@web-socket Acceptance Tests', async function() {
         requestId = Utils.generateRequestId();
         // Stabilizes the initial connection test.
         await new Promise(resolve => setTimeout(resolve, 1000));
-        expect(server._connections).to.equal(1);
+        if (server) 
+            expect(server._connections).to.equal(1);
     });
 
     this.afterEach(async () => {
         await wsProvider.destroy();
         await new Promise(resolve => setTimeout(resolve, 1000));
-        expect(server._connections).to.equal(0);
+        if (server) 
+            expect(server._connections).to.equal(0);
     });
 
     describe('Connection', async function () {
@@ -228,6 +233,7 @@ describe('@web-socket Acceptance Tests', async function() {
                 response = data;
             });
             webSocket.on('open', function open() {
+                // send invalid JSON, missing closing bracket
                 webSocket.send('{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1');
             });
             await new Promise(resolve => setTimeout(resolve, 200));

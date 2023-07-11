@@ -63,6 +63,7 @@ import {
     defaultLogTopics,
     defaultNetworkFees,
     defaultTxHash,
+    getRequestId,
     signedTransactionHash
 } from '../helpers';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
@@ -233,7 +234,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getBalance"', async function () {
-        const response = await ethImpl.getBalance(contractAddress1, 'latest');
+        const response = await ethImpl.getBalance(contractAddress1, 'latest', getRequestId());
 
         validateResponseSchema(methodsResponseSchema.eth_getBalance, response);
     });

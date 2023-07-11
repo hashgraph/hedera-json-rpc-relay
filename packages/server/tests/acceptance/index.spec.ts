@@ -158,6 +158,7 @@ describe('RPC Server Acceptance Tests', function () {
         relayServer = app.listen({ port: constants.RELAY_PORT });
 
         if (process.env.TEST_WS_SERVER === 'true') {
+            logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
             global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
         }
     }

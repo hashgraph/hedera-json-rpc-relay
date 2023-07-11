@@ -27,7 +27,7 @@ import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import constants from '../../src/lib/constants';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import {mockData, random20BytesAddress} from './../helpers';
+import {getRequestId, mockData, random20BytesAddress} from './../helpers';
 const registry = new Registry();
 
 import pino from 'pino';
@@ -920,10 +920,7 @@ describe('MirrorNodeClient', async function () {
       });
       mock.onGet(`transactions/${transactionId}`).reply(200, null);
 
-      const id = uuid();
-      const requestIdPrefix = formatRequestIdMessage(id);
-
-      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
+      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, getRequestId());
       expect(result).to.be.null;
     });
 
@@ -934,10 +931,7 @@ describe('MirrorNodeClient', async function () {
       });
       mock.onGet(`transactions/${transactionId}`).reply(200, []);
 
-      const id = uuid();
-      const requestIdPrefix = formatRequestIdMessage(id);
-
-      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
+      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, getRequestId());
       expect(result).to.be.null;
     });
 
@@ -948,10 +942,7 @@ describe('MirrorNodeClient', async function () {
       });
       mock.onGet(`transactions/${transactionId}`).reply(200, defaultTransaction);
 
-      const id = uuid();
-      const requestIdPrefix = formatRequestIdMessage(id);
-
-      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, id, requestIdPrefix);
+      const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, getRequestId());
       expect(result).to.eq('INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE');
     });
 
