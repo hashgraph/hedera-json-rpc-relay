@@ -76,7 +76,7 @@ export class EthImpl implements Eth {
   static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
   static iHTSAddress = '0x0000000000000000000000000000000000000167';
   static invalidEVMInstruction = '0xfe';
-  static errorContractReverted = 'CONTRACT_REVERT_EXECUTED';
+
 
   // endpoint callerNames
   static ethBlockByNumber = 'eth_blockNumber';
@@ -525,8 +525,10 @@ export class EthImpl implements Eth {
           return predefined.INVALID_PARAMETER(0, `Invalid 'value' field in transaction param. Value must be greater than 0`);
         }
       } else {
-        // execute reverted: with no message comes from a contract deployment
-        if (e.message === EthImpl.errorContractReverted) {
+        // The size limit of the encoded contract posted to the mirror node can cause contract deployment transactions to fail with a 400 response code.
+        // The contract is actually deployed on the consensus node, so the contract will work.  In these cases, we don't want to return a 
+        // CONTRTACT_REVERT error.
+        if (e.isContractReverted() && e.detail && e.data && e.message !== MirrorNodeClientError.messages.INVALID_HEX && process.env.ALLOW_INVALID_HEX_RESPONSE) {
           return predefined.CONTRACT_REVERT(e.detail, e.data);
         }      
         // Handle Contract Call or Contract Create
