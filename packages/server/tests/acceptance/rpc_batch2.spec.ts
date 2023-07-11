@@ -322,7 +322,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             const signedTx1 = await accounts[3].wallet.signTransaction(transaction);
             const txHash1 = await relay.sendRawTransaction(signedTx1);
             await mirrorNode.get(`/contracts/results/${txHash1}`, requestId);
-            const tx1 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash1]);
+            await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash1]);
             await new Promise(r => setTimeout(r, 2000));
 
             const blockNumber = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId);
@@ -330,7 +330,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             const signedTx2 = await accounts[3].wallet.signTransaction({ ...transaction, nonce: acc3Nonce + 1 });
             const txHash2 = await relay.sendRawTransaction(signedTx2);
             await mirrorNode.get(`/contracts/results/${txHash2}`, requestId);
-            const tx2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash2]);
+            await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash2]);
             await new Promise(r => setTimeout(r, 2000));
 
             const endBalance = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, ['0x' + accounts[0].address, 'latest'], requestId);
@@ -695,7 +695,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             };
 
             const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
-            const transactionHash1 = await relay.sendRawTransaction(signedTx1, requestId);
+            await relay.sendRawTransaction(signedTx1, requestId);
             await new Promise(r => setTimeout(r, 2000));
 
             //Get previous state change with specific block number
