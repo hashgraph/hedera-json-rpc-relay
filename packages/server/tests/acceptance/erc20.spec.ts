@@ -251,6 +251,7 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                     beforeEach('reducing balance', async function () {
                                         amount = initialSupply;
+                                        await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, await Utils.gasOptions(requestId));
                                         await contract.transfer(to, 1, await Utils.gasOptions(1_500_000));
                                         // 5 seconds sleep to propagate the changes to mirror node
                                         await new Promise(r => setTimeout(r, 5000));                                        
