@@ -284,7 +284,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                     await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                 });
 
-                                describe.only('when the token owner has enough balance', function () {
+                                describe('when the token owner has enough balance', function () {
                                     let amount;
                                     before(async function () {
                                         amount = initialSupply;
