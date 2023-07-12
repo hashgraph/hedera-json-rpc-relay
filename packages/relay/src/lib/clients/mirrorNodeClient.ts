@@ -267,7 +267,7 @@ export class MirrorNodeClient {
         return `${baseUrl}api/v1/`;
     }
 
-    private async request(path: string, pathLabel: string, method: REQUEST_METHODS, data?: any, requestId?: string): Promise<any> {
+    private async request(path: string, pathLabel: string, method: REQUEST_METHODS, data?: any, requestId?: string, retries?: number): Promise<any> {
         const start = Date.now();
         const requestIdPrefix = formatRequestIdMessage(requestId);
         let ms;
@@ -281,6 +281,11 @@ export class MirrorNodeClient {
                 },
                 signal: controller.signal
             };
+
+            // request specific config for axios-retry
+            if (retries != null) {
+                axiosRequestConfig['axios-retry'] = { retries };
+            }
 
             if (method === 'GET') {
                 response = await this.restClient.get(path, axiosRequestConfig);
@@ -307,8 +312,8 @@ export class MirrorNodeClient {
         return null;
     }
 
-    async get(path: string, pathLabel: string, requestId?: string): Promise<any> {
-        return this.request(path, pathLabel, 'GET', null, requestId);
+    async get(path: string, pathLabel: string, requestId?: string, retries?: number): Promise<any> {
+        return this.request(path, pathLabel, 'GET', null, requestId, retries);
     }
 
     async post(path: string, data: any, pathLabel: string, requestId?: string): Promise<any> {
@@ -480,21 +485,21 @@ export class MirrorNodeClient {
             requestId);
     }
 
-    public async isValidContract(contractIdOrAddress: string, requestId?: string) {
+    public async isValidContract(contractIdOrAddress: string, requestId?: string, retries?: number) {
         const cachedLabel = `${constants.CACHE_KEY.GET_CONTRACT}.valid.${contractIdOrAddress}`;
         const cachedResponse: any = this.cache.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
         if (cachedResponse != undefined) {
             return cachedResponse;
         }
 
-        const contract = await this.getContractId(contractIdOrAddress, requestId);
+        const contract = await this.getContractId(contractIdOrAddress, requestId, retries);
         const valid = contract != null;
 
         this.cache.set(cachedLabel, valid, constants.CACHE_TTL.ONE_DAY, requestId);
         return valid;
     }
 
-    public async getContractId(contractIdOrAddress: string, requestId?: string) {
+    public async getContractId(contractIdOrAddress: string, requestId?: string, retries?: number) {
         const cachedLabel = `${constants.CACHE_KEY.GET_CONTRACT}.id.${contractIdOrAddress}`;
         const cachedResponse: any = this.cache.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
         if (cachedResponse != undefined) {
@@ -503,7 +508,8 @@ export class MirrorNodeClient {
 
         const contract = await this.get(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`,
             MirrorNodeClient.GET_CONTRACT_ENDPOINT,
-            requestId);
+            requestId,
+            retries);
 
         if (contract != null) {
             const id = contract.contract_id;

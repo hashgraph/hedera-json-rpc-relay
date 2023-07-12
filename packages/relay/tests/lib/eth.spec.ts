@@ -4131,6 +4131,10 @@ describe('Eth calls using MirrorNode', async function () {
       const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockLatest);
       expect(nonce).to.exist;
       expect(nonce).to.equal(EthImpl.numberTo0x(mockData.account.ethereum_nonce));
+
+      const callsToContractPath = restMock.history.get.filter(e => e.url === contractPath);
+      expect(callsToContractPath).to.exist;
+      expect(callsToContractPath.length).to.eq(1, 'No retry requests are made to get the contract data');
     });
 
     it('should return latest nonce for pending block', async() => {

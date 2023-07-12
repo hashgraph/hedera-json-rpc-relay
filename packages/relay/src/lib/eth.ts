@@ -1932,29 +1932,14 @@ export class EthImpl implements Eth {
   }
 
   private async getAccountLatestEthereumNonce(address: string, requestId?: string) {
-    const cachedLabel = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${address}`;
-    const cachedResponse: { type: string, entity: any } | undefined = this.cache.get(cachedLabel);
-    let entityResult: { type: string, entity: any } | undefined | null;
-    if (cachedResponse) {
-      entityResult = cachedResponse;
-      if (entityResult.type === constants.TYPE_ACCOUNT) {
-        entityResult.entity = await this.mirrorNodeClient.getAccount(address, requestId);
-        return EthImpl.numberTo0x(entityResult.entity.ethereum_nonce);
+    const accountData = await this.mirrorNodeClient.getAccount(address, requestId);
+    if (accountData) {
+      const contract = await this.mirrorNodeClient.isValidContract(address, requestId, 0);
+      if (contract) {
+        return EthImpl.oneHex;
       }
-    }
-    else {
-      entityResult = await this.mirrorNodeClient.resolveEntityType(
-          address,
-          [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT],
-          requestId
-      );
-    }
 
-    if (entityResult?.type === constants.TYPE_CONTRACT) {
-      return EthImpl.oneHex;
-    }
-    else if (entityResult?.type === constants.TYPE_ACCOUNT) {
-      return EthImpl.numberTo0x(entityResult.entity.ethereum_nonce);
+      return EthImpl.numberTo0x(accountData.ethereum_nonce);
     }
 
     return EthImpl.zeroHex;
