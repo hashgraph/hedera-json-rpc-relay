@@ -30,6 +30,7 @@ import { SDKClientError } from '../errors/SDKClientError';
 import { ClientCache } from './clientCache';
 const http = require('http');
 const https = require('https');
+import { registerInterceptor } from 'axios-cached-dns-resolve';
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
@@ -207,6 +208,8 @@ export class MirrorNodeClient {
             },
             shouldResetTimeout: true
         });
+
+        registerInterceptor(axiosClient);
 
         return axiosClient;
     }

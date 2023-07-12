@@ -31,6 +31,7 @@
         "@hashgraph/sdk": "^2.29.0",
         "@keyvhq/core": "^1.6.9",
         "axios": "^1.4.0",
+        "axios-cached-dns-resolve": "^3.3.0",
         "axios-retry": "^3.5.1",
         "buffer": "^6.0.3",
         "dotenv": "^16.0.0",
