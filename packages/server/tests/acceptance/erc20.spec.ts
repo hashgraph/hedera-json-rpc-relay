@@ -286,22 +286,11 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 describe('when the token owner has enough balance', function () {
                                     let amount;
-                                    let origWallet;
                                     before(async function () {
-                                        // origWallet = tokenOwnerWallet;
-                                        // tokenOwnerWallet = accounts[2].wallet;
                                         allowance = initialSupply.sub(1);
-                                        console.log('DEBUG: allowance: ', allowance.toString());
                                         amount = initialSupply;
-                                        console.log('DEBUG: amount: ', amount.toString());
-                                        const balance = await contract.balanceOf(tokenOwner);
-                                        console.log('DEBUG: balance: ', balance.toString());    
                                         await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                     });
-
-                                    // after(async function () { 
-                                    //     tokenOwnerWallet = origWallet;
-                                    // });
 
                                     it('reverts', async function () {
                                         try {
