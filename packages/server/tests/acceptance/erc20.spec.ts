@@ -289,8 +289,10 @@ describe('@erc20 Acceptance Tests', async function () {
                                     before(async function () {
                                         allowance = initialSupply.sub(1);
                                         console.log('DEBUG: allowance: ', allowance.toString());
-                                        console.log('DEBUG: amount: ', amount);
                                         amount = initialSupply;
+                                        console.log('DEBUG: amount: ', amount.toString());
+                                        const balance = await contract.balanceOf(tokenOwner);
+                                        console.log('DEBUG: balance: ', balance.toString());    
                                         await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                     });
 
