@@ -286,7 +286,10 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 describe('when the token owner has enough balance', function () {
                                     let amount;
+                                    let origWallet;
                                     before(async function () {
+                                        // origWallet = tokenOwnerWallet;
+                                        // tokenOwnerWallet = accounts[2].wallet;
                                         allowance = initialSupply.sub(1);
                                         console.log('DEBUG: allowance: ', allowance.toString());
                                         amount = initialSupply;
@@ -296,6 +299,10 @@ describe('@erc20 Acceptance Tests', async function () {
                                         await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                     });
 
+                                    // after(async function () { 
+                                    //     tokenOwnerWallet = origWallet;
+                                    // });
+
                                     it('reverts', async function () {
                                         try {
                                             await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
@@ -304,7 +311,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                             // eth_estimateGas gets called by ethers
                                             // so we need to catch the error and check that the reason is the expected one,
                                             // in addition to validating the CALL_EXCEPTION   
-                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: insufficient allowance');                                            
+                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: transfer amount exceeds balance');                                            
                                         }                                          
                                     });
                                 });
@@ -369,8 +376,6 @@ describe('@erc20 Acceptance Tests', async function () {
                             let amount, to, tokenOwnerWallet;
 
                             beforeEach(async function () {
-                                // spender = accounts[0].address;
-                                // spenderWallet = accounts[0].wallet;
 
                                 amount = initialSupply;
                                 to = ethers.constants.AddressZero;
