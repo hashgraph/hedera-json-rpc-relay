@@ -70,6 +70,14 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     let blockNumberAtStartOfTests = 0;
     let mirrorAccount0AtStartOfTests;
 
+    const signAndSendTransaction = async (transaction, accounts, requestId) => {
+        const signedTx = await accounts.wallet.signTransaction(transaction);
+        const txHash = await relay.sendRawTransaction(signedTx);
+        await mirrorNode.get(`/contracts/results/${txHash}`, requestId);
+        await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash]);
+        await new Promise(r => setTimeout(r, 2000));
+      };
+
     this.beforeAll(async () => {
         requestId = Utils.generateRequestId();
 
@@ -319,19 +327,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 gasPrice: gasPrice,
             };
 
-            const signedTx1 = await accounts[3].wallet.signTransaction(transaction);
-            const txHash1 = await relay.sendRawTransaction(signedTx1);
-            await mirrorNode.get(`/contracts/results/${txHash1}`, requestId);
-            await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash1]);
-            await new Promise(r => setTimeout(r, 2000));
-
+            await signAndSendTransaction(transaction, accounts[3], requestId);
+            
             const blockNumber = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId);
 
-            const signedTx2 = await accounts[3].wallet.signTransaction({ ...transaction, nonce: acc3Nonce + 1 });
-            const txHash2 = await relay.sendRawTransaction(signedTx2);
-            await mirrorNode.get(`/contracts/results/${txHash2}`, requestId);
-            await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash2]);
-            await new Promise(r => setTimeout(r, 2000));
+            await signAndSendTransaction({ ...transaction, nonce: acc3Nonce + 1 }, accounts[3], requestId);
 
             const endBalance = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, ['0x' + accounts[0].address, 'latest'], requestId);
 

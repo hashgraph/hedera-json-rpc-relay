@@ -46,7 +46,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     const { servicesNode, mirrorNode, relay, logger } = global;
 
     // cached entities
-    let tokenId;
     let contractId;
     let contractExecuteTimestamp;
     let mirrorContract;
@@ -76,12 +75,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             const params = new ContractFunctionParameters().addUint256(1);
             contractExecuteTimestamp = (await accounts[0].client
                 .executeContractCall(contractId, 'createChild', params, 75000, requestId)).contractExecuteTimestamp;
-            tokenId = await servicesNode.createToken(1000, requestId);
-            logger.info('Associate and transfer tokens');
-            await accounts[0].client.associateToken(tokenId, requestId);
-            await accounts[1].client.associateToken(tokenId, requestId);
-            await servicesNode.transferToken(tokenId, accounts[0].accountId, 10, requestId);
-            await servicesNode.transferToken(tokenId, accounts[1].accountId, 10, requestId);
 
             // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
             await new Promise(r => setTimeout(r, 5000));
