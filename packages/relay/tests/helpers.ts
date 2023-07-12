@@ -413,18 +413,6 @@ const mockData = {
             ]
         }
     },
-
-    notSuported: {
-        "_status": {
-            "messages": [
-                {
-                    "message": "Auto account creation is not supported.",
-                    "detail": "",
-                    "data": ""
-                }
-            ]
-        }
-    }
 };
 
 export { expectUnsupportedMethod, expectedError, signTransaction, mockData, random20BytesAddress };
