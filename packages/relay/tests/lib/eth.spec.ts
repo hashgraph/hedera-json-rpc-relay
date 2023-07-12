@@ -67,6 +67,7 @@ import HbarLimit from '../../src/lib/hbarlimiter';
 import { v4 as uuid } from 'uuid';
 import { ethers } from 'ethers';
 import { TransactionId } from '@hashgraph/sdk';
+import { hashNumber } from '../../dist/formatters';
 
 const LRU = require('lru-cache');
 
@@ -251,7 +252,23 @@ describe('Eth calls using MirrorNode', async function () {
         'gas_used': gasUsed1,
         'hash': contractHash1,
         'timestamp': `${contractTimestamp1}`,
-        'to': null
+        'to': null,
+        "block_gas_used": 400000,
+        "block_hash": blockHash,
+        "block_number": blockNumber,
+        "chain_id": "0x12a",
+        "failed_initcode": null,
+        "gas_price": "0x4a817c80",
+        "max_fee_per_gas": "0x59",
+        "max_priority_fee_per_gas": "0x33",
+        "nonce": 5,
+        "r": "0xb5c21ab4dfd336e30ac2106cad4aa8888b1873a99bce35d50f64d2ec2cc5f6d9",
+        "result": "SUCCESS",
+        "s":  "0x1092806a99727a20c31836959133301b65a2bfa980f9795522d21a254e629110",
+        "status": "0x1",
+        "transaction_index": 1,
+        "type": 2,
+        "v": 1
       }
     ],
     'links': {
@@ -653,8 +670,6 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
     restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResults);
-    restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsWithNullNullableValues);
-    restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, resultWithNullGasUsed);
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), true);
     expect(result).to.exist;
@@ -668,8 +683,8 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(2);
     expect((result.transactions[0] as Transaction).hash).equal(contractHash1);
-    expect((result.transactions[1] as Transaction).hash).equal(contractHash1);
-    expect((result.transactions[1] as Transaction).gas).equal("0x0");
+    expect((result.transactions[1] as Transaction).hash).equal(contractHash2);
+    expect((result.transactions[1] as Transaction).gas).equal(hashNumber(gasUsed2));
 
     // verify expected constants
     verifyBlockConstants(result);
@@ -687,9 +702,7 @@ describe('Eth calls using MirrorNode', async function () {
     const next = `contracts/results?timestamp=lte:${defaultBlock.timestamp.to}&timestamp=gte:${defaultBlock.timestamp.from}&limit=100&order=asc`; // just flip the timestamp parameters for simplicity
     restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, { 'results': [], 'links': { 'next': next } });
     restMock.onGet(next).reply(200, defaultContractResults);
-    restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsWithNullNullableValues);
-    restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, resultWithNullGasUsed);
-    restMock.onGet('network/fees').reply(200, defaultNetworkFees);
+   restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), true);
     expect(result).to.exist;
     expect(result).to.not.be.null;
@@ -702,8 +715,8 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.timestamp).equal(blockTimestampHex);
     expect(result.transactions.length).equal(2);
     expect((result.transactions[0] as Transaction).hash).equal(contractHash1);
-    expect((result.transactions[1] as Transaction).hash).equal(contractHash1);
-    expect((result.transactions[1] as Transaction).gas).equal("0x0");
+    expect((result.transactions[1] as Transaction).hash).equal(contractHash2);
+    expect((result.transactions[1] as Transaction).gas).equal(hashNumber(gasUsed2));
 
     // verify expected constants
     verifyBlockConstants(result);
@@ -727,7 +740,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.number).equal(blockNumberHex);
     expect(result.parentHash).equal(blockHashPreviousTrimmed);
     expect(result.timestamp).equal(blockTimestampHex);
-    expect(result.transactions.length).equal(0);
+    expect(result.transactions.length).equal(1);
 
     // verify expected constants
     verifyBlockConstants(result);
@@ -899,8 +912,6 @@ describe('Eth calls using MirrorNode', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
     restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResults);
-    restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsWithNullNullableValues);
-    restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResultsWithNullNullableValues);
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
@@ -911,7 +922,7 @@ describe('Eth calls using MirrorNode', async function () {
       number: blockNumberHex,
       timestamp: blockTimestampHex,
       parentHash: blockHashPreviousTrimmed,
-      transactions: [contractHash1, contractHash1]
+      transactions: [contractHash1, contractHash2]
     }, true)
   });
 
@@ -921,8 +932,6 @@ describe('Eth calls using MirrorNode', async function () {
     const next = `contracts/results?timestamp=lte:${defaultBlock.timestamp.to}&timestamp=gte:${defaultBlock.timestamp.from}&limit=100&order=asc`; // just flip the timestamp parameters for simplicity
     restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, { 'results': [], 'links': { 'next': next } });
     restMock.onGet(next).reply(200, defaultContractResults);
-    restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResultsWithNullNullableValues);
-    restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResultsWithNullNullableValues);
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
@@ -932,7 +941,7 @@ describe('Eth calls using MirrorNode', async function () {
       number: blockNumberHex,
       parentHash: blockHashPreviousTrimmed,
       timestamp: blockTimestampHex,
-      transactions: [contractHash1, contractHash1]
+      transactions: [contractHash1, contractHash2]
     }, true)
   });
 
@@ -940,7 +949,7 @@ describe('Eth calls using MirrorNode', async function () {
     mirrorNodeCache.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockHash}`).reply(200, {...defaultBlock, gas_used: gasUsed1});
-    restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResultsRevert);
+    restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, []);
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
@@ -1107,8 +1116,10 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getTransactionByBlockNumberAndIndex with null amount', async function () {
     // mirror node request mocks
-    restMock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, defaultContractResults);
-    restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, {...defaultDetailedContractResults, amount: null});
+    const nullableDefaultContractResults = defaultContractResults;
+    // @ts-ignore
+    nullableDefaultContractResults.results[0].amount = null;
+    restMock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, nullableDefaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
     expect(result).to.exist;
@@ -1269,22 +1280,6 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_getTransactionByBlockHashAndIndex with no contract results', async function () {
     restMock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, {
       'results': []
-    });
-
-    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), EthImpl.numberTo0x(defaultBlock.count));
-    expect(result).to.equal(null);
-  });
-
-  it('eth_getTransactionByBlockHashAndIndex with no detailed contract result match', async function () {
-    restMock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, defaultContractResults);
-    restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(400, {
-      '_status': {
-        'messages': [
-          {
-            'message': 'No such detailed contract result exists'
-          }
-        ]
-      }
     });
 
     const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), EthImpl.numberTo0x(defaultBlock.count));
@@ -4334,8 +4329,8 @@ describe('Eth', async function () {
     "gasPrice": "0x4a817c80",
     "hash": defaultTxHash,
     "input": "0x0707",
-    "maxFeePerGas": undefined,
-    "maxPriorityFeePerGas": undefined,
+    "maxFeePerGas": null,
+    "maxPriorityFeePerGas": null,
     "nonce": 1,
     "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",

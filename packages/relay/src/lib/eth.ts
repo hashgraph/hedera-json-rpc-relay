@@ -1032,7 +1032,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getTransactionByBlockHashAndIndex(hash=${blockHash}, index=${transactionIndex})`);
     return this.mirrorNodeClient
       .getContractResults({ blockHash: blockHash, transactionIndex: Number(transactionIndex) }, undefined, requestId)
-      .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
+      .then((contractResults) => EthImpl.formatContractResult(contractResults[0] ?? null))
       .catch((error: any) => {
         throw this.genericErrorHandler(error, `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`);
       });
@@ -1054,7 +1054,7 @@ export class EthImpl implements Eth {
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestId);
     return this.mirrorNodeClient
       .getContractResults({ blockNumber: blockNum, transactionIndex: Number(transactionIndex) }, undefined, requestId)
-      .then((contractResults) => this.getTransactionFromContractResults(contractResults, requestId))
+      .then((contractResults) => EthImpl.formatContractResult(contractResults[0] ?? null))
       .catch((e: any) => {
         throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`);
       });
@@ -1431,36 +1431,14 @@ export class EthImpl implements Eth {
       }
     }
 
-    const maxPriorityFee = contractResult.max_priority_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_priority_fee_per_gas;
-    const maxFee = contractResult.max_fee_per_gas === EthImpl.emptyHex ? undefined : contractResult.max_fee_per_gas;
-    const rSig = contractResult.r === null ? null : contractResult.r.substring(0, 66);
-    const sSig = contractResult.s === null ? null : contractResult.s.substring(0, 66);
-
     if (process.env.DEV_MODE && process.env.DEV_MODE === 'true' && contractResult.result === 'CONTRACT_REVERT_EXECUTED') {
       const err = predefined.CONTRACT_REVERT(contractResult.error_message);
       throw err;
     }
 
-    return new Transaction({
-      accessList: undefined, // we don't support access lists, so punt for now
-      blockHash: EthImpl.toHash32(contractResult.block_hash),
-      blockNumber: EthImpl.nullableNumberTo0x(contractResult.block_number),
-      chainId: contractResult.chain_id,
-      from: fromAddress,
-      gas: EthImpl.nanOrNumberTo0x(contractResult.gas_used),
-      gasPrice: EthImpl.toNullIfEmptyHex(contractResult.gas_price),
-      hash: contractResult.hash.substring(0, 66),
-      input: contractResult.function_parameters,
-      maxPriorityFeePerGas: maxPriorityFee,
-      maxFeePerGas: maxFee,
-      nonce: EthImpl.nanOrNumberTo0x(contractResult.nonce),
-      r: rSig,
-      s: sSig,
-      to: contractResult.to?.substring(0, 42),
-      transactionIndex: EthImpl.nullableNumberTo0x(contractResult.transaction_index),
-      type: EthImpl.nullableNumberTo0x(contractResult.type),
-      v: EthImpl.nanOrNumberTo0x(contractResult.v),
-      value: EthImpl.nanOrNumberTo0x(contractResult.amount),
+    return EthImpl.formatContractResult({
+      ...contractResult,
+      from: fromAddress
     });
   }
 
@@ -1663,17 +1641,12 @@ export class EthImpl implements Eth {
 
     // The consensus timestamp of the block, with the nanoseconds part omitted.
     const timestamp = timestampRange.from.substring(0, timestampRange.from.indexOf('.'));
-    const transactionObjects: Transaction[] = [];
-    const transactionHashes: string[] = [];
-
     if (showDetails && contractResults.length >= this.ethGetTransactionCountMaxBlockRange) {
       throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
     }
 
-    await this.batchGetAndPopulateContractResults(contractResults, showDetails, transactionObjects, transactionHashes, requestId);
-
     const blockHash = EthImpl.toHash32(blockResponse.hash);
-    const transactionArray = showDetails ? transactionObjects : transactionHashes;
+    const transactionArray = contractResults.map(cr => showDetails ? EthImpl.formatContractResult(cr) : cr.hash);
     return new Block({
       baseFeePerGas: await this.gasPrice(requestId),
       difficulty: EthImpl.zeroHex,
@@ -1697,41 +1670,6 @@ export class EthImpl implements Eth {
       transactionsRoot: transactionArray.length == 0 ? EthImpl.ethEmptyTrie : blockHash,
       uncles: [],
     });
-  }
-
-  /**
-   * Gets the transaction details for the block given the restried contract results.
-   * If showDetails is set to false simply populate the transactionHashes array with the transaction hash
-   * If showDetails is set to true subsequently batch call mirror node for additional transaction details
-   * @param contractResults
-   * @param showDetails
-   * @param transactionObjects
-   * @param transactionHashes
-   * @param requestId
-   */
-  private async batchGetAndPopulateContractResults(contractResults: any[], showDetails: boolean, transactionObjects: Transaction[], transactionHashes: string[], requestId?: string): Promise<void> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    let batchCount = 1;
-    for (let i = 0; i < contractResults.length; i+= this.ethGetBlockByResultsBatchSize) {
-      if (showDetails) {
-        this.logger.trace(`${requestIdPrefix} Batch ${i} of size ${this.ethGetBlockByResultsBatchSize} to retrieve detailed contract results from Mirror Node`);
-        await Promise.all(contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(async result => {
-          // depending on stage of contract execution revert the result.to value may be null
-          if (result.to != null) {
-            const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestId);
-            if (transaction !== null) {
-              transactionObjects.push(transaction);
-            }
-          }
-        })).catch((err) => {
-          this.logger.error(err, `${requestIdPrefix} Error encountered on results ${i} -> ${i + this.ethGetBlockByResultsBatchSize} of contract results retrieval from Mirror Node`);
-          throw predefined.INTERNAL_ERROR('Error encountered on contract results retrieval from Mirror Node');
-        });
-        batchCount++;
-      } else {
-        transactionHashes.push(...contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(result => result.hash));
-      }
-    }
   }
 
 
@@ -1782,58 +1720,32 @@ export class EthImpl implements Eth {
     return EthImpl.numberTo0x(block.count);
   }
 
-  private getTransactionFromContractResults(contractResults: any, requestId?: string) {
-    if (!contractResults || contractResults.length == 0) {
-      // contract result not found
+  private static formatContractResult(cr: any) {
+    if (cr === null) {
       return null;
     }
 
-    const contractResult = contractResults[0];
-
-    return this.getTransactionFromContractResult(contractResult.to, contractResult.timestamp, requestId);
-  }
-
-  private async getTransactionFromContractResult(to: string, timestamp: string, requestId?: string): Promise<Transaction | null> {
-    // call mirror node by id and timestamp for further details
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    return this.mirrorNodeClient.getContractResultsByAddressAndTimestamp(to, timestamp, requestId)
-      .then(contractResultDetails => {
-        // 404 is allowed return code so it's possible for contractResultDetails to be null
-        if (contractResultDetails == null) {
-          return null;
-        } else {
-          const rSig = contractResultDetails.r === null ? null : contractResultDetails.r.substring(0, 66);
-          const sSig = contractResultDetails.s === null ? null : contractResultDetails.s.substring(0, 66);
-          return new Transaction({
-            accessList: undefined, // we don't support access lists for now, so punt
-            blockHash: EthImpl.toHash32(contractResultDetails.block_hash),
-            blockNumber: EthImpl.numberTo0x(contractResultDetails.block_number),
-            chainId: contractResultDetails.chain_id,
-            from: contractResultDetails.from.substring(0, 42),
-            gas: EthImpl.nanOrNumberTo0x(contractResultDetails.gas_used),
-            gasPrice: EthImpl.toNullIfEmptyHex(contractResultDetails.gas_price),
-            hash: contractResultDetails.hash.substring(0, 66),
-            input: contractResultDetails.function_parameters,
-            maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_priority_fee_per_gas),
-            maxFeePerGas: EthImpl.toNullIfEmptyHex(contractResultDetails.max_fee_per_gas),
-            nonce: EthImpl.nanOrNumberTo0x(contractResultDetails.nonce),
-            r: rSig,
-            s: sSig,
-            to: contractResultDetails.to.substring(0, 42),
-            transactionIndex: EthImpl.nullableNumberTo0x(contractResultDetails.transaction_index),
-            type: EthImpl.nullableNumberTo0x(contractResultDetails.type),
-            v: EthImpl.nanOrNumberTo0x(contractResultDetails.v),
-            value: EthImpl.nanOrNumberTo0x(contractResultDetails.amount),
-          });
-        }
-      })
-      .catch((e: any) => {
-        this.logger.error(
-          e,
-          `${requestIdPrefix} Failed to retrieve contract result details for contract address ${to} at timestamp=${timestamp}`
-        );
-        throw predefined.INTERNAL_ERROR(e.message.toString());
-      });
+    return new Transaction({
+      accessList: undefined,
+      blockHash: EthImpl.toHash32(cr.block_hash),
+      blockNumber: EthImpl.nullableNumberTo0x(cr.block_number),
+      chainId: cr.chain_id,
+      from: cr.from.substring(0, 42),
+      gas: EthImpl.nanOrNumberTo0x(cr.gas_used),
+      gasPrice: EthImpl.toNullIfEmptyHex(cr.gas_price),
+      hash: cr.hash.substring(0, 66),
+      input: cr.function_parameters,
+      maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(cr.max_priority_fee_per_gas),
+      maxFeePerGas: EthImpl.toNullIfEmptyHex(cr.max_fee_per_gas),
+      nonce: EthImpl.nanOrNumberTo0x(cr.nonce),
+      r: cr.r === null ? null : cr.r.substring(0, 66),
+      s: cr.s === null ? null : cr.s.substring(0, 66),
+      to: cr.to?.substring(0, 42),
+      transactionIndex: EthImpl.nullableNumberTo0x(cr.transaction_index),
+      type: EthImpl.nullableNumberTo0x(cr.type),
+      v: EthImpl.nanOrNumberTo0x(cr.v),
+      value: EthImpl.nanOrNumberTo0x(cr.amount)
+    });
   }
 
   private async validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestId?: string) {

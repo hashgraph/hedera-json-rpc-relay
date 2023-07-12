@@ -277,7 +277,7 @@ describe('eth_getBlockBy', async function () {
       
     describe('getBlockByNumber', () => {
 
-        it('eth_getBlockByNumber with eror during batch call', async function () {
+        xit('eth_getBlockByNumber with error during batch call', async function () {
             // mirror node request mocks
             restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
             restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
