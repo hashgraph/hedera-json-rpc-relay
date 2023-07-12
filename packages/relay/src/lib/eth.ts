@@ -528,7 +528,7 @@ export class EthImpl implements Eth {
         // The size limit of the encoded contract posted to the mirror node can cause contract deployment transactions to fail with a 400 response code.
         // The contract is actually deployed on the consensus node, so the contract will work.  In these cases, we don't want to return a 
         // CONTRTACT_REVERT error.
-        if (e.isContractReverted() && e.detail && e.data && e.message !== MirrorNodeClientError.messages.INVALID_HEX && process.env.ALLOW_INVALID_HEX_RESPONSE) {
+        if (e.isContractReverted() && e.message !== MirrorNodeClientError.messages.INVALID_HEX && process.env.ALLOW_INVALID_HEX_RESPONSE) {
           return predefined.CONTRACT_REVERT(e.detail, e.data);
         }      
         // Handle Contract Call or Contract Create
