@@ -63,6 +63,7 @@ import {
     defaultLogTopics,
     defaultNetworkFees,
     defaultTxHash,
+    getRequestId,
     signedTransactionHash
 } from '../helpers';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
@@ -141,9 +142,20 @@ describe("Open RPC Specification", function () {
         mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
         mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, defaultDetailedContractResults3);
         mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, null);
-        mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, { account: contractAddress1, balance:{balance: 2000000000000} });
-        mock.onGet(`accounts/${contractAddress3}${limitOrderPostFix}`).reply(200, { account: contractAddress3 });
+        mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, { 
+            account: contractAddress1, 
+            balance: {
+                balance: 2000000000000
+            } 
+        });
+        mock.onGet(`accounts/${contractAddress3}${limitOrderPostFix}`).reply(200, { 
+            account: contractAddress3,
+            balance: {
+                balance: 100000000000
+            } 
+        });
         mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
+
         mock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
             from: `${defaultEvmAddress}`
           });
@@ -222,7 +234,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getBalance"', async function () {
-        const response = await ethImpl.getBalance(contractAddress1, 'latest');
+        const response = await ethImpl.getBalance(contractAddress1, 'latest', getRequestId());
 
         validateResponseSchema(methodsResponseSchema.eth_getBalance, response);
     });

@@ -26,6 +26,7 @@ import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
 import { ContractFunctionParameters } from '@hashgraph/sdk';
 
+
 // local resources
 import parentContractJson from '../contracts/Parent.json';
 import logsContractJson from '../contracts/Logs.json';
@@ -293,7 +294,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     'address': [contractAddress, contractAddress2]
                 }], requestId);
                 expect(logs.length).to.be.greaterThan(2);
-            })
+            });
         });
 
         describe('Block related RPC calls', () => {
@@ -307,7 +308,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const timestampQuery = `timestamp=gte:${mirrorBlock.timestamp.from}&timestamp=lte:${mirrorBlock.timestamp.to}`;
                 mirrorContractResults = (await mirrorNode.get(`/contracts/results?${timestampQuery}`, requestId)).results;
 
-                for ( let res of mirrorContractResults ) {
+                for ( const res of mirrorContractResults ) {
                     mirrorTransactions.push((await mirrorNode.get(`/contracts/${res.contract_id}/results/${res.timestamp}`, requestId)));
                 }
 
@@ -506,11 +507,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 };
 
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                try {
-                    await relay.sendRawTransaction(signedTx+"11", requestId);
-                } catch (error) {
-                    expect(`Error invoking RPC: ${error.message}`).to.equal(predefined.INTERNAL_ERROR(error.message).message);
-                } 
+
+                await expect(relay.sendRawTransaction(signedTx + "11", requestId)).to.be.rejectedWith(
+                    predefined.INTERNAL_ERROR()
+                );
             });
 
             it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {
@@ -526,13 +526,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     chainId: INCORRECT_CHAIN_ID
                 };
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                try {
-                    await relay.sendRawTransaction(signedTx, requestId);
-                    Assertions.expectedError();
-                }
-                catch (e) {
-                    Assertions.jsonRpcError(e, predefined.UNSUPPORTED_CHAIN_ID(ethers.utils.hexValue(INCORRECT_CHAIN_ID), CHAIN_ID));
-                }
+
+                await expect(relay.sendRawTransaction(signedTx, requestId)).to.be.rejectedWith(
+                    predefined.UNSUPPORTED_CHAIN_ID(ethers.utils.hexValue(INCORRECT_CHAIN_ID), CHAIN_ID)
+                );
             });
 
             it('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
@@ -599,11 +596,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     gasPrice: await relay.gasPrice(requestId)
                 };
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                try {
-                    await relay.sendRawTransaction(signedTx, requestId);
-                } catch (error) {
-                    expect(`Error invoking RPC: ${error.message}`).to.equal(predefined.INTERNAL_ERROR(error.message).message);
-                } 
+
+                await expect(relay.sendRawTransaction(signedTx, requestId)).to.be.rejectedWith(predefined.INTERNAL_ERROR());
             });
 
             it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with gas price too low)', async function () {
@@ -741,13 +735,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 };
 
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                let hasError = false;
-                try {
-                    await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId);
-                } catch (e) {
-                    hasError = true;
-                }
-                expect(hasError).to.be.true;
+
+                await expect(relay.sendRawTransaction(signedTx, requestId)).to.be.rejectedWith(predefined.INTERNAL_ERROR());
             });
 
             describe('Prechecks', async function () {
@@ -759,13 +748,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         chainId: INCORRECT_CHAIN_ID
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    try {
-                        await relay.sendRawTransaction(signedTx, requestId);
-                        Assertions.expectedError();
-                    }
-                    catch (e) {
-                        Assertions.jsonRpcError(e, predefined.UNSUPPORTED_CHAIN_ID('0x3e7', CHAIN_ID));
-                    }
+
+                    await expect(relay.sendRawTransaction(signedTx, requestId)).to.be.rejectedWith(predefined.UNSUPPORTED_CHAIN_ID('0x3e7', CHAIN_ID));
                 });
 
                 it('should fail "eth_sendRawTransaction" for EIP155 transaction with not enough gas', async function () {
@@ -779,13 +763,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     };
 
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    try {
-                        await relay.sendRawTransaction(signedTx, requestId);
-                        Assertions.expectedError();
-                    }
-                    catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.BLOCK_GAS_LIMIT));
-                    }
+
+                    await expect(relay.sendRawTransaction(signedTx, requestId)).to.be.rejectedWith(predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.BLOCK_GAS_LIMIT));
                 });
 
                 it('should fail "eth_sendRawTransaction" for EIP155 transaction with a too high gasLimit', async function () {
@@ -799,12 +778,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     };
 
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    try {
-                        await relay.sendRawTransaction(signedTx, requestId);
-                        Assertions.expectedError();
-                    } catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT));
-                    }
+
+                    await expect(relay.sendRawTransaction(signedTx, requestId)).to.be.rejectedWith(predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT));
                 });
 
 
@@ -817,13 +792,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         gasLimit: gasLimit
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    try {
-                        await relay.sendRawTransaction(signedTx, requestId);
-                        Assertions.expectedError();
-                    }
-                    catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.BLOCK_GAS_LIMIT));
-                    }
+
+                    await expect(relay.sendRawTransaction(signedTx, requestId)).to.be.rejectedWith(predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT));
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transaction with a too high gasLimit', async function () {
@@ -835,12 +805,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                         gasLimit: gasLimit
                     };
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                    try {
-                        await relay.sendRawTransaction(signedTx, requestId);
-                        Assertions.expectedError();
-                    } catch (e) {
-                        Assertions.jsonRpcError(e, predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT));
-                    }
+
+                    await expect(relay.sendRawTransaction(signedTx, requestId)).to.be.rejectedWith(predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT));
                 });
 
                 it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with gas price too low)', async function () {
@@ -922,7 +888,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                                 expect(rejected).to.exist;
                                 expect(rejected).to.have.property('reason');
 
-                                Assertions.jsonRpcError(rejected.reason, predefined.NONCE_TOO_LOW(nonce + 1, nonce))
+                                Assertions.jsonRpcError(rejected.reason, predefined.NONCE_TOO_LOW(nonce + 1, nonce));
                             })
                     ]);
                 });
