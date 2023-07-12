@@ -1278,7 +1278,7 @@ export class EthImpl implements Eth {
 
         if (e.isContractReverted()) {
           this.logger.trace(`${requestIdPrefix} mirror node eth_call request encountered contract revert. message: ${e.message}, details: ${e.detail}, data: ${e.data}`);
-          return predefined.CONTRACT_REVERT(e.message + e.detail, e.data);
+          return predefined.CONTRACT_REVERT(`message: ${e.message}, detail: ${e.detail}`, e.data);
         }
 
         // Temporary workaround until mirror node web3 module implements the support of precompiles
