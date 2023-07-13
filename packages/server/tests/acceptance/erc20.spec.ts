@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,10 @@ import Assertions from '../helpers/assertions';
 import { EthImpl } from "@hashgraph/json-rpc-relay/src/lib/eth";
 import Constants from '../../../server/tests/helpers/constants';
 
+const extractRevertReason = (errorReason: string) => {
+    const pattern = /(?<=reverted: ).*/;
+    return errorReason.match(pattern)?.[0] || '';
+};
 
 describe('@erc20 Acceptance Tests', async function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -247,14 +251,24 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                     beforeEach('reducing balance', async function () {
                                         amount = initialSupply;
+                                        await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, await Utils.gasOptions(requestId));
                                         await contract.transfer(to, 1, await Utils.gasOptions(1_500_000));
+                                        // 5 seconds sleep to propagate the changes to mirror node
+                                        await new Promise(r => setTimeout(r, 5000));                                        
                                     });
 
                                     it('reverts', async function () {
+                                     try {
                                         await Assertions.expectRevert(
                                             contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                             Constants.CALL_EXCEPTION
                                         );
+                                     }catch(e){
+                                        // eth_estimateGas gets called by ethers
+                                        // so we need to catch the error and check that the reason is the expected one,
+                                        // in addition to validating the CALL_EXCEPTION   
+                                        expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: transfer amount exceeds balance');
+                                     }
                                     });
                                 });
                             });
@@ -273,14 +287,21 @@ describe('@erc20 Acceptance Tests', async function () {
                                 describe('when the token owner has enough balance', function () {
                                     let amount;
                                     before(async function () {
+                                        allowance = initialSupply.sub(1);
                                         amount = initialSupply;
+                                        await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                     });
 
                                     it('reverts', async function () {
-                                        await Assertions.expectRevert(
-                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                            Constants.CALL_EXCEPTION,
-                                        );
+                                        try {
+                                            await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                            Constants.CALL_EXCEPTION);
+                                        } catch(e) {
+                                            // eth_estimateGas gets called by ethers
+                                            // so we need to catch the error and check that the reason is the expected one,
+                                            // in addition to validating the CALL_EXCEPTION   
+                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: insufficient allowance');                                            
+                                        }                                          
                                     });
                                 });
 
@@ -295,10 +316,15 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     it('reverts', async function () {
-                                        await Assertions.expectRevert(
-                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                            Constants.CALL_EXCEPTION,
-                                        );
+                                        try {
+                                            await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                            Constants.CALL_EXCEPTION);
+                                        } catch(e) {
+                                            // eth_estimateGas gets called by ethers
+                                            // so we need to catch the error and check that the reason is the expected one,
+                                            // in addition to validating the CALL_EXCEPTION   
+                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: transfer amount exceeds balance');                                     
+                                        }                                                                               
                                     });
                                 });
                             });
@@ -312,7 +338,15 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 if (testTitles[i].testName !== HTS) {
                                     it('does not decrease the spender allowance', async function () {
-                                        await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
+                                        try{
+                                            await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
+                                        }catch(e){
+                                            // eth_estimateGas gets called by ethers
+                                            // so we need to catch the error and check that the reason is the expected one,
+                                            // in addition to validating the allowance   
+                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: transfer amount exceeds balance');                                              
+                                        }
+                                        
                                         const allowance = await contract.allowance(tokenOwner, spender);
                                         expect(allowance.toString()).to.be.equal(ethers.constants.MaxUint256.toString());
                                     });
@@ -331,15 +365,23 @@ describe('@erc20 Acceptance Tests', async function () {
                             let amount, to, tokenOwnerWallet;
 
                             beforeEach(async function () {
+
                                 amount = initialSupply;
                                 to = ethers.constants.AddressZero;
-                                tokenOwnerWallet = accounts[0].wallet;
+                                tokenOwnerWallet = accounts[2].wallet;
                                 await contract.connect(tokenOwnerWallet).approve(spender, amount, await Utils.gasOptions(requestId, 1_500_000));
                             });
 
                             it('reverts', async function () {
-                                await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                Constants.CALL_EXCEPTION);
+                                try {
+                                    await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                    Constants.CALL_EXCEPTION);
+                                } catch(e) {
+                                    // eth_estimateGas gets called by ethers
+                                    // so we need to catch the error and check that the reason is the expected one,
+                                    // in addition to validating the CALL_EXCEPTION   
+                                    expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: transfer to the zero address');                                                                         
+                                }
                             });
                         });
                     });
