@@ -1625,14 +1625,15 @@ export class EthImpl implements Eth {
     const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true, requestIdPrefix);
 
     if (blockResponse == null) return null;
-
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
     const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams }, undefined, requestIdPrefix);
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
+    const blockNumber = blockResponse.number.toString(16);
+    const logs = await this.getLogs(null, blockNumber, blockNumber, null, null, requestIdPrefix);
 
-    if (contractResults == null) {
+    if (contractResults == null && logs.length == 0) {
       // contract result not found
       return null;
     }
@@ -1647,6 +1648,7 @@ export class EthImpl implements Eth {
     }
 
     await this.batchGetAndPopulateContractResults(contractResults, showDetails, transactionObjects, transactionHashes, requestIdPrefix);
+    await this.filterAndPopulateSyntheticContractResults(showDetails, logs, transactionObjects, transactionHashes, requestIdPrefix);
 
     const blockHash = EthImpl.toHash32(blockResponse.hash);
     const transactionArray = showDetails ? transactionObjects : transactionHashes;
@@ -1673,6 +1675,27 @@ export class EthImpl implements Eth {
       transactionsRoot: transactionArray.length == 0 ? EthImpl.ethEmptyTrie : blockHash,
       uncles: [],
     });
+  }
+
+  /**
+   * Filter contract logs to remove the duplicate ones with the contract results to get only the synthetic ones.
+   * If showDetails is set to false filter the contract logs and add missing transaction hashes
+   * If showDetails is set to true filter the contract logs and add construct missing transaction objects
+   * @param showDetails 
+   * @param logs
+   * @param transactionObjects 
+   * @param transactionHashes 
+   * @param requestIdPrefix 
+   */
+  private async filterAndPopulateSyntheticContractResults(showDetails: boolean, logs: Log[],transactionObjects: Transaction[], transactionHashes: string[], requestIdPrefix?: string): Promise<void> {
+    let filteredLogs: Log[];
+    if (showDetails) {
+      filteredLogs = logs.filter((log) => !transactionObjects.some((transaction) => transaction.hash === log.transactionHash));
+    } else {
+      filteredLogs = logs.filter(log => !transactionHashes.includes(log.transactionHash));
+      transactionHashes.push(...filteredLogs.map(log => log.transactionHash));
+      this.logger.trace(`${requestIdPrefix} ${filteredLogs.length} Synthetic transaction hashes will be added in the block response`);
+    }
   }
 
   /**
