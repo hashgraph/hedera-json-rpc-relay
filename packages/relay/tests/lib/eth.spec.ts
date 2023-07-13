@@ -66,9 +66,7 @@ import { ClientCache, SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
-import { v4 as uuid } from 'uuid';
 import { Hbar, HbarUnit, TransactionId } from '@hashgraph/sdk';
-import { ethers } from 'ethers';
 import { hashNumber } from '../../dist/formatters';
 
 const LRU = require('lru-cache');
@@ -365,12 +363,6 @@ describe('Eth calls using MirrorNode', async function () {
     }
   };
 
-  const defaultDetailedContractResultsNullStateChange = {
-    ...defaultDetailedContractResults, ...{
-      'state_changes' : null
-    }
-  };
-
   const defaultContractStateEmptyArray = {
     "state": [],
     "links": {
@@ -379,12 +371,6 @@ describe('Eth calls using MirrorNode', async function () {
   };
 
   const detailedContractResultNotFound = { "_status": { "messages": [{ "message": "No correlating transaction" }] } };
-
-  const defaultDetailedContractResultsWithNullNullableValues = {
-    ...defaultDetailedContractResults,
-    r: null,
-    s: null
-  };
 
   const results = defaultContractResults.results;
   const totalGasUsed = EthImpl.numberTo0x(results[0].gas_used + results[1].gas_used);
@@ -664,10 +650,6 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockByNumber with match and details', async function () {
     mirrorNodeCache.clear();
-    const resultWithNullGasUsed = {
-      ...defaultDetailedContractResults,
-      gas_used: null
-    };
     // mirror node request mocks
     restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
@@ -694,10 +676,6 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockByNumber with match and details paginated', async function () {
     mirrorNodeCache.clear();
-    const resultWithNullGasUsed = {
-      ...defaultDetailedContractResults,
-      gas_used: null
-    };
     // mirror node request mocks
     restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
