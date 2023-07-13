@@ -332,6 +332,7 @@ describe('@erc20 Acceptance Tests', async function () {
                             describe('@release when the spender has unlimited allowance', function () {
                                 beforeEach(async function () {
                                     await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256, await Utils.gasOptions(requestId));
+
                                     // 5 seconds sleep to propagate the changes to mirror node
                                     await new Promise(r => setTimeout(r, 5000));
                                 });

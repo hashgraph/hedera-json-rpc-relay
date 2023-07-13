@@ -3034,6 +3034,104 @@ describe('Eth calls using MirrorNode', async function () {
     expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
   });
 
+  it('eth_estimateGas with contract revert and message does not equal executionReverted', async function () {
+    const transaction = {
+      from: "0x05fba803be258049a27b820088bab1cad2058871",
+      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
+    };
+    const id = uuid();
+    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
+        "_status": {
+            "messages": [
+                {
+                    "message": "data field invalid hexadecimal string",
+                    "detail": "",
+                    "data": ""
+                }
+            ]
+        }
+    });
+
+    const result: any = await ethImpl.estimateGas(transaction, id);
+
+    expect(result).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
+
+  });
+
+  it('eth_estimateGas with contract revert and message does not equal executionReverted and ESTIMATE_GAS_THROWS is set to false', async function () {
+    const estimateGasThrows = process.env.ESTIMATE_GAS_THROWS;
+    process.env.ESTIMATE_GAS_THROWS = 'false';
+    const transaction = {
+      from: "0x05fba803be258049a27b820088bab1cad2058871",
+      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
+    };
+    const id = uuid();
+    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
+        "_status": {
+            "messages": [
+                {
+                    "message": "data field invalid hexadecimal string",
+                    "detail": "",
+                    "data": ""
+                }
+            ]
+        }
+    });
+
+    const result: any = await ethImpl.estimateGas(transaction, id);
+
+    expect(result).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
+    process.env.ESTIMATE_GAS_THROWS = estimateGasThrows;
+
+  });
+
+  it('eth_estimateGas with contract revert and message equals "execution reverted: Invalid number of recipients"', async function () {
+    const transaction = {
+      from: "0x05fba803be258049a27b820088bab1cad2058871",
+      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
+    };
+    const id = uuid();
+    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
+      "_status": {
+        "messages": [
+          {
+            "data": "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c496e76616c6964206e756d626572206f6620726563697069656e747300000000",
+            "detail": "Invalid number of recipients",
+            "message": "CONTRACT_REVERT_EXECUTED"
+          }
+        ]
+      }
+    });
+
+    const result: any = await ethImpl.estimateGas(transaction, id);
+
+    expect(result.data).to.equal("0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c496e76616c6964206e756d626572206f6620726563697069656e747300000000");
+    expect(result.message).to.equal("execution reverted: Invalid number of recipients");
+
+  });  
+
+  it('eth_estimateGas handles a 501 unimplemented response from the mirror node correctly by returning default gas', async function () {
+    const transaction = {
+      from: "0x05fba803be258049a27b820088bab1cad2058871",
+      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
+    };
+    const id = uuid();
+    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(501, {
+      "_status": {
+        "messages": [
+          {
+            "message": "Auto account creation is not supported.",
+            "detail": "",
+            "data": ""
+          }
+        ]
+      }
+    });
+  
+    const result: any = await ethImpl.estimateGas(transaction, id);
+    expect(result).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
+  });
+
   describe('eth_gasPrice', async function () {
     it('eth_gasPrice', async function () {
       restMock.onGet(`network/fees`).reply(200, defaultNetworkFees);
