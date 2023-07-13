@@ -1898,11 +1898,20 @@ export class EthImpl implements Eth {
   }
 
   private async getAccountLatestEthereumNonce(address: string, requestId?: string) {
+    const cachedResponse: any = this.mirrorNodeClient.getIsValidContractCache(address);
+
+    // address is a valid contract
+    if (cachedResponse) {
+      return EthImpl.oneHex;
+    }
+
     const accountData = await this.mirrorNodeClient.getAccount(address, requestId);
     if (accountData) {
-      const contract = await this.mirrorNodeClient.isValidContract(address, requestId, 0);
-      if (contract) {
-        return EthImpl.oneHex;
+      if (!accountData.ethereum_nonce) {  // if nonce > 0 then the entity cannot be a contract
+        const contract = await this.mirrorNodeClient.isValidContract(address, requestId, 0);
+        if (contract) {
+          return EthImpl.oneHex;
+        }
       }
 
       return EthImpl.numberTo0x(accountData.ethereum_nonce);
