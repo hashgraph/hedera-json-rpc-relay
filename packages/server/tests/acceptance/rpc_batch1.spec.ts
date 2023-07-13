@@ -34,7 +34,6 @@ import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
-import { sign } from 'crypto';
 const Address = RelayCalls;
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
@@ -43,7 +42,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     const accounts: AliasAccount[] = [];
 
     // @ts-ignore
-    const { servicesNode, mirrorNode, relay, logger } = global;
+    const { servicesNode, mirrorNode, relay } = global;
 
     // cached entities
     let contractId;
