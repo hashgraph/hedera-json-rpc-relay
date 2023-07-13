@@ -70,7 +70,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     let blockNumberAtStartOfTests = 0;
     let mirrorAccount0AtStartOfTests;
 
-    const signAndSendTransaction = async (transaction, accounts, requestId) => {
+    const signSendAndConfirmTransaction = async (transaction, accounts, requestId) => {
         const signedTx = await accounts.wallet.signTransaction(transaction);
         const txHash = await relay.sendRawTransaction(signedTx);
         await mirrorNode.get(`/contracts/results/${txHash}`, requestId);
