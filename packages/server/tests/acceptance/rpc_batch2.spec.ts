@@ -327,11 +327,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 gasPrice: gasPrice,
             };
 
-            await signAndSendTransaction(transaction, accounts[3], requestId);
+            await signSendAndConfirmTransaction(transaction, accounts[3], requestId);
             
             const blockNumber = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId);
 
-            await signAndSendTransaction({ ...transaction, nonce: acc3Nonce + 1 }, accounts[3], requestId);
+            await signSendAndConfirmTransaction({ ...transaction, nonce: acc3Nonce + 1 }, accounts[3], requestId);
 
             const endBalance = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, ['0x' + accounts[0].address, 'latest'], requestId);
 
