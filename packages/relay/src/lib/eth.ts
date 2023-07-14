@@ -1691,11 +1691,44 @@ export class EthImpl implements Eth {
     let filteredLogs: Log[];
     if (showDetails) {
       filteredLogs = logs.filter((log) => !transactionObjects.some((transaction) => transaction.hash === log.transactionHash));
+      filteredLogs.forEach(log => {
+        const transaction = this.populateTransactionFromLog(log);
+        transactionObjects.push(transaction);
+      });
     } else {
       filteredLogs = logs.filter(log => !transactionHashes.includes(log.transactionHash));
       transactionHashes.push(...filteredLogs.map(log => log.transactionHash));
       this.logger.trace(`${requestIdPrefix} ${filteredLogs.length} Synthetic transaction hashes will be added in the block response`);
     }
+  }
+
+  /**
+   * Populate a new instance of transaction object using the information in the log, all unavailable information will be null
+   * @param log
+   * @returns Transaction Object
+   */
+  private populateTransactionFromLog(log: Log) {
+    return new Transaction({
+      accessList: undefined, // we don't support access lists for now, so punt
+      blockHash: log.blockHash,
+      blockNumber: log.blockNumber,
+      chainId: this.chain,
+      from: null,
+      gas: null,
+      gasPrice: null,
+      hash: log.transactionHash,
+      input: null,
+      maxPriorityFeePerGas: null,
+      maxFeePerGas: null,
+      nonce: null,
+      r: null,
+      s: null,
+      to: log.address,
+      transactionIndex: log.transactionIndex,
+      type: null,
+      v: null,
+      value: EthImpl.nanOrNumberTo0x(0),
+    });
   }
 
   /**
