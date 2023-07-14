@@ -1748,43 +1748,23 @@ export class EthImpl implements Eth {
       blockHash: log.blockHash,
       blockNumber: log.blockNumber,
       chainId: this.chain,
-      from: null,
-      gas: null,
+      from: undefined,
+      gas: undefined,
       gasPrice: this.gasPrice(requestIdPrefix),
       hash: log.transactionHash,
-      input: null,
-      maxPriorityFeePerGas: null,
-      maxFeePerGas: null,
-      nonce: null,
-      r: null,
-      s: null,
+      input: undefined,
+      maxPriorityFeePerGas: undefined,
+      maxFeePerGas: undefined,
+      nonce: undefined,
+      r: undefined,
+      s: undefined,
       to: log.address,
       transactionIndex: log.transactionIndex,
       type: "0x2", //0x0 for legacy transactions, 0x1 for access list types, 0x2 for dynamic fees.
-      v: null,
+      v: undefined,
       value: EthImpl.nanOrNumberTo0x(0),
     });
   }
-
-    // "blockHash": "0x816b188dfb47a0dd76147b58f0bcfa23daa320f87a4a08d4b0d45ea260779003",
-    // "blockNumber": "0x1800",
-    // "chainId": "0x12a",
-    // "from": null,
-    // "gas": null,
-    // "gasPrice": null,
-    // "hash": "0x12f9559218ce02608e2615154183f6f032a4a51f87a85dbd802c9e1102f644a3",
-    // "input": null,
-    // "maxPriorityFeePerGas": null,
-    // "maxFeePerGas": null,
-    // "nonce": null,
-    // "r": null,
-    // "s": null,
-    // "to": "0x0000000000000000000000000000000000000416",
-    // "transactionIndex": "0xa",
-    // "type": "0x2",
-    // "v": null,
-    // "value": "0x0"
-
 
   /**
    * Gets the transaction details for the block given the restried contract results.
