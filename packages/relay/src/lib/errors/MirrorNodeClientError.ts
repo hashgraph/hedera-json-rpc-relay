@@ -36,6 +36,10 @@ export class MirrorNodeClientError extends Error {
       NO_CONTENT: 204
     };
 
+    static messages = {
+      INVALID_HEX: 'data field invalid hexadecimal string',
+    };
+
     constructor(error: any, statusCode: number) {
         // mirror node web3 module sends errors in this format, this is why we need a check to distinguish
         if (error.response?.data?._status?.messages?.length) {
