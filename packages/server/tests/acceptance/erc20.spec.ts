@@ -253,11 +253,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                     let amount;
 
                                     beforeEach('reducing balance', async function () {
-                                        amount = initialSupply;
-                                        // await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, await Utils.gasOptions(requestId));
-                                        // await contract.transfer(to, 1, await Utils.gasOptions(1_500_000));
-                                        // // 5 seconds sleep to propagate the changes to mirror node
-                                        // await new Promise(r => setTimeout(r, 5000));                                        
+                                        amount = initialSupply;                                   
                                     });
 
                                     it('reverts', async function () {
@@ -268,7 +264,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                         await new Promise(r => setTimeout(r, 5000));     
 
                                         await Assertions.expectRevert(
-                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply),
+                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
                                             Constants.CALL_EXCEPTION
                                         );
                                      }catch(e){
@@ -295,9 +291,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                 describe('when the token owner has enough balance', function () {
                                     let amount;
                                     before(async function () {
-                                        // allowance = initialSupply.sub(1);
                                         amount = initialSupply;
-                                        // await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                     });
 
                                     it('reverts', async function () {
@@ -340,7 +334,6 @@ describe('@erc20 Acceptance Tests', async function () {
                             describe('@release when the spender has unlimited allowance', function () {
                                 beforeEach(async function () {
                                     await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256, await Utils.gasOptions(requestId));
-
                                     // 5 seconds sleep to propagate the changes to mirror node
                                     await new Promise(r => setTimeout(r, 5000));
                                 });
@@ -378,7 +371,6 @@ describe('@erc20 Acceptance Tests', async function () {
                                 amount = initialSupply;
                                 to = ethers.constants.AddressZero;
                                 tokenOwnerWallet = accounts[0].wallet;
-                                // tokenOwnerWallet = accounts[2].wallet;
                                 await contract.connect(tokenOwnerWallet).approve(spender, amount, await Utils.gasOptions(requestId, 1_500_000));
                             });
 
