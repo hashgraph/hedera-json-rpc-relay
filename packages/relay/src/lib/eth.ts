@@ -1748,21 +1748,21 @@ export class EthImpl implements Eth {
       blockHash: log.blockHash,
       blockNumber: log.blockNumber,
       chainId: this.chain,
-      from: undefined,
-      gas: undefined,
-      gasPrice: this.gasPrice(requestIdPrefix),
+      from: log.address,
+      gas: EthImpl.defaultTxGas,
+      gasPrice: undefined,
       hash: log.transactionHash,
-      input: undefined,
+      input: "0xabcd",
       maxPriorityFeePerGas: undefined,
       maxFeePerGas: undefined,
-      nonce: undefined,
+      nonce: EthImpl.nanOrNumberTo0x(0),
       r: undefined,
       s: undefined,
       to: log.address,
       transactionIndex: log.transactionIndex,
       type: "0x2", //0x0 for legacy transactions, 0x1 for access list types, 0x2 for dynamic fees.
       v: undefined,
-      value: EthImpl.nanOrNumberTo0x(0),
+      value: "0x1234",
     });
   }
 
