@@ -28,13 +28,10 @@ import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
 import { SDKClientError } from '../errors/SDKClientError';
 import { ClientCache } from './clientCache';
-import { install } from "better-lookup";
+import { install as betterLookupInstall } from "better-lookup";
 
 const http = require('http');
 const https = require('https');
-
-install(https.globalAgent);
-install(http.globalAgent);
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
@@ -177,6 +174,25 @@ export class MirrorNodeClient {
         const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
         const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES) : [404]; // by default we should only retry on 404 errors
 
+        const httpAgent = new http.Agent({
+            keepAlive: mirrorNodeHttpKeepAlive,
+            keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
+            maxSockets: mirrorNodeHttpMaxSockets,
+            maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
+            timeout: mirrorNodeHttpSocketTimeout,
+        });
+
+        const httpsAgent = new https.Agent({
+            keepAlive: mirrorNodeHttpKeepAlive,
+            keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
+            maxSockets: mirrorNodeHttpMaxSockets,
+            maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
+            timeout: mirrorNodeHttpSocketTimeout,
+        });
+
+        betterLookupInstall(httpAgent);
+        betterLookupInstall(httpsAgent);
+
         const axiosClient: AxiosInstance = Axios.create({
             baseURL: baseUrl,
             responseType: 'json' as const,
@@ -186,20 +202,8 @@ export class MirrorNodeClient {
             timeout: mirrorNodeTimeout,
             maxRedirects: mirrorNodeMaxRedirects,
             // set http agent options to optimize performance - https://nodejs.org/api/http.html#new-agentoptions
-            httpAgent: new http.Agent({ 
-                keepAlive: mirrorNodeHttpKeepAlive,
-                keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
-                maxSockets: mirrorNodeHttpMaxSockets,
-                maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
-                timeout: mirrorNodeHttpSocketTimeout,
-            }),
-            httpsAgent: new https.Agent({ 
-                keepAlive: mirrorNodeHttpKeepAlive,
-                keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
-                maxSockets: mirrorNodeHttpMaxSockets,
-                maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
-                timeout: mirrorNodeHttpSocketTimeout,
-            }),
+            httpAgent: httpAgent,
+            httpsAgent: httpsAgent,
         });
 
         // Custom headers
