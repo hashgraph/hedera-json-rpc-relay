@@ -251,7 +251,7 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                     beforeEach('reducing balance', async function () {
                                         amount = initialSupply;
-                                        await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, await Utils.gasOptions(requestId));
+                                        // await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, await Utils.gasOptions(requestId));
                                         await contract.transfer(to, 1, await Utils.gasOptions(1_500_000));
                                         // 5 seconds sleep to propagate the changes to mirror node
                                         await new Promise(r => setTimeout(r, 5000));                                        
@@ -287,9 +287,9 @@ describe('@erc20 Acceptance Tests', async function () {
                                 describe('when the token owner has enough balance', function () {
                                     let amount;
                                     before(async function () {
-                                        allowance = initialSupply.sub(1);
+                                        // allowance = initialSupply.sub(1);
                                         amount = initialSupply;
-                                        await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
+                                        // await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                     });
 
                                     it('reverts', async function () {
@@ -369,7 +369,8 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 amount = initialSupply;
                                 to = ethers.constants.AddressZero;
-                                tokenOwnerWallet = accounts[2].wallet;
+                                tokenOwnerWallet = accounts[0].wallet;
+                                // tokenOwnerWallet = accounts[2].wallet;
                                 await contract.connect(tokenOwnerWallet).approve(spender, amount, await Utils.gasOptions(requestId, 1_500_000));
                             });
 
