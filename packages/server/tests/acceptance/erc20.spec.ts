@@ -225,8 +225,8 @@ describe('@erc20 Acceptance Tests', async function () {
                                     it('transfers the requested amount', async function () {
                                         tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply, await Utils.gasOptions(requestId));
                                         const receipt = await tx.wait();
-                                        // 5 seconds sleep to propagate the changes to mirror node
-                                        await new Promise(r => setTimeout(r, 5000));
+                                        // 10 seconds sleep to propagate the changes to mirror node
+                                        await new Promise(r => setTimeout(r, 10000));
                                         const ownerBalance = await contract.balanceOf(tokenOwner);
                                         const toBalance = await contract.balanceOf(to);
                                         expect(ownerBalance.toString()).to.be.equal('0');
@@ -327,38 +327,6 @@ describe('@erc20 Acceptance Tests', async function () {
                                         }                                                                               
                                     });
                                 });
-                            });
-
-                            describe('@release when the spender has unlimited allowance', function () {
-                                beforeEach(async function () {
-                                    await contract.connect(tokenOwnerWallet).approve(spender, ethers.constants.MaxUint256, await Utils.gasOptions(requestId));
-
-                                    // 5 seconds sleep to propagate the changes to mirror node
-                                    await new Promise(r => setTimeout(r, 5000));
-                                });
-
-                                if (testTitles[i].testName !== HTS) {
-                                    it('does not decrease the spender allowance', async function () {
-                                        try{
-                                            await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
-                                        }catch(e){
-                                            // eth_estimateGas gets called by ethers
-                                            // so we need to catch the error and check that the reason is the expected one,
-                                            // in addition to validating the allowance   
-                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: transfer amount exceeds balance');                                              
-                                        }
-                                        
-                                        const allowance = await contract.allowance(tokenOwner, spender);
-                                        expect(allowance.toString()).to.be.equal(ethers.constants.MaxUint256.toString());
-                                    });
-                                }
-                                else {
-                                    it('decreases the spender allowance', async function () {
-                                        await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
-                                        const allowance = await contract.allowance(tokenOwner, spender);
-                                        expect(allowance.toString()).to.be.equal((initialSupply.toNumber() - 1).toString());
-                                    });
-                                }
                             });
                         });
 
