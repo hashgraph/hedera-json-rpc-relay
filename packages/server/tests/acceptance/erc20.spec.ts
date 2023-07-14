@@ -231,6 +231,9 @@ describe('@erc20 Acceptance Tests', async function () {
                                         const toBalance = await contract.balanceOf(to);
                                         expect(ownerBalance.toString()).to.be.equal('0');
                                         expect(toBalance.toString()).to.be.equal(amount.toString());
+
+                                        const allowance = await contract.allowance(tokenOwner, spender);
+                                        expect(allowance.toString()).to.be.equal('0');
                                     });
 
                                     it('decreases the spender allowance', async function () {
@@ -252,15 +255,20 @@ describe('@erc20 Acceptance Tests', async function () {
                                     beforeEach('reducing balance', async function () {
                                         amount = initialSupply;
                                         // await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, await Utils.gasOptions(requestId));
-                                        await contract.transfer(to, 1, await Utils.gasOptions(1_500_000));
-                                        // 5 seconds sleep to propagate the changes to mirror node
-                                        await new Promise(r => setTimeout(r, 5000));                                        
+                                        // await contract.transfer(to, 1, await Utils.gasOptions(1_500_000));
+                                        // // 5 seconds sleep to propagate the changes to mirror node
+                                        // await new Promise(r => setTimeout(r, 5000));                                        
                                     });
 
                                     it('reverts', async function () {
                                      try {
+                                        await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, await Utils.gasOptions(requestId));
+                                        await contract.transfer(to, 1, await Utils.gasOptions(1_500_000));
+                                        // 5 seconds sleep to propagate the changes to mirror node
+                                        await new Promise(r => setTimeout(r, 5000));     
+
                                         await Assertions.expectRevert(
-                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply),
                                             Constants.CALL_EXCEPTION
                                         );
                                      }catch(e){
