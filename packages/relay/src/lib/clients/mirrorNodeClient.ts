@@ -28,9 +28,13 @@ import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
 import { SDKClientError } from '../errors/SDKClientError';
 import { ClientCache } from './clientCache';
+import { install } from "better-lookup";
 
 const http = require('http');
 const https = require('https');
+
+install(https.globalAgent);
+install(http.globalAgent);
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
