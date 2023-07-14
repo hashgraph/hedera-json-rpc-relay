@@ -1722,7 +1722,7 @@ export class EthImpl implements Eth {
       filteredLogs.forEach(log => {
         const cacheKey = `${EthImpl.cacheKeySyntheticLogHash}${log.transactionHash}`;
         this.cache.set(cacheKey, JSON.stringify(log), EthImpl.ethGetBlockByHash, undefined, requestIdPrefix);
-        const transaction = this.populateTransactionFromLog(log);
+        const transaction = this.populateTransactionFromLog(log, requestIdPrefix);
         transactionObjects.push(transaction);
       });
     } else {
@@ -1739,9 +1739,10 @@ export class EthImpl implements Eth {
   /**
    * Populate a new instance of transaction object using the information in the log, all unavailable information will be null
    * @param log
+   * @param requestIdPrefix
    * @returns Transaction Object
    */
-  private populateTransactionFromLog(log: Log) {
+  private populateTransactionFromLog(log: Log, requestIdPrefix?: string) {
     return new Transaction({
       accessList: undefined, // we don't support access lists for now, so punt
       blockHash: log.blockHash,
@@ -1749,7 +1750,7 @@ export class EthImpl implements Eth {
       chainId: this.chain,
       from: null,
       gas: null,
-      gasPrice: null,
+      gasPrice: this.gasPrice(requestIdPrefix),
       hash: log.transactionHash,
       input: null,
       maxPriorityFeePerGas: null,
@@ -1759,11 +1760,31 @@ export class EthImpl implements Eth {
       s: null,
       to: log.address,
       transactionIndex: log.transactionIndex,
-      type: null,
+      type: "0x2", //0x0 for legacy transactions, 0x1 for access list types, 0x2 for dynamic fees.
       v: null,
       value: EthImpl.nanOrNumberTo0x(0),
     });
   }
+
+    // "blockHash": "0x816b188dfb47a0dd76147b58f0bcfa23daa320f87a4a08d4b0d45ea260779003",
+    // "blockNumber": "0x1800",
+    // "chainId": "0x12a",
+    // "from": null,
+    // "gas": null,
+    // "gasPrice": null,
+    // "hash": "0x12f9559218ce02608e2615154183f6f032a4a51f87a85dbd802c9e1102f644a3",
+    // "input": null,
+    // "maxPriorityFeePerGas": null,
+    // "maxFeePerGas": null,
+    // "nonce": null,
+    // "r": null,
+    // "s": null,
+    // "to": "0x0000000000000000000000000000000000000416",
+    // "transactionIndex": "0xa",
+    // "type": "0x2",
+    // "v": null,
+    // "value": "0x0"
+
 
   /**
    * Gets the transaction details for the block given the restried contract results.
