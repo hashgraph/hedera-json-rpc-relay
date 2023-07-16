@@ -234,7 +234,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     // Issue #1514.
-                                    xit('decreases the spender allowance', async function () {
+                                    it('decreases the spender allowance', async function () {
                                         const allowance = await contract.allowance(tokenOwner, spender);
                                         expect(allowance.toString()).to.be.equal('0');
                                     });
