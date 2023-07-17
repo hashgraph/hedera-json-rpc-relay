@@ -130,6 +130,7 @@ export class EthImpl implements Eth {
     parseNumericEnvVar('ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE', 'ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE');
   private readonly MirrorNodeGetContractResultRetries =
     parseNumericEnvVar('MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES', 'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES');
+  private readonly estimateGasThrows = process.env. ESTIMATE_GAS_THROWS ? process.env. ESTIMATE_GAS_THROWS === "true" : true;
 
     /**
    * Configurable options used when initializing the cache.
@@ -519,6 +520,12 @@ export class EthImpl implements Eth {
           return predefined.INVALID_PARAMETER(0, `Invalid 'value' field in transaction param. Value must be greater than 0`);
         }
       } else {
+        // The size limit of the encoded contract posted to the mirror node can cause contract deployment transactions to fail with a 400 response code.
+        // The contract is actually deployed on the consensus node, so the contract will work.  In these cases, we don't want to return a 
+        // CONTRTACT_REVERT error.
+        if (this.estimateGasThrows && e.isContractReverted() && e.message !== MirrorNodeClientError.messages.INVALID_HEX) {
+          return predefined.CONTRACT_REVERT(e.detail, e.data);
+        }      
         // Handle Contract Call or Contract Create
         gas = this.defaultGas;
       }
