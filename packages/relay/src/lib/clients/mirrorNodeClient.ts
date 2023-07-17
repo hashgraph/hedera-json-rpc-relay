@@ -174,7 +174,7 @@ export class MirrorNodeClient {
         const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
         const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES) : [404]; // by default we should only retry on 404 errors
         // by default will be true, unless explicitly set to false.
-        const useCacheableDnsLookup: boolean = process.env.MIRROR_NODE_AGENT_CACHEABLE_DNS === 'true' || true;
+        const useCacheableDnsLookup: boolean = process.env.MIRROR_NODE_AGENT_CACHEABLE_DNS === 'false' ? false : true;
 
         const httpAgent = new http.Agent({
             keepAlive: mirrorNodeHttpKeepAlive,
