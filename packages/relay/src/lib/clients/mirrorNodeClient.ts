@@ -28,6 +28,7 @@ import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
 import { SDKClientError } from '../errors/SDKClientError';
 import { ClientCache } from './clientCache';
+import { install as betterLookupInstall } from "better-lookup";
 
 const http = require('http');
 const https = require('https');
@@ -172,6 +173,29 @@ export class MirrorNodeClient {
         const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
         const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
         const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES) : [404]; // by default we should only retry on 404 errors
+        // by default will be true, unless explicitly set to false.
+        const useCacheableDnsLookup: boolean = process.env.MIRROR_NODE_AGENT_CACHEABLE_DNS === 'false' ? false : true;
+
+        const httpAgent = new http.Agent({
+            keepAlive: mirrorNodeHttpKeepAlive,
+            keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
+            maxSockets: mirrorNodeHttpMaxSockets,
+            maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
+            timeout: mirrorNodeHttpSocketTimeout,
+        });
+
+        const httpsAgent = new https.Agent({
+            keepAlive: mirrorNodeHttpKeepAlive,
+            keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
+            maxSockets: mirrorNodeHttpMaxSockets,
+            maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
+            timeout: mirrorNodeHttpSocketTimeout,
+        });
+
+        if(useCacheableDnsLookup) {
+            betterLookupInstall(httpAgent);
+            betterLookupInstall(httpsAgent);
+        }
 
         const axiosClient: AxiosInstance = Axios.create({
             baseURL: baseUrl,
@@ -182,20 +206,8 @@ export class MirrorNodeClient {
             timeout: mirrorNodeTimeout,
             maxRedirects: mirrorNodeMaxRedirects,
             // set http agent options to optimize performance - https://nodejs.org/api/http.html#new-agentoptions
-            httpAgent: new http.Agent({ 
-                keepAlive: mirrorNodeHttpKeepAlive,
-                keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
-                maxSockets: mirrorNodeHttpMaxSockets,
-                maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
-                timeout: mirrorNodeHttpSocketTimeout,
-            }),
-            httpsAgent: new https.Agent({ 
-                keepAlive: mirrorNodeHttpKeepAlive,
-                keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
-                maxSockets: mirrorNodeHttpMaxSockets,
-                maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
-                timeout: mirrorNodeHttpSocketTimeout,
-            }),
+            httpAgent: httpAgent,
+            httpsAgent: httpsAgent,
         });
 
         // Custom headers
