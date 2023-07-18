@@ -49,14 +49,15 @@ import {
   defaultLogs2,
   defaultLogs3,
   defaultContractResults,
+  defaultEthereumTransactions,
+  defaultErrorMessageText,
   verifyBlockConstants,
   expectLogData,
   expectLogData1,
   expectLogData2,
   expectLogData3,
   expectLogData4,
-  defaultErrorMessageText,
-  getRequestId,
+  getRequestId
 } from '../helpers';
 
 import pino from 'pino';
@@ -4178,6 +4179,8 @@ describe('Eth calls using MirrorNode', async function () {
     const transactionId = '0.0.1078@1686183420.196506746';
 
     const accountPath = `accounts/${mockData.account.evm_address}?order=desc&limit=1`;
+    const accountLimitOnePath = `accounts/${mockData.account.evm_address}?order=desc&limit=1`;
+    const accountTimestampFilteredPath = `accounts/${mockData.account.evm_address}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=2&order=desc`;
     const contractPath = `contracts/${mockData.account.evm_address}`;
     const contractResultsPath = `contracts/results/${transactionId}`;
     const earliestBlockPath = `blocks?limit=1&order=asc`;
@@ -4228,22 +4231,17 @@ describe('Eth calls using MirrorNode', async function () {
       const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockLatest);
       expect(nonce).to.exist;
       expect(nonce).to.equal(EthImpl.numberTo0x(mockData.account.ethereum_nonce));
-
-      const callsToContractPath = restMock.history.get.filter(e => e.url === contractPath);
-      expect(callsToContractPath).to.exist;
-      expect(callsToContractPath.length).to.eq(0, 'No requests are made to get the contract data');
     });
 
-    it('should return latest nonce for latest block when nonce=0', async() => {
-      restMock.onGet(contractPath).reply(404, mockData.notFound);
-      restMock.onGet(accountPath).reply(200, {...mockData.account, ethereum_nonce: 0});
+    it('should return latest nonce contract for latest block', async() => {
+      restMock.onGet(accountPath).reply(200, mockData.account);
+
+      // mock contract to have the same nonce as the account
+      restMock.onGet(contractPath).reply(200, { ...mockData.contract, nonce: mockData.account.ethereum_nonce });
+
       const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockLatest);
       expect(nonce).to.exist;
-      expect(nonce).to.equal(EthImpl.numberTo0x(0));
-
-      const callsToContractPath = restMock.history.get.filter(e => e.url === contractPath);
-      expect(callsToContractPath).to.exist;
-      expect(callsToContractPath.length).to.eq(1, 'No retry requests are made to get the contract data');
+      expect(nonce).to.equal(EthImpl.numberTo0x(mockData.account.ethereum_nonce));
     });
 
     it('should return latest nonce for pending block', async() => {
@@ -4287,11 +4285,16 @@ describe('Eth calls using MirrorNode', async function () {
       expect(hasError).to.be.true;
     });
 
-    it('should return zero nonce for contract nonce request on historical numerical block', async() => {
+    it('should return nonce for request on historical numerical block', async() => {
       restMock.onGet(contractPath).reply(200, mockData.contract);
+      restMock.onGet(blockPath).reply(200, mockData.blocks.blocks[2]);
+      restMock.onGet(accountLimitOnePath).reply(200, {...mockData.account, transactions: [defaultEthereumTransactions[0]]});
+      restMock.onGet(accountTimestampFilteredPath).reply(200, {...mockData.account, transactions: defaultEthereumTransactions});
+      restMock.onGet(`${contractResultsPath}`).reply(200, defaultDetailedContractResults);
+
       const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex);
       expect(nonce).to.exist;
-      expect(nonce).to.equal(EthImpl.zeroHex);
+      expect(nonce).to.equal(`0x${Number(mockData.account.ethereum_nonce).toString(16)}`);
     });
 
     it('should throw error for account historical numerical block tag with missing block', async() => {
