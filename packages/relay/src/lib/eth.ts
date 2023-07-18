@@ -897,7 +897,6 @@ export class EthImpl implements Eth {
         // handle INVALID_CONTRACT_ID or CONTRACT_DELETED
         if (e.isInvalidContractId() || e.isContractDeleted()) {
           this.logger.debug(`${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.statusCode}`);
-          this.cache.set(cachedLabel, EthImpl.emptyHex, EthImpl.ethGetCode, undefined, requestIdPrefix);
           return EthImpl.emptyHex;
         }
 
