@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release Version (semver ie. 0.24.0):"
+        description: "Release Version (semver ie. 0.28.0):"
         type: string
         required: true
   push:
