@@ -457,10 +457,10 @@ describe('@web-socket Acceptance Tests', async function() {
             const excessProvider = new ethers.WebSocketProvider(WS_RELAY_URL);
 
             let closeEventHandled = false;
-            excessProvider._websocket.on('close', (code, message) => {
+            excessProvider.websocket.on('close', (code, message) => {
                 closeEventHandled = true;
                 expect(code).to.equal(WebSocketError.CONNECTION_LIMIT_EXCEEDED.code);
-                expect(message).to.equal(WebSocketError.CONNECTION_LIMIT_EXCEEDED.message);
+                expect(message.toString('utf8')).to.equal(WebSocketError.CONNECTION_LIMIT_EXCEEDED.message);
             })
 
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -490,17 +490,17 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(server._connections).to.equal(3);
 
             let closeEventHandled2 = false;
-            wsConn2._websocket.on('close', (code, message) => {
+            wsConn2.websocket.on('close', (code, message) => {
                 closeEventHandled2 = true;
                 expect(code).to.equal(WebSocketError.TTL_EXPIRED.code);
-                expect(message).to.equal(WebSocketError.TTL_EXPIRED.message);
+                expect(message.toString('utf8')).to.equal(WebSocketError.TTL_EXPIRED.message);
             })
 
             let closeEventHandled3 = false;
-            wsConn2._websocket.on('close', (code, message) => {
+            wsConn2.websocket.on('close', (code, message) => {
                 closeEventHandled3 = true;
                 expect(code).to.equal(WebSocketError.TTL_EXPIRED.code);
-                expect(message).to.equal(WebSocketError.TTL_EXPIRED.message);
+                expect(message.toString('utf8')).to.equal(WebSocketError.TTL_EXPIRED.message);
             })
 
             await new Promise(resolve => setTimeout(resolve, parseInt(process.env.WS_MAX_CONNECTION_TTL) + 1000));
@@ -764,10 +764,10 @@ describe('@web-socket Acceptance Tests', async function() {
                 const provider = await new ethers.WebSocketProvider(WS_RELAY_URL);
 
                 let closeEventHandled = false;
-                provider._websocket.on('close', (code, message) => {
+                provider.websocket.on('close', (code, message) => {
                     closeEventHandled = true;
                     expect(code).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.code);
-                    expect(message).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.message);
+                    expect(message.toString('utf8')).to.equal(WebSocketError.CONNECTION_IP_LIMIT_EXCEEDED.message);
                 })
 
                 await new Promise(resolve => setTimeout(resolve, 1000));

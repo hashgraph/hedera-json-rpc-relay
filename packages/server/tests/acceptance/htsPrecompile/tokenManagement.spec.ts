@@ -195,7 +195,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       expect(Number(balanceAfter.toString()) + wipeAmount).to.equal(Number(balanceBefore.toString()));
     });
 
-    it.only('should be able to execute wipeTokenAccountNFT', async function() {
+    it('should be able to execute wipeTokenAccountNFT', async function() {
       let NftSerialNumber, serials;
 
       // Mint an NFT

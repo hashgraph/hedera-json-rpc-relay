@@ -191,65 +191,37 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
         });
 
-        it('should fail to execute "eth_call" with wrong block tag', async function () {
-            const callData = {
+        it('should fail to execute "eth_call" with wrong block tag', async function() {
+            await relay.callFailing('eth_call', [{
                 from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
-            };
-
-            try {
-                await relay.call('eth_call', [callData, 'newest'], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: newest'));
-            }
+            }, 'newest'], predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: newest'), requestId);
         });
 
         it('should fail to execute "eth_call" with wrong block number', async function () {
-            const callData = {
+            await relay.callFailing('eth_call', [{
                 from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
-            };
-
-            try {
-                await relay.call('eth_call', [callData, '123'], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'));
-            }
+            }, '123'], predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'), requestId);
         });
 
         it('should fail to execute "eth_call" with wrong block hash object', async function () {
-            const callData = {
+            await relay.callFailing('eth_call', [{
                 from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
-            };
+            }, {'blockHash': '0x123'}], predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block, value: 0x123'), requestId);
 
-            try {
-                await relay.call('eth_call', [callData, {'blockHash': '0x123'}], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-
-                Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block, value: 0x123'));
-            }
         });
 
         it('should fail to execute "eth_call" with wrong block number object', async function () {
-            const callData = {
+            await relay.callFailing('eth_call', [{
                 from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
-            };
-
-            try {
-                await relay.call('eth_call', [callData, {'blockNumber': '123'}], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                Assertions.jsonRpcError(error,predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'));
-            }
+            }, {'blockNumber': '123'}], predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'), requestId);
         });
 
         describe('Caller contract', () => {

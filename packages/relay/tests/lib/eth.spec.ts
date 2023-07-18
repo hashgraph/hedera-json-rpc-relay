@@ -3562,7 +3562,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_sendRawTransaction', async function() {
-    it('should return a predefined INTERNAL_ERROR instead of NUMERIC_FAULT as precheck exception', async function() {
+    it('should return a predefined GAS_LIMIT_TOO_HIGH instead of NUMERIC_FAULT as precheck exception', async function() {
       // tx with 'gasLimit: BigNumber { value: "30678687678687676876786786876876876000" }'
       const txHash = '0x02f881820128048459682f0086014fa0186f00901714801554cbe52dd95512bedddf68e09405fba803be258049a27b820088bab1cad205887185174876e80080c080a0cab3f53602000c9989be5787d0db637512acdd2ad187ce15ba83d10d9eae2571a07802515717a5a1c7d6fa7616183eb78307b4657d7462dbb9e9deca820dd28f62';
 
@@ -3572,8 +3572,8 @@ describe('Eth calls using MirrorNode', async function () {
         await ethImpl.sendRawTransaction(txHash);
       } catch (e) {
         hasError = true;
-        expect(e.code).to.equal(predefined.INTERNAL_ERROR(e.message).code);
-        expect(`Error invoking RPC: ${e.message}`).to.equal(predefined.INTERNAL_ERROR(e.message).message);
+        expect(e.code).to.equal(predefined.GAS_LIMIT_TOO_HIGH.code);
+        expect(e.message).to.equal(predefined.GAS_LIMIT_TOO_HIGH.message);
       }
       expect(hasError).to.be.true;
     });
