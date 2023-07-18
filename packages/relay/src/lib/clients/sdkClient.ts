@@ -136,8 +136,12 @@ export class SDKClient {
     }
 
     async getContractByteCode(shard: number | Long, realm: number | Long, address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
+        const contractByteCodeQuery = new ContractByteCodeQuery().setContractId(ContractId.fromEvmAddress(shard, realm, address));
+        const cost = await contractByteCodeQuery
+            .getCost(this.clientMain);
+
         return this.executeQuery(new ContractByteCodeQuery()
-            .setContractId(ContractId.fromEvmAddress(shard, realm, address)), this.clientMain, callerName, address, requestId);
+            .setQueryPayment(cost), this.clientMain, callerName, address, requestId);
     }
 
     async getContractBalance(contract: string, callerName: string, requestId?: string): Promise<AccountBalance> {
