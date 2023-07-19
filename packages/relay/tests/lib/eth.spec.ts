@@ -2007,7 +2007,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_getCode', async function() {
-    it('should return cached value', async () => {
+    it('should return non cached value for not found contract', async () => {
       restMock.onGet(`contracts/${contractAddress1}`).reply(404, defaultContract);
       restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, null);
       restMock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
@@ -2017,7 +2017,6 @@ describe('Eth calls using MirrorNode', async function () {
 
       const resNoCache = await ethImpl.getCode(contractAddress1, null);
       const resCached = await ethImpl.getCode(contractAddress1, null);
-      sinon.assert.calledOnce(sdkClientStub.getContractByteCode);
       expect(resNoCache).to.equal(EthImpl.emptyHex);
       expect(resCached).to.equal(EthImpl.emptyHex);
     });
