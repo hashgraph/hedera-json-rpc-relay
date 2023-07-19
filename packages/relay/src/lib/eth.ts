@@ -897,7 +897,6 @@ export class EthImpl implements Eth {
         // handle INVALID_CONTRACT_ID or CONTRACT_DELETED
         if (e.isInvalidContractId() || e.isContractDeleted()) {
           this.logger.debug(`${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.statusCode}`);
-          this.cache.set(cachedLabel, EthImpl.emptyHex, EthImpl.ethGetCode, undefined, requestIdPrefix);
           return EthImpl.emptyHex;
         }
 
@@ -1072,7 +1071,7 @@ export class EthImpl implements Eth {
         // if latest or pending, get latest ethereumNonce from mirror node account API
         nonceCount = await this.getAccountLatestEthereumNonce(address, requestIdPrefix);
       } else if (blockNumOrTag === EthImpl.blockEarliest) {
-        nonceCount = await this.getAccountNonceForEarliestBlock(requestIdPrefix);    
+        nonceCount = await this.getAccountNonceForEarliestBlock(requestIdPrefix);
       } else if (!isNaN(blockNum)) {
         nonceCount = await this.getAccountNonceForHistoricBlock(address, blockNum, requestIdPrefix);
       } else {
@@ -1085,7 +1084,7 @@ export class EthImpl implements Eth {
     }
 
     const cacheTtl = blockNumOrTag === EthImpl.blockEarliest || !isNaN(blockNum) ? constants.CACHE_TTL.ONE_DAY : this.ethGetTransactionCountCacheTtl; // cache historical values longer as they don't change
-    this.cache.set(cacheKey, nonceCount, EthImpl.ethGetTransactionCount, cacheTtl, requestIdPrefix); 
+    this.cache.set(cacheKey, nonceCount, EthImpl.ethGetTransactionCount, cacheTtl, requestIdPrefix);
 
     return nonceCount;
   }
@@ -1904,17 +1903,24 @@ export class EthImpl implements Eth {
     return logs;
   }
 
-  private async getAccountLatestEthereumNonce(address: string, requestIdPrefix?: string) {
-    // check if address is a valid contract then get ethereumNonce from consensus node until HIP 729 is implemented
-    const validContract = await this.mirrorNodeClient.isValidContract(address, requestIdPrefix);
-    if (validContract)  {
+  private async getAccountLatestEthereumNonce(address: string, requestId?: string) {
+    const cachedResponse: any = this.mirrorNodeClient.getIsValidContractCache(address);
+
+    // address is a valid contract
+    if (cachedResponse) {
       return EthImpl.oneHex;
-    } 
-    
-    // get latest ethereumNonce from mirror node account API
-    const mirrorAccount = await this.mirrorNodeClient.getAccount(address, requestIdPrefix);
-    if (mirrorAccount?.ethereum_nonce) {
-      return EthImpl.numberTo0x(mirrorAccount.ethereum_nonce);
+    }
+
+    const accountData = await this.mirrorNodeClient.getAccount(address, requestId);
+    if (accountData) {
+      if (!accountData.ethereum_nonce) {  // if nonce > 0 then the entity cannot be a contract
+        const contract = await this.mirrorNodeClient.isValidContract(address, requestId, 0);
+        if (contract) {
+          return EthImpl.oneHex;
+        }
+      }
+
+      return EthImpl.numberTo0x(accountData.ethereum_nonce);
     }
 
     return EthImpl.zeroHex;

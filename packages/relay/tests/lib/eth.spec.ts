@@ -2007,7 +2007,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   describe('eth_getCode', async function() {
-    it('should return cached value', async () => {
+    it('should return non cached value for not found contract', async () => {
       restMock.onGet(`contracts/${contractAddress1}`).reply(404, defaultContract);
       restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, null);
       restMock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
@@ -2017,7 +2017,6 @@ describe('Eth calls using MirrorNode', async function () {
 
       const resNoCache = await ethImpl.getCode(contractAddress1, null);
       const resCached = await ethImpl.getCode(contractAddress1, null);
-      sinon.assert.calledOnce(sdkClientStub.getContractByteCode);
       expect(resNoCache).to.equal(EthImpl.emptyHex);
       expect(resCached).to.equal(EthImpl.emptyHex);
     });
@@ -4228,6 +4227,22 @@ describe('Eth calls using MirrorNode', async function () {
       const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockLatest);
       expect(nonce).to.exist;
       expect(nonce).to.equal(EthImpl.numberTo0x(mockData.account.ethereum_nonce));
+
+      const callsToContractPath = restMock.history.get.filter(e => e.url === contractPath);
+      expect(callsToContractPath).to.exist;
+      expect(callsToContractPath.length).to.eq(0, 'No requests are made to get the contract data');
+    });
+
+    it('should return latest nonce for latest block when nonce=0', async() => {
+      restMock.onGet(contractPath).reply(404, mockData.notFound);
+      restMock.onGet(accountPath).reply(200, {...mockData.account, ethereum_nonce: 0});
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockLatest);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.numberTo0x(0));
+
+      const callsToContractPath = restMock.history.get.filter(e => e.url === contractPath);
+      expect(callsToContractPath).to.exist;
+      expect(callsToContractPath.length).to.eq(1, 'No retry requests are made to get the contract data');
     });
 
     it('should return latest nonce for pending block', async() => {
