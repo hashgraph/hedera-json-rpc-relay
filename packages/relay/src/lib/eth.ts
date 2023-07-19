@@ -1658,8 +1658,10 @@ export class EthImpl implements Eth {
     const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams }, undefined, requestIdPrefix);
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
-    const blockNumber = blockResponse.number.toString(16);
-    const logs = await this.getLogs(blockResponse.hash, blockNumber, blockNumber, null, null, requestIdPrefix);
+    const params = { timestamp: timestampRangeParams };
+
+    // get contract results logs using block timestamp range
+    const logs = await this.getLogsWithParams(null, params, requestIdPrefix)
 
     if (contractResults == null && logs.length == 0) {
       // contract result not found
@@ -2117,6 +2119,12 @@ export class EthImpl implements Eth {
     }
 
     this.addTopicsToParams(params, topics);
+
+    return this.getLogsWithParams(address, params, requestIdPrefix);
+  }
+
+  async getLogsWithParams(address: string | [string] | null, params, requestIdPrefix?: string): Promise<Log[]> {
+    const EMPTY_RESPONSE = [];
 
     let logResults;
     if (address) {

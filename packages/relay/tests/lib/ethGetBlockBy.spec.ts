@@ -293,6 +293,7 @@ describe('eth_getBlockBy', async function () {
       
     describe('getBlockByNumber', () => {
 
+      const defaultEthGetBlockByLogs = { logs: defaultLogs1 };
       it('eth_getBlockByNumber with eror during batch call', async function () {
           // mirror node request mocks
           restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
@@ -301,6 +302,7 @@ describe('eth_getBlockBy', async function () {
           restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
           restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).timeout();
           restMock.onGet('network/fees').reply(200, defaultNetworkFees);
+          restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
           
           try{
               await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), true);
