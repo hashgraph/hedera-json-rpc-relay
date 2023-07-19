@@ -60,7 +60,7 @@ import {
 } from '../helpers';
 
 import pino from 'pino';
-import { Transaction } from '../../src/lib/model';
+import { Log, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { ClientCache, SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
@@ -4439,7 +4439,10 @@ describe('Eth', async function () {
   let ethImpl: EthImpl;
   this.beforeAll(() => {
     // @ts-ignore
+    clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
+    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache);
     ethImpl = new EthImpl(null, mirrorNodeInstance, logger, "0x12a", registry, clientCache);
+    restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: "throwException" });
   });
 
   const contractEvmAddress = '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9';
@@ -4644,8 +4647,7 @@ describe('Eth', async function () {
 
   describe('eth_getTransactionReceipt', async function () {
     this.beforeEach(() => {
-      // @ts-ignore
-      ethImpl.cache.clear();
+      clientCache.clear();
     });
 
     it('returns `null` for non-existent hash', async function () {
@@ -4793,6 +4795,45 @@ describe('Eth', async function () {
 
       expect(receipt.logs[0].transactionIndex).to.eq(null);
       expect(receipt.transactionIndex).to.eq(null);
+    });
+
+    it('valid receipt on cache match', async function () {
+      // clear cache
+      clientCache.clear();
+
+      // set cache with synthetic log
+      const cacheKeySyntheticLog1 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${defaultDetailedContractResultByHash.hash}`;
+      const cachedLog = new Log({
+        address: defaultLogs1[0].address,
+        blockHash: EthImpl.toHash32(defaultLogs1[0].block_hash),
+        blockNumber: EthImpl.numberTo0x(defaultLogs1[0].block_number),
+        data: defaultLogs1[0].data,
+        logIndex: EthImpl.numberTo0x(defaultLogs1[0].index),
+        removed: false,
+        topics: defaultLogs1[0].topics,
+        transactionHash: EthImpl.toHash32(defaultLogs1[0].transaction_hash),
+        transactionIndex: EthImpl.nullableNumberTo0x(defaultLogs1[0].transaction_index)
+      });
+
+      clientCache.set(cacheKeySyntheticLog1, cachedLog);
+      
+      // w no mirror node requests
+      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+
+      // Assert the matching reciept
+      expect(receipt.blockHash).to.eq(cachedLog.blockHash);
+      expect(receipt.blockNumber).to.eq(cachedLog.blockNumber);
+      expect(receipt.contractAddress).to.eq(cachedLog.address);
+      expect(receipt.cumulativeGasUsed).to.be.null;
+      expect(receipt.effectiveGasPrice).to.be.null;
+      expect(receipt.from).to.be.null;
+      expect(receipt.gasUsed).to.be.null;
+      expect(receipt.logs).to.deep.eq([cachedLog]);
+      expect(receipt.logsBloom).to.be.eq(EthImpl.emptyBloom);
+      expect(receipt.status).to.be.null;
+      expect(receipt.to).to.eq(cachedLog.address);
+      expect(receipt.transactionHash).to.eq(cachedLog.transactionHash);
+      expect(receipt.transactionIndex).to.eq(cachedLog.transactionIndex);
     });
   });
 

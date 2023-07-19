@@ -59,6 +59,7 @@ export class EthImpl implements Eth {
   static emptyHex = '0x';
   static zeroHex = '0x0';
   static oneHex = '0x1';
+  static twoHex = '0x2'; 
   static zeroHex8Byte = '0x0000000000000000';
   static zeroHex32Byte = '0x0000000000000000000000000000000000000000000000000000000000000000';
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
@@ -76,7 +77,6 @@ export class EthImpl implements Eth {
   static redirectBytecodePostfix = '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
   static iHTSAddress = '0x0000000000000000000000000000000000000167';
   static invalidEVMInstruction = '0xfe';
-  static cacheKeySyntheticLogHash = 'SyntheticLog_TransactionHash_';
 
   // endpoint callerNames
   static ethBlockByNumber = 'eth_blockNumber';
@@ -132,6 +132,7 @@ export class EthImpl implements Eth {
   private readonly MirrorNodeGetContractResultRetries =
     parseNumericEnvVar('MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES', 'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES');
   private readonly estimateGasThrows = process.env. ESTIMATE_GAS_THROWS ? process.env. ESTIMATE_GAS_THROWS === "true" : true;
+  private readonly syntheticLogCacheTtl =  parseNumericEnvVar('SYNTHETIC_LOG_CACHE_TTL', 'DEFAULT_SYNTHETIC_LOG_CACHE_TTL');
 
     /**
    * Configurable options used when initializing the cache.
@@ -1457,29 +1458,28 @@ export class EthImpl implements Eth {
       return cachedResponse;
     }
 
-    const cacheKeySyntheticLog = `${EthImpl.cacheKeySyntheticLogHash}${hash}`;
-    const cachedSyntheticResponse = this.cache.get(cacheKeySyntheticLog, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
-    if (cachedSyntheticResponse) {
-      const cachedLog: Log = JSON.parse(cachedSyntheticResponse);
-      
+    const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
+    const cachedLog = this.cache.get(cacheKeySyntheticLog, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
+    if (cachedLog) {      
       const receipt: any  = {
         blockHash: cachedLog.blockHash,
         blockNumber: cachedLog.blockNumber,
-        from: null,
-        to: cachedLog.address,
-        cumulativeGasUsed: null,
-        gasUsed: null,
         contractAddress: cachedLog.address,
+        cumulativeGasUsed: null,
+        effectiveGasPrice: null,
+        from: null,
+        gasUsed: null,
         logs: [cachedLog],
         logsBloom: EthImpl.emptyBloom,
-        transactionHash: cachedLog.transactionHash,
-        transactionIndex: cachedLog.transactionIndex,
-        effectiveGasPrice: null,
         root: null,
         status: null,
+        to: cachedLog.address,
+        transactionHash: cachedLog.transactionHash,
+        transactionIndex: cachedLog.transactionIndex,
       };
+
       this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached synthetic receipt response: ${cachedResponse}`);
-      this.cache.set(cacheKey, receipt, EthImpl.ethGetTransactionReceipt, undefined, requestIdPrefix);
+      this.cache.set(cacheKey, receipt, EthImpl.ethGetTransactionReceipt, constants.CACHE_TTL.ONE_DAY, requestIdPrefix);
 
       return receipt
     }
@@ -1533,7 +1533,7 @@ export class EthImpl implements Eth {
 
       this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
 
-      this.cache.set(cacheKey, receipt, EthImpl.ethGetTransactionReceipt, undefined, requestIdPrefix);
+      this.cache.set(cacheKey, receipt, EthImpl.ethGetTransactionReceipt, constants.CACHE_TTL.ONE_DAY, requestIdPrefix);
       return receipt;
     }
   }
@@ -1715,36 +1715,39 @@ export class EthImpl implements Eth {
    * @param transactionHashes 
    * @param requestIdPrefix 
    */
-  private async filterAndPopulateSyntheticContractResults(showDetails: boolean, logs: Log[],transactionObjects: Transaction[], transactionHashes: string[], requestIdPrefix?: string): Promise<void> {
+  filterAndPopulateSyntheticContractResults(showDetails: boolean, logs: Log[], transactionObjects: Transaction[], transactionHashes: string[], requestIdPrefix?: string): void {
     let filteredLogs: Log[];
     if (showDetails) {
       filteredLogs = logs.filter((log) => !transactionObjects.some((transaction) => transaction.hash === log.transactionHash));
       filteredLogs.forEach(log => {
-        const cacheKey = `${EthImpl.cacheKeySyntheticLogHash}${log.transactionHash}`;
-        this.cache.set(cacheKey, JSON.stringify(log), EthImpl.ethGetBlockByHash, undefined, requestIdPrefix);
-        const transaction = this.populateTransactionFromLog(log, requestIdPrefix);
+        const transaction = this.createTransactionFromLog(log);
         transactionObjects.push(transaction);
+
+        const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
+        this.cache.set(cacheKey, log, EthImpl.ethGetBlockByHash, this.syntheticLogCacheTtl, requestIdPrefix);
       });
     } else {
       filteredLogs = logs.filter(log => !transactionHashes.includes(log.transactionHash));
       filteredLogs.forEach(log => {
-        const cacheKey = `${EthImpl.cacheKeySyntheticLogHash}${log.transactionHash}`;
-        this.cache.set(cacheKey, JSON.stringify(log), EthImpl.ethGetBlockByHash, undefined, requestIdPrefix);
+        transactionHashes.push(log.transactionHash);
+
+        const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
+        this.cache.set(cacheKey, log, EthImpl.ethGetBlockByHash, this.syntheticLogCacheTtl, requestIdPrefix);
       });
-      transactionHashes.push(...filteredLogs.map(log => log.transactionHash));
+      
       this.logger.trace(`${requestIdPrefix} ${filteredLogs.length} Synthetic transaction hashes will be added in the block response`);
     }
   }
 
   /**
-   * Populate a new instance of transaction object using the information in the log, all unavailable information will be null
+   * Creates a new instance of transaction object using the information in the log, all unavailable information will be null
    * @param log
    * @param requestIdPrefix
    * @returns Transaction Object
    */
-  private populateTransactionFromLog(log: Log, requestIdPrefix?: string) {
+  private createTransactionFromLog(log: Log) {
     return new Transaction({
-      accessList: undefined, // we don't support access lists for now, so punt
+      accessList: undefined, // we don't support access lists for now
       blockHash: log.blockHash,
       blockNumber: log.blockNumber,
       chainId: this.chain,
@@ -1752,7 +1755,7 @@ export class EthImpl implements Eth {
       gas: EthImpl.defaultTxGas,
       gasPrice: undefined,
       hash: log.transactionHash,
-      input: "0xabcd",
+      input: EthImpl.zeroHex,
       maxPriorityFeePerGas: undefined,
       maxFeePerGas: undefined,
       nonce: EthImpl.nanOrNumberTo0x(0),
@@ -1760,9 +1763,9 @@ export class EthImpl implements Eth {
       s: undefined,
       to: log.address,
       transactionIndex: log.transactionIndex,
-      type: "0x2", //0x0 for legacy transactions, 0x1 for access list types, 0x2 for dynamic fees.
+      type: EthImpl.twoHex, // 0x0 for legacy transactions, 0x1 for access list types, 0x2 for dynamic fees.
       v: undefined,
-      value: "0x1234",
+      value: EthImpl.zeroHex,
     });
   }
 
