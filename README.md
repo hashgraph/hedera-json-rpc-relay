@@ -80,7 +80,7 @@ The following table highlights some initial configuration values to consider
 | ----------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CHAIN_ID`        | `0x12a` | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively                                                                                                                                            |
 | `HEDERA_NETWORK`  | ``      | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`                                                                                                                                                                            |
-| `MIRROR_NODE_URL` | ``      | The Mirror Node API endpoint. Official endpoints are Previewnet (https://previewnet.mirrornode.hedera.com/v1/api), Testnet (https://testnet.mirrornode.hedera.com/v1/api), Mainnet (https://mainnet-public.mirrornode.hedera.com/v1/api). See [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api) |
+| `MIRROR_NODE_URL` | ``      | The Mirror Node API endpoint. Official endpoints are Previewnet (https://previewnet.mirrornode.hedera.com), Testnet (https://testnet.mirrornode.hedera.com), Mainnet (https://mainnet-public.mirrornode.hedera.com). See [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api) |
 
 #### Run
 
@@ -170,7 +170,7 @@ Where result returns a valid hexadecimal number
 
 ### Helm Chart
 
-This repos `helm-chart` directory contains the templates and values to deploy Hedera's json-rpc relay to a K8s cluster. This directory is packaged and distributed via helm repo.
+This repos `charts` directory contains the templates and values to deploy Hedera's json-rpc relay to a K8s cluster. This directory is packaged and distributed via helm repo.
 To get started, first install the helm repo:
 
 ```
@@ -181,7 +181,7 @@ helm repo update
 now install the helm chart:
 
 ```
-helm install [RELEASE_NAME] hedera-json-rpc-relay/hedera-json-rpc-relay -f /path/to/values.yaml
+helm install [RELEASE_NAME] charts/hedera-json-rpc -f /path/to/values.yaml
 ```
 
 To see the values that have been deployed:
@@ -193,7 +193,7 @@ helm show values hedera-json-rpc-relay
 Deploy an installation with custom values file:
 
 ```
-helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./helm-chart --debug
+helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./charts/hedera-json-rpc --debug
 ```
 
 ##### Deploy Helm Chart locally on minikube
@@ -211,7 +211,7 @@ helm install custom-hedera-json-rpc-relay -f path/to/values/file.yaml ./helm-cha
   --docker-email=$GH_EMAIL
   ```
 
-3. Deploy this helm-chart with the addtional [environment/minikube.yaml](environment/minikube.yaml) file
+3. Deploy this helm chart with the addtional [environment/minikube.yaml](environment/minikube.yaml) file
 
 ```
 helm upgrade -f environments/minkube.yaml jrpc-test ./

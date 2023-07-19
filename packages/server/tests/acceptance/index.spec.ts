@@ -17,18 +17,22 @@
  * limitations under the License.
  *
  */
-
+import chai from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';
 import shell from 'shelljs';
 import pino from 'pino';
+import chaiAsPromised from 'chai-as-promised';
+
+chai.use(chaiAsPromised);
+
 import fs from 'fs';
 import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
 import app from '../../dist/server';
-import {app as wsApp} from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
-import {Hbar} from "@hashgraph/sdk";
+import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
+import { Hbar } from "@hashgraph/sdk";
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
@@ -101,7 +105,7 @@ describe('RPC Server Acceptance Tests', function () {
             shell.exec('hedera stop');
         }
 
-        // stop relay
+        //stop relay
         logger.info('Stop relay');
         if (relayServer !== undefined) {
             relayServer.close();
@@ -135,7 +139,7 @@ describe('RPC Server Acceptance Tests', function () {
         // set env variables for docker images until local-node is updated
         process.env['NETWORK_NODE_IMAGE_TAG'] = '0.39.0-alpha.0';
         process.env['HAVEGED_IMAGE_TAG'] = '0.39.0-alpha.0';
-        process.env['MIRROR_IMAGE_TAG'] = '0.82.1';
+        process.env['MIRROR_IMAGE_TAG'] = '0.83.0';
 
         console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
@@ -154,6 +158,7 @@ describe('RPC Server Acceptance Tests', function () {
         relayServer = app.listen({ port: constants.RELAY_PORT });
 
         if (process.env.TEST_WS_SERVER === 'true') {
+            logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
             global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
         }
     }

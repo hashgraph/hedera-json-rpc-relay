@@ -1,9 +1,11 @@
 {
     "name": "root",
     "devDependencies": {
+        "@types/chai-as-promised": "^7.1.5",
         "@typescript-eslint/eslint-plugin": "^5.11.0",
         "@typescript-eslint/parser": "^5.11.0",
         "axios-mock-adapter": "^1.20.0",
+        "chai-as-promised": "^7.1.1",
         "codecov": "^3.8.3",
         "eslint": "^7.32.0",
         "eslint-config-airbnb-base": "^15.0.0",
@@ -52,7 +54,7 @@
         "bump-version": "SEM_VER=${npm_config_semver} SNAPSHOT=${npm_config_snapshot} node scripts/.bump-version.js"
     },
     "dependencies": {
-        "@hashgraph/hedera-local": "^2.10.0",
+        "@hashgraph/hedera-local": "^2.11.0",
         "@open-rpc/schema-utils-js": "^1.16.1",
         "@types/find-config": "^1.0.1",
         "keyv-file": "^0.2.0",

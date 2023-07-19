@@ -32,6 +32,7 @@ import pino from 'pino';
 import constants from '../../src/lib/constants';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
+import { ClientCache } from '../../src/lib/clients';
 
 const LRU = require('lru-cache');
 
@@ -41,7 +42,7 @@ const registry = new Registry();
 let restMock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
-let cache;
+let clientCache: ClientCache;
 let mirrorNodeCache;
 
 
@@ -243,8 +244,10 @@ describe('eth_getBlockBy', async function () {
     let ethImpl: EthImpl;
 
     this.beforeAll(() => {
+        clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
+
         // @ts-ignore
-        mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry);
+        mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache);
     
         // @ts-ignore
         mirrorNodeCache = mirrorNodeInstance.cache;
@@ -255,25 +258,20 @@ describe('eth_getBlockBy', async function () {
         const duration = constants.HBAR_RATE_LIMIT_DURATION;
         const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-    
-        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter);
-    
-        cache = new LRU({
-          max: constants.CACHE_MAX,
-          ttl: constants.CACHE_TTL.ONE_HOUR
-        });
+
+        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, clientCache);
     
         process.env.ETH_FEE_HISTORY_FIXED = 'false';
     
         // @ts-ignore
-        ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cache);
+        ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
       });
     
     
       this.beforeEach(() => {
         // reset cache and restMock
         mirrorNodeCache.clear();
-        cache.clear();
+        clientCache.clear();
         restMock.reset();
       });
       

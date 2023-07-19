@@ -23,6 +23,8 @@ import { ethers } from 'ethers';
 import crypto from 'crypto';
 import {EthImpl} from "../src/lib/eth";
 import {Block, Transaction} from "../src/lib/model";
+import { formatRequestIdMessage } from '../src/formatters';
+import { v4 as uuid } from 'uuid';
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -47,6 +49,10 @@ const signTransaction = async (transaction, key = defaultPrivateKey) => {
 
 const random20BytesAddress = (addHexPrefix = true) => {
     return (addHexPrefix ? '0x' : '') + crypto.randomBytes(20).toString('hex');
+};
+
+const getRequestId = () => {
+    return formatRequestIdMessage(uuid());
 };
 
 export const ethCallFailing = async (ethImpl, args, block, assertFunc) => {
@@ -396,14 +402,26 @@ const mockData = {
                 {
                     "message": "CONTRACT_REVERT_EXECUTED",
                     "detail": "",
-                    "data": "0x"
+                    "data": ""
+                }
+            ]
+        }
+    },
+
+    notSuported: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "Auto account creation is not supported.",
+                    "detail": "",
+                    "data": ""
                 }
             ]
         }
     }
 };
 
-export { expectUnsupportedMethod, expectedError, signTransaction, mockData, random20BytesAddress };
+export { expectUnsupportedMethod, expectedError, signTransaction, mockData, random20BytesAddress, getRequestId };
 
 export const bytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
 export const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
@@ -790,4 +808,5 @@ export const defaultCallData = {
     "value": null
 };
 
-export const defaultErrorMessage = '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';
+export const defaultErrorMessageText = 'Set to revert';
+export const defaultErrorMessageHex = '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';

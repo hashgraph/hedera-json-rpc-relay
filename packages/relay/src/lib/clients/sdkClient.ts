@@ -55,6 +55,7 @@ import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
+import { ClientCache } from './clientCache';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -87,7 +88,7 @@ export class SDKClient {
      * LRU cache container.
      * @private
      */
-    private readonly cache;
+    private readonly cache: ClientCache;
 
     private consensusNodeClientHistogramCost;
     private consensusNodeClientHistogramGasFee;
@@ -95,7 +96,7 @@ export class SDKClient {
     private maxChunks;
 
     // populate with consensusnode requests via SDK
-    constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any) {
+    constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, clientCache: ClientCache) {
         this.clientMain = clientMain;
 
         if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
@@ -110,7 +111,7 @@ export class SDKClient {
         this.operatorAccountGauge = metrics.operatorGauge;
 
         this.hbarLimiter = hbarLimiter;
-        this.cache = new LRU({ max: constants.CACHE_MAX, ttl: constants.CACHE_TTL.ONE_HOUR });
+        this.cache = clientCache;
         this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     }
 
@@ -162,8 +163,8 @@ export class SDKClient {
     }
 
     async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
-        const cachedResponse: number | undefined = this.cache.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE);
-        if (cachedResponse != undefined) {
+        const cachedResponse: number | undefined = this.cache.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, callerName);
+        if (cachedResponse) {
             return cachedResponse;
         }
 
@@ -178,7 +179,7 @@ export class SDKClient {
                 const exchangeRates = await this.getExchangeRate(callerName, requestId);
                 const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
-                this.cache.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars);
+                this.cache.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, undefined, requestId);
                 return tinyBars;
             }
         }
@@ -257,7 +258,7 @@ export class SDKClient {
                 const sdkClientError = new SDKClientError(e, e.message);
                 if (sdkClientError.isTimeoutExceeded()) {
                     const delay = retries * 1000;
-                    this.logger.trace(`${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay}ms ...`);
+                    this.logger.trace(`${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`);
                     retries++;
                     await new Promise(r => setTimeout(r, delay));
                     continue;
@@ -549,16 +550,14 @@ export class SDKClient {
         );
 
         if (fileId && callData.length > 4096) {
-            await (
-                await new FileAppendTransaction()
-                    .setFileId(fileId)
-                    .setContents(
-                        hexedCallData.substring(4096, hexedCallData.length)
-                    )
-                    .setChunkSize(4096)
-                    .setMaxChunks(this.maxChunks)
-                    .execute(client)
-            ).getReceipt(client);
+            await new FileAppendTransaction()
+                .setFileId(fileId)
+                .setContents(
+                    hexedCallData.substring(4096, hexedCallData.length)
+                )
+                .setChunkSize(4096)
+                .setMaxChunks(this.maxChunks)
+                .execute(client);
         }
 
         // Ensure that the calldata file is not empty

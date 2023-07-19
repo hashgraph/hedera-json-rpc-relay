@@ -29,7 +29,7 @@ import { Poller } from './poller';
 import { SubscriptionController } from './subscriptionController';
 import { Client } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { MirrorNodeClient } from './clients';
+import { ClientCache, MirrorNodeClient } from './clients';
 import { Gauge, Registry } from 'prom-client';
 import HAPIService from './services/hapiService/hapiService';
 import constants from './constants';
@@ -42,6 +42,7 @@ export class RelayImpl implements Relay {
   private readonly netImpl: Net;
   private readonly ethImpl: Eth;
   private readonly subImpl?: Subs;
+  private readonly clientCache: ClientCache;
 
   constructor(logger: Logger, register: Registry) {
     logger.info('Configurations successfully loaded');
@@ -56,7 +57,8 @@ export class RelayImpl implements Relay {
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
 
-    const hapiService = new HAPIService(logger, register, hbarLimiter);
+    this.clientCache = new ClientCache(logger.child({ name: 'client-cache' }), register);
+    const hapiService = new HAPIService(logger, register, hbarLimiter, this.clientCache);
     this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
@@ -66,8 +68,9 @@ export class RelayImpl implements Relay {
       process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
       register,
+      this.clientCache,
       undefined,
-      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
+      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || ''
     );
 
     this.ethImpl = new EthImpl(
@@ -75,11 +78,12 @@ export class RelayImpl implements Relay {
       this.mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
       chainId,
-      register,);
+      register,
+      this.clientCache);
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
-      const poller = new Poller(this.ethImpl, logger, register);
-      this.subImpl = new SubscriptionController(poller, logger, register);
+      const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
+      this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }
 
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);

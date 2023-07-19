@@ -48,6 +48,10 @@ function hexToASCII(str: string): string {
  */
 const decodeErrorMessage = (message?: string): string => {
     if (!message) return '';
+
+    // If the message does not start with 0x, it is not an error message, return it as is
+    if (!message.includes('0x')) return message;
+
     message = message.replace(/^0x/, "");   // Remove the starting 0x
     const strLen = parseInt(message.slice(8 + 64, 8 + 128), 16);  // Get the length of the readable text
     const resultCodeHex = message.slice(8 + 128, 8 + 128 + strLen * 2); // Extract the hex of the text
@@ -65,4 +69,25 @@ const formatTransactionId = (transactionId: string): string | null => {
     return `${payer}-${timestamp}`;
 }
 
-export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId };
+/**
+ * Reads a value loaded up from the `.env` file, and converts it to a number.
+ * If it is not set in `.env` or set as an empty string or other non-numeric
+ * value, it uses the default value specified in constants.
+ * @param envVarName The name of the env var to read in from the `.env` file
+ * @param constantName The name of the constant to use as a fallback when the
+ *   specified env var is invalid
+ * @throws An error if both the env var and constant are invalid
+ */
+const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): number => {
+    let value: number = Number.parseInt((process.env[envVarName] ?? ''), 10);
+    if (!isNaN(value)) {
+        return value;
+    }
+    value = Number.parseInt((constants[fallbackConstantKey] ?? '').toString());
+    if (isNaN(value)) {
+        throw new Error(`Unable to parse numeric env var: '${envVarName}', constant: '${fallbackConstantKey}'`);
+    }
+    return value;
+}
+
+export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId, parseNumericEnvVar };

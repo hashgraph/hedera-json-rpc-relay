@@ -28,15 +28,14 @@ import { Utils } from '../helpers/utils';
 import reverterContractJson from '../contracts/Reverter.json';
 import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import { predefined } from '../../../../packages/relay';
-import Assertions from "../helpers/assertions";
 import basicContractJson from '../contracts/Basic.json';
 import callerContractJson from '../contracts/Caller.json';
 import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 //Constants are imported with different definitions for better readability in the code.
-import Constants from '../../../../packages/relay/src/lib/constants';
 import RelayCall from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
+import Assertions from '../helpers/assertions';
 
 describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -44,7 +43,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const accounts: AliasAccount[] = [];
 
     // @ts-ignore
-    const { servicesNode, mirrorNode, relay, logger } = global;
+    const { servicesNode, mirrorNode, relay } = global;
 
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
@@ -63,6 +62,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const PAYABLE_METHOD_ERROR_DATA = '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013526576657274526561736f6e50617961626c6500000000000000000000000000';
     const PURE_METHOD_ERROR_MESSAGE = 'execution reverted: RevertReasonPure';
     const VIEW_METHOD_ERROR_MESSAGE = 'execution reverted: RevertReasonView';
+    const errorMessagePrefixedStr = 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"';
 
     beforeEach(async () => {
         requestId = Utils.generateRequestId();
@@ -190,13 +190,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
+            const errorType = predefined.INVALID_PARAMETER(1, `${errorMessagePrefixedStr}, value: newest`);
+            const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'newest'], requestId];
 
-            try {
-                await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'newest'], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: newest'));
-            }
+            await Assertions.assertRejection(errorType, relay.call, args, false);
         });
 
         it('should fail to execute "eth_call" with wrong block number', async function () {
@@ -205,13 +202,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
+            const errorType = predefined.INVALID_PARAMETER(1, `${errorMessagePrefixedStr}, value: 123`);
+            const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, '123'], requestId];
 
-            try {
-                await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, '123'], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(1, 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'));
-            }
+            await Assertions.assertRejection(errorType, relay.call, args, false);
         });
 
         it('should fail to execute "eth_call" with wrong block hash object', async function () {
@@ -220,14 +214,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
-
-            try {
-                await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-
-                Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block, value: 0x123'));
-            }
+            const errorType = predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block, value: 0x123');
+            const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId];
+            
+            await Assertions.assertRejection(errorType, relay.call, args, false);
         });
 
         it('should fail to execute "eth_call" with wrong block number object', async function () {
@@ -236,13 +226,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
-
-            try {
-                await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockNumber': '123' }], requestId);
-                Assertions.expectedError();
-            } catch (error) {
-                Assertions.jsonRpcError(error, predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, 'Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: 123'));
-            }
+            const errorType = predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, `${errorMessagePrefixedStr}, value: 123`);
+            const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId];
+            
+            await Assertions.assertRejection(errorType, relay.call, args, false);
         });
 
         describe('Caller contract', () => {
@@ -255,7 +242,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         activeAccount = accounts[0];
                         callerContract = await servicesNode.deployContract(callerContractJson);
                         // Wait for creation to propagate
-                        const callerMirror = await mirrorNode.get(`/contracts/${callerContract.contractId}`, requestId);
+                        await mirrorNode.get(`/contracts/${callerContract.contractId}`, requestId);
                         callerAddress = `0x${callerContract.contractId.toSolidityAddress()}`;
                         defaultCallData = {
                             from: `0x${activeAccount.address}`,
@@ -281,7 +268,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 }
             ];
 
-            for (let desc of describes) {
+            for (const desc of describes) {
                 describe(desc.title, () => {
                     before(desc.beforeFunc);
 
@@ -393,13 +380,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                                 data: '0xddf363d7',
                                 value: '0x3e80000000'
                             };
+                            const errorType = predefined.CONTRACT_REVERT();
+                            const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId];
 
-                            try {
-                                await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
-                                Assertions.expectedError();
-                            } catch (e) {
-                                Assertions.jsonRpcError(e, predefined.CONTRACT_REVERT());
-                            }
+                            await Assertions.assertRejection(errorType, relay.call, args, true);
                         });
 
                         it("012 should work for wrong 'from' field", async function () {
@@ -460,7 +444,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: PAYABLE_METHOD_CALL_DATA
             };
             const signedTx = await accounts[0].wallet.signTransaction(transaction);
-            const transactionHash = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId);
+            const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
             // Wait until receipt is available in mirror node
             await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
@@ -504,7 +488,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             });
 
             before(async function () {
-                for (let i = 0; i < payableMethodsData.length; i++) {
+                for (const element of payableMethodsData) {
                     const transaction = {
                         // value: ONE_TINYBAR,
                         gasLimit: EthImpl.numberTo0x(30000),
@@ -512,10 +496,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         to: reverterEvmAddress,
                         nonce: await relay.getAccountNonce('0x' + accounts[0].address, requestId),
                         gasPrice: await relay.gasPrice(requestId),
-                        data: payableMethodsData[i].data
+                        data: element.data
                     };
                     const signedTx = await accounts[0].wallet.signTransaction(transaction);
-                    const hash = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId);
+                    const hash = await relay.sendRawTransaction(signedTx, requestId);
                     hashes.push(hash);
 
                     // Wait until receipt is available in mirror node
@@ -588,19 +572,19 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 }
             ];
 
-            for (let i = 0; i < pureMethodsData.length; i++) {
-                it(`Pure method ${pureMethodsData[i].method} returns tx receipt`, async function () {
+            for (const element of pureMethodsData) {
+                it(`Pure method ${element.method} returns tx receipt`, async function () {
                     const callData = {
                         from: '0x' + accounts[0].address,
                         to: reverterEvmAddress,
                         gas: EthImpl.numberTo0x(30000),
-                        data: pureMethodsData[i].data
+                        data: element.data
                     };
 
                     await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], {
                         code: -32008,
-                        message: pureMethodsData[i].message,
-                        data: pureMethodsData[i].errorData
+                        message: element.message,
+                        data: element.errorData
                     }, requestId);
                 });
             }
@@ -639,7 +623,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: IS_TOKEN_ADDRESS_SIGNATURE + tokenAddress.replace('0x', '')
             };
 
-            relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'])
+            relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest']);
             const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
 
             expect(res).to.eq(RESULT_TRUE);
