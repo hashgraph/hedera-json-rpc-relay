@@ -751,7 +751,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 expect(res.baseFeePerGas[res.baseFeePerGas.length - 1]).to.equal(defaultGasPriceHex);
             });
 
-            it('should call eth_feeHistory with newest block > latest', async function () {
+            itß('should call eth_feeHistory with newest block > latest', async function () {
                 const blocksAhead = 10;
 
                 const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
@@ -760,6 +760,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 const args = [RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY, ['0x1', newestBlockNumberHex, null], requestId];
 
                 await Assertions.assertRejection(errorType, relay.call, args, true);
+                //await Assertions.assertRejection(errorType, relay.call, true, relay, args);
             });
 
             it('should call eth_feeHistory with zero block count', async function () {

@@ -377,7 +377,7 @@ export class EthImpl implements Eth {
   private async getFeeWeibars(callerName: string, requestIdPrefix?: string, timestamp?: string) {
     let networkFees;
     try {
-      networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp,undefined, requestIdPrefix);
+      networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp, undefined, requestIdPrefix);
       if (_.isNil(networkFees)) {
         this.logger.debug(`${requestIdPrefix} Mirror Node returned no fees. Fallback to network`);
       }
@@ -1106,7 +1106,7 @@ export class EthImpl implements Eth {
     let interactingEntity = '';
     let originatingAddress = '';
     try {
-      let parsedTx = Precheck.parseTxIfNeeded(transaction);
+      const parsedTx = Precheck.parseTxIfNeeded(transaction);
       interactingEntity = parsedTx.to?.toString() || '';
       originatingAddress = parsedTx.from?.toString() || '';
       this.logger.trace(`${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
@@ -1564,7 +1564,7 @@ export class EthImpl implements Eth {
     return input.startsWith(EthImpl.emptyHex) ? input : EthImpl.emptyHex + input;
   }
 
-  static numberTo0x(input: number | BigNumber | BigInt): string {
+  static numberTo0x(input: number | BigNumber | bigint): string {
     return EthImpl.emptyHex + input.toString(16);
   }
 
@@ -1648,7 +1648,7 @@ export class EthImpl implements Eth {
 
     // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
     // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
-    let gas = Number.parseInt(gasString);
+    const gas = Number.parseInt(gasString);
     if (gas > constants.BLOCK_GAS_LIMIT) {
       this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`);
       return constants.BLOCK_GAS_LIMIT;

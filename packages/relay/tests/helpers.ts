@@ -64,7 +64,7 @@ export const ethCallFailing = async (ethImpl, args, block, assertFunc) => {
         assertFunc(error);
     }
     expect(hasError).to.eq(true);
-}
+};
 
 export const ethGetLogsFailing = async (ethImpl, args, assertFunc) => {
     let hasError = false;
@@ -76,7 +76,7 @@ export const ethGetLogsFailing = async (ethImpl, args, assertFunc) => {
         assertFunc(error);
     }
     expect(hasError).to.eq(true);
-}
+};
 
 export const validateHash = (hash: string, len?: number) => {
     let regex;
@@ -122,7 +122,7 @@ export const assertTransactionReceipt = (receipt, expectedReceipt) => {
     expect(receipt.root).to.eq(expectedReceipt.root);
     expect(receipt.status).to.eq(expectedReceipt.status);
     expect(receipt.effectiveGasPrice).to.eq(expectedReceipt.effectiveGasPrice);
-}
+};
 
 export const assertTransaction = (tx, expectedTx) => {
 
@@ -148,7 +148,7 @@ export const assertTransaction = (tx, expectedTx) => {
     expect(tx.type).to.eq(EthImpl.numberTo0x(expectedTx.type));
     expect(tx.v).to.eq(EthImpl.numberTo0x(expectedTx.v));
     expect(tx.value).to.eq(expectedTx.value);
-}
+};
 
 export const assertBlock = (block, expectedBlock, txDetails = false) => {
     expect(block).to.exist;
@@ -172,7 +172,7 @@ export const assertBlock = (block, expectedBlock, txDetails = false) => {
 
     // verify expected constants
     verifyBlockConstants(block);
-}
+};
 
 export const verifyBlockConstants = (block: Block) => {
     expect(block.gasLimit).equal(EthImpl.numberTo0x(15000000));
@@ -447,7 +447,7 @@ export const contractTimestamp2 = '1653077542.701408897';
 export const contractTimestamp3 = '1653088542.123456789';
 export const contractId1 = '0.0.5001';
 export const contractId2 = '0.0.5002';
-export const signedTransactionHash = '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad'
+export const signedTransactionHash = '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad';
 
 export const defaultBlock = {
     'count': blockTransactionCount,
@@ -797,7 +797,7 @@ export const buildCryptoTransferTransaction = (from, to, amount, args: any = {})
     ],
         "valid_duration_seconds": "120",
         "valid_start_timestamp": "1669207645.620109637"
-    }
+    };
 };
 
 export const defaultCallData = {
