@@ -28,6 +28,7 @@ import axiosRetry from 'axios-retry';
 import { predefined } from "../errors/JsonRpcError";
 import { SDKClientError } from '../errors/SDKClientError';
 import { ClientCache } from './clientCache';
+import { install as betterLookupInstall } from "better-lookup";
 
 const http = require('http');
 const https = require('https');
@@ -172,6 +173,29 @@ export class MirrorNodeClient {
         const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
         const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
         const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES) : [404]; // by default we should only retry on 404 errors
+        // by default will be true, unless explicitly set to false.
+        const useCacheableDnsLookup: boolean = process.env.MIRROR_NODE_AGENT_CACHEABLE_DNS === 'false' ? false : true;
+
+        const httpAgent = new http.Agent({
+            keepAlive: mirrorNodeHttpKeepAlive,
+            keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
+            maxSockets: mirrorNodeHttpMaxSockets,
+            maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
+            timeout: mirrorNodeHttpSocketTimeout,
+        });
+
+        const httpsAgent = new https.Agent({
+            keepAlive: mirrorNodeHttpKeepAlive,
+            keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
+            maxSockets: mirrorNodeHttpMaxSockets,
+            maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
+            timeout: mirrorNodeHttpSocketTimeout,
+        });
+
+        if(useCacheableDnsLookup) {
+            betterLookupInstall(httpAgent);
+            betterLookupInstall(httpsAgent);
+        }
 
         const axiosClient: AxiosInstance = Axios.create({
             baseURL: baseUrl,
@@ -182,20 +206,8 @@ export class MirrorNodeClient {
             timeout: mirrorNodeTimeout,
             maxRedirects: mirrorNodeMaxRedirects,
             // set http agent options to optimize performance - https://nodejs.org/api/http.html#new-agentoptions
-            httpAgent: new http.Agent({ 
-                keepAlive: mirrorNodeHttpKeepAlive,
-                keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
-                maxSockets: mirrorNodeHttpMaxSockets,
-                maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
-                timeout: mirrorNodeHttpSocketTimeout,
-            }),
-            httpsAgent: new https.Agent({ 
-                keepAlive: mirrorNodeHttpKeepAlive,
-                keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
-                maxSockets: mirrorNodeHttpMaxSockets,
-                maxTotalSockets: mirrorNodeHttpMaxTotalSockets,
-                timeout: mirrorNodeHttpSocketTimeout,
-            }),
+            httpAgent: httpAgent,
+            httpsAgent: httpsAgent,
         });
 
         // Custom headers
@@ -280,7 +292,7 @@ export class MirrorNodeClient {
         return `${baseUrl}${MirrorNodeClient.API_V1_POST_FIX}`;
     }
 
-    private async request(path: string, pathLabel: string, method: REQUEST_METHODS, data?: any, requestIdPrefix?: string): Promise<any> {
+    private async request(path: string, pathLabel: string, method: REQUEST_METHODS, data?: any, requestIdPrefix?: string, retries?: number): Promise<any> {
         const start = Date.now();
         // extract request id from prefix and remove trailing ']' character
         const requestId = requestIdPrefix?.split(MirrorNodeClient.REQUEST_PREFIX_SEPARATOR)[1].replace(MirrorNodeClient.REQUEST_PREFIX_TRAILING_BRACKET, MirrorNodeClient.EMPTY_STRING) || MirrorNodeClient.EMPTY_STRING;
@@ -295,6 +307,11 @@ export class MirrorNodeClient {
                 },
                 signal: controller.signal
             };
+
+            // request specific config for axios-retry
+            if (retries != null) {
+                axiosRequestConfig['axios-retry'] = { retries };
+            }
 
             if (method === MirrorNodeClient.HTTP_GET) {
                 response = await this.restClient.get(path, axiosRequestConfig);
@@ -321,8 +338,8 @@ export class MirrorNodeClient {
         return null;
     }
 
-    async get(path: string, pathLabel: string, requestIdPrefix?: string): Promise<any> {
-        return this.request(path, pathLabel, 'GET', null, requestIdPrefix);
+    async get(path: string, pathLabel: string, requestIdPrefix?: string, retries?: number): Promise<any> {
+        return this.request(path, pathLabel, 'GET', null, requestIdPrefix, retries);
     }
 
     async post(path: string, data: any, pathLabel: string, requestIdPrefix?: string): Promise<any> {
@@ -493,21 +510,30 @@ export class MirrorNodeClient {
             requestIdPrefix);
     }
 
-    public async isValidContract(contractIdOrAddress: string, requestIdPrefix?: string) {
-        const cachedLabel = `${constants.CACHE_KEY.GET_CONTRACT}.valid.${contractIdOrAddress}`;
-        const cachedResponse: any = this.cache.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
+    public getIsValidContractCacheLabel(contractIdOrAddress): string {
+        return `${constants.CACHE_KEY.GET_CONTRACT}.valid.${contractIdOrAddress}`;
+    }
+
+    public getIsValidContractCache(contractIdOrAddress): any {
+        const cachedLabel = this.getIsValidContractCacheLabel(contractIdOrAddress);
+        return this.cache.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
+    }
+
+    public async isValidContract(contractIdOrAddress: string, requestIdPrefix?: string, retries?: number) {
+        const cachedResponse: any = this.getIsValidContractCache(contractIdOrAddress);
         if (cachedResponse != undefined) {
             return cachedResponse;
         }
 
-        const contract = await this.getContractId(contractIdOrAddress, requestIdPrefix);
+        const contract = await this.getContractId(contractIdOrAddress, requestIdPrefix, retries);
         const valid = contract != null;
 
+        const cachedLabel = this.getIsValidContractCacheLabel(contractIdOrAddress);
         this.cache.set(cachedLabel, valid, MirrorNodeClient.GET_CONTRACT_ENDPOINT, constants.CACHE_TTL.ONE_DAY, requestIdPrefix);
         return valid;
     }
 
-    public async getContractId(contractIdOrAddress: string, requestIdPrefix?: string) {
+    public async getContractId(contractIdOrAddress: string, requestIdPrefix?: string, retries?: number) {
         const cachedLabel = `${constants.CACHE_KEY.GET_CONTRACT}.id.${contractIdOrAddress}`;
         const cachedResponse: any = this.cache.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
         if (cachedResponse != undefined) {
@@ -516,7 +542,8 @@ export class MirrorNodeClient {
 
         const contract = await this.get(`${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`,
             MirrorNodeClient.GET_CONTRACT_ENDPOINT,
-            requestIdPrefix);
+            requestIdPrefix,
+            retries);
 
         if (contract != null) {
             const id = contract.contract_id;
@@ -665,7 +692,7 @@ export class MirrorNodeClient {
         const blocks = await this.getBlocks(undefined, undefined, this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.ASC), requestId);
         if (blocks && blocks.blocks.length > 0) {
             const block = blocks.blocks[0];
-            this.cache.set(cachedLabel, block, MirrorNodeClient.GET_BLOCKS_ENDPOINT, constants.CACHE_TTL.ONE_DAY, requestId);       
+            this.cache.set(cachedLabel, block, MirrorNodeClient.GET_BLOCKS_ENDPOINT, constants.CACHE_TTL.ONE_DAY, requestId);
             return block;     
         }
 
