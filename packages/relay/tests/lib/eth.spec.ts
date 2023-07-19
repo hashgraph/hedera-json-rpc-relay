@@ -68,6 +68,7 @@ import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { Hbar, HbarUnit, TransactionId } from '@hashgraph/sdk';
 import { hashNumber } from '../../dist/formatters';
+import { v4 as uuid } from 'uuid';
 
 const LRU = require('lru-cache');
 
