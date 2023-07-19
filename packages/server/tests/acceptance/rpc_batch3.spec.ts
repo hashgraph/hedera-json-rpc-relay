@@ -129,8 +129,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 gas: EthImpl.numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
-            const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
-            expect(res).to.eq('0x'); // confirm no error
+
+            await Assertions.assertRejection(predefined.CONTRACT_REVERT(), relay.call, [callData, 'latest'], false);
         });
 
         it('should execute "eth_call" without from field', async function () {
@@ -636,9 +636,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         });
     });
 
-
     describe('eth_getTransactionCount', async function () {
-        let deployerContract, mirrorContract, mirrorContractDetails, contractId;
+        let deployerContract, mirrorContract, mirrorContractDetails, contractId,
+            primaryAccountNonce, secondaryAccountNonce;
 
         const defaultGasPrice = EthImpl.numberTo0x(Assertions.defaultGasPrice);
         const defaultGasLimit = EthImpl.numberTo0x(3_000_000);
@@ -664,44 +664,47 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             mirrorContract = await mirrorNode.get(`/contracts/${receipt.to}`, requestId);
 
             // get contract result details
-            mirrorContractDetails = await mirrorNode.get(`/contracts/results/${receipt.hash}`, requestId);
+            mirrorContractDetails = await mirrorNode.get(`/contracts/results/${receipt.transactionHash}`, requestId);
 
             contractId = mirrorContract.contract_id;
+
+            primaryAccountNonce = await servicesNode.getAccountNonce(accounts[0].accountId);
+            secondaryAccountNonce = await servicesNode.getAccountNonce(accounts[1].accountId);
         });
 
         it('@release should execute "eth_getTransactionCount" primary', async function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorPrimaryAccount.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
-            expect(res).to.be.equal('0x0');
+            expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(primaryAccountNonce.toInt())));
         });
 
         it('should execute "eth_getTransactionCount" secondary', async function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorSecondaryAccount.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
-            expect(res).to.be.equal('0x0');
+            expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(secondaryAccountNonce.toInt())));
         });
 
         it('@release should execute "eth_getTransactionCount" historic', async function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorContract.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
-            expect(res).to.be.equal('0x0');
+            expect(res).to.be.equal('0x2');
         });
 
         it('@release should execute "eth_getTransactionCount" contract latest', async function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorContract.evm_address, EthImpl.blockLatest], requestId);
-            expect(res).to.be.equal('0x1');
+            expect(res).to.be.equal('0x2');
         });
 
         it('@release should execute "eth_getTransactionCount" for account with id converted to evm_address', async function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(mirrorPrimaryAccount.account), EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
-            expect(res).to.be.equal('0x0');
+            expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(primaryAccountNonce.toInt())));
         });
 
         it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address historic', async function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(contractId.toString()), EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
-            expect(res).to.be.equal('0x0');
+            expect(res).to.be.equal('0x2');
         });
 
         it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address latest', async function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(contractId.toString()), EthImpl.blockLatest], requestId);
-            expect(res).to.be.equal('0x1');
+            expect(res).to.be.equal('0x2');
         });
 
         it('should execute "eth_getTransactionCount" for non-existing address', async function () {
@@ -715,11 +718,11 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             expect(resBeforeCreation).to.be.equal('0x0');
 
             const gasPrice = await relay.gasPrice(requestId);
-            const signedTxHollowAccountCreation = await accounts[2].wallet.signTransaction({
+            const signedTxHollowAccountCreation = await accounts[1].wallet.signTransaction({
                 ...defaultTransaction,
                 value: '10000000000000000000', // 10 HBARs
                 to: hollowAccount.address,
-                nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
+                nonce: await relay.getAccountNonce('0x' + accounts[1].address, requestId),
                 maxPriorityFeePerGas: gasPrice,
                 maxFeePerGas: gasPrice,
             });
@@ -764,5 +767,18 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, ['0x' + account.address, 'latest'], requestId);
             expect(res).to.be.equal('0x1');
         });
+
+        it('nonce for contract correctly increments', async function () {
+            const nonceBefore = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [deployerContract.address, 'latest'], requestId);
+            expect(nonceBefore).to.be.equal('0x2');
+
+            const newContractReceipt = await deployerContract.deployViaCreate();
+            await newContractReceipt.wait();
+
+            const nonceAfter = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [deployerContract.address, 'latest'], requestId);
+            expect(nonceAfter).to.be.equal('0x3');
+
+        });
+
     });
 });
