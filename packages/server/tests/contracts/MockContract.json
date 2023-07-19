@@ -1,0 +1,31 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "MockContract",
+  "sourceName": "contracts/Deployer.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "destroy",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600f57600080fd5b5060878061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806338cc483114603757806383197ef014604a575b600080fd5b6040805130815290519081900360200190f35b604f33ff5b00fea2646970667358221220e4694c5da062c0f5d60f55b135a5e3c1f3741556180ff1dd7fb1f1658265e42164736f6c63430008090033",
+  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806338cc483114603757806383197ef014604a575b600080fd5b6040805130815290519081900360200190f35b604f33ff5b00fea2646970667358221220e4694c5da062c0f5d60f55b135a5e3c1f3741556180ff1dd7fb1f1658265e42164736f6c63430008090033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

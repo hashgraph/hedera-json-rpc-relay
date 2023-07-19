@@ -30,12 +30,14 @@ import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import { predefined } from '../../../../packages/relay';
 import basicContractJson from '../contracts/Basic.json';
 import callerContractJson from '../contracts/Caller.json';
+import DeployerContractJson from '../contracts/Deployer.json';
 import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 //Constants are imported with different definitions for better readability in the code.
 import RelayCall from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import Assertions from '../helpers/assertions';
+import RelayCalls from "../helpers/constants";
 
 describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -44,6 +46,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
     // @ts-ignore
     const { servicesNode, mirrorNode, relay } = global;
+    let mirrorPrimaryAccount, mirrorSecondaryAccount;
 
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
@@ -72,13 +75,16 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         requestId = Utils.generateRequestId();
 
-        accounts[0] = await servicesNode.createAliasAccount(80, null, requestId);
+        accounts[0] = await servicesNode.createAliasAccount(80, relay.provider, requestId);
         accounts[1] = await servicesNode.createAliasAccount(80, relay.provider, requestId);
 
         reverterContract = await servicesNode.deployContract(reverterContractJson);
         // Wait for creation to propagate
         await mirrorNode.get(`/contracts/${reverterContract.contractId}`, requestId);
         reverterEvmAddress = `0x${reverterContract.contractId.toSolidityAddress()}`;
+
+        mirrorPrimaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`, requestId)).accounts[0];
+        mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`, requestId)).accounts[0];
     });
 
 
@@ -627,6 +633,136 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
 
             expect(res).to.eq(RESULT_TRUE);
+        });
+    });
+
+
+    describe('eth_getTransactionCount', async function () {
+        let deployerContract, mirrorContract, mirrorContractDetails, contractId;
+
+        const defaultGasPrice = EthImpl.numberTo0x(Assertions.defaultGasPrice);
+        const defaultGasLimit = EthImpl.numberTo0x(3_000_000);
+        const defaultTransaction = {
+            value: ONE_TINYBAR,
+            chainId: Number(CHAIN_ID),
+            maxPriorityFeePerGas: defaultGasPrice,
+            maxFeePerGas: defaultGasPrice,
+            gasLimit: defaultGasLimit,
+            type: 2
+        };
+
+        before(async() => {
+            const factory = new ethers.ContractFactory(DeployerContractJson.abi, DeployerContractJson.bytecode, accounts[0].wallet);
+            let contract = await factory.deploy();
+            await contract.deployed();
+
+            // re-init the contract with the deployed address
+            const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
+            deployerContract = new ethers.Contract(receipt.to, DeployerContractJson.abi, accounts[0].wallet);
+
+            // get contract details
+            mirrorContract = await mirrorNode.get(`/contracts/${receipt.to}`, requestId);
+
+            // get contract result details
+            mirrorContractDetails = await mirrorNode.get(`/contracts/results/${receipt.hash}`, requestId);
+
+            contractId = mirrorContract.contract_id;
+        });
+
+        it('@release should execute "eth_getTransactionCount" primary', async function () {
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorPrimaryAccount.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            expect(res).to.be.equal('0x0');
+        });
+
+        it('should execute "eth_getTransactionCount" secondary', async function () {
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorSecondaryAccount.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            expect(res).to.be.equal('0x0');
+        });
+
+        it('@release should execute "eth_getTransactionCount" historic', async function () {
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorContract.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            expect(res).to.be.equal('0x0');
+        });
+
+        it('@release should execute "eth_getTransactionCount" contract latest', async function () {
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorContract.evm_address, EthImpl.blockLatest], requestId);
+            expect(res).to.be.equal('0x1');
+        });
+
+        it('@release should execute "eth_getTransactionCount" for account with id converted to evm_address', async function () {
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(mirrorPrimaryAccount.account), EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            expect(res).to.be.equal('0x0');
+        });
+
+        it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address historic', async function () {
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(contractId.toString()), EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            expect(res).to.be.equal('0x0');
+        });
+
+        it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address latest', async function () {
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(contractId.toString()), EthImpl.blockLatest], requestId);
+            expect(res).to.be.equal('0x1');
+        });
+
+        it('should execute "eth_getTransactionCount" for non-existing address', async function () {
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Address.NON_EXISTING_ADDRESS, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            expect(res).to.be.equal('0x0');
+        });
+
+        it('should execute "eth_getTransactionCount" from hollow account', async function () {
+            const hollowAccount = ethers.Wallet.createRandom();
+            const resBeforeCreation = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [hollowAccount.address, 'latest'], requestId);
+            expect(resBeforeCreation).to.be.equal('0x0');
+
+            const gasPrice = await relay.gasPrice(requestId);
+            const signedTxHollowAccountCreation = await accounts[2].wallet.signTransaction({
+                ...defaultTransaction,
+                value: '10000000000000000000', // 10 HBARs
+                to: hollowAccount.address,
+                nonce: await relay.getAccountNonce('0x' + accounts[2].address, requestId),
+                maxPriorityFeePerGas: gasPrice,
+                maxFeePerGas: gasPrice,
+            });
+            const txHashHAC = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTxHollowAccountCreation], requestId);
+            await mirrorNode.get(`/contracts/results/${txHashHAC}`, requestId);
+
+            const signTxFromHollowAccount = await hollowAccount.signTransaction({
+                ...defaultTransaction,
+                to: mirrorContract.evm_address,
+                nonce: await relay.getAccountNonce(hollowAccount.address, requestId),
+                maxPriorityFeePerGas: gasPrice,
+                maxFeePerGas: gasPrice,
+            });
+            const txHashHA = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signTxFromHollowAccount], requestId);
+            await mirrorNode.get(`/contracts/results/${txHashHA}`, requestId);
+
+            const resAfterCreation = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [hollowAccount.address, 'latest'], requestId);
+            expect(resAfterCreation).to.be.equal('0x1');
+        });
+
+        it('should execute "eth_getTransactionCount" for account with non-zero nonce', async function () {
+            const account = await servicesNode.createAliasAccount(10, null, requestId);
+
+            // Wait for account creation to propagate
+            await mirrorNode.get(`/accounts/${account.accountId}`, requestId);
+
+            const gasPrice = await relay.gasPrice(requestId);
+            const transaction = {
+                ...defaultTransaction,
+                to: mirrorContract.evm_address,
+                nonce: await relay.getAccountNonce('0x' + account.address, requestId),
+                maxPriorityFeePerGas: gasPrice,
+                maxFeePerGas: gasPrice,
+            };
+
+            const signedTx = await account.wallet.signTransaction(transaction);
+            const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+            // Since the transactionId is not available in this context
+            // Wait for the transaction to be processed and imported in the mirror node with axios-retry
+            await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, ['0x' + account.address, 'latest'], requestId);
+            expect(res).to.be.equal('0x1');
         });
     });
 });
