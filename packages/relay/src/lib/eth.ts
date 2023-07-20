@@ -1907,7 +1907,8 @@ export class EthImpl implements Eth {
   private async getAccountLatestEthereumNonce(address: string, requestId?: string) {
     const accountData = await this.mirrorNodeClient.getAccount(address, requestId);
     if (accountData) {
-      return EthImpl.numberTo0x(accountData.ethereum_nonce);
+      // with HIP 729 ethereum_nonce should always be 0+ and null. Historical contracts may have a null value as the nonce was not tracked, return default EVM compliant 0x1 in this case
+      return accountData.ethereum_nonce !== null ? EthImpl.numberTo0x(accountData.ethereum_nonce) : EthImpl.oneHex;
     }
 
     return EthImpl.zeroHex;

@@ -4433,6 +4433,16 @@ describe('Eth calls using MirrorNode', async function () {
       }
       expect(hasError).to.be.true;
     });
+
+    it('should return 0x1 for pre-hip-729 contracts with nonce=null', async() => {
+      restMock.onGet(accountPath).reply(200, {...mockData.account, ethereum_nonce: null});
+
+      // mock contract to have the same nonce as the account
+      restMock.onGet(contractPath).reply(200, { ...mockData.contract, nonce: null });
+      const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockLatest);
+      expect(nonce).to.exist;
+      expect(nonce).to.equal(EthImpl.oneHex);
+    });
   });
 });
 
