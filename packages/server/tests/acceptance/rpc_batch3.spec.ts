@@ -130,7 +130,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
 
-            await Assertions.assertRejection(predefined.CONTRACT_REVERT(), relay.call, [callData, 'latest'], false);
+            const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+            expect(res).to.eq('0x'); // confirm no error
         });
 
         it('should execute "eth_call" without from field', async function () {
