@@ -135,13 +135,18 @@ export class SDKClient {
             .setAccountId(AccountId.fromString(address)), this.clientMain, callerName, address, requestId);
     }
 
-    async getContractByteCode(shard: number | Long, realm: number | Long, address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
-        const contractByteCodeQuery = new ContractByteCodeQuery().setContractId(ContractId.fromEvmAddress(shard, realm, address));
-        const cost = await contractByteCodeQuery
-            .getCost(this.clientMain);
+    async getContractByteCode(shard: number | Long, realm: number | Long, address: string, callerName: string, hasProhibitedOpCodes: boolean, requestId?: string): Promise<Uint8Array> {
+        if(hasProhibitedOpCodes) {
+            return this.executeQuery(new ContractByteCodeQuery()
+                .setContractId(ContractId.fromEvmAddress(shard, realm, address)), this.clientMain, callerName, address, requestId);
+        } else {
+            const contractByteCodeQuery = new ContractByteCodeQuery().setContractId(ContractId.fromEvmAddress(shard, realm, address));
+            const cost = await contractByteCodeQuery
+                .getCost(this.clientMain);
 
-        return this.executeQuery(new ContractByteCodeQuery()
-            .setQueryPayment(cost), this.clientMain, callerName, address, requestId);
+            return this.executeQuery(new ContractByteCodeQuery()
+                .setQueryPayment(cost), this.clientMain, callerName, address, requestId);
+        }
     }
 
     async getContractBalance(contract: string, callerName: string, requestId?: string): Promise<AccountBalance> {

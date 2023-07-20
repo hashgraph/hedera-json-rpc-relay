@@ -18,6 +18,8 @@
   *
   */
 
+import {PrecheckStatusError} from "@hashgraph/sdk";
+
 enum CACHE_KEY {
     ACCOUNT = 'account',
     ETH_BLOCK_NUMBER = 'eth_block_number',
@@ -124,6 +126,12 @@ export default {
 
     TRANSACTION_RESULT_STATUS: {
         WRONG_NONCE: 'WRONG_NONCE'
+    },
+
+    PRECHECK_STATUS_ERROR_STATUS_CODES: {
+        INVALID_CONTRACT_ID: 16,
+        CONTRACT_DELETED: 66
     }
+
 };
 
