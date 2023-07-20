@@ -18,8 +18,6 @@
   *
   */
 
-import {PrecheckStatusError} from "@hashgraph/sdk";
-
 enum CACHE_KEY {
     ACCOUNT = 'account',
     ETH_BLOCK_NUMBER = 'eth_block_number',
