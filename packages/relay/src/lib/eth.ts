@@ -1755,9 +1755,9 @@ export class EthImpl implements Eth {
       chainId: this.chain,
       from: log.address,
       gas: EthImpl.defaultTxGas,
-      gasPrice: EthImpl.zeroHex,
+      gasPrice: undefined,
       hash: log.transactionHash,
-      input: EthImpl.zeroHex,
+      input: EthImpl.zeroHex8Byte,
       maxPriorityFeePerGas: EthImpl.zeroHex,
       maxFeePerGas: EthImpl.zeroHex,
       nonce: EthImpl.nanOrNumberTo0x(0),
@@ -1767,7 +1767,7 @@ export class EthImpl implements Eth {
       transactionIndex: log.transactionIndex,
       type: EthImpl.twoHex, // 0x0 for legacy transactions, 0x1 for access list types, 0x2 for dynamic fees.
       v: EthImpl.zeroHex,
-      value: EthImpl.zeroHex,
+      value: EthImpl.zeroHex8Byte,
     });
   }
 
