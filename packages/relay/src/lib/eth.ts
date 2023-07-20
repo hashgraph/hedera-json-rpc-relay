@@ -59,7 +59,7 @@ export class EthImpl implements Eth {
   static emptyHex = '0x';
   static zeroHex = '0x0';
   static oneHex = '0x1';
-  static twoHex = '0x2'; 
+  static twoHex = '0x2';
   static zeroHex8Byte = '0x0000000000000000';
   static zeroHex32Byte = '0x0000000000000000000000000000000000000000000000000000000000000000';
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
@@ -1755,7 +1755,7 @@ export class EthImpl implements Eth {
       chainId: this.chain,
       from: log.address,
       gas: EthImpl.defaultTxGas,
-      gasPrice: undefined,
+      gasPrice: EthImpl.invalidEVMInstruction,
       hash: log.transactionHash,
       input: EthImpl.zeroHex8Byte,
       maxPriorityFeePerGas: EthImpl.zeroHex,
@@ -1767,7 +1767,7 @@ export class EthImpl implements Eth {
       transactionIndex: log.transactionIndex,
       type: EthImpl.twoHex, // 0x0 for legacy transactions, 0x1 for access list types, 0x2 for dynamic fees.
       v: EthImpl.zeroHex,
-      value: EthImpl.zeroHex8Byte,
+      value: EthImpl.invalidEVMInstruction,
     });
   }
 
