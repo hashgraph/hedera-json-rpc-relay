@@ -69,6 +69,8 @@ import HbarLimit from '../../src/lib/hbarlimiter';
 import { Hbar, HbarUnit, TransactionId } from '@hashgraph/sdk';
 import chaiAsPromised from 'chai-as-promised';
 import Assertions from '../assertions';
+import {v4 as uuid} from 'uuid';
+import { JsonRpcError } from '../../dist';
 
 chai.use(chaiAsPromised);
 
@@ -84,6 +86,7 @@ let restMock: MockAdapter, web3Mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
 let sdkClientStub;
+let getSdkClientStub;
 let mirrorNodeCache;
 let defaultLogs, defaultDetailedContractResults2, defaultDetailedContractResults3;
 
@@ -115,8 +118,6 @@ describe('Eth calls using MirrorNode', async function () {
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
 
     hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, clientCache);
-    sdkClientStub = sinon.createStubInstance(SDKClient);
-    sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkClientStub);
 
     process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
@@ -133,6 +134,13 @@ describe('Eth calls using MirrorNode', async function () {
     mirrorNodeCache.clear();
     clientCache.clear();
     restMock.reset();
+
+    sdkClientStub = sinon.createStubInstance(SDKClient);
+    getSdkClientStub = sinon.stub(hapiServiceInstance, "getSDKClient").returns(sdkClientStub);
+  });
+
+  this.afterEach(() => {
+    getSdkClientStub.restore();
   });
 
   const TINYBAR_TO_WEIBAR_COEF_BIGINT = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
@@ -993,7 +1001,8 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.equal(null);
   });
 
-  it('eth_getBlockByHash should throw if unexpected error', async function () {
+  // TODO: entire test is re-written and fixed in https://github.com/hashgraph/hedera-json-rpc-relay/pull/1506
+  xit('eth_getBlockByHash should throw if unexpected error', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
     restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultContractResults);
@@ -1001,14 +1010,6 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, {...defaultDetailedContractResults, block_hash: null});
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
-
-    // try {
-    //   await ethImpl.getBlockByHash(blockHash, false);
-    // } catch (e) {
-    //   console.log("Error ------>", e);
-    //   expect(e.code).to.equal(-32603);
-    //   expect(e.name).to.equal('Internal error');
-    // }
 
     await Assertions.assertRejection(predefined.INTERNAL_ERROR(), ethImpl.getBlockByHash, false, ethImpl, [blockHash, false]);
   });
@@ -3543,6 +3544,12 @@ describe('Eth calls using MirrorNode', async function () {
       };
 
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
+      sdkClientStub.submitContractCallQueryWithRetry.returns({
+          asBytes: function () {
+            return Uint8Array.of(0);
+          }
+        }
+      );
 
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal("0x00");
@@ -3615,17 +3622,21 @@ describe('Eth calls using MirrorNode', async function () {
 
       await new Promise(r => setTimeout(r, 200));
 
-      const args = [{
+      const expectedError = predefined.INVALID_CONTRACT_ADDRESS(contractAddress2);
+      sdkClientStub.submitContractCallQueryWithRetry.throws(expectedError);
+      const call: string | JsonRpcError = await ethImpl.call({
         "from": accountAddress1,
         "to": contractAddress2,
         "data": contractCallData,
         "gas": maxGasLimitHex
-      }, 'latest'];
+      }, 'latest');
 
-      await Assertions.assertRejection(predefined.INTERNAL_ERROR(), ethImpl.call, false, ethImpl, args);
+      expect(call.code).to.equal(expectedError.code);
+      expect(call.name).to.equal(expectedError.name);
+      expect(call.message).to.equal(expectedError.message);
     });
 
-    describe('with gas > 15_000_000', async function() {      
+    describe('with gas > 15_000_000', async function() {
       it('eth_call throws gasLimit too high error when gas exceeds limit', async function () {
         restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
@@ -3636,7 +3647,7 @@ describe('Eth calls using MirrorNode', async function () {
           "data": contractCallData,
           "gas": 50_000_000
         }, 'latest'];
-  
+
         await Assertions.assertRejection(predefined.GAS_LIMIT_TOO_HIGH(50000000, constants.BLOCK_GAS_LIMIT), ethImpl.call, false, ethImpl, args);
       });
     });
@@ -3727,19 +3738,10 @@ describe('Eth calls using MirrorNode', async function () {
         evm_address: accountAddress1
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract3EmptyBytecode);
-
-      sdkClientStub.submitContractCallQueryWithRetry.returns({
-          asBytes: function () {
-            return Uint8Array.of(0);
-          }
-        }
-      );
+      web3Mock.onPost(`contracts/call`).replyOnce(200, {});
 
       const result = await ethImpl.call(callData, 'latest');
-      sinon.assert.calledWith(sdkClientStub.submitContractCallQueryWithRetry, contractAddress2, contractCallData, maxGasLimit, accountAddress1, EthImpl.ethCall);
-      expect(result).to.not.be.null;
-      expect(result.code).to.equal(-32603);
-      expect(result.name).to.equal("Internal error");
+      expect(result).to.equal('0x');
     });
     
     it('eth_call with no gas', async function () {
