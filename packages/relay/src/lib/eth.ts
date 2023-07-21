@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { Hbar } from '@hashgraph/sdk';
+import {Hbar, PrecheckStatusError} from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { BigNumber as BN } from "bignumber.js";
 import { Logger } from 'pino';
@@ -905,6 +905,16 @@ export class EthImpl implements Eth {
 
         this.hapiService.decrementErrorCounter(e.statusCode);
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}, err code: ${e.statusCode}`);
+      } else if(e instanceof PrecheckStatusError) {
+        if(e.status._code === constants.PRECHECK_STATUS_ERROR_STATUS_CODES.INVALID_CONTRACT_ID ||
+            e.status._code === constants.PRECHECK_STATUS_ERROR_STATUS_CODES.CONTRACT_DELETED ) {
+          this.logger.debug(`${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.message}`);
+          return EthImpl.emptyHex;
+        }
+
+        this.hapiService.decrementErrorCounter(e.status._code);
+        this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}, err code: ${e.status._code}`);
+
       } else {
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}`);
       }
