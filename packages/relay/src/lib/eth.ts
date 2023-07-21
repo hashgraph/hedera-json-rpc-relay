@@ -1151,7 +1151,13 @@ export class EthImpl implements Eth {
       txSubmitted = true;
       // Wait for the record from the execution.
       let txId = contractExecuteResponse.transactionId.toString();
-      const formattedId = formatTransactionId(txId);
+      const formattedId = formatTransactionIdWithoutQueryParams(txId);
+      
+      // handle formattedId beng null
+      if (!formattedId) {
+        throw predefined.INTERNAL_ERROR(`Invalid transactionID.`);
+      }
+
       const  record = await this.mirrorNodeClient.repeatedRequest(this.mirrorNodeClient.getContractResult.name, [formattedId], this.MirrorNodeGetContractResultRetries, requestIdPrefix);
       if (!record) {
         this.logger.warn(`${requestIdPrefix} No record retrieved`);
