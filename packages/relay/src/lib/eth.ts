@@ -873,7 +873,6 @@ export class EthImpl implements Eth {
 
     try {
       const result = await this.mirrorNodeClient.resolveEntityType(address, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN], EthImpl.ethGetCode, requestIdPrefix);
-      let hasProhibitedOpcode = false;
       if (result) {
         if (result?.type === constants.TYPE_TOKEN) {
           this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
@@ -882,7 +881,7 @@ export class EthImpl implements Eth {
           if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
             const prohibitedOpcodes = ['CALLCODE', 'DELEGATECALL', 'SELFDESTRUCT', 'SUICIDE'];
             const opcodes = asm.disassemble(result?.entity.runtime_bytecode);
-            hasProhibitedOpcode = opcodes.filter(opcode => prohibitedOpcodes.indexOf(opcode.opcode.mnemonic) > -1).length > 0;
+            const hasProhibitedOpcode = opcodes.filter(opcode => prohibitedOpcodes.indexOf(opcode.opcode.mnemonic) > -1).length > 0;
             if (!hasProhibitedOpcode) {
               this.cache.set(cachedLabel, result?.entity.runtime_bytecode, EthImpl.ethGetCode, undefined, requestIdPrefix);
               return result?.entity.runtime_bytecode;
@@ -891,7 +890,7 @@ export class EthImpl implements Eth {
         }
       }
 
-      const bytecode = await this.hapiService.getSDKClient().getContractByteCode(0, 0, address, EthImpl.ethGetCode, hasProhibitedOpcode, requestIdPrefix);
+      const bytecode = await this.hapiService.getSDKClient().getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestIdPrefix);
       return EthImpl.prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       if (e instanceof SDKClientError) {
