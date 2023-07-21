@@ -487,7 +487,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       const txBefore = (await mainContract.getTokenInfoPublic(createdTokenAddress, Constants.GAS.LIMIT_1_000_000));
       const tokenInfoBefore = (await txBefore.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenInfo)[0].args.tokenInfo;
 
-      const tx = await mainContract.deleteTokenPublic(createdTokenAddress);
+      const tx = await mainContract.deleteTokenPublic(createdTokenAddress, Constants.GAS.LIMIT_1_000_000);
       const responseCode = (await tx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
       expect(responseCode).to.equal(TX_SUCCESS_CODE);
 
