@@ -1237,6 +1237,11 @@ export class EthImpl implements Eth {
       }
 
       if (e instanceof MirrorNodeClientError) {
+        // Handles mirror node error for missing contract
+        if (e.isFailInvalid()) {
+          return EthImpl.emptyHex;
+        }
+
         if (e.isRateLimit()) {
           return predefined.IP_RATE_LIMIT_EXCEEDED(e.data || `Rate limit exceeded on ${EthImpl.ethCall}`);
         }

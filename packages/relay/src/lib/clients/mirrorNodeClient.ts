@@ -351,15 +351,7 @@ export class MirrorNodeClient {
         const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
         const acceptedErrorResponses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
 
-        const acceptError = (
-        // Handles a FAIL_INVALID error thrown in the case of a non-existing contract in /contracts/call
-            (mirrorError.isFailInvalid() && pathLabel === MirrorNodeClient.CONTRACT_CALL_ENDPOINT)
-
-            // Handle accepted error codes
-            || (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1)
-        )
-
-        if (acceptError) {
+        if (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1) {
             this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
             if(pathLabel  === MirrorNodeClient.CONTRACT_CALL_ENDPOINT) {
                 this.logger.warn(`${requestIdPrefix} [${method}] ${path} Error details: ( StatusCode: '${effectiveStatusCode}', StatusText: '${error.response.statusText}', Data: '${JSON.stringify(error.response.data)}')`);
