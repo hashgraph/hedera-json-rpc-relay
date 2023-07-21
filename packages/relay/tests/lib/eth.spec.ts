@@ -4075,6 +4075,40 @@ describe('Eth calls using MirrorNode', async function () {
       expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
       expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
     });
+
+    it('should throw internal error when transactionID is invalid', async function () {
+      restMock.onGet(accountEndpoint).reply(200, {
+        account: accountAddress,
+        balance: {
+          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
+        },
+      });
+      
+
+      const transaction = {
+        chainId: 0x12a,
+        to: accountAddress1,
+        from: accountAddress,
+        value,
+        gasPrice,
+        gasLimit: maxGasLimitHex,
+      };
+
+      const signed = await signTransaction(transaction);
+
+      restMock.onGet('network/fees').reply(200, defaultNetworkFees);
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+
+      sdkClientStub.submitEthereumTransaction.returns({
+        transactionId: "",
+      });
+
+      const response = (await ethImpl.sendRawTransaction(signed, getRequestId())) as JsonRpcError;
+
+      expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
+      expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
+    });
+
     it('should return hash from ContractResult mirror node api', async function () {
       restMock.onGet(accountEndpoint).reply(200, { 
         account: accountAddress,
