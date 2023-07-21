@@ -54,7 +54,7 @@
         "bump-version": "SEM_VER=${npm_config_semver} SNAPSHOT=${npm_config_snapshot} node scripts/.bump-version.js"
     },
     "dependencies": {
-        "@hashgraph/hedera-local": "^2.11.0",
+        "@hashgraph/hedera-local": "^2.11.1",
         "@open-rpc/schema-utils-js": "^1.16.1",
         "@types/find-config": "^1.0.1",
         "keyv-file": "^0.2.0",
