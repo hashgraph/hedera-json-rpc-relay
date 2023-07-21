@@ -126,6 +126,12 @@ export default {
 
     TRANSACTION_RESULT_STATUS: {
         WRONG_NONCE: 'WRONG_NONCE'
+    },
+
+    PRECHECK_STATUS_ERROR_STATUS_CODES: {
+        INVALID_CONTRACT_ID: 16,
+        CONTRACT_DELETED: 66
     }
+
 };
 
