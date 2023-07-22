@@ -1171,7 +1171,7 @@ export class EthImpl implements Eth {
       const  record = await this.mirrorNodeClient.repeatedRequest(this.mirrorNodeClient.getContractResult.name, [formattedId], this.MirrorNodeGetContractResultRetries, requestIdPrefix);
       if (!record) {
         this.logger.warn(`${requestIdPrefix} No record retrieved`);
-        const tx = await this.mirrorNodeClient.getTransactionById(formattedId, 0, requestIdPrefix);
+        const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestIdPrefix);
 
         if (tx?.transactions?.length) {
           const result = tx.transactions[0].result;

@@ -4043,7 +4043,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(resultingHash).to.equal(ethereumHash);
     });
 
-    it('should throw internal error when transaction not found from mirror node', async function () {
+    it('should throw internal error when transaction returned from mirror node is null', async function () {
       restMock.onGet(accountEndpoint).reply(200, {
         account: accountAddress,
         balance: {
@@ -4063,8 +4063,8 @@ describe('Eth calls using MirrorNode', async function () {
       const signed = await signTransaction(transaction);
 
       restMock.onGet('network/fees').reply(200, defaultNetworkFees);
-      restMock.onGet(`transactions/${transactionId}`).reply(404, mockData.notFound);
       restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
+      restMock.onGet(`transactions/${transactionId}?nonce=0`).reply(200, null);
 
       sdkClientStub.submitEthereumTransaction.returns({
         transactionId: TransactionId.fromString(transactionIdServicesFormat),
