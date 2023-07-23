@@ -1165,7 +1165,7 @@ export class EthImpl implements Eth {
       
       // handle formattedId beng null
       if (!formattedId) {
-        throw predefined.INTERNAL_ERROR(`Invalid transactionID.`);
+        throw predefined.INTERNAL_ERROR(`Invalid transactionID: ${txId}`);
       }
 
       const  record = await this.mirrorNodeClient.repeatedRequest(this.mirrorNodeClient.getContractResult.name, [formattedId], this.MirrorNodeGetContractResultRetries, requestIdPrefix);
