@@ -136,8 +136,12 @@ export class SDKClient {
     }
 
     async getContractByteCode(shard: number | Long, realm: number | Long, address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
-        return this.executeQuery(new ContractByteCodeQuery()
-            .setContractId(ContractId.fromEvmAddress(shard, realm, address)), this.clientMain, callerName, address, requestId);
+        const contractByteCodeQuery = new ContractByteCodeQuery().setContractId(ContractId.fromEvmAddress(shard, realm, address));
+        const cost = await contractByteCodeQuery
+            .getCost(this.clientMain);
+
+        return this.executeQuery(contractByteCodeQuery
+            .setQueryPayment(cost), this.clientMain, callerName, address, requestId);
     }
 
     async getContractBalance(contract: string, callerName: string, requestId?: string): Promise<AccountBalance> {
@@ -163,7 +167,7 @@ export class SDKClient {
     }
 
     async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
-        const cachedResponse: number | undefined = this.cache.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE);
+        const cachedResponse: number | undefined = this.cache.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, callerName);
         if (cachedResponse) {
             return cachedResponse;
         }
@@ -179,7 +183,7 @@ export class SDKClient {
                 const exchangeRates = await this.getExchangeRate(callerName, requestId);
                 const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
-                this.cache.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, undefined, requestId);
+                this.cache.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, undefined, requestId);
                 return tinyBars;
             }
         }
@@ -258,7 +262,7 @@ export class SDKClient {
                 const sdkClientError = new SDKClientError(e, e.message);
                 if (sdkClientError.isTimeoutExceeded()) {
                     const delay = retries * 1000;
-                    this.logger.trace(`${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay}ms ...`);
+                    this.logger.trace(`${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`);
                     retries++;
                     await new Promise(r => setTimeout(r, delay));
                     continue;

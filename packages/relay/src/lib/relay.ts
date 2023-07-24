@@ -82,8 +82,8 @@ export class RelayImpl implements Relay {
       this.clientCache);
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
-      const poller = new Poller(this.ethImpl, logger, register);
-      this.subImpl = new SubscriptionController(poller, logger, register);
+      const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
+      this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }
 
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);

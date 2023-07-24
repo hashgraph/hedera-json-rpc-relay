@@ -139,7 +139,7 @@ describe('RPC Server Acceptance Tests', function () {
         // set env variables for docker images until local-node is updated
         process.env['NETWORK_NODE_IMAGE_TAG'] = '0.39.0-alpha.0';
         process.env['HAVEGED_IMAGE_TAG'] = '0.39.0-alpha.0';
-        process.env['MIRROR_IMAGE_TAG'] = '0.82.1';
+        process.env['MIRROR_IMAGE_TAG'] = '0.83.0';
 
         console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
@@ -158,6 +158,7 @@ describe('RPC Server Acceptance Tests', function () {
         relayServer = app.listen({ port: constants.RELAY_PORT });
 
         if (process.env.TEST_WS_SERVER === 'true') {
+            logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
             global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
         }
     }

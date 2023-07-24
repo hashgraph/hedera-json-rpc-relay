@@ -63,6 +63,7 @@ import {
     defaultLogTopics,
     defaultNetworkFees,
     defaultTxHash,
+    getRequestId,
     signedTransactionHash
 } from '../helpers';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
@@ -233,7 +234,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getBalance"', async function () {
-        const response = await ethImpl.getBalance(contractAddress1, 'latest');
+        const response = await ethImpl.getBalance(contractAddress1, 'latest', getRequestId());
 
         validateResponseSchema(methodsResponseSchema.eth_getBalance, response);
     });
@@ -342,7 +343,8 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionCount"', async function () {
-        mock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).reply(200, { account: contractAddress1 });
+        mock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).reply(200, { account: contractAddress1, ethereum_nonce: 5 });
+        mock.onGet(`contracts/${contractAddress1}${limitOrderPostFix}`).reply(404);
         const response = await ethImpl.getTransactionCount(contractAddress1, 'latest');
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);
