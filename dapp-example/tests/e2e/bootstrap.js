@@ -1,10 +1,9 @@
 const HederaSDK = require('@hashgraph/sdk');
 const ethers = require('ethers');
-const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const IHRC = require("../../src/contracts/IHRC.json");
+import { Utils } from '../../../packages/server/tests/helpers/utils';
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
@@ -69,7 +68,7 @@ const createHTSToken = async function() {
 
   const receipt = await tokenCreate.getReceipt(client);
   const tokenId = receipt.tokenId.toString();
-  const tokenAddress = hethers.utils.getAddressFromAccount(tokenId);
+  const tokenAddress = Utils.idToEvmAddress(tokenId);
 
   console.log(`HTS Token Deployed at: ${tokenAddress} with id ${tokenId}`);
 
