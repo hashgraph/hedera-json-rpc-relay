@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { Hbar } from '@hashgraph/sdk';
+import {Hbar, PrecheckStatusError} from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { BigNumber as BN } from "bignumber.js";
 import { Logger } from 'pino';
@@ -30,7 +30,7 @@ import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
-import { formatTransactionId, parseNumericEnvVar } from '../formatters';
+import { formatTransactionIdWithoutQueryParams, parseNumericEnvVar } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
 import { Counter, Registry } from "prom-client";
@@ -59,6 +59,8 @@ export class EthImpl implements Eth {
   static emptyHex = '0x';
   static zeroHex = '0x0';
   static oneHex = '0x1';
+  static twoHex = '0x2';
+  static oneTwoThreeFourHex  = '0x1234';
   static zeroHex8Byte = '0x0000000000000000';
   static zeroHex32Byte = '0x0000000000000000000000000000000000000000000000000000000000000000';
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
@@ -131,7 +133,8 @@ export class EthImpl implements Eth {
   private readonly MirrorNodeGetContractResultRetries =
     parseNumericEnvVar('MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES', 'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES');
   private readonly estimateGasThrows = process.env. ESTIMATE_GAS_THROWS ? process.env. ESTIMATE_GAS_THROWS === "true" : true;
-
+  private readonly syntheticLogCacheTtl =  parseNumericEnvVar('SYNTHETIC_LOG_CACHE_TTL', 'DEFAULT_SYNTHETIC_LOG_CACHE_TTL');
+  private readonly shouldPopulateSyntheticContractResults = process.env.ETH_POPULATE_SYNTHETIC_CONTRACT_RESULTS ? process.env.ETH_POPULATE_SYNTHETIC_CONTRACT_RESULTS === "true" : false;
     /**
    * Configurable options used when initializing the cache.
    *
@@ -902,6 +905,16 @@ export class EthImpl implements Eth {
 
         this.hapiService.decrementErrorCounter(e.statusCode);
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}, err code: ${e.statusCode}`);
+      } else if(e instanceof PrecheckStatusError) {
+        if(e.status._code === constants.PRECHECK_STATUS_ERROR_STATUS_CODES.INVALID_CONTRACT_ID ||
+            e.status._code === constants.PRECHECK_STATUS_ERROR_STATUS_CODES.CONTRACT_DELETED ) {
+          this.logger.debug(`${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.message}`);
+          return EthImpl.emptyHex;
+        }
+
+        this.hapiService.decrementErrorCounter(e.status._code);
+        this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}, err code: ${e.status._code}`);
+
       } else {
         this.logger.error(e, `${requestIdPrefix} Error raised during getCode for address ${address}`);
       }
@@ -1148,12 +1161,19 @@ export class EthImpl implements Eth {
       txSubmitted = true;
       // Wait for the record from the execution.
       let txId = contractExecuteResponse.transactionId.toString();
-      const formattedId = formatTransactionId(txId);
+      const formattedId = formatTransactionIdWithoutQueryParams(txId);
+      
+      // handle formattedId being null
+      if (!formattedId) {
+        throw predefined.INTERNAL_ERROR(`Invalid transactionID: ${txId}`);
+      }
+
       const  record = await this.mirrorNodeClient.repeatedRequest(this.mirrorNodeClient.getContractResult.name, [formattedId], this.MirrorNodeGetContractResultRetries, requestIdPrefix);
       if (!record) {
         this.logger.warn(`${requestIdPrefix} No record retrieved`);
         const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestIdPrefix);
-        if (tx.transactions?.length) {
+
+        if (tx?.transactions?.length) {
           const result = tx.transactions[0].result;
           if (result === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
             const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestIdPrefix);
@@ -1449,10 +1469,36 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_RECEIPT}_${hash}`;
-    let cachedResponse = this.cache.get(cacheKey, EthImpl.ethGetTransactionReceipt);
+    let cachedResponse = this.cache.get(cacheKey, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
     if (cachedResponse) {
       this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached response: ${cachedResponse}`);
       return cachedResponse;
+    }
+
+    const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
+    const cachedLog = this.cache.get(cacheKeySyntheticLog, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
+    if (cachedLog) {      
+      const receipt: any  = {
+        blockHash: cachedLog.blockHash,
+        blockNumber: cachedLog.blockNumber,
+        contractAddress: cachedLog.address,
+        cumulativeGasUsed: null,
+        effectiveGasPrice: null,
+        from: null,
+        gasUsed: null,
+        logs: [cachedLog],
+        logsBloom: EthImpl.emptyBloom,
+        root: null,
+        status: null,
+        to: cachedLog.address,
+        transactionHash: cachedLog.transactionHash,
+        transactionIndex: cachedLog.transactionIndex,
+      };
+
+      this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached synthetic receipt response: ${cachedResponse}`);
+      this.cache.set(cacheKey, receipt, EthImpl.ethGetTransactionReceipt, constants.CACHE_TTL.ONE_DAY, requestIdPrefix);
+
+      return receipt
     }
 
     const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
@@ -1504,7 +1550,7 @@ export class EthImpl implements Eth {
 
       this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
 
-      this.cache.set(cacheKey, receipt, EthImpl.ethGetTransactionReceipt, undefined, requestIdPrefix);
+      this.cache.set(cacheKey, receipt, EthImpl.ethGetTransactionReceipt, constants.CACHE_TTL.ONE_DAY, requestIdPrefix);
       return receipt;
     }
   }
@@ -1624,14 +1670,17 @@ export class EthImpl implements Eth {
     const blockResponse = await this.getHistoricalBlockResponse(blockHashOrNumber, true, requestIdPrefix);
 
     if (blockResponse == null) return null;
-
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
     const contractResults = await this.mirrorNodeClient.getContractResults({ timestamp: timestampRangeParams }, undefined, requestIdPrefix);
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
+    const params = { timestamp: timestampRangeParams };
 
-    if (contractResults == null) {
+    // get contract results logs using block timestamp range
+    const logs = await this.getLogsWithParams(null, params, requestIdPrefix)
+
+    if (contractResults == null && logs.length == 0) {
       // contract result not found
       return null;
     }
@@ -1646,6 +1695,10 @@ export class EthImpl implements Eth {
     }
 
     await this.batchGetAndPopulateContractResults(contractResults, showDetails, transactionObjects, transactionHashes, requestIdPrefix);
+    // Gating feature in case of unexpected behavior with other apps.
+    if(this.shouldPopulateSyntheticContractResults) {
+      await this.filterAndPopulateSyntheticContractResults(showDetails, logs, transactionObjects, transactionHashes, requestIdPrefix);
+    }
 
     const blockHash = EthImpl.toHash32(blockResponse.hash);
     const transactionArray = showDetails ? transactionObjects : transactionHashes;
@@ -1671,6 +1724,70 @@ export class EthImpl implements Eth {
       transactions: transactionArray,
       transactionsRoot: transactionArray.length == 0 ? EthImpl.ethEmptyTrie : blockHash,
       uncles: [],
+    });
+  }
+
+  /**
+   * Filter contract logs to remove the duplicate ones with the contract results to get only the synthetic ones.
+   * If showDetails is set to false filter the contract logs and add missing transaction hashes
+   * If showDetails is set to true filter the contract logs and add construct missing transaction objects
+   * @param showDetails 
+   * @param logs
+   * @param transactionObjects 
+   * @param transactionHashes 
+   * @param requestIdPrefix 
+   */
+  filterAndPopulateSyntheticContractResults(showDetails: boolean, logs: Log[], transactionObjects: Transaction[], transactionHashes: string[], requestIdPrefix?: string): void {
+    let filteredLogs: Log[];
+    if (showDetails) {
+      filteredLogs = logs.filter((log) => !transactionObjects.some((transaction) => transaction.hash === log.transactionHash));
+      filteredLogs.forEach(log => {
+        const transaction = this.createTransactionFromLog(log);
+        transactionObjects.push(transaction);
+
+        const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
+        this.cache.set(cacheKey, log, EthImpl.ethGetBlockByHash, this.syntheticLogCacheTtl, requestIdPrefix);
+      });
+    } else {
+      filteredLogs = logs.filter(log => !transactionHashes.includes(log.transactionHash));
+      filteredLogs.forEach(log => {
+        transactionHashes.push(log.transactionHash);
+
+        const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
+        this.cache.set(cacheKey, log, EthImpl.ethGetBlockByHash, this.syntheticLogCacheTtl, requestIdPrefix);
+      });
+      
+      this.logger.trace(`${requestIdPrefix} ${filteredLogs.length} Synthetic transaction hashes will be added in the block response`);
+    }
+  }
+
+  /**
+   * Creates a new instance of transaction object using the information in the log, all unavailable information will be null
+   * @param log
+   * @param requestIdPrefix
+   * @returns Transaction Object
+   */
+  private createTransactionFromLog(log: Log) {
+    return new Transaction({
+      accessList: undefined, // we don't support access lists for now
+      blockHash: log.blockHash,
+      blockNumber: log.blockNumber,
+      chainId: this.chain,
+      from: log.address,
+      gas: EthImpl.defaultTxGas,
+      gasPrice: EthImpl.invalidEVMInstruction,
+      hash: log.transactionHash,
+      input: EthImpl.zeroHex8Byte,
+      maxPriorityFeePerGas: EthImpl.zeroHex,
+      maxFeePerGas: EthImpl.zeroHex,
+      nonce: EthImpl.nanOrNumberTo0x(0),
+      r: EthImpl.zeroHex,
+      s: EthImpl.zeroHex,
+      to: log.address,
+      transactionIndex: log.transactionIndex,
+      type: EthImpl.twoHex, // 0x0 for legacy transactions, 0x1 for access list types, 0x2 for dynamic fees.
+      v: EthImpl.zeroHex,
+      value: EthImpl.oneTwoThreeFourHex,
     });
   }
 
@@ -2022,6 +2139,12 @@ export class EthImpl implements Eth {
     }
 
     this.addTopicsToParams(params, topics);
+
+    return this.getLogsWithParams(address, params, requestIdPrefix);
+  }
+
+  async getLogsWithParams(address: string | [string] | null, params, requestIdPrefix?: string): Promise<Log[]> {
+    const EMPTY_RESPONSE = [];
 
     let logResults;
     if (address) {
