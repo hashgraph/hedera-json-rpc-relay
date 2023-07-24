@@ -30,7 +30,7 @@ import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
-import { formatTransactionId, parseNumericEnvVar } from '../formatters';
+import { formatTransactionIdWithoutQueryParams, parseNumericEnvVar } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
 import { Counter, Registry } from "prom-client";
@@ -1161,12 +1161,19 @@ export class EthImpl implements Eth {
       txSubmitted = true;
       // Wait for the record from the execution.
       let txId = contractExecuteResponse.transactionId.toString();
-      const formattedId = formatTransactionId(txId);
+      const formattedId = formatTransactionIdWithoutQueryParams(txId);
+      
+      // handle formattedId being null
+      if (!formattedId) {
+        throw predefined.INTERNAL_ERROR(`Invalid transactionID: ${txId}`);
+      }
+
       const  record = await this.mirrorNodeClient.repeatedRequest(this.mirrorNodeClient.getContractResult.name, [formattedId], this.MirrorNodeGetContractResultRetries, requestIdPrefix);
       if (!record) {
         this.logger.warn(`${requestIdPrefix} No record retrieved`);
         const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestIdPrefix);
-        if (tx.transactions?.length) {
+
+        if (tx?.transactions?.length) {
           const result = tx.transactions[0].result;
           if (result === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
             const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestIdPrefix);
