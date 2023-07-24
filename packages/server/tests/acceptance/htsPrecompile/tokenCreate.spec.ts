@@ -338,7 +338,10 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       //approval for accounts[2] to use this NFT
       await mainContract.approveNFTPublic(NftHTSTokenContractAddress, accounts[2].address, NftSerialNumber, Constants.GAS.LIMIT_1_000_000);
       await new Promise(r => setTimeout(r, 5000));
-      expect(await NFTokenContract.getApproved(NftSerialNumber)).to.equal(accounts[2].wallet.address);
+      expect(await NFTokenContract.getApproved(NftSerialNumber)).to.be.oneOf([
+        accounts[2].wallet.address,
+        Utils.idToEvmAddress(accounts[2].accountId.toString())
+      ]);
 
       //transfer NFT to accounts[1] with accounts[2] as signer
       await NFTokenContract.connect(accounts[2].wallet).transferFrom(mainContract.address, accounts[1].wallet.address, NftSerialNumber, Constants.GAS.LIMIT_1_000_000);
