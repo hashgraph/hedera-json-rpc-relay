@@ -1160,7 +1160,6 @@ export class EthImpl implements Eth {
       const contractExecuteResponse = await this.hapiService.getSDKClient().submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix);
       txSubmitted = true;
       // Wait for the record from the execution.
-<<<<<<< HEAD
       let txId = contractExecuteResponse.transactionId.toString();
       const formattedId = formatTransactionIdWithoutQueryParams(txId);
       
@@ -1169,10 +1168,6 @@ export class EthImpl implements Eth {
         throw predefined.INTERNAL_ERROR(`Invalid transactionID: ${txId}`);
       }
 
-=======
-      const txId = contractExecuteResponse.transactionId.toString();
-      const formattedId = formatTransactionId(txId);
->>>>>>> 63062fe (Fixes some linter issues)
       const  record = await this.mirrorNodeClient.repeatedRequest(this.mirrorNodeClient.getContractResult.name, [formattedId], this.MirrorNodeGetContractResultRetries, requestIdPrefix);
       if (!record) {
         this.logger.warn(`${requestIdPrefix} No record retrieved`);

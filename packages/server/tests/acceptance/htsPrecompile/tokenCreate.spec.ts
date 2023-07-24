@@ -32,7 +32,6 @@ import ERC721MockJson from '../../contracts/ERC721Mock.json';
 import TokenCreateJson from '../../contracts/TokenCreateContract.json';
 import { Utils } from '../../helpers/utils';
 import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import Assertions from '../../helpers/assertions';
 
 /**
  * Tests for:

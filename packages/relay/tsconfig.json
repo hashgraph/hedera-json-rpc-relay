@@ -14,8 +14,7 @@
         "forceConsistentCasingInFileNames": true,
         "noImplicitAny": false,
         "declaration": true,
-        "strict": true,
-        "sourceMap": true
+        "strict": true
     },
     "include": [
         "src"

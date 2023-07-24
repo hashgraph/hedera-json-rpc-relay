@@ -81,13 +81,13 @@ describe('RPC Server Acceptance Tests', function () {
         logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
         logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
-        // if (USE_LOCAL_NODE === 'true') {
-        //     runLocalHederaNetwork();
-        // }
+        if (USE_LOCAL_NODE === 'true') {
+            runLocalHederaNetwork();
+        }
 
-        // if (global.relayIsLocal) {
-        //     runLocalRelay();
-        // }
+        if (global.relayIsLocal) {
+            runLocalRelay();
+        }
 
         // cache start balance
         startOperatorBalance = await global.servicesNode.getOperatorBalance();
@@ -99,21 +99,21 @@ describe('RPC Server Acceptance Tests', function () {
         logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
 
 
-        // if (USE_LOCAL_NODE === 'true') {
-        //     // stop local-node
-        //     logger.info('Shutdown local node');
-        //     shell.exec('hedera stop');
-        // }
+        if (USE_LOCAL_NODE === 'true') {
+            // stop local-node
+            logger.info('Shutdown local node');
+            shell.exec('hedera stop');
+        }
 
-        // //stop relay
-        // logger.info('Stop relay');
-        // if (relayServer !== undefined) {
-        //     relayServer.close();
-        // }
+        //stop relay
+        logger.info('Stop relay');
+        if (relayServer !== undefined) {
+            relayServer.close();
+        }
 
-        // if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
-        //     socketServer.close();
-        // }
+        if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
+            socketServer.close();
+        }
     });
 
     describe("Acceptance tests", async () => {
