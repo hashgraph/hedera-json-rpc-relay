@@ -75,7 +75,7 @@ const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
 
-const limitOrderPostFix = '?order=desc&limit=1';
+const noTransactions = '?transactions=false';
 
 let restMock: MockAdapter, web3Mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
@@ -2089,7 +2089,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should return the static bytecode for address(0x167) call', async () => {
       restMock.onGet(`contracts/${EthImpl.iHTSAddress}`).reply(200, defaultContract);
-      restMock.onGet(`accounts/${EthImpl.iHTSAddress}${limitOrderPostFix}`).reply(404, null);
+      restMock.onGet(`accounts/${EthImpl.iHTSAddress}${noTransactions}`).reply(404, null);
 
       const res = await ethImpl.getCode(EthImpl.iHTSAddress, null);
       expect(res).to.equal(EthImpl.invalidEVMInstruction);
@@ -2907,7 +2907,7 @@ describe('Eth calls using MirrorNode', async function () {
     web3Mock.onPost('contracts/call', {...callData, estimate: true}).reply(501, {"errorMessage":"","statusCode":501});
 
     const receiverAddress = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
-    restMock.onGet(`accounts/${receiverAddress}${limitOrderPostFix}`).reply(200, { address: receiverAddress });
+    restMock.onGet(`accounts/${receiverAddress}${noTransactions}`).reply(200, { address: receiverAddress });
 
     const gas = await ethImpl.estimateGas(callData, null);
     expect(gas).to.equal(EthImpl.numberTo0x(constants.TX_BASE_COST));
@@ -2922,7 +2922,7 @@ describe('Eth calls using MirrorNode', async function () {
     web3Mock.onPost('contracts/call', {...callData, estimate: true}).reply(501, {"errorMessage":"","statusCode":501});
 
     const receiverAddress = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
-    restMock.onGet(`accounts/${receiverAddress}${limitOrderPostFix}`).reply(200, { address: receiverAddress });
+    restMock.onGet(`accounts/${receiverAddress}${noTransactions}`).reply(200, { address: receiverAddress });
 
     const result = await ethImpl.estimateGas(callData, null);
     expect(result).to.not.be.null;
@@ -2948,7 +2948,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_estimateGas transfer to existing account', async function() {
     const receiverAddress = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
-    restMock.onGet(`accounts/${receiverAddress}${limitOrderPostFix}`).reply(200, { address: receiverAddress });
+    restMock.onGet(`accounts/${receiverAddress}${noTransactions}`).reply(200, { address: receiverAddress });
 
     const gas = await ethImpl.estimateGas({
       to: receiverAddress,
@@ -2959,14 +2959,14 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_estimateGas transfer to existing cached account', async function() {
     const receiverAddress = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
-    restMock.onGet(`accounts/${receiverAddress}${limitOrderPostFix}`).reply(200, { address: receiverAddress });
+    restMock.onGet(`accounts/${receiverAddress}${noTransactions}`).reply(200, { address: receiverAddress });
 
     const gasBeforeCache = await ethImpl.estimateGas({
       to: receiverAddress,
       value: 100_000_000_000
     }, null);
 
-    restMock.onGet(`accounts/${receiverAddress}${limitOrderPostFix}`).reply(404);
+    restMock.onGet(`accounts/${receiverAddress}${noTransactions}`).reply(404);
     const gasAfterCache = await ethImpl.estimateGas({
       to: receiverAddress,
       value: 100_000_000_000
@@ -2978,7 +2978,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_estimateGas transfer to non existing account', async function() {
     const receiverAddress = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
-    restMock.onGet(`accounts/${receiverAddress}${limitOrderPostFix}`).reply(404);
+    restMock.onGet(`accounts/${receiverAddress}${noTransactions}`).reply(404);
 
     const hollowAccountGasCreation = await ethImpl.estimateGas({
       to: receiverAddress,
@@ -3015,7 +3015,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_estimateGas empty call returns transfer cost', async function () {
-    restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
+    restMock.onGet(`accounts/undefined${noTransactions}`).reply(404);
     const gas = await ethImpl.estimateGas({}, null);
     expect(gas).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
@@ -3024,13 +3024,13 @@ describe('Eth calls using MirrorNode', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
     const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
-    restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
+    restMock.onGet(`accounts/undefined${noTransactions}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({}, null);
     expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
   });
 
   it('eth_estimateGas empty input transfer cost', async function () {
-    restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
+    restMock.onGet(`accounts/undefined${noTransactions}`).reply(404);
     const gas = await ethImpl.estimateGas({ data: "" }, null);
     expect(gas).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
@@ -3039,13 +3039,13 @@ describe('Eth calls using MirrorNode', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
     const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
-    restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
+    restMock.onGet(`accounts/undefined${noTransactions}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({ data: "" }, null);
     expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
   });
 
   it('eth_estimateGas zero input returns transfer cost', async function () {
-    restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
+    restMock.onGet(`accounts/undefined${noTransactions}`).reply(404);
     const gas = await ethImpl.estimateGas({ data: "0x" }, null);
     expect(gas).to.equal(EthImpl.numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
@@ -3054,7 +3054,7 @@ describe('Eth calls using MirrorNode', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
     const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
-    restMock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
+    restMock.onGet(`accounts/undefined${noTransactions}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({ data: "0x" }, null);
     expect(gas).to.equal(EthImpl.numberTo0x(defaultGasOverride));
   });
@@ -3276,7 +3276,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-      restMock.onGet(`accounts/${defaultCallData.from}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultCallData.from}${noTransactions}`).reply(200, {
           account: "0.0.1723",
           evm_address: defaultCallData.from
       });
@@ -3292,7 +3292,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = void 0;
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-      restMock.onGet(`accounts/${defaultCallData.from}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultCallData.from}${noTransactions}`).reply(200, {
           account: "0.0.1723",
           evm_address: defaultCallData.from
       });
@@ -3308,7 +3308,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-      restMock.onGet(`accounts/${defaultCallData.from}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultCallData.from}${noTransactions}`).reply(200, {
           account: "0.0.1723",
           evm_address: defaultCallData.from
       });
@@ -3322,7 +3322,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('gas exceeds limit', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3342,7 +3342,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('block 0', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3364,7 +3364,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('block 1', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3386,7 +3386,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('block earliest', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3408,7 +3408,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('block hash not supported', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3430,7 +3430,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('latest block but not found for comparison', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3453,7 +3453,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('to field is not a contract or token', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3490,7 +3490,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('eth_call with no gas', async function () {
       restMock.onGet(`contracts/${accountAddress1}`).reply(404);
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3514,7 +3514,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_call with no data', async function () {
-      restMock.onGet(`accounts/${accountAddress1}?order=desc&limit=1`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3568,7 +3568,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_call with all fields', async function () {
-      restMock.onGet(`accounts/${accountAddress1}?order=desc&limit=1`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3593,7 +3593,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     //Return once the value, then it's being fetched from cache. After the loop we reset the sdkClientStub, so that it returns nothing, if we get an error in the next request that means that the cache was cleared.
     it('eth_call should cache the response for 200ms', async function () {
-      restMock.onGet(`accounts/${accountAddress1}?order=desc&limit=1`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3652,7 +3652,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('SDK returns a precheck error', async function () {
-      restMock.onGet(`accounts/${accountAddress1}?order=desc&limit=1`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3733,7 +3733,7 @@ describe('Eth calls using MirrorNode', async function () {
         "data": contractCallData,
         "gas": maxGasLimit
       };
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3761,7 +3761,7 @@ describe('Eth calls using MirrorNode', async function () {
         "data": contractCallData
       };
 
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3778,7 +3778,7 @@ describe('Eth calls using MirrorNode', async function () {
         "to": contractAddress2,
         "gas": maxGasLimit
       };
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3810,7 +3810,7 @@ describe('Eth calls using MirrorNode', async function () {
         "data": contractCallData,
         "gas": maxGasLimit
       };
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3828,7 +3828,7 @@ describe('Eth calls using MirrorNode', async function () {
         "data": contractCallData,
         "gas": maxGasLimit
       };
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3848,11 +3848,11 @@ describe('Eth calls using MirrorNode', async function () {
         "data": contractCallData,
         "gas": maxGasLimit
       };
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });      restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3873,7 +3873,7 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimit
       };
 
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3902,7 +3902,7 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimit
       };
 
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3926,7 +3926,7 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimit
       };
 
-      restMock.onGet(`accounts/${accountAddress1}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
         account: "0.0.1723",
         evm_address: accountAddress1
       });
@@ -3983,7 +3983,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   describe('eth_sendRawTransaction', async function() {
     const accountAddress = '0x9eaee9E66efdb91bfDcF516b034e001cc535EB57';
-    const accountEndpoint = `accounts/${accountAddress}${limitOrderPostFix}`;
+    const accountEndpoint = `accounts/${accountAddress}${noTransactions}`;
     const gasPrice = '0xad78ebc5ac620000';
     const transactionIdServicesFormat = '0.0.902@1684375868.230217103';
     const transactionId = '0.0.902-1684375868-230217103';
@@ -4202,7 +4202,7 @@ describe('Eth calls using MirrorNode', async function () {
     const blockNumberHex = EthImpl.numberTo0x(blockNumber);
     const transactionId = '0.0.1078@1686183420.196506746';
 
-    const accountPath = `accounts/${mockData.account.evm_address}?order=desc&limit=1`;
+    const accountPath = `accounts/${mockData.account.evm_address}${noTransactions}`;
     const contractPath = `contracts/${mockData.account.evm_address}`;
     const contractResultsPath = `contracts/results/${transactionId}`;
     const earliestBlockPath = `blocks?limit=1&order=asc`;
@@ -4884,12 +4884,12 @@ describe('Eth', async function () {
 
     it('account should be cached', async function() {
       restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
       const resBeforeCache = await ethImpl.getTransactionByHash(defaultTxHash);
 
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(404);
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(404);
       const resAfterCache = await ethImpl.getTransactionByHash(defaultTxHash);
 
       expect(resBeforeCache).to.deep.equal(resAfterCache);
@@ -4898,7 +4898,7 @@ describe('Eth', async function () {
     it('returns correct transaction for existing hash', async function () {
       // mirror node request mocks
       restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
 
@@ -4918,7 +4918,7 @@ describe('Eth', async function () {
       const uniqueTxHash = '0x97cad7b827375d12d73af57b6a3f84353645fd31305ea58ff52dda53ec640533';
 
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
@@ -4940,7 +4940,7 @@ describe('Eth', async function () {
       const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
@@ -4961,7 +4961,7 @@ describe('Eth', async function () {
       const uniqueTxHash = '0x0aaad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
@@ -4982,7 +4982,7 @@ describe('Eth', async function () {
       const uniqueTxHash = '0xb4cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
@@ -5002,7 +5002,7 @@ describe('Eth', async function () {
       const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640534';
 
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
@@ -5022,7 +5022,7 @@ describe('Eth', async function () {
       const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640511';
 
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
@@ -5043,7 +5043,7 @@ describe('Eth', async function () {
       const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52d1a53ec640511';
 
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
@@ -5056,7 +5056,7 @@ describe('Eth', async function () {
 
     it('returns reverted transactions', async function () {
       restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHashReverted);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
 
@@ -5072,7 +5072,7 @@ describe('Eth', async function () {
       const uniqueTxHash = '0xa8cad7b827375d12d73af57b6a3f84353645fd31305ea58ff52dda53ec640533';
 
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, defaultDetailedContractResultByHashReverted);
-      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+      restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
 
