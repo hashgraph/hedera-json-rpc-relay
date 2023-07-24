@@ -1163,7 +1163,7 @@ export class EthImpl implements Eth {
       let txId = contractExecuteResponse.transactionId.toString();
       const formattedId = formatTransactionIdWithoutQueryParams(txId);
       
-      // handle formattedId beng null
+      // handle formattedId being null
       if (!formattedId) {
         throw predefined.INTERNAL_ERROR(`Invalid transactionID: ${txId}`);
       }
