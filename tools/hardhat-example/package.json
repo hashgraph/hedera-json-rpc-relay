@@ -6,6 +6,6 @@
   },
   "dependencies": {
     "@hashgraph/hedera-local": "^2.4.5",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.3.1"
   }
 }
