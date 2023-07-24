@@ -32,6 +32,7 @@ import ERC721MockJson from '../../contracts/ERC721Mock.json';
 import TokenCreateJson from '../../contracts/TokenCreateContract.json';
 import { Utils } from '../../helpers/utils';
 import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import Assertions from '../../helpers/assertions';
 
 /**
  * Tests for:
@@ -697,13 +698,13 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
           serialNumber: NftSerialNumber.toNumber(),
         }],
       }];
-      try {
-        const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList);
-        const response = (await txXfer.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
-      } catch (error: any) {
-        expect(error.code).to.equal(Constants.CALL_EXCEPTION);
-        expect(error.reason).to.equal("transaction failed");
-      }
+
+      const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList);
+      
+      await expect(txXfer.wait()).to.eventually.be.rejected.and.satisfy((err) => {
+        return err.code === Constants.CALL_EXCEPTION && err.reason === "transaction failed";
+      });
+
     });
   });
 });
