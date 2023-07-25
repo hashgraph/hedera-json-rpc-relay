@@ -298,7 +298,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                     chainId: Number(CHAIN_ID),
                     to: accounts[0].wallet.address,
                     nonce: acc3Nonce,
-                    gasPrice: gasPrice,
+                    maxPriorityFeePerGas: gasPrice,
+                    maxFeePerGas: gasPrice
                 };
 
                 const signedTx1 = await accounts[3].wallet.signTransaction(transaction);

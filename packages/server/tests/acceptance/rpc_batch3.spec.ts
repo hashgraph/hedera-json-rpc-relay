@@ -424,7 +424,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 chainId: Number(CHAIN_ID),
                 to: reverterEvmAddress,
                 nonce: await relay.getAccountNonce(accounts[0].address, requestId),
-                gasPrice: await relay.gasPrice(requestId),
+                maxPriorityFeePerGas: await relay.gasPrice(requestId),
+                maxFeePerGas: await relay.gasPrice(requestId),
                 data: PAYABLE_METHOD_CALL_DATA
             };
             const signedTx = await accounts[0].wallet.signTransaction(transaction);
@@ -479,7 +480,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         chainId: Number(CHAIN_ID),
                         to: reverterEvmAddress,
                         nonce: await relay.getAccountNonce(accounts[0].address, requestId),
-                        gasPrice: await relay.gasPrice(requestId),
+                        maxPriorityFeePerGas: await relay.gasPrice(requestId),
+                        maxFeePerGas: await relay.gasPrice(requestId),
                         data: payableMethodsData[i].data
                     };
                     const signedTx = await accounts[0].wallet.signTransaction(transaction);

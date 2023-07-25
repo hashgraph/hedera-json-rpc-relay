@@ -458,14 +458,14 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 expect(response).to.be.null;
             });
 
-            it.only('@release should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
+            // TODO: blocked by https://github.com/hashgraph/hedera-services/issues/7670
+            xit('@release should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
             const transaction = {
                 ...default155TransactionData,
                 to: mirrorContract.evm_address,
                 nonce: await relay.getAccountNonce(accounts[2].address, requestId),
                 gasPrice: await relay.gasPrice(requestId)
             };
-            console.log(transaction);
 
             const signedTx = await accounts[2].wallet.signTransaction(transaction);
             const legacyTxHash = await relay.sendRawTransaction(signedTx, requestId);
@@ -540,7 +540,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 }
             });
 
-            it('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
+            // TODO: blocked by https://github.com/hashgraph/hedera-services/issues/7670
+            xit('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
                 const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
                 let transaction = {
                     ...default155TransactionData,
