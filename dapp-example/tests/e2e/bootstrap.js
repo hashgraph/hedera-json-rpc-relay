@@ -3,7 +3,7 @@ const ethers = require('ethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-import { Utils } from '../../../packages/server/tests/helpers/utils';
+const Utils = require('../../../packages/server/tests/helpers/utils');
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
