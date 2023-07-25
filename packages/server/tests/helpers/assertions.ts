@@ -208,7 +208,7 @@ export default class Assertions {
         }
     }
 
-    static assertRejection = async (error: JsonRpcError, method: () => Promise<any>, checkMessage: boolean, thisObj, args?: any[]): Promise<any> => {
+    static assertPredefinedRpcError = async (error: JsonRpcError, method: () => Promise<any>, checkMessage: boolean, thisObj, args?: any[]): Promise<any> => {
         return await expect(method.apply(thisObj, args)).to.eventually.be.rejected.and.satisfy((err) => {
             if(!checkMessage) {
                 return [error.code, error.name].every(substring => err.body.includes(substring));

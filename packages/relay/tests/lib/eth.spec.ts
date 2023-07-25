@@ -39,17 +39,12 @@ import {
   mockData,
   signTransaction,
   ethCallFailing,
-  validateHash,
-  assertTransactionReceipt,
-  assertTransaction,
-  assertBlock,
   ethGetLogsFailing,
   defaultDetailedContractResults,
   defaultLogs1,
   defaultLogs2,
   defaultLogs3,
   defaultContractResults,
-  verifyBlockConstants,
   expectLogData,
   expectLogData1,
   expectLogData2,
@@ -68,7 +63,7 @@ import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { Hbar, HbarUnit, TransactionId } from '@hashgraph/sdk';
 import chaiAsPromised from 'chai-as-promised';
-import Assertions from '../assertions';
+import RelayAssertions from '../assertions';
 import {v4 as uuid} from 'uuid';
 import { JsonRpcError } from '../../dist';
 
@@ -514,7 +509,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const error = predefined.COULD_NOT_RETRIEVE_LATEST_BLOCK;
 
-    await Assertions.assertRejection(error, ethImpl.blockNumber, true, ethImpl);
+    await RelayAssertions.assertRejection(error, ethImpl.blockNumber, true, ethImpl);
   });
 
   it('"eth_blockNumber" return the latest block number on second try', async function () {
@@ -569,7 +564,7 @@ describe('Eth calls using MirrorNode', async function () {
       }
     });
 
-    await Assertions.assertRejection(predefined.COULD_NOT_RETRIEVE_LATEST_BLOCK, ethImpl.blockNumber, true, ethImpl);
+    await RelayAssertions.assertRejection(predefined.COULD_NOT_RETRIEVE_LATEST_BLOCK, ethImpl.blockNumber, true, ethImpl);
   });
 
   it('eth_getBlockByNumber with match', async function () {
@@ -583,7 +578,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
 
-    assertBlock(result, {
+    RelayAssertions.assertBlock(result, {
       hash: blockHashTrimmed,
       gasUsed: totalGasUsed,
       number: blockNumberHex,
@@ -606,7 +601,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
     const result = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
 
-    assertBlock(result, {
+    RelayAssertions.assertBlock(result, {
       hash: blockHashTrimmed,
       gasUsed: totalGasUsed,
       number: blockNumberHex,
@@ -655,7 +650,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.transactionsRoot).equal(EthImpl.ethEmptyTrie);
 
     // verify expected constants
-    verifyBlockConstants(result);
+    RelayAssertions.verifyBlockConstants(result);
   });
 
   it('eth_getBlockByNumber with match and details', async function () {
@@ -688,7 +683,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect((result.transactions[1] as Transaction).gas).equal("0x0");
 
     // verify expected constants
-    verifyBlockConstants(result);
+    RelayAssertions.verifyBlockConstants(result);
   });
 
   it('eth_getBlockByNumber with match and details paginated', async function () {
@@ -723,7 +718,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect((result.transactions[1] as Transaction).gas).equal("0x0");
 
     // verify expected constants
-    verifyBlockConstants(result);
+    RelayAssertions.verifyBlockConstants(result);
   });
 
   it('eth_getBlockByNumber with block match and contract revert', async function () {
@@ -748,7 +743,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.transactions.length).equal(0);
 
     // verify expected constants
-    verifyBlockConstants(result);
+    RelayAssertions.verifyBlockConstants(result);
   });
 
   it('eth_getBlockByNumber with no match', async function () {
@@ -872,7 +867,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
 
     const result = await ethImpl.getBlockByHash(blockHash, false);
-    assertBlock(result, {
+    RelayAssertions.assertBlock(result, {
       hash: blockHashTrimmed,
       gasUsed: totalGasUsed,
       number: blockNumberHex,
@@ -894,7 +889,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
 
     const result = await ethImpl.getBlockByHash(blockHash, false);
-    assertBlock(result, {
+    RelayAssertions.assertBlock(result, {
       hash: blockHashTrimmed,
       gasUsed: totalGasUsed,
       number: blockNumberHex,
@@ -918,7 +913,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.not.be.null;
       expect(result.hash).equal(blockHashTrimmed);
       expect(result.number).equal(blockNumberHex);
-      verifyBlockConstants(result);
+      RelayAssertions.verifyBlockConstants(result);
     }
   });
 
@@ -933,7 +928,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
 
-    assertBlock(result, {
+    RelayAssertions.assertBlock(result, {
       hash: blockHashTrimmed,
       gasUsed: totalGasUsed,
       number: blockNumberHex,
@@ -955,7 +950,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
-    assertBlock(result, {
+    RelayAssertions.assertBlock(result, {
       hash: blockHashTrimmed,
       gasUsed: totalGasUsed,
       number: blockNumberHex,
@@ -974,7 +969,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, { logs: [] });
 
     const result = await ethImpl.getBlockByHash(blockHash, true);
-    assertBlock(result, {
+    RelayAssertions.assertBlock(result, {
       hash: blockHashTrimmed,
       gasUsed: EthImpl.numberTo0x(gasUsed1),
       number: blockNumberHex,
@@ -1011,7 +1006,7 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
     restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
 
-    await Assertions.assertRejection(predefined.INTERNAL_ERROR(), ethImpl.getBlockByHash, false, ethImpl, [blockHash, false]);
+    await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(), ethImpl.getBlockByHash, false, ethImpl, [blockHash, false]);
   });
 
   it('eth_getBlockTransactionCountByNumber with match', async function () {
@@ -1167,7 +1162,7 @@ describe('Eth calls using MirrorNode', async function () {
     const args = [EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count)];
     const errMessage = "Cannot read properties of null (reading 'substring')";
 
-    await Assertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.getTransactionByBlockNumberAndIndex, true, ethImpl, args);
+    await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.getTransactionByBlockNumberAndIndex, true, ethImpl, args);
   });
 
   it('eth_getTransactionByBlockNumberAndIndex with no contract results', async function () {
@@ -1266,18 +1261,10 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, defaultContractResults);
     restMock.onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`).reply(200, {...defaultDetailedContractResults, block_hash: null });
 
-    // try {
-    //   await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count));
-    // } catch (e) {
-    //   console.log("EEERRRROOOR ------>", e);
-    //   expect(e.code).to.equal(-32603);
-    //   expect(e.name).to.equal('Internal error');
-    // }
-
     const args = [defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count)];
     const errMessage = "Cannot read properties of null (reading 'substring')";
 
-    await Assertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.getTransactionByBlockHashAndIndex, true, ethImpl, args);
+    await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.getTransactionByBlockHashAndIndex, true, ethImpl, args);
   });
 
   it('eth_getTransactionByBlockHashAndIndex with no contract result match', async function () {
@@ -1343,19 +1330,9 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet('network/fees').reply(200, defaultNetworkFees);
       restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
 
-      // try{
-      //   await ethImplLowTransactionCount.getBlockByHash(blockHash, true);
-      // } catch(e) {
-      //   console.log("ERRROOOR --->", e);
-      //   expect(e).to.be.an.instanceof(JsonRpcError);
-      //   expect(e.code).to.equal(-32000);
-      //   expect(e.message).to.equal(`Exceeded max transactions that can be returned in a block: 77`);
-      //   expect(e.name).to.equal('Block size too large');
-      // }  
-
     const args = [blockHash, true];
 
-    await Assertions.assertRejection(predefined.MAX_BLOCK_SIZE(77), ethImplLowTransactionCount.getBlockByHash, true, ethImplLowTransactionCount, args);
+    await RelayAssertions.assertRejection(predefined.MAX_BLOCK_SIZE(77), ethImplLowTransactionCount.getBlockByHash, true, ethImplLowTransactionCount, args);
     });
 
     it('eth_getBlockByNumber with greater number of transactions than the ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', async function () {
@@ -1368,18 +1345,9 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet('network/fees').reply(200, defaultNetworkFees);
       restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
 
-      // try{
-      //   await ethImplLowTransactionCount.getBlockByNumber(EthImpl.numberTo0x(blockNumber), true);
-      // } catch(e) {
-      //   expect(e).to.be.an.instanceof(JsonRpcError);
-      //   expect(e.code).to.equal(-32000);
-      //   expect(e.message).to.equal(`Exceeded max transactions that can be returned in a block: 77`);
-      //   expect(e.name).to.equal('Block size too large');
-      // }
-
     const args = [EthImpl.numberTo0x(blockNumber), true];
 
-    await Assertions.assertRejection(predefined.MAX_BLOCK_SIZE(77), ethImplLowTransactionCount.getBlockByNumber, true, ethImplLowTransactionCount, args);
+    await RelayAssertions.assertRejection(predefined.MAX_BLOCK_SIZE(77), ethImplLowTransactionCount.getBlockByNumber, true, ethImplLowTransactionCount, args);
     });
 
   });
@@ -3202,7 +3170,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       restMock.onGet(`network/fees`).reply(200, partialNetworkFees);
 
-      await Assertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl);
+      await RelayAssertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl);
     });
 
     it('eth_gasPrice with mirror node return network fees found', async function () {
@@ -3235,7 +3203,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
 
-      await Assertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl);
+      await RelayAssertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl);
     });
   });
 
@@ -3648,7 +3616,7 @@ describe('Eth calls using MirrorNode', async function () {
           "gas": 50_000_000
         }, 'latest'];
 
-        await Assertions.assertRejection(predefined.GAS_LIMIT_TOO_HIGH(50000000, constants.BLOCK_GAS_LIMIT), ethImpl.call, false, ethImpl, args);
+        await RelayAssertions.assertRejection(predefined.GAS_LIMIT_TOO_HIGH(50000000, constants.BLOCK_GAS_LIMIT), ethImpl.call, false, ethImpl, args);
       });
     });
 
@@ -3682,7 +3650,7 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimitHex
       }, 'latest'];
 
-      await Assertions.assertRejection(predefined.INVALID_CONTRACT_ADDRESS(wrongContractAddress), ethImpl.call, false, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.INVALID_CONTRACT_ADDRESS(wrongContractAddress), ethImpl.call, false, ethImpl, args);
     });
 
     it('eth_call throws internal error when consensus node times out and submitContractCallQueryWithRetry returns undefined', async function () {
@@ -3945,17 +3913,6 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_call with missing `to` field', async function() {
-      // try {
-      //   await ethImpl.call({
-      //     ...defaultCallData,
-      //     "from": contractAddress1,
-      //     "data": contractCallData,
-      //     "gas": maxGasLimit
-      //   }, 'latest');
-      // } catch (error: any) {
-      //   expect(error.message).to.equal(`Invalid Contract Address: ${undefined}.`);
-      // }
-
       const args = [{
         ...defaultCallData,
           "from": contractAddress1,
@@ -3963,22 +3920,10 @@ describe('Eth calls using MirrorNode', async function () {
           "gas": maxGasLimit
       }, 'latest'];
 
-      await Assertions.assertRejection(predefined.INVALID_CONTRACT_ADDRESS(undefined), ethImpl.call, false, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.INVALID_CONTRACT_ADDRESS(undefined), ethImpl.call, false, ethImpl, args);
     });
 
     it('eth_call with wrong `to` field', async function() {
-      // try {
-      //   await ethImpl.call({
-      //     ...defaultCallData,
-      //     "from": contractAddress1,
-      //     "to": wrongContractAddress,
-      //     "data": contractCallData,
-      //     "gas": maxGasLimit
-      //   }, 'latest');
-      // } catch (error: any) {
-      //   expect(error.message).to.equal(`Invalid Contract Address: ${wrongContractAddress}. Expected length of 42 chars but was ${wrongContractAddress.length}.`);
-      // }
-
       const args = [{
         ...defaultCallData,
           "from": contractAddress1,
@@ -3986,7 +3931,7 @@ describe('Eth calls using MirrorNode', async function () {
           "gas": maxGasLimit
       }, 'latest'];
 
-      await Assertions.assertRejection(predefined.INVALID_CONTRACT_ADDRESS(wrongContractAddress), ethImpl.call, false, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.INVALID_CONTRACT_ADDRESS(wrongContractAddress), ethImpl.call, false, ethImpl, args);
     });
   });
 
@@ -4019,7 +3964,7 @@ describe('Eth calls using MirrorNode', async function () {
       const args = [txHash];
       const errMessage = 'overflow [ See: https://links.ethers.org/v5-errors-NUMERIC_FAULT-overflow ] (fault="overflow", operation="toNumber", value="30678687678687676876786786876876876000", code=NUMERIC_FAULT, version=bignumber/5.7.0)';
 
-      await Assertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.sendRawTransaction, true, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.sendRawTransaction, true, ethImpl, args);
     });
 
     it('should return a computed hash if unable to retrieve EthereumHash from record due to contract revert', async function () {
@@ -4224,7 +4169,7 @@ describe('Eth calls using MirrorNode', async function () {
                     defaultDetailedContractResults.state_changes[0].slot,
                     EthImpl.numberTo0x(blockNumber)];
 
-      await Assertions.assertRejection(predefined.RESOURCE_NOT_FOUND(), ethImpl.getStorageAt, false, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.RESOURCE_NOT_FOUND(), ethImpl.getStorageAt, false, ethImpl, args);
     });
 
     it('eth_getStorageAt should return EthImpl.zeroHex32Byte when slot wrong', async function () {
@@ -4257,7 +4202,7 @@ describe('Eth calls using MirrorNode', async function () {
                     defaultDetailedContractResults.state_changes[0].slot,
                     EthImpl.numberTo0x(blockNumber)];
 
-      await Assertions.assertRejection(predefined.RESOURCE_NOT_FOUND(), ethImpl.getStorageAt, false, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.RESOURCE_NOT_FOUND(), ethImpl.getStorageAt, false, ethImpl, args);
     });
   });
 
@@ -4352,19 +4297,9 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should throw error for earliest block with invalid block', async() => {
       restMock.onGet(earliestBlockPath).reply(200, { blocks: []});
-      const hasError = false;
-      // try {
-      //   expect(await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockEarliest)).to.throw();
-      // } catch (error) {
-      //   hasError = true;
-      //   expect(error).to.exist;
-      //   expect(error.message).to.equal(`Error invoking RPC: No network blocks found`);
-      // }
-      // expect(hasError).to.be.true;
-
       const args = [mockData.account.evm_address, EthImpl.blockEarliest];
 
-      await Assertions.assertRejection(predefined.INTERNAL_ERROR('No network blocks found'), ethImpl.getTransactionCount, true, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR('No network blocks found'), ethImpl.getTransactionCount, true, ethImpl, args);
     });
 
     it('should throw error for earliest block with non 0 or 1 block', async() => {
@@ -4374,7 +4309,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const errMessage = `Partial mirror node encountered, earliest block number is ${mockData.blocks.blocks[2].number}`;
 
-      await Assertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.getTransactionCount, true, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.getTransactionCount, true, ethImpl, args);
     });
 
     it('should return zero nonce for contract nonce request on historical numerical block', async() => {
@@ -4390,7 +4325,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const args = [mockData.account.evm_address, blockNumberHex];
 
-      await Assertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
     });
 
     it('should throw error for account historical numerical block tag with error on latest block', async() => {
@@ -4400,7 +4335,7 @@ describe('Eth calls using MirrorNode', async function () {
 
       const args = [mockData.account.evm_address, blockNumberHex];
 
-      await Assertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
     });
 
     it('should return valid nonce for historical numerical block close to latest', async() => {
@@ -4452,7 +4387,7 @@ describe('Eth calls using MirrorNode', async function () {
       const args = [mockData.account.evm_address, blockNumberHex];
       const errMessage = `Failed to retrieve contract results for transaction ${transactionId}`;
 
-      await Assertions.assertRejection(predefined.RESOURCE_NOT_FOUND(errMessage), ethImpl.getTransactionCount, true, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.RESOURCE_NOT_FOUND(errMessage), ethImpl.getTransactionCount, true, ethImpl, args);
     });
 
     it('should return valid nonce for historical numerical block when contract result sender is not address', async() => {
@@ -4483,35 +4418,15 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('should throw for -1 invalid block tag', async() => {
-      // let hasError = false;
-      // try {
-      //   expect(await ethImpl.getTransactionCount(mockData.account.evm_address, '-1')).to.throw();
-      // } catch (error) {
-      //   hasError = true;
-      //   expect(error).to.exist;
-      //   expect(error.message).to.equal(`Unknown block`);
-      // }
-      // expect(hasError).to.be.true;
-      
       const args = [mockData.account.evm_address, '-1'];
 
-      await Assertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
     });
 
     it('should throw for invalid block tag', async() => {
-      // let hasError = false;
-      // try {
-      //   expect(await ethImpl.getTransactionCount(mockData.account.evm_address, 'notablock')).to.throw();
-      // } catch (error) {
-      //   hasError = true;
-      //   expect(error).to.exist;
-      //   expect(error.message).to.equal(`Unknown block`);
-      // }
-      // expect(hasError).to.be.true;
-
       const args = [mockData.account.evm_address, 'notablock'];
 
-      await Assertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
     });
   });
 });
@@ -4755,7 +4670,7 @@ describe('Eth', async function () {
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
       // Assert the data format
-      assertTransactionReceipt(receipt, defaultReceipt);
+      RelayAssertions.assertTransactionReceipt(receipt, defaultReceipt);
     });
 
     it('valid receipt on match should hit cache', async function() {
@@ -4766,7 +4681,7 @@ describe('Eth', async function () {
         const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
         expect(receipt).to.exist;
         if (receipt == null) return;
-        expect(validateHash(receipt.transactionHash, 64)).to.eq(true);
+        expect(RelayAssertions.validateHash(receipt.transactionHash, 64)).to.eq(true);
         expect(receipt.transactionHash).to.exist;
         expect(receipt.to).to.eq(defaultReceipt.to);
         expect(receipt.contractAddress).to.eq(defaultReceipt.contractAddress);
@@ -4785,9 +4700,9 @@ describe('Eth', async function () {
       expect(receipt).to.exist;
       if (receipt == null) return;
 
-      expect(validateHash(receipt.from, 40)).to.eq(true);
+      expect(RelayAssertions.validateHash(receipt.from, 40)).to.eq(true);
       if (receipt.contractAddress) {
-        expect(validateHash(receipt.contractAddress, 40)).to.eq(true);
+        expect(RelayAssertions.validateHash(receipt.contractAddress, 40)).to.eq(true);
       }
       expect(receipt.contractAddress).to.eq(contractEvmAddress);
     });
@@ -4961,7 +4876,7 @@ describe('Eth', async function () {
       });
 
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
-      assertTransaction(result, defaultTransaction);
+      RelayAssertions.assertTransaction(result, defaultTransaction);
     });
 
     it('returns correct transaction for existing hash w no sigs', async function () {
@@ -4980,7 +4895,7 @@ describe('Eth', async function () {
         evm_address: `${defaultTransaction.from}`
       });
       const result = await ethImpl.getTransactionByHash(uniqueTxHash);
-      assertTransaction(result, {
+      RelayAssertions.assertTransaction(result, {
         ...defaultTransaction,
         r: null,
         s: null
@@ -5119,7 +5034,7 @@ describe('Eth', async function () {
       });
 
       const result = await ethImpl.getTransactionByHash(defaultTxHash);
-      assertTransaction(result, defaultTransaction);
+      RelayAssertions.assertTransaction(result, defaultTransaction);
     });
 
     it('throws error for reverted transactions when DEV_MODE=true', async function () {
@@ -5134,19 +5049,11 @@ describe('Eth', async function () {
         evm_address: `${defaultTransaction.from}`
       });
 
-      // try {
-      //   await ethImpl.getTransactionByHash(uniqueTxHash);
-      //   expect(true).to.eq(false);
-      // }
-      // catch(error) {
-      //   expect(error).to.deep.equal(predefined.CONTRACT_REVERT(defaultDetailedContractResultByHashReverted.error_message, defaultDetailedContractResultByHashReverted.error_message));
-      // }
-
       const args = [uniqueTxHash];
       const errMessage = defaultDetailedContractResultByHashReverted.error_message;
       const data = defaultDetailedContractResultByHashReverted.error_message;
 
-      await Assertions.assertRejection(predefined.CONTRACT_REVERT(errMessage, data), ethImpl.getTransactionByHash, true, ethImpl, args);
+      await RelayAssertions.assertRejection(predefined.CONTRACT_REVERT(errMessage, data), ethImpl.getTransactionByHash, true, ethImpl, args);
       process.env.DEV_MODE = initialDevModeValue;
     });
   });
