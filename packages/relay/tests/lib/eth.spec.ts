@@ -4849,16 +4849,17 @@ describe('Eth', async function () {
       expect(receipt.blockHash).to.eq(cachedLog.blockHash);
       expect(receipt.blockNumber).to.eq(cachedLog.blockNumber);
       expect(receipt.contractAddress).to.eq(cachedLog.address);
-      expect(receipt.cumulativeGasUsed).to.be.null;
-      expect(receipt.effectiveGasPrice).to.be.null;
-      expect(receipt.from).to.be.null;
-      expect(receipt.gasUsed).to.be.null;
+      expect(receipt.cumulativeGasUsed).to.eq(EthImpl.zeroHex);
+      expect(receipt.effectiveGasPrice).to.eq(EthImpl.zeroHex);
+      expect(receipt.from).to.eq(EthImpl.zeroAddressHex);
+      expect(receipt.gasUsed).to.eq(EthImpl.zeroHex);
       expect(receipt.logs).to.deep.eq([cachedLog]);
       expect(receipt.logsBloom).to.be.eq(EthImpl.emptyBloom);
-      expect(receipt.status).to.be.null;
+      expect(receipt.status).to.eq(EthImpl.oneHex);
       expect(receipt.to).to.eq(cachedLog.address);
       expect(receipt.transactionHash).to.eq(cachedLog.transactionHash);
       expect(receipt.transactionIndex).to.eq(cachedLog.transactionIndex);
+      expect(receipt.root).to.eq(EthImpl.zeroHex32Byte);
     });
   });
 
