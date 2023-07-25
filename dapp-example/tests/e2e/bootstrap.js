@@ -3,7 +3,6 @@ const ethers = require('ethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const Utils = require('../../../packages/server/tests/helpers/utils');
 
 const randomUppercaseString = (length = 5) => {
   let result = '';
@@ -15,6 +14,24 @@ const randomUppercaseString = (length = 5) => {
   }
 
   return result;
+};
+
+const idToEvmAddress = (id) => {
+  try {
+    const [shard, realm, num] = id.split('.');
+    return [
+        '0x',
+        toHex(shard).padStart(8, '0'),
+        toHex(realm).padStart(16, '0'),
+        toHex(num).padStart(16, '0')
+    ].join('');
+  } catch(e) {
+    throw new Error(`Can not transform id ${id} to evm address`);
+  }
+};
+
+const toHex = (num) => {
+  return parseInt(num).toString(16);
 };
 
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
@@ -68,7 +85,7 @@ const createHTSToken = async function() {
 
   const receipt = await tokenCreate.getReceipt(client);
   const tokenId = receipt.tokenId.toString();
-  const tokenAddress = Utils.idToEvmAddress(tokenId);
+  const tokenAddress = idToEvmAddress(tokenId);
 
   console.log(`HTS Token Deployed at: ${tokenAddress} with id ${tokenId}`);
 
@@ -136,6 +153,7 @@ const deployAndFundContractTransferTx = async function(wallet) {
 
   return contractAddress;
 };
+
 
 (async () => {
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
