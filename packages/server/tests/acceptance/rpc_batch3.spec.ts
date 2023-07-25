@@ -193,7 +193,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const errorType = predefined.INVALID_PARAMETER(1, `${errorMessagePrefixedStr}, value: newest`);
             const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'newest'], requestId];
 
-            await Assertions.assertRejection(errorType, relay.call, args, false);
+            await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
         });
 
         it('should fail to execute "eth_call" with wrong block number', async function () {
@@ -205,7 +205,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const errorType = predefined.INVALID_PARAMETER(1, `${errorMessagePrefixedStr}, value: 123`);
             const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, '123'], requestId];
 
-            await Assertions.assertRejection(errorType, relay.call, args, false);
+            await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
         });
 
         it('should fail to execute "eth_call" with wrong block hash object', async function () {
@@ -217,7 +217,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const errorType = predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block, value: 0x123');
             const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId];
             
-            await Assertions.assertRejection(errorType, relay.call, args, false);
+            await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
         });
 
         it('should fail to execute "eth_call" with wrong block number object', async function () {
@@ -229,7 +229,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const errorType = predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, `${errorMessagePrefixedStr}, value: 123`);
             const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId];
             
-            await Assertions.assertRejection(errorType, relay.call, args, false);
+            await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
         });
 
         describe('Caller contract', () => {
@@ -383,7 +383,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                             const errorType = predefined.CONTRACT_REVERT();
                             const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId];
 
-                            await Assertions.assertRejection(errorType, relay.call, args, true);
+                            await Assertions.assertPredefinedRpcError(errorType, relay.call, true, relay, args);
                         });
 
                         it("012 should work for wrong 'from' field", async function () {
