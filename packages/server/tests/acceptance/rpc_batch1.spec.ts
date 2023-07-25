@@ -503,7 +503,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.INTERNAL_ERROR();
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx + "11", requestId], false);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx + "11", requestId]);
             });
 
             it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {
@@ -521,7 +521,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.UNSUPPORTED_CHAIN_ID(ethers.utils.hexValue(INCORRECT_CHAIN_ID), CHAIN_ID);
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], true);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
             });
 
             it('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
@@ -556,7 +556,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.INSUFFICIENT_ACCOUNT_BALANCE;
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], true);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
             });
 
             it('should fail "eth_sendRawTransaction" for Legacy transactions (with no chainId)', async function () {
@@ -569,7 +569,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.UNSUPPORTED_CHAIN_ID('0x0', CHAIN_ID);
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], true);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
             });
 
             it('should fail "eth_sendRawTransaction" for Legacy transactions (with gas price too low)', async function () {
@@ -583,10 +583,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.GAS_PRICE_TOO_LOW(GAS_PRICE_TOO_LOW, GAS_PRICE_REF);
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], false);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
             });
 
-            it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions', async function () {
+            it('should fail "eth_sendRawTransactxion" for Legacy 2930 transactions', async function () {
                 const transaction = {
                     ...defaultLegacy2930TransactionData,
                     to: mirrorContract.evm_address,
@@ -596,7 +596,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.INTERNAL_ERROR();
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], false);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
             });
 
             it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with gas price too low)', async function () {
@@ -609,7 +609,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.GAS_PRICE_TOO_LOW(GAS_PRICE_TOO_LOW, GAS_PRICE_REF);
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], false);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
             });
 
             it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with insufficient balance)', async function () {
@@ -624,7 +624,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.INSUFFICIENT_ACCOUNT_BALANCE;
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], true);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
             });
 
             it('should fail "eth_sendRawTransaction" for London transactions (with gas price too low)', async function () {
@@ -638,7 +638,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.GAS_PRICE_TOO_LOW(GAS_PRICE_TOO_LOW, GAS_PRICE_REF);
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], false);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
             });
 
             it('should fail "eth_sendRawTransaction" for London transactions (with insufficient balance)', async function () {
@@ -656,7 +656,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.INSUFFICIENT_ACCOUNT_BALANCE;
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], true);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
             });
 
             it('should execute "eth_sendRawTransaction" for London transactions', async function () {
@@ -743,7 +743,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
                 const error = predefined.INTERNAL_ERROR();
 
-                await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], false);
+                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
             });
 
             describe('Prechecks', async function () {
@@ -757,7 +757,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const error = predefined.UNSUPPORTED_CHAIN_ID('0x3e7', CHAIN_ID);
 
-                    await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], true);
+                    await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
                 });
 
                 it('should fail "eth_sendRawTransaction" for EIP155 transaction with not enough gas', async function () {
@@ -773,7 +773,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const error = predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.BLOCK_GAS_LIMIT);
 
-                    await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], false);
+                    await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
                 });
 
                 it('should fail "eth_sendRawTransaction" for EIP155 transaction with a too high gasLimit', async function () {
@@ -789,7 +789,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const error = predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT);
 
-                    await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], false);
+                    await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transaction with not enough gas', async function () {
@@ -803,7 +803,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const error = predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.BLOCK_GAS_LIMIT);
 
-                    await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], false);
+                    await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
                 });
 
                 it('should fail "eth_sendRawTransaction" for London transaction with a too high gasLimit', async function () {
@@ -817,7 +817,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const error = predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT);
 
-                    await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], false);
+                    await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
                 });
 
                 it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with gas price too low)', async function () {
@@ -852,7 +852,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     Assertions.transactionReceipt(res, mirrorResult);
                     const error = predefined.NONCE_TOO_LOW(nonce, nonce + 1);
 
-                    await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], true);
+                    await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
                 });
 
                 it('@release fail "eth_getTransactionReceipt" on precheck with wrong nonce error when sending a tx with a higher nonce', async function () {
@@ -868,7 +868,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const error = predefined.NONCE_TOO_HIGH(nonce + 100, nonce);
 
-                    await Assertions.assertRejection(error, sendRawTransaction, [signedTx, requestId], true);
+                    await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
                 });
 
                 it('@release fail "eth_getTransactionReceipt" on submitting with wrong nonce error when sending a tx with the same nonce twice', async function () {
