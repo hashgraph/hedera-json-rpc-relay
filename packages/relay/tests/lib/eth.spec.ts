@@ -4833,8 +4833,6 @@ describe('Eth', async function () {
       expect(receipt.transactionHash).to.eq(cachedLog.transactionHash);
       expect(receipt.transactionIndex).to.eq(cachedLog.transactionIndex);
       expect(receipt.root).to.eq(EthImpl.zeroHex32Byte);
-
-
     });
   });
 
