@@ -373,6 +373,7 @@ export class MirrorNodeClient {
 
         if (page === pageMax) {
             // max page reached
+            this.logger.trace(`${requestIdPrefix} Max page reached ${pageMax} with ${results.length} results`);
             throw predefined.PAGINATION_MAX(pageMax);
         }
 
