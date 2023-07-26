@@ -2,8 +2,8 @@
 
 ### TheGraph integration
 
-|                                                                  | Status | Description                                                                                                                                         |
-| ---------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+|                                                                  | Status | Description                                                                                              |
+| ---------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------- |
 | Catch & handle events emitted from EthereumTransactions          | ✅     |
 | Catch & handle events emitted from ContractCall & ContractCreate | ✅     |
 | Capture ERC transfers through HTS precompile                     | ✅     |
@@ -13,10 +13,10 @@
 | Support for dynamic dataSource templates                         | ✅     |
 | Block Handlers WITHOUT filters                                   | ✅     |
 | Can index anonymous events                                       | ✅     |
-| Block Handlers WITH filters                                      | ❌     | Requires ОpenЕthereum's [trace_filter](https://openethereum.github.io/JSONRPC-trace-module#trace_filter)                                            |
-| Call Handlers                                                    | ❌     | Requires ОpenЕthereum's [trace_filter](https://openethereum.github.io/JSONRPC-trace-module#trace_filter)                                            |
-| Capture HTS transfers through HTS precompile                     | ❌     | Depends on [4127](https://github.com/hashgraph/hedera-services/issues/4127)                                                                         |
-| Capture HTS token transfers through HAPI                         | ❌     | Depends on [4337](https://github.com/hashgraph/hedera-mirror-node/issues/4337), [4738](https://github.com/hashgraph/hedera-mirror-node/issues/4738) |
+| Block Handlers WITH filters                                      | ❌     | Requires ОpenЕthereum's [trace_filter](https://openethereum.github.io/JSONRPC-trace-module#trace_filter) |
+| Call Handlers                                                    | ❌     | Requires ОpenЕthereum's [trace_filter](https://openethereum.github.io/JSONRPC-trace-module#trace_filter) |
+| Capture HTS transfers through HTS precompile                     | ❌     | Depends on [4127](https://github.com/hashgraph/hedera-services/issues/4127)                              |
+| Capture HTS token transfers through HAPI                         | ✅     | Only multiple transfer events are not supported                                                          |
 
 ### Supported tools
 
