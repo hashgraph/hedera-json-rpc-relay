@@ -22,7 +22,6 @@ require('dotenv').config();
 const fs = require('fs');
 const Web3 = require('web3');
 const Web3HttpProvider = require('web3-providers-http');
-const hethers = require('@hashgraph/hethers');
 
 module.exports = async (contractParam) => {
   const { abi, bytecode } = await JSON.parse(fs.readFileSync(__dirname + '/../contract/Greeter.json'));
@@ -39,7 +38,6 @@ module.exports = async (contractParam) => {
     gas: 300000
   });
 
-  console.log(`Greeter contract id: ${hethers.utils.asAccountString(contract._address)}`);
   console.log(`Greeter deployed to: ${contract._address}`);
 
   return contract._address;

@@ -164,8 +164,8 @@ export class MirrorNodeClient {
         const mirrorNodeMaxRedirects = parseInt(process.env.MIRROR_NODE_MAX_REDIRECTS || '5');
         const mirrorNodeHttpKeepAlive = process.env.MIRROR_NODE_HTTP_KEEP_ALIVE === 'true' ? true : false;
         const mirrorNodeHttpKeepAliveMsecs = parseInt(process.env.MIRROR_NODE_HTTP_KEEP_ALIVE_MSECS || '1000');
-        const mirrorNodeHttpMaxSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_SOCKETS || '100');
-        const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '100');
+        const mirrorNodeHttpMaxSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_SOCKETS || '300');
+        const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '300');
         const mirrorNodeHttpSocketTimeout = parseInt(process.env.MIRROR_NODE_HTTP_SOCKET_TIMEOUT || '60000');
         const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
         const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '3');

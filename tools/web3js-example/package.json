@@ -9,9 +9,8 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@hashgraph/hethers": "^1.1.3",
     "dotenv": "^16.1.4",
-    "web3": "^1.8.0"
+    "web3": "^1.10.0"
   },
   "devDependencies": {
     "chai": "^4.3.6",

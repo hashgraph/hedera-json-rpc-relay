@@ -60,10 +60,14 @@
         "keyv-file": "^0.2.0",
         "koa-cors": "^0.0.16",
         "koa-websocket": "^7.0.0",
-        "lerna": "^7.1.0",
+        "lerna": "^7.1.4",
         "pino": "^7.11.0",
         "pino-pretty": "^7.6.1",
         "prom-client": "^14.0.1",
         "typescript": "^4.6.3"
+    },
+    "overrides": {
+        "protobufjs": "^7.2.4",
+        "semver": "^7.5.3"
     }
 }

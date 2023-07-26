@@ -759,7 +759,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 const newestBlockNumberHex = ethers.utils.hexValue(latestBlock.number + blocksAhead);
                 const args = [RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY, ['0x1', newestBlockNumberHex, null], requestId];
 
-                await Assertions.assertRejection(errorType, relay.call, args, true);
+                await Assertions.assertPredefinedRpcError(errorType, relay.call, true, relay, args);
             });
 
             it('should call eth_feeHistory with zero block count', async function () {
