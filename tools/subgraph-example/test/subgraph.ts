@@ -8,7 +8,6 @@ import hre from 'hardhat';
 dotenv.config();
 
 const URL = "http://127.0.0.1:8000/subgraphs/name/subgraph-example";
-const ALL_QUERY = "query {gravatars{id owner displayName imageUrl}erc20S{id supply type transfers{from to amount}}htss{id supply type transfers{from to amount}}htsnfts{id owner type tokenId transfers{from to}}erc721S{id owner type tokenId transfers{from to}}}"
 const GRAVATAR_QUERY = "query { gravatars { id owner displayName imageUrl } }";
 const ERC20_QUERY = "query { erc20S { id supply type transfers { from to amount } } }";
 const HTS_QUERY = "query { htss { id supply type transfers { from to amount } } }";
@@ -18,7 +17,6 @@ const ERC721_QUERY = "query { erc721S { id owner type tokenId transfers { from t
 describe("Subgraph", () => {
   describe("Can index past events", () => {
     it("Indexes past GravatarRegistry events correctly", async () => {
-      console.log(await getData(ALL_QUERY))
       const result = await getData(GRAVATAR_QUERY);
       const gravatars = result.data.gravatars;
 
@@ -42,14 +40,14 @@ describe("Subgraph", () => {
     it("Indexes past ExampleHTS events correctly", async () => {
       const result = await getData(HTS_QUERY);
       const hts = result.data.htss;
-      console.log(hts)
+
       expect(isEqual(hts, expected.htss.initial)).to.be.true;
     });
 
     it("Indexes past ExampleHTSNFT events correctly", async () => {
       const result = await getData(NFTHTS_QUERY);
       const htsnfts = result.data.htsnfts;
-      console.log(htsnfts)
+
       expect(isEqual(htsnfts, expected.htsnfts.initial)).to.be.true;
     });
   })
@@ -84,8 +82,15 @@ describe("Subgraph", () => {
     it("Indexes new ExampleHTS events correctly", async () => {
       const result = await getData(HTS_QUERY);
       const hts = result.data.htss;
-      console.log(hts)
+
       expect(isEqual(hts, expected.htss.updated)).to.be.true;
+    });
+
+    it("Indexes new ExampleHTSNFT events correctly", async () => {
+      const result = await getData(NFTHTS_QUERY);
+      const htsnfts = result.data.htsnfts;
+
+      expect(isEqual(htsnfts, expected.htsnfts.updated)).to.be.true;
     });
   })
 })

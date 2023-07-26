@@ -9,6 +9,7 @@ import { task } from "hardhat/config";
 import { mintNFT, transferERC20, createGravatar, updateGravatarName } from "./scripts";
 import { Client, LocalProvider, TokenCreateTransaction, TokenMintTransaction, TokenSupplyType, TokenType, Wallet } from "@hashgraph/sdk";
 import { transferHts } from "./scripts/hts-transfer";
+import { mintHtsNft } from "./scripts/htsnft-mint";
 
 dotenv.config();
 
@@ -143,7 +144,7 @@ task("transferHTS", "Transfer HTS to a recipient", async (taskArgs, hre) => {
 });
 
 task("mintNFTHTS", "Mints HTS Non Fungible Token to a recipient", async (taskArgs, hre) => {
-  
+  await mintHtsNft(<string>process.env.RECEIVER_PRIVATE_KEY, hre);
 });
 
 task("deployGravatar", "Deploys the passed contract", async (taskArgs, hre) => {
