@@ -7,10 +7,6 @@ on:
     branches: [main, release/**]
     tags: [v*]
 
-env:
-  RELAY_IMAGE_TAG: 0.28.0-rc3
-  ETH_POPULATE_SYNTHETIC_CONTRACT_RESULTS: true
-
 jobs:
   subgraph-workflow:
     runs-on: ubuntu-latest
@@ -37,12 +33,6 @@ jobs:
       - name: Run local node
         run: npx hedera start -d  
         timeout-minutes: 5
-
-      - name: Check containers
-        run: docker ps -a
-
-      - name: Call env
-        run: env
 
       - name: Deploy and interact with contracts
         run: npx hardhat prepare
