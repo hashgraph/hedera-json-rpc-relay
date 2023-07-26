@@ -377,7 +377,7 @@ export class EthImpl implements Eth {
   private async getFeeWeibars(callerName: string, requestIdPrefix?: string, timestamp?: string) {
     let networkFees;
     try {
-      networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp,undefined, requestIdPrefix);
+      networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp, undefined, requestIdPrefix);
       if (_.isNil(networkFees)) {
         this.logger.debug(`${requestIdPrefix} Mirror Node returned no fees. Fallback to network`);
       }
@@ -1106,7 +1106,7 @@ export class EthImpl implements Eth {
     let interactingEntity = '';
     let originatingAddress = '';
     try {
-      let parsedTx = Precheck.parseTxIfNeeded(transaction);
+      const parsedTx = Precheck.parseTxIfNeeded(transaction);
       interactingEntity = parsedTx.to?.toString() || '';
       originatingAddress = parsedTx.from?.toString() || '';
       this.logger.trace(`${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`);
@@ -1469,7 +1469,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_RECEIPT}_${hash}`;
-    let cachedResponse = this.cache.get(cacheKey, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
+    const cachedResponse = this.cache.get(cacheKey, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
     if (cachedResponse) {
       this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached response: ${cachedResponse}`);
       return cachedResponse;
@@ -1482,14 +1482,14 @@ export class EthImpl implements Eth {
         blockHash: cachedLog.blockHash,
         blockNumber: cachedLog.blockNumber,
         contractAddress: cachedLog.address,
-        cumulativeGasUsed: null,
-        effectiveGasPrice: null,
-        from: null,
-        gasUsed: null,
+        cumulativeGasUsed: EthImpl.zeroHex,
+        effectiveGasPrice: EthImpl.zeroHex,
+        from: EthImpl.zeroAddressHex,
+        gasUsed: EthImpl.zeroHex,
         logs: [cachedLog],
         logsBloom: EthImpl.emptyBloom,
-        root: null,
-        status: null,
+        root: EthImpl.zeroHex32Byte,
+        status: EthImpl.oneHex,
         to: cachedLog.address,
         transactionHash: cachedLog.transactionHash,
         transactionIndex: cachedLog.transactionIndex,
@@ -1498,7 +1498,7 @@ export class EthImpl implements Eth {
       this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached synthetic receipt response: ${cachedResponse}`);
       this.cache.set(cacheKey, receipt, EthImpl.ethGetTransactionReceipt, constants.CACHE_TTL.ONE_DAY, requestIdPrefix);
 
-      return receipt
+      return receipt;
     }
 
     const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
@@ -1564,7 +1564,7 @@ export class EthImpl implements Eth {
     return input.startsWith(EthImpl.emptyHex) ? input : EthImpl.emptyHex + input;
   }
 
-  static numberTo0x(input: number | BigNumber | BigInt): string {
+  static numberTo0x(input: number | BigNumber | bigint): string {
     return EthImpl.emptyHex + input.toString(16);
   }
 
@@ -1648,7 +1648,7 @@ export class EthImpl implements Eth {
 
     // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
     // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
-    let gas = Number.parseInt(gasString);
+    const gas = Number.parseInt(gasString);
     if (gas > constants.BLOCK_GAS_LIMIT) {
       this.logger.trace(`${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`);
       return constants.BLOCK_GAS_LIMIT;
@@ -1678,7 +1678,7 @@ export class EthImpl implements Eth {
     const params = { timestamp: timestampRangeParams };
 
     // get contract results logs using block timestamp range
-    const logs = await this.getLogsWithParams(null, params, requestIdPrefix)
+    const logs = await this.getLogsWithParams(null, params, requestIdPrefix);
 
     if (contractResults == null && logs.length == 0) {
       // contract result not found
