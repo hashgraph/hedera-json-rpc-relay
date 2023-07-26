@@ -155,6 +155,7 @@ export class MirrorNodeClient {
     static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;   
     
     static mirrorNodeContractResultsPageMax = parseInt(process.env.MIRROR_NODE_CONTRACT_RESULTS_PG_MAX!) || 25;
+    static mirrorNodeContractResultsLogsPageMax = parseInt(process.env.MIRROR_NODE_CONTRACT_RESULTS_LOGS_PG_MAX!) || 50;
 
     protected createAxiosClient(
         baseUrl: string
@@ -372,6 +373,7 @@ export class MirrorNodeClient {
 
         if (page === pageMax) {
             // max page reached
+            this.logger.trace(`${requestIdPrefix} Max page reached ${pageMax} with ${results.length} results`);
             throw predefined.PAGINATION_MAX(pageMax);
         }
 
@@ -658,7 +660,10 @@ export class MirrorNodeClient {
             `${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
             MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
-            requestIdPrefix
+            requestIdPrefix,
+            [],
+            1,
+            MirrorNodeClient.mirrorNodeContractResultsLogsPageMax
         );
     }
 
@@ -678,7 +683,10 @@ export class MirrorNodeClient {
             `${apiEndpoint}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT,
             MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
-            requestIdPrefix
+            requestIdPrefix,
+            [],
+            1,
+            MirrorNodeClient.mirrorNodeContractResultsLogsPageMax
         );
     }
 
