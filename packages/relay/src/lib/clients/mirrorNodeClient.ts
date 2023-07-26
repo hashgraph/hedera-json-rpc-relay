@@ -162,7 +162,7 @@ export class MirrorNodeClient {
         // defualt values for axios clients to mirror node
         const mirrorNodeTimeout = parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000');
         const mirrorNodeMaxRedirects = parseInt(process.env.MIRROR_NODE_MAX_REDIRECTS || '5');
-        const mirrorNodeHttpKeepAlive = process.env.MIRROR_NODE_HTTP_KEEP_ALIVE === 'true' ? true : false;
+        const mirrorNodeHttpKeepAlive = process.env.MIRROR_NODE_HTTP_KEEP_ALIVE === 'false' ? false : true;
         const mirrorNodeHttpKeepAliveMsecs = parseInt(process.env.MIRROR_NODE_HTTP_KEEP_ALIVE_MSECS || '1000');
         const mirrorNodeHttpMaxSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_SOCKETS || '300');
         const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '300');
