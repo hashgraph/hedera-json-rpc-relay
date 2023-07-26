@@ -209,11 +209,14 @@ export default class Assertions {
     }
 
     static assertPredefinedRpcError = async (error: JsonRpcError, method: () => Promise<any>, checkMessage: boolean, thisObj, args?: any[]): Promise<any> => {
+        const propsToCheck = checkMessage ? [error.code, error.name, error.message] : [error.code, error.name];
+
         return await expect(method.apply(thisObj, args)).to.eventually.be.rejected.and.satisfy((err) => {
-            if(!checkMessage) {
-                return [error.code, error.name].every(substring => err.body.includes(substring));
+            if(!err.hasOwnProperty('body')) {
+                return propsToCheck.every(substring => err.response.includes(substring));
+            } else {
+                return propsToCheck.every(substring => err.body.includes(substring));
             }
-            return [error.code, error.name, error.message].every(substring => err.body.includes(substring));
         });
     };
 
