@@ -82,7 +82,7 @@ describe("Subgraph", () => {
     it("Indexes new ExampleHTS events correctly", async () => {
       const result = await getData(HTS_QUERY);
       const hts = result.data.htss;
-
+      console.log(hts)
       expect(isEqual(hts, expected.htss.updated)).to.be.true;
     });
 

@@ -16,7 +16,7 @@
 | Block Handlers WITH filters                                      | ❌     | Requires ОpenЕthereum's [trace_filter](https://openethereum.github.io/JSONRPC-trace-module#trace_filter) |
 | Call Handlers                                                    | ❌     | Requires ОpenЕthereum's [trace_filter](https://openethereum.github.io/JSONRPC-trace-module#trace_filter) |
 | Capture HTS transfers through HTS precompile                     | ❌     | Depends on [4127](https://github.com/hashgraph/hedera-services/issues/4127)                              |
-| Capture HTS token transfers through HAPI                         | ✅     | Only multiple transfer events are not supported                                                          |
+| Capture HTS token transfers/mint/wipe/burn through HAPI          | ✅     | Only multiple token transfer events are not supported                                                    |
 
 ### Supported tools
 
