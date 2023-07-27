@@ -20,7 +20,7 @@
 
 // external resources
 import { solidity } from "ethereum-waffle";
-import chai, {Assertion, expect} from "chai";
+import chai, { expect } from "chai";
 import WebSocket from 'ws';
 chai.use(solidity);
 
@@ -712,20 +712,20 @@ describe('@web-socket Acceptance Tests', async function() {
             const missingContract = "0xea4168c4cbb744ec22dea4a4bfc5f74b6fe27816";
             const expectedError = predefined.INVALID_PARAMETER(`filters.address`, `${missingContract} is not a valid contract type or does not exists`);
 
-            await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {"address": missingContract}]])
+            await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {"address": missingContract}]]);
         });
 
         it('Calling eth_subscribe Logs with an empty address should fail', async function() {
             const expectedError = predefined.INVALID_PARAMETER(`'address' for EthSubscribeLogsParamsObject`, `Expected 0x prefixed string representing the address (20 bytes) or an array of addresses, value: `);
             const missingContract = "";
 
-            await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {"address": missingContract}]])
+            await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {"address": missingContract}]]);
         });
 
         it('Calling eth_subscribe Logs with an invalid topics should fail', async function() {
             const expectedError = predefined.INVALID_PARAMETER(`'topics' for EthSubscribeLogsParamsObject`, `Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: 0x000`);
 
-            await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {"address": logContractSigner.address, "topics": ["0x000"]}]])
+            await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {"address": logContractSigner.address, "topics": ["0x000"]}]]);
         });
     });
 
@@ -803,7 +803,7 @@ describe('@web-socket Acceptance Tests', async function() {
                         await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {
                             address: logContractSigner.address,
                             topics: [topics[i]]
-                        }]])
+                        }]]);
                     } else {
                         await wsProvider.send('eth_subscribe', ["logs", {
                             address: logContractSigner.address,
