@@ -26,10 +26,8 @@ import "@typechain/hardhat";
 import "@nomiclabs/hardhat-waffle";
 import "@graphprotocol/hardhat-graph";
 import { task } from "hardhat/config";
-import { mintNFT, transferERC20, createGravatar, updateGravatarName } from "./scripts";
+import { mintNFT, transferERC20, createGravatar, updateGravatarName, transferHtsFT, mintHtsNft } from "./scripts";
 import { Client, LocalProvider, TokenCreateTransaction, TokenMintTransaction, TokenSupplyType, TokenType, Wallet } from "@hashgraph/sdk";
-import { transferHtsFT } from "./scripts/hts-transfer";
-import { mintHtsNft } from "./scripts/htsnft-mint";
 
 dotenv.config();
 

@@ -32,7 +32,7 @@ export async function transferHtsFT(receiver: string, hre: any) {
   );
   const account = new ethers.Wallet(receiver);
   const privateKey = PrivateKey.fromStringECDSA(account.privateKey);
-  const tokenId = TokenId.fromSolidityAddress(networks.default.local.ExampleHTS.address);
+  const tokenId = TokenId.fromSolidityAddress(networks.default.local.ExampleHTSFT.address);
   const accountId = AccountId.fromString("0.0.1013");
 
   let associateTx = await new TokenAssociateTransaction()
