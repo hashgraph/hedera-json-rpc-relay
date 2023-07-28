@@ -1,3 +1,23 @@
+/*-
+ *
+ * Hedera JSON RPC Relay - Hardhat Example
+ *
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 /* eslint-disable prettier/prettier */
 import * as dotenv from "dotenv";
 import * as fs from 'fs';
@@ -8,7 +28,7 @@ import "@graphprotocol/hardhat-graph";
 import { task } from "hardhat/config";
 import { mintNFT, transferERC20, createGravatar, updateGravatarName } from "./scripts";
 import { Client, LocalProvider, TokenCreateTransaction, TokenMintTransaction, TokenSupplyType, TokenType, Wallet } from "@hashgraph/sdk";
-import { transferHts } from "./scripts/hts-transfer";
+import { transferHtsFT } from "./scripts/hts-transfer";
 import { mintHtsNft } from "./scripts/htsnft-mint";
 
 dotenv.config();
@@ -71,7 +91,7 @@ task("deployHTS", "Deploys HTS Fungible Token", async (taskArgs, hre) => {
     process.env.OPERATOR_KEY!,
     new LocalProvider({client: Client.forNetwork(JSON.parse(process.env.HEDERA_NETWORK!))})
   );
-  const contractName = "ExampleHTS";
+  const contractName = "ExampleHTSFT";
   await hre.run("compile");
   let createTransaction = await new TokenCreateTransaction()
     .setTokenName("ffff")
@@ -139,8 +159,8 @@ task("deployHTSNFT", "Deploys and mint HTS Non Fungible Token", async (taskArgs,
   updateStartBlock(contractName, 10, hre);
 });
 
-task("transferHTS", "Transfer HTS to a recipient", async (taskArgs, hre) => {
-  await transferHts(<string>process.env.RECEIVER_PRIVATE_KEY, hre);
+task("transferHTSFT", "Transfer HTS Fungible Token to a recipient", async (taskArgs, hre) => {
+  await transferHtsFT(<string>process.env.RECEIVER_PRIVATE_KEY, hre);
 });
 
 task("mintNFTHTS", "Mints HTS Non Fungible Token to a recipient", async (taskArgs, hre) => {
@@ -207,8 +227,8 @@ task("interactWithContracts", "interacts with contracts", async (_, hre) => {
   await hre.run("transferERC20")
   console.log("Minting NFT!");
   await hre.run("mintERC721");
-  console.log("Transfer HTS!");
-  await hre.run("transferHTS");
+  console.log("Transfer HTS FT!");
+  await hre.run("transferHTSFT");
   console.log("Minting NFT!");
   await hre.run("mintNFTHTS");
   console.log("Updating Existing Gravatar!");
@@ -226,7 +246,7 @@ function updateStartBlock(dataSource: string, startBlock: number, hre: any) {
     },
   );
   const networks = JSON.parse(networksRaw);
-  networks[hre.network.name][dataSource].startBlock = startBlock || 1;
+  networks[hre.network.name][dataSource].startBlock = startBlock || 0;
   fs.writeFileSync(filepath, JSON.stringify(networks, null, 2));
 }
 

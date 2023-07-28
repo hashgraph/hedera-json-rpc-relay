@@ -6,7 +6,7 @@ interface Token {
 
 enum TokenType {
   ERC20
-  HTS
+  HTSFT
   HTSNFT
   ERC721
 }
@@ -41,7 +41,7 @@ type Gravatar @entity {
   imageUrl: String!
 }
 
-type HTS implements Token @entity(immutable: true) {
+type HTSFT implements Token @entity(immutable: true) {
   id: ID! # String
   supply: BigInt!
   transfers: [Transfer!]! @derivedFrom(field: "token") # One-to-many relationship with reverse lookup

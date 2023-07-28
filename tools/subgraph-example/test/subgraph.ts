@@ -1,3 +1,23 @@
+/*-
+ *
+ * Hedera JSON RPC Relay - Hardhat Example
+ *
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import * as dotenv from "dotenv";
 import { expect } from "chai";
 import fetch from 'node-fetch'
@@ -10,7 +30,7 @@ dotenv.config();
 const URL = "http://127.0.0.1:8000/subgraphs/name/subgraph-example";
 const GRAVATAR_QUERY = "query { gravatars { id owner displayName imageUrl } }";
 const ERC20_QUERY = "query { erc20S { id supply type transfers { from to amount } } }";
-const HTS_QUERY = "query { htss { id supply type transfers { from to amount } } }";
+const HTSFT_QUERY = "query { htsfts { id supply type transfers { from to amount } } }";
 const NFTHTS_QUERY = "query { htsnfts { id owner type tokenId transfers { from to } } }";
 const ERC721_QUERY = "query { erc721S { id owner type tokenId transfers { from to } } }";
 
@@ -37,11 +57,11 @@ describe("Subgraph", () => {
       expect(isEqual(erc721, expected.erc721.initial)).to.be.true;
     });
 
-    it("Indexes past ExampleHTS events correctly", async () => {
-      const result = await getData(HTS_QUERY);
-      const hts = result.data.htss;
+    it("Indexes past ExampleHTSFT events correctly", async () => {
+      const result = await getData(HTSFT_QUERY);
+      const htsft = result.data.htsfts;
 
-      expect(isEqual(hts, expected.htss.initial)).to.be.true;
+      expect(isEqual(htsft, expected.htsfts.initial)).to.be.true;
     });
 
     it("Indexes past ExampleHTSNFT events correctly", async () => {
@@ -79,11 +99,11 @@ describe("Subgraph", () => {
       expect(isEqual(erc721, expected.erc721.updated)).to.be.true;
     });
 
-    it("Indexes new ExampleHTS events correctly", async () => {
-      const result = await getData(HTS_QUERY);
-      const hts = result.data.htss;
+    it("Indexes new ExampleHTSFT events correctly", async () => {
+      const result = await getData(HTSFT_QUERY);
+      const htsft = result.data.htsfts;
 
-      expect(isEqual(hts, expected.htss.updated)).to.be.true;
+      expect(isEqual(htsft, expected.htsfts.updated)).to.be.true;
     });
 
     it("Indexes new ExampleHTSNFT events correctly", async () => {
