@@ -1220,7 +1220,7 @@ export class EthImpl implements Eth {
     
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-      if ((typeof process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'undefined') || (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false')) {
+      if ((String(process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE) === 'undefined') || (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false')) {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
         return await this.callMirrorNode(call, gas, value, requestIdPrefix);
