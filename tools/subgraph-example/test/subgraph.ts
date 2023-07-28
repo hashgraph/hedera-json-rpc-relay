@@ -102,7 +102,7 @@ describe("Subgraph", () => {
     it("Indexes new ExampleHTSFT events correctly", async () => {
       const result = await getData(HTSFT_QUERY);
       const htsft = result.data.htsfts;
-
+      console.log(htsft[0].transfers)
       expect(isEqual(htsft, expected.htsfts.updated)).to.be.true;
     });
 
