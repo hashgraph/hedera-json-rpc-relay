@@ -20,7 +20,7 @@
 
 // external resources
 import { solidity } from "ethereum-waffle";
-import chai, {expect} from "chai";
+import chai, { expect } from "chai";
 import WebSocket from 'ws';
 chai.use(solidity);
 
@@ -30,6 +30,7 @@ import {AliasAccount} from "../../clients/servicesClient";
 import {predefined, WebSocketError} from '../../../../../packages/relay';
 import { ethers } from "ethers";
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import Assertions from "../../helpers/assertions";
 const LogContractJson = require('../../contracts/Logs.json');
 
 const WS_RELAY_URL = `ws://localhost:${constants.WEB_SOCKET_PORT}`;
@@ -709,46 +710,22 @@ describe('@web-socket Acceptance Tests', async function() {
 
         it('Calling eth_subscribe Logs with a non existent address should fail', async function() {
             const missingContract = "0xea4168c4cbb744ec22dea4a4bfc5f74b6fe27816";
-            let actualError: any = null;
-            try {
-                await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
-            } catch (e: any) {
-                actualError = JSON.parse(e.response);
-            }
-
             const expectedError = predefined.INVALID_PARAMETER(`filters.address`, `${missingContract} is not a valid contract type or does not exists`);
-            expect(actualError.error.code).to.be.eq(expectedError.code);
-            expect(actualError.error.name).to.be.eq(expectedError.name);
-            expect(actualError.error.message).to.contains(expectedError.message);
+
+            await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {"address": missingContract}]]);
         });
 
         it('Calling eth_subscribe Logs with an empty address should fail', async function() {
-            const missingContract = "";
-            let actualError: any = null;
-            try {
-                await wsProvider.send('eth_subscribe', ["logs", {"address": missingContract}]);
-            } catch (e: any) {
-                actualError = JSON.parse(e.response);
-            }
-
             const expectedError = predefined.INVALID_PARAMETER(`'address' for EthSubscribeLogsParamsObject`, `Expected 0x prefixed string representing the address (20 bytes) or an array of addresses, value: `);
-            expect(actualError.error.code).to.be.eq(expectedError.code);
-            expect(actualError.error.name).to.be.eq(expectedError.name);
-            expect(actualError.error.message).to.contains(expectedError.message);
+            const missingContract = "";
+
+            await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {"address": missingContract}]]);
         });
 
         it('Calling eth_subscribe Logs with an invalid topics should fail', async function() {
-            let actualError: any = null;
-            try {
-                await wsProvider.send('eth_subscribe', ["logs", {"address": logContractSigner.address, "topics": ["0x000"]}]);
-            } catch (e: any) {
-                actualError = JSON.parse(e.response);
-            }
-
             const expectedError = predefined.INVALID_PARAMETER(`'topics' for EthSubscribeLogsParamsObject`, `Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: 0x000`);
-            expect(actualError.error.code).to.be.eq(expectedError.code);
-            expect(actualError.error.name).to.be.eq(expectedError.name);
-            expect(actualError.error.message).to.contains(expectedError.message);
+
+            await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {"address": logContractSigner.address, "topics": ["0x000"]}]]);
         });
     });
 
@@ -821,20 +798,21 @@ describe('@web-socket Acceptance Tests', async function() {
 
                 // Create different subscriptions
                 for (let i = 0; i < 3; i++) {
-                    try {
-                        const subId = await wsProvider.send('eth_subscribe', ["logs", {
+                    if(i === 2) {
+                        const expectedError = predefined.MAX_SUBSCRIPTIONS
+                        await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {
+                            address: logContractSigner.address,
+                            topics: [topics[i]]
+                        }]]);
+                    } else {
+                        await wsProvider.send('eth_subscribe', ["logs", {
                             address: logContractSigner.address,
                             topics: [topics[i]]
                         }]);
-                    } catch (e: any) {
-                        expect(e.code).to.eq(predefined.MAX_SUBSCRIPTIONS.code);
-                        expect(e.message).to.eq(predefined.MAX_SUBSCRIPTIONS.message);
-                        errorsHandled++;
                     }
                 }
 
                 await new Promise(resolve => setTimeout(resolve, 500));
-                expect(errorsHandled).to.eq(1);
             });
 
             it('Calling eth_unsubscribe decrements the internal counters', async function () {
@@ -848,7 +826,7 @@ describe('@web-socket Acceptance Tests', async function() {
                             topics: [topics[i]]
                         }]);
 
-                        const result = await wsProvider.send('eth_unsubscribe', [subId]);
+                        await wsProvider.send('eth_unsubscribe', [subId]);
                     } catch (e: any) {
                         errorsHandled++;
                     }
