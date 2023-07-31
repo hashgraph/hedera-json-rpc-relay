@@ -702,7 +702,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       }];
 
       const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList);
-      
+
       await expect(txXfer.wait()).to.eventually.be.rejected.and.satisfy((err) => {
         return err.code === Constants.CALL_EXCEPTION && err.reason === "transaction failed";
       });

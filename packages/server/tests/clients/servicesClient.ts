@@ -597,6 +597,12 @@ export default class ServicesClient {
         }
     };
 
+    async getAccountNonce(accountId) {
+        const query = new AccountInfoQuery().setAccountId(accountId);
+        const accountInfo = await query.execute(this.client);
+        return accountInfo.ethereumNonce;
+    }
+
 }
 
 export class AliasAccount {

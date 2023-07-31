@@ -2026,23 +2026,10 @@ export class EthImpl implements Eth {
   }
 
   private async getAccountLatestEthereumNonce(address: string, requestId?: string) {
-    const cachedResponse: any = this.mirrorNodeClient.getIsValidContractCache(address);
-
-    // address is a valid contract
-    if (cachedResponse) {
-      return EthImpl.oneHex;
-    }
-
     const accountData = await this.mirrorNodeClient.getAccount(address, requestId);
     if (accountData) {
-      if (!accountData.ethereum_nonce) {  // if nonce > 0 then the entity cannot be a contract
-        const contract = await this.mirrorNodeClient.isValidContract(address, requestId, 0);
-        if (contract) {
-          return EthImpl.oneHex;
-        }
-      }
-
-      return EthImpl.numberTo0x(accountData.ethereum_nonce);
+      // with HIP 729 ethereum_nonce should always be 0+ and null. Historical contracts may have a null value as the nonce was not tracked, return default EVM compliant 0x1 in this case
+      return accountData.ethereum_nonce !== null ? EthImpl.numberTo0x(accountData.ethereum_nonce) : EthImpl.oneHex;
     }
 
     return EthImpl.zeroHex;
@@ -2118,13 +2105,6 @@ export class EthImpl implements Eth {
 
     if (blockResponse.blocks[0].number - blockNum <= this.maxBlockRange) {
       return this.getAccountLatestEthereumNonce(address, requestIdPrefix);
-    }
-
-    const contract = await this.mirrorNodeClient.isValidContract(address, requestIdPrefix);
-    if (contract) {
-      // historical contract nonces unsupported until HIP 729 and mirror node historical account info is implemented
-      this.logger.warn(`${requestIdPrefix} retrieval of unsupported historical contract account nonces: ${address}`);
-      return EthImpl.zeroHex;
     }
 
     // if valid block number, get block timestamp
