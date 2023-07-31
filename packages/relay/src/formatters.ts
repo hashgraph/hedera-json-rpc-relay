@@ -70,6 +70,24 @@ const formatTransactionId = (transactionId: string): string | null => {
 }
 
 /**
+ * Retrieve formated transactionID without query params
+ * @param transactionId The string value of the transactionId
+ * @returns string | null
+ */
+const formatTransactionIdWithoutQueryParams = (transactionId: string): string | null => {
+    // get formatted transactionID
+    const formattedTransactionIdWithQueryParams = formatTransactionId(transactionId);
+
+    // handle formattedTransactionIdWithQueryParams is empty
+    if (!formattedTransactionIdWithQueryParams) {
+      return null;
+    }
+
+    // split the formattedTransactionIdWithQueryParams with `?` and return the formatedID without params
+    return formattedTransactionIdWithQueryParams.split('?')[0];
+};
+
+/**
  * Reads a value loaded up from the `.env` file, and converts it to a number.
  * If it is not set in `.env` or set as an empty string or other non-numeric
  * value, it uses the default value specified in constants.
@@ -90,4 +108,4 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
     return value;
 }
 
-export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId, parseNumericEnvVar };
+export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId, formatTransactionIdWithoutQueryParams, parseNumericEnvVar };

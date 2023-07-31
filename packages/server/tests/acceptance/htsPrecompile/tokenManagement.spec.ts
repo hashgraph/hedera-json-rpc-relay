@@ -256,6 +256,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       const isTokenFlag = txReceipt.events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.IsToken)[0].args.isToken;
       expect(isTokenFlag).to.equal(false);
     });
+
     it('should return true for isToken with passed token address', async function () {
       const tx = await mainContract.isTokenPublic(HTSTokenContractAddress, Constants.GAS.LIMIT_50_000);
       const txReceipt = await tx.wait();
@@ -266,6 +267,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       const isTokenFlag = txReceipt.events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.IsToken)[0].args.isToken;
       expect(isTokenFlag).to.equal(true);
     });
+
     it('should return 0 for getTokenType with passed FUNGIBLE_COMMON token', async function () {
       const tx = await mainContract.getTokenTypePublic(HTSTokenContractAddress, Constants.GAS.LIMIT_50_000);
       const txReceipt = await tx.wait();
@@ -276,6 +278,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       const tokenType = txReceipt.events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenType)[0].args.tokenType;
       expect(tokenType).to.equal(0);
     });
+
     it('should return 1 for getTokenType with passed HTS NON_FUNGIBLE_UNIQUE token', async function () {
       const tx = await mainContract.getTokenTypePublic(NftHTSTokenContractAddress, Constants.GAS.LIMIT_50_000);
       const txReceipt = await tx.wait();
@@ -286,15 +289,13 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       const tokenType = txReceipt.events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.TokenType)[0].args.tokenType;
       expect(tokenType).to.equal(1);
     });
+
     it('should throw an exception for getTokenType with passed contract address', async function () {
-      let hasError = false;
-      try {
-        const tx = await mainContract.getTokenTypePublic(mainContractAddress, Constants.GAS.LIMIT_50_000);
-        await tx.wait();
-      } catch (e) {
-        hasError = true;
-      }
-      expect(hasError).to.equal(true);
+      const tx = await mainContract.getTokenTypePublic(mainContractAddress, Constants.GAS.LIMIT_50_000);
+
+      await expect(tx.wait()).to.eventually.be.rejected.and.satisfy((err) => {
+        return err.code === Constants.CALL_EXCEPTION && err.reason === "transaction failed";
+      });
     });
   });
 
