@@ -128,8 +128,6 @@ export class EthImpl implements Eth {
     parseNumericEnvVar('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', 'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE');
   private readonly ethGetTransactionCountCacheTtl =
     parseNumericEnvVar('ETH_GET_TRANSACTION_COUNT_CACHE_TTL', 'ETH_GET_TRANSACTION_COUNT_CACHE_TTL');
-  private readonly ethGetBlockByResultsBatchSize =
-    parseNumericEnvVar('ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE', 'ETH_GET_BLOCK_BY_RESULTS_BATCH_SIZE');
   private readonly MirrorNodeGetContractResultRetries =
     parseNumericEnvVar('MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES', 'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES');
   private readonly estimateGasThrows = process.env. ESTIMATE_GAS_THROWS ? process.env. ESTIMATE_GAS_THROWS === "true" : true;
@@ -1672,8 +1670,8 @@ export class EthImpl implements Eth {
     const blockHash = EthImpl.toHash32(blockResponse.hash);
     const transactionArray = contractResults.map(cr => showDetails ? EthImpl.formatContractResult(cr) : cr.hash);
     // Gating feature in case of unexpected behavior with other apps.
-    if(this.shouldPopulateSyntheticContractResults) {
-      // await this.filterAndPopulateSyntheticContractResults(showDetails, logs, transactionObjects, transactionHashes, requestIdPrefix);
+    if (this.shouldPopulateSyntheticContractResults) {
+      await this.filterAndPopulateSyntheticContractResults(showDetails, logs, transactionArray, requestIdPrefix);
     }
     return new Block({
       baseFeePerGas: await this.gasPrice(requestIdPrefix),
@@ -1706,25 +1704,24 @@ export class EthImpl implements Eth {
    * If showDetails is set to true filter the contract logs and add construct missing transaction objects
    * @param showDetails
    * @param logs
-   * @param transactionObjects
-   * @param transactionHashes
+   * @param transactionArray
    * @param requestIdPrefix
    */
-  filterAndPopulateSyntheticContractResults(showDetails: boolean, logs: Log[], transactionObjects: Transaction[], transactionHashes: string[], requestIdPrefix?: string): void {
+  filterAndPopulateSyntheticContractResults(showDetails: boolean, logs: Log[], transactionArray: any, requestIdPrefix?: string): void {
     let filteredLogs: Log[];
     if (showDetails) {
-      filteredLogs = logs.filter((log) => !transactionObjects.some((transaction) => transaction.hash === log.transactionHash));
+      filteredLogs = logs.filter((log) => !transactionArray.some((transaction) => transaction.hash === log.transactionHash));
       filteredLogs.forEach(log => {
         const transaction = this.createTransactionFromLog(log);
-        transactionObjects.push(transaction);
+        transactionArray.push(transaction);
 
         const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
         this.cache.set(cacheKey, log, EthImpl.ethGetBlockByHash, this.syntheticLogCacheTtl, requestIdPrefix);
       });
     } else {
-      filteredLogs = logs.filter(log => !transactionHashes.includes(log.transactionHash));
+      filteredLogs = logs.filter(log => !transactionArray.includes(log.transactionHash));
       filteredLogs.forEach(log => {
-        transactionHashes.push(log.transactionHash);
+        transactionArray.push(log.transactionHash);
 
         const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
         this.cache.set(cacheKey, log, EthImpl.ethGetBlockByHash, this.syntheticLogCacheTtl, requestIdPrefix);
@@ -1763,41 +1760,6 @@ export class EthImpl implements Eth {
       value: EthImpl.oneTwoThreeFourHex,
     });
   }
-
-  /**
-   * Gets the transaction details for the block given the restried contract results.
-   * If showDetails is set to false simply populate the transactionHashes array with the transaction hash
-   * If showDetails is set to true subsequently batch call mirror node for additional transaction details
-   * @param contractResults
-   * @param showDetails
-   * @param transactionObjects
-   * @param transactionHashes
-   * @param requestId
-   */
-  private async batchGetAndPopulateContractResults(contractResults: any[], showDetails: boolean, transactionObjects: Transaction[], transactionHashes: string[], requestIdPrefix?: string): Promise<void> {
-    let batchCount = 1;
-    for (let i = 0; i < contractResults.length; i+= this.ethGetBlockByResultsBatchSize) {
-      if (showDetails) {
-        this.logger.trace(`${requestIdPrefix} Batch ${i} of size ${this.ethGetBlockByResultsBatchSize} to retrieve detailed contract results from Mirror Node`);
-        await Promise.all(contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(async result => {
-          // depending on stage of contract execution revert the result.to value may be null
-          if (result.to != null) {
-            const transaction = await this.getTransactionFromContractResult(result.to, result.timestamp, requestIdPrefix);
-            if (transaction !== null) {
-              transactionObjects.push(transaction);
-            }
-          }
-        })).catch((err) => {
-          this.logger.error(err, `${requestIdPrefix} Error encountered on results ${i} -> ${i + this.ethGetBlockByResultsBatchSize} of contract results retrieval from Mirror Node`);
-          throw predefined.INTERNAL_ERROR('Error encountered on contract results retrieval from Mirror Node');
-        });
-        batchCount++;
-      } else {
-        transactionHashes.push(...contractResults.slice(i, i + this.ethGetBlockByResultsBatchSize).map(result => result.hash));
-      }
-    }
-  }
-
 
   /**
    * returns the block response
