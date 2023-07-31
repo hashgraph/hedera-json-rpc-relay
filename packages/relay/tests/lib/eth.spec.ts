@@ -3262,7 +3262,7 @@ describe('Eth calls using MirrorNode', async function () {
     it('should execute "eth_call" against mirror node with an undefined ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
       const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
 
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = void 0;
+      delete process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
       restMock.onGet(`accounts/${defaultCallData.from}${limitOrderPostFix}`).reply(200, {
           account: "0.0.1723",
