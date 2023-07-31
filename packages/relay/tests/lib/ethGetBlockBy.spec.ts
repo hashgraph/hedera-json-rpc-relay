@@ -24,7 +24,6 @@ import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-import { JsonRpcError, predefined } from '../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 

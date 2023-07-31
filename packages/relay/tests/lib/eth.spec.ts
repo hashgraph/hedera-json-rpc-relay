@@ -245,6 +245,9 @@ describe('Eth calls using MirrorNode', async function () {
     ]
   };
 
+  const defaultContractResultsWithNullableFrom = _.cloneDeep(defaultContractResults);
+  defaultContractResultsWithNullableFrom.results[0].from = null;
+
   const defaultContractResultsRevert = {
     'results': [
       {
@@ -1141,10 +1144,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getTransactionByBlockNumberAndIndex should throw for internal error', async function () {
-    let nullableDefaultContractResults = _.cloneDeep(defaultContractResults);
-    // @ts-ignore
-    nullableDefaultContractResults.results[0].from = null;
-    restMock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, nullableDefaultContractResults);
+    restMock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, defaultContractResultsWithNullableFrom);
 
     const args = [EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count)];
     const errMessage = "Cannot read properties of null (reading 'substring')";
@@ -1238,11 +1238,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getTransactionByBlockHashAndIndex should throw for internal error', async function () {
-    // mirror node request mocks
-    const nullableDefaultContractResults = _.cloneDeep(defaultContractResults);
-    // @ts-ignore
-    nullableDefaultContractResults.results[0].from = null;
-    restMock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, nullableDefaultContractResults);
+    restMock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, defaultContractResultsWithNullableFrom);
 
     const args = [defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count)];
     const errMessage = "Cannot read properties of null (reading 'substring')";
