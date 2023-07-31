@@ -1671,7 +1671,7 @@ export class EthImpl implements Eth {
     const transactionArray = contractResults.map(cr => showDetails ? EthImpl.formatContractResult(cr) : cr.hash);
     // Gating feature in case of unexpected behavior with other apps.
     if (this.shouldPopulateSyntheticContractResults) {
-      await this.filterAndPopulateSyntheticContractResults(showDetails, logs, transactionArray, requestIdPrefix);
+      this.filterAndPopulateSyntheticContractResults(showDetails, logs, transactionArray, requestIdPrefix);
     }
     return new Block({
       baseFeePerGas: await this.gasPrice(requestIdPrefix),
