@@ -45,5 +45,8 @@
     "deploy-local": "cd ./subgraph && graph deploy --ipfs http://127.0.0.1:5001 --node http://127.0.0.1:8020 subgraph-example",
     "hardhat-local": "hardhat node --hostname 0.0.0.0",
     "subgraph-test": "hardhat test"
+  },
+  "overrides": {
+      "protobufjs": "^7.2.4"
   }
 }
