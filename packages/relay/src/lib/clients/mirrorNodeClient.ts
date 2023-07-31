@@ -351,6 +351,7 @@ export class MirrorNodeClient {
     handleError(error: any, path: string, pathLabel: string, effectiveStatusCode: number, method: REQUEST_METHODS, requestIdPrefix?: string) {
         const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
         const acceptedErrorResponses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
+
         if (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1) {
             this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
             if(pathLabel  === MirrorNodeClient.CONTRACT_CALL_ENDPOINT) {
