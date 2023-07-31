@@ -49,7 +49,7 @@ New filter API methods can be added and handled by extending `eth` class. Adding
 
 #### Parameters
 
-An existing
+An existing FILTER_ID
 
 #### Request
 
