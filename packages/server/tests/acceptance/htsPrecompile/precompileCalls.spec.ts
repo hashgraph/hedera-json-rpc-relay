@@ -290,6 +290,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             const responseCodeFreeze = (await freezeTx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
             expect(responseCodeFreeze).to.equal(TX_SUCCESS_CODE);
 
+            await new Promise(r => setTimeout(r, 5000));
             const isFrozen = await htsImpl.callStatic.isTokenFrozen(tokenAddress, account1LongZero);
             expect(isFrozen).to.eq(true);
 

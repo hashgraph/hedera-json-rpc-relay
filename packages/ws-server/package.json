@@ -22,7 +22,7 @@
         "pino-pretty": "^7.6.1"
     },
     "devDependencies": {
-        "@hashgraph/hedera-local": "^2.11.1",
+        "@hashgraph/hedera-local": "^2.11.3",
         "@hashgraph/sdk": "^2.30.0",
         "@koa/cors": "^3.1.0",
         "@types/chai": "^4.3.0",

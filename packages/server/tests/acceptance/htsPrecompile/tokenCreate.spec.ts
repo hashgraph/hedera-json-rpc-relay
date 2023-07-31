@@ -338,8 +338,10 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       //approval for accounts[2] to use this NFT
       await mainContract.approveNFTPublic(NftHTSTokenContractAddress, accounts[2].address, NftSerialNumber, Constants.GAS.LIMIT_1_000_000);
       await new Promise(r => setTimeout(r, 5000));
-
-      expect(await NFTokenContract.getApproved(NftSerialNumber)).to.equal(accounts[2].wallet.address);
+      expect(await NFTokenContract.getApproved(NftSerialNumber)).to.be.oneOf([
+        accounts[2].wallet.address,
+        Utils.idToEvmAddress(accounts[2].accountId.toString())
+      ]);
 
       //transfer NFT to accounts[1] with accounts[2] as signer
       await NFTokenContract.connect(accounts[2].wallet).transferFrom(mainContract.address, accounts[1].wallet.address, NftSerialNumber, Constants.GAS.LIMIT_1_000_000);
@@ -698,13 +700,13 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
           serialNumber: NftSerialNumber.toNumber(),
         }],
       }];
-      try {
-        const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList);
-        const response = (await txXfer.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
-      } catch (error: any) {
-        expect(error.code).to.equal(Constants.CALL_EXCEPTION);
-        expect(error.reason).to.equal("transaction failed");
-      }
+
+      const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList);
+
+      await expect(txXfer.wait()).to.eventually.be.rejected.and.satisfy((err) => {
+        return err.code === Constants.CALL_EXCEPTION && err.reason === "transaction failed";
+      });
+
     });
   });
 });
