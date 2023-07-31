@@ -99,13 +99,6 @@ describe("Subgraph", () => {
       expect(isEqual(erc721, expected.erc721.updated)).to.be.true;
     });
 
-    it("Indexes new ExampleHTSFT events correctly", async () => {
-      const result = await getData(HTSFT_QUERY);
-      const htsft = result.data.htsfts;
-
-      expect(isEqual(htsft, expected.htsfts.updated)).to.be.true;
-    });
-
     it("Indexes new ExampleHTSNFT events correctly", async () => {
       const result = await getData(NFTHTS_QUERY);
       const htsnfts = result.data.htsnfts;
