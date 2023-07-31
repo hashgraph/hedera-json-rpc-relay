@@ -85,4 +85,8 @@ export class MirrorNodeClientError extends Error {
     public isNotSupportedSystemContractOperaton(): boolean {
       return this.message === 'Precompile not supported';
     }
+
+    isFailInvalid() {
+        return this.message === 'FAIL_INVALID';
+    }
   }

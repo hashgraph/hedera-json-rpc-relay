@@ -1218,7 +1218,7 @@ export class EthImpl implements Eth {
     
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-      if ((String(process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE) === 'undefined') || (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false')) {
+      if((process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === undefined) || (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false')) {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
         return await this.callMirrorNode(call, gas, value, requestIdPrefix);
@@ -1252,6 +1252,11 @@ export class EthImpl implements Eth {
       }
 
       if (e instanceof MirrorNodeClientError) {
+        // Handles mirror node error for missing contract
+        if (e.isFailInvalid()) {
+          return EthImpl.emptyHex;
+        }
+
         if (e.isRateLimit()) {
           return predefined.IP_RATE_LIMIT_EXCEEDED(e.data || `Rate limit exceeded on ${EthImpl.ethCall}`);
         }
