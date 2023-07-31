@@ -155,6 +155,7 @@ export class MirrorNodeClient {
     static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;   
     
     static mirrorNodeContractResultsPageMax = parseInt(process.env.MIRROR_NODE_CONTRACT_RESULTS_PG_MAX!) || 25;
+    static mirrorNodeContractResultsLogsPageMax = parseInt(process.env.MIRROR_NODE_CONTRACT_RESULTS_LOGS_PG_MAX!) || 50;
 
     protected createAxiosClient(
         baseUrl: string
@@ -162,7 +163,7 @@ export class MirrorNodeClient {
         // defualt values for axios clients to mirror node
         const mirrorNodeTimeout = parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000');
         const mirrorNodeMaxRedirects = parseInt(process.env.MIRROR_NODE_MAX_REDIRECTS || '5');
-        const mirrorNodeHttpKeepAlive = process.env.MIRROR_NODE_HTTP_KEEP_ALIVE === 'true' ? true : false;
+        const mirrorNodeHttpKeepAlive = process.env.MIRROR_NODE_HTTP_KEEP_ALIVE === 'false' ? false : true;
         const mirrorNodeHttpKeepAliveMsecs = parseInt(process.env.MIRROR_NODE_HTTP_KEEP_ALIVE_MSECS || '1000');
         const mirrorNodeHttpMaxSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_SOCKETS || '300');
         const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '300');
@@ -373,6 +374,7 @@ export class MirrorNodeClient {
 
         if (page === pageMax) {
             // max page reached
+            this.logger.trace(`${requestIdPrefix} Max page reached ${pageMax} with ${results.length} results`);
             throw predefined.PAGINATION_MAX(pageMax);
         }
 
@@ -659,7 +661,10 @@ export class MirrorNodeClient {
             `${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
             MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
-            requestIdPrefix
+            requestIdPrefix,
+            [],
+            1,
+            MirrorNodeClient.mirrorNodeContractResultsLogsPageMax
         );
     }
 
@@ -679,7 +684,10 @@ export class MirrorNodeClient {
             `${apiEndpoint}${queryParams}`,
             MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT,
             MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
-            requestIdPrefix
+            requestIdPrefix,
+            [],
+            1,
+            MirrorNodeClient.mirrorNodeContractResultsLogsPageMax
         );
     }
 

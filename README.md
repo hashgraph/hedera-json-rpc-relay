@@ -253,6 +253,9 @@ The hedera-json-rpc-relay ships with a metrics endpoint at `/metrics`. Here is a
 
 Please note that the `/metrics` endpoint is also a default scrape configurations for prometheus. The `job_name` of `kubernetes-pods` is generally deployed as a default with prometheus; in the case where this scrape_config is present metrics will start getting populated by that scrape_config and no other configurations are necessary.
 
+##### Dashboard
+[Grafana JSON Dashboards](https://github.com/hashgraph/hedera-json-rpc-relay/tree/main/charts/hedera-json-rpc-relay/dashboards) can be used as the dashboard for hedera-json-rpc-relay.
+
 ## Support
 
 If you have a question on how to use the product, please see our
