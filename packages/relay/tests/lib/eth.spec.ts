@@ -47,7 +47,6 @@ import {
   defaultContractResults,
   defaultEthereumTransactions,
   defaultErrorMessageText,
-  verifyBlockConstants,
   expectLogData,
   expectLogData1,
   expectLogData2,
