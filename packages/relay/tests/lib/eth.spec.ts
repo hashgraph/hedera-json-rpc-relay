@@ -942,14 +942,10 @@ describe('Eth calls using MirrorNode', async function () {
     }, true);
   });
 
-  it.only('eth_getBlockByHash with block match and contract revert', async function () {
+  it('eth_getBlockByHash with block match and contract revert', async function () {
     mirrorNodeCache.clear();
     const randomBlock = {
       ...defaultBlock,
-      'timestamp': {
-        'from': `1651310386.061840429`,
-        'to': '1651361389.061850429'
-      },
       'gas_used': 400000
     };
     restMock.onGet(`blocks/${blockHash}`).reply(200, randomBlock);
