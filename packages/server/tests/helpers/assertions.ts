@@ -247,4 +247,13 @@ export default class Assertions {
         expect(log.address.toLowerCase()).to.equal(contract.address.toLowerCase());
     };
 
+    static assertRejection = async (error: JsonRpcError, method: () => Promise<any>, args: any[], checkMessage: boolean): Promise<any> => {
+        return await expect(method.apply(global.relay, args)).to.eventually.be.rejected.and.satisfy((err) => {
+            if(!checkMessage) {
+                return [error.code, error.name].every(substring => err.body.includes(substring));
+            }
+            return [error.code, error.name, error.message].every(substring => err.body.includes(substring));
+        });
+    };
+
 }
