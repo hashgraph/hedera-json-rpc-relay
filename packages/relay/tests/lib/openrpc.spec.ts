@@ -84,7 +84,7 @@ let mirrorNodeInstance: MirrorNodeClient;
 let clientServiceInstance: ClientService;
 let sdkClientStub: any;
 
-const limitOrderPostFix = '?order=desc&limit=1';
+const noTransactions = '?transactions=false';
 
 describe("Open RPC Specification", function () {
 
@@ -148,7 +148,7 @@ describe("Open RPC Specification", function () {
                 balance: 2000000000000
             } 
         });
-        mock.onGet(`accounts/${contractAddress3}${limitOrderPostFix}`).reply(200, { 
+        mock.onGet(`accounts/${contractAddress3}${noTransactions}`).reply(200, { 
             account: contractAddress3,
             balance: {
                 balance: 100000000000
@@ -156,7 +156,7 @@ describe("Open RPC Specification", function () {
         });
         mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
 
-        mock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+        mock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
             from: `${defaultEvmAddress}`
           });
         for (const log of defaultLogs.logs) {
@@ -215,7 +215,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_estimateGas"', async function () {
-        mock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
+        mock.onGet(`accounts/undefined${noTransactions}`).reply(404);
         const response = await ethImpl.estimateGas({}, null);
 
         validateResponseSchema(methodsResponseSchema.eth_estimateGas, response);
@@ -343,8 +343,8 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionCount"', async function () {
-        mock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).reply(200, { account: contractAddress1, ethereum_nonce: 5 });
-        mock.onGet(`contracts/${contractAddress1}${limitOrderPostFix}`).reply(404);
+        mock.onGet(`accounts/${contractAddress1}${noTransactions}`).reply(200, { account: contractAddress1, ethereum_nonce: 5 });
+        mock.onGet(`contracts/${contractAddress1}${noTransactions}`).reply(404);
         const response = await ethImpl.getTransactionCount(contractAddress1, 'latest');
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);
