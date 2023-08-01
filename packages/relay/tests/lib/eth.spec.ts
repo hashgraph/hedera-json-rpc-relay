@@ -1109,13 +1109,16 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getTransactionByBlockNumberAndIndex with null amount', async function () {
-    // mirror node request mocks
+    const randomBlock = {
+      'number': 1009,
+      'count': 37
+    };
     const nullableDefaultContractResults = _.cloneDeep(defaultContractResults);
     // @ts-ignore
     nullableDefaultContractResults.results[0].amount = null;
-    restMock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, nullableDefaultContractResults);
+    restMock.onGet(`contracts/results?block.number=${randomBlock.number}&transaction.index=${randomBlock.count}&limit=100&order=asc`).reply(200, nullableDefaultContractResults);
 
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(randomBlock.number), EthImpl.numberTo0x(randomBlock.count));
     expect(result).to.exist;
     expect(result).to.not.be.null;
 
@@ -1237,9 +1240,13 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getTransactionByBlockHashAndIndex should throw for internal error', async function () {
-    restMock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, defaultContractResultsWithNullableFrom);
+    const randomBlock = {
+      'hash': '0x5f827a801c579c84eca738827b65612b28ed425b7578bfdd10177e24fc3db8d4b1a7f3d56d83c39b950cc5e4d175dd64',
+      'count': 9
+    };
+    restMock.onGet(`contracts/results?block.hash=${randomBlock.hash}&transaction.index=${randomBlock.count}&limit=100&order=asc`).reply(200, defaultContractResultsWithNullableFrom);
 
-    const args = [defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count)];
+    const args = [randomBlock.hash, EthImpl.numberTo0x(randomBlock.count)];
     const errMessage = "Cannot read properties of null (reading 'substring')";
 
     await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.getTransactionByBlockHashAndIndex, true, ethImpl, args);
