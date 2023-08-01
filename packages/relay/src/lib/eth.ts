@@ -1476,7 +1476,7 @@ export class EthImpl implements Eth {
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_RECEIPT}_${hash}`;
     const cachedResponse = this.cache.get(cacheKey, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
     if (cachedResponse) {
-      this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached response: ${cachedResponse}`);
+      this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached response: ${JSON.stringify(cachedResponse)}`);
       return cachedResponse;
     }
 
@@ -1500,7 +1500,7 @@ export class EthImpl implements Eth {
         transactionIndex: cachedLog.transactionIndex,
       };
 
-      this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached synthetic receipt response: ${cachedResponse}`);
+      this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached synthetic receipt response: ${JSON.stringify(cachedResponse)}`);
       this.cache.set(cacheKey, receipt, EthImpl.ethGetTransactionReceipt, constants.CACHE_TTL.ONE_DAY, requestIdPrefix);
 
       return receipt;

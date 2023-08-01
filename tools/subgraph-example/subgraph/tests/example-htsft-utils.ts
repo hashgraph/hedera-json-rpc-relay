@@ -22,8 +22,8 @@ import { newMockEvent } from "matchstick-as"
 import { ethereum, Address, BigInt } from "@graphprotocol/graph-ts"
 import {
   Approval,
-  ExampleERC20Transfer
-} from "../generated/ExampleERC20/ExampleERC20"
+  ExampleHTSFTTransfer
+} from "../generated/ExampleHTSFT/ExampleHTSFT"
 
 export function createApprovalEvent(
   owner: Address,
@@ -47,26 +47,24 @@ export function createApprovalEvent(
   return approvalEvent
 }
 
-export function createExampleERC20TransferEvent(
+export function createExampleHTSFTTransferEvent(
   from: Address,
   to: Address,
   value: BigInt
-): ExampleERC20Transfer {
-  let exampleErc20TransferEvent = changetype<ExampleERC20Transfer>(
-    newMockEvent()
-  )
+): ExampleHTSFTTransfer {
+  let exampleHtsFTTransferEvent = changetype<ExampleHTSFTTransfer>(newMockEvent())
 
-  exampleErc20TransferEvent.parameters = new Array()
+  exampleHtsFTTransferEvent.parameters = new Array()
 
-  exampleErc20TransferEvent.parameters.push(
+  exampleHtsFTTransferEvent.parameters.push(
     new ethereum.EventParam("from", ethereum.Value.fromAddress(from))
   )
-  exampleErc20TransferEvent.parameters.push(
+  exampleHtsFTTransferEvent.parameters.push(
     new ethereum.EventParam("to", ethereum.Value.fromAddress(to))
   )
-  exampleErc20TransferEvent.parameters.push(
+  exampleHtsFTTransferEvent.parameters.push(
     new ethereum.EventParam("value", ethereum.Value.fromUnsignedBigInt(value))
   )
 
-  return exampleErc20TransferEvent
+  return exampleHtsFTTransferEvent
 }

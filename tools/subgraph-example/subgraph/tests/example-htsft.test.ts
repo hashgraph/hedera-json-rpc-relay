@@ -27,8 +27,8 @@ import {
   afterAll
 } from "matchstick-as/assembly/index"
 import { Address, BigInt } from "@graphprotocol/graph-ts"
-import { handleApproval } from "../src/example-erc-20"
-import { createApprovalEvent } from "./example-erc-20-utils"
+import { handleApproval } from "../src/example-htsft"
+import { createApprovalEvent } from "./example-htsft-utils"
 
 // Tests structure (matchstick-as >=0.5.0)
 // https://thegraph.com/docs/en/developer/matchstick/#tests-structure-0-5-0
