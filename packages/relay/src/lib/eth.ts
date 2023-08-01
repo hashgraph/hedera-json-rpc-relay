@@ -103,6 +103,7 @@ export class EthImpl implements Eth {
   static ethGetTransactionCountByNumber = 'eth_GetTransactionCountByNumber';
   static ethGetTransactionReceipt = 'eth_GetTransactionReceipt';
   static ethSendRawTransaction = 'eth_sendRawTransaction';
+  static ethUninstallFilter = 'eth_uninstallFilter';
 
   // block constants
   static blockLatest = 'latest';
@@ -2008,6 +2009,14 @@ export class EthImpl implements Eth {
     }
 
     return logs;
+  }
+
+  async uninstallFilter(filterId: string, requestIdPrefix?: string | undefined): Promise<boolean> {
+    this.logger.trace(`${requestIdPrefix} uninstallFilter(${filterId})`);
+
+    const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
+
+    return false;
   }
 
   async maxPriorityFeePerGas(requestIdPrefix?: string): Promise<string> {

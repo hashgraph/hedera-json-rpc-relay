@@ -37,6 +37,7 @@ enum CACHE_KEY {
     GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee',
     RESOLVE_ENTITY_TYPE = 'resolveEntityType',
     SYNTHETIC_LOG_TRANSACTION_HASH = 'syntheticLogTransactionHash',
+    FILTERID = 'filterId'
 }
 
 enum CACHE_TTL {
