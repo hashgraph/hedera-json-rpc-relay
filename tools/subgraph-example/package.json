@@ -31,7 +31,7 @@
     "ts-node": "^10.9.1",
     "typechain": "^5.2.0",
     "typescript": "^4.9.3",
-    "@hashgraph/hedera-local": "^2.3.2",
+    "@hashgraph/hedera-local": "^2.11.3",
     "@openzeppelin/contracts": "^4.9.2",
     "@graphprotocol/hardhat-graph": "0.1.0-alpha.2"
   },
@@ -45,5 +45,8 @@
     "deploy-local": "cd ./subgraph && graph deploy --ipfs http://127.0.0.1:5001 --node http://127.0.0.1:8020 subgraph-example",
     "hardhat-local": "hardhat node --hostname 0.0.0.0",
     "subgraph-test": "hardhat test"
+  },
+  "overrides": {
+      "protobufjs": "^7.2.4"
   }
 }

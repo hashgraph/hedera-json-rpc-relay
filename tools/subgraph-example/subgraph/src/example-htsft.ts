@@ -18,26 +18,23 @@
  *
  */
 
-import { Transfer as TransferEvent } from "../generated/ExampleERC721/ExampleERC721";
-import { ERC721, Transfer } from "../generated/schema";
+import {
+  Transfer as TransferEvent
+} from "../generated/ExampleHTSFT/ExampleHTSFT"
+import { HTSFT, Transfer } from "../generated/schema"
 
-// Schema:
+// SCHEMA:
 // id: ID! # String
-// owner: Bytes! # Address
+// supply: BigInt!
 // transfers: [Transfer!]! @derivedFrom(field: "token") # One-to-many relationship with reverse lookup
 // type: TokenType!
 export function handleTransfer(event: TransferEvent): void {
-  let token = ERC721.load(
-    event.address.toHexString() + "-" + event.params.tokenId.toString()
-  );
+  let token = HTSFT.load(event.address.toHexString());
 
   if (!token) {
-    token = new ERC721(
-      event.address.toHexString() + "-" + event.params.tokenId.toString()
-    );
-    token.type = "ERC721";
-    token.tokenId = event.params.tokenId;
-    token.owner = event.params.to;
+    token = new HTSFT(event.address.toHexString());
+    token.type = "HTSFT";
+    token.supply = event.params.value;
     token.save();
   }
 
@@ -47,6 +44,7 @@ export function handleTransfer(event: TransferEvent): void {
 
   transfer.from = event.params.from;
   transfer.to = event.params.to;
+  transfer.amount = event.params.value;
   transfer.token = token.id;
   transfer.save();
 }
