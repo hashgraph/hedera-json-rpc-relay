@@ -4170,7 +4170,6 @@ describe('Eth calls using MirrorNode', async function () {
     const transactionId = '0.0.1078@1686183420.196506746';
 
     const accountPath = `accounts/${mockData.account.evm_address}${noTransactions}`;
-    const accountLimitOnePath = `accounts/${mockData.account.evm_address}?order=desc&limit=1`;
     const accountTimestampFilteredPath = `accounts/${mockData.account.evm_address}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=2&order=desc`;
     const contractPath = `contracts/${mockData.account.evm_address}`;
     const contractResultsPath = `contracts/results/${transactionId}`;
@@ -4256,7 +4255,7 @@ describe('Eth calls using MirrorNode', async function () {
 
     it('should return nonce for request on historical numerical block', async() => {
       restMock.onGet(blockPath).reply(200, mockData.blocks.blocks[2]);
-      restMock.onGet(accountLimitOnePath).reply(200, {...mockData.account, transactions: [defaultEthereumTransactions[0]]});
+      restMock.onGet(accountPath).reply(200, {...mockData.account, transactions: [defaultEthereumTransactions[0]]});
       restMock.onGet(accountTimestampFilteredPath).reply(200, {...mockData.account, transactions: defaultEthereumTransactions});
       restMock.onGet(`${contractResultsPath}`).reply(200, defaultDetailedContractResults);
 
