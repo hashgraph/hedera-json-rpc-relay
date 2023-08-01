@@ -1712,7 +1712,7 @@ export class EthImpl implements Eth {
    * @param transactionArray
    * @param requestIdPrefix
    */
-  filterAndPopulateSyntheticContractResults(showDetails: boolean, logs: Log[], transactionArray: any, requestIdPrefix?: string): void {
+  filterAndPopulateSyntheticContractResults(showDetails: boolean, logs: Log[], transactionArray: Array<any>, requestIdPrefix?: string): void {
     let filteredLogs: Log[];
     if (showDetails) {
       filteredLogs = logs.filter((log) => !transactionArray.some((transaction) => transaction.hash === log.transactionHash));
