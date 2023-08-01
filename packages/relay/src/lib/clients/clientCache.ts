@@ -101,6 +101,12 @@ export class ClientCache {
         this.cacheKeyGauge.labels('', ClientCache.setCacheLabel, callingMethod || '').inc(1);
     }
 
+    public delete(key: string, callingMethod: string, requestIdPrefix?: string): void {
+        this.logger.trace(`${requestIdPrefix} delete cache for ${key}`);
+        this.cache.delete(key);
+        this.cacheKeyGauge.labels('', ClientCache.setCacheLabel, callingMethod || '').inc(1);
+    }
+
     public purgeStale(): void {
         this.cache.purgeStale();
     }

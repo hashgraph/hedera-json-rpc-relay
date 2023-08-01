@@ -17,7 +17,6 @@
  * limitations under the License.
  *
  */
-import chai from 'chai';
 import path from 'path';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
@@ -30,10 +29,8 @@ import constants from '../../../src/lib/constants';
 import { ClientCache } from '../../../src/lib/clients';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../../src/lib/hbarlimiter';
-import chaiAsPromised from 'chai-as-promised';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-chai.use(chaiAsPromised);
 
 const logger = pino();
 const registry = new Registry();

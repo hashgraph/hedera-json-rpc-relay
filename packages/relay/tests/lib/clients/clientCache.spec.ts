@@ -87,6 +87,15 @@ describe('Simple ClientCache', async function () {
         const cacheValue = clientCache.get(key, callingMethod);
         expect(cacheValue).to.be.equal(expectedValue);
       });
+
+      it('delete a valid object', async function () {
+        const key = 'key';
+        const expectedValue = { key: 'value' };
+        clientCache.set(key, expectedValue, callingMethod);
+        clientCache.delete(key, callingMethod);
+        const cacheValue = clientCache.get(key, callingMethod);
+        expect(cacheValue).to.be.equal(null);
+      });
     });
 
     describe('verify cache management', async function () {

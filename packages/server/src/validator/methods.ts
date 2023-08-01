@@ -150,4 +150,10 @@ export const METHODS = {
       type: 'hex'
     }
   },
+  "eth_uninstallFilter": {
+    0: {
+      required: true,
+      type: 'hex'
+    }
+  },
 };

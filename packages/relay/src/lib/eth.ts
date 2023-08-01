@@ -2015,6 +2015,12 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} uninstallFilter(${filterId})`);
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
+    const filter = this.cache.get(cacheKey, EthImpl.ethUninstallFilter, requestIdPrefix);
+    
+    if(filter) {
+      this.cache.delete(cacheKey, EthImpl.ethUninstallFilter, requestIdPrefix);
+      return true;
+    }
 
     return false;
   }
