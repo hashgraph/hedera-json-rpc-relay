@@ -293,6 +293,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                         await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                     });
 
+
                                     it('reverts', async function () {
                                         try {
                                             await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
