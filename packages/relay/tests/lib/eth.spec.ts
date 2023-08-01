@@ -979,8 +979,14 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockByHash should throw if unexpected error', async function () {
     // mirror node request mocks
-    restMock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
-    restMock.onGet(`contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).abortRequestOnce();
+    const randomBlock = {
+      'timestamp': {
+        'from': `1651560386.060890949`,
+        'to': '1651560389.060890919'
+      },
+    };
+    restMock.onGet(`blocks/${blockHash}`).reply(200, randomBlock);
+    restMock.onGet(`contracts/results?timestamp=gte:${randomBlock.timestamp.from}&timestamp=lte:${randomBlock.timestamp.to}&limit=100&order=asc`).abortRequestOnce();
     await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(), ethImpl.getBlockByHash, false, ethImpl, [blockHash, false]);
   });
 
@@ -1132,9 +1138,13 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getTransactionByBlockNumberAndIndex should throw for internal error', async function () {
-    restMock.onGet(`contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, defaultContractResultsWithNullableFrom);
+    const randomBlock = {
+      'number': 5644,
+      'count': 33
+    };
+    restMock.onGet(`contracts/results?block.number=${randomBlock.number}&transaction.index=${randomBlock.count}&limit=100&order=asc`).reply(200, defaultContractResultsWithNullableFrom);
 
-    const args = [EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count)];
+    const args = [EthImpl.numberTo0x(randomBlock.number), EthImpl.numberTo0x(randomBlock.count)];
     const errMessage = "Cannot read properties of null (reading 'substring')";
 
     await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.getTransactionByBlockNumberAndIndex, true, ethImpl, args);
