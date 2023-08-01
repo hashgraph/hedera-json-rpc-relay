@@ -625,6 +625,20 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
 });
 
 /**
+ * Filter related endpoints:
+ */
+
+app.useRpc('eth_newFilter', async (params: any) => {
+  const filter = params[0];
+  return logAndHandleResponse('eth_newFilter', [], (requestId) => relay.eth().newFilter(
+    filter.fromBlock,
+    filter.toBlock,
+    filter.address,
+    filter.topics,
+    requestId));
+});
+
+/**
  * Not supported
  */
 app.useRpc('eth_submitHashrate', async () => {

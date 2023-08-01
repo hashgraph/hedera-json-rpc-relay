@@ -19,10 +19,15 @@
  */
 
 import constants from "./lib/constants";
+import crypto from "crypto";
 
 const hashNumber = (num) => {
   return '0x' + num.toString(16);
 };
+
+const generateRandomHex = (bytes = 16) => {
+    return "0x" + crypto.randomBytes(bytes).toString('hex');
+}
 
 /**
 * Format message prefix for logger.
@@ -108,4 +113,4 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
     return value;
 }
 
-export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId, formatTransactionIdWithoutQueryParams, parseNumericEnvVar };
+export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId, formatTransactionIdWithoutQueryParams, parseNumericEnvVar, generateRandomHex };

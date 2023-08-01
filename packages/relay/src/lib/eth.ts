@@ -30,7 +30,7 @@ import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import constants from './constants';
 import { Precheck } from './precheck';
-import { formatTransactionIdWithoutQueryParams, parseNumericEnvVar } from '../formatters';
+import { formatTransactionIdWithoutQueryParams, parseNumericEnvVar, generateRandomHex } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
 import { Counter, Registry } from "prom-client";
@@ -94,6 +94,7 @@ export class EthImpl implements Eth {
   static ethGetTransactionCountByHash = 'eth_GetTransactionCountByHash';
   static ethGetTransactionCountByNumber = 'eth_GetTransactionCountByNumber';
   static ethGetTransactionReceipt = 'eth_GetTransactionReceipt';
+  static ethNewFilter = 'eth_newFilter';
   static ethSendRawTransaction = 'eth_sendRawTransaction';
 
   // block constants
@@ -2211,5 +2212,36 @@ export class EthImpl implements Eth {
       .reduce((total, amount) => {
         return total + amount;
       }, 0);
+  }
+
+  /**
+   * Creates a new filter with the specified type and parameters
+   * @param type
+   * @param params
+   * @param requestIdPrefix
+   */
+  createFilter(type: string, params: any, requestIdPrefix?: string): string {
+    const filterId = generateRandomHex();
+    const cacheKey = `${constants.CACHE_KEY.FILTER}-${filterId}`;
+    this.cache.set(cacheKey, {
+      type,
+      params,
+      lastQueried: null
+    }, EthImpl.ethNewFilter, constants.FILTER.TTL, requestIdPrefix);
+    return filterId;
+  }
+
+  /**
+   * Creates a new filter with TYPE=log
+   * @param fromBlock
+   * @param toBlock
+   * @param address
+   * @param topics
+   * @param requestIdPrefix
+   */
+  newFilter(fromBlock: string | 'latest', toBlock: string | 'latest', address?: string, topics?: any[], requestIdPrefix?: string): string  {
+    return this.createFilter(constants.FILTER.TYPE.LOG, {
+      fromBlock, toBlock, address, topics
+    }, requestIdPrefix);
   }
 }

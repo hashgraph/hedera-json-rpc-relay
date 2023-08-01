@@ -133,4 +133,6 @@ export interface Eth {
   syncing(requestId?: string): Promise<boolean>;
 
   accounts(requestId?: string): Array<any>;
+
+  newFilter(fromBlock: string | 'latest', toBlock: string | 'latest', address?: string, topics?: any[], requestIdPrefix?: string): string;
 }
