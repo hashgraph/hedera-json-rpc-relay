@@ -2228,7 +2228,17 @@ export class EthImpl implements Eth {
       params,
       lastQueried: null
     }, EthImpl.ethNewFilter, constants.FILTER.TTL, requestIdPrefix);
+    this.logger.trace(`${requestIdPrefix} created filter with TYPE=${type}, params: ${params}`);
     return filterId;
+  }
+
+  /**
+   * Checks if the Filter API is enabled
+   */
+  static requireFiltersEnabled(): undefined | JsonRpcError {
+    if (!process.env.FILTER_API_ENABLED || process.env.FILTER_API_ENABLED !== 'true') {
+      throw predefined.UNSUPPORTED_METHOD;
+    }
   }
 
   /**
@@ -2239,9 +2249,21 @@ export class EthImpl implements Eth {
    * @param topics
    * @param requestIdPrefix
    */
-  newFilter(fromBlock: string | 'latest', toBlock: string | 'latest', address?: string, topics?: any[], requestIdPrefix?: string): string  {
-    return this.createFilter(constants.FILTER.TYPE.LOG, {
-      fromBlock, toBlock, address, topics
-    }, requestIdPrefix);
+  async newFilter(fromBlock: string | 'latest', toBlock: string | 'latest', address?: string, topics?: any[], requestIdPrefix?: string): string  {
+    this.logger.trace(`${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`);
+    try {
+      EthImpl.requireFiltersEnabled()
+
+      if (!(await this.validateBlockRangeAndAddTimestampToParams({}, fromBlock, toBlock, requestIdPrefix))) {
+        throw predefined.INVALID_BLOCK_RANGE;
+      }
+
+      return this.createFilter(constants.FILTER.TYPE.LOG, {
+        fromBlock, toBlock, address, topics
+      }, requestIdPrefix);
+    }
+    catch(e) {
+      return this.genericErrorHandler(e);
+    }
   }
 }

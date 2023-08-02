@@ -52,7 +52,8 @@ import {
   expectLogData2,
   expectLogData3,
   expectLogData4,
-  getRequestId
+  getRequestId,
+  toHex
 } from '../helpers';
 
 import pino from 'pino';
@@ -4415,6 +4416,93 @@ describe('Eth calls using MirrorNode', async function () {
       const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, EthImpl.blockLatest);
       expect(nonce).to.exist;
       expect(nonce).to.equal(EthImpl.oneHex);
+    });
+  });
+
+  describe('filter API', async function () {
+
+    let blockNumberHexes, numberHex;
+
+    beforeEach(() => {
+      blockNumberHexes = {
+        5: toHex(5),
+        1400: toHex(1400),
+        1500: toHex(1500),
+        2000: toHex(2000),
+        2001: toHex(2001),
+      };
+
+      numberHex = blockNumberHexes[1500];
+
+      restMock.onGet(`blocks/5`).reply(200, {...olderBlock, number: 5});
+      restMock.onGet(`blocks/1400`).reply(200, {...olderBlock, number: 1400});
+      restMock.onGet(`blocks/1500`).reply(200, {...defaultBlock, number: 1500});
+      restMock.onGet(`blocks/2000`).reply(200, {...defaultBlock, number: 2000});
+      restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {blocks: [{...defaultBlock, number: 2002}]});
+    })
+
+    describe('all methods require a filter flag', async function () {
+      let ffAtStart;
+
+      before(function () {
+        ffAtStart = process.env.FILTER_API_ENABLED;
+      });
+
+      after(function () {
+        process.env.FILTER_API_ENABLED = ffAtStart;
+      });
+
+      it('FILTER_API_ENABLED is not specified', async function () {
+        delete process.env.FILTER_API_ENABLED;
+        await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, ethImpl.newFilter, true, ethImpl, {});
+      });
+
+      it('FILTER_API_ENABLED=true', async function () {
+        process.env.FILTER_API_ENABLED='true';
+        expect(RelayAssertions.validateHash(await ethImpl.newFilter(), 32)).to.eq(true, 'returns valid filterId');
+      });
+
+      it('FILTER_API_ENABLED=false', async function () {
+        process.env.FILTER_API_ENABLED='false';
+        await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, ethImpl.newFilter, true, ethImpl, {});
+      });
+    });
+
+    describe('eth_newFilter', async function() {
+      it('Returns a valid filterId', async function() {
+        expect(RelayAssertions.validateHash(await ethImpl.newFilter(), 32)).to.eq(true, 'with default param values');
+        expect(RelayAssertions.validateHash(await ethImpl.newFilter(numberHex), 32)).to.eq(true, 'with fromBlock');
+        expect(RelayAssertions.validateHash(await ethImpl.newFilter(numberHex, 'latest'), 32)).to.eq(true, 'with fromBlock, toBlock');
+        expect(RelayAssertions.validateHash(await ethImpl.newFilter(numberHex, 'latest', defaultEvmAddress), 32)).to.eq(true, 'with fromBlock, toBlock, address');
+        expect(RelayAssertions.validateHash(await ethImpl.newFilter(numberHex, 'latest', defaultEvmAddress, defaultLogTopics), 32)).to.eq(true, 'with fromBlock, toBlock, address, topics');
+        expect(RelayAssertions.validateHash(await ethImpl.newFilter(numberHex, 'latest', defaultEvmAddress, defaultLogTopics, getRequestId()), 32)).to.eq(true, 'with all parameters');
+      });
+
+      it('Creates a filter with type=log', async function() {
+        const filterId = await ethImpl.newFilter(numberHex, 'latest', defaultEvmAddress, defaultLogTopics, getRequestId());
+
+        const cacheKey = `${constants.CACHE_KEY.FILTER}-${filterId}`;
+        const cachedFilter = clientCache.get(cacheKey);
+
+        expect(cachedFilter).to.exist;
+        expect(cachedFilter.type).to.exist;
+        expect(cachedFilter.type).to.eq(constants.FILTER.TYPE.LOG);
+        expect(cachedFilter.params).to.exist;
+        expect(cachedFilter.lastQueried).to.be.null;
+      });
+
+      it('validates fromBlock and toBlock', async function() {
+        // fromBlock is larger than toBlock
+        await RelayAssertions.assertRejection(predefined.INVALID_BLOCK_RANGE, ethImpl.newFilter, true, ethImpl, [blockNumberHexes[1500], blockNumberHexes[1400]]);
+        await RelayAssertions.assertRejection(predefined.INVALID_BLOCK_RANGE, ethImpl.newFilter, true, ethImpl, ['latest', blockNumberHexes[1400]]);
+
+        // block range is too large
+        await RelayAssertions.assertRejection(predefined.RANGE_TOO_LARGE(1000), ethImpl.newFilter, true, ethImpl, [blockNumberHexes[5], blockNumberHexes[2000]]);
+
+        // block range is valid
+        expect(RelayAssertions.validateHash(await ethImpl.newFilter(blockNumberHexes[1400], blockNumberHexes[1500]), 32)).to.eq(true);
+        expect(RelayAssertions.validateHash(await ethImpl.newFilter(blockNumberHexes[1400], 'latest'), 32)).to.eq(true);
+      });
     });
   });
 });

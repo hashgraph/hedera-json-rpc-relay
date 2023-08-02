@@ -237,4 +237,9 @@ export const predefined = {
     code: -39012,
     message: 'Unknown block'
   }),
+  'INVALID_BLOCK_RANGE': new JsonRpcError({
+    name: 'Invalid block range',
+    code: -39013,
+    message: 'Invalid block range'
+  }),
 };
