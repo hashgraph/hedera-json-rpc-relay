@@ -21,6 +21,7 @@
 import { expect } from 'chai';
 import { hexToASCII, decodeErrorMessage, formatTransactionId, parseNumericEnvVar, formatTransactionIdWithoutQueryParams } from '../../src/formatters';
 import constants from '../../src/lib/constants';
+import { formatContractResult } from '../../dist/formatters';
 
 describe('Formatters', () => {
     describe('hexToASCII', () => {
@@ -165,6 +166,93 @@ describe('Formatters', () => {
                 parseNumericEnvVar('TEST_ONLY_ENV_VAR_NUMERICSTRING', 'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT');
             expect(isNaN(value)).to.equal(false, 'should not be NaN');
             expect(value).to.equal(12345);
+        });
+    });
+
+    describe('formatContractResult', () => {
+        const contractResult = {
+            amount: 0,
+            from: '0x05fba803be258049a27b820088bab1cad2058871',
+            function_parameters: '0x08090033',
+            gas_used: 400000,
+            to: '0x0000000000000000000000000000000000000409',
+            hash: '0xfc4ab7133197016293d2e14e8cf9c5227b07357e6385184f1cd1cb40d783cfbd',
+            block_hash: '0xb0f10139fa0bf9e66402c8c0e5ed364e07cf83b3726c8045fabf86a07f4887130e4650cb5cf48a9f6139a805b78f0312',
+            block_number: 528,
+            transaction_index: 9,
+            chain_id: '0x12a',
+            gas_price: '0x',
+            max_fee_per_gas: '0x59',
+            max_priority_fee_per_gas: '0x',
+            r: '0x2af9d41244c702764ed86c5b9f1a734b075b91c4d9c65e78bc584b0e35181e42',
+            s: '0x3f0a6baa347876e08c53ffc70619ba75881841885b2bd114dbb1905cd57112a5',
+            type: 2,
+            v: 1,
+            nonce: 2
+        };
+
+        it('should return null if null is passed', () => {
+            expect(formatContractResult(null)).to.equal(null);
+        });
+
+        it('should return a valid match', () => {
+            const formattedResult: any = formatContractResult(contractResult);
+            expect(formattedResult.accessList).to.equal(undefined);
+            expect(formattedResult.blockHash).to.equal('0xb0f10139fa0bf9e66402c8c0e5ed364e07cf83b3726c8045fabf86a07f488713');
+            expect(formattedResult.blockNumber).to.equal('0x210');
+            expect(formattedResult.chainId).to.equal('0x12a');
+            expect(formattedResult.from).to.equal('0x05fba803be258049a27b820088bab1cad2058871');
+            expect(formattedResult.gas).to.equal('0x61a80');
+            expect(formattedResult.gasPrice).to.equal(null);
+            expect(formattedResult.hash).to.equal('0xfc4ab7133197016293d2e14e8cf9c5227b07357e6385184f1cd1cb40d783cfbd');
+            expect(formattedResult.input).to.equal('0x08090033');
+            expect(formattedResult.maxPriorityFeePerGas).to.equal(null);
+            expect(formattedResult.maxFeePerGas).to.equal('0x59');
+            expect(formattedResult.nonce).to.equal('0x2');
+            expect(formattedResult.r).to.equal('0x2af9d41244c702764ed86c5b9f1a734b075b91c4d9c65e78bc584b0e35181e42');
+            expect(formattedResult.s).to.equal('0x3f0a6baa347876e08c53ffc70619ba75881841885b2bd114dbb1905cd57112a5');
+            expect(formattedResult.to).to.equal('0x0000000000000000000000000000000000000409');
+            expect(formattedResult.transactionIndex).to.equal('0x9');
+            expect(formattedResult.type).to.equal('0x2');
+            expect(formattedResult.v).to.equal('0x1');
+            expect(formattedResult.value).to.equal('0x0');
+        });
+
+        it('should return nullable fields', () => {
+            const formattedResult: any = formatContractResult({
+                ...contractResult,
+                block_number: null,
+                gas_used: null,
+                gas_price: '0x',
+                max_priority_fee_per_gas: '0x',
+                max_fee_per_gas: '0x',
+                nonce: null,
+                r: null,
+                s: null,
+                transaction_index: null,
+                type: null,
+                v: null,
+                value: null
+            });
+            expect(formattedResult.accessList).to.equal(undefined);
+            expect(formattedResult.blockHash).to.equal('0xb0f10139fa0bf9e66402c8c0e5ed364e07cf83b3726c8045fabf86a07f488713');
+            expect(formattedResult.blockNumber).to.equal(null);
+            expect(formattedResult.chainId).to.equal('0x12a');
+            expect(formattedResult.from).to.equal('0x05fba803be258049a27b820088bab1cad2058871');
+            expect(formattedResult.gas).to.equal('0x0');
+            expect(formattedResult.gasPrice).to.equal(null);
+            expect(formattedResult.hash).to.equal('0xfc4ab7133197016293d2e14e8cf9c5227b07357e6385184f1cd1cb40d783cfbd');
+            expect(formattedResult.input).to.equal('0x08090033');
+            expect(formattedResult.maxPriorityFeePerGas).to.equal(null);
+            expect(formattedResult.maxFeePerGas).to.equal(null);
+            expect(formattedResult.nonce).to.equal('0x0');
+            expect(formattedResult.r).to.equal(null);
+            expect(formattedResult.s).to.equal(null);
+            expect(formattedResult.to).to.equal('0x0000000000000000000000000000000000000409');
+            expect(formattedResult.transactionIndex).to.equal(null);
+            expect(formattedResult.type).to.equal(null);
+            expect(formattedResult.v).to.equal('0x0');
+            expect(formattedResult.value).to.equal('0x0');
         });
     });
 });

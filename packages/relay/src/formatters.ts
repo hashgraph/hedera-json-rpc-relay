@@ -19,6 +19,8 @@
  */
 
 import constants from "./lib/constants";
+import { Transaction } from './lib/model';
+import { EthImpl } from './lib/eth';
 
 const hashNumber = (num) => {
   return '0x' + num.toString(16);
@@ -108,4 +110,32 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
     return value;
 }
 
-export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId, formatTransactionIdWithoutQueryParams, parseNumericEnvVar };
+const formatContractResult = (cr: any) => {
+    if (cr === null) {
+        return null;
+    }
+
+    return new Transaction({
+        accessList: undefined,
+        blockHash: EthImpl.toHash32(cr.block_hash),
+        blockNumber: EthImpl.nullableNumberTo0x(cr.block_number),
+        chainId: cr.chain_id,
+        from: cr.from.substring(0, 42),
+        gas: EthImpl.nanOrNumberTo0x(cr.gas_used),
+        gasPrice: EthImpl.toNullIfEmptyHex(cr.gas_price),
+        hash: cr.hash.substring(0, 66),
+        input: cr.function_parameters,
+        maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(cr.max_priority_fee_per_gas),
+        maxFeePerGas: EthImpl.toNullIfEmptyHex(cr.max_fee_per_gas),
+        nonce: EthImpl.nanOrNumberTo0x(cr.nonce),
+        r: cr.r === null ? null : cr.r.substring(0, 66),
+        s: cr.s === null ? null : cr.s.substring(0, 66),
+        to: cr.to?.substring(0, 42),
+        transactionIndex: EthImpl.nullableNumberTo0x(cr.transaction_index),
+        type: EthImpl.nullableNumberTo0x(cr.type),
+        v: EthImpl.nanOrNumberTo0x(cr.v),
+        value: EthImpl.nanOrNumberTo0x(cr.amount)
+    });
+}
+
+export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId, formatTransactionIdWithoutQueryParams, parseNumericEnvVar, formatContractResult };

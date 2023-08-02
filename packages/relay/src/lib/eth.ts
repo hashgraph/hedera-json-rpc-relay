@@ -40,6 +40,7 @@ const _ = require('lodash');
 const createHash = require('keccak');
 const asm = require('@ethersproject/asm');
 import { Transaction as EthersTransaction } from 'ethers';
+import { formatContractResult } from '../formatters';
 
 interface LatestBlockNumberTimestamp {
   blockNumber: string;
@@ -1027,7 +1028,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getTransactionByBlockHashAndIndex(hash=${blockHash}, index=${transactionIndex})`);
     return this.mirrorNodeClient
       .getContractResults({ blockHash: blockHash, transactionIndex: Number(transactionIndex) }, undefined, requestIdPrefix)
-      .then((contractResults) => EthImpl.formatContractResult(contractResults[0] ?? null))
+      .then((contractResults) => formatContractResult(contractResults[0] ?? null))
       .catch((error: any) => {
         throw this.genericErrorHandler(error, `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`);
       });
@@ -1048,7 +1049,7 @@ export class EthImpl implements Eth {
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestIdPrefix);
     return this.mirrorNodeClient
       .getContractResults({ blockNumber: blockNum, transactionIndex: Number(transactionIndex) }, undefined, requestIdPrefix)
-      .then((contractResults) => EthImpl.formatContractResult(contractResults[0] ?? null))
+      .then((contractResults) => formatContractResult(contractResults[0] ?? null))
       .catch((e: any) => {
         throw this.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`);
       });
@@ -1435,7 +1436,7 @@ export class EthImpl implements Eth {
       throw err;
     }
 
-    return EthImpl.formatContractResult({
+    return formatContractResult({
       ...contractResult,
       from: fromAddress
     });
@@ -1572,7 +1573,7 @@ export class EthImpl implements Eth {
     return null;
   }
 
-  private static toNullIfEmptyHex(value: string): string | null {
+  static toNullIfEmptyHex(value: string): string | null {
     return value === EthImpl.emptyHex ? null : value;
   }
 
@@ -1673,7 +1674,7 @@ export class EthImpl implements Eth {
     }
 
     const blockHash = EthImpl.toHash32(blockResponse.hash);
-    const transactionArray = contractResults.map(cr => showDetails ? EthImpl.formatContractResult(cr) : cr.hash);
+    const transactionArray = contractResults.map(cr => showDetails ? formatContractResult(cr) : cr.hash);
     // Gating feature in case of unexpected behavior with other apps.
     if (this.shouldPopulateSyntheticContractResults) {
       this.filterAndPopulateSyntheticContractResults(showDetails, logs, transactionArray, requestIdPrefix);
@@ -1813,33 +1814,7 @@ export class EthImpl implements Eth {
     return EthImpl.numberTo0x(block.count);
   }
 
-  private static formatContractResult(cr: any) {
-    if (cr === null) {
-      return null;
-    }
 
-    return new Transaction({
-      accessList: undefined,
-      blockHash: EthImpl.toHash32(cr.block_hash),
-      blockNumber: EthImpl.nullableNumberTo0x(cr.block_number),
-      chainId: cr.chain_id,
-      from: cr.from.substring(0, 42),
-      gas: EthImpl.nanOrNumberTo0x(cr.gas_used),
-      gasPrice: EthImpl.toNullIfEmptyHex(cr.gas_price),
-      hash: cr.hash.substring(0, 66),
-      input: cr.function_parameters,
-      maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(cr.max_priority_fee_per_gas),
-      maxFeePerGas: EthImpl.toNullIfEmptyHex(cr.max_fee_per_gas),
-      nonce: EthImpl.nanOrNumberTo0x(cr.nonce),
-      r: cr.r === null ? null : cr.r.substring(0, 66),
-      s: cr.s === null ? null : cr.s.substring(0, 66),
-      to: cr.to?.substring(0, 42),
-      transactionIndex: EthImpl.nullableNumberTo0x(cr.transaction_index),
-      type: EthImpl.nullableNumberTo0x(cr.type),
-      v: EthImpl.nanOrNumberTo0x(cr.v),
-      value: EthImpl.nanOrNumberTo0x(cr.amount)
-    });
-  }
 
   private async validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestIdPrefix?: string) {
     try {
