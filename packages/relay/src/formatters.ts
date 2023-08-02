@@ -20,7 +20,8 @@
 
 import constants from "./lib/constants";
 import { Transaction } from './lib/model';
-import { BigNumber as BN } from 'bignumber.js';
+import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { BigNumber as BN } from "bignumber.js";
 
 const EMPTY_HEX = '0x';
 
@@ -144,15 +145,15 @@ const prepend0x = (input: string): string => {
     return input.startsWith(EMPTY_HEX) ? input : EMPTY_HEX + input;
 };
 
-const numberTo0x = (input: number | BN | bigint): string => {
+const numberTo0x = (input: number | BigNumber | bigint): string => {
     return EMPTY_HEX + input.toString(16);
 };
 
-const nullableNumberTo0x = (input: number | BN): string | null => {
+const nullableNumberTo0x = (input: number | BigNumber): string | null => {
     return input == null ? null : numberTo0x(input);
 };
 
-const nanOrNumberTo0x = (input: number | BN): string => {
+const nanOrNumberTo0x = (input: number | BigNumber): string => {
     return input == null || input !== input ? numberTo0x(0) : numberTo0x(input);
 };
 

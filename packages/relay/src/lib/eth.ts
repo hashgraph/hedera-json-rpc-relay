@@ -20,8 +20,6 @@
 
 import { Eth } from '../index';
 import {Hbar, PrecheckStatusError} from '@hashgraph/sdk';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { BigNumber as BN } from "bignumber.js";
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
 import { ClientCache, MirrorNodeClient } from './clients';
