@@ -20,10 +20,12 @@
 
 import constants from "./lib/constants";
 import { Transaction } from './lib/model';
-import { EthImpl } from './lib/eth';
+import { BigNumber as BN } from 'bignumber.js';
+
+const EMPTY_HEX = '0x';
 
 const hashNumber = (num) => {
-  return '0x' + num.toString(16);
+  return EMPTY_HEX + num.toString(16);
 };
 
 /**
@@ -52,7 +54,7 @@ const decodeErrorMessage = (message?: string): string => {
     if (!message) return '';
 
     // If the message does not start with 0x, it is not an error message, return it as is
-    if (!message.includes('0x')) return message;
+    if (!message.includes(EMPTY_HEX)) return message;
 
     message = message.replace(/^0x/, "");   // Remove the starting 0x
     const strLen = parseInt(message.slice(8 + 64, 8 + 128), 16);  // Get the length of the readable text
@@ -117,25 +119,61 @@ const formatContractResult = (cr: any) => {
 
     return new Transaction({
         accessList: undefined,
-        blockHash: EthImpl.toHash32(cr.block_hash),
-        blockNumber: EthImpl.nullableNumberTo0x(cr.block_number),
+        blockHash: toHash32(cr.block_hash),
+        blockNumber: nullableNumberTo0x(cr.block_number),
         chainId: cr.chain_id,
         from: cr.from.substring(0, 42),
-        gas: EthImpl.nanOrNumberTo0x(cr.gas_used),
-        gasPrice: EthImpl.toNullIfEmptyHex(cr.gas_price),
+        gas: nanOrNumberTo0x(cr.gas_used),
+        gasPrice: toNullIfEmptyHex(cr.gas_price),
         hash: cr.hash.substring(0, 66),
         input: cr.function_parameters,
-        maxPriorityFeePerGas: EthImpl.toNullIfEmptyHex(cr.max_priority_fee_per_gas),
-        maxFeePerGas: EthImpl.toNullIfEmptyHex(cr.max_fee_per_gas),
-        nonce: EthImpl.nanOrNumberTo0x(cr.nonce),
+        maxPriorityFeePerGas: toNullIfEmptyHex(cr.max_priority_fee_per_gas),
+        maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas),
+        nonce: nanOrNumberTo0x(cr.nonce),
         r: cr.r === null ? null : cr.r.substring(0, 66),
         s: cr.s === null ? null : cr.s.substring(0, 66),
         to: cr.to?.substring(0, 42),
-        transactionIndex: EthImpl.nullableNumberTo0x(cr.transaction_index),
-        type: EthImpl.nullableNumberTo0x(cr.type),
-        v: EthImpl.nanOrNumberTo0x(cr.v),
-        value: EthImpl.nanOrNumberTo0x(cr.amount)
+        transactionIndex: nullableNumberTo0x(cr.transaction_index),
+        type: nullableNumberTo0x(cr.type),
+        v: nanOrNumberTo0x(cr.v),
+        value: nanOrNumberTo0x(cr.amount)
     });
 }
 
-export { hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId, formatTransactionIdWithoutQueryParams, parseNumericEnvVar, formatContractResult };
+const prepend0x = (input: string): string => {
+    return input.startsWith(EMPTY_HEX) ? input : EMPTY_HEX + input;
+};
+
+const numberTo0x = (input: number | BN | bigint): string => {
+    return EMPTY_HEX + input.toString(16);
+};
+
+const nullableNumberTo0x = (input: number | BN): string | null => {
+    return input == null ? null : numberTo0x(input);
+};
+
+const nanOrNumberTo0x = (input: number | BN): string => {
+    return input == null || input !== input ? numberTo0x(0) : numberTo0x(input);
+};
+
+const toHash32 = (value: string): string => {
+    return value.substring(0, 66);
+};
+
+const toNullableBigNumber = (value: string): string | null => {
+    if (typeof value === 'string') {
+        return (new BN(value)).toString();
+    }
+
+    return null;
+};
+
+const toNullIfEmptyHex = (value: string): string | null => {
+    return value === EMPTY_HEX ? null : value;
+};
+
+export {
+    hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId,
+    formatTransactionIdWithoutQueryParams, parseNumericEnvVar, formatContractResult, prepend0x,
+    numberTo0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex
+};
