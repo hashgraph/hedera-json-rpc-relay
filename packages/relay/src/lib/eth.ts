@@ -2235,7 +2235,7 @@ export class EthImpl implements Eth {
   /**
    * Checks if the Filter API is enabled
    */
-  static requireFiltersEnabled(): undefined | JsonRpcError {
+  static requireFiltersEnabled() {
     if (!process.env.FILTER_API_ENABLED || process.env.FILTER_API_ENABLED !== 'true') {
       throw predefined.UNSUPPORTED_METHOD;
     }
@@ -2249,7 +2249,7 @@ export class EthImpl implements Eth {
    * @param topics
    * @param requestIdPrefix
    */
-  async newFilter(fromBlock: string | 'latest', toBlock: string | 'latest', address?: string, topics?: any[], requestIdPrefix?: string): string  {
+  async newFilter(fromBlock: string | 'latest', toBlock: string | 'latest', address?: string, topics?: any[], requestIdPrefix?: string): Promise<string | JsonRpcError> {
     this.logger.trace(`${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`);
     try {
       EthImpl.requireFiltersEnabled()

@@ -134,5 +134,5 @@ export interface Eth {
 
   accounts(requestId?: string): Array<any>;
 
-  newFilter(fromBlock: string | 'latest', toBlock: string | 'latest', address?: string, topics?: any[], requestIdPrefix?: string): string;
+  newFilter(fromBlock: string | 'latest', toBlock: string | 'latest', address?: string, topics?: any[], requestIdPrefix?: string):  Promise<string | JsonRpcError>;
 }
