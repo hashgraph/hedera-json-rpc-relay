@@ -351,6 +351,7 @@ export class MirrorNodeClient {
     handleError(error: any, path: string, pathLabel: string, effectiveStatusCode: number, method: REQUEST_METHODS, requestIdPrefix?: string) {
         const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
         const acceptedErrorResponses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
+
         if (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1) {
             this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
             if(pathLabel  === MirrorNodeClient.CONTRACT_CALL_ENDPOINT) {
@@ -388,7 +389,7 @@ export class MirrorNodeClient {
     }
 
     public async getAccount(idOrAliasOrEvmAddress: string, requestIdPrefix?: string) {
-        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?order=desc&limit=1`,
+        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?transactions=false`,
             MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
             requestIdPrefix);
     }

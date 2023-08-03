@@ -31,7 +31,8 @@ jobs:
         run: cp .env.example .env
 
       - name: Run local node
-        run: npx hedera start --network local-test --detached
+        run: npx hedera start -d  
+        timeout-minutes: 5
 
       - name: Deploy and interact with contracts
         run: npx hardhat prepare

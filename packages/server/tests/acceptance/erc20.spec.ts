@@ -293,6 +293,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                         await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                     });
 
+
                                     it('reverts', async function () {
                                         try {
                                             await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
@@ -301,7 +302,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                             // eth_estimateGas gets called by ethers
                                             // so we need to catch the error and check that the reason is the expected one,
                                             // in addition to validating the CALL_EXCEPTION   
-                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: transfer amount exceeds balance');                                            
+                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: insufficient allowance');
                                         }                                          
                                     });
                                 });

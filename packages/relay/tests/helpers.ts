@@ -388,7 +388,23 @@ export const defaultContractResults = {
             'gas_used': gasUsed1,
             'hash': contractHash1,
             'timestamp': `${contractTimestamp1}`,
-            'to': `${contractAddress1}`
+            'to': `${contractAddress1}`,
+            "block_gas_used": 400000,
+            "block_hash": `${blockHash}`,
+            "block_number": `${blockNumber}`,
+            "chain_id": "0x12a",
+            "failed_initcode": null,
+            "gas_price": "0x4a817c80",
+            "max_fee_per_gas": "0x59",
+            "max_priority_fee_per_gas": "0x33",
+            "nonce": 5,
+            "r": "0xb5c21ab4dfd336e30ac2106cad4aa8888b1873a99bce35d50f64d2ec2cc5f6d9",
+            "result": "SUCCESS",
+            "s":  "0x1092806a99727a20c31836959133301b65a2bfa980f9795522d21a254e629110",
+            "status": "0x1",
+            "transaction_index": 1,
+            "type": 2,
+            "v": 1
         },
         {
             'amount': 0,
@@ -403,7 +419,23 @@ export const defaultContractResults = {
             'gas_used': gasUsed2,
             'hash': contractHash2,
             'timestamp': `${contractTimestamp2}`,
-            'to': `${contractAddress2}`
+            'to': `${contractAddress2}`,
+            "block_gas_used": 400000,
+            "block_hash": `${blockHash}`,
+            "block_number": `${blockNumber}`,
+            "chain_id": "0x12a",
+            "failed_initcode": null,
+            "gas_price": "0x4a817c80",
+            "max_fee_per_gas": "0x59",
+            "max_priority_fee_per_gas": "0x33",
+            "nonce": 6,
+            "r": "0xb5c21ab4dfd336e30ac2106cad4aa8888b1873a99bce35d50f64d2ec2cc5f6d9",
+            "result": "SUCCESS",
+            "s":  "0x1092806a99727a20c31836959133301b65a2bfa980f9795522d21a254e629110",
+            "status": "0x1",
+            "transaction_index": 2,
+            "type": 2,
+            "v": 1
         }
     ],
     'links': {
@@ -686,6 +718,85 @@ export const buildCryptoTransferTransaction = (from, to, amount, args: any = {})
         "valid_start_timestamp": "1669207645.620109637"
     };
 };
+
+export const defaultEthereumTransactions = [
+    {
+        "bytes": null,
+        "charged_tx_fee": 0,
+        "consensus_timestamp": "1689672910.529610346",
+        "entity_id": null,
+        "max_fee": "100000000",
+        "memo_base64": "",
+        "name": "ETHEREUMTRANSACTION",
+        "nft_transfers": [],
+        "node": "0.0.7",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [],
+        "token_transfers": [],
+        "transaction_hash": "9VjM48D6NNaaY49C3MybTGNJkN0PwegeablbJgQeruHs6K+qXMwCNz/jQo0f1HE8",
+        "transaction_id": "0.0.1078@1686183420.196506746",
+        "transfers": [
+            {
+                "account": "0.0.2",
+                "amount": -681600000,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.36516",
+                "amount": 681600000,
+                "is_approval": false
+            }
+        ],
+        "valid_duration_seconds": "120",
+        "valid_start_timestamp": "1689672901.525163476"
+    },
+    {
+        "bytes": null,
+        "charged_tx_fee": 108530272,
+        "consensus_timestamp": "1689669806.068075774",
+        "entity_id": "0.0.58263",
+        "max_fee": "1065000000",
+        "memo_base64": "",
+        "name": "ETHEREUMTRANSACTION",
+        "nft_transfers": [],
+        "node": "0.0.4",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [],
+        "token_transfers": [],
+        "transaction_hash": "3rfGmWnoGQaDgnvI9u4YVTDBE7qBByL11fzK4mvGs/SOZ8myENbo7z9Pf7nVrHN6",
+        "transaction_id": "0.0.1078@1686183420.196506747",
+        "transfers": [
+            {
+                "account": "0.0.4",
+                "amount": 1998730,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.98",
+                "amount": 106531542,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.902",
+                "amount": -51730272,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.36516",
+                "amount": -56800000,
+                "is_approval": false
+            }
+        ],
+        "valid_duration_seconds": "120",
+        "valid_start_timestamp": "1689669792.798100892"
+    }
+]
 
 export const defaultCallData = {
     "from": "0x0000000000000000000000000000000000001f41",
