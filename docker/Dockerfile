@@ -15,20 +15,21 @@ RUN microdnf install --nodocs -y \
         python3 && \
     rm -rf /var/lib/apt/lists/*
 
-USER node 
-WORKDIR /app
+
 ENV LANG=C.UTF-8 NODE_OPTIONS=--max_old_space_size=4096
+WORKDIR /app
 
-# NOSONAR: Not an executable.
 COPY --chown=node:node package*.json lerna.json /app/
-# NOSONAR: Not an executable.
-COPY --chown=node:node ./packages/ /app/packages/     
+COPY --chown=node:node ./packages/ /app/packages/
 
-RUN npm ci -q --only=production --ignore-scripts && \
+RUN npm ci -q --omit=dev --ignore-scripts && \
     npm cache clean --force --loglevel=error
 
 RUN npm run setup && \
     npm install pnpm && \
     npm run build
+
+USER node 
+WORKDIR /app
 
 CMD ["npm", "run", "start"]

@@ -16,7 +16,7 @@ services:
     command: start:ws
     environment:
       HEALTHCHECK_PORT: 8547
-      SUBSCRIPTIONS_ENABLED: true
+      SUBSCRIPTIONS_ENABLED: "true"
     restart: "unless-stopped"
     ports:
       - 8546:8546
