@@ -65,6 +65,7 @@ const ETH_ENDPOINTS = {
     NET_PEER_COUNT: 'net_peerCount',
     ETH_SIGN_TYPED_DATA: 'eth_signTypedData',
     ETH_GET_PROOF: 'eth_getProof',
+    ETH_NEW_FILTER: 'eth_newFilter'
 }
 
 //Events

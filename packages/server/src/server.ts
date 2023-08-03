@@ -631,10 +631,10 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
 app.useRpc('eth_newFilter', async (params: any) => {
   const filter = params[0];
   return logAndHandleResponse('eth_newFilter', [], (requestId) => relay.eth().newFilter(
-    filter.fromBlock,
-    filter.toBlock,
-    filter.address,
-    filter.topics,
+    filter?.fromBlock,
+    filter?.toBlock,
+    filter?.address,
+    filter?.topics,
     requestId));
 });
 
