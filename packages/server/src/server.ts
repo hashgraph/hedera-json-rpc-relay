@@ -659,7 +659,7 @@ app.useRpc('eth_coinbase', async () => {
  */
 app.useRpc('eth_uninstallFilter', async (params: any) => {
   return logAndHandleResponse('eth_uninstallFilter', params, (requestId) =>
-    relay.eth().uninstallFilter(params?.[0], requestId));
+    relay.eth().filterService().uninstallFilter(params?.[0], requestId));
 });
 
 const rpcApp = app.rpcApp();

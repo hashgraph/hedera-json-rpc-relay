@@ -22,13 +22,11 @@ import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import { EthImpl } from '../../../src/lib/eth';
 import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import pino from 'pino';
 import constants from '../../../src/lib/constants';
 import { ClientCache } from '../../../src/lib/clients';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import HbarLimit from '../../../src/lib/hbarlimiter';
+import { FilterService } from '../../../src/lib/services/ethService';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -37,7 +35,7 @@ const registry = new Registry();
 
 let restMock: MockAdapter, web3Mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
-let hapiServiceInstance: HAPIService;
+let filterService: FilterService;
 let clientCache: ClientCache;
 let mirrorNodeCache: ClientCache;
 
@@ -45,7 +43,6 @@ let mirrorNodeCache: ClientCache;
 describe('Filter API Test Suite', async function () {
     this.timeout(10000);
 
-    let ethImpl: EthImpl;
     this.beforeAll(() => {
         clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
         // @ts-ignore
@@ -60,16 +57,8 @@ describe('Filter API Test Suite', async function () {
         // @ts-ignore
         web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: "throwException" });
     
-        const duration = constants.HBAR_RATE_LIMIT_DURATION;
-        const total = constants.HBAR_RATE_LIMIT_TINYBAR;
-        const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-    
-        hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, clientCache);
-    
-        process.env.ETH_FEE_HISTORY_FIXED = 'false';
-    
         // @ts-ignore
-        ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
+        filterService = new FilterService(mirrorNodeInstance, logger, clientCache);
       });
 
     this.beforeEach(() => {
@@ -77,7 +66,6 @@ describe('Filter API Test Suite', async function () {
         mirrorNodeCache.clear();
         clientCache.clear();
         restMock.reset();
-
     });
 
     this.afterEach(() => {
@@ -93,17 +81,17 @@ describe('Filter API Test Suite', async function () {
 
     it('should return true if filter is deleted', async function () {
         const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-        clientCache.set(cacheKey, filterObject, EthImpl.ethUninstallFilter, 300000, undefined);
+        clientCache.set(cacheKey, filterObject, filterService.ethUninstallFilter, 300000, undefined);
 
-        const result = await ethImpl.uninstallFilter(existingFilterId);
+        const result = await filterService.uninstallFilter(existingFilterId);
 
-        const isDeleted = clientCache.get(cacheKey, EthImpl.ethUninstallFilter, undefined) ? false : true;
+        const isDeleted = clientCache.get(cacheKey, filterService.ethUninstallFilter, undefined) ? false : true;
         expect(result).to.eq(true);
         expect(isDeleted).to.eq(true);
     });
 
     it('should return false if filter does not exist, therefore is not deleted', async function () {
-        const result = await ethImpl.uninstallFilter(nonExistingFilterId);
+        const result = await filterService.uninstallFilter(nonExistingFilterId);
 
         expect(result).to.eq(false);
     });

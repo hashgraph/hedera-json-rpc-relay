@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import {Hbar, PrecheckStatusError} from '@hashgraph/sdk';
+import { Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Block, Transaction, Log } from './model';
 import { ClientCache, MirrorNodeClient } from './clients';
@@ -42,12 +42,14 @@ import {
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
 import { Counter, Registry } from "prom-client";
+import { Transaction as EthersTransaction } from 'ethers';
+import { FilterService } from './services/ethService';
+import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
 
 const LRU = require('lru-cache');
 const _ = require('lodash');
 const createHash = require('keccak');
 const asm = require('@ethersproject/asm');
-import { Transaction as EthersTransaction } from 'ethers';
 
 interface LatestBlockNumberTimestamp {
   blockNumber: string;
@@ -103,7 +105,6 @@ export class EthImpl implements Eth {
   static ethGetTransactionCountByNumber = 'eth_GetTransactionCountByNumber';
   static ethGetTransactionReceipt = 'eth_GetTransactionReceipt';
   static ethSendRawTransaction = 'eth_sendRawTransaction';
-  static ethUninstallFilter = 'eth_uninstallFilter';
 
   // block constants
   static blockLatest = 'latest';
@@ -197,6 +198,12 @@ export class EthImpl implements Eth {
    */
   private ethExecutionsCounter: Counter;
 
+
+  /**
+   * The Filter Service implemntation that takes care of all filter API operations.
+   */
+  private filterServiceImpl: FilterService;
+
   /**
    * Create a new Eth implementation.
    * @param nodeClient
@@ -220,6 +227,8 @@ export class EthImpl implements Eth {
     this.cache = clientCache;
 
     this.ethExecutionsCounter = this.initEthExecutionCounter(registry);
+
+    this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, clientCache);
   }
 
   private initEthExecutionCounter(register: Registry) {
@@ -233,6 +242,9 @@ export class EthImpl implements Eth {
     });
   }
 
+  filterService(): IFilterService {
+      return this.filterServiceImpl;
+  }
   /**
    * This method is implemented to always return an empty array. This is in alignment
    * with the behavior of Infura.
@@ -2009,20 +2021,6 @@ export class EthImpl implements Eth {
     }
 
     return logs;
-  }
-
-  async uninstallFilter(filterId: string, requestIdPrefix?: string | undefined): Promise<boolean> {
-    this.logger.trace(`${requestIdPrefix} uninstallFilter(${filterId})`);
-
-    const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cache.get(cacheKey, EthImpl.ethUninstallFilter, requestIdPrefix);
-    
-    if(filter) {
-      this.cache.delete(cacheKey, EthImpl.ethUninstallFilter, requestIdPrefix);
-      return true;
-    }
-
-    return false;
   }
 
   async maxPriorityFeePerGas(requestIdPrefix?: string): Promise<string> {

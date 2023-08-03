@@ -786,7 +786,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     describe('Filter API Test Suite', () => {
         const nonExstingFilter = "0x111222331";
 
-        //Fix when newFilter method is added.
+        // Fix when newFilter method is added.
         describe('Positive', async function () {
             xit('should be able to uninstall existing filter', async function () {
 
