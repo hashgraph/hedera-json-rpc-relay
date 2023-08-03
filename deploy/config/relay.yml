@@ -1,0 +1,41 @@
+common: &common
+  name: relay
+  serviceSpecificSecret: false
+  port:
+    source: 3000
+    target: 3000
+    name: relay
+
+  resources:
+    requests:
+      cpu: 2
+      memory: 4Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+
+  livenessProbe:
+    failureThreshold: 15
+    httpGet:
+      path: /health/liveness
+      port: 7546
+      scheme: HTTP
+    initialDelaySeconds: 25
+    periodSeconds: 30
+    successThreshold: 1
+    timeoutSeconds: 3
+ 
+  readinessProbe:
+    failureThreshold: 15
+    httpGet:
+      path: /health/liveness
+      port: 7546
+      scheme: HTTP
+    initialDelaySeconds: 25
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+dev:
+  <<: *common
+  kubeNamespace: dev

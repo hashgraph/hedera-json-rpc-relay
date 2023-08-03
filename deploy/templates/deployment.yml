@@ -1,0 +1,137 @@
+{% if serviceSpecificSecret %}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: env-{{ name }}
+  {% if kubeNamespace %}
+  namespace: {{ kubeNamespace }}
+  {% endif %}
+type: Opaque
+data:
+{% for k, v  in secrets.items() %}
+  {{ k }}: {{ v | base64encode }}{{ '\n' }}{% endfor %}
+
+{% endif %}
+---
+{% if label is not defined %}{% set label = 'app' %}{% endif %}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ name }}
+  {% if kubeNamespace %}
+  namespace: {{ kubeNamespace }}
+  {% endif %}
+  labels:
+    {{ label }}: {{ name }}
+    tags.datadoghq.com/service: {{ datadog_name }}
+    tags.datadoghq.com/version: {{ release }}
+{% if labels is defined %}{{ labels | to_yaml(indent=4) }}{% endif %}
+spec:
+  revisionHistoryLimit: {{ historyLimit or 1}}
+  selector:
+    matchLabels:
+      {{ label }}: {{ name }}
+  template:
+    metadata:
+      labels:
+        {{ label }}: {{ name }}
+        env: {{ hash }}
+        tags.datadoghq.com/service: {{ datadog_name }}
+        tags.datadoghq.com/version: {{ release }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: {{ label }}
+                  operator: In
+                  values: 
+                  - {{ name }}
+              topologyKey: topology.kubernetes.io/zone
+            weight: 100
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+      containers:
+      - name: {{ name }}
+        image: {{image}}
+        imagePullPolicy: Always
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+        envFrom:
+        - secretRef:
+            name: env-{{ name }}
+        {% if secrets %}
+        - secretRef:
+            {% set env_name = secretPath.split('/')  %}
+            name: env-{{ env_name[1] }}
+            optional: {{ serviceSpecificSecret }}
+          {% endif %}
+        volumeMounts:
+        - name: apmsocketpath
+          mountPath: /var/run/datadog
+        {% if volumes is defined %}
+        {% for volume in volumes %}
+        - name: {{ volume.name }}
+          mountPath: {{ volume.path }}
+          {% if volume.type == 'secret' %}
+          readOnly: true
+          {% endif %}
+        {% endfor %}{% endif %}
+        {% if resources is defined %}
+        resources:
+{{resources | to_yaml}}{% endif %}
+        {% if livenessProbe is defined %}
+        livenessProbe:
+{{ livenessProbe | to_yaml }}{% endif %}
+        {% if readinessProbe is defined %}
+        readinessProbe:
+{{ readinessProbe | to_yaml }}{% endif %}
+        {% if lifecycle is defined %}
+        lifecycle:
+{{ lifecycle | to_yaml}}{% endif %}
+      {% if terminationGracePeriodSeconds is defined %}
+      terminationGracePeriodSeconds: {{ terminationGracePeriodSeconds }}
+      {% endif %}
+      volumes:
+      - name: apmsocketpath
+        hostPath:
+          path: /var/run/datadog/
+      {% if volumes is defined %}{% for volume in volumes %}
+      - name: {{ volume.name }}
+        {{ volume.type }}:
+{{ volume.args | to_yaml }}{% endfor %}{% endif %}
+{%- if port is defined %}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{name}}
+  {% if kubeNamespace %}
+  namespace: {{ kubeNamespace }}
+  {% endif %}
+  labels:
+    {{ label }}: {{name}}
+spec:
+  selector:
+    {{ label }}: {{name}}
+  ports:
+  - port: {{ port.source }}
+    protocol: TCP
+    targetPort: {{ port.target }}
+    name: {{ port.name }}
+{% endif %}
