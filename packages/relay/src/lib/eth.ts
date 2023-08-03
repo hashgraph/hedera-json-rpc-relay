@@ -2249,7 +2249,7 @@ export class EthImpl implements Eth {
    * @param topics
    * @param requestIdPrefix
    */
-  async newFilter(fromBlock: string | 'latest', toBlock: string | 'latest', address?: string, topics?: any[], requestIdPrefix?: string): Promise<string | JsonRpcError> {
+  async newFilter(fromBlock: string = 'latest', toBlock: string = 'latest', address?: string, topics?: any[], requestIdPrefix?: string): Promise<string | JsonRpcError> {
     this.logger.trace(`${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`);
     try {
       EthImpl.requireFiltersEnabled()
