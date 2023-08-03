@@ -19,8 +19,10 @@ USER node
 WORKDIR /app
 ENV LANG=C.UTF-8 NODE_OPTIONS=--max_old_space_size=4096
 
+# NOSONAR: Not an executable.
 COPY --chown=node:node package*.json lerna.json /app/
-COPY --chown=node:node ./packages/ /app/packages/
+# NOSONAR: Not an executable.
+COPY --chown=node:node ./packages/ /app/packages/     
 
 RUN npm ci -q --only=production --ignore-scripts && \
     npm cache clean --force --loglevel=error
