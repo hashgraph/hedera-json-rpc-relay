@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { JsonRpcError } from '../src';
 import { EthImpl } from "../src/lib/eth";
 import { Block, Transaction} from "../src/lib/model";
+import { numberTo0x } from '../src/formatters';
 
 export default class RelayAssertions {
     static assertRejection = async (error: JsonRpcError, method, checkMessage: boolean, thisObj, args?: any[]): Promise<any> => {
@@ -65,13 +66,13 @@ export default class RelayAssertions {
         expect(tx.input).to.eq(expectedTx.input);
         expect(tx.maxFeePerGas).to.eq(expectedTx.maxFeePerGas);
         expect(tx.maxPriorityFeePerGas).to.eq(expectedTx.maxPriorityFeePerGas);
-        expect(tx.nonce).to.eq(EthImpl.numberTo0x(expectedTx.nonce));
+        expect(tx.nonce).to.eq(numberTo0x(expectedTx.nonce));
         expect(tx.r).to.eq(expectedTx.r);
         expect(tx.s).to.eq(expectedTx.s);
         expect(tx.to).to.eq(expectedTx.to);
         expect(tx.transactionIndex).to.eq(expectedTx.transactionIndex);
-        expect(tx.type).to.eq(EthImpl.numberTo0x(expectedTx.type));
-        expect(tx.v).to.eq(EthImpl.numberTo0x(expectedTx.v));
+        expect(tx.type).to.eq(numberTo0x(expectedTx.type));
+        expect(tx.v).to.eq(numberTo0x(expectedTx.v));
         expect(tx.value).to.eq(expectedTx.value);
     };
     
@@ -112,7 +113,7 @@ export default class RelayAssertions {
 
     
     static verifyBlockConstants = (block: Block) => {
-        expect(block.gasLimit).equal(EthImpl.numberTo0x(15000000));
+        expect(block.gasLimit).equal(numberTo0x(15000000));
         expect(block.baseFeePerGas).equal('0x84b6a5c400');
         expect(block.difficulty).equal(EthImpl.zeroHex);
         expect(block.extraData).equal(EthImpl.emptyHex);

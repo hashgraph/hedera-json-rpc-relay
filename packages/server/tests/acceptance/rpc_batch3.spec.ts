@@ -38,6 +38,7 @@ import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import Assertions from '../helpers/assertions';
 import RelayCalls from "../helpers/constants";
+import { numberTo0x } from '../../../../packages/relay/src/formatters';
 
 describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -103,7 +104,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const callData = {
                 from: '0x' + accounts[0].address,
                 to: evmAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
 
@@ -115,7 +116,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const callData = {
                 from: '0x' + accounts[0].address,
                 to: evmAddress,
-                gas: EthImpl.numberTo0x(30000)
+                gas: numberTo0x(30000)
             };
 
             const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
@@ -126,7 +127,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const callData = {
                 from: '0x' + accounts[0].address,
                 to: Address.NON_EXISTING_ADDRESS,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
 
@@ -137,7 +138,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should execute "eth_call" without from field', async function () {
             const callData = {
                 to: evmAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
 
@@ -414,7 +415,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const callData = {
                 from: '0x' + accounts[0].address,
                 to: reverterEvmAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: PURE_METHOD_CALL_DATA
             };
 
@@ -429,7 +430,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const callData = {
                 from: '0x' + accounts[0].address,
                 to: reverterEvmAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: VIEW_METHOD_CALL_DATA
             };
 
@@ -443,7 +444,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('Returns revert reason in receipt for payable methods', async () => {
             const transaction = {
                 value: ONE_TINYBAR,
-                gasLimit: EthImpl.numberTo0x(30000),
+                gasLimit: numberTo0x(30000),
                 chainId: Number(CHAIN_ID),
                 to: reverterEvmAddress,
                 nonce: await relay.getAccountNonce('0x' + accounts[0].address, requestId),
@@ -498,7 +499,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 for (const element of payableMethodsData) {
                     const transaction = {
                         // value: ONE_TINYBAR,
-                        gasLimit: EthImpl.numberTo0x(30000),
+                        gasLimit: numberTo0x(30000),
                         chainId: Number(CHAIN_ID),
                         to: reverterEvmAddress,
                         nonce: await relay.getAccountNonce('0x' + accounts[0].address, requestId),
@@ -584,7 +585,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                     const callData = {
                         from: '0x' + accounts[0].address,
                         to: reverterEvmAddress,
-                        gas: EthImpl.numberTo0x(30000),
+                        gas: numberTo0x(30000),
                         data: element.data
                     };
 
@@ -626,7 +627,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const callData = {
                 from: '0x' + accounts[1].address,
                 to: htsImpl.address,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: IS_TOKEN_ADDRESS_SIGNATURE + tokenAddress.replace('0x', '')
             };
 
@@ -641,8 +642,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         let deployerContract, mirrorContract, mirrorContractDetails, contractId,
             primaryAccountNonce, secondaryAccountNonce;
 
-        const defaultGasPrice = EthImpl.numberTo0x(Assertions.defaultGasPrice);
-        const defaultGasLimit = EthImpl.numberTo0x(3_000_000);
+        const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
+        const defaultGasLimit = numberTo0x(3_000_000);
         const defaultTransaction = {
             value: ONE_TINYBAR,
             chainId: Number(CHAIN_ID),
@@ -674,17 +675,17 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         });
 
         it('@release should execute "eth_getTransactionCount" primary', async function () {
-            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorPrimaryAccount.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorPrimaryAccount.evm_address, numberTo0x(mirrorContractDetails.block_number)], requestId);
             expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(primaryAccountNonce.toInt())));
         });
 
         it('should execute "eth_getTransactionCount" secondary', async function () {
-            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorSecondaryAccount.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorSecondaryAccount.evm_address, numberTo0x(mirrorContractDetails.block_number)], requestId);
             expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(secondaryAccountNonce.toInt())));
         });
 
         it('@release should execute "eth_getTransactionCount" historic', async function () {
-            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorContract.evm_address, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [mirrorContract.evm_address, numberTo0x(mirrorContractDetails.block_number)], requestId);
             expect(res).to.be.equal('0x2');
         });
 
@@ -694,12 +695,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         });
 
         it('@release should execute "eth_getTransactionCount" for account with id converted to evm_address', async function () {
-            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(mirrorPrimaryAccount.account), EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(mirrorPrimaryAccount.account), numberTo0x(mirrorContractDetails.block_number)], requestId);
             expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(primaryAccountNonce.toInt())));
         });
 
         it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address historic', async function () {
-            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(contractId.toString()), EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Utils.idToEvmAddress(contractId.toString()), numberTo0x(mirrorContractDetails.block_number)], requestId);
             expect(res).to.be.equal('0x2');
         });
 
@@ -709,7 +710,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         });
 
         it('should execute "eth_getTransactionCount" for non-existing address', async function () {
-            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Address.NON_EXISTING_ADDRESS, EthImpl.numberTo0x(mirrorContractDetails.block_number)], requestId);
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [Address.NON_EXISTING_ADDRESS, numberTo0x(mirrorContractDetails.block_number)], requestId);
             expect(res).to.be.equal('0x0');
         });
 

@@ -24,7 +24,7 @@ import { EthImpl } from './eth';
 import { Logger } from 'pino';
 import constants from './constants';
 import { BigNumber, ethers, Transaction } from 'ethers';
-import { formatRequestIdMessage } from '../formatters';
+import { formatRequestIdMessage, prepend0x } from '../formatters';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
@@ -94,7 +94,7 @@ export class Precheck {
    */
   chainId(tx: Transaction, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const txChainId = EthImpl.prepend0x(Number(tx.chainId).toString(16));
+    const txChainId = prepend0x(Number(tx.chainId).toString(16));
     const passes = txChainId === this.chain;
     if (!passes) {
       this.logger.trace(`${requestIdPrefix} Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)`, JSON.stringify(tx), txChainId);
