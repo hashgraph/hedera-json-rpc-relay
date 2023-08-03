@@ -11,7 +11,6 @@ type: Opaque
 data:
 {% for k, v  in secrets.items() %}
   {{ k }}: {{ v | base64encode }}{{ '\n' }}{% endfor %}
-
 {% endif %}
 ---
 {% if label is not defined %}{% set label = 'app' %}{% endif %}
