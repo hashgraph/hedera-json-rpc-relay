@@ -21,8 +21,7 @@
 import { expect } from "chai";
 import { ethers } from 'ethers';
 import crypto from 'crypto';
-import { EthImpl } from "../src/lib/eth";
-import { formatRequestIdMessage } from '../src/formatters';
+import { formatRequestIdMessage, numberTo0x, toHash32 } from '../src/formatters';
 import { v4 as uuid } from 'uuid';
 
 // Randomly generated key
@@ -84,17 +83,17 @@ export const ethGetLogsFailing = async (ethImpl, args, assertFunc) => {
 
 export const expectLogData = (res, log, tx) => {
     expect(res.address).to.eq(log.address);
-    expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
+    expect(res.blockHash).to.eq(toHash32(tx.block_hash));
     expect(res.blockHash.length).to.eq(66);
-    expect(res.blockNumber).to.eq(EthImpl.numberTo0x(tx.block_number));
+    expect(res.blockNumber).to.eq(numberTo0x(tx.block_number));
     expect(res.data).to.eq(log.data);
-    expect(res.logIndex).to.eq(EthImpl.numberTo0x(log.index));
+    expect(res.logIndex).to.eq(numberTo0x(log.index));
     expect(res.removed).to.eq(false);
     expect(res.topics).to.exist;
     expect(res.topics).to.deep.eq(log.topics);
     expect(res.transactionHash).to.eq(tx.hash);
     expect(res.transactionHash.length).to.eq(66);
-    expect(res.transactionIndex).to.eq(EthImpl.numberTo0x(tx.transaction_index));
+    expect(res.transactionIndex).to.eq(numberTo0x(tx.transaction_index));
 };
 
 export const expectLogData1 = (res) => {
