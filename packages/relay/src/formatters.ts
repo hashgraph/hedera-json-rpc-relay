@@ -30,8 +30,8 @@ const hashNumber = (num) => {
   return EMPTY_HEX + num.toString(16);
 };
 
-const generateRandomHex = (bytes = 16) => {
-    return "0x" + crypto.randomBytes(bytes).toString('hex');
+const generateRandomHex = (bytesLength = 16) => {
+    return "0x" + crypto.randomBytes(bytesLength).toString('hex');
 }
 
 /**
