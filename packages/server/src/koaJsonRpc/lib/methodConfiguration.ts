@@ -151,7 +151,7 @@ export const methodConfiguration = {
     total: tier2rateLimit,
   },
   eth_newFilter: {
-    total: tier1rateLimit,
+    total: tier2rateLimit,
   },
   web3_client_version: {
     total: tier3rateLimit,
