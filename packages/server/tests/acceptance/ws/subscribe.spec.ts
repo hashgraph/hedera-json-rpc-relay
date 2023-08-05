@@ -559,7 +559,7 @@ describe('@web-socket Acceptance Tests', async function() {
             const invalidTopic = '0x9999999999999999999999999999999999999999999999999999999999999999';
 
             const testFilters = [
-                {}, // all contract logs
+                'debug', // all contract logs
                 {
                     address: logContractSigner.target
                 },  // logs from single contract with evm address
@@ -611,6 +611,7 @@ describe('@web-socket Acceptance Tests', async function() {
         });
 
         it('Subscribes for all contract logs', async function () {
+            await new Promise(r => setTimeout(r, 2000));
             let eventsReceived = eventsReceivedGlobal[0];
 
             // Only the logs from logContractSigner.target are captured
@@ -623,16 +624,16 @@ describe('@web-socket Acceptance Tests', async function() {
                 assertions.expectAnonymousLog(eventsReceived[iter], contracts[i], ANONYMOUS_LOG_DATA);
 
                 // event Log1(uint256 indexed num0);
-                assertions.expectLogArgs(eventsReceived[iter + 1], contracts[i], [1]);
+                assertions.expectLogArgs(eventsReceived[iter + 1], contracts[i], [BigInt(1)]);
 
                 // event Log2(uint256 indexed num0, uint256 indexed num1);
-                assertions.expectLogArgs(eventsReceived[iter + 2], contracts[i], [1, 2]);
+                assertions.expectLogArgs(eventsReceived[iter + 2], contracts[i], [BigInt(1), BigInt(2)]);
 
                 // event Log3(uint256 indexed num0, uint256 indexed num1, uint256 indexed num2);
-                assertions.expectLogArgs(eventsReceived[iter + 3], contracts[i], [10, 20, 31]);
+                assertions.expectLogArgs(eventsReceived[iter + 3], contracts[i], [BigInt(10), BigInt(20), BigInt(31)]);
 
                 // event Log4(uint256 indexed num0, uint256 indexed num1, uint256 indexed num2, uint256 num3);
-                assertions.expectLogArgs(eventsReceived[iter + 4], contracts[i], [11, 22, 33, 44]);
+                assertions.expectLogArgs(eventsReceived[iter + 4], contracts[i], [BigInt(11), BigInt(22), BigInt(33), BigInt(44)]);
             }
         });
 
@@ -643,10 +644,10 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(eventsReceived.length).to.eq(5);
 
             assertions.expectAnonymousLog(eventsReceived[0], logContractSigner, ANONYMOUS_LOG_DATA);
-            assertions.expectLogArgs(eventsReceived[1], logContractSigner, [1]);
-            assertions.expectLogArgs(eventsReceived[2], logContractSigner, [1, 2]);
-            assertions.expectLogArgs(eventsReceived[3], logContractSigner, [10, 20, 31]);
-            assertions.expectLogArgs(eventsReceived[4], logContractSigner, [11, 22, 33, 44]);
+            assertions.expectLogArgs(eventsReceived[1], logContractSigner, [BigInt(1)]);
+            assertions.expectLogArgs(eventsReceived[2], logContractSigner, [BigInt(1), BigInt(2)]);
+            assertions.expectLogArgs(eventsReceived[3], logContractSigner, [BigInt(10), BigInt(20), BigInt(31)]);
+            assertions.expectLogArgs(eventsReceived[4], logContractSigner, [BigInt(11), BigInt(22), BigInt(33), BigInt(44)]);
         });
 
         it('Subscribes for contract logs for a specific contract address (using long zero address)', async function () {
@@ -656,10 +657,10 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(eventsReceived.length).to.eq(5);
 
             assertions.expectAnonymousLog(eventsReceived[0], logContractSigner, ANONYMOUS_LOG_DATA);
-            assertions.expectLogArgs(eventsReceived[1], logContractSigner, [1]);
-            assertions.expectLogArgs(eventsReceived[2], logContractSigner, [1, 2]);
-            assertions.expectLogArgs(eventsReceived[3], logContractSigner, [10, 20, 31]);
-            assertions.expectLogArgs(eventsReceived[4], logContractSigner, [11, 22, 33, 44]);
+            assertions.expectLogArgs(eventsReceived[1], logContractSigner, [BigInt(1)]);
+            assertions.expectLogArgs(eventsReceived[2], logContractSigner, [BigInt(1), BigInt(2)]);
+            assertions.expectLogArgs(eventsReceived[3], logContractSigner, [BigInt(10), BigInt(20), BigInt(31)]);
+            assertions.expectLogArgs(eventsReceived[4], logContractSigner, [BigInt(11), BigInt(22), BigInt(33), BigInt(44)]);
         });
 
         it('Subscribes for contract logs for a single topic', async function () {
@@ -668,9 +669,9 @@ describe('@web-socket Acceptance Tests', async function() {
             // Only the logs from logContractSigner.target are captured
             expect(eventsReceived.length).to.eq(3);
 
-            assertions.expectLogArgs(eventsReceived[0], contracts[0], [1]);
-            assertions.expectLogArgs(eventsReceived[1], contracts[1], [1]);
-            assertions.expectLogArgs(eventsReceived[2], contracts[2], [1]);
+            assertions.expectLogArgs(eventsReceived[0], contracts[0], [BigInt(1)]);
+            assertions.expectLogArgs(eventsReceived[1], contracts[1], [BigInt(1)]);
+            assertions.expectLogArgs(eventsReceived[2], contracts[2], [BigInt(1)]);
         });
 
         it('Subscribes for contract logs for multiple topics', async function () {
@@ -679,9 +680,9 @@ describe('@web-socket Acceptance Tests', async function() {
             // Only the logs from logContractSigner.target are captured
             expect(eventsReceived.length).to.eq(3);
 
-            assertions.expectLogArgs(eventsReceived[0], contracts[0], [1]);
-            assertions.expectLogArgs(eventsReceived[1], contracts[1], [1]);
-            assertions.expectLogArgs(eventsReceived[2], contracts[2], [1]);
+            assertions.expectLogArgs(eventsReceived[0], contracts[0], [BigInt(1)]);
+            assertions.expectLogArgs(eventsReceived[1], contracts[1], [BigInt(1)]);
+            assertions.expectLogArgs(eventsReceived[2], contracts[2], [BigInt(1)]);
         });
 
         it('Subscribes for contract logs for address and multiple topics', async function () {
@@ -690,7 +691,7 @@ describe('@web-socket Acceptance Tests', async function() {
             // Only the logs from logContractSigner.target are captured
             expect(eventsReceived.length).to.eq(1);
 
-            assertions.expectLogArgs(eventsReceived[0], contracts[1], [1]);
+            assertions.expectLogArgs(eventsReceived[0], contracts[1], [BigInt(1)]);
         });
 
         it('Subscribing for contract logs for a speciffic contract address and a wrong topic.', async function () {
