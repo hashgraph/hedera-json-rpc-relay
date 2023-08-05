@@ -38,6 +38,7 @@ import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import Assertions from '../helpers/assertions';
 import RelayCalls from "../helpers/constants";
+import { numberTo0x } from '../../../../packages/relay/src/formatters';
 
 describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -102,7 +103,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const callData = {
                 from: accounts[0].address,
                 to: evmAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
 
@@ -114,7 +115,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const callData = {
                 from: accounts[0].address,
                 to: evmAddress,
-                gas: EthImpl.numberTo0x(30000)
+                gas: numberTo0x(30000)
             };
 
             const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
@@ -136,7 +137,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should execute "eth_call" without from field', async function () {
             const callData = {
                 to: evmAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
 
@@ -222,7 +223,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             };
             const errorType = predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block, value: 0x123');
             const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId];
-            
+
             await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
         });
 
@@ -234,7 +235,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             };
             const errorType = predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, `${errorMessagePrefixedStr}, value: 123`);
             const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId];
-            
+
             await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
         });
 
@@ -413,7 +414,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const callData = {
                 from: accounts[0].address,
                 to: reverterEvmAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: PURE_METHOD_CALL_DATA
             };
 
@@ -428,7 +429,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const callData = {
                 from: accounts[0].address,
                 to: reverterEvmAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: VIEW_METHOD_CALL_DATA
             };
 
@@ -442,7 +443,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('Returns revert reason in receipt for payable methods', async () => {
             const transaction = {
                 value: ONE_TINYBAR,
-                gasLimit: EthImpl.numberTo0x(30000),
+                gasLimit: numberTo0x(30000),
                 chainId: Number(CHAIN_ID),
                 to: reverterEvmAddress,
                 nonce: await relay.getAccountNonce(accounts[0].address, requestId),
@@ -497,7 +498,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 for (const element of payableMethodsData) {
                     const transaction = {
                         // value: ONE_TINYBAR,
-                        gasLimit: EthImpl.numberTo0x(30000),
+                        gasLimit: numberTo0x(30000),
                         chainId: Number(CHAIN_ID),
                         to: reverterEvmAddress,
                         nonce: await relay.getAccountNonce(accounts[0].address, requestId),

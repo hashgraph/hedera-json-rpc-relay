@@ -32,9 +32,6 @@ jobs:
           cp ./dapp-example/localDappCI.env ./dapp-example/.env
           cp ./packages/server/tests/localAcceptance.env .env
 
-      - name: Lerna Bootstrap
-        run: npm run setup
-
       - name: Install pnpm
         run: npm install -g pnpm
 
@@ -50,6 +47,23 @@ jobs:
       - name: Build, Bootstrap & Test the dapp in Docker
         run: docker-compose up --exit-code-from synpress
         working-directory: ./dapp-example/
+
+      - name: Dump relay logs
+        if: always()
+        uses: jwalton/gh-docker-logs@v2
+        with:
+          dest: './logs'
+
+      - name: Tar logs
+        if: always()
+        run: tar cvzf ./logs.tgz ./logs
+      
+      - name: Upload logs to GitHub
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: logs.tgz
+          path: ./logs.tgz
 
       - name: Publish Reports
         uses: mikepenz/action-junit-report@v3

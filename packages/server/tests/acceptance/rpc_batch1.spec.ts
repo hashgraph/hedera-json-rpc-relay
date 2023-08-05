@@ -31,10 +31,10 @@ import { ContractFunctionParameters } from '@hashgraph/sdk';
 import parentContractJson from '../contracts/Parent.json';
 import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
-import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 const Address = RelayCalls;
+import { numberTo0x } from '../../../../packages/relay/src/formatters';
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -383,8 +383,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         });
 
         describe('Transaction related RPC Calls', () => {
-            const defaultGasPrice = EthImpl.numberTo0x(Assertions.defaultGasPrice);
-            const defaultGasLimit = EthImpl.numberTo0x(3_000_000);
+            const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
+            const defaultGasLimit = numberTo0x(3_000_000);
             const defaultLegacyTransactionData = {
                 value: ONE_TINYBAR,
                 gasPrice: defaultGasPrice,

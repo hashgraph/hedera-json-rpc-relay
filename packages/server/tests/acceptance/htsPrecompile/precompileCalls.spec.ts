@@ -40,8 +40,8 @@ import TokenManagementContractJson from '../../contracts/TokenManagementContract
 
 import { predefined } from '../../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../../helpers/utils';
-import { EthImpl } from "@hashgraph/json-rpc-relay/dist/lib/eth";
 import RelayCall from "../../helpers/constants";
+import { numberTo0x } from '../../../../../packages/relay/src/formatters';
 
 describe('@precompile-calls Tests for eth_call with HTS', async function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -283,7 +283,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
 
     //According to this ticket the following describe should be deleted after adaptations are applied -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131
     describe("Calling HTS token through HederaTokenService", async () => {
-        //TODO remove this it when should be able to freeze and unfreeze token2 is implemented -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131 
+        //TODO remove this it when should be able to freeze and unfreeze token2 is implemented -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131
         it("Function with HederaTokenService.isFrozen(token, account) - using long zero address", async () => {
             // freeze token
             const freezeTx = await TokenManagementSigner.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_1_000_000);
@@ -550,7 +550,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             const callData = {
                 from: accounts[0].address,
                 to: '0x' + NON_EXISTING_ACCOUNT,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: CALLDATA_BALANCE_OF + accounts[0].address.replace('0x', '')
             };
 
@@ -562,7 +562,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             const callData = {
                 from: '0x' + NON_EXISTING_ACCOUNT,
                 to: htsImplAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: CALLDATA_BALANCE_OF + NON_EXISTING_ACCOUNT.padStart(64, '0')
             };
 
@@ -578,7 +578,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             const callData = {
                 from: accounts[0].address,
                 to: htsImplAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: CALLDATA_ALLOWANCE + NON_EXISTING_ACCOUNT.padStart(64, '0') + account2LongZero.replace('0x', '').padStart(64, '0')
             };
 
@@ -595,7 +595,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             const callData = {
                 from: accounts[0].address,
                 to: htsImplAddress,
-                gas: EthImpl.numberTo0x(30000),
+                gas: numberTo0x(30000),
                 data: CALLDATA_ALLOWANCE + adminAccountLongZero.replace('0x', '').padStart(64, '0') + NON_EXISTING_ACCOUNT.padStart(64, '0')
             };
 

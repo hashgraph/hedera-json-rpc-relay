@@ -10,6 +10,16 @@ on:
         required: false
         default: false
         type: boolean
+      envfile:
+        required: false
+        default: localAcceptance.env
+        type: string
+      operator_id:
+        required: false
+        type: string
+      operator_key:
+        required: false
+        type: string
 
 jobs:
   acceptance-workflow:
@@ -30,16 +40,19 @@ jobs:
         run: npm ci
 
       - name: Create .env file
-        run: cp ./packages/server/tests/localAcceptance.env .env
-
-      - name: Lerna Bootstrap
-        run: npm run setup
+        run: cp ./packages/server/tests/${{ inputs.envfile }} .env
 
       - name: Install pnpm
         run: npm install -g pnpm
 
       - name: Build Typescript
         run: npx lerna run build
+
+      - name: Set operator id and key env variable if CI is manual
+        if: ${{ inputs.operator_id }}
+        run: |
+          echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
+          echo "OPERATOR_KEY_MAIN=${{ inputs.operator_key }}" >> $GITHUB_ENV
 
       - name: Run acceptance tests
         uses: nick-fields/retry@v2

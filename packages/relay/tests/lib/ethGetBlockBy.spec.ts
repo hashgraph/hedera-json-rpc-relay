@@ -33,6 +33,7 @@ import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { ClientCache } from '../../src/lib/clients';
 import { Log, Transaction } from '../../src/lib/model';
+import { nullableNumberTo0x, numberTo0x, nanOrNumberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 
 const LRU = require('lru-cache');
 
@@ -355,24 +356,24 @@ describe('eth_getBlockBy', async function () {
     const getTranactionModel = (transactionHash) => {
       return new Transaction({
         accessList: undefined, // we don't support access lists for now, so punt
-        blockHash: EthImpl.toHash32(defaultDetailedContractResults.block_hash),
-        blockNumber: EthImpl.numberTo0x(defaultDetailedContractResults.block_number),
+        blockHash: toHash32(defaultDetailedContractResults.block_hash),
+        blockNumber: numberTo0x(defaultDetailedContractResults.block_number),
         chainId: defaultDetailedContractResults.chain_id,
         from: defaultDetailedContractResults.from.substring(0, 42),
-        gas: EthImpl.nanOrNumberTo0x(defaultDetailedContractResults.gas_used),
+        gas: nanOrNumberTo0x(defaultDetailedContractResults.gas_used),
         gasPrice: null,
         hash: transactionHash,
         input: defaultDetailedContractResults.function_parameters,
         maxPriorityFeePerGas: null,
         maxFeePerGas: null,
-        nonce: EthImpl.nanOrNumberTo0x(defaultDetailedContractResults.nonce),
+        nonce: nanOrNumberTo0x(defaultDetailedContractResults.nonce),
         r: EthImpl.zeroHex,
         s: EthImpl.zeroHex,
         to: defaultDetailedContractResults.to.substring(0, 42),
-        transactionIndex: EthImpl.nullableNumberTo0x(defaultDetailedContractResults.transaction_index),
-        type: EthImpl.nullableNumberTo0x(defaultDetailedContractResults.type),
-        v: EthImpl.nanOrNumberTo0x(defaultDetailedContractResults.v),
-        value: EthImpl.nanOrNumberTo0x(defaultDetailedContractResults.amount),
+        transactionIndex: nullableNumberTo0x(defaultDetailedContractResults.transaction_index),
+        type: nullableNumberTo0x(defaultDetailedContractResults.type),
+        v: nanOrNumberTo0x(defaultDetailedContractResults.v),
+        value: nanOrNumberTo0x(defaultDetailedContractResults.amount),
       });
     };
 

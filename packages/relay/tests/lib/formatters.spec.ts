@@ -19,9 +19,12 @@
  */
 
 import { expect } from 'chai';
-import { hexToASCII, decodeErrorMessage, formatTransactionId, parseNumericEnvVar, formatTransactionIdWithoutQueryParams } from '../../src/formatters';
+import {
+    hexToASCII, decodeErrorMessage, formatTransactionId, parseNumericEnvVar, formatTransactionIdWithoutQueryParams,
+    numberTo0x, formatContractResult, prepend0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex
+} from '../../src/formatters';
 import constants from '../../src/lib/constants';
-import { formatContractResult } from '../../dist/formatters';
+import { BigNumber as BN } from "bignumber.js";
 
 describe('Formatters', () => {
     describe('hexToASCII', () => {
@@ -83,25 +86,25 @@ describe('Formatters', () => {
           expect(formatTransactionId('')).to.eq(null);
         });
       });
-    
+
     describe('formatTransactionIdWithoutQueryParams', () => {
         const validInputTimestamp = '0.0.2@1234567890.123456789?nonce=1';
         const validOutputTimestamp = '0.0.2-1234567890-123456789';
         const invalidInputTimestamp = '0.0.2@12345678222.123456789?nonce=1';
-    
+
         it('should return correct formated transaction id', () => {
           expect(formatTransactionIdWithoutQueryParams(validInputTimestamp)).to.eq(validOutputTimestamp);
         });
-    
+
         it('should return null', () => {
           expect(formatTransactionIdWithoutQueryParams(invalidInputTimestamp)).to.eq(null);
         });
-    
+
         it('should return null on empty', () => {
           expect(formatTransactionIdWithoutQueryParams('')).to.eq(null);
         });
     });
-    
+
 
     describe('parseNumericEnvVar', () => {
         before(() => {
@@ -253,6 +256,78 @@ describe('Formatters', () => {
             expect(formattedResult.type).to.equal(null);
             expect(formattedResult.v).to.equal('0x0');
             expect(formattedResult.value).to.equal('0x0');
+        });
+    });
+
+    describe('prepend0x', () => {
+        it('should add a prefix if there is no one', () => {
+            expect(prepend0x('5644')).to.equal('0x5644');
+        });
+        it('should not add prefix if the string is already prefixed', () => {
+            expect(prepend0x('0x5644')).to.equal('0x5644');
+        });
+    });
+
+    describe('numberTo0x', () => {
+        it('should convert to hex a number type', () => {
+            expect(numberTo0x(1009)).to.equal('0x3f1');
+        });
+        it('should convert to hex a BigInt type', () => {
+            expect(numberTo0x(BigInt(6234))).to.equal('0x185a');
+        });
+    });
+
+    describe('nullableNumberTo0x', () => {
+        it('should be able to accept null', () => {
+            expect(nullableNumberTo0x(null)).to.equal(null);
+        });
+        it('should convert a valid number to hex', () => {
+            expect(nullableNumberTo0x(3867)).to.equal('0xf1b');
+        });
+    });
+
+    describe('nanOrNumberTo0x', () => {
+        it('should return null for nullable input', () => {
+            expect(nanOrNumberTo0x(null)).to.equal('0x0');
+        });
+        it('should return 0x0 for Nan input', () => {
+            expect(nanOrNumberTo0x(NaN)).to.equal('0x0');
+        });
+        it('should convert a number', () => {
+            expect(nanOrNumberTo0x(593)).to.equal('0x251');
+        });
+    });
+
+    describe('toHash32', () => {
+        it('should format more than 32 bytes hash to 32 bytes', () => {
+            expect(toHash32('0x9af1252ea00af08c2ebc78f35a6071a3736795dc53027ea746d710c46b0ef011dc4460630cf109972dafa76c4a56f530'))
+              .to.equal('0x9af1252ea00af08c2ebc78f35a6071a3736795dc53027ea746d710c46b0ef011');
+        });
+        it('should format exactly 32 bytes hash to 32 bytes', () => {
+            const hash32bytes = '0x92b761fa12ed062122c962dd84fce75ed6659e5bca328b6bb08077ff249682a';
+            expect(toHash32(hash32bytes))
+              .to.equal(hash32bytes);
+        });
+    });
+
+    describe('toNullableBigNumber', () => {
+        it('should return null for null input', () => {
+            expect(toNullableBigNumber(null)).to.equal(null);
+        });
+        it('should convert a valid hex to BigNumber', () => {
+            const bigNumberString = '0x9af1252ea00af08c2ebc78f35a6071a3736795dc53027ea746d710c46b0ef011dc4460630cf109972dafa76c4a56f530';
+            expect(toNullableBigNumber(bigNumberString))
+              .to.equal(new BN(bigNumberString).toString());
+        });
+    });
+
+    describe('toNullIfEmptyHex', () => {
+        it('should return null for empty hex', () => {
+            expect(toNullIfEmptyHex('0x')).to.equal(null);
+        });
+        it('should return value for non-nullable input', () => {
+            const value = '2911';
+            expect(toNullIfEmptyHex(value)).to.equal(value);
         });
     });
 });

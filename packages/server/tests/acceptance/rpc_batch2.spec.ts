@@ -34,9 +34,11 @@ import storageContractJson from '../contracts/Storage.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 //Constants are imported with different definitions for better readability in the code.
-import Constants from '../../tests/helpers/constants';
+import Constants from '../../../../packages/relay/src/lib/constants';
+import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
+import { numberTo0x } from '../../../../packages/relay/src/formatters';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -669,7 +671,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
             const signedTx = await accounts[1].wallet.signTransaction(transaction);
             const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-            
+
             const blockNumber = await relay.call(Constants.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [transactionHash], requestId).blockNumber;
 
             const transaction1 = {

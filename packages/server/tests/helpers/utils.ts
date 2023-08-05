@@ -121,7 +121,7 @@ export class Utils {
             gasLimit: gasLimit,
             gasPrice: await global.relay.gasPrice(requestId)
         };
-    };
+    }
 
     static convertEthersResultIntoStringsArray = (res) => {
         if (typeof res === 'object') {
