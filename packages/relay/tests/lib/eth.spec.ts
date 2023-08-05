@@ -241,7 +241,7 @@ describe('Eth calls using MirrorNode', async function () {
         "previous_hash": "0xe5ec054c17063d3912eb13760f9f62779f12c60f4d13f882d3fe0aba15db617b9f2b62d9f51d2aac05f7499147c6aa28",
         "size": 3085,
         "timestamp": {
-          "from": "1679512870.216373003", "to": "1679512871.851262003" 
+          "from": "1679512870.216373003", "to": "1679512871.851262003"
         }
       }
     ]
@@ -405,7 +405,6 @@ describe('Eth calls using MirrorNode', async function () {
     ],
     'timestamp': '1653644164.591111113'
   };
-
   const baseFeePerGasHex = numberTo0x(BigInt(defaultNetworkFees.fees[2].gas) * TINYBAR_TO_WEIBAR_COEF_BIGINT); // '0x84b6a5c400' -> 570_000_000_000 tb
 
   const defaultContract = {
@@ -1322,9 +1321,9 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
       restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
 
-    const args = [blockHash, true];
+      const args = [blockHash, true];
 
-    await RelayAssertions.assertRejection(predefined.MAX_BLOCK_SIZE(77), ethImplLowTransactionCount.getBlockByHash, true, ethImplLowTransactionCount, args);
+      await RelayAssertions.assertRejection(predefined.MAX_BLOCK_SIZE(77), ethImplLowTransactionCount.getBlockByHash, true, ethImplLowTransactionCount, args);
     });
 
     it('eth_getBlockByNumber with greater number of transactions than the ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', async function () {
@@ -1336,9 +1335,9 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults);
       restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
 
-    const args = [numberTo0x(blockNumber), true];
+      const args = [numberTo0x(blockNumber), true];
 
-    await RelayAssertions.assertRejection(predefined.MAX_BLOCK_SIZE(77), ethImplLowTransactionCount.getBlockByNumber, true, ethImplLowTransactionCount, args);
+      await RelayAssertions.assertRejection(predefined.MAX_BLOCK_SIZE(77), ethImplLowTransactionCount.getBlockByNumber, true, ethImplLowTransactionCount, args);
     });
 
   });
@@ -1409,7 +1408,7 @@ describe('Eth calls using MirrorNode', async function () {
           'timestamp': {
             'from': `${blockTimestamp}.060890919`,
             'to': '1651560389.060890949'
-          },            
+          },
         }]
       });
       restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
@@ -1431,7 +1430,7 @@ describe('Eth calls using MirrorNode', async function () {
           'timestamp': {
             'from': `${blockTimestamp}.060890919`,
             'to': '1651560389.060890949'
-          },           
+          },
         }]
       });
       restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
@@ -1498,10 +1497,10 @@ describe('Eth calls using MirrorNode', async function () {
           'timestamp': {
             'from': `${blockTimestamp}.060890919`,
             'to': '1651560389.060890949'
-          },            
+          },
         }]
       });
-      
+
       restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
         account: contractAddress1,
         balance: {
@@ -1514,7 +1513,7 @@ describe('Eth calls using MirrorNode', async function () {
         ],
         links: {
           next: null
-        }       
+        }
       });
 
       const resNoCache = await ethImpl.getBalance(contractAddress1, blockNumber, getRequestId());
@@ -1528,7 +1527,7 @@ describe('Eth calls using MirrorNode', async function () {
       const resCached = await ethImpl.getBalance(contractAddress1, blockNumber, getRequestId());
       expect(resNoCache).to.equal(defHexBalance);
       expect(resCached).to.equal(defHexBalance);
-    });    
+    });
 
     describe('with blockNumberOrTag filter', async function() {
       const balance1 = 99960581131;
@@ -1672,9 +1671,9 @@ describe('Eth calls using MirrorNode', async function () {
           ],
           links: {
             next: null
-          }          
+          }
         });
- 
+
         const resBalance = await ethImpl.getBalance(contractId1, '2', getRequestId());
         const historicalBalance = numberTo0x(BigInt(balance3) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
@@ -1717,7 +1716,7 @@ describe('Eth calls using MirrorNode', async function () {
           ],
           links: {
             next: null
-          }         
+          }
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2', getRequestId());
@@ -1747,9 +1746,9 @@ describe('Eth calls using MirrorNode', async function () {
           ],
           links: {
             next: null
-          }            
+          }
         });
- 
+
         const resBalance = await ethImpl.getBalance(contractId1, '2', getRequestId());
         const historicalBalance = numberTo0x(BigInt(balance3 + 175) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
@@ -1763,7 +1762,7 @@ describe('Eth calls using MirrorNode', async function () {
             'to': '1651560900.060890941'
           },
         });
-        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);        
+        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
         restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
           account: contractId1,
           balance: {
@@ -1778,7 +1777,7 @@ describe('Eth calls using MirrorNode', async function () {
           ],
           links: {
             next: null
-          }              
+          }
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '2', getRequestId());
@@ -1810,7 +1809,7 @@ describe('Eth calls using MirrorNode', async function () {
           ],
           links: {
             next: `/api/v1/accounts/${contractId1}?limit=100&timestamp=lt:1651550575.060890941`
-          }         
+          }
         });
         const latestBlock = Object.assign({}, defaultBlock, {
           number: 4,
@@ -1823,7 +1822,7 @@ describe('Eth calls using MirrorNode', async function () {
         restMock.onGet('blocks?limit=1&order=desc').reply(200, {
           blocks: [latestBlock]
         });
-      
+
         const resBalance = await ethImpl.getBalance(contractId1, '1', getRequestId());
         const historicalBalance = numberTo0x(BigInt(balance3 - 230) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
         expect(resBalance).to.equal(historicalBalance);
@@ -1852,7 +1851,7 @@ describe('Eth calls using MirrorNode', async function () {
           ],
           links: {
             next: `/api/v1/accounts/${contractId1}?limit=100&timestamp=lt:1651550575.060890941`
-          }         
+          }
         });
 
         restMock.onGet(`accounts/${contractId1}?limit=100&timestamp=lt:1651550575.060890941`).reply(200, {
@@ -1867,7 +1866,7 @@ describe('Eth calls using MirrorNode', async function () {
           ],
           links: {
             next: null
-          }         
+          }
         });
 
         const latestBlock = Object.assign({}, defaultBlock, {
@@ -1881,10 +1880,10 @@ describe('Eth calls using MirrorNode', async function () {
         restMock.onGet('blocks?limit=1&order=desc').reply(200, {
           blocks: [latestBlock]
         });
-      
+
         const resBalance = await ethImpl.getBalance(contractId1, '1', getRequestId());
         const historicalBalance = numberTo0x(BigInt(balance3 - 480) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
-        expect(resBalance).to.equal(historicalBalance);        
+        expect(resBalance).to.equal(historicalBalance);
       });
 
       it('blockNumber is in the latest 15 minutes with credit and debit transactions and a next pagination with a timestamp greater than the block.timestamp.to', async () => {
@@ -1910,7 +1909,7 @@ describe('Eth calls using MirrorNode', async function () {
           ],
           links: {
             next: `/api/v1/accounts/${contractId1}?limit=100&timestamp=lt:1651550575.060890941`
-          }         
+          }
         });
 
         restMock.onGet(`accounts/${contractId1}?limit=100&timestamp=lt:1651550575.060890941`).reply(200, {
@@ -1925,7 +1924,7 @@ describe('Eth calls using MirrorNode', async function () {
           ],
           links: {
             next: null
-          }         
+          }
         });
 
         const latestBlock = Object.assign({}, defaultBlock, {
@@ -1939,11 +1938,11 @@ describe('Eth calls using MirrorNode', async function () {
         restMock.onGet('blocks?limit=1&order=desc').reply(200, {
           blocks: [latestBlock]
         });
-      
+
         const resBalance = await ethImpl.getBalance(contractId1, '1', getRequestId());
         const historicalBalance = numberTo0x(BigInt(balance3 - 80) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
-        expect(resBalance).to.equal(historicalBalance);        
-      });      
+        expect(resBalance).to.equal(historicalBalance);
+      });
 
       it('blockNumber is the same as the latest block', async () => {
         const resBalance = await ethImpl.getBalance(contractId1, '3', getRequestId());
@@ -1955,53 +1954,53 @@ describe('Eth calls using MirrorNode', async function () {
       const timestamp1 = 1651550386;
 
       it('Given a blockNumber, return the account balance at that blocknumber, with transactions that debit the account balance', async () => {
-        const transactionsInBlockTimestamp: any[] = 
-        [
-          buildCryptoTransferTransaction("0.0.98", contractId1, 100, {"timestamp":`${timestamp1}.060890955`}),
-          buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":`${timestamp1}.060890954`}),
-        ];
+        const transactionsInBlockTimestamp: any[] =
+          [
+            buildCryptoTransferTransaction("0.0.98", contractId1, 100, {"timestamp":`${timestamp1}.060890955`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 50, {"timestamp":`${timestamp1}.060890954`}),
+          ];
 
-        const resultingUpdate = ethImpl.getBalanceAtBlockTimestamp(contractId1, transactionsInBlockTimestamp, Number(`${timestamp1}.060890950`));      
+        const resultingUpdate = ethImpl.getBalanceAtBlockTimestamp(contractId1, transactionsInBlockTimestamp, Number(`${timestamp1}.060890950`));
         // Transactions up to the block timestamp.to timestamp will be subsctracted from the current balance to get the block's balance.
         expect(resultingUpdate).to.equal(+150);
       });
 
       it('Given a blockNumber, return the account balance at that blocknumber, with transactions that credit the account balance', async () => {
-        const transactionsInBlockTimestamp: any[] = 
-        [
-          buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":`${timestamp1}.060890955`}),
-          buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":`${timestamp1}.060890954`}),
-        ];
+        const transactionsInBlockTimestamp: any[] =
+          [
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 100, {"timestamp":`${timestamp1}.060890955`}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":`${timestamp1}.060890954`}),
+          ];
 
-        const resultingUpdate = ethImpl.getBalanceAtBlockTimestamp(contractId1, transactionsInBlockTimestamp, Number(`${timestamp1}.060890950`));      
+        const resultingUpdate = ethImpl.getBalanceAtBlockTimestamp(contractId1, transactionsInBlockTimestamp, Number(`${timestamp1}.060890950`));
         // Transactions up to the block timestamp.to timestamp will be subsctracted from the current balance to get the block's balance.
         expect(resultingUpdate).to.equal(-150);
       });
 
       it('Given a blockNumber, return the account balance at that blocknumber, with transactions that debit and credit the account balance', async () => {
-        const transactionsInBlockTimestamp: any[] = 
-        [
-          buildCryptoTransferTransaction("0.0.98", contractId1, 100, {"timestamp":`${timestamp1}.060890955`}),
-          buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":`${timestamp1}.060890954`}),
-        ];
+        const transactionsInBlockTimestamp: any[] =
+          [
+            buildCryptoTransferTransaction("0.0.98", contractId1, 100, {"timestamp":`${timestamp1}.060890955`}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":`${timestamp1}.060890954`}),
+          ];
 
-        const resultingUpdate = ethImpl.getBalanceAtBlockTimestamp(contractId1, transactionsInBlockTimestamp, Number(`${timestamp1}.060890950`));      
+        const resultingUpdate = ethImpl.getBalanceAtBlockTimestamp(contractId1, transactionsInBlockTimestamp, Number(`${timestamp1}.060890950`));
         // Transactions up to the block timestamp.to timestamp will be subsctracted from the current balance to get the block's balance.
         expect(resultingUpdate).to.equal(+50);
       });
 
       it('Given a blockNumber, return the account balance at that blocknumber, with transactions that debit, credit, and debit the account balance', async () => {
-        const transactionsInBlockTimestamp: any[] = 
-        [
-          buildCryptoTransferTransaction("0.0.98", contractId1, 100, {"timestamp":`${timestamp1}.060890955`}),
-          buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":`${timestamp1}.060890954`}),
-          buildCryptoTransferTransaction("0.0.98", contractId1, 20, {"timestamp":`${timestamp1}.060890955`}),
-        ];
+        const transactionsInBlockTimestamp: any[] =
+          [
+            buildCryptoTransferTransaction("0.0.98", contractId1, 100, {"timestamp":`${timestamp1}.060890955`}),
+            buildCryptoTransferTransaction(contractId1, "0.0.98", 50, {"timestamp":`${timestamp1}.060890954`}),
+            buildCryptoTransferTransaction("0.0.98", contractId1, 20, {"timestamp":`${timestamp1}.060890955`}),
+          ];
 
-        const resultingUpdate = ethImpl.getBalanceAtBlockTimestamp(contractId1, transactionsInBlockTimestamp, Number(`${timestamp1}.060890950`));      
+        const resultingUpdate = ethImpl.getBalanceAtBlockTimestamp(contractId1, transactionsInBlockTimestamp, Number(`${timestamp1}.060890950`));
         // Transactions up to the block timestamp.to timestamp will be subsctracted from the current balance to get the block's balance.
         expect(resultingUpdate).to.equal(+70);
-      });     
+      });
     });
   });
 
@@ -2011,8 +2010,8 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(404, null);
       restMock.onGet(`tokens/0.0.${parseInt(contractAddress1, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.throws(new SDKClientError({status: {
-        _code: 16
-      }}));
+          _code: 16
+        }}));
 
       const resNoCache = await ethImpl.getCode(contractAddress1, null);
       const resCached = await ethImpl.getCode(contractAddress1, null);
@@ -2088,7 +2087,7 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogs);
 
       await ethGetLogsFailing(
-          ethImpl,
+        ethImpl,
         [blockHash, null, null, null, null],
         (error) => {
           expect(error.statusCode).to.equal(504);
@@ -2102,12 +2101,12 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress1}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).timeout();
 
       await ethGetLogsFailing(
-          ethImpl,
-          [null, null, null, contractAddress1, null],
-          (error) => {
-            expect(error.statusCode).to.equal(504);
-            expect(error.message).to.eq("timeout of 10000ms exceeded");
-          }
+        ethImpl,
+        [null, null, null, contractAddress1, null],
+        (error) => {
+          expect(error.statusCode).to.equal(504);
+          expect(error.message).to.eq("timeout of 10000ms exceeded");
+        }
       );
     });
 
@@ -2196,7 +2195,7 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
 
       restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=2&order=asc`).replyOnce(200, filteredLogs)
-      .onGet('contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0').replyOnce(200, filteredLogsNext);
+        .onGet('contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0').replyOnce(200, filteredLogsNext);
 
       unfilteredLogs.logs.forEach((log , index) => {
         restMock.onGet(`contracts/${log.address}`).reply(200, {...defaultContract, contract_id: `0.0.105${index}`});
@@ -2381,13 +2380,13 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet('blocks/5').reply(200, {blocks: [defaultBlock]});
 
       await ethGetLogsFailing(
-          ethImpl,
-          [null, null, '0x5', null, null],
-          (error) => {
-            expect(error.code).to.equal(-32011);
-            expect(error.name).to.equal('Missing fromBlock parameter');
-            expect(error.message).to.equal('Provided toBlock parameter without specifying fromBlock');
-          }
+        ethImpl,
+        [null, null, '0x5', null, null],
+        (error) => {
+          expect(error.code).to.equal(-32011);
+          expect(error.name).to.equal('Missing fromBlock parameter');
+          expect(error.message).to.equal('Provided toBlock parameter without specifying fromBlock');
+        }
       );
     });
 
@@ -2421,18 +2420,18 @@ describe('Eth calls using MirrorNode', async function () {
       const blockBeyondMaximumRange = {
         ...defaultBlock,
         number: 1007,
-      };      
+      };
 
       restMock.onGet('blocks?limit=1&order=desc').reply(200, {blocks: [blockBeyondMaximumRange]});
       restMock.onGet('blocks/1').reply(200, fromBlock);
       restMock.onGet('blocks/1003').reply(200, toBlock);
 
       await ethGetLogsFailing(
-          ethImpl,
-          [null, '0x1', '0x3eb', null, null],
-          (error) => {
-            expect(error.message).to.equal('Exceeded maximum block range: 1000');
-          }
+        ethImpl,
+        [null, '0x1', '0x3eb', null, null],
+        (error) => {
+          expect(error.message).to.equal('Exceeded maximum block range: 1000');
+        }
       );
     });
 
@@ -2514,9 +2513,9 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_feeHistory', async function () {
     const previousBlock = {...defaultBlock, number: blockNumber2, timestamp: {
-      from: '1651560386.060890948',
-      to: '1651560389.060890948'
-    }};
+        from: '1651560386.060890948',
+        to: '1651560389.060890948'
+      }};
     const latestBlock = {...defaultBlock, number: blockNumber3};
     const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
     const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
@@ -2546,9 +2545,9 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_feeHistory with latest param', async function () {
     const previousBlock = {...defaultBlock, number: blockNumber2, timestamp: {
-      from: '1651560386.060890948',
-      to: '1651560389.060890948'
-    }};
+        from: '1651560386.060890948',
+        to: '1651560389.060890948'
+      }};
     const latestBlock = {...defaultBlock, number: blockNumber3};
     const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
     const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
@@ -2566,9 +2565,9 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_feeHistory with pending param', async function () {
     const previousBlock = {...defaultBlock, number: blockNumber2, timestamp: {
-      from: '1651560386.060890948',
-      to: '1651560389.060890948'
-    }};
+        from: '1651560386.060890948',
+        to: '1651560389.060890948'
+      }};
     const latestBlock = {...defaultBlock, number: blockNumber3};
     const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
     const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
@@ -2588,9 +2587,9 @@ describe('Eth calls using MirrorNode', async function () {
     const firstBlockIndex = 0;
     const secondBlockIndex = 1;
     const previousBlock = {...defaultBlock, number: firstBlockIndex, timestamp: {
-      from: '1651560386.060890948',
-      to: '1651560389.060890948'
-    }};
+        from: '1651560386.060890948',
+        to: '1651560389.060890948'
+      }};
     const latestBlock = {...defaultBlock, number: secondBlockIndex};
     const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
     const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
@@ -2608,9 +2607,9 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_feeHistory with number param', async function () {
     const previousBlock = {...defaultBlock, number: blockNumber2, timestamp: {
-      from: '1651560386.060890948',
-      to: '1651560389.060890948'
-    }};
+        from: '1651560386.060890948',
+        to: '1651560389.060890948'
+      }};
     const latestBlock = {...defaultBlock, number: blockNumber3};
     const previousFees = JSON.parse(JSON.stringify(defaultNetworkFees));
     const latestFees = JSON.parse(JSON.stringify(defaultNetworkFees));
@@ -2916,36 +2915,6 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result.name).to.eq("Invalid parameter");
   });
 
-  it('eth_estimateGas to mirror node for transfer returns 501', async function () {
-    const callData = {
-      data: "0x",
-      from: "0x81cb089c285e5ee3a7353704fb114955037443af",
-      to: receiverAddress,
-      value: "0x1"
-    };
-    web3Mock.onPost('contracts/call', {...callData, estimate: true}).reply(501, {"errorMessage":"","statusCode":501});
-
-    restMock.onGet(`accounts/${receiverAddress}${noTransactions}`).reply(200, { address: receiverAddress });
-
-    const gas = await ethImpl.estimateGas(callData, null);
-    expect(gas).to.equal(numberTo0x(constants.TX_BASE_COST));
-  });
-
-  it('eth_estimateGas to mirror node for transfer without value returns 501', async function () {
-    const callData = {
-      data: "0x",
-      from: "0x81cb089c285e5ee3a7353704fb114955037443af",
-      to: receiverAddress
-    };
-    web3Mock.onPost('contracts/call', {...callData, estimate: true}).reply(501, {"errorMessage":"","statusCode":501});
-    restMock.onGet(`accounts/${receiverAddress}${noTransactions}`).reply(200, { address: receiverAddress });
-
-    const result = await ethImpl.estimateGas(callData, null);
-    expect(result).to.not.be.null;
-    expect(result.code).to.eq(-32602);
-    expect(result.name).to.eq("Invalid parameter");
-  });
-
   it('eth_estimateGas transfer to existing account', async function() {
     restMock.onGet(`accounts/${receiverAddress}${noTransactions}`).reply(200, { address: receiverAddress });
 
@@ -3061,155 +3030,10 @@ describe('Eth calls using MirrorNode', async function () {
     };
     const id = uuid();
     web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
-        "_status": {
-            "messages": [
-                {
-                    "message": "data field invalid hexadecimal string",
-                    "detail": "",
-                    "data": ""
-                }
-            ]
-        }
-    });
-
-    const result: any = await ethImpl.estimateGas(transaction, id);
-
-    expect(result).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
-
-  });
-
-  it('eth_estimateGas with contract revert and message does not equal executionReverted and ESTIMATE_GAS_THROWS is set to false', async function () {
-    const estimateGasThrows = process.env.ESTIMATE_GAS_THROWS;
-    process.env.ESTIMATE_GAS_THROWS = 'false';
-    const transaction = {
-      from: "0x05fba803be258049a27b820088bab1cad2058871",
-      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
-    };
-    const id = uuid();
-    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
-        "_status": {
-            "messages": [
-                {
-                    "message": "data field invalid hexadecimal string",
-                    "detail": "",
-                    "data": ""
-                }
-            ]
-        }
-    });
-
-    const result: any = await ethImpl.estimateGas(transaction, id);
-
-    expect(result).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
-    process.env.ESTIMATE_GAS_THROWS = estimateGasThrows;
-
-  });
-
-  it('eth_estimateGas with contract revert and message equals "execution reverted: Invalid number of recipients"', async function () {
-    const transaction = {
-      from: "0x05fba803be258049a27b820088bab1cad2058871",
-      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
-    };
-    const id = uuid();
-    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
       "_status": {
         "messages": [
           {
-            "data": "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c496e76616c6964206e756d626572206f6620726563697069656e747300000000",
-            "detail": "Invalid number of recipients",
-            "message": "CONTRACT_REVERT_EXECUTED"
-          }
-        ]
-      }
-    });
-
-  it('eth_estimateGas with contract revert and message does not equal executionReverted', async function () {
-    const transaction = {
-      from: "0x05fba803be258049a27b820088bab1cad2058871",
-      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
-    };
-    const id = uuid();
-    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
-        "_status": {
-            "messages": [
-                {
-                    "message": "data field invalid hexadecimal string",
-                    "detail": "",
-                    "data": ""
-                }
-            ]
-        }
-    });
-
-    const result: any = await ethImpl.estimateGas(transaction, id);
-
-    expect(result).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
-
-  });
-
-  it('eth_estimateGas with contract revert and message does not equal executionReverted and ESTIMATE_GAS_THROWS is set to false', async function () {
-    const estimateGasThrows = process.env.ESTIMATE_GAS_THROWS;
-    process.env.ESTIMATE_GAS_THROWS = 'false';
-    const transaction = {
-      from: "0x05fba803be258049a27b820088bab1cad2058871",
-      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
-    };
-    const id = uuid();
-    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
-        "_status": {
-            "messages": [
-                {
-                    "message": "data field invalid hexadecimal string",
-                    "detail": "",
-                    "data": ""
-                }
-            ]
-        }
-    });
-
-    const result: any = await ethImpl.estimateGas(transaction, id);
-
-    expect(result).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
-    process.env.ESTIMATE_GAS_THROWS = estimateGasThrows;
-
-  });
-
-  it('eth_estimateGas with contract revert and message equals "execution reverted: Invalid number of recipients"', async function () {
-    const transaction = {
-      from: "0x05fba803be258049a27b820088bab1cad2058871",
-      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
-    };
-    const id = uuid();
-    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
-      "_status": {
-        "messages": [
-          {
-            "data": "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c496e76616c6964206e756d626572206f6620726563697069656e747300000000",
-            "detail": "Invalid number of recipients",
-            "message": "CONTRACT_REVERT_EXECUTED"
-          }
-        ]
-      }
-    });
-
-    const result: any = await ethImpl.estimateGas(transaction, id);
-
-    expect(result.data).to.equal("0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c496e76616c6964206e756d626572206f6620726563697069656e747300000000");
-    expect(result.message).to.equal("execution reverted: Invalid number of recipients");
-
-  });
-
-  it('eth_estimateGas handles a 501 unimplemented response from the mirror node correctly by returning default gas', async function () {
-    const transaction = {
-      from: "0x05fba803be258049a27b820088bab1cad2058871",
-      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
-    };
-    const id = uuid();
-    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(501, {
-      "_status": {
-        "messages": [
-          {
-            "message": "Auto account creation is not supported.",
+            "message": "data field invalid hexadecimal string",
             "detail": "",
             "data": ""
           }
@@ -3218,12 +3042,56 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     const result: any = await ethImpl.estimateGas(transaction, id);
+
     expect(result).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
+
   });
 
-  describe('eth_gasPrice', async function () {
-    it('eth_gasPrice', async function () {
-      restMock.onGet(`network/fees`).reply(200, defaultNetworkFees);
+  it('eth_estimateGas with contract revert and message does not equal executionReverted and ESTIMATE_GAS_THROWS is set to false', async function () {
+    const estimateGasThrows = process.env.ESTIMATE_GAS_THROWS;
+    process.env.ESTIMATE_GAS_THROWS = 'false';
+    const transaction = {
+      from: "0x05fba803be258049a27b820088bab1cad2058871",
+      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
+    };
+    const id = uuid();
+    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
+      "_status": {
+        "messages": [
+          {
+            "message": "data field invalid hexadecimal string",
+            "detail": "",
+            "data": ""
+          }
+        ]
+      }
+    });
+
+    const result: any = await ethImpl.estimateGas(transaction, id);
+
+    expect(result).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
+    process.env.ESTIMATE_GAS_THROWS = estimateGasThrows;
+
+  });
+
+  it('eth_estimateGas with contract revert and message equals "execution reverted: Invalid number of recipients"', async function () {
+    const transaction = {
+      from: "0x05fba803be258049a27b820088bab1cad2058871",
+      data: "0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505"
+    };
+    const id = uuid();
+    web3Mock.onPost('contracts/call', {...transaction, estimate: true}).reply(400, {
+      "_status": {
+        "messages": [
+          {
+            "data": "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c496e76616c6964206e756d626572206f6620726563697069656e747300000000",
+            "detail": "Invalid number of recipients",
+            "message": "CONTRACT_REVERT_EXECUTED"
+          }
+        ]
+      }
+    });
+
     const result: any = await ethImpl.estimateGas(transaction, id);
 
     expect(result.data).to.equal("0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c496e76616c6964206e756d626572206f6620726563697069656e747300000000");
@@ -3363,8 +3231,8 @@ describe('Eth calls using MirrorNode', async function () {
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
       restMock.onGet(`accounts/${defaultCallData.from}${noTransactions}`).reply(200, {
-          account: "0.0.1723",
-          evm_address: defaultCallData.from
+        account: "0.0.1723",
+        evm_address: defaultCallData.from
       });
       restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);
       await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
@@ -3379,8 +3247,8 @@ describe('Eth calls using MirrorNode', async function () {
       delete process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
       restMock.onGet(`accounts/${defaultCallData.from}${noTransactions}`).reply(200, {
-          account: "0.0.1723",
-          evm_address: defaultCallData.from
+        account: "0.0.1723",
+        evm_address: defaultCallData.from
       });
       restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);
       await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
@@ -3395,8 +3263,8 @@ describe('Eth calls using MirrorNode', async function () {
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
       restMock.onGet(`accounts/${defaultCallData.from}${noTransactions}`).reply(200, {
-          account: "0.0.1723",
-          evm_address: defaultCallData.from
+        account: "0.0.1723",
+        evm_address: defaultCallData.from
       });
       restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);
       await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
@@ -3548,11 +3416,11 @@ describe('Eth calls using MirrorNode', async function () {
       web3Mock.onPost(`contracts/call`).reply(200, {result: '0x1'});
 
       await expect(ethImpl.call({
-            "from": accountAddress1,
-            "to": contractAddress2,
-            "data": contractCallData,
-            "gas": maxGasLimitHex
-          }, 'latest')).to.eventually.be.fulfilled.and.equal("0x1");
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "data": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest')).to.eventually.be.fulfilled.and.equal("0x1");
     });
   });
 
@@ -3577,10 +3445,10 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
 
       sdkClientStub.submitContractCallQueryWithRetry.returns({
-            asBytes: function () {
-              return Uint8Array.of(0);
-            }
+          asBytes: function () {
+            return Uint8Array.of(0);
           }
+        }
       );
 
       const result = await ethImpl.call({
@@ -3600,10 +3468,10 @@ describe('Eth calls using MirrorNode', async function () {
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
       sdkClientStub.submitContractCallQueryWithRetry.returns({
-            asBytes: function () {
-              return Uint8Array.of(0);
-            }
+          asBytes: function () {
+            return Uint8Array.of(0);
           }
+        }
       );
 
       const result = await ethImpl.call({
@@ -3660,10 +3528,10 @@ describe('Eth calls using MirrorNode', async function () {
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
       sdkClientStub.submitContractCallQueryWithRetry.returns({
-            asBytes: function () {
-              return Uint8Array.of(0);
-            }
+          asBytes: function () {
+            return Uint8Array.of(0);
           }
+        }
       );
 
       const result = await ethImpl.call({
@@ -3685,10 +3553,10 @@ describe('Eth calls using MirrorNode', async function () {
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
       sdkClientStub.submitContractCallQueryWithRetry.returns({
-        asBytes: function () {
-          return Uint8Array.of(0);
-            }
+          asBytes: function () {
+            return Uint8Array.of(0);
           }
+        }
       );
 
       for (let index = 0; index < 3; index++) {
@@ -3825,7 +3693,7 @@ describe('Eth calls using MirrorNode', async function () {
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x');
     });
-    
+
     it('eth_call with no gas', async function () {
       const callData = {
         ...defaultCallData,
@@ -3907,10 +3775,10 @@ describe('Eth calls using MirrorNode', async function () {
       });
       restMock.onGet(`contracts/${contractAddress2}`).reply(200, defaultContract2);
       web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(429, mockData.tooManyRequests);
-        const result = await ethImpl.call(callData, 'latest');
-        expect(result).to.be.not.null;
-        expect(result.code).to.eq(-32605);
-        expect(result.name).to.eq("IP Rate limit exceeded");
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.be.not.null;
+      expect(result.code).to.eq(-32605);
+      expect(result.name).to.eq("IP Rate limit exceeded");
     });
 
     it('eth_call with all fields but mirrorNode throws 400', async function () {
@@ -3954,10 +3822,10 @@ describe('Eth calls using MirrorNode', async function () {
       web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(501, mockData.notSupported);
 
       sdkClientStub.submitContractCallQueryWithRetry.returns({
-            asBytes: function () {
-              return Uint8Array.of(0);
-            }
+          asBytes: function () {
+            return Uint8Array.of(0);
           }
+        }
       );
 
       const result = await ethImpl.call(callData, 'latest');
@@ -4007,15 +3875,15 @@ describe('Eth calls using MirrorNode', async function () {
 
       web3Mock.onPost('contracts/call', {...callData, estimate: false}).reply(400, {
         "_status": {
-            "messages": [
-                {
-                    "message": "",
-                    "detail": defaultErrorMessageText,
-                    "data": defaultErrorMessageHex
-                }
-            ]
+          "messages": [
+            {
+              "message": "",
+              "detail": defaultErrorMessageText,
+              "data": defaultErrorMessageHex
+            }
+          ]
         }
-    });
+      });
 
       const result = await ethImpl.call(callData, 'latest');
 
@@ -4029,9 +3897,9 @@ describe('Eth calls using MirrorNode', async function () {
     it('eth_call with missing `to` field', async function() {
       const args = [{
         ...defaultCallData,
-          "from": contractAddress1,
-          "data": contractCallData,
-          "gas": maxGasLimit
+        "from": contractAddress1,
+        "data": contractCallData,
+        "gas": maxGasLimit
       }, 'latest'];
 
       await RelayAssertions.assertRejection(predefined.INVALID_CONTRACT_ADDRESS(undefined), ethImpl.call, false, ethImpl, args);
@@ -4040,9 +3908,9 @@ describe('Eth calls using MirrorNode', async function () {
     it('eth_call with wrong `to` field', async function() {
       const args = [{
         ...defaultCallData,
-          "from": contractAddress1,
-          "data": contractCallData,
-          "gas": maxGasLimit
+        "from": contractAddress1,
+        "data": contractCallData,
+        "gas": maxGasLimit
       }, 'latest'];
 
       await RelayAssertions.assertRejection(predefined.INVALID_CONTRACT_ADDRESS(wrongContractAddress), ethImpl.call, false, ethImpl, args);
@@ -4073,128 +3941,6 @@ describe('Eth calls using MirrorNode', async function () {
       // tx with 'gasLimit: BigNumber { value: "30678687678687676876786786876876876000" }'
       const txHash = '0x02f881820128048459682f0086014fa0186f00901714801554cbe52dd95512bedddf68e09405fba803be258049a27b820088bab1cad205887185174876e80080c080a0cab3f53602000c9989be5787d0db637512acdd2ad187ce15ba83d10d9eae2571a07802515717a5a1c7d6fa7616183eb78307b4657d7462dbb9e9deca820dd28f62';
       await RelayAssertions.assertRejection(predefined.GAS_LIMIT_TOO_HIGH(null, null), ethImpl.sendRawTransaction, false, ethImpl, [txHash]);
-    });
-
-    it('should return a computed hash if unable to retrieve EthereumHash from record due to contract revert', async function () {
-      restMock.onGet(accountEndpoint).reply(200, {
-        account: accountAddress,
-        balance: {
-          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar)
-        }
-      });
-
-      const transaction = {
-        chainId: 0x12a,
-        to: accountAddress1,
-        from: accountAddress,
-        value,
-        gasPrice,
-        gasLimit: maxGasLimitHex,
-      };
-
-      const signed = await signTransaction(transaction);
-
-      restMock.onGet(`transactions/${transactionId}`).reply(200, null);
-
-      const resultingHash = await ethImpl.sendRawTransaction(signed, getRequestId());
-      expect(resultingHash).to.equal(ethereumHash);
-    });
-
-    it('should throw internal error when transaction returned from mirror node is null', async function () {
-      restMock.onGet(accountEndpoint).reply(200, {
-        account: accountAddress,
-        balance: {
-          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
-        },
-      });
-
-      const transaction = {
-        chainId: 0x12a,
-        to: accountAddress1,
-        from: accountAddress,
-        value,
-        gasPrice,
-        gasLimit: maxGasLimitHex,
-      };
-
-      const signed = await signTransaction(transaction);
-
-      restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
-      restMock.onGet(`transactions/${transactionId}?nonce=0`).reply(200, null);
-
-      sdkClientStub.submitEthereumTransaction.returns({
-        transactionId: TransactionId.fromString(transactionIdServicesFormat),
-      });
-
-      const response = (await ethImpl.sendRawTransaction(signed, getRequestId())) as JsonRpcError;
-
-      expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
-      expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
-    });
-
-    it('should throw internal error when transactionID is invalid', async function () {
-      restMock.onGet(accountEndpoint).reply(200, {
-        account: accountAddress,
-        balance: {
-          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
-        },
-      });
-
-
-      const transaction = {
-        chainId: 0x12a,
-        to: accountAddress1,
-        from: accountAddress,
-        value,
-        gasPrice,
-        gasLimit: maxGasLimitHex,
-      };
-
-      const signed = await signTransaction(transaction);
-
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
-
-      sdkClientStub.submitEthereumTransaction.returns({
-        transactionId: "",
-      });
-
-      const response = (await ethImpl.sendRawTransaction(signed, getRequestId())) as JsonRpcError;
-
-      expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
-      expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
-    });
-
-    it('should return hash from ContractResult mirror node api', async function () {
-      restMock.onGet(accountEndpoint).reply(200, {
-        account: accountAddress,
-        balance: {
-          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar)
-        }
-      });
-
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
-      const transaction = {
-        chainId: 0x12a,
-        to: accountAddress1,
-        from: accountAddress,
-        value,
-        gasPrice,
-        gasLimit: maxGasLimitHex,
-      };
-
-      sdkClientStub.submitEthereumTransaction.returns({transactionId: TransactionId.fromString(transactionIdServicesFormat)});
-      const signed = await signTransaction(transaction);
-
-
-      const resultingHash = await ethImpl.sendRawTransaction(signed, getRequestId());
-      expect(resultingHash).to.equal(ethereumHash);
-    });
-
-
-      const args = [txHash];
-      const errMessage = 'overflow [ See: https://links.ethers.org/v5-errors-NUMERIC_FAULT-overflow ] (fault="overflow", operation="toNumber", value="30678687678687676876786786876876876000", code=NUMERIC_FAULT, version=bignumber/5.7.0)';
-
-      await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(errMessage), ethImpl.sendRawTransaction, true, ethImpl, args);
     });
 
     it('should return a computed hash if unable to retrieve EthereumHash from record due to contract revert', async function () {
@@ -4392,8 +4138,8 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
 
       const args = [contractAddress1,
-                    defaultDetailedContractResults.state_changes[0].slot,
-                    numberTo0x(blockNumber)];
+        defaultDetailedContractResults.state_changes[0].slot,
+        numberTo0x(blockNumber)];
 
       await RelayAssertions.assertRejection(predefined.RESOURCE_NOT_FOUND(), ethImpl.getStorageAt, false, ethImpl, args);
     });
@@ -4408,7 +4154,7 @@ describe('Eth calls using MirrorNode', async function () {
       expect(result).to.equal(EthImpl.zeroHex32Byte);
     });
 
-    
+
     it('eth_getStorageAt should return old state when passing older block number', async function () {
       restMock.onGet(`blocks/${blockNumber}`).reply(200, olderBlock);
       restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
@@ -4425,8 +4171,8 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`contracts/${contractAddress1}/state?timestamp=${defaultBlock.timestamp.to}&slot=${defaultOlderContractState.state[0].slot}&limit=100&order=desc`).reply(404, detailedContractResultNotFound);
 
       const args = [contractAddress1,
-                    defaultDetailedContractResults.state_changes[0].slot,
-                    numberTo0x(blockNumber)];
+        defaultDetailedContractResults.state_changes[0].slot,
+        numberTo0x(blockNumber)];
 
       await RelayAssertions.assertRejection(predefined.RESOURCE_NOT_FOUND(), ethImpl.getStorageAt, false, ethImpl, args);
     });
@@ -4450,7 +4196,7 @@ describe('Eth calls using MirrorNode', async function () {
           ...mockData.blocks.blocks[2],
           number: blockNumber + constants.MAX_BLOCK_RANGE + 1
         }
-      ]});
+        ]});
     });
 
     it('should return 0x0 nonce for no block consideration with not found acoount', async() => {
@@ -4554,7 +4300,7 @@ describe('Eth calls using MirrorNode', async function () {
           ...mockData.blocks.blocks[2],
           number: blockNumber + 1
         }
-      ]});
+        ]});
       restMock.onGet(accountPath).reply(200, mockData.account);
 
       const nonce = await ethImpl.getTransactionCount(mockData.account.evm_address, blockNumberHex);
