@@ -17,18 +17,24 @@
  * limitations under the License.
  *
  */
-
+import chai from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';
 import shell from 'shelljs';
 import pino from 'pino';
+import chaiAsPromised from 'chai-as-promised';
+
+chai.use(chaiAsPromised);
+
 import fs from 'fs';
 import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
 import app from '../../dist/server';
-import {app as wsApp} from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
-import {Hbar} from "@hashgraph/sdk";
+import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
+import { Hbar } from "@hashgraph/sdk";
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 const testLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -43,8 +49,6 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-
 const USE_LOCAL_NODE = process.env.LOCAL_NODE || 'true';
 const NETWORK = process.env.HEDERA_NETWORK || '';
 const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
@@ -53,15 +57,16 @@ const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 let startOperatorBalance: Hbar;
+global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 
 describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
     let relayServer; // Relay Server
     let socketServer;
-    global.servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({name: `services-test-client`}));
-    global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({name: `mirror-node-test-client`}));
-    global.relay = new RelayClient(RELAY_URL, logger.child({name: `relay-test-client`}));
+    global.servicesNode = new ServicesClient(NETWORK, OPERATOR_ID, OPERATOR_KEY, logger.child({ name: `services-test-client` }));
+    global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
+    global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
     global.relayServer = relayServer;
     global.socketServer = socketServer;
     global.logger = logger;
@@ -80,7 +85,7 @@ describe('RPC Server Acceptance Tests', function () {
             runLocalHederaNetwork();
         }
 
-        if (RELAY_URL === LOCAL_RELAY_URL) {
+        if (global.relayIsLocal) {
             runLocalRelay();
         }
 
@@ -100,7 +105,7 @@ describe('RPC Server Acceptance Tests', function () {
             shell.exec('hedera stop');
         }
 
-        // stop relay
+        //stop relay
         logger.info('Stop relay');
         if (relayServer !== undefined) {
             relayServer.close();
@@ -132,9 +137,9 @@ describe('RPC Server Acceptance Tests', function () {
 
     function runLocalHederaNetwork() {
         // set env variables for docker images until local-node is updated
-        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.37.0-alpha.0';
-        process.env['HAVEGED_IMAGE_TAG'] = '0.37.0-alpha.0';
-        process.env['MIRROR_IMAGE_TAG'] = '0.78.1';
+        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.40.1';
+        process.env['HAVEGED_IMAGE_TAG'] = '0.40.1';
+        process.env['MIRROR_IMAGE_TAG'] = '0.85.0-rc4';
 
         console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 
@@ -149,11 +154,12 @@ describe('RPC Server Acceptance Tests', function () {
     function runLocalRelay() {
         // start local relay, stop relay instance in local
         shell.exec('docker stop json-rpc-relay');
-        logger.info(`Start relay on port ${process.env.SERVER_PORT}`);
-        relayServer = app.listen({port: process.env.SERVER_PORT});
+        logger.info(`Start relay on port ${constants}`);
+        relayServer = app.listen({ port: constants.RELAY_PORT });
 
         if (process.env.TEST_WS_SERVER === 'true') {
-            global.socketServer = wsApp.listen({port: process.env.WEB_SOCKET_PORT || 8546});   
+            logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
+            global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
         }
     }
 

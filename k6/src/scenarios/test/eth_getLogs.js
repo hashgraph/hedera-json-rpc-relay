@@ -28,7 +28,9 @@ const url = __ENV.RELAY_BASE_URL;
 const methodName = 'eth_getLogs';
 const {options, run} = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
-  .request(() => http.post(url, getPayLoad(methodName, [{"blockHash": __ENV.DEFAULT_BLOCK_HASH}]), httpParams))
+  .request((testParameters) => {
+      console.log(__ENV.DEFAULT_BLOCK_HASH);
+      return http.post(url, getPayLoad(methodName, [{"blockHash": __ENV.DEFAULT_BLOCK_HASH}]), httpParams) })
   .check(methodName, (r) => isNonErrorResponse(r))
   .build();
 

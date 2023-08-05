@@ -21,6 +21,8 @@
 // external resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
+//Constants are imported with different definitions for better readability in the code.
+import Constants from '../../tests/helpers/constants';
 
 chai.use(solidity);
 
@@ -32,7 +34,7 @@ import { Utils } from '../helpers/utils';
 
 describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
-  const { servicesNode, relay } = global;
+  const { servicesNode, relay, mirrorNode }: any = global;
 
   const TX_SUCCESS_CODE = BigInt(22);
 
@@ -50,14 +52,17 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
 
-    accounts[0] = await servicesNode.createAliasAccount(70, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(25, relay.provider, requestId);
-    accounts[2] = await servicesNode.createAliasAccount(25, relay.provider, requestId);
+    const contractDeployer = await servicesNode.createAliasAccount(50, relay.provider, requestId);
+    BaseHTSContractAddress = await deployBaseHTSContract(contractDeployer.wallet);
+    const contractMirror = await mirrorNode.get(`/contracts/${BaseHTSContractAddress}`, requestId);
 
-    // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
+    accounts[0] = await servicesNode.createAccountWithContractIdKey(contractMirror.contract_id,70, relay.provider, requestId);
+    accounts[1] = await servicesNode.createAccountWithContractIdKey(contractMirror.contract_id,25, relay.provider, requestId);
+    accounts[2] = await servicesNode.createAccountWithContractIdKey(contractMirror.contract_id,25, relay.provider, requestId);
+
+    // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise(r => setTimeout(r, 5000));
 
-    BaseHTSContractAddress = await deployBaseHTSContract();
     baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
 
     baseHTSContractOwner = baseHTSContract;
@@ -69,12 +74,12 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
     requestId = Utils.generateRequestId();
   });
 
-  async function deployBaseHTSContract() {
-    const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, accounts[0].wallet);
-    const baseHTS = await baseHTSFactory.deploy({gasLimit: 10_000_000});
-    const { target } = await baseHTS.waitForDeployment();
+  async function deployBaseHTSContract(signer) {
+    const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, signer);
+    const baseHTS = await baseHTSFactory.deploy(Constants.GAS.LIMIT_10_000_000);
+    await baseHTS.waitForDeployment();
 
-    return target;
+    return baseHTS.target;
   }
 
   async function createHTSToken() {
@@ -83,7 +88,7 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
       value: BigInt('10000000000000000000'),
       gasLimit: 1_000_000
     });
-    const [tokenAddress] = (await tx.wait()).logs.filter(e => e.fragment.name === 'CreatedToken')[0].args;
+    const { tokenAddress } = (await tx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.CreatedToken)[0].args;
 
     return tokenAddress;
   }
@@ -94,7 +99,7 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
       value: BigInt('10000000000000000000'),
       gasLimit: 1_000_000
     });
-    const [tokenAddress] = (await tx.wait()).logs.filter(e => e.fragment.name === 'CreatedToken')[0].args;
+    const { tokenAddress } = (await tx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.CreatedToken)[0].args;
 
     return tokenAddress;
   }
@@ -105,50 +110,51 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
       value: BigInt('20000000000000000000'),
       gasLimit: 1_000_000
     });
-    const [tokenAddress] = (await tx.wait()).logs.filter(e => e.fragment.name === 'CreatedToken')[0].args;
+    const txReceipt = await tx.wait();
+    const { tokenAddress } = txReceipt.logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.CreatedToken)[0].args;
 
     return tokenAddress;
   }
 
-  it('should create associate to a fungible token', async function() {
+  it('should create associate to a fungible token', async function () {
     HTSTokenContractAddress = await createHTSToken();
 
-    const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, HTSTokenContractAddress, { gasLimit: 1_000_000 });
-    expect((await txCO.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0]).to.equal(TX_SUCCESS_CODE);
+    const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, HTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
+    expect((await txCO.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
-    const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, { gasLimit: 1_000_000 });
-    expect((await txRWF.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0]).to.equal(TX_SUCCESS_CODE);
+    const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
+    expect((await txRWF.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
-    const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, { gasLimit: 1_000_000 });
-    expect((await txRWS.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0]).to.equal(TX_SUCCESS_CODE);
+    const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
+    expect((await txRWS.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
   });
 
-  it('should create and associate to an nft', async function() {
+  it('should create and associate to an nft', async function () {
     NftHTSTokenContractAddress = await createNftHTSToken();
 
-    const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, NftHTSTokenContractAddress, { gasLimit: 1_000_000 });
-    expect((await txCO.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0]).to.equal(TX_SUCCESS_CODE);
+    const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, NftHTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
+    expect((await txCO.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
-    const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, NftHTSTokenContractAddress, { gasLimit: 1_000_000 });
-    expect((await txRWF.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0]).to.equal(TX_SUCCESS_CODE);
+    const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, NftHTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
+    expect((await txRWF.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
-    const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, NftHTSTokenContractAddress, { gasLimit: 1_000_000 });
-    expect((await txRWS.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0]).to.equal(TX_SUCCESS_CODE);
+    const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, NftHTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
+    expect((await txRWS.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
   });
 
-  it('should create and associate to a fungible token with custom fees', async function() {
+  it('should create and associate to a fungible token with custom fees', async function () {
     HTSTokenWithCustomFeesContractAddress = await createHTSTokenWithCustomFees();
 
     const baseHTSContractOwner = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
-    const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, HTSTokenWithCustomFeesContractAddress, { gasLimit: 1_000_000 });
-    expect((await txCO.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0]).to.equal(TX_SUCCESS_CODE);
+    const txCO = await baseHTSContractOwner.associateTokenPublic(BaseHTSContractAddress, HTSTokenWithCustomFeesContractAddress, Constants.GAS.LIMIT_1_000_000);
+    expect((await txCO.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
     const baseHTSContractReceiverWalletFirst = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[1].wallet);
-    const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenWithCustomFeesContractAddress, { gasLimit: 1_000_000 });
-    expect((await txRWF.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0]).to.equal(TX_SUCCESS_CODE);
+    const txRWF = await baseHTSContractReceiverWalletFirst.associateTokenPublic(accounts[1].wallet.address, HTSTokenWithCustomFeesContractAddress, Constants.GAS.LIMIT_1_000_000);
+    expect((await txRWF.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
     const baseHTSContractReceiverWalletSecond = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[2].wallet);
-    const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenWithCustomFeesContractAddress, { gasLimit: 1_000_000 });
-    expect((await txRWS.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0]).to.equal(TX_SUCCESS_CODE);
+    const txRWS = await baseHTSContractReceiverWalletSecond.associateTokenPublic(accounts[2].wallet.address, HTSTokenWithCustomFeesContractAddress, Constants.GAS.LIMIT_1_000_000);
+    expect((await txRWS.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
   });
 });

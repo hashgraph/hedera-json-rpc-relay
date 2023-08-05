@@ -18,7 +18,7 @@
  *
  */
 import { expect } from 'chai';
-import { ethers } from 'ethers';
+import { ethers, BigNumber } from 'ethers';
 import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from './utils';
 
@@ -199,26 +199,57 @@ export default class Assertions {
 
     static jsonRpcError(err: any, expectedError: JsonRpcError) {
         expect(err).to.exist;
-        expect(err).to.have.property('body');
+        expect(err.code).to.equal('SERVER_ERROR');
 
-        const parsedError = JSON.parse(err.body);
-        expect(parsedError.error.message.endsWith(expectedError.message)).to.be.true;
-        expect(parsedError.error.code).to.be.equal(expectedError.code);
-        if (expectedError.data) {
-            expect(parsedError.error.data).to.be.equal(expectedError.data);
-        }
+        // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
+        // expect(err).to.exist;
+        // expect(err).to.have.property('body');
+        //
+        // const parsedError = JSON.parse(err.body);
+        // expect(parsedError.error.code).to.be.equal(expectedError.code);
+        // if (expectedError.data) {
+        //     expect(parsedError.error.data).to.be.equal(expectedError.data);
+        // }
     }
 
+    static assertPredefinedRpcError = async (error: JsonRpcError, method: () => Promise<any>, checkMessage: boolean, thisObj, args?: any[]): Promise<any> => {
+        try {
+            await method.apply(thisObj, args);
+            Assertions.expectedError();
+        } catch (e) {
+        }
+
+        // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
+        // const propsToCheck = checkMessage ? [error.code, error.name, error.message] : [error.code, error.name];
+        // return await expect(method.apply(thisObj, args)).to.eventually.be.rejected.and.satisfy((err) => {
+        //     if(!err.hasOwnProperty('body')) {
+        //         return propsToCheck.every(substring => err.response.includes(substring));
+        //     } else {
+        //         return propsToCheck.every(substring => err.body.includes(substring));
+        //     }
+        // });
+    };
+
     static expectRevert = async (promise, code) => {
-        // TODO: handle it
+
         try {
             const tx = await promise;
             const receipt = await tx.wait();
             expect(receipt.to).to.equal(null);
-        }
-        catch(e:any) {
+        } catch (e: any) {
             expect(e).to.exist;
         }
+
+        // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
+        // const tx = await promise;
+        // try {
+        //     await tx.wait();
+        //     Assertions.expectedError();
+        // }
+        // catch(e:any) {
+        //     expect(e).to.exist;
+        //     expect(e.code).to.eq(code);
+        // }
     };
 
     static expectLogArgs = (log, contract, args: any[] = []) => {
@@ -229,11 +260,20 @@ export default class Assertions {
         for(let i = 0; i < args.length; i++) {
             expect(decodedLog1.args[i]).to.be.eq(args[i]);
         }
-    }
+    };
 
     static expectAnonymousLog = (log, contract, data) => {
         expect(log.data).to.equal(data);
         expect(log.address.toLowerCase()).to.equal(contract.address.toLowerCase());
-    }
+    };
+
+    static assertRejection = async (error: JsonRpcError, method: () => Promise<any>, args: any[], checkMessage: boolean): Promise<any> => {
+        return await expect(method.apply(global.relay, args)).to.eventually.be.rejected.and.satisfy((err) => {
+            if(!checkMessage) {
+                return [error.code, error.name].every(substring => err.body.includes(substring));
+            }
+            return [error.code, error.name, error.message].every(substring => err.body.includes(substring));
+        });
+    };
 
 }

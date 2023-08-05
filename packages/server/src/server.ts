@@ -43,13 +43,11 @@ const mainLogger = pino({
 const cors = require('koa-cors');
 const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
-const relay: Relay = new RelayImpl(logger, register);
-const app = new KoaJsonRpc(logger, register, {
+const relay: Relay = new RelayImpl(logger.child({ name: 'relay' }), register);
+const app = new KoaJsonRpc(logger.child({ name: 'koa-rpc' }), register, {
   limit: process.env.INPUT_SIZE_LIMIT ? process.env.INPUT_SIZE_LIMIT + 'mb' : null
 });
 
-const responseSuccessStatusCode = '200';
-const responseInternalErrorCode = '-32603';
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
 
 // clear and create metric in registry
@@ -60,19 +58,27 @@ const methodResponseHistogram = new Histogram({
   help: 'JSON RPC method statusCode latency histogram',
   labelNames: ['method', 'statusCode'],
   registers: [register],
-  buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000] // ms (milliseconds)
+  buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 40000, 50000, 60000] // ms (milliseconds)
 });
+
+// set cors
+app.getKoaApp().use(cors());
 
 /**
  * middleware for non POST request timing
  */
 app.getKoaApp().use(async (ctx, next) => {
   const start = Date.now();
+  ctx.state.start = start;
   await next();
 
+  const ms = Date.now() - start;
   if (ctx.method !== 'POST') {
-    const ms = Date.now() - start;
-    logger.info(`[${ctx.method}]: ${ctx.url} ${ms} ms`);
+    logger.info(`[${ctx.method}]: ${ctx.url} ${ctx.status} ${ms} ms`);
+  } else {
+    // log call type, method, status code and latency
+    logger.info(`${formatRequestIdMessage(ctx.state.reqId)} [${ctx.method}]: ${ctx.state.methodName} ${ctx.state.status} ${ms} ms`);
+    methodResponseHistogram.labels(ctx.state.methodName, `${ctx.status}`).observe(ms);
   }
 });
 
@@ -134,6 +140,20 @@ app.getKoaApp().use(async (ctx, next) => {
   }
 });
 
+/**
+ * middleware to end for non POST requests asides health, metrics and openrpc
+ */
+app.getKoaApp().use(async (ctx, next) => {
+  if (ctx.method === 'POST') {
+    await next();
+  } else if (ctx.method === 'OPTIONS') {
+    // support CORS preflight
+    ctx.status = 200;
+  } else {
+    logger.warn(`skipping HTTP method: [${ctx.method}], url: ${ctx.url}, status: ${ctx.status}`);
+  }
+});
+
 app.getKoaApp().use(async (ctx, next) => {
   const options = {
     expose: ctx.get('Request-Id'),
@@ -165,19 +185,14 @@ app.getKoaApp().use(async (ctx, next) => {
     ctx.set(options.expose, id);
   }
 
-  ctx.state.start = Date.now();
   ctx.state.reqId = id;
 
   return next();
 });
 
 const logAndHandleResponse = async (methodName: any, methodParams: any, methodFunction: any) => {
-  let ms;
-
   const requestId = app.getRequestId();
   const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
-  logger.debug(`${requestIdPrefix} ${methodName}`);
-  const messagePrefix = `${requestIdPrefix} [POST] ${methodName}:`;
 
   try {
 
@@ -186,13 +201,9 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
       Validator.validateParams(methodParams, methodValidations);
     }
 
-    const response = await methodFunction(requestId);
-    const status = response instanceof JsonRpcError ? response.code.toString() : responseSuccessStatusCode;
-    ms = Date.now() - app.getStartTimestamp();
-    methodResponseHistogram.labels(methodName, status).observe(ms);
-    logger.info(`${messagePrefix} ${status} ${ms} ms `);
+    const response = await methodFunction(requestIdPrefix);
     if (response instanceof JsonRpcError) {
-      logger.error(`${requestIdPrefix} returning error to sender: ${response.message}`);
+      logger.error(`${requestIdPrefix} ${response.message}`);
       return new JsonRpcError({
         name: response.name,
         code: response.code,
@@ -202,10 +213,6 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
     }
     return response;
   } catch (e: any) {
-    ms = Date.now() - app.getStartTimestamp();
-    methodResponseHistogram.labels(methodName, responseInternalErrorCode).observe(ms);
-    logger.error(e, `${messagePrefix} ${responseInternalErrorCode} ${ms} ms`);
-
     let error = predefined.INTERNAL_ERROR();
     if (e instanceof MirrorNodeClientError) {
       if (e.isTimeout()) {
@@ -216,7 +223,7 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
       error = e;
     }
 
-    logger.error(`${requestIdPrefix} returning error to sender: ${error.message}`);
+    logger.error(`${requestIdPrefix} ${error.message}`);
     return new JsonRpcError({
       name: error.name,
       code: error.code,
@@ -644,8 +651,6 @@ app.useRpc('eth_coinbase', async () => {
   return logAndHandleResponse('eth_coinbase', [], (requestId) => relay.eth().coinbase(requestId));
 });
 
-app.getKoaApp().use(cors());
-
 const rpcApp = app.rpcApp();
 
 app.getKoaApp().use(async (ctx, next) => {
@@ -655,6 +660,14 @@ app.getKoaApp().use(async (ctx, next) => {
     ctx.body.error = { ...ctx.body.result };
     delete ctx.body.result;
   }
+});
+
+process.on('unhandledRejection', (reason, p) => {
+  logger.error(`Unhandled Rejection at: Promise: ${JSON.stringify(p)}, reason: ${reason}`);
+});
+
+process.on('uncaughtException', (err) => {
+  logger.error(err, 'Uncaught Exception!');
 });
 
 export default app.getKoaApp();

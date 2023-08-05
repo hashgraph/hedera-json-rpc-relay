@@ -30,8 +30,9 @@ import { Registry, Counter } from 'prom-client';
 import pino from 'pino';
 
 import ConnectionLimiter from "./ConnectionLimiter";
-import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
+import { formatRequestIdMessage } from "@hashgraph/json-rpc-relay/dist/formatters";
 import { EthSubscribeLogsParamsObject } from "@hashgraph/json-rpc-server/dist/validator";
+import { v4 as uuid } from 'uuid';
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -45,7 +46,7 @@ const mainLogger = pino({
     }
 });
 
-const logger = mainLogger.child({ name: 'rpc-server' });
+const logger = mainLogger.child({ name: 'rpc-ws-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 const limiter = new ConnectionLimiter(logger, register);
@@ -87,7 +88,7 @@ function getMultipleAddressesEnabled() {
 }
 
 async function validateIsContractAddress(address, requestId) {
-    const isContract = await mirrorNodeClient.resolveEntityType(address, [constants.TYPE_CONTRACT], requestId);
+    const isContract = await mirrorNodeClient.isValidContract(address, requestId)
     if (!isContract) {
         throw new JsonRpcError(predefined.INVALID_PARAMETER(`filters.address`, `${address} is not a valid contract type or does not exists`), requestId);
     }
@@ -114,11 +115,13 @@ async function validateSubscribeEthLogsParams(filters: any, requestId: string) {
 
 app.ws.use(async (ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
-    logger.info(`New connection established. ConnectionId: ${ctx.websocket.id}. Current active connections: ${ctx.app.server._connections}`);
+    const connectionIdPrefix = formatConnectionIdMessage(ctx.websocket.id);
+    const connectionRequestIdPrefix = formatRequestIdMessage(uuid());
+    logger.info(`${connectionIdPrefix} ${connectionRequestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`);
 
     // Close event handle
     ctx.websocket.on('close', async (code, message) => {
-        logger.info(`Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`);
+        logger.info(`${connectionIdPrefix} ${connectionRequestIdPrefix} Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`);
         await handleConnectionClose(ctx);
     });
 
@@ -130,18 +133,19 @@ app.ws.use(async (ctx) => {
 
     ctx.websocket.on('message', async (msg) => {
         ctx.websocket.id = relay.subs()?.generateId();
+        const requestIdPrefix = formatRequestIdMessage(uuid());
         let request;
         try {
             request = JSON.parse(msg.toString('ascii'));
         } catch (e) {
-            logger.error(`Could not decode message from connection ${ctx.websocket.id}: ${e}`);
+            logger.error(`${connectionIdPrefix} ${requestIdPrefix} ${ctx.websocket.id}: Could not decode message from connection, message: ${msg}, error: ${e}`);
             ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
             return;
         }
         const { method, params } = request;
         let response;
 
-        logger.debug(`Received message from ${ctx.websocket.id}. Method: ${method}. Params: ${params}`);
+        logger.debug(`${connectionIdPrefix} ${requestIdPrefix} Received message from ${ctx.websocket.id}. Method: ${method}. Params: ${JSON.stringify(params)}`);
 
         methodsCounter.labels(method).inc();
         methodsCounterByIp.labels(ctx.request.ip, method).inc();
@@ -154,8 +158,9 @@ app.ws.use(async (ctx) => {
 
                 if (event === 'logs') {
                     try {
-                        await validateSubscribeEthLogsParams(filters, request.id);
+                        await validateSubscribeEthLogsParams(filters, requestIdPrefix);
                     } catch (error) {
+                        logger.error(error, `${connectionIdPrefix} ${requestIdPrefix} Encountered error on ${ctx.websocket.id}, method: ${method}, params: ${JSON.stringify(params)}`);
                         response = jsonResp(request.id, error, undefined);
                         ctx.websocket.send(JSON.stringify(response));
                         return;
@@ -249,6 +254,18 @@ httpApp.use(async (ctx, next) => {
     else {
         return next();
     }
+});
+
+const formatConnectionIdMessage = (connectionId?: string): string => {
+    return connectionId ? `[Connection ID: ${connectionId}]` : '';
+};
+
+process.on('unhandledRejection', (reason, p) => {
+    logger.error(`Unhandled Rejection at: Promise: ${JSON.stringify(p)}, reason: ${reason}`);
+});
+
+process.on('uncaughtException', (err) => {
+    logger.error(err, 'Uncaught Exception!');
 });
 
 export {

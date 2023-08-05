@@ -1,16 +1,24 @@
 {
   "local": {
     "ExampleERC721": {
-      "address": "0x000000000000000000000000000000000000040A",
-      "startBlock": 116
-    },
-    "ExampleERC20": {
-      "address": "0x0000000000000000000000000000000000000408",
-      "startBlock": 109
+      "address": "0x8A7fa94487d0d0460550e5F3F80A663c39Ac8B10",
+      "startBlock": 15
     },
     "GravatarRegistry": {
-      "address": "0x000000000000000000000000000000000000040B",
-      "startBlock": 121
+      "address": "0x2825a2eBD7F17Ae448900992D6293eF599B75C46",
+      "startBlock": 17
+    },
+    "ExampleERC20": {
+      "address": "0x23f5e49569A835d7bf9AefD30e4f60CdD570f225",
+      "startBlock": 11
+    },
+    "ExampleHTSNFT": {
+      "address": "0x000000000000000000000000000000000000040c",
+      "startBlock": 10
+    },
+    "ExampleHTSFT": {
+      "address": "0x0000000000000000000000000000000000000409",
+      "startBlock": 10
     }
   }
 }

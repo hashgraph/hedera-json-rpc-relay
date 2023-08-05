@@ -35,36 +35,31 @@ export class JsonRpcError {
 }
 
 export const predefined = {
-  'CONTRACT_REVERT': (errorMessage?: string) => new JsonRpcError({
+  'CONTRACT_REVERT': (errorMessage?: string, data: string = '') => new JsonRpcError({
     name: 'Contract revert executed',
     code: -32008,
     message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
-    data: errorMessage
+    data: data
   }),
-  'GAS_LIMIT_TOO_HIGH': new JsonRpcError({
+  'GAS_LIMIT_TOO_HIGH': (gasLimit, maxGas) => new JsonRpcError({
     name: 'gasLimit too high',
     code: -32005,
-    message: 'Transaction gas limit exceeds block gas limit'
+    message: `Transaction gas limit '${gasLimit}' exceeds block gas limit '${maxGas}'`
   }),
-  'GAS_LIMIT_TOO_LOW': new JsonRpcError({
+  'GAS_LIMIT_TOO_LOW': (gasLimit, requiredGas) => new JsonRpcError({
     name: 'gasLimit too low',
     code: -32003,
-    message: 'Intrinsic gas exceeds gas limit'
+    message: `Transaction gas limit provided '${gasLimit}' is insufficient of intrinsic gas required '${requiredGas}'`
   }),
-  'GAS_PRICE_TOO_LOW': new JsonRpcError({
+  'GAS_PRICE_TOO_LOW': (gasPrice, minGasPrice) => new JsonRpcError({
     name: 'Gas price too low',
     code: -32009,
-    message: 'Gas price below configured minimum gas price'
+    message: `Gas price '${gasPrice}' is below configured minimum gas price '${minGasPrice}'`
   }),
   'HBAR_RATE_LIMIT_EXCEEDED': new JsonRpcError({
     name: 'HBAR Rate limit exceeded',
     code: -32606,
     message: 'HBAR Rate limit exceeded'
-  }),
-  'INCORRECT_NONCE': new JsonRpcError({
-    name: 'Incorrect nonce',
-    code: -32006,
-    message: 'Incorrect nonce'
   }),
   'INSUFFICIENT_ACCOUNT_BALANCE': new JsonRpcError({
     name: 'Insufficient account balance',
@@ -106,10 +101,15 @@ export const predefined = {
     code: -32602,
     message: `Missing value for required parameter ${index}`
   }),
-  'NONCE_TOO_LOW': new JsonRpcError({
+  'NONCE_TOO_LOW': (nonce, currentNonce) => new JsonRpcError({
     name: 'Nonce too low',
     code: 32001,
-    message: 'Nonce too low'
+    message: `Nonce too low. Provided nonce: ${nonce}, current nonce: ${currentNonce}`
+  }),
+  'NONCE_TOO_HIGH': (nonce, currentNonce) => new JsonRpcError({
+    name: 'Nonce too high',
+    code: 32002,
+    message: `Nonce too high. Provided nonce: ${nonce}, current nonce: ${currentNonce}`
   }),
   'NO_MINING_WORK': new JsonRpcError({
     name: 'No mining work',
@@ -211,5 +211,30 @@ export const predefined = {
     name: 'Exceeded maximum allowed subscriptions',
     code: -32608,
     message: 'Exceeded maximum allowed subscriptions'
-  })
+  }),
+  'UNSUPPORTED_HISTORICAL_EXECUTION': (blockId: string) => new JsonRpcError({
+    name: 'Unsupported historical block request',
+    code: -32609,
+    message: `Unsupported historical block identifier encountered: ${blockId}`
+  }),
+  'UNSUPPORTED_OPERATION': (message: string) => new JsonRpcError({
+    name: 'Unsupported operation',
+    code: -32610,
+    message: `Unsupported operation. ${message}`
+  }),
+  'PAGINATION_MAX': (count: number) => new JsonRpcError({
+    name: 'Mirror Node pagination count range too large',
+    code: -32011,
+    message: `Exceeded maximum mirror node pagination count: ${count}`
+  }),
+  'MAX_BLOCK_SIZE': (count: number) => new JsonRpcError({
+    name: 'Block size too large',
+    code: -32000,
+    message: `Exceeded max transactions that can be returned in a block: ${count}`
+  }),
+  'UNKNOWN_BLOCK': new JsonRpcError({
+    name: 'Unknown block',
+    code: -39012,
+    message: 'Unknown block'
+  }),
 };

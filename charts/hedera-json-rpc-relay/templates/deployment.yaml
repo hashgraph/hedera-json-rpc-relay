@@ -23,13 +23,10 @@ spec:
         app:  {{ template "json-rpc-relay.name" . }}
         {{- include "json-rpc-relay.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
+      {{- with .Values.affinity }}
+      affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "json-rpc-relay.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -38,21 +35,28 @@ spec:
         - configMapRef:
             name: {{ include "json-rpc-relay.fullname" . }}
         - secretRef:
-            name: {{ include "json-rpc-relay.fullname" . }}  
+            name: {{ include "json-rpc-relay.fullname" . }}
+        {{- with .Values.extraEnvFrom }}
+          {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
         ports:
           - containerPort: {{ .Values.ports.containerPort }}
             name: {{ .Values.ports.name  }}
         livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
         readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
-        resources: {{- toYaml .Values.resources | nindent 12 }}
+        resources: {{- toYaml .Values.resources | nindent 12 }}      
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      serviceAccountName: {{ include "json-rpc-relay.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}

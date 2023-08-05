@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,20 +20,25 @@
 
 // external resources
 import { solidity } from "ethereum-waffle";
-import chai, {expect} from "chai";
+import chai, { expect } from "chai";
 chai.use(solidity);
 
 import { AliasAccount } from '../clients/servicesClient';
-import {Utils} from '../helpers/utils';
+import { Utils } from '../helpers/utils';
 import { ethers } from 'ethers';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import Assertions from '../helpers/assertions';
 import { EthImpl } from "@hashgraph/json-rpc-relay/src/lib/eth";
+import Constants from '../../../server/tests/helpers/constants';
 
+const extractRevertReason = (errorReason: string) => {
+    const pattern = /(?<=reverted: ).*/;
+    return errorReason.match(pattern)?.[0] || '';
+};
 
 describe('@erc20 Acceptance Tests', async function () {
     this.timeout(240 * 1000); // 240 seconds
-    const {servicesNode, relay} = global;
+    const { servicesNode, relay }: any = global;
 
     // cached entities
     const accounts: AliasAccount[] = [];
@@ -42,26 +47,26 @@ describe('@erc20 Acceptance Tests', async function () {
     let anotherAccount;
     let requestId;
 
-    const contracts:[any] = [];
+    const contracts: [any] = [];
 
     const name = Utils.randomString(10);
     const symbol = Utils.randomString(5);
-    const initialSupply = 10000;
+    const initialSupply = BigInt(10000);
 
     const ERC20 = 'ERC20 Contract';
     const HTS = 'HTS token';
 
     const testTitles = [
-        {testName: ERC20, expectedBytecode: ERC20MockJson.deployedBytecode},
-        {testName: HTS}
+        { testName: ERC20, expectedBytecode: ERC20MockJson.deployedBytecode },
+        { testName: HTS }
     ];
 
     this.beforeAll(async () => {
         requestId = Utils.generateRequestId();
 
-        accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
-        accounts[1] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
-        accounts[2] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
+        accounts[0] = await servicesNode.createAliasAccount(60, relay.provider, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
+        accounts[2] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
 
         initialHolder = accounts[0].address;
         recipient = accounts[1].address;
@@ -108,7 +113,7 @@ describe('@erc20 Acceptance Tests', async function () {
                 }
             });
 
-            describe('should behave like erc20', function() {
+            describe('should behave like erc20', function () {
                 describe('total supply', function () {
                     it('@release returns the total amount of tokens', async function () {
                         const supply = await contract.totalSupply();
@@ -173,13 +178,13 @@ describe('@erc20 Acceptance Tests', async function () {
                                 });
 
                                 it('emits a transfer event', async function () {
-                                    const transferEvent = (await tx.wait()).logs.filter(e => e.fragment.name === 'Transfer')[0].args;
-                                    expect(transferEvent[0]).to.eq(tokenOwnerWallet.address);
-                                    expect(transferEvent[1]).to.eq(toWallet.address);
-                                    expect(transferEvent[2]).to.eq(BigInt(amount));
+                                    const transferEvent = (await tx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.Transfer)[0].args;
+                                    expect(transferEvent.from).to.eq(tokenOwnerWallet.address);
+                                    expect(transferEvent.to).to.eq(toWallet.address);
+                                    expect(transferEvent.value).to.eq(amount);
                                 });
 
-                                it ('other account transfers tokens back to owner', async function () {
+                                it('other account transfers tokens back to owner', async function () {
                                     tx = await contract.connect(toWallet).transfer(tokenOwner, amount);
                                     // 5 seconds sleep to propagate the changes to mirror node
                                     await new Promise(r => setTimeout(r, 5000));
@@ -193,7 +198,7 @@ describe('@erc20 Acceptance Tests', async function () {
                             describe('when the spender has enough allowance', function () {
                                 let tx, receipt;
                                 before(async function () {
-                                    tx = await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, {gasLimit: 1_000_000});
+                                    tx = await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, await Utils.gasOptions(requestId));
                                     receipt = await tx.wait();
                                     // 5 seconds sleep to propagate the changes to mirror node
                                     await new Promise(r => setTimeout(r, 5000));
@@ -201,10 +206,10 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 it('emits an approval event', async function () {
                                     const allowance = await contract.allowance(tokenOwner, spender);
-                                    const approvalEvent = (await tx.wait()).logs.filter(e => e.fragment.name === 'Approval')[0].args;
-                                    expect(approvalEvent[0]).to.eq(tokenOwnerWallet.address);
-                                    expect(approvalEvent[1]).to.eq(spenderWallet.address);
-                                    expect(approvalEvent[2]).to.eq(allowance);
+                                    const approvalEvent = (await tx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.Approval)[0].args;
+                                    expect(approvalEvent.owner).to.eq(tokenOwnerWallet.address);
+                                    expect(approvalEvent.spender).to.eq(spenderWallet.address);
+                                    expect(approvalEvent.value).to.eq(allowance);
                                 });
 
                                 describe('when the token owner has enough balance', function () {
@@ -218,7 +223,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     it('transfers the requested amount', async function () {
-                                        tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply, {gasLimit: 1_000_000});
+                                        tx = await contract.connect(spenderWallet).transferFrom(tokenOwner, to, initialSupply, await Utils.gasOptions(requestId));
                                         const receipt = await tx.wait();
                                         // 5 seconds sleep to propagate the changes to mirror node
                                         await new Promise(r => setTimeout(r, 5000));
@@ -228,16 +233,17 @@ describe('@erc20 Acceptance Tests', async function () {
                                         expect(toBalance.toString()).to.be.equal(amount.toString());
                                     });
 
-                                    it('decreases the spender allowance', async function () {
+                                    // Issue #1514.
+                                    xit('decreases the spender allowance', async function () {
                                         const allowance = await contract.allowance(tokenOwner, spender);
                                         expect(allowance.toString()).to.be.equal('0');
                                     });
 
                                     it('emits a transfer event', async function () {
-                                        const transferEvent = (await tx.wait()).logs.filter(e => e.fragment.name === 'Transfer')[0].args;
-                                        expect(transferEvent[0]).to.eq(tokenOwnerWallet.address);
-                                        expect(transferEvent[1]).to.eq(toWallet.address);
-                                        expect(transferEvent[2]).to.eq(BigInt(amount));
+                                        const transferEvent = (await tx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.Transfer)[0].args;
+                                        expect(transferEvent.from).to.eq(tokenOwnerWallet.address);
+                                        expect(transferEvent.to).to.eq(toWallet.address);
+                                        expect(transferEvent.value).to.eq(amount);
                                     });
                                 });
 
@@ -246,14 +252,24 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                     beforeEach('reducing balance', async function () {
                                         amount = initialSupply;
-                                        await contract.transfer(to, 1);
+                                        await contract.connect(tokenOwnerWallet).approve(spender, initialSupply, await Utils.gasOptions(requestId));
+                                        await contract.transfer(to, 1, await Utils.gasOptions(1_500_000));
+                                        // 5 seconds sleep to propagate the changes to mirror node
+                                        await new Promise(r => setTimeout(r, 5000));                                        
                                     });
 
                                     it('reverts', async function () {
+                                     try {
                                         await Assertions.expectRevert(
                                             contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                            'CALL_EXCEPTION'
+                                            Constants.CALL_EXCEPTION
                                         );
+                                     }catch(e){
+                                        // eth_estimateGas gets called by ethers
+                                        // so we need to catch the error and check that the reason is the expected one,
+                                        // in addition to validating the CALL_EXCEPTION   
+                                        expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: transfer amount exceeds balance');
+                                     }
                                     });
                                 });
                             });
@@ -262,24 +278,32 @@ describe('@erc20 Acceptance Tests', async function () {
                                 let allowance;
 
                                 before(async function () {
-                                    allowance = initialSupply - 1;
+                                    allowance = initialSupply - BigInt(1);
                                 });
 
                                 beforeEach(async function () {
-                                    await contract.approve(spender, allowance, {gasLimit: 1_000_000});
+                                    await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                 });
 
                                 describe('when the token owner has enough balance', function () {
                                     let amount;
                                     before(async function () {
+                                        allowance = initialSupply - BigInt(1);
                                         amount = initialSupply;
+                                        await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                     });
 
+
                                     it('reverts', async function () {
-                                        await Assertions.expectRevert(
-                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                            `CALL_EXCEPTION`,
-                                        );
+                                        try {
+                                            await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                            Constants.CALL_EXCEPTION);
+                                        } catch(e) {
+                                            // eth_estimateGas gets called by ethers
+                                            // so we need to catch the error and check that the reason is the expected one,
+                                            // in addition to validating the CALL_EXCEPTION   
+                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: insufficient allowance');
+                                        }                                          
                                     });
                                 });
 
@@ -290,39 +314,21 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     beforeEach('reducing balance', async function () {
-                                        await contract.transfer(to, 2);
+                                        await contract.transfer(to, 2, await Utils.gasOptions(1_500_000));
                                     });
 
                                     it('reverts', async function () {
-                                        await Assertions.expectRevert(
-                                            contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                            `CALL_EXCEPTION`,
-                                        );
+                                        try {
+                                            await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                            Constants.CALL_EXCEPTION);
+                                        } catch(e) {
+                                            // eth_estimateGas gets called by ethers
+                                            // so we need to catch the error and check that the reason is the expected one,
+                                            // in addition to validating the CALL_EXCEPTION   
+                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: transfer amount exceeds balance');                                     
+                                        }                                                                               
                                     });
                                 });
-                            });
-
-                            describe('@release when the spender has unlimited allowance', function () {
-                                beforeEach(async function () {
-                                    await contract.connect(tokenOwnerWallet).approve(spender, ethers.MaxUint256, {gasLimit: 1_000_000});
-                                    // 5 seconds sleep to propagate the changes to mirror node
-                                    await new Promise(r => setTimeout(r, 5000));
-                                });
-
-                                if (testTitles[i].testName !== HTS) {
-                                    it('does not decrease the spender allowance', async function () {
-                                        await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1);
-                                        const allowance = await contract.allowance(tokenOwner, spender);
-                                        expect(allowance.toString()).to.be.equal(ethers.MaxUint256.toString());
-                                    });
-                                }
-                                else {
-                                    it('decreases the spender allowance', async function () {
-                                        await contract.connect(spenderWallet).transferFrom(tokenOwner, to, 1, {gasLimit: 200_000});
-                                        const allowance = await contract.allowance(tokenOwner, spender);
-                                        expect(allowance.toString()).to.be.equal((initialSupply - 1).toString());
-                                    });
-                                }
                             });
                         });
 
@@ -330,15 +336,24 @@ describe('@erc20 Acceptance Tests', async function () {
                             let amount, to, tokenOwnerWallet;
 
                             beforeEach(async function () {
+
                                 amount = initialSupply;
                                 to = ethers.ZeroAddress;
-                                tokenOwnerWallet = accounts[0].wallet;
-                                await contract.connect(tokenOwnerWallet).approve(spender, amount, {gasLimit: 1_000_000});
+                                tokenOwnerWallet = accounts[2].wallet;
+                                await contract.connect(tokenOwnerWallet).approve(spender, amount, await Utils.gasOptions(requestId, 1_500_000));
                             });
 
                             it('reverts', async function () {
-                                await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
-                                    `CALL_EXCEPTION`);
+                                try {
+                                    await Assertions.expectRevert(contract.connect(spenderWallet).transferFrom(tokenOwner, to, amount),
+                                    Constants.CALL_EXCEPTION);
+                                } catch(e) {
+                                    // eth_estimateGas gets called by ethers
+                                    // so we need to catch the error and check that the reason is the expected one,
+                                    // in addition to validating the CALL_EXCEPTION   
+                                    // issue #1514, revist this when fixed
+                                    expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: insufficient allowance');                                                                         
+                                }
                             });
                         });
                     });

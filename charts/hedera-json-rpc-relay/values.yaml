@@ -1,0 +1,176 @@
+# Default values for json-rpc-relay.
+affinity: {}
+
+autoscaling:
+  # need to test
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+config:
+  # This value should be in decimal, not hexadecimal format. Defaulted to testnet
+  CHAIN_ID: ''
+  CLIENT_TRANSPORT_SECURITY: false
+  CONSENSUS_MAX_EXECUTION_TIME: 15000
+  CONTRACT_QUERY_TIMEOUT_RETRIES: 3
+  DEV_MODE: false
+  DEFAULT_RATE_LIMIT: 200
+  ETH_CALL_CACHE_TTL: 200
+  ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: false
+  ETH_GET_LOGS_BLOCK_RANGE_LIMIT: 1000
+  GAS_PRICE_TINY_BAR_BUFFER: 10000000000
+  HBAR_RATE_LIMIT_TINYBAR: 5000000000
+  HBAR_RATE_LIMIT_DURATION: 60000
+  # Valid options are `previewnet`, `testnet`, and `mainnet` for remote options. For local use {"127.0.01:50211":"0.0.3"}. For IPs use {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1"} form
+  HEDERA_NETWORK: ''
+  INPUT_SIZE_LIMIT: 1
+  LIMIT_DURATION: 60000
+  LOG_LEVEL: ''
+  MIRROR_NODE_RETRIES: 3
+  MIRROR_NODE_RETRY_DELAY: 250
+  MIRROR_NODE_LIMIT_PARAM: 100
+  MIRROR_NODE_URL: ''
+  OPERATOR_ID_MAIN: ''
+  OPERATOR_KEY_MAIN: ''
+  OPERATOR_ID_ETH_SENDRAWTRANSACTION: ''
+  OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ''
+  RATE_LIMIT_DISABLED: false
+  SDK_REQUEST_TIMEOUT: 10000
+  SERVER_PORT: 7546
+  SUBSCRIPTIONS_ENABLED: false
+  TIER_1_RATE_LIMIT: 100
+  TIER_2_RATE_LIMIT: 200
+  TIER_3_RATE_LIMIT: 400
+  WEB_SOCKET_PORT: 8546
+  HAPI_CLIENT_TRANSACTION_RESET: 50
+  HAPI_CLIENT_DURATION_RESET: 3600000
+  HAPI_CLIENT_ERROR_RESET: [50]
+
+# -- Extra environment variables from existing secrets or configmaps
+extraEnvFrom: []
+# - secretRef:
+#     name: "{{ .Release.Name }}-env"
+
+cronjob:
+  enabled: false
+  image:
+    pullPolicy: IfNotPresent
+    repository: postman/newman
+    tag: 5.3.1-alpine
+  postman: ""  # Custom postman.json in base64 encoding
+  schedule: '@daily'
+
+fullnameOverride: ''
+
+global:
+  namespaceOverride: ''
+
+image:
+  pullPolicy: IfNotPresent
+  registry: ghcr.io
+  repository: hashgraph/hedera-json-rpc-relay
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ''
+
+imagePullSecrets: []
+
+ingress:
+  enabled: false
+  className: ''
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+livenessProbe:
+  failureThreshold: 5
+  httpGet:
+    path: /health/liveness
+    port: jsonrpcrelay
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 5
+
+nameOverride: ''
+
+nodeSelector: {}
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+ports:
+  name: jsonrpcrelay
+  containerPort: 7546
+
+replicaCount: 2
+
+resources:
+  limits:
+    cpu: 1100m
+    memory: 350Mi
+  requests:
+    cpu: 1100m
+    memory: 350Mi
+
+# Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
+rolling_restart:
+  enabled: false
+  schedule: '@daily'
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+
+service:
+  type: ClusterIP
+  port: 7546
+  annotations: {}
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ''
+
+tolerations: []
+
+readinessProbe:
+  failureThreshold: 5
+  httpGet:
+    path: /health/readiness
+    port: jsonrpcrelay
+  initialDelaySeconds: 20
+  timeoutSeconds: 5
+
+test:
+  enabled: true
+  image:
+    pullPolicy: IfNotPresent
+    repository: postman/newman
+    tag: 5.3.1-alpine
+  postman: ""  # Custom postman.json in base64 encoding
+
+terminationGracePeriodSeconds: 60
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 10%
+    maxUnavailable: 25%

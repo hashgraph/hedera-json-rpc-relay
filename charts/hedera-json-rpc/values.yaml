@@ -1,0 +1,17 @@
+# Default values for hedera-json-rpc.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  hostname: ''
+  namespaceOverride: ''
+
+labels: {}
+
+nameOverride: json-rpc
+
+relay:
+  enabled: true
+
+ws:
+  enabled: false

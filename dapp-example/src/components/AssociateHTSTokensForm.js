@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { Button, TextField, Typography } from "@mui/material";
 import { ethers } from 'ethers';
-import HederaTokenService from '../contracts/HederaTokenService.json'
-import bootstrapInfo from '../contracts/.bootstrapInfo.json'
+import IHRC from '../contracts/IHRC.json'
 
 const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -12,21 +11,21 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
     // clear state vars on a chain or address have changed
     useEffect(() => {
         setIsLoading(false);
-        setHtsTokenAddress(bootstrapInfo.HTS_SECOND_ADDRESS);
+        setHtsTokenAddress('');
         setHtsTokenAssocaiteMsg(null);
     }, [chain, address])
 
     const htsTokenAssociate = useCallback(async () => {
-      const contract = new ethers.Contract(bootstrapInfo.HTS_CONTRACT_ADDRESS, HederaTokenService.abi, signer);
+      const hrcToken = new ethers.Contract(htsTokenAddress, new ethers.utils.Interface(IHRC), signer);
 
       try {
         setIsLoading(true);
         setHtsTokenAssocaiteMsg('Loading...');
 
-        const tx = await contract.associateTokenPublic(await signer.getAddress(), htsTokenAddress, { gasLimit: 1_000_0000 });
-        const receipt = await tx.wait();
+        const txAssociate = await hrcToken.associate({ gasLimit: 1_000_0000 });
+        const receiptAssociate = await txAssociate.wait();
 
-        setHtsTokenAssocaiteMsg(receipt.events[0].args[0] == 22 ? 'Done' : 'There was an error.');
+        setHtsTokenAssocaiteMsg(receiptAssociate.status === 1 ? 'Done' : 'There was an error.');
         setIsLoading(false);
 
       } catch (e) {
@@ -41,7 +40,7 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
             <Typography variant="h5" sx={{ textDecoration: 'underline' }}> Associate HTS Tokens </Typography>
             <br />
             <TextField
-                id="htsTokenAddressField"
+                id="htsTokenAssociateAddressField"
                 fullWidth
                 label="Token address"
                 sx={{ m: 1 }}

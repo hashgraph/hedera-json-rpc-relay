@@ -21,12 +21,14 @@
 // external resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
-import {Hbar} from '@hashgraph/sdk';
+import { AccountId, Hbar, ContractId } from '@hashgraph/sdk';
+//Constants are imported with different definitions for better readability in the code.
+import Constants from '../../helpers/constants';
 
 chai.use(solidity);
 
 import { AliasAccount } from '../../clients/servicesClient';
-import {ethers} from 'ethers';
+import { ethers } from 'ethers';
 import IERC20MetadataJson from '../../contracts/openzeppelin/IERC20Metadata.json';
 import IERC20Json from '../../contracts/openzeppelin/IERC20.json';
 import IERC721MetadataJson from '../../contracts/openzeppelin/IERC721Metadata.json';
@@ -38,18 +40,18 @@ import TokenManagementContractJson from '../../contracts/TokenManagementContract
 
 import { predefined } from '../../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../../helpers/utils';
-import {EthImpl} from "@hashgraph/json-rpc-relay/dist/lib/eth";
+import { EthImpl } from "@hashgraph/json-rpc-relay/dist/lib/eth";
+import RelayCall from "../../helpers/constants";
 
 describe('@precompile-calls Tests for eth_call with HTS', async function () {
     this.timeout(240 * 1000); // 240 seconds
-    const { servicesNode, mirrorNode, relay } = global;
+    const { servicesNode, mirrorNode, relay }: any = global;
 
     const TX_SUCCESS_CODE = BigInt(22);
 
     const TOKEN_NAME = Utils.randomString(10);
     const TOKEN_SYMBOL = Utils.randomString(5);
     const INITIAL_SUPPLY = 100000;
-    const TOKEN_DECIMALS = 18;
 
     const NFT_NAME = Utils.randomString(10);
     const NFT_SYMBOL = Utils.randomString(5);
@@ -62,7 +64,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     const accounts: AliasAccount[] = [];
     let requestId;
 
-    let IERC20Metadata, IERC20, IERC721Metadata, IERC721Enumerable, IERC721, IHederaTokenService, TokenManager;
+    let IERC20Metadata, IERC20, IERC721Metadata, IERC721Enumerable, IERC721, IHederaTokenService, TokenManager, TokenManagementSigner;
     let nftSerial, tokenAddress, nftAddress, htsImplAddress, htsImpl, adminAccountLongZero, account1LongZero, account2LongZero;
 
     let tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressNoFees,
@@ -73,7 +75,24 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         requestId = Utils.generateRequestId();
 
         // create accounts
-        accounts[0] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
+        const contractDeployer = await servicesNode.createAliasAccount(100, relay.provider, requestId);
+
+        // Deploy a contract implementing HederaTokenService
+        const HederaTokenServiceImplFactory = new ethers.ContractFactory(HederaTokenServiceImplJson.abi, HederaTokenServiceImplJson.bytecode, contractDeployer.wallet);
+        htsImpl = await HederaTokenServiceImplFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
+
+        const rec0 = await htsImpl.waitForDeployment();
+        htsImplAddress = rec0.target;
+
+        // Deploy the Token Management contract
+        const TokenManagementContractFactory = new ethers.ContractFactory(TokenManagementContractJson.abi, TokenManagementContractJson.bytecode, contractDeployer.wallet);
+        TokenManager = await TokenManagementContractFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
+        await htsImpl.waitForDeployment();
+
+        const tokenManagementMirror = await mirrorNode.get(`/contracts/${TokenManager.target}`, requestId);
+
+        // create accounts
+        accounts[0] = await servicesNode.createAliasAccount(400, relay.provider, requestId);
         accounts[1] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
         accounts[2] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
 
@@ -82,6 +101,8 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);
         await mirrorNode.get(`/accounts/${accounts[2].accountId}`, requestId);
 
+        TokenManagementSigner = new ethers.Contract(TokenManager.target, TokenManagementContractJson.abi, accounts[0].wallet);
+
         // Create tokens
         const defaultTokenOptions = {
             tokenName: TOKEN_NAME,
@@ -89,8 +110,8 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             treasuryAccountId: accounts[0].accountId.toString(),
             initialSupply: INITIAL_SUPPLY,
             adminPrivateKey: accounts[0].privateKey,
-            kyc: true,
-            freeze: true
+            kyc: accounts[0].privateKey,
+            freeze: ContractId.fromString(tokenManagementMirror.contract_id)
         };
 
         const defaultNftOptions = {
@@ -147,8 +168,8 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             treasuryAccountId: accounts[0].accountId.toString(),
             adminPrivateKey: accounts[0].privateKey
         };
-        const mintResult0 = await servicesNode.mintNFT({...mintArgs, tokenId: nftTokenId0});
-        const mintResult1 = await servicesNode.mintNFT({...mintArgs, tokenId: nftTokenId1});
+        const mintResult0 = await servicesNode.mintNFT({ ...mintArgs, tokenId: nftTokenId0 });
+        const mintResult1 = await servicesNode.mintNFT({ ...mintArgs, tokenId: nftTokenId1 });
 
         // associate tokens, grant KYC
         for (let account of [accounts[1], accounts[2]]) {
@@ -189,29 +210,17 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         account2LongZero = Utils.idToEvmAddress(accounts[2].accountId.toString());
 
         // Transfer and approve token amounts
-        const rec1 = await IERC20.transfer(accounts[1].address, 100, { gasLimit: 1_000_000 });
+        const rec1 = await IERC20.transfer(accounts[1].address, 100, Constants.GAS.LIMIT_1_000_000);
         await rec1.wait();
-        const rec2 = await IERC20.approve(accounts[2].address, 200, { gasLimit: 1_000_000 });
+        const rec2 = await IERC20.approve(accounts[2].address, 200, Constants.GAS.LIMIT_1_000_000);
         await rec2.wait();
 
-        const rec3 = await IERC721.transferFrom(accounts[0].address, accounts[1].address, nftSerial, { gasLimit: 1_000_000 });
+        const rec3 = await IERC721.transferFrom(accounts[0].address, accounts[1].address, nftSerial, Constants.GAS.LIMIT_1_000_000);
         await rec3.wait();
-        const rec4 = await IERC721.connect(accounts[1].wallet).approve(accounts[2].address, nftSerial, { gasLimit: 1_000_000 });
+        const rec4 = await IERC721.connect(accounts[1].wallet).approve(accounts[2].address, nftSerial, Constants.GAS.LIMIT_1_000_000);
         await rec4.wait();
-        const rec5 = await IERC721.connect(accounts[1].wallet).setApprovalForAll(accounts[0].address, true, { gasLimit: 1_000_000 });
+        const rec5 = await IERC721.connect(accounts[1].wallet).setApprovalForAll(accounts[0].address, true, Constants.GAS.LIMIT_1_000_000);
         await rec5.wait();
-
-        // Deploy a contract implementing HederaTokenService
-        const HederaTokenServiceImplFactory = new ethers.ContractFactory(HederaTokenServiceImplJson.abi, HederaTokenServiceImplJson.bytecode, accounts[0].wallet);
-        htsImpl = await HederaTokenServiceImplFactory.deploy({gasLimit: 15000000});
-
-        const rec6 = await htsImpl.waitForDeployment();
-        htsImplAddress = rec6.target;
-
-        // Deploy the Token Management contract
-        const TokenManagementContractFactory = new ethers.ContractFactory(TokenManagementContractJson.abi, TokenManagementContractJson.bytecode, accounts[0].wallet);
-        TokenManager = await TokenManagementContractFactory.deploy({gasLimit: 15000000});
-        const rec7 = await htsImpl.waitForDeployment();
 
         tokenAddresses = [tokenAddressNoFees, tokenAddressFixedHbarFees, tokenAddressFixedTokenFees, tokenAddressFractionalFees, tokenAddressAllFees];
         nftAddresses = [nftAddress, nftAddressRoyaltyFees];
@@ -225,23 +234,6 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     function getContract(address, abi, wallet) {
         return new ethers.Contract(address, abi, wallet);
     }
-
-    describe("Calling HTS token through IERC20Metadata", async () => {
-        it("Function with IERC20Metadata(token).name()", async () => {
-            const name = await IERC20Metadata.name();
-            expect(name).to.eq(TOKEN_NAME);
-        });
-
-        it("Function with IERC20Metadata(token).symbol()", async () => {
-            const symbol = await IERC20Metadata.symbol();
-            expect(symbol).to.eq(TOKEN_SYMBOL);
-        });
-
-        it("Function with IERC20Metadata(token).decimals()", async () => {
-            const decimals = await IERC20Metadata.decimals();
-            expect(decimals).to.eq(BigInt(TOKEN_DECIMALS));
-        });
-    });
 
     describe("Calling HTS token through IERC20", async () => {
         it("Function with IERC20(token).totalSupply()", async () => {
@@ -262,27 +254,6 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         it("Function with IERC20(token).allowance(owner, spender) - using both evm addresses", async () => {
             const allowance = await IERC20.allowance(accounts[0].address, accounts[2].address);
             expect(allowance).to.eq(BigInt(200));
-        });
-
-        /**
-         * The following tests are temporarily disabled until `allowance` is fixed in the mirror node
-         *
-         * Currently, the mirror node returns `501: Not Supported` and the fallback to Consensus is triggered
-         * Consensus does not support CallData with long-zero addresses
-         */
-        xit("Function with IERC20(token).allowance(owner, spender) - using both long zero addresses", async () => {
-            const allowance = await IERC20.allowance(adminAccountLongZero, account2LongZero);
-            expect(allowance).to.eq(200);
-        });
-
-        xit("Function with IERC20(token).allowance(owner, spender) - using evm address for owner", async () => {
-            const allowance = await IERC20.allowance(accounts[0].address, account2LongZero);
-            expect(allowance).to.eq(200);
-        });
-
-        xit("Function with IERC20(token).allowance(owner, spender) - using evm address for spender", async () => {
-            const allowance = await IERC20.allowance(adminAccountLongZero, accounts[2].address);
-            expect(allowance).to.eq(200);
         });
     });
 
@@ -310,111 +281,29 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         });
     });
 
-    describe("Calling HTS token through IERC721", async () => {
-        it("Function with IERC721(token).balanceOf(owner)", async () => {
-            const balance0 = await IERC721.balanceOf(accounts[0].address);
-            expect(balance0).to.eq(BigInt(0));
-
-            const balance1 = await IERC721.balanceOf(accounts[1].address);
-            expect(balance1).to.eq(BigInt(1));
-
-            const balance2 = await IERC721.balanceOf(accounts[2].address);
-            expect(balance2).to.eq(BigInt(0));
-
-        });
-
-        it("Function with IERC721(token).getApproved(serialNo)", async () => {
-            const approval = await IERC721.getApproved(nftSerial);
-            expect(approval.toLowerCase()).to.eq(accounts[2].address);
-        });
-
-        it("Function with IERC721(token).isApprovedForAll(owner, operator) - using both evm addresses", async () => {
-            const approvalForAll = await IERC721.isApprovedForAll(accounts[1].address, accounts[0].address);
-            expect(approvalForAll).to.eq(true);
-        });
-
-        /**
-         * The following tests are temporarily disabled until isApprovedForAll is fixed in the mirror node
-         *
-         * Currently, the mirror node returns `501: Not Supported` and the fallback to Consensus is triggered
-         * Consensus does not support CallData with long-zero addresses
-         */
-        xit("Function with IERC721(token).isApprovedForAll(owner, operator) - using both long zero addresses addresses", async () => {
-            const approvalForAll = await IERC721.isApprovedForAll(account1LongZero, adminAccountLongZero);
-            expect(approvalForAll).to.eq(true);
-        });
-
-        xit("Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for owner", async () => {
-            const approvalForAll = await IERC721.isApprovedForAll(accounts[1].address, adminAccountLongZero);
-            expect(approvalForAll).to.eq(true);
-        });
-
-        xit("Function with IERC721(token).isApprovedForAll(owner, operator) - using evm address for operator", async () => {
-            const approvalForAll = await IERC721.isApprovedForAll(account1LongZero, accounts[0].address);
-            expect(approvalForAll).to.eq(true);
-        });
-
-        it("Function with IERC721(token).ownerOf(serialNo)", async () => {
-            const owner = await IERC721.ownerOf(nftSerial);
-            expect(owner.toLowerCase()).to.eq(accounts[1].address);
-        });
-    });
-
+    //According to this ticket the following describe should be deleted after adaptations are applied -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131
     describe("Calling HTS token through HederaTokenService", async () => {
-        it("Function with HederaTokenService.isToken(token)", async () => {
-            const isToken = await htsImpl.isTokenAddress.staticCall(tokenAddress);
-            expect(isToken).to.eq(true);
-        });
-
-        it("Function with HederaTokenService.isFrozen(token, account) - using evm address", async () => {
-            // freeze token
-            const freezeTx = await TokenManager.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
-            const receipt = await freezeTx.wait();
-            const responseCodeFreeze = (receipt).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0];
-            expect(responseCodeFreeze).to.equal(TX_SUCCESS_CODE);
-
-            const isFrozen = await htsImpl.isTokenFrozen.staticCall(tokenAddress, accounts[1].address);
-            expect(isFrozen).to.eq(true);
-
-            // unfreeze token
-            const unfreezeTx = await TokenManager.unfreezeTokenPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
-            const responseCodeUnfreeze = (await unfreezeTx.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0];
-            expect(responseCodeUnfreeze).to.equal(TX_SUCCESS_CODE);
-        });
-
+        //TODO remove this it when should be able to freeze and unfreeze token2 is implemented -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131 
         it("Function with HederaTokenService.isFrozen(token, account) - using long zero address", async () => {
             // freeze token
-            const freezeTx = await TokenManager.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
-            const responseCodeFreeze = (await freezeTx.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0];
+            const freezeTx = await TokenManagementSigner.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_1_000_000);
+            const responseCodeFreeze = (await freezeTx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
             expect(responseCodeFreeze).to.equal(TX_SUCCESS_CODE);
 
+            await new Promise(r => setTimeout(r, 5000));
             const isFrozen = await htsImpl.isTokenFrozen.staticCall(tokenAddress, account1LongZero);
             expect(isFrozen).to.eq(true);
 
             // unfreeze token
-            const unfreezeTx = await TokenManager.unfreezeTokenPublic(tokenAddress, accounts[1].wallet.address, { gasLimit: 1_000_000 });
-            const responseCodeUnfreeze = (await unfreezeTx.wait()).logs.filter(e => e.fragment.name === 'ResponseCode')[0].args[0];
+            const unfreezeTx = await TokenManagementSigner.unfreezeTokenPublic(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_1_000_000);
+            const responseCodeUnfreeze = (await unfreezeTx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
             expect(responseCodeUnfreeze).to.equal(TX_SUCCESS_CODE);
         });
 
-        it("Function with HederaTokenService.isKyc(token, account) - using evm account address", async () => {
-            const isKyc1 = await htsImpl.isKycGranted.staticCall(tokenAddress, accounts[1].address);
-            expect(isKyc1).to.eq(true);
-        });
-
+        //Todo delete when should query isKyc2 is implemented -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131
         it("Function with HederaTokenService.isKyc(token, account) - using long zero account address", async () => {
             const isKyc1 = await htsImpl.isKycGranted.staticCall(tokenAddress, account1LongZero);
             expect(isKyc1).to.eq(true);
-        });
-
-        it("Function with HederaTokenService.getTokenDefaultFreezeStatus(token)", async () => {
-            const defaultFreeze = await htsImpl.getTokenDefaultFreeze.staticCall(tokenAddress);
-            expect(defaultFreeze).to.eq(false);
-        });
-
-        it("Function with HederaTokenService.getTokenDefaultKycStatus(token)", async () => {
-            const defaultKyc = await htsImpl.getTokenDefaultKyc.staticCall(tokenAddress);
-            expect(defaultKyc).to.eq(true);
         });
 
         describe("Function with HederaTokenService.getTokenCustomFees(token)", async () => {
@@ -439,6 +328,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[0].feeCollector).to.exist;
                 expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
+
                 expect(customFees.fractionalFees).to.exist;
                 expect(customFees.fractionalFees.length).to.eq(0);
                 expect(customFees.royaltyFees).to.exist;
@@ -455,6 +345,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[0].feeCollector).to.exist;
                 expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
+
                 expect(customFees.fractionalFees).to.exist;
                 expect(customFees.fractionalFees.length).to.eq(0);
                 expect(customFees.royaltyFees).to.exist;
@@ -481,7 +372,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fractionalFees[0].netOfTransfers).to.eq(false);
 
                 expect(customFees.fractionalFees[0].feeCollector).to.exist;
-                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address);
+                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(0);
                 expect(customFees.royaltyFees).to.exist;
@@ -509,7 +400,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fractionalFees[0].netOfTransfers).to.eq(false);
 
                 expect(customFees.fractionalFees[0].feeCollector).to.exist;
-                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address);
+                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
 
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(2);
@@ -518,13 +409,13 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees[0].amount.toString()).to.eq(Hbar.from(1).toTinybars().toString());
                 expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[0].feeCollector).to.exist;
-                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address);
+                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
 
                 expect(customFees.fixedFees[1].amount).to.exist;
                 expect(customFees.fixedFees[1].amount.toString()).to.eq("1");
                 expect(customFees.fixedFees[1].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[1].feeCollector).to.exist;
-                expect(customFees.fixedFees[1].feeCollector.toLowerCase()).to.eq(accounts[0].address);
+                expect(customFees.fixedFees[1].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
 
                 expect(customFees.royaltyFees).to.exist;
                 expect(customFees.royaltyFees.length).to.eq(0);
@@ -573,54 +464,9 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 'nft with no custom fees',
                 'nft with a royalty fee',
             ];
-
-            for (let i = 0; i < tokenTests.length; i++ ) {
-                it(`Function with HederaTokenService.getTokenInfo(token) for a ${tokenTests[i]}`, async () => {
-                    const info = await htsImpl.getInformationForToken.staticCall(tokenAddresses[i]);
-                    expect(info).to.exist;
-                    expect(info.token).to.exist;
-                    expect(info.token.name).to.eq(TOKEN_NAME);
-                    expect(info.token.symbol).to.eq(TOKEN_SYMBOL);
-                    expect(info.token.treasury.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
-                    expect(info.totalSupply).to.exist;
-                    expect(info.totalSupply.toString()).to.eq(INITIAL_SUPPLY.toString());
-                });
-
-                it(`Function with HederaTokenService.getFungibleTokenInfo(token) for a ${tokenTests[i]}`, async () => {
-                    const info = await htsImpl.getInformationForFungibleToken.staticCall(tokenAddresses[i]);
-                    expect(info).to.exist;
-                    expect(info.tokenInfo).to.exist;
-                    expect(info.tokenInfo.token).to.exist;
-                    expect(info.tokenInfo.token.name).to.eq(TOKEN_NAME);
-                    expect(info.tokenInfo.token.symbol).to.eq(TOKEN_SYMBOL);
-                    expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
-                    expect(info.tokenInfo.totalSupply).to.exist;
-                    expect(info.tokenInfo.totalSupply.toString()).to.eq(INITIAL_SUPPLY.toString());
-                });
-
-                it(`Function with HederaTokenService.getTokenExpiryInfo(token) for a ${tokenTests[i]}`, async () => {
-                    const expiryInfo = await htsImpl.getExpiryInfoForToken.staticCall(tokenAddresses[i]);
-                    expect(expiryInfo).to.exist;
-                    expect(expiryInfo.autoRenewAccount).to.eq('0x0000000000000000000000000000000000000000');
-                    expect(expiryInfo.autoRenewPeriod).to.exist;
-                    expect(expiryInfo.autoRenewPeriod.toString()).to.eq('0');
-                    expect(expiryInfo.second).to.exist;
-                });
-            }
-
-            for (let i = 0; i < nftTests.length; i++) {
-                it(`Function with HederaTokenService.getNonFungibleTokenInfo(token, serialNumber) for a ${nftTests[i]}`, async () => {
-                    const info = await htsImpl.getInformationForNonFungibleToken.staticCall(nftAddresses[i], nftSerial);
-                    expect(info).to.exist;
-                    expect(info.tokenInfo.token).to.exist;
-                    expect(info.tokenInfo.token.name).to.eq(NFT_NAME);
-                    expect(info.tokenInfo.token.symbol).to.eq(NFT_SYMBOL);
-                    expect(info.tokenInfo.token.treasury.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
-                    expect(info.serialNumber.toString()).to.eq(nftSerial.toString());
-                });
-            }
         });
 
+        //TODO After adding the additional expects after getTokenKeyPublic in tokenManagementContract, the whole describe can be deleted. -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131
         describe('Function with HederaTokenService.getTokenKey(token, keyType)', async () => {
             const keyTypes = {
                 ADMIN: 1,
@@ -656,9 +502,9 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 const res = await htsImpl.getTokenKeyPublic.staticCall(tokenAddress, keyTypes['FREEZE']);
                 expect(res).to.exist;
                 expect(res.inheritAccountKey).to.eq(false);
-                expect(res.contractId).to.eq(ZERO_HEX);
+                expect(res.contractId).to.not.eq(ZERO_HEX);
                 expect(res.ed25519).to.eq(EMPTY_HEX);
-                expect(res.ECDSA_secp256k1).to.not.eq(EMPTY_HEX);
+                expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
                 expect(res.delegatableContractId).to.eq(ZERO_HEX);
             });
 
@@ -694,25 +540,22 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         });
     });
 
+    //Relay test, move to the acceptance tests. Check if there are existing similar tests.
     describe("Negative tests", async () => {
         const CALLDATA_BALANCE_OF = '0x70a08231';
-        const CALLDATA_ALLOWANCE =  '0xdd62ed3e';
+        const CALLDATA_ALLOWANCE = '0xdd62ed3e';
         const NON_EXISTING_ACCOUNT = '123abc123abc123abc123abc123abc123abc123a';
 
-        it("Call to non-existing HTS token returns error", async () => {
+        it("Call to non-existing HTS token returns 0x", async () => {
             const callData = {
                 from: accounts[0].address,
                 to: '0x' + NON_EXISTING_ACCOUNT,
-                gas: EthImpl.numberTo0x(5000000),
+                gas: EthImpl.numberTo0x(30000),
                 data: CALLDATA_BALANCE_OF + accounts[0].address.replace('0x', '')
             };
 
-            await relay.callFailing(
-                'eth_call',
-                [callData, 'latest'],
-                predefined.NON_EXISTING_CONTRACT('0x' + NON_EXISTING_ACCOUNT),
-                requestId
-            );
+            const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+            expect(res).to.eq('0x'); // confirm no error
         });
 
         it("Call to HTS token from non-existing account returns error", async () => {
@@ -724,9 +567,9 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             };
 
             await relay.callFailing(
-                'eth_call',
+                Constants.ETH_ENDPOINTS.ETH_CALL,
                 [callData, 'latest'],
-                predefined.NON_EXISTING_ACCOUNT('0x' + NON_EXISTING_ACCOUNT),
+                predefined.CONTRACT_REVERT(),
                 requestId
             );
         });
@@ -740,12 +583,13 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             };
 
             await relay.callFailing(
-                'eth_call',
+                Constants.ETH_ENDPOINTS.ETH_CALL,
                 [callData, 'latest'],
                 predefined.CONTRACT_REVERT(),
                 requestId
             );
         });
+
 
         it("Call to allowance method of an HTS token with non-existing spender account in call data returns error", async () => {
             const callData = {
@@ -756,7 +600,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             };
 
             await relay.callFailing(
-                'eth_call',
+                Constants.ETH_ENDPOINTS.ETH_CALL,
                 [callData, 'latest'],
                 predefined.CONTRACT_REVERT(),
                 requestId

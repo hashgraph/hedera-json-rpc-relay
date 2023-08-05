@@ -23,17 +23,18 @@ import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 const registry = new Registry();
 
-import sinon from 'sinon';
 import pino from 'pino';
 import { Precheck } from "../../src/lib/precheck";
 import { expectedError, mockData, signTransaction } from "../helpers";
-import { MirrorNodeClient, SDKClient } from "../../src/lib/clients";
+import { ClientCache, MirrorNodeClient } from "../../src/lib/clients";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { ethers } from "ethers";
 import constants from '../../src/lib/constants';
 import { predefined } from '../../src';
 const logger = pino();
+
+const limitOrderPostFix = '?order=desc&limit=1';
 
 describe('Precheck', async function() {
 
@@ -51,8 +52,6 @@ describe('Precheck', async function() {
     const oneTinyBar = ethers.utils.parseUnits('1', 10);
     const defaultGasPrice = 720_000_000_000;
     const defaultChainId = Number('0x12a');
-    let sdkInstance;
-
     let precheck: Precheck;
     let mock: MockAdapter;
 
@@ -69,11 +68,10 @@ describe('Precheck', async function() {
 
         // @ts-ignore
         mock = new MockAdapter(instance, { onNoMatch: "throwException" });
-
+        
         // @ts-ignore
-        const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
-        sdkInstance = sinon.createStubInstance(SDKClient);
-        precheck = new Precheck(mirrorNodeInstance, sdkInstance, logger, '0x12a');
+        const mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, new ClientCache(logger.child({ name: `cache` }), registry), instance);
+        precheck = new Precheck(mirrorNodeInstance, logger, '0x12a');
     });
 
     this.beforeEach(() => {
@@ -143,7 +141,7 @@ describe('Precheck', async function() {
             chainId: defaultChainId
         };
 
-        function testFailingGasLimitPrecheck(gasLimits, errorCode, errorMessage) {
+        function testFailingGasLimitPrecheck(gasLimits, errorCode) {
             for (const gasLimit of gasLimits) {
                 it(`should fail for gasLimit: ${gasLimit}`, async function () {
                     const tx = {
@@ -152,13 +150,16 @@ describe('Precheck', async function() {
                     };
                     const signed = await signTransaction(tx);
                     const parsedTx = ethers.utils.parseTransaction(signed);
+                    const message =  gasLimit > constants.BLOCK_GAS_LIMIT ? 
+                        `Transaction gas limit '${gasLimit}' exceeds block gas limit '${constants.BLOCK_GAS_LIMIT}'` :
+                        `Transaction gas limit provided '${gasLimit}' is insufficient of intrinsic gas required `;
                     try {
                         await precheck.gasLimit(parsedTx);
                         expectedError();
                     } catch (e: any) {
                         expect(e).to.exist;
                         expect(e.code).to.eq(errorCode);
-                        expect(e.message).to.eq(errorMessage);
+                        expect(e.message).to.contain(message);
                     }
                 });
             }
@@ -188,14 +189,14 @@ describe('Precheck', async function() {
         const highGasLimits = [20000000, 100000000, 999999999999];
 
         testPassingGasLimitPrecheck(validGasLimits);
-        testFailingGasLimitPrecheck(lowGasLimits, -32003, 'Intrinsic gas exceeds gas limit');
-        testFailingGasLimitPrecheck(highGasLimits, -32005, 'Transaction gas limit exceeds block gas limit');
+        testFailingGasLimitPrecheck(lowGasLimits, -32003);
+        testFailingGasLimitPrecheck(highGasLimits, -32005);
     });
 
     describe('gas price', async function() {
         let initialMinGasPriceBuffer;
         before(async () =>{
-            initialMinGasPriceBuffer = process.env.GAS_PRICE_TINY_BAR_BUFFER;
+            initialMinGasPriceBuffer = constants.GAS_PRICE_TINY_BAR_BUFFER;
             process.env.GAS_PRICE_TINY_BAR_BUFFER = '10000000000'; // 1 tinybar
         })
 
@@ -221,12 +222,13 @@ describe('Precheck', async function() {
             } catch (e: any) {
                 expect(e).to.exist;
                 expect(e.code).to.eq(-32009);
-                expect(e.message).to.eq('Gas price below configured minimum gas price');
+                expect(e.message).to.contains(`Gas price `);
+                expect(e.message).to.contains(` is below configured minimum gas price '${minGasPrice}`);
             }
         });
 
         it('should pass for gas price not enough but within buffer', async function() {
-            const adjustedGasPrice = parsedTxGasPrice + Number(process.env.GAS_PRICE_TINY_BAR_BUFFER);
+            const adjustedGasPrice = parsedTxGasPrice + Number(constants.GAS_PRICE_TINY_BAR_BUFFER);
             precheck.gasPrice(parsedTxWithMatchingChainId, adjustedGasPrice);
         });
     });
@@ -235,17 +237,18 @@ describe('Precheck', async function() {
         // sending 2 hbars
         const transaction = '0x02f876820128078459682f0086018a4c7747008252089443cb701defe8fc6ed04d7bddf949618e3c575fe1881bc16d674ec8000080c001a0b8c604e08c15a7acc8c898a1bbcc41befcd0d120b64041d1086381c7fc2a5339a062eabec286592a7283c90ce90d97f9f8cf9f6c0cef4998022660e7573c046a46';
         const parsedTransaction = ethers.utils.parseTransaction(transaction);
-        const mirrorAccountsPath = 'accounts/0xF8A44f9a4E4c452D25F5aE0F5d7970Ac9522a3C8';
         const accountId = '0.1.2';
 
         it('should not pass for 1 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(1, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
 
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(1, HbarUnit.Hbar).to(HbarUnit.Tinybar));
             try {
-                await precheck.balance(parsedTransaction, 'sendRawTransaction');
+                await precheck.balance(parsedTransaction, account);
                 expectedError();
             } catch(e: any) {
                 expect(e).to.exist;
@@ -255,18 +258,10 @@ describe('Precheck', async function() {
         });
 
         it('should not pass for no account found', async function() {
-            mock.onGet(mirrorAccountsPath).reply(404, {
-                "_status": {
-                    "messages": [
-                        {
-                            "message": "Not found"
-                        }
-                    ]
-                }
-            });
+            const account = null;
 
             try {
-                await precheck.balance(parsedTransaction, 'sendRawTransaction');
+                await precheck.balance(parsedTransaction, account);
                 expectedError();
             } catch(e: any) {
                 expect(e).to.exist;
@@ -276,52 +271,62 @@ describe('Precheck', async function() {
         });
 
         it('should pass for 10 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
-            
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(10, HbarUnit.Hbar).to(HbarUnit.Tinybar));
-            const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(10, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
+
+            const result = await precheck.balance(parsedTransaction, account);
             expect(result).to.not.exist;
         });
 
         it('should pass for 100 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
-            
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(100, HbarUnit.Hbar).to(HbarUnit.Tinybar));
-            const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(100, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
+
+            const result = await precheck.balance(parsedTransaction, account);
             expect(result).to.not.exist;
         });
 
         it('should pass for 10000 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(10_000, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
             
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(10_000, HbarUnit.Hbar).to(HbarUnit.Tinybar));
-            const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
+            const result = await precheck.balance(parsedTransaction, account);
             expect(result).to.not.exist;
         });
 
         it('should pass for 100000 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(100_000, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
             
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(100_000, HbarUnit.Hbar).to(HbarUnit.Tinybar));
-            const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
+            const result = await precheck.balance(parsedTransaction, account);
             expect(result).to.not.exist;
         });
 
         it('should pass for 50_000_000_000 hbar', async function() {
-            mock.onGet(mirrorAccountsPath).reply(200, {
-                account: accountId
-            });
+            const account = {
+                account: accountId,
+                balance: {
+                    balance: Hbar.from(50_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar)
+                }
+            };
             
-            sdkInstance.getAccountBalanceInTinyBar.returns(Hbar.from(50_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar));
-            const result = await precheck.balance(parsedTransaction, 'sendRawTransaction');
+            const result = await precheck.balance(parsedTransaction, account);
             expect(result).to.not.exist;
         });
     });
@@ -347,14 +352,14 @@ describe('Precheck', async function() {
             const signed = await signTransaction(tx);
             const parsedTx = ethers.utils.parseTransaction(signed);
 
-            mock.onGet(`accounts/${parsedTx.from}`).reply(200, mirrorAccount);
+            mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
 
 
             try {
                 await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
                 expectedError();
             } catch (e: any) {
-                expect(e).to.eql(predefined.NONCE_TOO_LOW);
+                expect(e).to.eql(predefined.NONCE_TOO_LOW(parsedTx.nonce, mirrorAccount.ethereum_nonce));
             }
         });
 
@@ -366,7 +371,7 @@ describe('Precheck', async function() {
             const signed = await signTransaction(tx);
             const parsedTx = ethers.utils.parseTransaction(signed);
 
-            mock.onGet(`accounts/${parsedTx.from}`).reply(200, mirrorAccount);
+            mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
 
             await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
         });
@@ -391,7 +396,7 @@ describe('Precheck', async function() {
         };
 
         it(`should fail for missing account`, async function () {
-            mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(404, mockData.notFound);
+            mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(404, mockData.notFound);
 
 
             try {
@@ -406,7 +411,7 @@ describe('Precheck', async function() {
         });
 
         it(`should not fail for matched account`, async function () {
-            mock.onGet(`accounts/${mockData.accountEvmAddress}`).reply(200, mirrorAccount);
+            mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(200, mirrorAccount);
             const account = await precheck.verifyAccount(parsedTx);
 
 

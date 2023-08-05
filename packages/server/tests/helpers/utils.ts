@@ -40,10 +40,6 @@ export class Utils {
         ].join('');
     };
 
-    static subtractBigNumberHexes = (hex1, hex2) => {
-        return BigInt(hex1) - BigInt(hex2);
-    };
-
     static tinyBarsToWeibars = (value) => {
         return ethers.parseUnits(Number(value).toString(), 10);
     };
@@ -80,7 +76,9 @@ export class Utils {
 
         // re-init the contract with the deployed address
         const receipt = await relay.provider.getTransactionReceipt(contract.deploymentTransaction()?.hash);
-        return new ethers.Contract(receipt.to, contractJson.abi, wallet);
+        contract = new ethers.Contract(receipt.to, contractJson.abi, wallet);
+
+        return contract;
     };
 
     // The main difference between this and deployContractWithEthers is that this does not re-init the contract with the deployed address
@@ -115,7 +113,14 @@ export class Utils {
     };
 
     static add0xPrefix = (num) => {
-        return num ? num.toString().startsWith('0x') ? num : '0x' + num : '0x';
+        return num.startsWith('0x') ? num : '0x' + num;
+    };
+
+    static gasOptions = async (requestId, gasLimit = 1_500_000) => {
+        return  {
+            gasLimit: gasLimit,
+            gasPrice: await global.relay.gasPrice(requestId)
+        };
     };
 
     static convertEthersResultIntoStringsArray = (res) => {

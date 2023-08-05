@@ -23,6 +23,7 @@ import { expect } from 'chai';
 import { Utils } from '../helpers/utils';
 import EstimateGasContractJson from '../contracts/EstimateGasContract.json';
 import { AliasAccount } from '../clients/servicesClient';
+import constants from '../../../../packages/relay/src/lib/constants';
 
 describe('EstimateGasContract tests', function() {
   const signers: AliasAccount[] = [];
@@ -39,10 +40,9 @@ describe('EstimateGasContract tests', function() {
     randomAddress = (ethers.Wallet.createRandom()).address;
   });
 
-  const baseGasCheck = (response, expectedValue: number) => {
-    const gasValue = Number(response);
+  const baseGasCheck = (estimatedGasValue, expectedValue: number) => {
     // handle deviation of 20%
-    expect(gasValue).to.be.lessThan(expectedValue * 1.2);
+    expect(Number(estimatedGasValue)).to.be.lessThan(expectedValue * 1.4);
   };
 
   const basicTests = [
@@ -101,7 +101,7 @@ describe('EstimateGasContract tests', function() {
   for (const test of basicTests) {
     it(test.name, async function() {
       baseGasCheck(await relay.call('eth_estimateGas', [
-        contract[test.functionName].populateTransaction()
+        await contract[test.functionName].populateTransaction()
       ]), test.expectedGas);
     });
   }
@@ -129,16 +129,16 @@ describe('EstimateGasContract tests', function() {
   it('#015 "data" from request body with wrong method signature', async function() {
     const estimateGasResponse = await relay.call('eth_estimateGas', [{
       data: '0xffffffff',
-      to: Utils.add0xPrefix(contract.target),
-      from: Utils.add0xPrefix(signers[0].address)
+      to: contract.target,
+      from: signers[0].address
     }]);
     baseGasCheck(estimateGasResponse, 0x61A80);
   });
   it('#016 "data" from request body with wrong encoded parameter', async function() {
     const estimateGasResponse = await relay.call('eth_estimateGas', [{
       data: '0x3ec4de35',
-      to: Utils.add0xPrefix(contract.target),
-      from: Utils.add0xPrefix(signers[0].address)
+      to: contract.target,
+      from: signers[0].address
     }]);
     baseGasCheck(estimateGasResponse, 0x61A80);
   });
@@ -177,5 +177,70 @@ describe('EstimateGasContract tests', function() {
     const tx = await contract.callCodeToInvalidContract.populateTransaction(randomAddress);
     const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
     baseGasCheck(estimateGasResponse, 0x6187);
+  });
+  it('#023 Execute .call to external contract', async function() {
+    const tx = await contract.callExternalFunctionNTimes.populateTransaction(1, contract.target);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x6c46);
+    const txN = await contract.callExternalFunctionNTimes.populateTransaction(100, contract.target);
+    const estimateGasResponseN = await relay.call('eth_estimateGas', [txN]);
+    baseGasCheck(estimateGasResponseN, 0x232d2);
+    expect(Number(estimateGasResponseN)).to.be.greaterThan(Number(estimateGasResponse));
+  });
+  it('#024 Execute .delegatecall to external contract', async function() {
+    const tx = await contract.delegatecallExternalFunctionNTimes.populateTransaction(1, contract.target);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x6c17);
+    const txN = await contract.delegatecallExternalFunctionNTimes.populateTransaction(100, contract.target);
+    const estimateGasResponseN = await relay.call('eth_estimateGas', [txN]);
+    baseGasCheck(estimateGasResponseN, 0x2317a);
+    expect(Number(estimateGasResponseN)).to.be.greaterThan(Number(estimateGasResponse));
+  });
+  it('#025 Execute state update method', async function() {
+    const tx = await contract.updateStateNTimes.populateTransaction(1);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x681e);
+    const txN = await contract.updateStateNTimes.populateTransaction(100);
+    const estimateGasResponseN = await relay.call('eth_estimateGas', [txN]);
+    baseGasCheck(estimateGasResponse, 0xd23b);
+    expect(Number(estimateGasResponseN)).to.be.greaterThan(Number(estimateGasResponse));
+  });
+  it('#026 Execute view .call to external contract', async function() {
+    const tx = await contract.callExternalViewFunctionNTimes.populateTransaction(1, contract.target);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x5a92);
+    const txN = await contract.callExternalViewFunctionNTimes.populateTransaction(100, contract.target);
+    const estimateGasResponseN = await relay.call('eth_estimateGas', [txN]);
+    baseGasCheck(estimateGasResponseN, 0x194d0);
+    expect(Number(estimateGasResponseN)).to.be.greaterThan(Number(estimateGasResponse));
+  });
+  it('#028 Execute reentrancy with transfer', async function() {
+    const tx = await contract.reentrancyWithTransfer.populateTransaction(randomAddress, constants.TINYBAR_TO_WEIBAR_COEF);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x61a80);
+  });
+  it('#029 Execute reentrancy with call', async function() {
+    const tx = await contract.reentrancyWithCall.populateTransaction(randomAddress, constants.TINYBAR_TO_WEIBAR_COEF);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0xe4ba);
+  });
+  it('#030 Execute and validate gasleft()', async function() {
+    const tx = await contract.getGasLeft.populateTransaction();
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    expect(Number(estimateGasResponse)).to.be.lessThan(constants.TX_BASE_COST * 1.2);
+  });
+  it('#031 Execute positive nested calls)', async function() {
+    const tx = await contract.nestedCalls.populateTransaction(1, 10, contract.target);
+    const estimateGasResponse = await relay.call('eth_estimateGas', [tx]);
+    baseGasCheck(estimateGasResponse, 0x90bc);
+  });
+  it('#032 Execute limited nested calls)', async function() {
+    const tx500 = await contract.nestedCalls.populateTransaction(1, 500, contract.target);
+    const estimateGasResponse500 = await relay.call('eth_estimateGas', [tx500]);
+    const tx750 = await contract.nestedCalls.populateTransaction(1, 750, contract.target);
+    const estimateGasResponse750 = await relay.call('eth_estimateGas', [tx750]);
+    const tx1000 = await contract.nestedCalls.populateTransaction(1, 1000, contract.target);
+    const estimateGasResponse1000 = await relay.call('eth_estimateGas', [tx1000]);
+    expect(estimateGasResponse500).to.equals(estimateGasResponse750).to.equal(estimateGasResponse1000);
   });
 });

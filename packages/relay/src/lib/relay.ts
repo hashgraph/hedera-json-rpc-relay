@@ -20,42 +20,46 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
+dotenv.config({ path: findConfig('.env') || '' });
 import { Relay, Eth, Net, Web3, Subs } from '../index';
 import { Web3Impl } from './web3';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
 import { Poller } from './poller';
 import { SubscriptionController } from './subscriptionController';
-import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
+import { Client } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { MirrorNodeClient, SDKClient } from './clients';
-import { Registry } from 'prom-client';
+import { ClientCache, MirrorNodeClient } from './clients';
+import { Gauge, Registry } from 'prom-client';
+import HAPIService from './services/hapiService/hapiService';
+import constants from './constants';
+import HbarLimit from './hbarlimiter';
 
 export class RelayImpl implements Relay {
-  private static chainIds = {
-    mainnet: 0x127,
-    testnet: 0x128,
-    previewnet: 0x129,
-  };
-
   private readonly clientMain: Client;
   private readonly mirrorNodeClient: MirrorNodeClient;
   private readonly web3Impl: Web3;
   private readonly netImpl: Net;
   private readonly ethImpl: Eth;
   private readonly subImpl?: Subs;
+  private readonly clientCache: ClientCache;
 
   constructor(logger: Logger, register: Registry) {
-    dotenv.config({ path: findConfig('.env') || '' });
     logger.info('Configurations successfully loaded');
 
     const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
 
     const configuredChainId =
-      process.env.CHAIN_ID || RelayImpl.chainIds[hederaNetwork] || '298';
+      process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
 
-    this.clientMain = this.initClient(logger, hederaNetwork);
+    const duration = constants.HBAR_RATE_LIMIT_DURATION;
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
+
+    this.clientCache = new ClientCache(logger.child({ name: 'client-cache' }), register);
+    const hapiService = new HAPIService(logger, register, hbarLimiter, this.clientCache);
+    this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain, chainId);
@@ -64,25 +68,57 @@ export class RelayImpl implements Relay {
       process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
       register,
+      this.clientCache,
       undefined,
-      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
+      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || ''
     );
 
-    const sdkClient = new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), register);
-
     this.ethImpl = new EthImpl(
-      sdkClient,
+      hapiService,
       this.mirrorNodeClient,
       logger.child({ name: 'relay-eth' }),
-      chainId);
-
+      chainId,
+      register,
+      this.clientCache);
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
-      const poller = new Poller(this.ethImpl, logger, register);
-      this.subImpl = new SubscriptionController(poller, logger, register);
+      const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
+      this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }
 
+    this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
     logger.info('Relay running with chainId=%s', chainId);
+  }
+
+  /**
+ * Initialize operator account metrics
+ * @param {Client} clientMain
+ * @param {MirrorNodeClient} mirrorNodeClient
+ * @param {Logger} logger
+ * @param {Registry} register
+ * @returns {Gauge} Operator Metric
+ */
+  private initOperatorMetric(clientMain: Client, mirrorNodeClient: MirrorNodeClient, logger: Logger, register: Registry) {
+    const metricGaugeName = 'rpc_relay_operator_balance';
+    register.removeSingleMetric(metricGaugeName);
+    return new Gauge({
+        name: metricGaugeName,
+        help: 'Relay operator balance gauge',
+        labelNames: ['mode', 'type', 'accountId'],
+        registers: [register],
+        async collect() {
+            // Invoked when the registry collects its metrics' values.
+            // Allows for updated account balance tracking
+            try {
+                const account = await mirrorNodeClient.getAccount(clientMain.operatorAccountId!.toString());
+                const accountBalance = account.balance?.balance;
+                this.labels({ 'accountId': clientMain.operatorAccountId?.toString() })
+                    .set(accountBalance);
+            } catch (e: any) {
+                logger.error(e, `Error collecting operator balance. Skipping balance set`);
+            }
+        },
+    });
   }
 
   web3(): Web3 {
@@ -103,48 +139,5 @@ export class RelayImpl implements Relay {
 
   mirrorClient(): MirrorNodeClient {
     return this.mirrorNodeClient;
-  }
-
-  initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
-    let client: Client;
-    if (hederaNetwork in RelayImpl.chainIds) {
-      client = Client.forName(hederaNetwork);
-    } else {
-      client = Client.forNetwork(JSON.parse(hederaNetwork));
-    }
-
-    if (type === 'eth_sendRawTransaction') {
-      if (
-        process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION &&
-        process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
-      ) {
-        client = client.setOperator(
-          AccountId.fromString(
-            process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION
-          ),
-          PrivateKey.fromString(
-            process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION
-          )
-        );
-      } else {
-        logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
-      }
-    } else {
-      if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
-        client = client.setOperator(
-          AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()),
-          PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
-        );
-      } else {
-        logger.warn(`Invalid 'OPERATOR' env variables provided`);
-      }
-    }
-
-    client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
-    client.setRequestTimeout(parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000'));
-
-    logger.info(`SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${client.operatorAccountId} with request timeout value: ${process.env.SDK_REQUEST_TIMEOUT}`);
-
-    return client;
   }
 }

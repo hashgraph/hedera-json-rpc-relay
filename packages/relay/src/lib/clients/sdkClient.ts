@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,13 +48,14 @@ import {
     TransactionRecordQuery,
     Hbar,
 } from '@hashgraph/sdk';
+import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from "pino";
-import { Gauge, Histogram, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
+import { ClientCache } from './clientCache';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -78,12 +79,6 @@ export class SDKClient {
     private readonly logger: Logger;
 
     /**
-     * The metrics register used for metrics tracking.
-     * @private
-     */
-    private readonly register: Registry;
-
-    /**
      * This limiter tracks hbar expenses and limits.
      * @private
      */
@@ -93,15 +88,15 @@ export class SDKClient {
      * LRU cache container.
      * @private
      */
-    private readonly cache;
+    private readonly cache: ClientCache;
 
     private consensusNodeClientHistogramCost;
     private consensusNodeClientHistogramGasFee;
     private operatorAccountGauge;
-    private operatorAccountId;
+    private maxChunks;
 
     // populate with consensusnode requests via SDK
-    constructor(clientMain: Client, logger: Logger, register: Registry) {
+    constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, clientCache: ClientCache) {
         this.clientMain = clientMain;
 
         if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
@@ -111,53 +106,13 @@ export class SDKClient {
         }
 
         this.logger = logger;
-        this.register = register;
-        this.operatorAccountId = clientMain.operatorAccountId ? clientMain.operatorAccountId.toString() : 'UNKNOWN';
+        this.consensusNodeClientHistogramCost = metrics.costHistogram;
+        this.consensusNodeClientHistogramGasFee = metrics.gasHistogram;
+        this.operatorAccountGauge = metrics.operatorGauge;
 
-        // clear and create metrics in registry
-        const metricHistogramCost = 'rpc_relay_consensusnode_response';
-        register.removeSingleMetric(metricHistogramCost);
-        this.consensusNodeClientHistogramCost = new Histogram({
-            name: metricHistogramCost,
-            help: 'Relay consensusnode mode type status cost histogram',
-            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-            registers: [register]
-        });
-        const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
-        register.removeSingleMetric(metricHistogramGasFee);
-        this.consensusNodeClientHistogramGasFee = new Histogram({
-            name: metricHistogramGasFee,
-            help: 'Relay consensusnode mode type status gas fee histogram',
-            labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-            registers: [register]
-        });
-
-        const metricGaugeName = 'rpc_relay_operator_balance';
-        register.removeSingleMetric(metricGaugeName);
-        this.operatorAccountGauge = new Gauge({
-            name: metricGaugeName,
-            help: 'Relay operator balance gauge',
-            labelNames: ['mode', 'type', 'accountId'],
-            registers: [register],
-            async collect() {
-                // Invoked when the registry collects its metrics' values.
-                // Allows for updated account balance tracking
-                try {
-                    const accountBalance = await (new AccountBalanceQuery()
-                        .setAccountId(clientMain.operatorAccountId!))
-                        .execute(clientMain);
-                    this.labels({ 'accountId': clientMain.operatorAccountId!.toString() })
-                        .set(accountBalance.hbars.toTinybars().toNumber());
-                } catch (e: any) {
-                    logger.error(e, `Error collecting operator balance. Skipping balance set`);
-                }
-            },
-        });
-
-        const duration = parseInt(process.env.HBAR_RATE_LIMIT_DURATION!);
-        const total = parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR!);
-        this.hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
-        this.cache = new LRU({ max: constants.CACHE_MAX, ttl: constants.CACHE_TTL.ONE_HOUR });
+        this.hbarLimiter = hbarLimiter;
+        this.cache = clientCache;
+        this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     }
 
     async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
@@ -165,12 +120,12 @@ export class SDKClient {
             .setAccountId(AccountId.fromString(account)), this.clientMain, callerName, account, requestId);
     }
 
-    async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: string): Promise<BigInt> {
+    async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
         const balance = await this.getAccountBalance(account, callerName, requestId);
-        return BigInt(balance.hbars.to(HbarUnit.Tinybar).toString());
+        return balance.hbars.to(HbarUnit.Tinybar);
     }
     
-    async getAccountBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigInt> {
+    async getAccountBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
         const balance = await this.getAccountBalance(account, callerName, requestId);
         return SDKClient.HbarToWeiBar(balance);
     }
@@ -181,8 +136,12 @@ export class SDKClient {
     }
 
     async getContractByteCode(shard: number | Long, realm: number | Long, address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
-        return this.executeQuery(new ContractByteCodeQuery()
-            .setContractId(ContractId.fromEvmAddress(shard, realm, address)), this.clientMain, callerName, address, requestId);
+        const contractByteCodeQuery = new ContractByteCodeQuery().setContractId(ContractId.fromEvmAddress(shard, realm, address));
+        const cost = await contractByteCodeQuery
+            .getCost(this.clientMain);
+
+        return this.executeQuery(contractByteCodeQuery
+            .setQueryPayment(cost), this.clientMain, callerName, address, requestId);
     }
 
     async getContractBalance(contract: string, callerName: string, requestId?: string): Promise<AccountBalance> {
@@ -190,7 +149,7 @@ export class SDKClient {
             .setContractId(ContractId.fromString(contract)), this.clientMain, callerName, contract, requestId);
     }
 
-    async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigInt> {
+    async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
         const balance = await this.getContractBalance(account, callerName, requestId);
         return SDKClient.HbarToWeiBar(balance);
     }
@@ -208,8 +167,8 @@ export class SDKClient {
     }
 
     async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
-        const cachedResponse: number | undefined = this.cache.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE);
-        if (cachedResponse != undefined) {
+        const cachedResponse: number | undefined = this.cache.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, callerName);
+        if (cachedResponse) {
             return cachedResponse;
         }
 
@@ -224,7 +183,7 @@ export class SDKClient {
                 const exchangeRates = await this.getExchangeRate(callerName, requestId);
                 const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
-                this.cache.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars);
+                this.cache.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, undefined, requestId);
                 return tinyBars;
             }
         }
@@ -303,7 +262,7 @@ export class SDKClient {
                 const sdkClientError = new SDKClientError(e, e.message);
                 if (sdkClientError.isTimeoutExceeded()) {
                     const delay = retries * 1000;
-                    this.logger.trace(`${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay}ms ...`);
+                    this.logger.trace(`${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`);
                     retries++;
                     await new Promise(r => setTimeout(r, delay));
                     continue;
@@ -569,8 +528,10 @@ export class SDKClient {
             : input;
     }
 
-    private static HbarToWeiBar(balance: AccountBalance): BigInt {
-        return BigInt(balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF).toString());
+    private static HbarToWeiBar(balance: AccountBalance): BigNumber {
+        return balance.hbars
+        .to(HbarUnit.Tinybar)
+        .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
     }
 
     private createFile = async (callData: Uint8Array, client: Client, requestId?: string) => {
@@ -593,15 +554,14 @@ export class SDKClient {
         );
 
         if (fileId && callData.length > 4096) {
-            await (
-                await new FileAppendTransaction()
-                    .setFileId(fileId)
-                    .setContents(
-                        hexedCallData.substring(4096, hexedCallData.length)
-                    )
-                    .setChunkSize(4096)
-                    .execute(client)
-            ).getReceipt(client);
+            await new FileAppendTransaction()
+                .setFileId(fileId)
+                .setContents(
+                    hexedCallData.substring(4096, hexedCallData.length)
+                )
+                .setChunkSize(4096)
+                .setMaxChunks(this.maxChunks)
+                .execute(client);
         }
 
         // Ensure that the calldata file is not empty

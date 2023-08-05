@@ -21,6 +21,9 @@
 import { expect } from "chai";
 import { ethers } from 'ethers';
 import crypto from 'crypto';
+import { EthImpl } from "../src/lib/eth";
+import { formatRequestIdMessage } from '../src/formatters';
+import { v4 as uuid } from 'uuid';
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -47,6 +50,65 @@ const random20BytesAddress = (addHexPrefix = true) => {
     return (addHexPrefix ? '0x' : '') + crypto.randomBytes(20).toString('hex');
 };
 
+const getRequestId = () => {
+    return formatRequestIdMessage(uuid());
+};
+
+export const ethCallFailing = async (ethImpl, args, block, assertFunc) => {
+    let hasError = false;
+    try {
+        await ethImpl.call(args, block);
+    } catch (error: any) {
+        hasError = true;
+        assertFunc(error);
+    }
+    expect(hasError).to.eq(true);
+};
+
+export const ethGetLogsFailing = async (ethImpl, args, assertFunc) => {
+    let hasError = false;
+    try {
+        await ethImpl.getLogs(...args);
+        expect(true).to.eq(false);
+    } catch (error: any) {
+        hasError = true;
+        assertFunc(error);
+    }
+    expect(hasError).to.eq(true);
+};
+
+export const expectLogData = (res, log, tx) => {
+    expect(res.address).to.eq(log.address);
+    expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
+    expect(res.blockHash.length).to.eq(66);
+    expect(res.blockNumber).to.eq(EthImpl.numberTo0x(tx.block_number));
+    expect(res.data).to.eq(log.data);
+    expect(res.logIndex).to.eq(EthImpl.numberTo0x(log.index));
+    expect(res.removed).to.eq(false);
+    expect(res.topics).to.exist;
+    expect(res.topics).to.deep.eq(log.topics);
+    expect(res.transactionHash).to.eq(tx.hash);
+    expect(res.transactionHash.length).to.eq(66);
+    expect(res.transactionIndex).to.eq(EthImpl.numberTo0x(tx.transaction_index));
+};
+
+export const expectLogData1 = (res) => {
+    expectLogData(res, defaultLogs.logs[0], defaultDetailedContractResults);
+};
+
+export const expectLogData2 = (res) => {
+    expectLogData(res, defaultLogs.logs[1], defaultDetailedContractResults);
+};
+
+export const expectLogData3 = (res) => {
+    expectLogData(res, defaultLogs.logs[2], defaultDetailedContractResults2);
+};
+
+export const expectLogData4 = (res) => {
+    expectLogData(res, defaultLogs.logs[3], defaultDetailedContractResults3);
+};
+
+
 const mockData = {
     accountEvmAddress: '0x00000000000000000000000000000000000003f6',
     account: {
@@ -59,7 +121,7 @@ const mockData = {
             "tokens": []
         },
         "deleted": false,
-        "ethereum_nonce": null,
+        "ethereum_nonce": 7,
         "evm_address": "0x00000000000000000000000000000000000003f6",
         "expiry_timestamp": null,
         "key": {
@@ -73,6 +135,49 @@ const mockData = {
         "links": {
             "next": null
         }
+    },
+
+    blocks: {
+        blocks: [
+            {
+                "count":17,
+                "hapi_version":
+                "0.38.10",
+                "hash":"0xa1bff58c8980be6f08e357d78a2eeea35f57408907695d0a4e9f6bdc5ad361be717e0a89f4d4eab7c79da926d466f184",
+                "name":"2023-06-06T03_26_52.041881845Z.rcd.gz",
+                "number":0,
+                "previous_hash":"0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "size":5496,
+                "timestamp":{"from":"1686022012.041881845","to":"1686022013.882529003"},
+                "gas_used":0,
+                "logs_bloom":"0x"
+            },
+            {
+                "count":33,
+                "hapi_version":"0.38.10",
+                "hash":"0x88fbc1805d2193f45de7974259d5bde32e5a9afb071dbc9c325d4635fee1bbba3e7f99e3c3ce866dfbca7379b4535813",
+                "name":"2023-06-06T03_26_50.010262867Z.rcd.gz",
+                "number":1,
+                "previous_hash":"0xa1bff58c8980be6f08e357d78a2eeea35f57408907695d0a4e9f6bdc5ad361be717e0a89f4d4eab7c79da926d466f184",
+                "size":7068,
+                "timestamp":{"from":"1686022010.010262867","to":"1686022011.869509167"},
+                "gas_used":0,
+                "logs_bloom":"0x"
+            },
+            {
+                "count":33,
+                "hapi_version":"0.38.10",
+                "hash":"0xcf703d42a6d55555cc8c24cb0c615115a8ab82ec29db3e3e58573263c4e2ec11d097fba3f5896dbfc7fb35081bb325df",
+                "name":"2023-06-06T03_26_55.010262867Z.rcd.gz",
+                "number":2,
+                "previous_hash":"0x88fbc1805d2193f45de7974259d5bde32e5a9afb071dbc9c325d4635fee1bbba3e7f99e3c3ce866dfbca7379b4535813",
+                "size":7068,
+                "timestamp":{"from":"1686022010.010262867","to":"1686022011.869509167"},
+                "gas_used":0,
+                "logs_bloom":"0x"
+            }
+        ],
+        "links":{"next":null}
     },
 
     contractEvmAddress: '0000000000000000000000000000000000001f41',
@@ -166,10 +271,44 @@ const mockData = {
                 }
             ]
         }
+    },
+
+    tooManyRequests: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "Too Many Requests"
+                }
+            ]
+        }
+    },
+
+    contractReverted: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "CONTRACT_REVERT_EXECUTED",
+                    "detail": "",
+                    "data": ""
+                }
+            ]
+        }
+    },
+
+    notSuported: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "Auto account creation is not supported.",
+                    "detail": "",
+                    "data": ""
+                }
+            ]
+        }
     }
 };
 
-export { expectUnsupportedMethod, expectedError, signTransaction, mockData, random20BytesAddress };
+export { expectUnsupportedMethod, expectedError, signTransaction, mockData, random20BytesAddress, getRequestId };
 
 export const bytecode = '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
 export const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
@@ -195,7 +334,7 @@ export const contractTimestamp2 = '1653077542.701408897';
 export const contractTimestamp3 = '1653088542.123456789';
 export const contractId1 = '0.0.5001';
 export const contractId2 = '0.0.5002';
-export const signedTransactionHash = '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad'
+export const signedTransactionHash = '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad';
 
 export const defaultBlock = {
     'count': blockTransactionCount,
@@ -249,7 +388,23 @@ export const defaultContractResults = {
             'gas_used': gasUsed1,
             'hash': contractHash1,
             'timestamp': `${contractTimestamp1}`,
-            'to': `${contractAddress1}`
+            'to': `${contractAddress1}`,
+            "block_gas_used": 400000,
+            "block_hash": `${blockHash}`,
+            "block_number": `${blockNumber}`,
+            "chain_id": "0x12a",
+            "failed_initcode": null,
+            "gas_price": "0x4a817c80",
+            "max_fee_per_gas": "0x59",
+            "max_priority_fee_per_gas": "0x33",
+            "nonce": 5,
+            "r": "0xb5c21ab4dfd336e30ac2106cad4aa8888b1873a99bce35d50f64d2ec2cc5f6d9",
+            "result": "SUCCESS",
+            "s":  "0x1092806a99727a20c31836959133301b65a2bfa980f9795522d21a254e629110",
+            "status": "0x1",
+            "transaction_index": 1,
+            "type": 2,
+            "v": 1
         },
         {
             'amount': 0,
@@ -264,11 +419,27 @@ export const defaultContractResults = {
             'gas_used': gasUsed2,
             'hash': contractHash2,
             'timestamp': `${contractTimestamp2}`,
-            'to': `${contractAddress2}`
+            'to': `${contractAddress2}`,
+            "block_gas_used": 400000,
+            "block_hash": `${blockHash}`,
+            "block_number": `${blockNumber}`,
+            "chain_id": "0x12a",
+            "failed_initcode": null,
+            "gas_price": "0x4a817c80",
+            "max_fee_per_gas": "0x59",
+            "max_priority_fee_per_gas": "0x33",
+            "nonce": 6,
+            "r": "0xb5c21ab4dfd336e30ac2106cad4aa8888b1873a99bce35d50f64d2ec2cc5f6d9",
+            "result": "SUCCESS",
+            "s":  "0x1092806a99727a20c31836959133301b65a2bfa980f9795522d21a254e629110",
+            "status": "0x1",
+            "transaction_index": 2,
+            "type": 2,
+            "v": 1
         }
     ],
     'links': {
-        'next': '/api/v1/contracts/results?limit=2&timestamp=lt:1653077542.701408897'
+        'next': null
     }
 };
 
@@ -439,7 +610,7 @@ export const defaultNetworkFees = {
 };
 
 export const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
-export const defaultTransaction = {
+export const expectedTx = {
     "accessList": undefined,
     "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "blockNumber": "0x11",
@@ -545,8 +716,87 @@ export const buildCryptoTransferTransaction = (from, to, amount, args: any = {})
     ],
         "valid_duration_seconds": "120",
         "valid_start_timestamp": "1669207645.620109637"
-    }
+    };
 };
+
+export const defaultEthereumTransactions = [
+    {
+        "bytes": null,
+        "charged_tx_fee": 0,
+        "consensus_timestamp": "1689672910.529610346",
+        "entity_id": null,
+        "max_fee": "100000000",
+        "memo_base64": "",
+        "name": "ETHEREUMTRANSACTION",
+        "nft_transfers": [],
+        "node": "0.0.7",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [],
+        "token_transfers": [],
+        "transaction_hash": "9VjM48D6NNaaY49C3MybTGNJkN0PwegeablbJgQeruHs6K+qXMwCNz/jQo0f1HE8",
+        "transaction_id": "0.0.1078@1686183420.196506746",
+        "transfers": [
+            {
+                "account": "0.0.2",
+                "amount": -681600000,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.36516",
+                "amount": 681600000,
+                "is_approval": false
+            }
+        ],
+        "valid_duration_seconds": "120",
+        "valid_start_timestamp": "1689672901.525163476"
+    },
+    {
+        "bytes": null,
+        "charged_tx_fee": 108530272,
+        "consensus_timestamp": "1689669806.068075774",
+        "entity_id": "0.0.58263",
+        "max_fee": "1065000000",
+        "memo_base64": "",
+        "name": "ETHEREUMTRANSACTION",
+        "nft_transfers": [],
+        "node": "0.0.4",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [],
+        "token_transfers": [],
+        "transaction_hash": "3rfGmWnoGQaDgnvI9u4YVTDBE7qBByL11fzK4mvGs/SOZ8myENbo7z9Pf7nVrHN6",
+        "transaction_id": "0.0.1078@1686183420.196506747",
+        "transfers": [
+            {
+                "account": "0.0.4",
+                "amount": 1998730,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.98",
+                "amount": 106531542,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.902",
+                "amount": -51730272,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.36516",
+                "amount": -56800000,
+                "is_approval": false
+            }
+        ],
+        "valid_duration_seconds": "120",
+        "valid_start_timestamp": "1689669792.798100892"
+    }
+]
 
 export const defaultCallData = {
     "from": "0x0000000000000000000000000000000000001f41",
@@ -556,4 +806,5 @@ export const defaultCallData = {
     "value": null
 };
 
-export const defaultErrorMessage = '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';
+export const defaultErrorMessageText = 'Set to revert';
+export const defaultErrorMessageHex = '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';

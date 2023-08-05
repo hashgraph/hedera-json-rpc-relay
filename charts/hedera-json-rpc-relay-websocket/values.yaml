@@ -2,58 +2,37 @@
 affinity: {}
 
 autoscaling:
-  # need to test
   enabled: false
   minReplicas: 2
-  maxReplicas: 6
+  maxReplicas: 8
   targetCPUUtilizationPercentage: 80
-  targetMemoryUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
 
 config:
   # This value should be in decimal, not hexadecimal format. Defaulted to testnet
   CHAIN_ID: ''
-  CLIENT_TRANSPORT_SECURITY: false
-  CONSENSUS_MAX_EXECUTION_TIME: 15000
-  CONTRACT_QUERY_TIMEOUT_RETRIES: 3
   DEV_MODE: false
-  DEFAULT_RATE_LIMIT: 200
-  ETH_CALL_CACHE_TTL: 200
-  ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: true
-  ETH_GET_LOGS_BLOCK_RANGE_LIMIT: 1000
-  GAS_PRICE_TINY_BAR_BUFFER: 10000000000
-  HBAR_RATE_LIMIT_TINYBAR: 5000000000
-  HBAR_RATE_LIMIT_DURATION: 60000
-  # Valid options are `previewnet`, `testnet`, and `mainnet` for remote options. For local use {"127.0.01:50211":"0.0.3"}. For IPs use {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1"} form
+
+  # Valid options are `previewnet`, `testnet`, and `mainnet` for remote options. For local use {'127.0.01:50211':'0.0.3'}. For IPs use {'$IPv4_ADDR_1:$PORT_1':'$ACCOUNT_ID_1'} form
   HEDERA_NETWORK: ''
-  INPUT_SIZE_LIMIT: 1
-  LIMIT_DURATION: 60000
-  LOCAL_NODE: false
   LOG_LEVEL: ''
   MIRROR_NODE_RETRIES: 3
   MIRROR_NODE_RETRY_DELAY: 250
   MIRROR_NODE_LIMIT_PARAM: 100
   MIRROR_NODE_URL: ''
-  OPERATOR_ID_MAIN: ''
-  OPERATOR_KEY_MAIN: ''
-  OPERATOR_ID_ETH_SENDRAWTRANSACTION: ''
-  OPERATOR_KEY_ETH_SENDRAWTRANSACTION: ''
-  RATE_LIMIT_DISABLED: false
-  SDK_REQUEST_TIMEOUT: 10000
-  SERVER_PORT: 7546
-  SUBSCRIPTIONS_ENABLED: false
-  TIER_1_RATE_LIMIT: 100
-  TIER_2_RATE_LIMIT: 200
-  TIER_3_RATE_LIMIT: 400
+  SUBSCRIPTIONS_ENABLED: true  # must be true for websocket
   WEB_SOCKET_PORT: 8546
+  WEB_SOCKET_HTTP_PORT: 8547
+  WS_CONNECTION_LIMIT_PER_IP: 10
+  WS_CONNECTION_LIMIT: 100
+  WS_MAX_CONNECTION_TTL: 300000
+  WS_MULTIPLE_ADDRESSES_ENABLED: false
+  WS_SUBSCRIPTION_LIMIT: 100
 
-cronjob:
-  enabled: false
-  image:
-    pullPolicy: IfNotPresent
-    repository: postman/newman
-    tag: 5.3.1-alpine
-  postman: ""  # Custom postman.json in base64 encoding
-  schedule: '@daily'
+# -- Extra environment variables from existing secrets or configmaps
+extraEnvFrom: []
+# - secretRef:
+#     name: '{{ .Release.Name }}-env'
 
 fullnameOverride: ''
 
@@ -84,7 +63,7 @@ livenessProbe:
   failureThreshold: 5
   httpGet:
     path: /health/liveness
-    port: jsonrpcrelay
+    port: metrics
   initialDelaySeconds: 20
   periodSeconds: 10
   timeoutSeconds: 5
@@ -104,8 +83,10 @@ podSecurityContext:
     type: RuntimeDefault
 
 ports:
-  name: jsonrpcrelay
-  containerPort: 7546
+  - name: websocket
+    containerPort: 8546
+  - name: metrics  # port for http endpoints (metrics and health)
+    containerPort: 8547
 
 replicaCount: 2
 
@@ -117,21 +98,16 @@ resources:
     cpu: 1100m
     memory: 350Mi
 
-# Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
-rolling_restart:
-  enabled: false
-  schedule: '@daily'
-
 securityContext:
   allowPrivilegeEscalation: false
   capabilities:
     drop: [ALL]
-  readOnlyRootFilesystem: true
+  readOnlyRootFilesystem: false
 
 service:
-  type: ClusterIP
-  port: 7546
   annotations: {}
+  port: 8546
+  type: ClusterIP
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -148,17 +124,9 @@ readinessProbe:
   failureThreshold: 5
   httpGet:
     path: /health/readiness
-    port: jsonrpcrelay
+    port: metrics
   initialDelaySeconds: 20
   timeoutSeconds: 5
-
-test:
-  enabled: true
-  image:
-    pullPolicy: IfNotPresent
-    repository: postman/newman
-    tag: 5.3.1-alpine
-  postman: ""  # Custom postman.json in base64 encoding
 
 terminationGracePeriodSeconds: 60
 

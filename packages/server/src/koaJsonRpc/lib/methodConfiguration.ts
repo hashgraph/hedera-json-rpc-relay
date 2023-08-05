@@ -22,129 +22,135 @@ import path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
+import CONSTANTS from '../../../../relay/dist/lib/constants';
+
+const tier1rateLimit = process.env.TIER_1_RATE_LIMIT || CONSTANTS.DEFAULT_RATE_LIMIT.TIER_1;
+const tier2rateLimit = process.env.TIER_2_RATE_LIMIT || CONSTANTS.DEFAULT_RATE_LIMIT.TIER_2;
+const tier3rateLimit = process.env.TIER_3_RATE_LIMIT || CONSTANTS.DEFAULT_RATE_LIMIT.TIER_3;
+
 // total requests per rate limit duration (default ex. 200 request per 60000ms)
 export const methodConfiguration = {
   web3_clientVersion: {
-    total: process.env.TIER_3_RATE_LIMIT,
+    total: tier3rateLimit,
   },
   net_listening: {
-    total: process.env.TIER_3_RATE_LIMIT,
+    total: tier3rateLimit,
   },
   net_version: {
-    total: process.env.TIER_3_RATE_LIMIT,
+    total: tier3rateLimit,
   },
   eth_blockNumber: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_call: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_coinbase: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_estimateGas: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_gasPrice: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getBalance: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getBlockByHash: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getBlockByNumber: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getBlockTransactionCountByHash: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getBlockTransactionCountByNumber: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getCode: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_chainId: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getLogs: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getStorageAt: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getTransactionByBlockHashAndIndex: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getTransactionByBlockNumberAndIndex: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getTransactionByHash: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getTransactionCount: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getTransactionReceipt: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getUncleByBlockHashAndIndex: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getUncleByBlockNumberAndIndex: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getUncleCountByBlockHash: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getUncleCountByBlockNumber: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_getWork: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_feeHistory: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_hashrate: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_maxPriorityFeePerGas: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_mining: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_protocolVersion: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   eth_sendRawTransaction: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_sendTransaction: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_sign: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_signTransaction: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_submitHashrate: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_submitWork: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_syncing: {
-    total: process.env.TIER_1_RATE_LIMIT,
+    total: tier1rateLimit,
   },
   eth_accounts: {
-    total: process.env.TIER_2_RATE_LIMIT,
+    total: tier2rateLimit,
   },
   web3_client_version: {
-    total: process.env.TIER_3_RATE_LIMIT,
+    total: tier3rateLimit,
   },
 };

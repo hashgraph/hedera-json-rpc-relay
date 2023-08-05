@@ -18,8 +18,8 @@
  *
  */
 
-import { predefined } from './errors/JsonRpcError';
-import { MirrorNodeClient, SDKClient } from './clients';
+import { JsonRpcError, predefined } from './errors/JsonRpcError';
+import { MirrorNodeClient } from './clients';
 import { EthImpl } from './eth';
 import { Logger } from 'pino';
 import constants from './constants';
@@ -28,15 +28,13 @@ import { formatRequestIdMessage } from '../formatters';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
-  private sdkClient: SDKClient;
   private readonly chain: string;
   private readonly logger: Logger;
 
-  constructor(mirrorNodeClient: MirrorNodeClient, sdkClient: SDKClient, logger: Logger, chainId: string) {
+  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, chainId: string) {
     this.mirrorNodeClient = mirrorNodeClient;
-    this.sdkClient = sdkClient;
-    this.chain = chainId;
     this.logger = logger;
+    this.chain = chainId;
   }
 
   public static parseTxIfNeeded(transaction: string | Transaction): Transaction {
@@ -56,14 +54,14 @@ export class Precheck {
    * @param gasPrice
    */
   async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId?: string) {
-
+    
     this.gasLimit(parsedTx, requestId);
     const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
     await this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
     this.chainId(parsedTx, requestId);
     this.value(parsedTx);
     this.gasPrice(parsedTx, gasPrice, requestId);
-    await this.balance(parsedTx, EthImpl.ethSendRawTransaction, requestId);
+    await this.balance(parsedTx, mirrorAccountInfo, requestId);
   }
 
   async verifyAccount(tx: Transaction, requestId?: string) {
@@ -87,7 +85,7 @@ export class Precheck {
 
     // @ts-ignore
     if (accountInfoNonce > tx.nonce) {
-      throw predefined.NONCE_TOO_LOW;
+      throw predefined.NONCE_TOO_LOW(tx.nonce, accountInfoNonce);
     }
   }
 
@@ -115,17 +113,17 @@ export class Precheck {
     const passes = txGasPrice >= minGasPrice;
 
     if (!passes) {
-      if (process.env.GAS_PRICE_TINY_BAR_BUFFER) {
+      if (constants.GAS_PRICE_TINY_BAR_BUFFER) {
         // Check if failure is within buffer range (Often it's by 1 tinybar) as network gasprice calculation can change slightly.
         // e.g gasPrice=1450000000000, requiredGasPrice=1460000000000, in which case we should allow users to go through and let the network check
-        const txGasPriceWithBuffer = txGasPrice + BigInt(process.env.GAS_PRICE_TINY_BAR_BUFFER);
+        const txGasPriceWithBuffer = txGasPrice + BigInt(constants.GAS_PRICE_TINY_BAR_BUFFER);
         if (txGasPriceWithBuffer >= minGasPrice) {
           return;
         }
       }
 
       this.logger.trace(`${requestIdPrefix} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`, JSON.stringify(tx), txGasPrice, minGasPrice);
-      throw predefined.GAS_PRICE_TOO_LOW;
+      throw predefined.GAS_PRICE_TOO_LOW(txGasPrice, minGasPrice);
     }
   }
 
@@ -133,7 +131,7 @@ export class Precheck {
    * @param tx
    * @param callerName
    */
-  async balance(tx: Transaction, callerName: string, requestId?: string) {
+  async balance(tx: Transaction, account: any, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const result = {
       passes: false,
@@ -141,20 +139,24 @@ export class Precheck {
     };
     const txGas = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
     const txTotalValue = tx.value + txGas * tx.gasLimit;
-    let tinybars;
+    let tinybars: BigInt;
 
-    const accountResponse: any = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
-    if (accountResponse == null) {
+    if (account == null) {
       this.logger.trace(`${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(tx)}, totalValue=${txTotalValue})`);
       throw predefined.RESOURCE_NOT_FOUND(`tx.from '${tx.from}'.`);
     }
 
     try {
-      tinybars = await this.sdkClient.getAccountBalanceInTinyBar(accountResponse.account, callerName, requestId);
-      result.passes = BigInt(tinybars.toString()) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF) >= txTotalValue;
+      tinybars = BigInt(account.balance.balance.toString()) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+      result.passes = tinybars >= txTotalValue;
     } catch (error: any) {
       this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);
-      throw predefined.INTERNAL_ERROR('balance precheck');
+      if (error instanceof JsonRpcError) {
+        // preserve original error
+        throw error;
+      } else {
+        throw predefined.INTERNAL_ERROR(`balance precheck: ${error.message}`);
+      }
     }
 
     if (!result.passes) {
@@ -176,10 +178,10 @@ export class Precheck {
 
     if (gasLimit > constants.BLOCK_GAS_LIMIT) {
       this.logger.trace(`${requestIdPrefix} ${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`, JSON.stringify(tx), gasLimit, constants.BLOCK_GAS_LIMIT);
-      throw predefined.GAS_LIMIT_TOO_HIGH;
+      throw predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.BLOCK_GAS_LIMIT);
     } else if (gasLimit < intrinsicGasCost) {
       this.logger.trace(`${requestIdPrefix} ${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`, JSON.stringify(tx), gasLimit, intrinsicGasCost);
-      throw predefined.GAS_LIMIT_TOO_LOW;
+      throw predefined.GAS_LIMIT_TOO_LOW(gasLimit, intrinsicGasCost);
     }
   }
 

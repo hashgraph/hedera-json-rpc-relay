@@ -1,4 +1,4 @@
-FROM node:18.16.0-bullseye-slim
+FROM node:18.17-bullseye-slim
 
 # Setup
 ENV DEBIAN_FRONTEND=noninteractive
@@ -23,8 +23,6 @@ RUN apt-get update && \
     chown -R node:node . && \
     rm -rf /var/lib/apt/lists/*
 
-RUN npm run setup
-RUN npm install pnpm
 RUN npm run build
 
 # Install OS updates

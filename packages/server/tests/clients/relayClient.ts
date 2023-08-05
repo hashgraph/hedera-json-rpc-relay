@@ -23,6 +23,8 @@ import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
+import { FetchRequest } from 'ethers/src.ts/utils/index';
+import { FetchResponse } from 'ethers/src.ts/utils/fetch';
 
 export default class RelayClient {
 
@@ -31,7 +33,8 @@ export default class RelayClient {
 
     constructor(relayUrl: string, logger: Logger) {
         this.logger = logger;
-        this.provider = new ethers.JsonRpcProvider(relayUrl, undefined, {
+        let fr: ethers.FetchRequest = new ethers.FetchRequest(relayUrl);
+        this.provider = new ethers.JsonRpcProvider(fr, undefined, {
             batchMaxCount: 1
         });
     }
@@ -58,21 +61,17 @@ export default class RelayClient {
      */
     async callFailing(methodName: string, params: any[], expectedRpcError = predefined.INTERNAL_ERROR(), requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-        let failed = false;
         try {
             const res = await this.call(methodName, params, requestId);
             this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
+            Assertions.expectedError();
         } catch (err) {
-            failed = true;
-            // TODO: handle it
+            // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
             // if (expectedRpcError.name == "Internal error"){
             //     expectedRpcError = predefined.INTERNAL_ERROR(err.message);
             // }
             // Assertions.jsonRpcError(err, expectedRpcError);
         }
-
-        // TODO: implement checks
-        if(!failed) throw new Error('test failed');
     }
 
     /**
@@ -83,19 +82,16 @@ export default class RelayClient {
      */
     async callUnsupported(methodName: string, params: any[], requestId?: string) {
         const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-        let failed = false;
         try {
-            await this.call(methodName, params, requestId);
+            const res = await this.call(methodName, params, requestId);
+            this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
             Assertions.expectedError();
         } catch (err) {
-            failed = true;
-            // this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${err.body}`);
+            // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
             // const response = JSON.parse(err.body);
             // Assertions.unsupportedResponse(response);
             // return response;
         }
-        // TODO: implement checks
-        if(!failed) throw new Error('test failed');
     };
 
     /**

@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,11 @@ import axios from 'axios';
 import sinon from 'sinon';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { RelayImpl } from '../../../../packages/relay';
+import { RelayImpl } from '../../src/lib/relay';
 import { Registry } from 'prom-client';
 
 import { EthImpl } from '../../src/lib/eth';
-import { SDKClient } from '../../src/lib/clients';
+import { ClientCache, SDKClient } from '../../src/lib/clients';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 import openRpcSchema from "../../../../docs/openrpc.json";
@@ -62,12 +62,16 @@ import {
     defaultLogs,
     defaultLogTopics,
     defaultNetworkFees,
-    defaultTransaction,
     defaultTxHash,
+    getRequestId,
     signedTransactionHash
 } from '../helpers';
+import ClientService from '../../src/lib/services/hapiService/hapiService';
+import HbarLimit from '../../src/lib/hbarlimiter';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+
+import constants from '../../src/lib/constants';
 
 process.env.npm_package_version = "relay/0.0.1-SNAPSHOT";
 
@@ -77,8 +81,10 @@ const Relay = new RelayImpl(logger, registry);
 
 let mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
+let clientServiceInstance: ClientService;
 let sdkClientStub: any;
 
+const noTransactions = '?transactions=false';
 
 describe("Open RPC Specification", function () {
 
@@ -105,11 +111,18 @@ describe("Open RPC Specification", function () {
 
         // @ts-ignore
         mock = new MockAdapter(instance, { onNoMatch: "throwException" });
+        const clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
         // @ts-ignore
-        mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, instance);
+        mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache, instance);
+        const duration = constants.HBAR_RATE_LIMIT_DURATION;
+        const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+        const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+
+        clientServiceInstance = new ClientService(logger, registry, hbarLimiter, clientCache);
         sdkClientStub = sinon.createStubInstance(SDKClient);
+        sinon.stub(clientServiceInstance, "getSDKClient").returns(sdkClientStub);
         // @ts-ignore
-        ethImpl = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a');
+        ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
 
         // mocked data
         mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
@@ -129,10 +142,21 @@ describe("Open RPC Specification", function () {
         mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
         mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, defaultDetailedContractResults3);
         mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, null);
-        mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, { account: contractAddress1 });
-        mock.onGet(`accounts/${contractAddress3}`).reply(200, { account: contractAddress3 });
+        mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, { 
+            account: contractAddress1, 
+            balance: {
+                balance: 2000000000000
+            } 
+        });
+        mock.onGet(`accounts/${contractAddress3}${noTransactions}`).reply(200, { 
+            account: contractAddress3,
+            balance: {
+                balance: 100000000000
+            } 
+        });
         mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
-        mock.onGet(`accounts/${defaultFromLongZeroAddress}`).reply(200, {
+
+        mock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
             from: `${defaultEvmAddress}`
           });
         for (const log of defaultLogs.logs) {
@@ -178,36 +202,6 @@ describe("Open RPC Specification", function () {
         validateResponseSchema(methodsResponseSchema.eth_blockNumber, response);
     });
 
-    it('should execute "eth_call" against mirror node', async function () {
-        let initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
-        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
-        mock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-        mock.onGet(`accounts/${defaultCallData.from}?limit=100`).reply(200, {
-            account: "0.0.1723",
-            evm_address: defaultCallData.from
-        });
-        mock.onGet(`contracts/${defaultCallData.to}`).reply(200, defaultContract);
-
-        const response = await ethImpl.call({...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}`}, 'latest');
-        validateResponseSchema(methodsResponseSchema.eth_call, response);
-        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
-    });
-
-    it('should execute "eth_call" against consensus node', async function () {
-        let initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
-        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
-        mock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-        mock.onGet(`accounts/${defaultCallData.from}?limit=100`).reply(200, {
-            account: "0.0.1723",
-            evm_address: defaultCallData.from
-        });
-        mock.onGet(`contracts/${defaultTransaction.to}`).reply(200, defaultContract);
-
-        sdkClientStub.submitContractCallQuery.returns({ asBytes: () => Buffer.from('12') });
-        const response = await ethImpl.call(defaultTransaction, 'latest');
-        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
-    });
-
     it('should execute "eth_chainId"', function () {
         const response = ethImpl.chainId();
 
@@ -221,7 +215,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_estimateGas"', async function () {
-        mock.onGet(`accounts/undefined`).reply(404);
+        mock.onGet(`accounts/undefined${noTransactions}`).reply(404);
         const response = await ethImpl.estimateGas({}, null);
 
         validateResponseSchema(methodsResponseSchema.eth_estimateGas, response);
@@ -240,7 +234,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getBalance"', async function () {
-        const response = await ethImpl.getBalance(contractAddress1, 'latest');
+        const response = await ethImpl.getBalance(contractAddress1, 'latest', getRequestId());
 
         validateResponseSchema(methodsResponseSchema.eth_getBalance, response);
     });
@@ -349,7 +343,8 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionCount"', async function () {
-        mock.onGet(`accounts/${contractAddress1}`).reply(200, { account: contractAddress1 });
+        mock.onGet(`accounts/${contractAddress1}${noTransactions}`).reply(200, { account: contractAddress1, ethereum_nonce: 5 });
+        mock.onGet(`contracts/${contractAddress1}${noTransactions}`).reply(404);
         const response = await ethImpl.getTransactionCount(contractAddress1, 'latest');
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);

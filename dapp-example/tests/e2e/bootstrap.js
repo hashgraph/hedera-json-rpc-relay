@@ -1,6 +1,5 @@
 const HederaSDK = require('@hashgraph/sdk');
 const ethers = require('ethers');
-const hethers = require('@hashgraph/hethers');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -15,6 +14,24 @@ const randomUppercaseString = (length = 5) => {
   }
 
   return result;
+};
+
+const idToEvmAddress = (id) => {
+  try {
+    const [shard, realm, num] = id.split('.');
+    return [
+        '0x',
+        toHex(shard).padStart(8, '0'),
+        toHex(realm).padStart(16, '0'),
+        toHex(num).padStart(16, '0')
+    ].join('');
+  } catch(e) {
+    throw new Error(`Can not transform id ${id} to evm address`);
+  }
+};
+
+const toHex = (num) => {
+  return parseInt(num).toString(16);
 };
 
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
@@ -68,7 +85,7 @@ const createHTSToken = async function() {
 
   const receipt = await tokenCreate.getReceipt(client);
   const tokenId = receipt.tokenId.toString();
-  const tokenAddress = hethers.utils.getAddressFromAccount(tokenId);
+  const tokenAddress = idToEvmAddress(tokenId);
 
   console.log(`HTS Token Deployed at: ${tokenAddress} with id ${tokenId}`);
 
@@ -137,6 +154,7 @@ const deployAndFundContractTransferTx = async function(wallet) {
   return contractAddress;
 };
 
+
 (async () => {
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
   if (mainPrivateKeyString === '') {
@@ -160,6 +178,15 @@ const deployAndFundContractTransferTx = async function(wallet) {
   console.log(`Contract Transfer Tx Address: ${ContractTransferTxAddress}`);
   const HTSContractAddress = await deployHederaTokenService(mainWallet);
   console.log(`HTS Contract Address: ${HTSContractAddress}`);
+
+  // Get Contract id from evm address
+  const contractInfo = await (
+      new HederaSDK.ContractInfoQuery()
+          .setContractId(HederaSDK.ContractId.fromEvmAddress(0, 0, HTSContractAddress))
+  ).execute(client);
+  const HTSContractId = contractInfo.contractId;
+  console.log(`HTS Contract ID: ${HTSContractId}`);
+
   const { tokenId, tokenAddress } = await createHTSToken();
   const token2 = await createHTSToken();
   fs.writeFileSync(path.resolve(__dirname + '../../../src/contracts/') + '/.bootstrapInfo.json',
