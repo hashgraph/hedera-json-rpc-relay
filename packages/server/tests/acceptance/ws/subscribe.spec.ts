@@ -528,7 +528,7 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(closeEventHandled3).to.eq(true);
             expect(server._connections).to.equal(0);
         });
-    })
+    });
 
     describe('Subscribes to log events', async function () {
         let logContractSigner2, logContractSigner3, wsLogsProvider, contracts, cLen;
@@ -559,7 +559,10 @@ describe('@web-socket Acceptance Tests', async function() {
             const invalidTopic = '0x9999999999999999999999999999999999999999999999999999999999999999';
 
             const testFilters = [
-                'debug', // all contract logs
+                {
+                    address: [logContractSigner.target, logContractSigner2.target, logContractSigner3.target]
+                    // all contract logs
+                },
                 {
                     address: logContractSigner.target
                 },  // logs from single contract with evm address
@@ -607,7 +610,7 @@ describe('@web-socket Acceptance Tests', async function() {
                 await createLogs(contracts[i], requestId);
             }
 
-            await wsLogsProvider.destroy();
+            await wsLogsProvider.websocket.close();
         });
 
         it('Subscribes for all contract logs', async function () {

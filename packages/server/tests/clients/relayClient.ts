@@ -23,8 +23,6 @@ import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
-import { FetchRequest } from 'ethers/src.ts/utils/index';
-import { FetchResponse } from 'ethers/src.ts/utils/fetch';
 
 export default class RelayClient {
 
@@ -81,13 +79,13 @@ export default class RelayClient {
      * @param requestId
      */
     async callUnsupported(methodName: string, params: any[], requestId?: string) {
-        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         try {
-            const res = await this.call(methodName, params, requestId);
-            this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
+            await this.call(methodName, params, requestId);
             Assertions.expectedError();
         } catch (err) {
             // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
+            // const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+            // this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${err.body}`);
             // const response = JSON.parse(err.body);
             // Assertions.unsupportedResponse(response);
             // return response;

@@ -18,7 +18,7 @@
  *
  */
 import { expect } from 'chai';
-import { ethers, BigNumber } from 'ethers';
+import { ethers } from 'ethers';
 import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from './utils';
 

@@ -28,7 +28,6 @@ import testConstants from '../../tests/helpers/constants';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
-import { predefined } from '../../../../packages/relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
 import relayConstants from "../../../../packages/relay/src/lib/constants";
 

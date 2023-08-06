@@ -235,6 +235,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       {
         const tx = await mainContract.wipeTokenAccountNFTPublic(nftAddress, accounts[1].wallet.address, serials.toArray().map(e => Number(e)), Constants.GAS.LIMIT_50_000);
         const { responseCode } = (await tx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args;
+        expect(responseCode).to.equal(TX_SUCCESS_CODE);
       }
 
       // Get token info after
