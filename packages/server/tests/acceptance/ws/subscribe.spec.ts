@@ -559,10 +559,10 @@ describe('@web-socket Acceptance Tests', async function() {
             const invalidTopic = '0x9999999999999999999999999999999999999999999999999999999999999999';
 
             const testFilters = [
-                {
-                    address: [logContractSigner.target, logContractSigner2.target, logContractSigner3.target]
-                    // all contract logs
-                },
+                // currently, there is no way to gossip about all contract logs
+                // ethers v6 .getSubscription() method expects "ProviderEvent" https://github.com/ethers-io/ethers.js/blob/main/src.ts/providers/abstract-provider.ts#L230
+                // and "ProviderEvent" doesn't support '*' filter https://github.com/ethers-io/ethers.js/blob/main/src.ts/providers/provider.ts#L1781
+                'debug',
                 {
                     address: logContractSigner.target
                 },  // logs from single contract with evm address
@@ -613,31 +613,16 @@ describe('@web-socket Acceptance Tests', async function() {
             await wsLogsProvider.websocket.close();
         });
 
-        it('Subscribes for all contract logs', async function () {
+        it('Subscribes for debug', async function () {
             await new Promise(r => setTimeout(r, 2000));
+
             let eventsReceived = eventsReceivedGlobal[0];
+            const subscriptionEvents = eventsReceived.filter(e => e?.payload?.method === 'eth_subscribe');
+            const receiveRpcResultEvents = eventsReceived.filter(e => e?.action === 'receiveRpcResult');
 
-            // Only the logs from logContractSigner.target are captured
-            expect(eventsReceived.length).to.eq(15);
-
-            for (let i = 0; i < cLen; i++) {
-                const iter = i * 5;
-
-                // event Log0(uint256 num1) anonymous;
-                assertions.expectAnonymousLog(eventsReceived[iter], contracts[i], ANONYMOUS_LOG_DATA);
-
-                // event Log1(uint256 indexed num0);
-                assertions.expectLogArgs(eventsReceived[iter + 1], contracts[i], [BigInt(1)]);
-
-                // event Log2(uint256 indexed num0, uint256 indexed num1);
-                assertions.expectLogArgs(eventsReceived[iter + 2], contracts[i], [BigInt(1), BigInt(2)]);
-
-                // event Log3(uint256 indexed num0, uint256 indexed num1, uint256 indexed num2);
-                assertions.expectLogArgs(eventsReceived[iter + 3], contracts[i], [BigInt(10), BigInt(20), BigInt(31)]);
-
-                // event Log4(uint256 indexed num0, uint256 indexed num1, uint256 indexed num2, uint256 num3);
-                assertions.expectLogArgs(eventsReceived[iter + 4], contracts[i], [BigInt(11), BigInt(22), BigInt(33), BigInt(44)]);
-            }
+            expect(eventsReceived.length).to.eq(12);
+            expect(subscriptionEvents.length).to.equal(6);
+            expect(receiveRpcResultEvents.length).to.equal(6);
         });
 
         it('Subscribes for contract logs for a specific contract address (using evmAddress)', async function () {
