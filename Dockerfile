@@ -12,10 +12,11 @@ EXPOSE 8547
 HEALTHCHECK --interval=10s --retries=3 --start-period=25s --timeout=2s CMD wget -q -O- http://localhost:${HEALTHCHECK_PORT}/health/liveness
 WORKDIR /home/node/app/
 
-# Install OS updates and required packages
 COPY package*.json ./
 COPY lerna.json ./
 COPY --chown=node:node ./packages ./packages
+
+# Install OS updates and required packages
 RUN apt-get update && \
     apt-get upgrade -y --no-install-recommends && \
     apt-get autoremove -y && \
