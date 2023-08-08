@@ -2909,7 +2909,7 @@ describe('Eth calls using MirrorNode', async function () {
       data: "0x",
       from: "0x81cb089c285e5ee3a7353704fb114955037443af",
       to: receiverAddress,
-      value: "0x1"
+      value: "0x2540BE400"
     };
     web3Mock.onPost('contracts/call', {...callData, estimate: true}).reply(501, {"errorMessage":"","statusCode":501});
 
@@ -3144,13 +3144,13 @@ describe('Eth calls using MirrorNode', async function () {
     const transaction = {
       from: "0x05fba803be258049a27b820088bab1cad2058871",
       data: "0x",
-      value: "0x123",
-      gasPrice: "0x124"
+      value: "0xA186B8E9800",
+      gasPrice: "0xF4240"
     };
 
     ethImpl.contractCallPrecheck(transaction);
-    expect(transaction.value).to.eq(291);
-    expect(transaction.gasPrice).to.eq(292);
+    expect(transaction.value).to.eq(1110);
+    expect(transaction.gasPrice).to.eq(1000000);
   });
 
   describe('eth_gasPrice', async function () {
