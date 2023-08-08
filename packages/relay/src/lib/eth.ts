@@ -38,6 +38,8 @@ import {
   nanOrNumberTo0x,
   toHash32,
   toNullableBigNumber,
+  valueHexToInt,
+  gasPriceHexToInt
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -487,7 +489,7 @@ export class EthImpl implements Eth {
     if (transaction?.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter.labels(EthImpl.ethEstimateGas, transaction.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
 
-
+    this.contractCallPrecheck(transaction);
     let gas = EthImpl.gasTxBaseCost;
     try {
       const contractCallResponse = await this.mirrorNodeClient.postContractCall({
@@ -540,6 +542,19 @@ export class EthImpl implements Eth {
     this.logger.error(`${requestIdPrefix} Returning predefined gas: ${gas}`);
 
     return gas;
+  }
+
+  /**
+   * Perform value format precheck before making contract call towards the mirror node
+   * @param transaction 
+   */
+  private contractCallPrecheck(transaction: any) {
+    if (transaction.value) {
+      transaction.value = valueHexToInt(transaction.value);
+    }
+    if (transaction.gasPrice) {
+      transaction.gasPrice = gasPriceHexToInt(transaction.gasPrice);
+    }
   }
 
   /**
