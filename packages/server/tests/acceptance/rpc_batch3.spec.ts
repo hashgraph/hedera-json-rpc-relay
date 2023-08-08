@@ -787,7 +787,25 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             expect(nonceAfter).to.be.equal('0x3');
 
         });
+    });
 
+    describe('Filter API Test Suite', () => {
+        const nonExstingFilter = "0x111222331";
+
+        // Fix when newFilter method is added.
+        describe('Positive', async function () {
+            xit('should be able to uninstall existing filter', async function () {
+
+            });
+        });
+
+        describe('Negative', async function () {
+            it('should not be able to uninstall not existing filter', async function () {
+                const result = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_UNINSTALL_FILTER, [nonExstingFilter], requestId);
+
+                expect(result).to.eq(false);
+            });
+        });
     });
 
     describe('Filter API Test Suite', () => {

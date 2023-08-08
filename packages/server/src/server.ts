@@ -665,6 +665,17 @@ app.useRpc('eth_coinbase', async () => {
   return logAndHandleResponse('eth_coinbase', [], (requestId) => relay.eth().coinbase(requestId));
 });
 
+/**
+ * It returns true if the filter was successfully uninstalled, otherwise false
+ * params: Filter Id - string
+ *
+ * returns: boolean
+ */
+app.useRpc('eth_uninstallFilter', async (params: any) => {
+  return logAndHandleResponse('eth_uninstallFilter', params, (requestId) =>
+    relay.eth().filterService().uninstallFilter(params?.[0], requestId));
+});
+
 const rpcApp = app.rpcApp();
 
 app.getKoaApp().use(async (ctx, next) => {

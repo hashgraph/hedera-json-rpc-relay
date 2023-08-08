@@ -156,4 +156,7 @@ export const methodConfiguration = {
   web3_client_version: {
     total: tier3rateLimit,
   },
+  eth_uninstallFilter: {
+    total: tier2rateLimit,
+  }
 };
