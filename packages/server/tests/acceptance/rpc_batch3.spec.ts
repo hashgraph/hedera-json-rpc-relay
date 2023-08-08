@@ -792,10 +792,33 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     describe('Filter API Test Suite', () => {
         const nonExstingFilter = "0x111222331";
 
-        // Fix when newFilter method is added.
         describe('Positive', async function () {
-            xit('should be able to uninstall existing filter', async function () {
+            it('should be able to create a log filter', async function() {
+                const currentBlock =  await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId);
+                expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [], requestId)), 32)).to.eq(true, 'without params');
+                expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [{
+                    fromBlock: currentBlock,
+                    toBlock: 'latest'
+                }], requestId)), 32)).to.eq(true, 'from current block to latest');
 
+                expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [{
+                    fromBlock: currentBlock,
+                    toBlock: 'latest',
+                    address: reverterEvmAddress
+                }], requestId)), 32)).to.eq(true, 'from current block to latest and specified address');
+
+                expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [{
+                    fromBlock: currentBlock,
+                    toBlock: 'latest',
+                    address: reverterEvmAddress,
+                    topics: TOPICS
+                }], requestId)), 32)).to.eq(true, 'with all params');
+            });
+
+            it('should be able to uninstall existing filter', async function () {
+                const filterId = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [], requestId);
+                const result = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_UNINSTALL_FILTER, [filterId], requestId);
+                expect(result).to.eq(true);
             });
         });
 
@@ -805,30 +828,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
                 expect(result).to.eq(false);
             });
-        });
-    });
-
-    describe('Filter API Test Suite', () => {
-        it('should be able to create a log filter', async function() {
-            const currentBlock =  await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId);
-            expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [], requestId)), 32)).to.eq(true, 'without params');
-            expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [{
-                fromBlock: currentBlock,
-                toBlock: 'latest'
-            }], requestId)), 32)).to.eq(true, 'from current block to latest');
-
-            expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [{
-                fromBlock: currentBlock,
-                toBlock: 'latest',
-                address: reverterEvmAddress
-            }], requestId)), 32)).to.eq(true, 'from current block to latest and specified address');
-
-            expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [{
-                fromBlock: currentBlock,
-                toBlock: 'latest',
-                address: reverterEvmAddress,
-                topics: TOPICS
-            }], requestId)), 32)).to.eq(true, 'with all params');
         });
     });
 });
