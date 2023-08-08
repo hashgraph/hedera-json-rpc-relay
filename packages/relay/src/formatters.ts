@@ -113,6 +113,28 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
     return value;
 }
 
+/**
+ * Parse value from hex string to number, if value lenght is bigger than tinybar to weibar coef, it means that it's in weibar, which needs conversion to weibar.
+ * @param value 
+ * @returns parsedValue
+ */
+const valueHexToInt = (value: string): number => {
+    if (BigInt(value).toString().length > constants.TINYBAR_TO_WEIBAR_COEF.toString().length) {
+        const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+        return Number(tinybarValue);
+    }
+    return parseInt(value);
+}
+
+/**
+ * Parse gasPrice hex value to number.
+ * @param gasPrice 
+ * @returns parsedGasPrice
+ */
+const gasPriceHexToInt = (gasPrice: string): number => {
+    return parseInt(gasPrice);
+}
+
 const formatContractResult = (cr: any) => {
     if (cr === null) {
         return null;
@@ -176,5 +198,6 @@ const toNullIfEmptyHex = (value: string): string | null => {
 export {
     hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId,
     formatTransactionIdWithoutQueryParams, parseNumericEnvVar, formatContractResult, prepend0x,
-    numberTo0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex
+    numberTo0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex,
+    gasPriceHexToInt, valueHexToInt
 };
