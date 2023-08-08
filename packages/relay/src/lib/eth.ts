@@ -38,7 +38,7 @@ import {
   nanOrNumberTo0x,
   toHash32,
   toNullableBigNumber,
-  valueHexToInt
+  weibarHexToTinyBarInt
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -564,7 +564,7 @@ export class EthImpl implements Eth {
    */
   contractCallPrecheck(transaction: any) {
     if (transaction.value) {
-      transaction.value = valueHexToInt(transaction.value);
+      transaction.value = weibarHexToTinyBarInt(transaction.value);
     }
     if (transaction.gasPrice) {
       transaction.gasPrice = parseInt(transaction.gasPrice);
