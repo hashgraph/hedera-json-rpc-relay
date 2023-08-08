@@ -27,7 +27,10 @@ import { MirrorNodeClient } from '../../../../src/lib/clients/mirrorNodeClient';
 import pino from 'pino';
 import constants from '../../../../src/lib/constants';
 import { ClientCache } from '../../../../src/lib/clients';
-import { FilterService } from '../../../../src/lib/services/ethService';
+import { FilterService, CommonService } from '../../../../src/lib/services/ethService';
+import {defaultEvmAddress, getRequestId, toHex, defaultBlock, defaultLogTopics} from "../../../helpers";
+import RelayAssertions from "../../../assertions";
+import {predefined} from "../../../../src";
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -40,17 +43,25 @@ let filterService: FilterService;
 let clientCache: ClientCache;
 let mirrorNodeCache: ClientCache;
 
-describe('Filter API Test Suite', async function () {
+describe.only('Filter API Test Suite', async function () {
   this.timeout(10000);
+
+  const filterObject = {
+    toBlock: 'latest',
+  };
+  const existingFilterId = '0x1112233';
+  const nonExistingFilterId = '0x1112231';
+  const LATEST_BLOCK_QUERY = 'blocks?limit=1&order=desc';
+  const BLOCK_BY_NUMBER_QUERY = 'blocks';
 
   this.beforeAll(() => {
     clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL,
-      logger.child({ name: `mirror-node` }),
-      registry,
-      clientCache
+        process.env.MIRROR_NODE_URL,
+        logger.child({ name: `mirror-node` }),
+        registry,
+        clientCache
     );
 
     // @ts-ignore
@@ -63,7 +74,8 @@ describe('Filter API Test Suite', async function () {
     web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
 
     // @ts-ignore
-    filterService = new FilterService(mirrorNodeInstance, logger, clientCache);
+    const common = new CommonService(mirrorNodeInstance, logger, clientCache);
+    filterService = new FilterService(mirrorNodeInstance, logger, clientCache, common);
   });
 
   this.beforeEach(() => {
@@ -77,26 +89,109 @@ describe('Filter API Test Suite', async function () {
     restMock.resetHandlers();
   });
 
-  const filterObject = {
-    toBlock: 'latest',
-  };
-  const existingFilterId = '0x1112233';
-  const nonExistingFilterId = '0x1112231';
+  describe('all methods require a filter flag', async function () {
+    let ffAtStart;
 
-  it('should return true if filter is deleted', async function () {
-    const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-    clientCache.set(cacheKey, filterObject, filterService.ethUninstallFilter, 300000, undefined);
+    before(function () {
+      ffAtStart = process.env.FILTER_API_ENABLED;
+    });
 
-    const result = await filterService.uninstallFilter(existingFilterId);
+    after(function () {
+      process.env.FILTER_API_ENABLED = ffAtStart;
+    });
 
-    const isDeleted = clientCache.get(cacheKey, filterService.ethUninstallFilter, undefined) ? false : true;
-    expect(result).to.eq(true);
-    expect(isDeleted).to.eq(true);
+    it('FILTER_API_ENABLED is not specified', async function () {
+      delete process.env.FILTER_API_ENABLED;
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, {});
+    });
+
+    it('FILTER_API_ENABLED=true', async function () {
+      process.env.FILTER_API_ENABLED='true';
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, {blocks: [{...defaultBlock}]});
+      const s = await filterService.newFilter();
+
+      expect(RelayAssertions.validateHash(await filterService.newFilter(), 32)).to.eq(true, 'returns valid filterId');
+    });
+
+    it('FILTER_API_ENABLED=false', async function () {
+      process.env.FILTER_API_ENABLED='false';
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, {});
+    });
   });
 
-  it('should return false if filter does not exist, therefore is not deleted', async function () {
-    const result = await filterService.uninstallFilter(nonExistingFilterId);
+  describe('eth_newFilter', async function() {
+    let blockNumberHexes, numberHex;
 
-    expect(result).to.eq(false);
+    beforeEach(() => {
+      blockNumberHexes = {
+        5: toHex(5),
+        1400: toHex(1400),
+        1500: toHex(1500),
+        2000: toHex(2000),
+        2001: toHex(2001),
+      };
+
+      numberHex = blockNumberHexes[1500];
+
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/5`).reply(200, {...defaultBlock, number: 5});
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/1400`).reply(200, {...defaultBlock, number: 1400});
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/1500`).reply(200, {...defaultBlock, number: 1500});
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/2000`).reply(200, {...defaultBlock, number: 2000});
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, {blocks: [{...defaultBlock, number: 2002}]});
+    })
+
+    it('Returns a valid filterId', async function() {
+      expect(RelayAssertions.validateHash(await filterService.newFilter(), 32)).to.eq(true, 'with default param values');
+      expect(RelayAssertions.validateHash(await filterService.newFilter(numberHex), 32)).to.eq(true, 'with fromBlock');
+      expect(RelayAssertions.validateHash(await filterService.newFilter(numberHex, 'latest'), 32)).to.eq(true, 'with fromBlock, toBlock');
+      expect(RelayAssertions.validateHash(await filterService.newFilter(numberHex, 'latest', defaultEvmAddress), 32)).to.eq(true, 'with fromBlock, toBlock, address');
+      expect(RelayAssertions.validateHash(await filterService.newFilter(numberHex, 'latest', defaultEvmAddress, defaultLogTopics), 32)).to.eq(true, 'with fromBlock, toBlock, address, topics');
+      expect(RelayAssertions.validateHash(await filterService.newFilter(numberHex, 'latest', defaultEvmAddress, defaultLogTopics, getRequestId()), 32)).to.eq(true, 'with all parameters');
+    });
+
+    it('Creates a filter with type=log', async function() {
+      const filterId = await filterService.newFilter(numberHex, 'latest', defaultEvmAddress, defaultLogTopics, getRequestId());
+
+      const cacheKey = `${constants.CACHE_KEY.FILTER}-${filterId}`;
+      const cachedFilter = clientCache.get(cacheKey);
+
+      expect(cachedFilter).to.exist;
+      expect(cachedFilter.type).to.exist;
+      expect(cachedFilter.type).to.eq(constants.FILTER.TYPE.LOG);
+      expect(cachedFilter.params).to.exist;
+      expect(cachedFilter.lastQueried).to.be.null;
+    });
+
+    it('validates fromBlock and toBlock', async function() {
+      // fromBlock is larger than toBlock
+      await RelayAssertions.assertRejection(predefined.INVALID_BLOCK_RANGE, filterService.newFilter, true, filterService, [blockNumberHexes[1500], blockNumberHexes[1400]]);
+      await RelayAssertions.assertRejection(predefined.INVALID_BLOCK_RANGE, filterService.newFilter, true, filterService, ['latest', blockNumberHexes[1400]]);
+
+      // block range is too large
+      await RelayAssertions.assertRejection(predefined.RANGE_TOO_LARGE(1000), filterService.newFilter, true, filterService, [blockNumberHexes[5], blockNumberHexes[2000]]);
+
+      // block range is valid
+      expect(RelayAssertions.validateHash(await filterService.newFilter(blockNumberHexes[1400], blockNumberHexes[1500]), 32)).to.eq(true);
+      expect(RelayAssertions.validateHash(await filterService.newFilter(blockNumberHexes[1400], 'latest'), 32)).to.eq(true);
+    });
+  });
+
+  describe('eth_uninstallFilter', async function() {
+    it('should return true if filter is deleted', async function () {
+      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
+      clientCache.set(cacheKey, filterObject, filterService.ethUninstallFilter, 300000, undefined);
+
+      const result = await filterService.uninstallFilter(existingFilterId);
+
+      const isDeleted = clientCache.get(cacheKey, filterService.ethUninstallFilter, undefined) ? false : true;
+      expect(result).to.eq(true);
+      expect(isDeleted).to.eq(true);
+    });
+
+    it('should return false if filter does not exist, therefore is not deleted', async function () {
+      const result = await filterService.uninstallFilter(nonExistingFilterId);
+
+      expect(result).to.eq(false);
+    });
   });
 });

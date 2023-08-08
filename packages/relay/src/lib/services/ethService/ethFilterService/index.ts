@@ -22,6 +22,9 @@ import { Logger } from 'pino';
 import { ClientCache, MirrorNodeClient } from '../../../clients';
 import constants from '../../../constants';
 import { IFilterService } from './IFilterService';
+import { CommonService } from './../ethCommonService';
+import {generateRandomHex} from "../../../../formatters";
+import {JsonRpcError, predefined} from "../../../errors/JsonRpcError";
 
 /**
  * Create a new Filter Service implementation.
@@ -50,12 +53,69 @@ export class FilterService implements IFilterService {
    * @private
    */
   private readonly cache: ClientCache;
+  public readonly ethNewFilter = 'eth_newFilter';
   public readonly ethUninstallFilter = 'eth_uninstallFilter';
 
-  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, clientCache: ClientCache) {
+  private readonly common: CommonService;
+
+  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, clientCache: ClientCache, common: CommonService) {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.cache = clientCache;
+    this.common = common;
+  }
+
+  /**
+   * Creates a new filter with the specified type and parameters
+   * @param type
+   * @param params
+   * @param requestIdPrefix
+   */
+  createFilter(type: string, params: any, requestIdPrefix?: string): string {
+    const filterId = generateRandomHex();
+    const cacheKey = `${constants.CACHE_KEY.FILTER}-${filterId}`;
+    this.cache.set(cacheKey, {
+      type,
+      params,
+      lastQueried: null
+    }, this.ethNewFilter, constants.FILTER.TTL, requestIdPrefix);
+    this.logger.trace(`${requestIdPrefix} created filter with TYPE=${type}, params: ${params}`);
+    return filterId;
+  }
+
+  /**
+   * Checks if the Filter API is enabled
+   */
+  static requireFiltersEnabled() {
+    if (!process.env.FILTER_API_ENABLED || process.env.FILTER_API_ENABLED !== 'true') {
+      throw predefined.UNSUPPORTED_METHOD;
+    }
+  }
+
+  /**
+   * Creates a new filter with TYPE=log
+   * @param fromBlock
+   * @param toBlock
+   * @param address
+   * @param topics
+   * @param requestIdPrefix
+   */
+  async newFilter(fromBlock: string = 'latest', toBlock: string = 'latest', address?: string, topics?: any[], requestIdPrefix?: string): Promise<string | JsonRpcError> {
+    this.logger.trace(`${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`);
+    try {
+      FilterService.requireFiltersEnabled();
+
+      if (!(await this.common.validateBlockRangeAndAddTimestampToParams({}, fromBlock, toBlock, requestIdPrefix))) {
+        throw predefined.INVALID_BLOCK_RANGE;
+      }
+
+      return this.createFilter(constants.FILTER.TYPE.LOG, {
+        fromBlock, toBlock, address, topics
+      }, requestIdPrefix);
+    }
+    catch(e) {
+      return this.common.genericErrorHandler(e);
+    }
   }
 
   public async uninstallFilter(filterId: string, requestIdPrefix?: string | undefined): Promise<boolean> {
