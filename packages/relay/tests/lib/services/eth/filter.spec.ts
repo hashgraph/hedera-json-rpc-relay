@@ -43,7 +43,7 @@ let filterService: FilterService;
 let clientCache: ClientCache;
 let mirrorNodeCache: ClientCache;
 
-describe.only('Filter API Test Suite', async function () {
+describe('Filter API Test Suite', async function () {
   this.timeout(10000);
 
   const filterObject = {
@@ -103,19 +103,22 @@ describe.only('Filter API Test Suite', async function () {
     it('FILTER_API_ENABLED is not specified', async function () {
       delete process.env.FILTER_API_ENABLED;
       await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, {});
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, {});
     });
 
     it('FILTER_API_ENABLED=true', async function () {
       process.env.FILTER_API_ENABLED='true';
       restMock.onGet(LATEST_BLOCK_QUERY).reply(200, {blocks: [{...defaultBlock}]});
-      const s = await filterService.newFilter();
-
-      expect(RelayAssertions.validateHash(await filterService.newFilter(), 32)).to.eq(true, 'returns valid filterId');
+      const filterId = await filterService.newFilter();
+      expect(filterId).to.exist;
+      expect(RelayAssertions.validateHash(filterId, 32)).to.eq(true, 'returns valid filterId');
+      expect((await filterService.uninstallFilter(filterId))).to.eq(true, 'executes correctly');
     });
 
     it('FILTER_API_ENABLED=false', async function () {
       process.env.FILTER_API_ENABLED='false';
       await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, {});
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, {});
     });
   });
 
@@ -152,7 +155,7 @@ describe.only('Filter API Test Suite', async function () {
     it('Creates a filter with type=log', async function() {
       const filterId = await filterService.newFilter(numberHex, 'latest', defaultEvmAddress, defaultLogTopics, getRequestId());
 
-      const cacheKey = `${constants.CACHE_KEY.FILTER}-${filterId}`;
+      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
       const cachedFilter = clientCache.get(cacheKey);
 
       expect(cachedFilter).to.exist;

@@ -73,7 +73,7 @@ export class FilterService implements IFilterService {
    */
   createFilter(type: string, params: any, requestIdPrefix?: string): string {
     const filterId = generateRandomHex();
-    const cacheKey = `${constants.CACHE_KEY.FILTER}-${filterId}`;
+    const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
     this.cache.set(cacheKey, {
       type,
       params,
@@ -120,6 +120,7 @@ export class FilterService implements IFilterService {
 
   public async uninstallFilter(filterId: string, requestIdPrefix?: string | undefined): Promise<boolean> {
     this.logger.trace(`${requestIdPrefix} uninstallFilter(${filterId})`);
+    FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
     const filter = this.cache.get(cacheKey, this.ethUninstallFilter, requestIdPrefix);
