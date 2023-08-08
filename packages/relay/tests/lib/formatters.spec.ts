@@ -21,7 +21,7 @@
 import { expect } from 'chai';
 import {
     hexToASCII, decodeErrorMessage, formatTransactionId, parseNumericEnvVar, formatTransactionIdWithoutQueryParams,
-    numberTo0x, formatContractResult, prepend0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex, valueHexToInt
+    numberTo0x, formatContractResult, prepend0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex, weibarHexToTinyBarInt
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from "bignumber.js";
@@ -331,15 +331,10 @@ describe('Formatters', () => {
         });
     });
 
-    describe('valueHexToInt', () => {
-        it('should convert big hex value to tinybar', () => {
+    describe('weibarHexToTinyBarInt', () => {
+        it('should convert weibar hex value to tinybar number', () => {
             const value = "0x1027127DC00";
-            expect(valueHexToInt(value)).to.eq(111);
-        });
-
-        it('should convert small hex value to tinybar', () => {
-            const value = "0x1B198";
-            expect(valueHexToInt(value)).to.eq(111000);
+            expect(weibarHexToTinyBarInt(value)).to.eq(111);
         });
     });
 });

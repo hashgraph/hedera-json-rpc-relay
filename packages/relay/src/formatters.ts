@@ -119,16 +119,13 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
 }
 
 /**
- * Parse value from hex string to number, if value lenght is bigger than tinybar to weibar coef, it means that it's in weibar, which needs conversion to weibar.
+ * Parse weibar hex string to tinybar number, by applying tinybar to weibar coef.
  * @param value 
- * @returns parsedValue
+ * @returns tinybarValue
  */
-const valueHexToInt = (value: string): number => {
-    if (BigInt(value).toString().length > constants.TINYBAR_TO_WEIBAR_COEF.toString().length) {
-        const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
-        return Number(tinybarValue);
-    }
-    return parseInt(value);
+const weibarHexToTinyBarInt = (value: string): number => {
+    const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+    return Number(tinybarValue);
 }
 
 const formatContractResult = (cr: any) => {
@@ -195,5 +192,5 @@ export {
     hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId,
     formatTransactionIdWithoutQueryParams, parseNumericEnvVar, formatContractResult, prepend0x,
     numberTo0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex,
-    generateRandomHex, valueHexToInt
+    generateRandomHex, weibarHexToTinyBarInt
 };
