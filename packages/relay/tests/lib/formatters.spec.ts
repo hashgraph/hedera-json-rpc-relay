@@ -21,7 +21,7 @@
 import { expect } from 'chai';
 import {
     hexToASCII, decodeErrorMessage, formatTransactionId, parseNumericEnvVar, formatTransactionIdWithoutQueryParams,
-    numberTo0x, formatContractResult, prepend0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex
+    numberTo0x, formatContractResult, prepend0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex, valueHexToInt
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from "bignumber.js";
@@ -328,6 +328,18 @@ describe('Formatters', () => {
         it('should return value for non-nullable input', () => {
             const value = '2911';
             expect(toNullIfEmptyHex(value)).to.equal(value);
+        });
+    });
+
+    describe('valueHexToInt', () => {
+        it('should convert big hex value to tinybar', () => {
+            const value = "0x1027127DC00";
+            expect(valueHexToInt(value)).to.eq(111);
+        });
+
+        it('should convert small hex value to tinybar', () => {
+            const value = "0x1B198";
+            expect(valueHexToInt(value)).to.eq(111000);
         });
     });
 });

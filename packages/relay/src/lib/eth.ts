@@ -563,12 +563,12 @@ export class EthImpl implements Eth {
    * Perform value format precheck before making contract call towards the mirror node
    * @param transaction 
    */
-  private contractCallPrecheck(transaction: any) {
+  contractCallPrecheck(transaction: any) {
     if (transaction.value) {
       transaction.value = valueHexToInt(transaction.value);
     }
     if (transaction.gasPrice) {
-      transaction.gasPrice = gasPriceHexToInt(transaction.gasPrice);
+      transaction.gasPrice = parseInt(transaction.gasPrice);
     }
   }
 

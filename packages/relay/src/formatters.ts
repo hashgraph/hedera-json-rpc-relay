@@ -126,15 +126,6 @@ const valueHexToInt = (value: string): number => {
     return parseInt(value);
 }
 
-/**
- * Parse gasPrice hex value to number.
- * @param gasPrice 
- * @returns parsedGasPrice
- */
-const gasPriceHexToInt = (gasPrice: string): number => {
-    return parseInt(gasPrice);
-}
-
 const formatContractResult = (cr: any) => {
     if (cr === null) {
         return null;
@@ -199,5 +190,5 @@ export {
     hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId,
     formatTransactionIdWithoutQueryParams, parseNumericEnvVar, formatContractResult, prepend0x,
     numberTo0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex,
-    gasPriceHexToInt, valueHexToInt
+    valueHexToInt
 };
