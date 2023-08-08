@@ -38,8 +38,7 @@ import {
   nanOrNumberTo0x,
   toHash32,
   toNullableBigNumber,
-  valueHexToInt,
-  gasPriceHexToInt
+  valueHexToInt
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
