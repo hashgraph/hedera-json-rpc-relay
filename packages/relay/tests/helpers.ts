@@ -49,6 +49,11 @@ const random20BytesAddress = (addHexPrefix = true) => {
     return (addHexPrefix ? '0x' : '') + crypto.randomBytes(20).toString('hex');
 };
 
+export const toHex = (num) => {
+    return `0x${Number(num).toString(16)}`;
+};
+
+
 const getRequestId = () => {
     return formatRequestIdMessage(uuid());
 };
