@@ -3136,6 +3136,19 @@ describe('Eth calls using MirrorNode', async function () {
     expect(result).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
 
+  it('should perform estimateGas precheck', async function () {
+    const transaction = {
+      from: "0x05fba803be258049a27b820088bab1cad2058871",
+      data: "0x",
+      value: "0x123",
+      gasPrice: "0x124"
+    };
+
+    ethImpl.contractCallPrecheck(transaction);
+    expect(transaction.value).to.eq(291);
+    expect(transaction.gasPrice).to.eq(292);
+  });
+
   describe('eth_gasPrice', async function () {
     it('eth_gasPrice', async function () {
       restMock.onGet(`network/fees`).reply(200, defaultNetworkFees);
