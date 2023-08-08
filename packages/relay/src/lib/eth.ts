@@ -512,7 +512,6 @@ export class EthImpl implements Eth {
         estimate: true
       }, requestIdPrefix);
       if (contractCallResponse?.result) {
-        console.log(contractCallResponse)
         // Workaround until mirror-node bugfix applied, currently mirror-node returns 21k for contract creation, which is wrong
         if (!transaction.to && transaction.data !== '0x') {
           gas = this.defaultGas;
