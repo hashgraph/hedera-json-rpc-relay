@@ -1542,29 +1542,29 @@ describe('Eth calls using MirrorNode', async function () {
       const latestBlock = {
         ...defaultBlock,
         number: 4,
-        'timestamp': {
-          'from': `${timestamp3}.060890949`,
-          'to': `${timestamp4}.060890949`
+        timestamp: {
+          from: `${timestamp3}.060890949`,
+          to: `${timestamp4}.060890949`,
         },
-      }
-
+      };
+      
       const recentBlock = {
         ...defaultBlock,
         number: 2,
-        'timestamp': {
-          'from': `${timestamp2}.060890949`,
-          'to': `${timestamp3}.060890949`
+        timestamp: {
+          from: `${timestamp2}.060890949`,
+          to: `${timestamp3}.060890949`,
         },
-      }
-
+      };
+      
       const earlierBlock = {
         ...defaultBlock,
         number: 1,
-        'timestamp': {
-          'from': `${timestamp1}.060890949`,
-          'to': `${timestamp2}.060890949`
+        timestamp: {
+          from: `${timestamp1}.060890949`,
+          to: `${timestamp2}.060890949`,
         },
-      }
+      };
 
       beforeEach(async () => {
         mirrorNodeCache.clear();
@@ -1655,11 +1655,12 @@ describe('Eth calls using MirrorNode', async function () {
         const recentBlockWithinLastfifteen = {
           ...defaultBlock,
           number: 2,
-          'timestamp': {
-            'from': `${fromTimestamp}.002391003`,
-            'to': `${toTimestamp}.980351003`
+          timestamp: {
+            from: `${fromTimestamp}.002391003`,
+            to: `${toTimestamp}.980351003`,
           },
-        }
+        };
+        
         restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
 
         restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
@@ -1702,9 +1703,9 @@ describe('Eth calls using MirrorNode', async function () {
         const recentBlockWithinLastfifteen = {
           ...defaultBlock,
           number: 2,
-          'timestamp': {
-            'from': '1651560899.060890921',
-            'to': `${blockTimestamp}.060890941`
+          timestamp: {
+            from: '1651560899.060890921',
+            to: `${blockTimestamp}.060890941`,
           },
         };
         restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
@@ -1733,12 +1734,12 @@ describe('Eth calls using MirrorNode', async function () {
         const recentBlockWithinLastfifteen = {
           ...defaultBlock,
           number: 2,
-          'timestamp': {
-            'from': '1651560899.060890921',
-            'to': '1651560900.060890941'
+          timestamp: {
+            from: '1651560899.060890921',
+            to: '1651560900.060890941',
           },
         };
-
+        
         restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
         restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
           account: contractId1,
@@ -1765,13 +1766,13 @@ describe('Eth calls using MirrorNode', async function () {
         const recentBlockWithinLastfifteen = {
           ...defaultBlock,
           number: 2,
-          'timestamp': {
-            'from': '1651560899.060890921',
-            'to': '1651560900.060890941'
+          timestamp: {
+            from: '1651560899.060890921',
+            to: '1651560900.060890941',
           },
         };
-
-        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
+        
+        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);        
         restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
           account: contractId1,
           balance: {
@@ -1799,9 +1800,9 @@ describe('Eth calls using MirrorNode', async function () {
         const recentBlockWithinLastfifteen = {
           ...defaultBlock,
           number: 1,
-          'timestamp': {
-            'from': `1651550584.060890921`,
-            'to': `1651550585.060890941`
+          timestamp: {
+            from: '1651550584.060890921',
+            to: '1651550585.060890941',
           },
         };
         restMock.onGet(`blocks/1`).reply(200, recentBlockWithinLastfifteen);
@@ -1824,12 +1825,12 @@ describe('Eth calls using MirrorNode', async function () {
         const latestBlock = {
           ...defaultBlock,
           number: 4,
-          'timestamp': {
-            'from': `1651550595.060890941`,
-            'to': `1651550597.060890941`
+          timestamp: {
+            from: '1651550595.060890941',
+            to: '1651550597.060890941',
           },
         };
-
+        
         restMock.onGet('blocks?limit=1&order=desc').reply(200, {
           blocks: [latestBlock]
         });
@@ -1843,11 +1844,12 @@ describe('Eth calls using MirrorNode', async function () {
         const recentBlockWithinLastfifteen = {
           ...defaultBlock,
           number: 1,
-          'timestamp': {
-            'from': '1651550564.060890921',
-            'to': '1651550565.060890941'
+          timestamp: {
+            from: '1651550564.060890921',
+            to: '1651550565.060890941',
           },
         };
+        
         restMock.onGet(`blocks/1`).reply(200, recentBlockWithinLastfifteen);
         restMock.onGet(`accounts/${contractId1}?limit=100`).reply(200, {
           account: contractId1,
@@ -1880,13 +1882,13 @@ describe('Eth calls using MirrorNode', async function () {
             next: null
           }
         });
-
+        
         const latestBlock = {
           ...defaultBlock,
           number: 4,
-          'timestamp': {
-            'from': `1651550595.060890941`,
-            'to': `1651550597.060890941`
+          timestamp: {
+            from: '1651550595.060890941',
+            to: '1651550597.060890941',
           },
         };
 
@@ -1903,9 +1905,9 @@ describe('Eth calls using MirrorNode', async function () {
         const recentBlockWithinLastfifteen = {
           ...defaultBlock,
           number: 1,
-          'timestamp': {
-            'from': '1651550564.060890921',
-            'to': '1651550565.060890941'
+          timestamp: {
+            from: '1651550564.060890921',
+            to: '1651550565.060890941',
           },
         };
         restMock.onGet(`blocks/1`).reply(200, recentBlockWithinLastfifteen);
@@ -1944,9 +1946,9 @@ describe('Eth calls using MirrorNode', async function () {
         const latestBlock = {
           ...defaultBlock,
           number: 4,
-          'timestamp': {
-            'from': `1651550595.060890941`,
-            'to': `1651550597.060890941`
+          timestamp: {
+            from: '1651550595.060890941',
+            to: '1651550597.060890941',
           },
         };
 

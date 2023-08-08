@@ -172,7 +172,7 @@ const nullableNumberTo0x = (input: number | BigNumber): string | null => {
 };
 
 const nanOrNumberTo0x = (input: number | BigNumber): string => {
-    return input == null || input !== input ? numberTo0x(0) : numberTo0x(input);
+    return input == null || Number.isNaN(input) ? numberTo0x(0) : numberTo0x(input);
 };
 
 const toHash32 = (value: string): string => {
