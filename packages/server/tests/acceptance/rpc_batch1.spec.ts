@@ -446,8 +446,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 expect(response).to.be.null;
             });
 
-            // TODO: blocked by https://github.com/hashgraph/hedera-services/issues/7670
-            xit('@release should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
+            it('@release should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
                 const transaction = {
                     ...default155TransactionData,
                     to: mirrorContract.evm_address,
@@ -519,8 +518,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
             });
 
-            // TODO: blocked by https://github.com/hashgraph/hedera-services/issues/7670
-            xit('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
+            it('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
                 const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
                 const transaction = {
                     ...default155TransactionData,
@@ -539,8 +537,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 expect(balanceChange.toString()).to.eq(Number(ONE_TINYBAR).toString());
             });
 
-            // TODO: blocked by https://github.com/hashgraph/hedera-services/issues/7670
-            xit('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with insufficient balance)', async function () {
+            it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with insufficient balance)', async function () {
                 const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId, requestId);
 
                 const transaction = {
@@ -817,8 +814,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
                 });
 
-                // TODO: blocked by https://github.com/hashgraph/hedera-services/issues/7670
-                xit('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with gas price too low)', async function () {
+                it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with gas price too low)', async function () {
                     const transaction = {
                         ...default155TransactionData,
                         gasPrice: GAS_PRICE_TOO_LOW,
@@ -828,9 +824,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const error = predefined.GAS_PRICE_TOO_LOW(GAS_PRICE_TOO_LOW, GAS_PRICE_REF);
 
-                    await expect(relay.sendRawTransaction(signedTx, requestId)).to.eventually.be.rejected.and.satisfy((err) => {
-                        return [error.code, error.name].every(substring => err.body.includes(substring));
-                    });
+                    await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
                 });
 
                 it('@release fail "eth_getTransactionReceipt" on precheck with wrong nonce error when sending a tx with the same nonce twice', async function () {
