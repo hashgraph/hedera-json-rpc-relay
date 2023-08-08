@@ -75,7 +75,7 @@ export class CommonService implements ICommonService {
         return tag == null || tag === CommonService.blockLatest || tag === CommonService.blockPending;
     };
 
-    public async validateBlockRangeAndAddTimestampToParams(params: any, fromBlock: string | 'latest', toBlock: string | 'latest', requestIdPrefix?: string) {
+    public async validateBlockRangeAndAddTimestampToParams(params: any, fromBlock: string, toBlock: string, requestIdPrefix?: string) {
         const blockRangeLimit = Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
 
         if (this.blockTagIsLatestOrPending(toBlock)) {
@@ -131,7 +131,7 @@ export class CommonService implements ICommonService {
      * @param blockNumberOrTag
      * @param returnLatest
      */
-    public async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestIdPrefix?: string | undefined): Promise<any | null> {
+    public async getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestIdPrefix?: string | undefined): Promise<any> {
         if (!returnLatest && this.blockTagIsLatestOrPending(blockNumberOrTag)) {
             return null;
         }

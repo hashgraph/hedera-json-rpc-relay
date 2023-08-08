@@ -45,7 +45,6 @@ import { Counter, Registry } from "prom-client";
 import { Transaction as EthersTransaction } from 'ethers';
 import { CommonService, FilterService } from './services/ethService';
 import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
-import { ICommonService } from './services/ethService/ethCommonService/ICommonService';
 
 const _ = require('lodash');
 const createHash = require('keccak');

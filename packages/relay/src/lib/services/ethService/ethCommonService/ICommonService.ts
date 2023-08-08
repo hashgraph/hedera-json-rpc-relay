@@ -26,7 +26,7 @@ export interface ICommonService {
 
   validateBlockRangeAndAddTimestampToParams(params: any, fromBlock: string, toBlock: string, requestIdPrefix?: string): Promise<boolean>;
 
-  getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestIdPrefix?: string | undefined): Promise<any | null>;
+  getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestIdPrefix?: string | undefined): Promise<any>;
 
   getLatestBlockNumber(requestIdPrefix?: string): Promise<string>;
 
