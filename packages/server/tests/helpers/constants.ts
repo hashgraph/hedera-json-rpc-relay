@@ -66,6 +66,7 @@ const ETH_ENDPOINTS = {
     ETH_SIGN_TYPED_DATA: 'eth_signTypedData',
     ETH_GET_PROOF: 'eth_getProof',
     ETH_NEW_FILTER: 'eth_newFilter',
+    ETH_NEW_BLOCK_FILTER: 'eth_newBlockFilter',
     ETH_UNINSTALL_FILTER: 'eth_uninstallFilter'
 }
 
