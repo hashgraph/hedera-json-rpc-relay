@@ -173,7 +173,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       expect(responseCodeGrantKycNft).to.equal(TX_SUCCESS_CODE);
       // Transfer initial token balance to receiver
       const amount = 5;
-      const tx = await mainContract.cryptoTransferTokenPublic(accounts[1].wallet.address, tokenAddress, amount);
+      const tx = await mainContract.cryptoTransferTokenPublic(accounts[1].wallet.address, tokenAddress, amount, Constants.GAS.LIMIT_1_000_000);
       await tx.wait();
     });
 
@@ -292,11 +292,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
     });
 
     it('should throw an exception for getTokenType with passed contract address', async function () {
-      try {
-        await mainContract.getTokenTypePublic(mainContractAddress, Constants.GAS.LIMIT_50_000);
-        Assertions.expectedError();
-      } catch (error: any) {
-      }
+      await Assertions.expectRevert(mainContract.getTokenTypePublic(mainContractAddress, Constants.GAS.LIMIT_50_000), Constants.CALL_EXCEPTION);
     });
   });
 

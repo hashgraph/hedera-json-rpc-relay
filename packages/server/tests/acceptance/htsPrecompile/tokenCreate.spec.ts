@@ -237,7 +237,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       }
 
       //Transfer some hbars to the contract address
-      await mainContract.cryptoTransferTokenPublic(mainContract.target, HTSTokenContractAddress, amount);
+      await mainContract.cryptoTransferTokenPublic(mainContract.target, HTSTokenContractAddress, amount, Constants.GAS.LIMIT_1_000_000);
       await new Promise(r => setTimeout(r, 5000));
       expect(await HTSTokenContract.balanceOf(mainContract.target)).to.equal(amount);
       expect(await HTSTokenContract.balanceOf(accounts[2].wallet.address)).to.be.equal(BigInt(0));
@@ -447,7 +447,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       // transfer hts
       const amount = BigInt(10);
       const balanceBefore = await HTSTokenContract.balanceOf(accounts[2].wallet.address);
-      await mainContract.connect(accounts[0].wallet).cryptoTransferTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, amount);
+      await mainContract.connect(accounts[0].wallet).cryptoTransferTokenPublic(accounts[2].wallet.address, HTSTokenContractAddress, amount, Constants.GAS.LIMIT_1_000_000);
       await new Promise(r => setTimeout(r, 5000));
       const balanceAfter = await HTSTokenContract.balanceOf(accounts[2].wallet.address);
 
@@ -539,7 +539,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         ],
         nftTransfers: [],
       }];
-      const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList);
+      const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList, Constants.GAS.LIMIT_1_000_000);
       expect((await txXfer.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
 
@@ -567,7 +567,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
           serialNumber: NftSerialNumber2,
         }],
       }];
-      const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList);
+      const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList, Constants.GAS.LIMIT_1_000_000);
       expect((await txXfer.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
 
@@ -602,17 +602,16 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         ],
         nftTransfers: [],
       }];
-      const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList);
+      const txXfer = await mainContract.cryptoTransferPublic(tokenTransferList, Constants.GAS.LIMIT_1_000_000);
       expect((await txXfer.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
     });
 
-    // this test is using setApprovalForAll, which is not working from 0.32.0-alpha.4 onwards
-    xit('should fail to swap approved fungible tokens', async function () {
+    it('should fail to swap approved fungible tokens', async function () {
       const txApproval1 = await mainContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, Constants.GAS.LIMIT_1_000_000);
-      expect((await txApproval1.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+      expect((await txApproval1.wait()).logs.filter(e => e?.fragment?.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
       const txApproval2 = await mainContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[2].wallet.address, true, Constants.GAS.LIMIT_1_000_000);
-      expect((await txApproval2.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+      expect((await txApproval2.wait()).logs.filter(e => e?.fragment?.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
       // setup the transfer
       const tokenTransferList = [{
@@ -638,21 +637,15 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         nftTransfers: [],
       }];
 
-      try {
-        await (await mainContract.cryptoTransferPublic(tokenTransferList)).wait();
-        Assertions.expectedError();
-      } catch (error: any) {
-        expect(error.code).to.equal(Constants.CALL_EXCEPTION);
-      }
+      await Assertions.expectRevert(mainContract.cryptoTransferPublic(tokenTransferList), Constants.CALL_EXCEPTION);
     });
 
-    // this test is using setApprovalForAll, which is not working from 0.32.0-alpha.4 onwards
-    xit('should fail to swap approved non-fungible tokens', async function () {
+    it('should fail to swap approved non-fungible tokens', async function () {
       const txApprove1 = await mainContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[1].wallet.address, true, Constants.GAS.LIMIT_1_000_000);
-      expect((await txApprove1.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+      expect((await txApprove1.wait()).logs.filter(e => e?.fragment?.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
       const txApprove2 = await mainContract.setApprovalForAllPublic(NftHTSTokenContractAddress, accounts[2].wallet.address, true, Constants.GAS.LIMIT_1_000_000);
-      expect((await txApprove2.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
+      expect((await txApprove2.wait()).logs.filter(e => e?.fragment?.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.equal(TX_SUCCESS_CODE);
 
       const tokenTransferList = [{
         token: `${NftHTSTokenContractAddress}`,
@@ -669,12 +662,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         }],
       }];
 
-      try {
-        await (await mainContract.cryptoTransferPublic(tokenTransferList)).wait();
-        Assertions.expectedError();
-      } catch (error: any) {
-        expect(error.code).to.equal(Constants.CALL_EXCEPTION);
-      }
+      await Assertions.expectRevert(mainContract.cryptoTransferPublic(tokenTransferList), Constants.CALL_EXCEPTION);
     });
 
     it('should fail to transfer fungible and non-fungible tokens in a single tokenTransferList', async function () {
@@ -699,12 +687,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         }],
       }];
 
-      try {
-        await (await mainContract.cryptoTransferPublic(tokenTransferList)).wait();
-        Assertions.expectedError();
-      } catch (error: any) {
-        expect(error.code).to.equal(Constants.CALL_EXCEPTION);
-      }
+      await Assertions.expectRevert(mainContract.cryptoTransferPublic(tokenTransferList), Constants.CALL_EXCEPTION);
     });
   });
 });
