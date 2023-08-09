@@ -120,12 +120,16 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
 
 /**
  * Parse weibar hex string to tinybar number, by applying tinybar to weibar coef.
+ * Return null, if value is not a valid hex. Null is the only other valid response that mirror-node accepts.
  * @param value 
  * @returns tinybarValue
  */
-const weibarHexToTinyBarInt = (value: string): number => {
-    const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
-    return Number(tinybarValue);
+const weibarHexToTinyBarInt = (value: string): number | null => {
+    if (value) {
+        const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+        return Number(tinybarValue);
+    }
+    return null;
 }
 
 const formatContractResult = (cr: any) => {

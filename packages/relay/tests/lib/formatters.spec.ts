@@ -336,5 +336,15 @@ describe('Formatters', () => {
             const value = "0x1027127DC00";
             expect(weibarHexToTinyBarInt(value)).to.eq(111);
         });
+
+        it('should convert weibar hex value to tinybar number', () => {
+            const value = undefined;
+            expect(weibarHexToTinyBarInt(value)).to.be.null;
+        });
+
+        it('should convert weibar hex value to tinybar number', () => {
+            const value = null;
+            expect(weibarHexToTinyBarInt(value)).to.be.null;
+        });
     });
 });

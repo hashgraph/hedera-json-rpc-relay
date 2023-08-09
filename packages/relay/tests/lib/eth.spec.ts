@@ -3146,7 +3146,7 @@ describe('Eth calls using MirrorNode', async function () {
       gasPrice: "0xF4240"
     };
 
-    ethImpl.contractCallPrecheck(transaction);
+    ethImpl.contractCallFormat(transaction);
     expect(transaction.value).to.eq(1110);
     expect(transaction.gasPrice).to.eq(1000000);
   });

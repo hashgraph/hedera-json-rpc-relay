@@ -488,7 +488,7 @@ export class EthImpl implements Eth {
     if (transaction?.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter.labels(EthImpl.ethEstimateGas, transaction.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)).inc();
 
-    this.contractCallPrecheck(transaction);
+    this.contractCallFormat(transaction);
     let gas = EthImpl.gasTxBaseCost;
     try {
       const contractCallResponse = await this.mirrorNodeClient.postContractCall({
@@ -547,7 +547,7 @@ export class EthImpl implements Eth {
    * Perform value format precheck before making contract call towards the mirror node
    * @param transaction 
    */
-  contractCallPrecheck(transaction: any) {
+  contractCallFormat(transaction: any) {
     if (transaction.value) {
       transaction.value = weibarHexToTinyBarInt(transaction.value);
     }
