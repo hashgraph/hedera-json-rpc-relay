@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,15 +43,17 @@ const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, 
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
 import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
+import {ClientCache} from "@hashgraph/json-rpc-relay/dist/lib/clients";
 
 const INTERNAL_ERROR = "INTERNAL ERROR";
 const INVALID_PARAMS_ERROR = "INVALID PARAMS ERROR";
 const INVALID_REQUEST = "INVALID REQUEST";
 const IP_RATE_LIMIT_EXCEEDED = "IP RATE LIMIT EXCEEDED";
-const JSON_RPC_ERROR = "JSON RPC ERROR"
+const JSON_RPC_ERROR = "JSON RPC ERROR";
 const METHOD_NOT_FOUND = "METHOD NOT FOUND";
 
 const responseSuccessStatusCode = '200';
+
 
 export default class KoaJsonRpc {
   private registry: any;
@@ -66,8 +68,9 @@ export default class KoaJsonRpc {
   private logger: Logger;
   private startTimestamp!: number;
   private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == 'true';
+  private readonly cache: ClientCache;
 
-  constructor(logger: Logger, register: Registry, opts?) {
+  constructor(logger: Logger, register: Registry, cache: ClientCache, opts?) {
     this.koaApp = new Koa();
     this.requestId = '';
     this.limit = '1mb';
@@ -80,11 +83,60 @@ export default class KoaJsonRpc {
     }
     this.logger = logger;
     this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
+    this.cache = cache;
+
+    this.overrideMethodConfig();
+  }
+
+  private overrideMethodConfig() {
+    // override defaults with env variable if set
+    const methodConfigurationOverride = process.env.METHOD_CONFIGURATION_OVERRIDE;
+    if(methodConfigurationOverride){
+      try {
+        const methodConfigurationOverrideJSON = JSON.parse(methodConfigurationOverride);
+        for (const [key, value] of Object.entries<any>(methodConfigurationOverrideJSON)) {
+          for(const [configKey, configValue] of Object.entries<any>(value)) {
+            const oldValue = methodConfiguration[key][configKey];
+            methodConfiguration[key][configKey] = configValue;
+            // log
+            this.logger.info(`[${this.getRequestId()}] method configuration override: method=${key}, config=${configKey}, oldValue=${oldValue}, newValue=${configValue}`);
+          }
+        }
+      } catch (error) {
+        // log error and continue with defaults
+        this.logger.error(`[${this.getRequestId()}] method configuration override error: ${error}`);
+      }
+
+    }
+  }
+
+  private getCacheKey(method, params) {
+    return `${method}:${JSON.stringify(params)}`;
+  }
+
+  private lookupGlobalCache(method, params) {
+    const cacheTTL = this.methodConfig[method].cacheTTL | 0;
+    if(this.cache && cacheTTL > 0) {
+        const cacheKey = this.getCacheKey(method, params);
+        const cachedResult = this.cache.get(cacheKey, method);
+        if (cachedResult) {
+            return cachedResult;
+        }
+    }
+    return null;
+  }
+
+  private setGlobalCache(method, params, result) {
+    const cacheTTL = this.methodConfig[method].cacheTTL | 0;
+    if(this.cache && cacheTTL > 0) {
+      const cacheKey = this.getCacheKey(method, params);
+      this.cache.set(cacheKey, result, method, cacheTTL);
+    }
   }
 
   useRpc(name, func) {
     this.registry[name] = func;
-    this.registryTotal[name] = this.methodConfig[name].total;
+    this.registryTotal[name] = this.methodConfig[name].totalLimit;
 
     if (!this.registryTotal[name]) {
       this.registryTotal[name] = process.env.DEFAULT_RATE_LIMIT || 200;
@@ -147,9 +199,15 @@ export default class KoaJsonRpc {
         return;
       }
 
+      result = this.lookupGlobalCache(body.method, body.params);
+
       try {
-        result = await this.registry[body.method](body.params);
+        if(!result) {
+          result = await this.registry[body.method](body.params);
+          this.setGlobalCache(body.method, body.params, result);
+        }
         ctx.state.status = responseSuccessStatusCode;
+
       } catch (e: any) {
         if (e instanceof InvalidParamsError) {
           ctx.body = jsonResp(body.id, new InvalidParamsError(e.message), undefined);
@@ -191,4 +249,6 @@ export default class KoaJsonRpc {
 
     return !hasId;
   }
+
+
 }

@@ -27,6 +27,7 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { formatRequestIdMessage } from './formatters';
+import {ClientCache} from "@hashgraph/json-rpc-relay/dist/lib/clients";
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -43,8 +44,9 @@ const mainLogger = pino({
 const cors = require('koa-cors');
 const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
-const relay: Relay = new RelayImpl(logger.child({ name: 'relay' }), register);
-const app = new KoaJsonRpc(logger.child({ name: 'koa-rpc' }), register, {
+const cache = new ClientCache(logger.child({ name: 'client-cache' }), register);
+const relay: Relay = new RelayImpl(logger.child({ name: 'relay' }), register, cache);
+const app = new KoaJsonRpc(logger.child({ name: 'koa-rpc' }), register, cache,{
   limit: process.env.INPUT_SIZE_LIMIT ? process.env.INPUT_SIZE_LIMIT + 'mb' : null
 });
 

@@ -45,7 +45,7 @@ export class RelayImpl implements Relay {
   private readonly subImpl?: Subs;
   private readonly clientCache: ClientCache;
 
-  constructor(logger: Logger, register: Registry) {
+  constructor(logger: Logger, register: Registry, cache : ClientCache) {
     logger.info('Configurations successfully loaded');
 
     const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
@@ -58,7 +58,12 @@ export class RelayImpl implements Relay {
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
 
-    this.clientCache = new ClientCache(logger.child({ name: 'client-cache' }), register);
+    if(cache != undefined) {
+        this.clientCache = cache;
+    } else {
+        this.clientCache = new ClientCache(logger.child({ name: 'client-cache' }), register);
+    }
+
     const hapiService = new HAPIService(logger, register, hbarLimiter, this.clientCache);
     this.clientMain = hapiService.getMainClientInstance();
 

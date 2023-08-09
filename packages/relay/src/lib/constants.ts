@@ -2,7 +2,7 @@
   *
   * Hedera JSON RPC Relay
   *
-  * Copyright (C) 2022 Hedera Hashgraph, LLC
+  * Copyright (C) 2023 Hedera Hashgraph, LLC
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -42,6 +42,9 @@ enum CACHE_KEY {
 }
 
 enum CACHE_TTL {
+    HALF_SECOND = 500,
+    ONE_SECOND = 1000,
+    ONE_MINUTE = 60_000,
     ONE_HOUR = 3_600_000,
     ONE_DAY = 86_400_000
 }
