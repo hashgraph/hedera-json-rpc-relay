@@ -3942,7 +3942,7 @@ describe('Eth calls using MirrorNode', async function () {
     const transactionId = '0.0.902-1684375868-230217103';
     const value = '0x511617DE831B9E173';
     const contractResultEndpoint = `contracts/results/${transactionId}`;
-    const ethereumHash = '0x720767603b7af0d096b51d24f485f28713299b16765a5736b913f29c3d970f49';
+    const ethereumHash = '0x6d20b034eecc8d455c4c040fb3763082d499353a8b7d318b1085ad8d7de15f7e';
 
     this.beforeEach(()=> {
       sinon.restore();
