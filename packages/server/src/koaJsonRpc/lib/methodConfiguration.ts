@@ -150,7 +150,7 @@ export const methodConfiguration = {
   eth_accounts: {
     total: tier2rateLimit,
   },
-  newPendingTransactionFilter: {
+  eth_newPendingTransactionFilter: {
     total: tier2rateLimit,
   },
   eth_newFilter: {
