@@ -631,6 +631,17 @@
             }
         },
         {
+            "name": "eth_newBlockFilter",
+            "summary": "Creates a filter object, to notify of newly created blocks",
+            "params": [],
+            "result": {
+                "name": "Filter ID",
+                "schema": {
+                    "$ref": "#/components/schemas/hash16"
+                }
+            }
+        },
+        {
             "name": "eth_newFilter",
             "summary": "Creates a filter object, based on filter options, to notify when the state changes (logs)",
             "params": [
