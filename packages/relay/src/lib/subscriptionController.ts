@@ -23,6 +23,7 @@ import LRU from "lru-cache";
 import crypto from "crypto";
 import constants from "./constants";
 import { Poller } from './poller';
+import {generateRandomHex} from '../formatters';
 import {Registry, Histogram, Counter} from "prom-client";
 
 export interface Subscriber {
@@ -83,7 +84,7 @@ export class SubscriptionController {
 
     // Generates a random 16 byte hex string
     generateId() {
-        return "0x" + crypto.randomBytes(16).toString('hex');
+        return generateRandomHex();
     }
 
     subscribe(connection, event: string, filters?: {}) {

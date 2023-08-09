@@ -19,6 +19,7 @@
  */
 
 import constants from "./lib/constants";
+import crypto from "crypto";
 import { Transaction } from './lib/model';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { BigNumber as BN } from "bignumber.js";
@@ -28,6 +29,10 @@ const EMPTY_HEX = '0x';
 const hashNumber = (num) => {
   return EMPTY_HEX + num.toString(16);
 };
+
+const generateRandomHex = (bytesLength = 16) => {
+    return "0x" + crypto.randomBytes(bytesLength).toString('hex');
+}
 
 /**
 * Format message prefix for logger.
@@ -176,5 +181,6 @@ const toNullIfEmptyHex = (value: string): string | null => {
 export {
     hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId,
     formatTransactionIdWithoutQueryParams, parseNumericEnvVar, formatContractResult, prepend0x,
-    numberTo0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex
+    numberTo0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex,
+    generateRandomHex
 };

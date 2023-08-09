@@ -38,6 +38,7 @@ import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import Assertions from '../helpers/assertions';
 import RelayCalls from "../helpers/constants";
+import RelayAssertions from '../../../../packages/relay/tests/assertions';
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
 
 describe('@api-batch-3 RPC Server Acceptance Tests', function () {
@@ -66,6 +67,11 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const PURE_METHOD_ERROR_MESSAGE = 'execution reverted: RevertReasonPure';
     const VIEW_METHOD_ERROR_MESSAGE = 'execution reverted: RevertReasonView';
     const errorMessagePrefixedStr = 'Expected 0x prefixed string representing the hash (32 bytes) in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"';
+    const TOPICS = [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x000000000000000000000000000000000000000000000000000000000000042d"
+    ];
 
     beforeEach(async () => {
         requestId = Utils.generateRequestId();
@@ -776,6 +782,47 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             expect(nonceAfter).to.be.equal('0x3');
 
         });
+    });
 
+    describe('Filter API Test Suite', () => {
+        const nonExstingFilter = "0x111222331";
+
+        describe('Positive', async function () {
+            it('should be able to create a log filter', async function() {
+                const currentBlock =  await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId);
+                expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [], requestId)), 32)).to.eq(true, 'without params');
+                expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [{
+                    fromBlock: currentBlock,
+                    toBlock: 'latest'
+                }], requestId)), 32)).to.eq(true, 'from current block to latest');
+
+                expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [{
+                    fromBlock: currentBlock,
+                    toBlock: 'latest',
+                    address: reverterEvmAddress
+                }], requestId)), 32)).to.eq(true, 'from current block to latest and specified address');
+
+                expect(RelayAssertions.validateHash((await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [{
+                    fromBlock: currentBlock,
+                    toBlock: 'latest',
+                    address: reverterEvmAddress,
+                    topics: TOPICS
+                }], requestId)), 32)).to.eq(true, 'with all params');
+            });
+
+            it('should be able to uninstall existing filter', async function () {
+                const filterId = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [], requestId);
+                const result = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_UNINSTALL_FILTER, [filterId], requestId);
+                expect(result).to.eq(true);
+            });
+        });
+
+        describe('Negative', async function () {
+            it('should not be able to uninstall not existing filter', async function () {
+                const result = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_UNINSTALL_FILTER, [nonExstingFilter], requestId);
+
+                expect(result).to.eq(false);
+            });
+        });
     });
 });

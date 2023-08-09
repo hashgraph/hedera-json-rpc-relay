@@ -23,6 +23,7 @@ import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
 import WebSocketError from './lib/errors/WebSocketError';
 import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
 import {MirrorNodeClient} from "./lib/clients";
+import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
 
 export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError };
 
@@ -133,4 +134,6 @@ export interface Eth {
   syncing(requestId?: string): Promise<boolean>;
 
   accounts(requestId?: string): Array<any>;
+
+  filterService(): IFilterService;
 }

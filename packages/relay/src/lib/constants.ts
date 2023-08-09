@@ -30,6 +30,7 @@ enum CACHE_KEY {
     ETH_GET_TRANSACTION_COUNT = 'eth_getTransactionCount',
     ETH_GET_TRANSACTION_RECEIPT = 'eth_getTransactionReceipt',
     FEE_HISTORY = 'fee_history',
+    FILTER = 'filter',
     GAS_PRICE = 'gas_price',
     GET_BLOCK = 'getBlock',
     GET_CONTRACT = 'getContract',
@@ -37,6 +38,7 @@ enum CACHE_KEY {
     GET_TINYBAR_GAS_FEE = 'getTinyBarGasFee',
     RESOLVE_ENTITY_TYPE = 'resolveEntityType',
     SYNTHETIC_LOG_TRANSACTION_HASH = 'syntheticLogTransactionHash',
+    FILTERID = 'filterId'
 }
 
 enum CACHE_TTL {
@@ -131,7 +133,15 @@ export default {
     PRECHECK_STATUS_ERROR_STATUS_CODES: {
         INVALID_CONTRACT_ID: 16,
         CONTRACT_DELETED: 66
-    }
+    },
 
+    FILTER: {
+        TYPE: {
+            NEW_BLOCK: 'newBlock',
+            LOG: 'log',
+            PENDING_TRANSACTION: 'pendingTransaction'
+        },
+        TTL: parseInt(process.env.FILTER_TTL || '300000')   // default is 5 minutes
+    }
 };
 
