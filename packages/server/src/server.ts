@@ -665,6 +665,10 @@ app.useRpc('eth_coinbase', async () => {
   return logAndHandleResponse('eth_coinbase', [], (requestId) => relay.eth().coinbase(requestId));
 });
 
+app.useRpc('eth_newPendingTransactionFilter', async () => {
+  return logAndHandleResponse('eth_newPendingTransactionFilter', [], (requestId) => relay.eth().filterService().newPendingTransactionFilter(requestId));
+});
+
 /**
  * It returns true if the filter was successfully uninstalled, otherwise false
  * params: Filter Id - string

@@ -57,6 +57,7 @@ The following table highlights each relay endpoint and the TIER associated with 
 | `eth_maxPriorityFeePerGas`                | TIER_1_RATE_LIMIT |
 | `eth_mining`                              | TIER_1_RATE_LIMIT |
 | `eth_newFilter`                           | TIER_2_RATE_LIMIT |
+| `eth_newPendingTransactionFilter`         | TIER_2_RATE_LIMIT |
 | `eth_protocolVersion`                     | TIER_2_RATE_LIMIT |
 | `eth_sendRawTransaction`                  | TIER_1_RATE_LIMIT |
 | `eth_sendTransaction`                     | TIER_1_RATE_LIMIT |

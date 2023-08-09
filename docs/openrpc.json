@@ -649,6 +649,15 @@
             }
         },
         {
+            "name": "eth_newPendingTransactionFilter",
+            "summary": "Always returns UNSUPPORTED_METHOD error.",
+            "params": [],
+            "result": {
+                "$ref": "#/components/schemas/unsupportedError"
+            },
+            "tags": [{ "name": "alpha API"}]
+        },
+        {
             "name": "eth_protocolVersion",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
             "params": [],

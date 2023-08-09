@@ -132,4 +132,9 @@ export class FilterService implements IFilterService {
 
     return false;
   }
+
+  public newPendingTransactionFilter(requestIdPrefix?: string | undefined): JsonRpcError {
+    this.logger.trace(`${requestIdPrefix} newPendingTransactionFilter()`);
+    return predefined.UNSUPPORTED_METHOD;
+  }
 }
