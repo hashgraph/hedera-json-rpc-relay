@@ -31,10 +31,10 @@ import { ContractFunctionParameters } from '@hashgraph/sdk';
 import parentContractJson from '../contracts/Parent.json';
 import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
-import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 const Address = RelayCalls;
+import { numberTo0x } from '../../../../packages/relay/src/formatters';
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -128,7 +128,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
                 //empty params for get logs defaults to latest block, which doesn't have required logs, that's why we fetch the last 10
                 const logs = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS, [{
-                    fromBlock: EthImpl.numberTo0x(tenBlocksBehindLatest),
+                    fromBlock: numberTo0x(tenBlocksBehindLatest),
                     'address': [contractAddress, contractAddress2]
                 }], requestId);
 
@@ -195,7 +195,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             it('should be able to use `address` param', async () => {
                 //when we pass only address, it defaults to the latest block
                 const logs = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS, [{
-                    'fromBlock': EthImpl.numberTo0x(tenBlocksBehindLatest),
+                    'fromBlock': numberTo0x(tenBlocksBehindLatest),
                     'address': contractAddress
                 }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
@@ -207,7 +207,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
             it('should be able to use `address` param with multiple addresses', async () => {
                 const logs = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS, [{
-                    'fromBlock': EthImpl.numberTo0x(tenBlocksBehindLatest),
+                    'fromBlock': numberTo0x(tenBlocksBehindLatest),
                     'address': [contractAddress, contractAddress2, Address.NON_EXISTING_ADDRESS]
                 }], requestId);
                 expect(logs.length).to.be.greaterThan(0);
@@ -277,7 +277,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     blocksBehindLatest = currentBlock - 10;
                 }
                 const logs = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS, [{
-                    'fromBlock': EthImpl.numberTo0x(blocksBehindLatest),
+                    'fromBlock': numberTo0x(blocksBehindLatest),
                     'toBlock': 'latest',
                     'address': [contractAddress, contractAddress2]
                 }], requestId);
@@ -323,12 +323,12 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             });
 
             it('should execute "eth_getBlockByNumber", hydrated transactions = false', async function () {
-                const blockResult = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER, [EthImpl.numberTo0x(mirrorBlock.number), false], requestId);
+                const blockResult = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER, [numberTo0x(mirrorBlock.number), false], requestId);
                 Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
             });
 
             it('@release should execute "eth_getBlockByNumber", hydrated transactions = true', async function () {
-                const blockResult = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER, [EthImpl.numberTo0x(mirrorBlock.number), true], requestId);
+                const blockResult = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER, [numberTo0x(mirrorBlock.number), true], requestId);
                 Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
             });
 
@@ -343,7 +343,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             });
 
             it('@release should execute "eth_getBlockTransactionCountByNumber"', async function () {
-                const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER, [EthImpl.numberTo0x(mirrorBlock.number)], requestId);
+                const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER, [numberTo0x(mirrorBlock.number)], requestId);
                 expect(res).to.be.equal(ethers.utils.hexValue(mirrorBlock.count));
             });
 
@@ -383,8 +383,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         });
 
         describe('Transaction related RPC Calls', () => {
-            const defaultGasPrice = EthImpl.numberTo0x(Assertions.defaultGasPrice);
-            const defaultGasLimit = EthImpl.numberTo0x(3_000_000);
+            const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
+            const defaultGasLimit = numberTo0x(3_000_000);
             const defaultLegacyTransactionData = {
                 value: ONE_TINYBAR,
                 gasPrice: defaultGasPrice,
@@ -415,13 +415,13 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
             it('@release should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
                 const response = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
-                    [mirrorContractDetails.block_hash.substring(0, 66), EthImpl.numberTo0x(mirrorContractDetails.transaction_index)], requestId);
+                    [mirrorContractDetails.block_hash.substring(0, 66), numberTo0x(mirrorContractDetails.transaction_index)], requestId);
                 Assertions.transaction(response, mirrorContractDetails);
             });
 
             it('should execute "eth_getTransactionByBlockHashAndIndex" for invalid block hash', async function () {
                 const response = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
-                    [Address.NON_EXISTING_BLOCK_HASH, EthImpl.numberTo0x(mirrorContractDetails.transaction_index)], requestId);
+                    [Address.NON_EXISTING_BLOCK_HASH, numberTo0x(mirrorContractDetails.transaction_index)], requestId);
                 expect(response).to.be.null;
             });
 
@@ -432,17 +432,17 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             });
 
             it('@release should execute "eth_getTransactionByBlockNumberAndIndex"', async function () {
-                const response = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX, [EthImpl.numberTo0x(mirrorContractDetails.block_number), EthImpl.numberTo0x(mirrorContractDetails.transaction_index)], requestId);
+                const response = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX, [numberTo0x(mirrorContractDetails.block_number), numberTo0x(mirrorContractDetails.transaction_index)], requestId);
                 Assertions.transaction(response, mirrorContractDetails);
             });
 
             it('should execute "eth_getTransactionByBlockNumberAndIndex" for invalid index', async function () {
-                const response = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX, [EthImpl.numberTo0x(mirrorContractDetails.block_number), Address.NON_EXISTING_INDEX], requestId);
+                const response = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX, [numberTo0x(mirrorContractDetails.block_number), Address.NON_EXISTING_INDEX], requestId);
                 expect(response).to.be.null;
             });
 
             it('should execute "eth_getTransactionByBlockNumberAndIndex" for non-exising block number', async function () {
-                const response = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX, [Address.NON_EXISTING_BLOCK_NUMBER, EthImpl.numberTo0x(mirrorContractDetails.transaction_index)], requestId);
+                const response = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX, [Address.NON_EXISTING_BLOCK_NUMBER, numberTo0x(mirrorContractDetails.transaction_index)], requestId);
                 expect(response).to.be.null;
             });
 
