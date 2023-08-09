@@ -23,5 +23,7 @@ import { JsonRpcError } from "../../../errors/JsonRpcError";
 export interface IFilterService {
   newFilter(fromBlock: string, toBlock: string, address?: string, topics?: any[], requestIdPrefix?: string):  Promise<string | JsonRpcError>;
 
+  newBlockFilter(requestIdPrefix?: string):  Promise<string | JsonRpcError>;
+
   uninstallFilter(filterId: string, requestId?: string): Promise<boolean>;
 }
