@@ -19,7 +19,7 @@
  *
  */
 
-import { AccountId, TokenId, Client, LocalProvider, Wallet, TokenAssociateTransaction, TransferTransaction, PrivateKey } from "@hashgraph/sdk";
+import { AccountId, TokenId, Client, LocalProvider, Wallet, TokenAssociateTransaction, TransferTransaction, PrivateKey, ReceiptStatusError } from "@hashgraph/sdk";
 import { ethers } from "ethers";
 
 export async function transferHtsFT(receiver: string, hre: any) {
@@ -35,17 +35,24 @@ export async function transferHtsFT(receiver: string, hre: any) {
   const tokenId = TokenId.fromSolidityAddress(networks.default.local.ExampleHTSFT.address);
   const accountId = AccountId.fromString("0.0.1013");
 
-  let associateTx = await new TokenAssociateTransaction()
-            .setAccountId(accountId)
-            .setTokenIds([tokenId])
-            .freezeWithSigner(wallet)
-  await associateTx.sign(privateKey);
-  await (
+  try {
+    let associateTx = await new TokenAssociateTransaction()
+        .setAccountId(accountId)
+        .setTokenIds([tokenId])
+        .freezeWithSigner(wallet)
+    await associateTx.sign(privateKey);
     await (
-        await associateTx.signWithSigner(wallet)
-    ).executeWithSigner(wallet)
-  ).getReceiptWithSigner(wallet);
-
+        await (
+            await associateTx.signWithSigner(wallet)
+        ).executeWithSigner(wallet)
+    ).getReceiptWithSigner(wallet);
+  } catch (error) {
+    if(error instanceof ReceiptStatusError && error.status._code === 194) {
+      console.log("Token already associated with account")
+    } else {
+      console.log(error);
+    }
+  }
   const transferTx = await (
     await (
         await (
