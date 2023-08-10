@@ -653,6 +653,13 @@ app.useRpc('eth_newBlockFilter', async (params: any) => {
 });
 
 /**
+ * Not Supported
+ */
+app.useRpc('eth_newPendingTransactionFilter', async () => {
+    return logAndHandleResponse('eth_newPendingTransactionFilter', [], (requestId) => relay.eth().filterService().newPendingTransactionFilter(requestId));
+});
+
+/**
  * It returns true if the filter was successfully uninstalled, otherwise false
  * params: Filter Id - string
  *
