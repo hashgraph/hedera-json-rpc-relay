@@ -242,4 +242,9 @@ export const predefined = {
     code: -39013,
     message: 'Invalid block range'
   }),
+  'FILTER_NOT_FOUND': new JsonRpcError({
+    name: 'Filter not found',
+    code: -32001,
+    message: 'Filter not found'
+  })
 };

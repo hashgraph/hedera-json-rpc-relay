@@ -24,7 +24,7 @@ import constants from '../../../constants';
 import { IFilterService } from './IFilterService';
 import { CommonService } from './../ethCommonService';
 import {generateRandomHex} from "../../../../formatters";
-import {JsonRpcError, predefined} from "../../../errors/JsonRpcError";
+import { JsonRpcError, predefined } from "../../../errors/JsonRpcError";
 
 /**
  * Create a new Filter Service implementation.
@@ -111,7 +111,10 @@ export class FilterService implements IFilterService {
       }
 
       return this.createFilter(constants.FILTER.TYPE.LOG, {
-        fromBlock, toBlock, address, topics
+        fromBlock: fromBlock === 'latest' ? await this.common.getLatestBlockNumber(requestIdPrefix) : fromBlock,
+        toBlock,
+        address,
+        topics
       }, requestIdPrefix);
     }
     catch(e) {
@@ -143,16 +146,20 @@ export class FilterService implements IFilterService {
     this.logger.trace(`${requestIdPrefix} getFilterLogs(${filterId})`);
     FilterService.requireFiltersEnabled();
 
-    // TODO: This method only works for filters created with eth_newFilter not for filters created
-    // using eth_newBlockFilter or eth_newPendingTransactionFilter, which will return "filter not found".
-
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
     const filter = this.cache.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
 
-    const logs = this.common.getLogs(null, filter?.params.fromBlock, filter?.params.toBlock, filter?.params.address, filter?.params.topics, requestIdPrefix);
+    if (filter?.type != constants.FILTER.TYPE.LOG) {
+      throw predefined.FILTER_NOT_FOUND;
+    }
 
-    // TODO: Update filter - Filters expire after 5 minutes of inactivity (no queries)
-
-    return logs;
+    return this.common.getLogs(
+      null,
+      filter?.params.fromBlock,
+      filter?.params.toBlock,
+      filter?.params.address,
+      filter?.params.topics,
+      requestIdPrefix
+    );
   }
 }
