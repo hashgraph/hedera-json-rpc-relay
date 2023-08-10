@@ -658,6 +658,37 @@
             "tags": [{ "name": "alpha API"}]
         },
         {
+            "name": "eth_getFilterChanges",
+            "summary": "Gets the latest results since the last request for a provided filter according to its type",
+            "params": [
+                {
+                    "name": "Filter ID",
+                    "schema": {
+                        "$ref": "#/components/schemas/hash16"
+                    }
+                }
+            ],
+            "result": {
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "blockHash": {
+                                "title": "block hash",
+                                "$ref": "#/components/schemas/hash32"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Log objects",
+                        "schema": {
+                            "$ref": "#/components/schemas/FilterResults"
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "name": "eth_protocolVersion",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
             "params": [],

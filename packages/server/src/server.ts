@@ -638,6 +638,11 @@ app.useRpc('eth_newFilter', async (params: any) => {
       requestId));
 });
 
+app.useRpc('eth_getFilterChanges', async (params: any) => {
+  const filterId = params[0];
+  return logAndHandleResponse('eth_getFilterChanges', [], (requestId) => relay.eth().filterService().getFilterChanges(filterId, requestId));
+});
+
 /**
  * Not supported
  */
