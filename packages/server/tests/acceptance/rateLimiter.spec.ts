@@ -59,7 +59,6 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
                 }
             }
 
-            // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
             // const error = predefined.IP_RATE_LIMIT_EXCEEDED(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID);
             // await expect(sendMultipleRequests()).to.eventually.be.rejected.and.satisfy((err) => {
             //     return [error.code, error.name, error.message].every(substring => err.body.includes(substring));

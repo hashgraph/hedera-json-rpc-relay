@@ -201,7 +201,6 @@ export default class Assertions {
         expect(err).to.exist;
         expect(err.code).to.equal('SERVER_ERROR');
 
-        // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
         // expect(err).to.exist;
         // expect(err).to.have.property('body');
         //
@@ -219,7 +218,6 @@ export default class Assertions {
         } catch (e) {
         }
 
-        // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
         // const propsToCheck = checkMessage ? [error.code, error.name, error.message] : [error.code, error.name];
         // return await expect(method.apply(thisObj, args)).to.eventually.be.rejected.and.satisfy((err) => {
         //     if(!err.hasOwnProperty('body')) {
@@ -240,7 +238,6 @@ export default class Assertions {
             expect(e).to.exist;
         }
 
-        // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
         // const tx = await promise;
         // try {
         //     await tx.wait();

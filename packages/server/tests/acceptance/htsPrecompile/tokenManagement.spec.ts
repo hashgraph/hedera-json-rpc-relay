@@ -354,8 +354,6 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       const txUpdate = await mainContractOwner.updateTokenInfoPublic(NftHTSTokenContractAddress, token, Constants.GAS.LIMIT_1_000_000);
       expect((await txUpdate.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode).to.be.equal(TX_SUCCESS_CODE);
 
-      await new Promise(r => setTimeout(r, 2000));
-
       const txAfterInfo = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress, Constants.GAS.LIMIT_1_000_000);
       const tokenInfoAfter = ((await txAfterInfo.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.TokenInfo)[0].args.tokenInfo)[0];
       await checkUpdatedTokenInfo(tokenInfoAfter);

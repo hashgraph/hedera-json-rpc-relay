@@ -64,7 +64,6 @@ export default class RelayClient {
             this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
             Assertions.expectedError();
         } catch (err) {
-            // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
             // if (expectedRpcError.name == "Internal error"){
             //     expectedRpcError = predefined.INTERNAL_ERROR(err.message);
             // }
@@ -83,7 +82,6 @@ export default class RelayClient {
             await this.call(methodName, params, requestId);
             Assertions.expectedError();
         } catch (err) {
-            // TODO: adapt to the new ethers v6 JsonRpcProvider error handling
             // const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
             // this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${err.body}`);
             // const response = JSON.parse(err.body);
