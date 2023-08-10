@@ -27,7 +27,7 @@ module.exports = async (address) => {
   const httpProvider = new Web3.providers.HttpProvider(process.env.RELAY_ENDPOINT);
   const web3 = new Web3(httpProvider);
   const wallet = await web3.eth.accounts.wallet.add(process.env.OPERATOR_PRIVATE_KEY);
-  const greeter = new web3.eth.Contract(abi, address, { from: wallet.address, gas: 300000 });
+  const greeter = new web3.eth.Contract(abi, address, { from: wallet[0].address, gas: 300000 });
 
   const callRes = await greeter.methods.greet().call();
   console.log(`Contract call result: ${callRes}`);
