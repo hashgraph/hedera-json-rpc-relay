@@ -116,7 +116,11 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
         throw new Error(`Unable to parse numeric env var: '${envVarName}', constant: '${fallbackConstantKey}'`);
     }
     return value;
-}
+};
+
+const isBigIntValid = (value: any): boolean => {
+    return typeof value === 'bigint';
+};
 
 /**
  * Parse weibar hex string to tinybar number, by applying tinybar to weibar coef.
