@@ -256,7 +256,7 @@ export default class ServicesClient {
         return new AliasAccount(
             accountId,
             accountInfo.accountId,
-            accountInfo.contractAccountId,
+            Utils.add0xPrefix(accountInfo.contractAccountId),
             servicesClient,
             privateKey,
             wallet,
@@ -366,7 +366,7 @@ export default class ServicesClient {
     async getAccountBalanceInWeiBars(account: string | AccountId, requestId?: string) {
         const balance = await this.getAccountBalance(account, requestId);
 
-        return ethers.BigNumber.from(balance.hbars.toTinybars().toString()).mul(ServicesClient.TINYBAR_TO_WEIBAR_COEF);
+        return BigInt(balance.hbars.toTinybars().toString()) * BigInt(ServicesClient.TINYBAR_TO_WEIBAR_COEF);
     }
 
     getClient() {
