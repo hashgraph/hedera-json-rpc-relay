@@ -144,6 +144,9 @@ export class FilterService implements IFilterService {
   }
 
   public async getFilterChanges(filterId: string, requestIdPrefix?: string): Promise<string[] | Log[] | JsonRpcError> {
+    this.logger.trace(`${requestIdPrefix} getFilterChanges(${filterId})`);
+    FilterService.requireFiltersEnabled();
+
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
     const filter = this.cache.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
 
@@ -155,6 +158,7 @@ export class FilterService implements IFilterService {
 
     if (filter.type === constants.FILTER.TYPE.LOG) {
       // FIXME implement once https://github.com/hashgraph/hedera-json-rpc-relay/pull/1624 is merged
+      result = [];
     }
     else if (filter.type === constants.FILTER.TYPE.NEW_BLOCK) {
       const fromBlock = filter.lastQueried || filter.params.blockAtCreation;

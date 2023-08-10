@@ -113,7 +113,8 @@ describe('Filter API Test Suite', async function () {
     it('FILTER_API_ENABLED is not specified', async function () {
       delete process.env.FILTER_API_ENABLED;
       await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, {});
-      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, {});
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, [existingFilterId]);
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.getFilterChanges, true, filterService, [existingFilterId]);
     });
 
     it('FILTER_API_ENABLED=true', async function () {
@@ -122,13 +123,18 @@ describe('Filter API Test Suite', async function () {
       const filterId = await filterService.newFilter();
       expect(filterId).to.exist;
       expect(RelayAssertions.validateHash(filterId, 32)).to.eq(true, 'returns valid filterId');
+
+      const filterChanges = await filterService.getFilterChanges(filterId);
+      expect(filterChanges).to.exist;
+
       expect((await filterService.uninstallFilter(filterId))).to.eq(true, 'executes correctly');
     });
 
     it('FILTER_API_ENABLED=false', async function () {
       process.env.FILTER_API_ENABLED='false';
       await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, {});
-      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, {});
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, [existingFilterId]);
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.getFilterChanges, true, filterService, [existingFilterId]);
     });
   });
 
