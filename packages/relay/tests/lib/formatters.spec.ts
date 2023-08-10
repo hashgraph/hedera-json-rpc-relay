@@ -86,25 +86,25 @@ describe('Formatters', () => {
           expect(formatTransactionId('')).to.eq(null);
         });
       });
-    
+
     describe('formatTransactionIdWithoutQueryParams', () => {
         const validInputTimestamp = '0.0.2@1234567890.123456789?nonce=1';
         const validOutputTimestamp = '0.0.2-1234567890-123456789';
         const invalidInputTimestamp = '0.0.2@12345678222.123456789?nonce=1';
-    
+
         it('should return correct formated transaction id', () => {
           expect(formatTransactionIdWithoutQueryParams(validInputTimestamp)).to.eq(validOutputTimestamp);
         });
-    
+
         it('should return null', () => {
           expect(formatTransactionIdWithoutQueryParams(invalidInputTimestamp)).to.eq(null);
         });
-    
+
         it('should return null on empty', () => {
           expect(formatTransactionIdWithoutQueryParams('')).to.eq(null);
         });
     });
-    
+
 
     describe('parseNumericEnvVar', () => {
         before(() => {
