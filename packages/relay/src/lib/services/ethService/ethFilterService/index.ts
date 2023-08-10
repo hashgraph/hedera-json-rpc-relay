@@ -25,6 +25,7 @@ import { IFilterService } from './IFilterService';
 import { CommonService } from './../ethCommonService';
 import {generateRandomHex} from "../../../../formatters";
 import {JsonRpcError, predefined} from "../../../errors/JsonRpcError";
+import { Log } from '../../../model';
 
 /**
  * Create a new Filter Service implementation.
@@ -55,14 +56,18 @@ export class FilterService implements IFilterService {
   private readonly cache: ClientCache;
   public readonly ethNewFilter = 'eth_newFilter';
   public readonly ethUninstallFilter = 'eth_uninstallFilter';
+  public readonly ethGetFilterChanges = 'eth_getFilterChanges';
 
   private readonly common: CommonService;
+  private readonly supportedTypes;
 
   constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, clientCache: ClientCache, common: CommonService) {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.cache = clientCache;
     this.common = common;
+
+    this.supportedTypes = [constants.FILTER.TYPE.LOG, constants.FILTER.TYPE.NEW_BLOCK];
   }
 
   /**
@@ -136,5 +141,44 @@ export class FilterService implements IFilterService {
   public newPendingTransactionFilter(requestIdPrefix?: string | undefined): JsonRpcError {
     this.logger.trace(`${requestIdPrefix} newPendingTransactionFilter()`);
     return predefined.UNSUPPORTED_METHOD;
+  }
+
+  public async getFilterChanges(filterId: string, requestIdPrefix?: string): Promise<string[] | Log[] | JsonRpcError> {
+    const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
+    const filter = this.cache.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
+
+    if (!filter || this.supportedTypes.indexOf(filter.type) === -1) {
+      throw predefined.FILTER_NOT_FOUND;
+    }
+
+    let result, latestBlockNumber;
+
+    if (filter.type === constants.FILTER.TYPE.LOG) {
+      // FIXME implement once https://github.com/hashgraph/hedera-json-rpc-relay/pull/1624 is merged
+    }
+    else if (filter.type === constants.FILTER.TYPE.NEW_BLOCK) {
+      const fromBlock = filter.lastQueried || filter.params.blockAtCreation;
+      result = await this.mirrorNodeClient.getBlocks([`gte:${fromBlock}`], undefined, {
+        order: 'asc'
+      });
+      if (result?.blocks && result.blocks.length) {
+        latestBlockNumber = Number(result.blocks[result.blocks.length - 1].number);
+        result = result.blocks.map(r => r.hash);
+      }
+      else {
+        result = [];
+        const latestBlock = await this.common.getLatestBlockNumber(requestIdPrefix);
+        latestBlockNumber = Number(latestBlock);
+      }
+    }
+
+    //update filter to refresh TTL and set lastQueried block number
+    this.cache.set(cacheKey, {
+      type: filter.type,
+      params: filter.params,
+      lastQueried: latestBlockNumber
+    }, this.ethGetFilterChanges, constants.FILTER.TTL, requestIdPrefix);
+
+    return result;
   }
 }

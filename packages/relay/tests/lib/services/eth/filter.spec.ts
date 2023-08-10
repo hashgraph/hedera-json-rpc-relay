@@ -49,12 +49,22 @@ describe('Filter API Test Suite', async function () {
   const filterObject = {
     toBlock: 'latest',
   };
+
+  let blockFilterObject;
   const existingFilterId = '0x1112233';
   const nonExistingFilterId = '0x1112231';
   const LATEST_BLOCK_QUERY = 'blocks?limit=1&order=desc';
   const BLOCK_BY_NUMBER_QUERY = 'blocks';
 
   this.beforeAll(() => {
+    blockFilterObject = {
+      type: constants.FILTER.TYPE.NEW_BLOCK,
+      params: {
+        blockAtCreation: defaultBlock.number
+      },
+      lastQueried: null
+    };
+
     clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
@@ -182,7 +192,7 @@ describe('Filter API Test Suite', async function () {
   describe('eth_uninstallFilter', async function() {
     it('should return true if filter is deleted', async function () {
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-      clientCache.set(cacheKey, filterObject, filterService.ethUninstallFilter, 300000, undefined);
+      clientCache.set(cacheKey, filterObject, filterService.ethUninstallFilter, constants.FILTER.TTL, undefined);
 
       const result = await filterService.uninstallFilter(existingFilterId);
 
@@ -195,6 +205,57 @@ describe('Filter API Test Suite', async function () {
       const result = await filterService.uninstallFilter(nonExistingFilterId);
 
       expect(result).to.eq(false);
+    });
+  });
+
+  describe('eth_getFilterChanges', async function() {
+    it('should throw error for non-existing filters', async function () {
+      await RelayAssertions.assertRejection(predefined.FILTER_NOT_FOUND, filterService.getFilterChanges, true, filterService, [nonExistingFilterId]);
+    });
+
+    it('should throw error for unsupported filter types', async function () {
+      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
+      clientCache.set(cacheKey, {
+        ...blockFilterObject,
+        type: 'newPendingTransaction'
+      }, filterService.ethGetFilterChanges, constants.FILTER.TTL);
+
+      await RelayAssertions.assertRejection(predefined.FILTER_NOT_FOUND, filterService.getFilterChanges, true, filterService, [existingFilterId]);
+    });
+
+    it('should return the hashes of latest blocks', async function () {
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, {blocks: [{...defaultBlock, number: defaultBlock.number + 4}]});
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gte:${defaultBlock.number}&order=asc`).reply(200, {blocks: [
+          { ...defaultBlock, number: defaultBlock.number + 1, hash: '0x1'},
+          { ...defaultBlock, number: defaultBlock.number + 2, hash: '0x2'},
+          { ...defaultBlock, number: defaultBlock.number + 3, hash: '0x3'}
+      ]});
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gte:${defaultBlock.number + 3}&order=asc`).reply(200, {blocks: []});
+
+      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
+      clientCache.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
+      const cachedFilterBeforeCall = clientCache.get(cacheKey, filterService.ethGetFilterChanges);
+      expect(cachedFilterBeforeCall).to.exist;
+      expect(cachedFilterBeforeCall.lastQueried).to.not.exist;
+
+      const result = await filterService.getFilterChanges(existingFilterId);
+
+      expect(result).to.exist;
+      expect(result.length).to.eq(3, 'returns correct number of blocks');
+      expect(result[0]).to.eq('0x1', 'result is in ascending order');
+      expect(result[1]).to.eq('0x2');
+      expect(result[2]).to.eq('0x3');
+      const cachedFilter = clientCache.get(cacheKey, filterService.ethGetFilterChanges);
+      expect(cachedFilter).to.exist;
+      expect(cachedFilter.lastQueried).to.eq(defaultBlock.number + 3, `lastQueried is updated with latest block number at the time`);
+
+      const secondResult = await filterService.getFilterChanges(existingFilterId);
+      expect(secondResult).to.exist;
+      expect(secondResult.length).to.eq(0, 'second call returns no block hashes');
+
+      const secondCachedFilter = clientCache.get(cacheKey, filterService.ethGetFilterChanges);
+      expect(secondCachedFilter).to.exist;
+      expect(secondCachedFilter.lastQueried).to.eq(defaultBlock.number + 4, `lastQueried is updated with latest block number at the time`);
     });
   });
 });

@@ -19,6 +19,7 @@
  */
 
 import { JsonRpcError } from "../../../errors/JsonRpcError";
+import { Log } from '../../../model';
 
 export interface IFilterService {
   newFilter(fromBlock: string, toBlock: string, address?: string, topics?: any[], requestIdPrefix?: string):  Promise<string | JsonRpcError>;
@@ -26,4 +27,6 @@ export interface IFilterService {
   uninstallFilter(filterId: string, requestId?: string): Promise<boolean>;
 
   newPendingTransactionFilter(requestIdPrefix?: string): JsonRpcError;
+
+  getFilterChanges(filterId: string, requestIdPrefix?: string): Promise<string[] | Log[] | JsonRpcError>;
 }
