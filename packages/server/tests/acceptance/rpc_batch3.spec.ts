@@ -828,6 +828,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
                 expect(result).to.eq(false);
             });
+
+            it('should not support "eth_newPendingTransactionFilter"', async function () {
+                await relay.callUnsupported(RelayCalls.ETH_ENDPOINTS.ETH_NEW_PENDING_TRANSACTION_FILTER, [], requestId);
+            });
         });
     });
 });
