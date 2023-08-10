@@ -64,10 +64,6 @@ export default class RelayClient {
             this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
             Assertions.expectedError();
         } catch (err) {
-            // if (expectedRpcError.name == "Internal error"){
-            //     expectedRpcError = predefined.INTERNAL_ERROR(err.message);
-            // }
-            // Assertions.jsonRpcError(err, expectedRpcError);
         }
     }
 
@@ -82,11 +78,6 @@ export default class RelayClient {
             await this.call(methodName, params, requestId);
             Assertions.expectedError();
         } catch (err) {
-            // const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-            // this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${err.body}`);
-            // const response = JSON.parse(err.body);
-            // Assertions.unsupportedResponse(response);
-            // return response;
         }
     };
 

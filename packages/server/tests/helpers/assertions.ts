@@ -200,15 +200,6 @@ export default class Assertions {
     static jsonRpcError(err: any, expectedError: JsonRpcError) {
         expect(err).to.exist;
         expect(err.code).to.equal('SERVER_ERROR');
-
-        // expect(err).to.exist;
-        // expect(err).to.have.property('body');
-        //
-        // const parsedError = JSON.parse(err.body);
-        // expect(parsedError.error.code).to.be.equal(expectedError.code);
-        // if (expectedError.data) {
-        //     expect(parsedError.error.data).to.be.equal(expectedError.data);
-        // }
     }
 
     static assertPredefinedRpcError = async (error: JsonRpcError, method: () => Promise<any>, checkMessage: boolean, thisObj, args?: any[]): Promise<any> => {
@@ -217,15 +208,6 @@ export default class Assertions {
             Assertions.expectedError();
         } catch (e) {
         }
-
-        // const propsToCheck = checkMessage ? [error.code, error.name, error.message] : [error.code, error.name];
-        // return await expect(method.apply(thisObj, args)).to.eventually.be.rejected.and.satisfy((err) => {
-        //     if(!err.hasOwnProperty('body')) {
-        //         return propsToCheck.every(substring => err.response.includes(substring));
-        //     } else {
-        //         return propsToCheck.every(substring => err.body.includes(substring));
-        //     }
-        // });
     };
 
     static expectRevert = async (promise, code) => {
@@ -237,16 +219,6 @@ export default class Assertions {
         } catch (e: any) {
             expect(e).to.exist;
         }
-
-        // const tx = await promise;
-        // try {
-        //     await tx.wait();
-        //     Assertions.expectedError();
-        // }
-        // catch(e:any) {
-        //     expect(e).to.exist;
-        //     expect(e.code).to.eq(code);
-        // }
     };
 
     static expectLogArgs = (log, contract, args: any[] = []) => {
