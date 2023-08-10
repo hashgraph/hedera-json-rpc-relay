@@ -42,9 +42,9 @@ describe('RPC', function() {
 
     const walletReceiver = await web3.eth.accounts.wallet.add(process.env.RECEIVER_PRIVATE_KEY);
 
-    const hbarsBefore = (await web3.eth.getBalance(walletReceiver.address)).toString();
+    const hbarsBefore = (await web3.eth.getBalance(walletReceiver[0].address)).toString();
     await transferHbars();
-    const hbarsAfter = (await web3.eth.getBalance(walletReceiver.address)).toString();
+    const hbarsAfter = (await web3.eth.getBalance(walletReceiver[0].address)).toString();
 
     expect(hbarsBefore).to.not.be.equal(hbarsAfter);
   });
