@@ -148,7 +148,6 @@ export class FilterService implements IFilterService {
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
     const filter = this.cache.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
-
     if (filter?.type != constants.FILTER.TYPE.LOG) {
       throw predefined.FILTER_NOT_FOUND;
     }
