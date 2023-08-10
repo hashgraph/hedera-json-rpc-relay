@@ -55,6 +55,7 @@ export class FilterService implements IFilterService {
   private readonly cache: ClientCache;
   public readonly ethNewFilter = 'eth_newFilter';
   public readonly ethUninstallFilter = 'eth_uninstallFilter';
+  public readonly ethGetFilterLogs = 'eth_getFilterLogs';
 
   private readonly common: CommonService;
 
@@ -136,5 +137,22 @@ export class FilterService implements IFilterService {
   public newPendingTransactionFilter(requestIdPrefix?: string | undefined): JsonRpcError {
     this.logger.trace(`${requestIdPrefix} newPendingTransactionFilter()`);
     return predefined.UNSUPPORTED_METHOD;
+  }
+
+  public async getFilterLogs(filterId: string, requestIdPrefix?: string | undefined): Promise<any> {
+    this.logger.trace(`${requestIdPrefix} getFilterLogs(${filterId})`);
+    FilterService.requireFiltersEnabled();
+
+    // TODO: This method only works for filters created with eth_newFilter not for filters created
+    // using eth_newBlockFilter or eth_newPendingTransactionFilter, which will return "filter not found".
+
+    const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
+    const filter = this.cache.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
+
+    const logs = this.common.getLogs(null, filter?.params.fromBlock, filter?.params.toBlock, filter?.params.address, filter?.params.topics, requestIdPrefix);
+
+    // TODO: Update filter - Filters expire after 5 minutes of inactivity (no queries)
+
+    return logs;
   }
 }

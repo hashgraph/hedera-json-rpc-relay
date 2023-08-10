@@ -638,6 +638,11 @@ app.useRpc('eth_newFilter', async (params: any) => {
       requestId));
 });
 
+app.useRpc('eth_getFilterLogs', async (params: any) => {
+  return logAndHandleResponse('eth_getFilterLogs', params, (requestId) =>
+    relay.eth().filterService().getFilterLogs(params?.[0], requestId));
+});
+
 /**
  * Not supported
  */
