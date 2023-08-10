@@ -19,6 +19,7 @@
  */
 
 import constants from "./lib/constants";
+import crypto from "crypto";
 import { Transaction } from './lib/model';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { BigNumber as BN } from "bignumber.js";
@@ -28,6 +29,10 @@ const EMPTY_HEX = '0x';
 const hashNumber = (num) => {
   return EMPTY_HEX + num.toString(16);
 };
+
+const generateRandomHex = (bytesLength = 16) => {
+    return "0x" + crypto.randomBytes(bytesLength).toString('hex');
+}
 
 /**
 * Format message prefix for logger.
@@ -111,29 +116,24 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
         throw new Error(`Unable to parse numeric env var: '${envVarName}', constant: '${fallbackConstantKey}'`);
     }
     return value;
-};
-
-const isBigIntValid = (value: any): boolean => {
-    return typeof value === 'bigint';
-};
+}
 
 /**
  * Parse weibar hex string to tinybar number, by applying tinybar to weibar coef.
+ * Return null, if value is not a valid hex. Null is the only other valid response that mirror-node accepts.
  * @param value 
  * @returns tinybarValue
  */
-const weibarHexToTinyBarInt = (value: string): number => {
+const weibarHexToTinyBarInt = (value: string): number | null => {
     if ((value === null) || (value === '0x')) {
-        return (0);
+        return null;
     }
 
-    const parsedValue = BigInt(value);
-    if (!isBigIntValid(parsedValue)) {
-        return (0);
+    if (value) {
+        const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+        return Number(tinybarValue);
     }
-
-    const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
-    return Number(tinybarValue);
+    return null;
 };
 
 const formatContractResult = (cr: any) => {
@@ -200,5 +200,5 @@ export {
     hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId,
     formatTransactionIdWithoutQueryParams, parseNumericEnvVar, formatContractResult, prepend0x,
     numberTo0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex,
-    weibarHexToTinyBarInt
+    generateRandomHex, weibarHexToTinyBarInt
 };

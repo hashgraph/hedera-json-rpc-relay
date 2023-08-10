@@ -142,7 +142,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             expect(estimatedGas).to.equal(expectedRes);
         });
 
-        it('@release should execute "eth_estimateGas" for existing account', async function() {
+        // Skip this test for now because of bug in mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/6612 in Additional bug fixes
+        xit('@release should execute "eth_estimateGas" for existing account', async function() {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
                 to: mirrorSecondaryAccount.evm_address,
                 value: '0x1',
@@ -151,7 +152,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             expect(res).to.equal(EthImpl.gasTxBaseCost);
         });
 
-        it('@release should execute "eth_estimateGas" hollow account creation', async function() {
+        // Skip this test for now because of bug in mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/6612 in Additional bug fixes
+        xit('@release should execute "eth_estimateGas" hollow account creation', async function() {
             const hollowAccount = ethers.Wallet.createRandom();
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
                 to: hollowAccount.address,
