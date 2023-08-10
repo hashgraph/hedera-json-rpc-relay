@@ -10,6 +10,10 @@ ExampleERC20 -> Transfer
 
 GravatarRegistry -> GravatarCreated and GravatarUpdated
 
+ExampleHTSFT -> Transfer
+
+ExampleHTSNFT -> Transfer
+
 For more information on subgraphs, check the official TheGraph documentation https://thegraph.com/docs/en/
 
 ## Introduction:
@@ -22,7 +26,7 @@ For more information on subgraphs, check the official TheGraph documentation htt
 
 ### Prerequisites:
 
-Note: Currently this example needs to be executed against older relay (v0.10.0) and mirror-node (v0.67.0-rc1) versions, until all fixes have been released.
+Hedera-Local-Node, recommended version: 2.12.0
 
 The full hedera local-node config can be found [here](./configs/local-test.json)
 
@@ -67,6 +71,24 @@ Rename `.env.example` to `.env`
 
 `npx hardhat createGravatar`
 
+#### HTS Fungible Token:
+
+`npx hardhat deployHTS`
+
+`npx hardhat transferHTSFT`
+
+#### HTS Non-Fungible Token:
+
+`npx hardhat deployHTSNFT`
+
+`npx hardhat mintNFTHTS`
+
+#### Deploy All and interact with all contracts at once:
+
+`npx hardhat prepare`
+
+`npx hardhat interactWithContracts`
+
 _NOTE: This example uses the [hardhat-graph](https://github.com/graphprotocol/hardhat-graph) plugin. After every contract deploy, the plugin will update the networks.json file with the contract address (and the startBlock), this way you can use the `--network <network_name>` option of the `deploy` command, which will automatically update the address (and startBlock) in the `subgraph.yaml` file to the last contract deployment._
 
 ### Generate the types:
@@ -94,7 +116,7 @@ To deploy the subgraph:
 1. Run `npm run create-local` or `yarn create-local`
 2. Run `npm run deploy-local -- --network local` or `yarn deploy-local --network local`
 3. Follow the instructions
-4. After the subgraph is successfully deployed open the [GraphQL playground](http://127.0.0.1:8000/subgraphs/name/subgraph-example/graphql?query=%7B+%0A++gravatars+%7B%0A++++id%0A++++owner%0A++++displayName%0A++++imageUrl%0A++%7D%0A++erc20S+%7B%0A++++id%0A++++supply%0A++++type%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++++amount%0A++++%7D%0A++%7D%0A++htss%7B%0A++++id%0A++++supply%0A++++type%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++++amount%0A++++%7D%0A++%7D%0A++htsnfts%7B%0A++++++++id%0A++++owner%0A++++type%0A++++tokenId%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++%7D%0A++%7D%0A++erc721S+%7B%0A++++id%0A++++owner%0A++++type%0A++++tokenId%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++%7D%0A++%7D%0A%7D%0A) where you can execute queries and fetch indexed data.
+4. After the subgraph is successfully deployed open the [GraphQL playground](http://127.0.0.1:8000/subgraphs/name/subgraph-example/graphql?query=%7B+%0A++gravatars+%7B%0A++++id%0A++++owner%0A++++displayName%0A++++imageUrl%0A++%7D%0A++erc20S+%7B%0A++++id%0A++++supply%0A++++type%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++++amount%0A++++%7D%0A++%7D%0A%0A++htsfts+%7B%0A++++id%0A++++supply%0A++++type%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++++amount%0A++++%7D%0A++%7D%0A++htsnfts%7B%0A++++++++id%0A++++owner%0A++++type%0A++++tokenId%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++%7D%0A++%7D%0A++erc721S+%7B%0A++++id%0A++++owner%0A++++type%0A++++tokenId%0A++++transfers+%7B%0A++++++from%0A++++++to%0A++++%7D%0A++%7D%0A%7D%0A) where you can execute queries and fetch indexed data.
 
 ## Running the tests:
 
