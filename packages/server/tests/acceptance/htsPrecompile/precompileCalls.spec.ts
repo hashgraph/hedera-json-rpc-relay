@@ -47,7 +47,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     this.timeout(240 * 1000); // 240 seconds
     const { servicesNode, mirrorNode, relay }: any = global;
 
-    const TX_SUCCESS_CODE = 22;
+    const TX_SUCCESS_CODE = BigInt(22);
 
     const TOKEN_NAME = Utils.randomString(10);
     const TOKEN_SYMBOL = Utils.randomString(5);
@@ -81,15 +81,15 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         const HederaTokenServiceImplFactory = new ethers.ContractFactory(HederaTokenServiceImplJson.abi, HederaTokenServiceImplJson.bytecode, contractDeployer.wallet);
         htsImpl = await HederaTokenServiceImplFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
 
-        const rec0 = await htsImpl.deployTransaction.wait();
-        htsImplAddress = rec0.contractAddress;
+        const rec0 = await htsImpl.waitForDeployment();
+        htsImplAddress = rec0.target;
 
         // Deploy the Token Management contract
         const TokenManagementContractFactory = new ethers.ContractFactory(TokenManagementContractJson.abi, TokenManagementContractJson.bytecode, contractDeployer.wallet);
         TokenManager = await TokenManagementContractFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
-        await htsImpl.deployTransaction.wait();
+        await htsImpl.waitForDeployment();
 
-        const tokenManagementMirror = await mirrorNode.get(`/contracts/${TokenManager.address}`, requestId);
+        const tokenManagementMirror = await mirrorNode.get(`/contracts/${TokenManager.target}`, requestId);
 
         // create accounts
         accounts[0] = await servicesNode.createAliasAccount(400, relay.provider, requestId);
@@ -101,7 +101,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);
         await mirrorNode.get(`/accounts/${accounts[2].accountId}`, requestId);
 
-        TokenManagementSigner = new ethers.Contract(TokenManager.address, TokenManagementContractJson.abi, accounts[0].wallet);
+        TokenManagementSigner = new ethers.Contract(TokenManager.target, TokenManagementContractJson.abi, accounts[0].wallet);
 
         // Create tokens
         const defaultTokenOptions = {
@@ -238,22 +238,22 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     describe("Calling HTS token through IERC20", async () => {
         it("Function with IERC20(token).totalSupply()", async () => {
             const totalSupply = await IERC20Metadata.totalSupply();
-            expect(totalSupply).to.eq(INITIAL_SUPPLY);
+            expect(totalSupply).to.eq(BigInt(INITIAL_SUPPLY));
         });
 
         it("Function with IERC20(token).balanceOf(account) - using long zero address", async () => {
             const balance = await IERC20.balanceOf(account1LongZero);
-            expect(balance).to.eq(100);
+            expect(balance).to.eq(BigInt(100));
         });
 
         it("Function with IERC20(token).balanceOf(account) - using evm address", async () => {
             const balance = await IERC20.balanceOf(accounts[1].address);
-            expect(balance).to.eq(100);
+            expect(balance).to.eq(BigInt(100));
         });
 
         it("Function with IERC20(token).allowance(owner, spender) - using both evm addresses", async () => {
             const allowance = await IERC20.allowance(accounts[0].address, accounts[2].address);
-            expect(allowance).to.eq(200);
+            expect(allowance).to.eq(BigInt(200));
         });
     });
 
@@ -277,38 +277,38 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     describe("Calling HTS token through IERC721Enumerable", async () => {
         it("Function with IERC721Enumerable(token).totalSupply()", async () => {
             const supply = await IERC721Enumerable.totalSupply();
-            expect(supply).to.eq(1);
+            expect(supply).to.eq(BigInt(1));
         });
     });
 
     //According to this ticket the following describe should be deleted after adaptations are applied -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131
     describe("Calling HTS token through HederaTokenService", async () => {
-        //TODO remove this it when should be able to freeze and unfreeze token2 is implemented -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131 
+        //TODO remove this it when should be able to freeze and unfreeze token2 is implemented -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131
         it("Function with HederaTokenService.isFrozen(token, account) - using long zero address", async () => {
             // freeze token
             const freezeTx = await TokenManagementSigner.freezeTokenPublic(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_1_000_000);
-            const responseCodeFreeze = (await freezeTx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
+            const responseCodeFreeze = (await freezeTx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
             expect(responseCodeFreeze).to.equal(TX_SUCCESS_CODE);
 
             await new Promise(r => setTimeout(r, 5000));
-            const isFrozen = await htsImpl.callStatic.isTokenFrozen(tokenAddress, account1LongZero);
+            const isFrozen = await htsImpl.isTokenFrozen.staticCall(tokenAddress, account1LongZero);
             expect(isFrozen).to.eq(true);
 
             // unfreeze token
             const unfreezeTx = await TokenManagementSigner.unfreezeTokenPublic(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_1_000_000);
-            const responseCodeUnfreeze = (await unfreezeTx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
+            const responseCodeUnfreeze = (await unfreezeTx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args.responseCode;
             expect(responseCodeUnfreeze).to.equal(TX_SUCCESS_CODE);
         });
 
         //Todo delete when should query isKyc2 is implemented -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131
         it("Function with HederaTokenService.isKyc(token, account) - using long zero account address", async () => {
-            const isKyc1 = await htsImpl.callStatic.isKycGranted(tokenAddress, account1LongZero);
+            const isKyc1 = await htsImpl.isKycGranted.staticCall(tokenAddress, account1LongZero);
             expect(isKyc1).to.eq(true);
         });
 
         describe("Function with HederaTokenService.getTokenCustomFees(token)", async () => {
             it("token with no custom fees", async () => {
-                const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressNoFees);
+                const customFees = await htsImpl.getCustomFeesForToken.staticCall(tokenAddressNoFees);
                 expect(customFees).to.exist;
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(0);
@@ -319,7 +319,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             });
 
             it("token with fixed hbar fees", async () => {
-                const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressFixedHbarFees);
+                const customFees = await htsImpl.getCustomFeesForToken.staticCall(tokenAddressFixedHbarFees);
                 expect(customFees).to.exist;
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(1);
@@ -327,7 +327,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees[0].amount.toString()).to.eq(Hbar.from(1).toTinybars().toString());
                 expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[0].feeCollector).to.exist;
-                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address.toLowerCase()}`);
+                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
 
                 expect(customFees.fractionalFees).to.exist;
                 expect(customFees.fractionalFees.length).to.eq(0);
@@ -336,7 +336,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             });
 
             it("token with fixed token fees", async () => {
-                const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressFixedTokenFees);
+                const customFees = await htsImpl.getCustomFeesForToken.staticCall(tokenAddressFixedTokenFees);
                 expect(customFees).to.exist;
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(1);
@@ -344,7 +344,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees[0].amount.toString()).to.eq("1");
                 expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[0].feeCollector).to.exist;
-                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address.toLowerCase()}`);
+                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
 
                 expect(customFees.fractionalFees).to.exist;
                 expect(customFees.fractionalFees.length).to.eq(0);
@@ -353,7 +353,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             });
 
             it("token with fractional fees", async () => {
-                const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressFractionalFees);
+                const customFees = await htsImpl.getCustomFeesForToken.staticCall(tokenAddressFractionalFees);
                 expect(customFees).to.exist;
                 expect(customFees.fractionalFees).to.exist;
                 expect(customFees.fractionalFees.length).to.eq(1);
@@ -372,7 +372,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fractionalFees[0].netOfTransfers).to.eq(false);
 
                 expect(customFees.fractionalFees[0].feeCollector).to.exist;
-                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address}`);
+                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(0);
                 expect(customFees.royaltyFees).to.exist;
@@ -380,7 +380,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             });
 
             it("token with all custom fees", async () => {
-                const customFees = await htsImpl.callStatic.getCustomFeesForToken(tokenAddressAllFees);
+                const customFees = await htsImpl.getCustomFeesForToken.staticCall(tokenAddressAllFees);
                 expect(customFees).to.exist;
                 expect(customFees.fractionalFees).to.exist;
                 expect(customFees.fractionalFees.length).to.eq(1);
@@ -400,7 +400,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fractionalFees[0].netOfTransfers).to.eq(false);
 
                 expect(customFees.fractionalFees[0].feeCollector).to.exist;
-                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address}`);
+                expect(customFees.fractionalFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
 
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(2);
@@ -409,20 +409,20 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.fixedFees[0].amount.toString()).to.eq(Hbar.from(1).toTinybars().toString());
                 expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[0].feeCollector).to.exist;
-                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address}`);
+                expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
 
                 expect(customFees.fixedFees[1].amount).to.exist;
                 expect(customFees.fixedFees[1].amount.toString()).to.eq("1");
                 expect(customFees.fixedFees[1].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.fixedFees[1].feeCollector).to.exist;
-                expect(customFees.fixedFees[1].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address}`);
+                expect(customFees.fixedFees[1].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
 
                 expect(customFees.royaltyFees).to.exist;
                 expect(customFees.royaltyFees.length).to.eq(0);
             });
 
             it("nft with no custom fees", async () => {
-                const customFees = await htsImpl.callStatic.getCustomFeesForToken(nftAddress);
+                const customFees = await htsImpl.getCustomFeesForToken.staticCall(nftAddress);
                 expect(customFees).to.exist;
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(0);
@@ -433,7 +433,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             });
 
             it("nft with royalty fees", async () => {
-                const customFees = await htsImpl.callStatic.getCustomFeesForToken(nftAddressRoyaltyFees);
+                const customFees = await htsImpl.getCustomFeesForToken.staticCall(nftAddressRoyaltyFees);
                 expect(customFees).to.exist;
                 expect(customFees.fixedFees).to.exist;
                 expect(customFees.fixedFees.length).to.eq(0);
@@ -447,7 +447,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
                 expect(customFees.royaltyFees[0].denominator.toString()).to.eq("10");
                 expect(customFees.royaltyFees[0].tokenId).to.eq(ZERO_HEX);
                 expect(customFees.royaltyFees[0].feeCollector).to.exist;
-                expect(customFees.royaltyFees[0].feeCollector.toLowerCase()).to.eq(`0x${accounts[0].address.toLowerCase()}`);
+                expect(customFees.royaltyFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
             });
 
         });
@@ -479,7 +479,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             };
 
             it(`keyType = ADMIN`, async () => {
-                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['ADMIN']);
+                const res = await htsImpl.getTokenKeyPublic.staticCall(tokenAddress, keyTypes['ADMIN']);
                 expect(res).to.exist;
                 expect(res.inheritAccountKey).to.eq(false);
                 expect(res.contractId).to.eq(ZERO_HEX);
@@ -489,7 +489,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             });
 
             it(`keyType = KYC`, async () => {
-                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['KYC']);
+                const res = await htsImpl.getTokenKeyPublic.staticCall(tokenAddress, keyTypes['KYC']);
                 expect(res).to.exist;
                 expect(res.inheritAccountKey).to.eq(false);
                 expect(res.contractId).to.eq(ZERO_HEX);
@@ -499,7 +499,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             });
 
             it(`keyType = FREEZE`, async () => {
-                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['FREEZE']);
+                const res = await htsImpl.getTokenKeyPublic.staticCall(tokenAddress, keyTypes['FREEZE']);
                 expect(res).to.exist;
                 expect(res.inheritAccountKey).to.eq(false);
                 expect(res.contractId).to.not.eq(ZERO_HEX);
@@ -509,7 +509,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             });
 
             it(`keyType = SUPPLY`, async () => {
-                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['SUPPLY']);
+                const res = await htsImpl.getTokenKeyPublic.staticCall(tokenAddress, keyTypes['SUPPLY']);
                 expect(res).to.exist;
                 expect(res.inheritAccountKey).to.eq(false);
                 expect(res.contractId).to.eq(ZERO_HEX);
@@ -519,7 +519,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             });
 
             it(`keyType = FEE`, async () => {
-                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['FEE']);
+                const res = await htsImpl.getTokenKeyPublic.staticCall(tokenAddress, keyTypes['FEE']);
                 expect(res).to.exist;
                 expect(res.inheritAccountKey).to.eq(false);
                 expect(res.contractId).to.eq(ZERO_HEX);
@@ -529,7 +529,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
             });
 
             it(`keyType = PAUSE`, async () => {
-                const res = await htsImpl.callStatic.getTokenKeyPublic(tokenAddress, keyTypes['PAUSE']);
+                const res = await htsImpl.getTokenKeyPublic.staticCall(tokenAddress, keyTypes['PAUSE']);
                 expect(res).to.exist;
                 expect(res.inheritAccountKey).to.eq(false);
                 expect(res.contractId).to.eq(ZERO_HEX);
@@ -548,10 +548,10 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
 
         it("Call to non-existing HTS token returns 0x", async () => {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: '0x' + NON_EXISTING_ACCOUNT,
                 gas: numberTo0x(30000),
-                data: CALLDATA_BALANCE_OF + accounts[0].address
+                data: CALLDATA_BALANCE_OF + accounts[0].address.replace('0x', '')
             };
 
             const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
@@ -576,7 +576,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
 
         it("Call to allowance method of an HTS token with non-existing owner account in call data returns error", async () => {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: htsImplAddress,
                 gas: numberTo0x(30000),
                 data: CALLDATA_ALLOWANCE + NON_EXISTING_ACCOUNT.padStart(64, '0') + account2LongZero.replace('0x', '').padStart(64, '0')
@@ -593,7 +593,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
 
         it("Call to allowance method of an HTS token with non-existing spender account in call data returns error", async () => {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: htsImplAddress,
                 gas: numberTo0x(30000),
                 data: CALLDATA_ALLOWANCE + adminAccountLongZero.replace('0x', '').padStart(64, '0') + NON_EXISTING_ACCOUNT.padStart(64, '0')

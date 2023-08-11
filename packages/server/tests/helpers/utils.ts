@@ -18,7 +18,7 @@
  *
  */
 
-import { ethers, BigNumber } from 'ethers';
+import { ethers } from 'ethers';
 import Assertions from './assertions';
 import crypto from 'crypto';
 
@@ -40,12 +40,8 @@ export class Utils {
         ].join('');
     };
 
-    static subtractBigNumberHexes = (hex1, hex2) => {
-        return BigNumber.from(hex1).sub(BigNumber.from(hex2));
-    };
-
     static tinyBarsToWeibars = (value) => {
-        return ethers.utils.parseUnits(Number(value).toString(), 10);
+        return ethers.parseUnits(Number(value).toString(), 10);
     };
 
     static randomString(length) {
@@ -76,10 +72,10 @@ export class Utils {
     static deployContractWithEthers = async (constructorArgs:any[] = [], contractJson, wallet, relay) => {
         const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
         let contract = await factory.deploy(...constructorArgs);
-        await contract.deployed();
+        await contract.waitForDeployment();
 
         // re-init the contract with the deployed address
-        const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
+        const receipt = await relay.provider.getTransactionReceipt(contract.deploymentTransaction()?.hash);
         contract = new ethers.Contract(receipt.to, contractJson.abi, wallet);
 
         return contract;
@@ -90,7 +86,7 @@ export class Utils {
     static deployContractWithEthersV2 = async (constructorArgs:any[] = [], contractJson, wallet) => {
         const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
         const contract = await factory.deploy(...constructorArgs);
-        await contract.deployed();
+        await contract.waitForDeployment();
         // no need to re-init the contract with the deployed address
         return contract;
     };
@@ -127,4 +123,10 @@ export class Utils {
         };
     }
 
+    static convertEthersResultIntoStringsArray = (res) => {
+        if (typeof res === 'object') {
+            return res.toArray().map(e => Utils.convertEthersResultIntoStringsArray(e));
+        }
+        return res.toString();
+    };
 }

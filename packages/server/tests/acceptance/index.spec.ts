@@ -137,9 +137,9 @@ describe('RPC Server Acceptance Tests', function () {
 
     function runLocalHederaNetwork() {
         // set env variables for docker images until local-node is updated
-        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.40.1';
-        process.env['HAVEGED_IMAGE_TAG'] = '0.40.1';
-        process.env['MIRROR_IMAGE_TAG'] = '0.85.0-rc4';
+        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.41.0-alpha.3';
+        process.env['HAVEGED_IMAGE_TAG'] = '0.41.0-alpha.3';
+        process.env['MIRROR_IMAGE_TAG'] = '0.86.0-beta1';
 
         console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
 

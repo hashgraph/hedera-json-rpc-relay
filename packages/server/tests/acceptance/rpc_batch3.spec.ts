@@ -52,8 +52,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
 
     const CHAIN_ID = process.env.CHAIN_ID || 0;
-    const ONE_TINYBAR = ethers.utils.parseUnits('1', 10).toHexString();
-
+    const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
     let reverterContract, reverterEvmAddress, requestId;
     const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
@@ -108,7 +107,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('@release should execute "eth_call" request to Basic contract', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 gas: numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
@@ -120,7 +119,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should fail "eth_call" request without data field', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 gas: numberTo0x(30000)
             };
@@ -131,7 +130,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('"eth_call" for non-existing contract address returns 0x', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: Address.NON_EXISTING_ADDRESS,
                 gas: numberTo0x(30000),
                 data: BASIC_CONTRACT_PING_CALL_DATA
@@ -154,7 +153,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should execute "eth_call" without gas field', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -166,7 +165,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should execute "eth_call" with correct block number', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -178,7 +177,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should execute "eth_call" with correct block hash object', async function () {
             const blockHash = '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3';
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -189,7 +188,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should execute "eth_call" with correct block number object', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -200,7 +199,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should fail to execute "eth_call" with wrong block tag', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -212,7 +211,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should fail to execute "eth_call" with wrong block number', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
@@ -224,25 +223,25 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('should fail to execute "eth_call" with wrong block hash object', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
             const errorType = predefined.INVALID_PARAMETER(`'blockHash' for BlockHashObject`, 'Expected 0x prefixed string representing the hash (32 bytes) of a block, value: 0x123');
             const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId];
-            
+
             await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
         });
 
         it('should fail to execute "eth_call" with wrong block number object', async function () {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
             const errorType = predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, `${errorMessagePrefixedStr}, value: 123`);
             const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId];
-            
+
             await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
         });
 
@@ -259,7 +258,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         await mirrorNode.get(`/contracts/${callerContract.contractId}`, requestId);
                         callerAddress = `0x${callerContract.contractId.toSolidityAddress()}`;
                         defaultCallData = {
-                            from: `0x${activeAccount.address}`,
+                            from: activeAccount.address,
                             to: callerAddress,
                             gas: `0x7530`,
                         };
@@ -271,10 +270,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         activeAccount = accounts[1];
                         callerContract = await Utils.deployContractWithEthers([], callerContractJson, activeAccount.wallet, relay);
                         // Wait for creation to propagate
-                        const callerMirror = await mirrorNode.get(`/contracts/${callerContract.address}`, requestId);
+                        const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestId);
                         callerAddress = callerMirror.evm_address;
                         defaultCallData = {
-                            from: `0x${activeAccount.address}`,
+                            from: activeAccount.address,
                             to: callerAddress,
                             gas: `0x7530`,
                         };
@@ -303,7 +302,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         };
 
                         const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
-                        expect(res).to.eq(`0x${activeAccount.address.padStart(64, '0')}`);
+                        expect(res).to.eq(`0x${activeAccount.address.replace('0x', '').padStart(64, '0')}`);
                     });
 
                     it("003 Should call txOrigin", async function () {
@@ -313,7 +312,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         };
 
                         const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
-                        expect(res).to.eq(`0x${activeAccount.address.padStart(64, '0')}`);
+                        expect(res).to.eq(`0x${activeAccount.address.replace('0x', '').padStart(64, '0')}`);
                     });
 
                     it("004 Should call msgSig", async function () {
@@ -419,7 +418,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     describe('Contract call reverts', async () => {
         it('Returns revert message for pure methods', async () => {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: reverterEvmAddress,
                 gas: numberTo0x(30000),
                 data: PURE_METHOD_CALL_DATA
@@ -434,7 +433,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it('Returns revert message for view methods', async () => {
             const callData = {
-                from: '0x' + accounts[0].address,
+                from: accounts[0].address,
                 to: reverterEvmAddress,
                 gas: numberTo0x(30000),
                 data: VIEW_METHOD_CALL_DATA
@@ -453,8 +452,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 gasLimit: numberTo0x(30000),
                 chainId: Number(CHAIN_ID),
                 to: reverterEvmAddress,
-                nonce: await relay.getAccountNonce('0x' + accounts[0].address, requestId),
-                gasPrice: await relay.gasPrice(requestId),
+                nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+                maxFeePerGas: await relay.gasPrice(requestId),
                 data: PAYABLE_METHOD_CALL_DATA
             };
             const signedTx = await accounts[0].wallet.signTransaction(transaction);
@@ -508,8 +507,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         gasLimit: numberTo0x(30000),
                         chainId: Number(CHAIN_ID),
                         to: reverterEvmAddress,
-                        nonce: await relay.getAccountNonce('0x' + accounts[0].address, requestId),
-                        gasPrice: await relay.gasPrice(requestId),
+                        nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+                        maxFeePerGas: await relay.gasPrice(requestId),
                         data: element.data
                     };
                     const signedTx = await accounts[0].wallet.signTransaction(transaction);
@@ -589,7 +588,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             for (const element of pureMethodsData) {
                 it(`Pure method ${element.method} returns tx receipt`, async function () {
                     const callData = {
-                        from: '0x' + accounts[0].address,
+                        from: accounts[0].address,
                         to: reverterEvmAddress,
                         gas: numberTo0x(30000),
                         data: element.data
@@ -631,8 +630,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         it("Function calling HederaTokenService.isToken(token)", async () => {
             const callData = {
-                from: '0x' + accounts[1].address,
-                to: htsImpl.address,
+                from: accounts[1].address,
+                to: htsImpl.target,
                 gas: numberTo0x(30000),
                 data: IS_TOKEN_ADDRESS_SIGNATURE + tokenAddress.replace('0x', '')
             };
@@ -661,18 +660,14 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         before(async() => {
             const factory = new ethers.ContractFactory(DeployerContractJson.abi, DeployerContractJson.bytecode, accounts[0].wallet);
-            let contract = await factory.deploy();
-            await contract.deployed();
-
-            // re-init the contract with the deployed address
-            const receipt = await relay.provider.getTransactionReceipt(contract.deployTransaction.hash);
-            deployerContract = new ethers.Contract(receipt.to, DeployerContractJson.abi, accounts[0].wallet);
+            deployerContract = await factory.deploy();
+            await deployerContract.waitForDeployment();
 
             // get contract details
-            mirrorContract = await mirrorNode.get(`/contracts/${receipt.to}`, requestId);
+            mirrorContract = await mirrorNode.get(`/contracts/${deployerContract.target}`, requestId);
 
             // get contract result details
-            mirrorContractDetails = await mirrorNode.get(`/contracts/results/${receipt.transactionHash}`, requestId);
+            mirrorContractDetails = await mirrorNode.get(`/contracts/results/${deployerContract.deploymentTransaction()?.hash}`, requestId);
 
             contractId = mirrorContract.contract_id;
 
@@ -730,7 +725,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 ...defaultTransaction,
                 value: '10000000000000000000', // 10 HBARs
                 to: hollowAccount.address,
-                nonce: await relay.getAccountNonce('0x' + accounts[1].address, requestId),
+                nonce: await relay.getAccountNonce(accounts[1].address, requestId),
                 maxPriorityFeePerGas: gasPrice,
                 maxFeePerGas: gasPrice,
             });
@@ -761,7 +756,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             const transaction = {
                 ...defaultTransaction,
                 to: mirrorContract.evm_address,
-                nonce: await relay.getAccountNonce('0x' + account.address, requestId),
+                nonce: await relay.getAccountNonce(account.address, requestId),
                 maxPriorityFeePerGas: gasPrice,
                 maxFeePerGas: gasPrice,
             };
@@ -772,18 +767,18 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             // Wait for the transaction to be processed and imported in the mirror node with axios-retry
             await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, ['0x' + account.address, 'latest'], requestId);
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [account.address, 'latest'], requestId);
             expect(res).to.be.equal('0x1');
         });
 
         it('nonce for contract correctly increments', async function () {
-            const nonceBefore = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [deployerContract.address, 'latest'], requestId);
+            const nonceBefore = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [deployerContract.target, 'latest'], requestId);
             expect(nonceBefore).to.be.equal('0x2');
 
             const newContractReceipt = await deployerContract.deployViaCreate();
             await newContractReceipt.wait();
 
-            const nonceAfter = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [deployerContract.address, 'latest'], requestId);
+            const nonceAfter = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT, [deployerContract.target, 'latest'], requestId);
             expect(nonceAfter).to.be.equal('0x3');
 
         });
