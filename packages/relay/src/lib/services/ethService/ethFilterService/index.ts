@@ -122,6 +122,19 @@ export class FilterService implements IFilterService {
     }
   }
 
+  async newBlockFilter(requestIdPrefix?: string): Promise<string | JsonRpcError> {
+    this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
+    try {
+      FilterService.requireFiltersEnabled();
+      return this.createFilter(constants.FILTER.TYPE.NEW_BLOCK, {
+        blockAtCreation: await this.common.getLatestBlockNumber(requestIdPrefix)
+      }, requestIdPrefix);
+    }
+    catch(e) {
+      return this.common.genericErrorHandler(e);
+    }
+  }
+
   public async uninstallFilter(filterId: string, requestIdPrefix?: string | undefined): Promise<boolean> {
     this.logger.trace(`${requestIdPrefix} uninstallFilter(${filterId})`);
     FilterService.requireFiltersEnabled();

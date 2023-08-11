@@ -54,6 +54,17 @@ describe('Filter API Test Suite', async function () {
   const LATEST_BLOCK_QUERY = 'blocks?limit=1&order=desc';
   const BLOCK_BY_NUMBER_QUERY = 'blocks';
 
+  const validateFilterCache = (filterId, expectedFilterType, expectedParams = {}) => {
+    const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
+    const cachedFilter = clientCache.get(cacheKey);
+    expect(cachedFilter).to.exist;
+    expect(cachedFilter.type).to.exist;
+    expect(cachedFilter.type).to.eq(expectedFilterType);
+    expect(cachedFilter.params).to.exist;
+    expect(cachedFilter.params).to.deep.eq(expectedParams);
+    expect(cachedFilter.lastQueried).to.be.null;
+  }
+
   this.beforeAll(() => {
     clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
     // @ts-ignore
@@ -154,15 +165,12 @@ describe('Filter API Test Suite', async function () {
 
     it('Creates a filter with type=log', async function() {
       const filterId = await filterService.newFilter(numberHex, 'latest', defaultEvmAddress, defaultLogTopics, getRequestId());
-
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-      const cachedFilter = clientCache.get(cacheKey);
-
-      expect(cachedFilter).to.exist;
-      expect(cachedFilter.type).to.exist;
-      expect(cachedFilter.type).to.eq(constants.FILTER.TYPE.LOG);
-      expect(cachedFilter.params).to.exist;
-      expect(cachedFilter.lastQueried).to.be.null;
+      validateFilterCache(filterId, constants.FILTER.TYPE.LOG, {
+        "fromBlock": numberHex,
+        "toBlock": "latest",
+        "address": defaultEvmAddress,
+        "topics": defaultLogTopics
+      });
     });
 
     it('validates fromBlock and toBlock', async function() {
@@ -195,6 +203,23 @@ describe('Filter API Test Suite', async function () {
       const result = await filterService.uninstallFilter(nonExistingFilterId);
 
       expect(result).to.eq(false);
+    });
+  });
+
+  describe('eth_newBlockFilter', async function() {
+    beforeEach(() => {
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, {blocks: [defaultBlock]});
+    })
+
+    it('Returns a valid filterId', async function() {
+      expect(RelayAssertions.validateHash(await filterService.newBlockFilter(), 32)).to.eq(true);
+    });
+
+    it('Creates a filter with type=new_block', async function() {
+      const filterId = await filterService.newBlockFilter(getRequestId());
+      validateFilterCache(filterId, constants.FILTER.TYPE.NEW_BLOCK, {
+        blockAtCreation: toHex(defaultBlock.number)
+      });
     });
   });
 
