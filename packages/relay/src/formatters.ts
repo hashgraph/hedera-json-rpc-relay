@@ -118,6 +118,20 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
     return value;
 }
 
+/**
+ * Parse weibar hex string to tinybar number, by applying tinybar to weibar coef.
+ * Return null, if value is not a valid hex. Null is the only other valid response that mirror-node accepts.
+ * @param value 
+ * @returns tinybarValue
+ */
+const weibarHexToTinyBarInt = (value: string): number | null => {
+    if (value) {
+        const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+        return Number(tinybarValue);
+    }
+    return null;
+}
+
 const formatContractResult = (cr: any) => {
     if (cr === null) {
         return null;
@@ -159,7 +173,7 @@ const nullableNumberTo0x = (input: number | BigNumber): string | null => {
 };
 
 const nanOrNumberTo0x = (input: number | BigNumber): string => {
-    return input == null || input !== input ? numberTo0x(0) : numberTo0x(input);
+    return input == null || Number.isNaN(input) ? numberTo0x(0) : numberTo0x(input);
 };
 
 const toHash32 = (value: string): string => {
@@ -182,5 +196,5 @@ export {
     hashNumber, formatRequestIdMessage, hexToASCII, decodeErrorMessage, formatTransactionId,
     formatTransactionIdWithoutQueryParams, parseNumericEnvVar, formatContractResult, prepend0x,
     numberTo0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex,
-    generateRandomHex
+    generateRandomHex, weibarHexToTinyBarInt
 };

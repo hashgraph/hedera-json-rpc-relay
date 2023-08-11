@@ -21,7 +21,7 @@
 import { expect } from 'chai';
 import {
     hexToASCII, decodeErrorMessage, formatTransactionId, parseNumericEnvVar, formatTransactionIdWithoutQueryParams,
-    numberTo0x, formatContractResult, prepend0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex
+    numberTo0x, formatContractResult, prepend0x, nullableNumberTo0x, nanOrNumberTo0x, toHash32, toNullableBigNumber, toNullIfEmptyHex, weibarHexToTinyBarInt
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from "bignumber.js";
@@ -86,25 +86,25 @@ describe('Formatters', () => {
           expect(formatTransactionId('')).to.eq(null);
         });
       });
-    
+
     describe('formatTransactionIdWithoutQueryParams', () => {
         const validInputTimestamp = '0.0.2@1234567890.123456789?nonce=1';
         const validOutputTimestamp = '0.0.2-1234567890-123456789';
         const invalidInputTimestamp = '0.0.2@12345678222.123456789?nonce=1';
-    
+
         it('should return correct formated transaction id', () => {
           expect(formatTransactionIdWithoutQueryParams(validInputTimestamp)).to.eq(validOutputTimestamp);
         });
-    
+
         it('should return null', () => {
           expect(formatTransactionIdWithoutQueryParams(invalidInputTimestamp)).to.eq(null);
         });
-    
+
         it('should return null on empty', () => {
           expect(formatTransactionIdWithoutQueryParams('')).to.eq(null);
         });
     });
-    
+
 
     describe('parseNumericEnvVar', () => {
         before(() => {
@@ -328,6 +328,23 @@ describe('Formatters', () => {
         it('should return value for non-nullable input', () => {
             const value = '2911';
             expect(toNullIfEmptyHex(value)).to.equal(value);
+        });
+    });
+
+    describe('weibarHexToTinyBarInt', () => {
+        it('should convert weibar hex value to tinybar number', () => {
+            const value = "0x1027127DC00";
+            expect(weibarHexToTinyBarInt(value)).to.eq(111);
+        });
+
+        it('should convert weibar hex value to tinybar number', () => {
+            const value = undefined;
+            expect(weibarHexToTinyBarInt(value)).to.be.null;
+        });
+
+        it('should convert weibar hex value to tinybar number', () => {
+            const value = null;
+            expect(weibarHexToTinyBarInt(value)).to.be.null;
         });
     });
 });

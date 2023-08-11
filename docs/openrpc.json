@@ -631,6 +631,18 @@
             }
         },
         {
+            "name": "eth_newBlockFilter",
+            "summary": "Creates a filter object, to notify of newly created blocks",
+            "params": [],
+            "result": {
+                "name": "Filter ID",
+                "schema": {
+                    "$ref": "#/components/schemas/hash16"
+                }
+            },
+            "tags": [{ "name": "alpha API"}]
+        },
+        {
             "name": "eth_newFilter",
             "summary": "Creates a filter object, based on filter options, to notify when the state changes (logs)",
             "params": [
@@ -646,7 +658,27 @@
                 "schema": {
                     "$ref": "#/components/schemas/hash16"
                 }
-            }
+            },
+            "tags": [{ "name": "alpha API"}]
+        },
+        {
+            "name": "eth_uninstallFilter",
+            "summary": "Uninstalls a filter with given id",
+            "params": [
+                {
+                    "name": "FilterID",
+                    "schema": {
+                        "$ref": "#/components/schemas/hash16"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Uninstall status",
+                "schema": {
+                    "type": "boolean"
+                }
+            },
+            "tags": [{ "name": "alpha API"}]
         },
         {
             "name": "eth_newPendingTransactionFilter",
