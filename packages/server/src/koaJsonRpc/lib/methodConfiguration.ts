@@ -164,5 +164,8 @@ export const methodConfiguration = {
   },
   eth_uninstallFilter: {
     total: tier2rateLimit,
+  },
+  eth_getFilterLogs: {
+    total: tier2rateLimit,
   }
 };

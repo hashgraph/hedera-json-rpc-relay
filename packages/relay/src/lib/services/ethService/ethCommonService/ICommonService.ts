@@ -19,6 +19,7 @@
  */
 
 import {JsonRpcError} from "../../../errors/JsonRpcError";
+import { Log } from '../../../model';
 
 export interface ICommonService {
 
@@ -31,4 +32,14 @@ export interface ICommonService {
   getLatestBlockNumber(requestIdPrefix?: string): Promise<string>;
 
   genericErrorHandler(error: any, logMessage?: string): JsonRpcError;
+
+  validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestIdPrefix?: string): Promise<boolean>;
+
+  addTopicsToParams(params: any, topics: any[] | null): void;
+
+  getLogsByAddress(address: string | [string], params: any, requestIdPrefix): Promise<any>;
+
+  getLogsWithParams(address: string | [string] | null, params, requestIdPrefix?: string): Promise<Log[]>;
+
+  getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestIdPrefix?: string): Promise<Log[]>;
 }

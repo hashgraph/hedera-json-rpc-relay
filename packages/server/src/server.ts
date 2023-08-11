@@ -643,6 +643,11 @@ app.useRpc('eth_newFilter', async (params: any) => {
       requestId));
 });
 
+app.useRpc('eth_getFilterLogs', async (params: any) => {
+  return logAndHandleResponse('eth_getFilterLogs', params, (requestId) =>
+    relay.eth().filterService().getFilterLogs(params?.[0], requestId));
+});
+
 /**
  * Returns a filterId to be later used by eth_getFilterChanges for getting the block hashes since the last query
  *
