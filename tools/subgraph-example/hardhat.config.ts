@@ -111,7 +111,7 @@ task("deployHTS", "Deploys HTS Fungible Token", async (taskArgs, hre) => {
   const address = `0x${receipt.tokenId?.toSolidityAddress()}`;
   console.log(`Created HTS with address: ${address}`);
   let mintTransaction = await new TokenMintTransaction()
-    .setAmount(10)
+    .setAmount(1000)
     .setTokenId(receipt.tokenId!)
     .freezeWithSigner(wallet);
   mintTransaction = await mintTransaction.signWithSigner(wallet);
