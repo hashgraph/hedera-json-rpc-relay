@@ -7,24 +7,24 @@
     },
     "servers": [
         {
-          "name": "Mainnet",
-          "url": "https://mainnet.hashio.io/api",
-          "description": "Hedera Mainnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
+            "name": "Mainnet",
+            "url": "https://mainnet.hashio.io/api",
+            "description": "Hedera Mainnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
         },
         {
-          "name": "Testnet",
-          "url": "https://testnet.hashio.io/api",
-          "description": "Hedera Testnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
+            "name": "Testnet",
+            "url": "https://testnet.hashio.io/api",
+            "description": "Hedera Testnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
         },
         {
-          "name": "Previewnet",
-          "url": "https://previewnet.hashio.io/api",
-          "description": "Hedera Previewnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
+            "name": "Previewnet",
+            "url": "https://previewnet.hashio.io/api",
+            "description": "Hedera Previewnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
         },
         {
-          "name": "localhost",
-          "url": "http://localhost:7564",
-          "description": "Run your own instance of [`hedera-json-rpc-relay`](https://github.com/hashgraph/hedera-json-rpc-relay) on `localhost`, and configure it connect to your choice of Hedera networks. No rate limits apply."
+            "name": "localhost",
+            "url": "http://localhost:7564",
+            "description": "Run your own instance of [`hedera-json-rpc-relay`](https://github.com/hashgraph/hedera-json-rpc-relay) on `localhost`, and configure it connect to your choice of Hedera networks. No rate limits apply."
         }
     ],
     "methods": [
@@ -631,6 +631,18 @@
             }
         },
         {
+            "name": "eth_newBlockFilter",
+            "summary": "Creates a filter object, to notify of newly created blocks",
+            "params": [],
+            "result": {
+                "name": "Filter ID",
+                "schema": {
+                    "$ref": "#/components/schemas/hash16"
+                }
+            },
+            "tags": [{ "name": "alpha API"}]
+        },
+        {
             "name": "eth_newFilter",
             "summary": "Creates a filter object, based on filter options, to notify when the state changes (logs)",
             "params": [
@@ -646,7 +658,27 @@
                 "schema": {
                     "$ref": "#/components/schemas/hash16"
                 }
-            }
+            },
+            "tags": [{ "name": "alpha API"}]
+        },
+        {
+            "name": "eth_uninstallFilter",
+            "summary": "Uninstalls a filter with given id",
+            "params": [
+                {
+                    "name": "FilterID",
+                    "schema": {
+                        "$ref": "#/components/schemas/hash16"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Uninstall status",
+                "schema": {
+                    "type": "boolean"
+                }
+            },
+            "tags": [{ "name": "alpha API"}]
         },
         {
             "name": "eth_newPendingTransactionFilter",
