@@ -825,13 +825,34 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 const result = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_UNINSTALL_FILTER, [filterId], requestId);
                 expect(result).to.eq(true);
             });
+
+            it(' should be able to call eth_getFilterChanges for NEW_BLOCK filter', async function () {
+                const filterId = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_BLOCK_FILTER, [], requestId);
+
+                await new Promise(r => setTimeout(r, 4000));
+                const result = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_FILTER_CHANGES, [filterId], requestId);
+                expect(result).to.exist;
+                expect(result.length).to.gt(0, "returns the latest block hashes");
+
+                result.forEach(hash => {
+                    expect(RelayAssertions.validateHash(hash, 96)).to.eq(true);
+                });
+
+                const result2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_FILTER_CHANGES, [filterId], requestId);
+                expect(result2).to.exist;
+                expect(result2.length).to.eq(1, "calling the method again does not return the same result");
+                expect(RelayAssertions.validateHash(result2[0], 96)).to.eq(true);
+            });
         });
 
         describe('Negative', async function () {
             it('should not be able to uninstall not existing filter', async function () {
                 const result = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_UNINSTALL_FILTER, [nonExstingFilter], requestId);
-
                 expect(result).to.eq(false);
+            });
+
+            it('should not be able to call eth_getFilterChanges for not existing filter', async function () {
+                await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_GET_FILTER_CHANGES, [nonExstingFilter], predefined.FILTER_NOT_FOUND, requestId);
             });
 
             it('should not support "eth_newPendingTransactionFilter"', async function () {
