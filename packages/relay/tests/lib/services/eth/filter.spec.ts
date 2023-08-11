@@ -233,9 +233,7 @@ describe('Filter API Test Suite', async function () {
       const logs = await filterService.getFilterLogs(filterId);
 
       expect(logs).to.not.be.empty;
-      for (let i in logs) {
-        expect(Number(logs[i].blockNumber)).to.be.greaterThan(1);
-      }
+      logs.every(log => expect(Number(log.blockNumber)).to.be.greaterThan(1));
     });
 
     it('should be able to get accurate logs with toBlock filter', async function() {
@@ -257,9 +255,7 @@ describe('Filter API Test Suite', async function () {
       const logs = await filterService.getFilterLogs(filterId);
 
       expect(logs).to.not.be.empty;
-      for (let i in logs) {
-        expect(Number(logs[i].blockNumber)).to.be.lessThan(3);
-      }
+      logs.every(log => expect(Number(log.blockNumber)).to.be.lessThan(3));
     });
 
     it('should be able to get accurate logs with address filter', async function() {
