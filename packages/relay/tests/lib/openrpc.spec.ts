@@ -68,6 +68,7 @@ import {
 } from '../helpers';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
+import { numberTo0x } from '../../../../packages/relay/src/formatters';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -84,7 +85,7 @@ let mirrorNodeInstance: MirrorNodeClient;
 let clientServiceInstance: ClientService;
 let sdkClientStub: any;
 
-const limitOrderPostFix = '?order=desc&limit=1';
+const noTransactions = '?transactions=false';
 
 describe("Open RPC Specification", function () {
 
@@ -142,21 +143,21 @@ describe("Open RPC Specification", function () {
         mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
         mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, defaultDetailedContractResults3);
         mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, null);
-        mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, { 
-            account: contractAddress1, 
+        mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
+            account: contractAddress1,
             balance: {
                 balance: 2000000000000
-            } 
+            }
         });
-        mock.onGet(`accounts/${contractAddress3}${limitOrderPostFix}`).reply(200, { 
+        mock.onGet(`accounts/${contractAddress3}${noTransactions}`).reply(200, {
             account: contractAddress3,
             balance: {
                 balance: 100000000000
-            } 
+            }
         });
         mock.onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`).reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
 
-        mock.onGet(`accounts/${defaultFromLongZeroAddress}${limitOrderPostFix}`).reply(200, {
+        mock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
             from: `${defaultEvmAddress}`
           });
         for (const log of defaultLogs.logs) {
@@ -215,7 +216,7 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_estimateGas"', async function () {
-        mock.onGet(`accounts/undefined${limitOrderPostFix}`).reply(404);
+        mock.onGet(`accounts/undefined${noTransactions}`).reply(404);
         const response = await ethImpl.estimateGas({}, null);
 
         validateResponseSchema(methodsResponseSchema.eth_estimateGas, response);
@@ -252,13 +253,13 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getBlockByNumber" with hydrated = true', async function () {
-        const response = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), true);
+        const response = await ethImpl.getBlockByNumber(numberTo0x(blockNumber), true);
 
         validateResponseSchema(methodsResponseSchema.eth_getBlockByNumber, response);
     });
 
     it('should execute "eth_getBlockByNumber" with hydrated = false', async function () {
-        const response = await ethImpl.getBlockByNumber(EthImpl.numberTo0x(blockNumber), false);
+        const response = await ethImpl.getBlockByNumber(numberTo0x(blockNumber), false);
 
         validateResponseSchema(methodsResponseSchema.eth_getBlockByNumber, response);
     });
@@ -325,13 +326,13 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
-        const response = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, EthImpl.numberTo0x(defaultBlock.count));
+        const response = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, numberTo0x(defaultBlock.count));
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionByBlockHashAndIndex, response);
     });
 
     it('should execute "eth_getTransactionByBlockNumberAndIndex"', async function () {
-        const response = await ethImpl.getTransactionByBlockNumberAndIndex(EthImpl.numberTo0x(defaultBlock.number), EthImpl.numberTo0x(defaultBlock.count));
+        const response = await ethImpl.getTransactionByBlockNumberAndIndex(numberTo0x(defaultBlock.number), numberTo0x(defaultBlock.count));
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionByBlockNumberAndIndex, response);
     });
@@ -343,8 +344,8 @@ describe("Open RPC Specification", function () {
     });
 
     it('should execute "eth_getTransactionCount"', async function () {
-        mock.onGet(`accounts/${contractAddress1}${limitOrderPostFix}`).reply(200, { account: contractAddress1, ethereum_nonce: 5 });
-        mock.onGet(`contracts/${contractAddress1}${limitOrderPostFix}`).reply(404);
+        mock.onGet(`accounts/${contractAddress1}${noTransactions}`).reply(200, { account: contractAddress1, ethereum_nonce: 5 });
+        mock.onGet(`contracts/${contractAddress1}${noTransactions}`).reply(404);
         const response = await ethImpl.getTransactionCount(contractAddress1, 'latest');
 
         validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);

@@ -3,7 +3,7 @@
     "info": {
         "title": "Hedera JSON-RPC Specification",
         "description": "A specification of the implemented Ethereum JSON RPC APIs interface for Hedera clients and adheres to the Ethereum execution APIs schema.",
-        "version": "0.28.0-SNAPSHOT"
+        "version": "0.30.0-SNAPSHOT"
     },
     "servers": [
         {
@@ -631,6 +631,33 @@
             }
         },
         {
+            "name": "eth_newFilter",
+            "summary": "Creates a filter object, based on filter options, to notify when the state changes (logs)",
+            "params": [
+                {
+                    "name": "LogFilter",
+                    "schema": {
+                        "$ref": "#/components/schemas/LogFilter"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Filter ID",
+                "schema": {
+                    "$ref": "#/components/schemas/hash16"
+                }
+            }
+        },
+        {
+            "name": "eth_newPendingTransactionFilter",
+            "summary": "Always returns UNSUPPORTED_METHOD error.",
+            "params": [],
+            "result": {
+                "$ref": "#/components/schemas/unsupportedError"
+            },
+            "tags": [{ "name": "alpha API"}]
+        },
+        {
             "name": "eth_protocolVersion",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
             "params": [],
@@ -804,6 +831,11 @@
                 "title": "hex encoded unsigned integer",
                 "type": "string",
                 "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "hash16": {
+                "title": "16 byte hex value",
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{32}$"
             },
             "hash32": {
                 "title": "32 byte hex value",
@@ -1431,6 +1463,28 @@
                         }
                     }
                 ]
+            },
+            "LogFilter": {
+                "title": "log filter",
+                "type": "object",
+                "properties": {
+                    "fromBlock": {
+                        "title": "from block",
+                        "$ref": "#/components/schemas/uint"
+                    },
+                    "toBlock": {
+                        "title": "to block",
+                        "$ref": "#/components/schemas/uint"
+                    },
+                    "address": {
+                        "title": "Address",
+                        "$ref": "#/components/schemas/address"
+                    },
+                    "topics": {
+                        "title": "Topics",
+                        "$ref": "#/components/schemas/FilterTopics"
+                    }
+                }
             },
             "unsupportedError": {
                 "name": "Unsupported Error",

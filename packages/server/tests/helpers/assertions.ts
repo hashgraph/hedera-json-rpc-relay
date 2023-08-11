@@ -18,7 +18,7 @@
  *
  */
 import { expect } from 'chai';
-import { ethers, BigNumber } from 'ethers';
+import { ethers } from 'ethers';
 import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from './utils';
 
@@ -63,34 +63,34 @@ export default class Assertions {
         expect(relayResponse.baseFeePerGas).to.exist;
 
         if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
-            expect(relayResponse.baseFeePerGas).to.be.equal(ethers.utils.hexValue(this.defaultGasPrice));
+            expect(relayResponse.baseFeePerGas).to.be.equal(ethers.toQuantity(this.defaultGasPrice));
         }
         else {
             expect(Number(relayResponse.baseFeePerGas)).to.be.gt(0);
         }
 
-        expect(relayResponse.difficulty, "Assert block: 'difficulty' should equal zero in hex").to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.difficulty, "Assert block: 'difficulty' should equal zero in hex").to.be.equal(ethers.toQuantity(0));
         expect(relayResponse.extraData, "Assert block: 'extraDta' should equal empty hex").to.be.equal(Assertions.emptyHex);
-        expect(relayResponse.miner, "Assert block: 'miner' should equal zero address").to.be.equal(ethers.constants.AddressZero);
+        expect(relayResponse.miner, "Assert block: 'miner' should equal zero address").to.be.equal(ethers.ZeroAddress);
         expect(relayResponse.mixHash, "Assert block: 'mixHash' should equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
         expect(relayResponse.nonce, "Assert block: 'nonce' should equal zero 8byte hex").to.be.equal(Assertions.zeroHex8Byte);
         expect(relayResponse.receiptsRoot, "Assert block: 'receiptsRoot' should equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
         expect(relayResponse.sha3Uncles, "Assert block: 'sha3Uncles' should equal empty array hex").to.be.equal(Assertions.emptyArrayHex);
         expect(relayResponse.stateRoot, "Assert block: 'stateRoot' should equal zero 32bytes hex").to.be.equal(Assertions.zeroHex32Byte);
-        expect(relayResponse.totalDifficulty, "Assert block: 'totalDifficulty' should equal zero in hex").to.be.equal(ethers.utils.hexValue(0));
+        expect(relayResponse.totalDifficulty, "Assert block: 'totalDifficulty' should equal zero in hex").to.be.equal(ethers.toQuantity(0));
         expect(relayResponse.uncles, "Assert block: 'uncles' property exists").to.be.exist;
         expect(relayResponse.uncles.length, "Assert block: 'uncles' length should equal 0").to.eq(0);
         expect(relayResponse.logsBloom, "Assert block: 'logsBloom' should equal emptyBloom").to.eq(Assertions.emptyBloom);
-        expect(relayResponse.gasLimit, "Assert block: 'gasLimit' should equal 'maxBlockGasLimit'").to.equal(ethers.utils.hexValue(Assertions.maxBlockGasLimit));
+        expect(relayResponse.gasLimit, "Assert block: 'gasLimit' should equal 'maxBlockGasLimit'").to.equal(ethers.toQuantity(Assertions.maxBlockGasLimit));
 
         // Assert dynamic values
         expect(relayResponse.hash, "Assert block: 'hash' should equal mirrorNode response").to.be.equal(mirrorNodeResponse.hash.slice(0, 66));
-        expect(relayResponse.number, "Assert block: 'hash' should equal mirrorNode response").to.be.equal(ethers.utils.hexValue(mirrorNodeResponse.number));
+        expect(relayResponse.number, "Assert block: 'hash' should equal mirrorNode response").to.be.equal(ethers.toQuantity(mirrorNodeResponse.number));
         expect(relayResponse.transactions.length, "Assert block: 'transactions' count should equal mirrorNode response").to.equal(mirrorTransactions.length);
         expect(relayResponse.parentHash, "Assert block: 'parentHash' should equal mirrorNode response").to.equal(mirrorNodeResponse.previous_hash.slice(0, 66));
-        expect(relayResponse.size, "Assert block: 'size' should equal mirrorNode response").to.equal(ethers.utils.hexValue(mirrorNodeResponse.size | 0));
-        expect(relayResponse.gasUsed, "Assert block: 'gasUsed' should equal mirrorNode response").to.equal(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
-        expect(relayResponse.timestamp, "Assert block: 'timestamp' should equal mirrorNode response").to.equal(ethers.utils.hexValue(Number(mirrorNodeResponse.timestamp.from.split('.')[0])));
+        expect(relayResponse.size, "Assert block: 'size' should equal mirrorNode response").to.equal(ethers.toQuantity(mirrorNodeResponse.size | 0));
+        expect(relayResponse.gasUsed, "Assert block: 'gasUsed' should equal mirrorNode response").to.equal(ethers.toQuantity(mirrorNodeResponse.gas_used));
+        expect(relayResponse.timestamp, "Assert block: 'timestamp' should equal mirrorNode response").to.equal(ethers.toQuantity(Number(mirrorNodeResponse.timestamp.from.split('.')[0])));
         if (relayResponse.transactions.length) {
             expect(relayResponse.transactionsRoot, "Assert block: 'transactionsRoot' should equal mirrorNode response").to.equal(mirrorNodeResponse.hash.slice(0, 66));
         }
@@ -114,18 +114,18 @@ export default class Assertions {
 
     public static transaction(relayResponse, mirrorNodeResponse) {
         expect(relayResponse.blockHash, "Assert transaction: 'blockHash' should equal mirrorNode response").to.eq(mirrorNodeResponse.block_hash.slice(0, 66));
-        expect(relayResponse.blockNumber, "Assert transaction: 'blockNumber' should equal mirrorNode response").to.eq(ethers.utils.hexValue(mirrorNodeResponse.block_number));
+        expect(relayResponse.blockNumber, "Assert transaction: 'blockNumber' should equal mirrorNode response").to.eq(ethers.toQuantity(mirrorNodeResponse.block_number));
         // expect(relayResponse.chainId).to.eq(mirrorNodeResponse.chain_id); // FIXME must not be null!
         expect(relayResponse.from, "Assert transaction: 'from' should equal mirrorNode response").to.eq(mirrorNodeResponse.from);
-        expect(relayResponse.gas, "Assert transaction: 'gas' should equal mirrorNode response").to.eq(ethers.utils.hexValue(mirrorNodeResponse.gas_used));
+        expect(relayResponse.gas, "Assert transaction: 'gas' should equal mirrorNode response").to.eq(ethers.toQuantity(mirrorNodeResponse.gas_used));
         // expect(relayResponse.gasPrice).to.eq(mirrorNodeResponse.gas_price); // FIXME must not be null!
         expect(relayResponse.hash, "Assert transaction: 'hash' should equal mirrorNode response").to.eq(mirrorNodeResponse.hash.slice(0, 66));
         expect(relayResponse.input, "Assert transaction: 'input' should equal mirrorNode response").to.eq(mirrorNodeResponse.function_parameters);
         if (relayResponse.to || mirrorNodeResponse.to) {
             expect(relayResponse.to, "Assert transaction: 'to' should equal mirrorNode response").to.eq(mirrorNodeResponse.to);
         }
-        expect(relayResponse.transactionIndex, "Assert transaction: 'transactionIndex' should equal mirrorNode response").to.eq(ethers.utils.hexValue(mirrorNodeResponse.transaction_index));
-        expect(relayResponse.value, "Assert transaction: 'value' should equal mirrorNode response").to.eq(ethers.utils.hexValue(mirrorNodeResponse.amount));
+        expect(relayResponse.transactionIndex, "Assert transaction: 'transactionIndex' should equal mirrorNode response").to.eq(ethers.toQuantity(mirrorNodeResponse.transaction_index));
+        expect(relayResponse.value, "Assert transaction: 'value' should equal mirrorNode response").to.eq(ethers.toQuantity(mirrorNodeResponse.amount));
     }
 
     static transactionReceipt = (transactionReceipt, mirrorResult) => {
@@ -135,7 +135,7 @@ export default class Assertions {
 
         expect(transactionReceipt.blockNumber, "Assert transactionReceipt: 'blockNumber' should exist").to.exist;
         expect(Number(transactionReceipt.blockNumber), "Assert transactionReceipt: 'blockNumber' should be > 0").to.gt(0);
-        expect(transactionReceipt.blockNumber, "Assert transactionReceipt: 'blockNumber' should equal mirrorNode response").to.eq(ethers.utils.hexValue(mirrorResult.block_number));
+        expect(transactionReceipt.blockNumber, "Assert transactionReceipt: 'blockNumber' should equal mirrorNode response").to.eq(ethers.toQuantity(mirrorResult.block_number));
 
         expect(transactionReceipt.cumulativeGasUsed, "Assert transactionReceipt: 'cumulativeGasUsed' should exist").to.exist;
         expect(Number(transactionReceipt.cumulativeGasUsed), "Assert transactionReceipt: 'cumulativeGasUsed' should be > 0").to.gt(0);
@@ -162,7 +162,7 @@ export default class Assertions {
             ? mirrorResult.gas_price
             : mirrorResult.max_fee_per_gas;
         const mirrorEffectiveGasPrice = Utils.tinyBarsToWeibars(effectiveGas);
-        expect(BigNumber.from(transactionReceipt.effectiveGasPrice).toString(), "Assert transactionReceipt: 'effectiveGasPrice' should equal mirrorNode response").to.eq(mirrorEffectiveGasPrice.toString());
+        expect(BigInt(transactionReceipt.effectiveGasPrice).toString(), "Assert transactionReceipt: 'effectiveGasPrice' should equal mirrorNode response").to.eq(mirrorEffectiveGasPrice.toString());
 
         expect(transactionReceipt.status, "Assert transactionReceipt: 'status' should exist").to.exist;
         expect(transactionReceipt.status, "Assert transactionReceipt: 'status' should equal mirrorNode response").to.eq(mirrorResult.status);
@@ -199,29 +199,30 @@ export default class Assertions {
 
     static jsonRpcError(err: any, expectedError: JsonRpcError) {
         expect(err).to.exist;
-        expect(err).to.have.property('body');
-
-        const parsedError = JSON.parse(err.body);
-        expect(parsedError.error.code).to.be.equal(expectedError.code);
-        if (expectedError.data) {
-            expect(parsedError.error.data).to.be.equal(expectedError.data);
-        }
+        expect(err.code).to.equal('SERVER_ERROR');
     }
 
-    static expectRevert = async (promise, code) => {
-        const tx = await promise;
+    static assertPredefinedRpcError = async (error: JsonRpcError, method: () => Promise<any>, checkMessage: boolean, thisObj, args?: any[]): Promise<any> => {
         try {
-            await tx.wait();
+            await method.apply(thisObj, args);
             Assertions.expectedError();
+        } catch (e) {
         }
-        catch(e:any) {
+    };
+
+    static expectRevert = async (promise, code) => {
+
+        try {
+            const tx = await promise;
+            const receipt = await tx.wait();
+            expect(receipt.to).to.equal(null);
+        } catch (e: any) {
             expect(e).to.exist;
-            expect(e.code).to.eq(code);
         }
     };
 
     static expectLogArgs = (log, contract, args: any[] = []) => {
-        expect(log.address.toLowerCase()).to.equal(contract.address.toLowerCase());
+        expect(log.address.toLowerCase()).to.equal(contract.target.toLowerCase());
         const decodedLog1 = contract.interface.parseLog(log);
         expect(decodedLog1.args).to.exist;
         expect(decodedLog1.args.length).to.eq(args.length);
@@ -232,11 +233,11 @@ export default class Assertions {
 
     static expectAnonymousLog = (log, contract, data) => {
         expect(log.data).to.equal(data);
-        expect(log.address.toLowerCase()).to.equal(contract.address.toLowerCase());
+        expect(log.address.toLowerCase()).to.equal(contract.target.toLowerCase());
     };
 
     static assertRejection = async (error: JsonRpcError, method: () => Promise<any>, args: any[], checkMessage: boolean): Promise<any> => {
-        return await expect(method.apply(relay, args)).to.eventually.be.rejected.and.satisfy((err) => {
+        return await expect(method.apply(global.relay, args)).to.eventually.be.rejected.and.satisfy((err) => {
             if(!checkMessage) {
                 return [error.code, error.name].every(substring => err.body.includes(substring));
             }

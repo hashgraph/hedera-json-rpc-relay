@@ -34,6 +34,7 @@ import { Gauge, Registry } from 'prom-client';
 import HAPIService from './services/hapiService/hapiService';
 import constants from './constants';
 import HbarLimit from './hbarlimiter';
+import { prepend0x } from '../formatters';
 
 export class RelayImpl implements Relay {
   private readonly clientMain: Client;
@@ -51,7 +52,7 @@ export class RelayImpl implements Relay {
 
     const configuredChainId =
       process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
-    const chainId = EthImpl.prepend0x(Number(configuredChainId).toString(16));
+    const chainId = prepend0x(Number(configuredChainId).toString(16));
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;

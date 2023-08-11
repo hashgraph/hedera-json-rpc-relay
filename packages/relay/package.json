@@ -1,6 +1,6 @@
 {
     "name": "@hashgraph/json-rpc-relay",
-    "version": "0.28.0-SNAPSHOT",
+    "version": "0.30.0-SNAPSHOT",
     "description": "Hedera Hashgraph implementation of Ethereum JSON RPC APIs. Utilises both the Hedera Consensus Nodes and the Mirror Nodes for transaction management and information retrieval",
     "types": "dist/index.d.ts",
     "main": "dist/index.js",
@@ -24,18 +24,18 @@
         "compile": "tsc -b tsconfig.json",
         "lint": "npx eslint --ext .js,.ts .",
         "format": "npx prettier --ignore-path ../../.gitignore --write \"**/*.+(js|ts|json)\"",
-        "test": "nyc ts-mocha --recursive ./tests/**/*.spec.ts --exit"
+        "test": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' --exit"
     },
     "dependencies": {
         "@ethersproject/asm": "^5.7.0",
-        "@hashgraph/sdk": "^2.30.0",
+        "@hashgraph/sdk": "^2.31.0",
         "@keyvhq/core": "^1.6.9",
         "better-lookup": "^1.3.0",
         "axios": "^1.4.0",
         "axios-retry": "^3.5.1",
         "buffer": "^6.0.3",
         "dotenv": "^16.0.0",
-        "ethers": "^5.6.8",
+        "ethers": "^6.7.0",
         "find-config": "^1.0.0",
         "keccak": "^3.0.2",
         "keyv": "^4.2.2",

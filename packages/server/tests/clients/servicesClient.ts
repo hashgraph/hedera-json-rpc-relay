@@ -256,7 +256,7 @@ export default class ServicesClient {
         return new AliasAccount(
             accountId,
             accountInfo.accountId,
-            accountInfo.contractAccountId,
+            Utils.add0xPrefix(accountInfo.contractAccountId),
             servicesClient,
             privateKey,
             wallet,
@@ -366,7 +366,7 @@ export default class ServicesClient {
     async getAccountBalanceInWeiBars(account: string | AccountId, requestId?: string) {
         const balance = await this.getAccountBalance(account, requestId);
 
-        return ethers.BigNumber.from(balance.hbars.toTinybars().toString()).mul(ServicesClient.TINYBAR_TO_WEIBAR_COEF);
+        return BigInt(balance.hbars.toTinybars().toString()) * BigInt(ServicesClient.TINYBAR_TO_WEIBAR_COEF);
     }
 
     getClient() {
@@ -596,6 +596,12 @@ export default class ServicesClient {
             this.logger.error(e, `${requestIdPrefix} TransferTransaction failed`);
         }
     };
+
+    async getAccountNonce(accountId) {
+        const query = new AccountInfoQuery().setAccountId(accountId);
+        const accountInfo = await query.execute(this.client);
+        return accountInfo.ethereumNonce;
+    }
 
 }
 

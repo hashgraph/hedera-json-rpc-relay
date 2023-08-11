@@ -21,9 +21,7 @@
 import { expect } from "chai";
 import { ethers } from 'ethers';
 import crypto from 'crypto';
-import {EthImpl} from "../src/lib/eth";
-import {Block, Transaction} from "../src/lib/model";
-import { formatRequestIdMessage } from '../src/formatters';
+import { formatRequestIdMessage, numberTo0x, toHash32 } from '../src/formatters';
 import { v4 as uuid } from 'uuid';
 
 // Randomly generated key
@@ -51,6 +49,11 @@ const random20BytesAddress = (addHexPrefix = true) => {
     return (addHexPrefix ? '0x' : '') + crypto.randomBytes(20).toString('hex');
 };
 
+export const toHex = (num) => {
+    return `0x${Number(num).toString(16)}`;
+};
+
+
 const getRequestId = () => {
     return formatRequestIdMessage(uuid());
 };
@@ -64,7 +67,7 @@ export const ethCallFailing = async (ethImpl, args, block, assertFunc) => {
         assertFunc(error);
     }
     expect(hasError).to.eq(true);
-}
+};
 
 export const ethGetLogsFailing = async (ethImpl, args, assertFunc) => {
     let hasError = false;
@@ -76,133 +79,21 @@ export const ethGetLogsFailing = async (ethImpl, args, assertFunc) => {
         assertFunc(error);
     }
     expect(hasError).to.eq(true);
-}
-
-export const validateHash = (hash: string, len?: number) => {
-    let regex;
-    if (len && len > 0) {
-        regex = new RegExp(`^0x[a-f0-9]{${len}}$`);
-    } else {
-        regex = /^0x[a-f0-9]*$/;
-    }
-
-    return !!regex.exec(hash);
 };
-
-export const assertTransactionReceipt = (receipt, expectedReceipt) => {
-    expect(receipt).to.exist;
-    if (receipt == null) return;
-
-    expect(validateHash(receipt.transactionHash, 64)).to.eq(true);
-    expect(validateHash(receipt.blockHash, 64)).to.eq(true);
-    expect(validateHash(receipt.from, 40)).to.eq(true);
-    if (receipt.contractAddress) {
-        expect(validateHash(receipt.contractAddress, 40)).to.eq(true);
-    }
-    if (receipt.to) {
-        expect(validateHash(receipt.to, 40)).to.eq(true);
-    }
-    expect(validateHash(receipt.logsBloom, 512)).to.eq(true);
-    if (receipt.root) {
-        expect(validateHash(receipt.root, 64)).to.eq(true);
-    }
-
-    expect(receipt.transactionHash).to.exist;
-    expect(receipt.transactionHash).to.eq(expectedReceipt.transactionHash);
-    expect(receipt.transactionIndex).to.exist;
-    expect(receipt.blockHash).to.eq(expectedReceipt.blockHash);
-    expect(receipt.blockNumber).to.eq(expectedReceipt.blockNumber);
-    expect(receipt.from).to.eq(expectedReceipt.from);
-    expect(receipt.to).to.eq(expectedReceipt.to);
-    expect(receipt.cumulativeGasUsed).to.eq(expectedReceipt.cumulativeGasUsed);
-    expect(receipt.gasUsed).to.eq(expectedReceipt.gasUsed);
-    expect(receipt.contractAddress).to.eq(expectedReceipt.contractAddress);
-    expect(receipt.logs).to.deep.eq(expectedReceipt.logs);
-    expect(receipt.logsBloom).to.eq(expectedReceipt.logsBloom);
-    expect(receipt.root).to.eq(expectedReceipt.root);
-    expect(receipt.status).to.eq(expectedReceipt.status);
-    expect(receipt.effectiveGasPrice).to.eq(expectedReceipt.effectiveGasPrice);
-}
-
-export const assertTransaction = (tx, expectedTx) => {
-
-    expect(tx).to.exist;
-    if (tx == null) return;
-
-    expect(tx.accessList).to.eq(expectedTx.accessList);
-    expect(tx.blockHash).to.eq(expectedTx.blockHash);
-    expect(tx.blockNumber).to.eq(expectedTx.blockNumber);
-    expect(tx.chainId).to.eq(expectedTx.chainId);
-    expect(tx.from).to.eq(expectedTx.from);
-    expect(tx.gas).to.eq(expectedTx.gas);
-    expect(tx.gasPrice).to.eq(expectedTx.gasPrice);
-    expect(tx.hash).to.eq(expectedTx.hash);
-    expect(tx.input).to.eq(expectedTx.input);
-    expect(tx.maxFeePerGas).to.eq(expectedTx.maxFeePerGas);
-    expect(tx.maxPriorityFeePerGas).to.eq(expectedTx.maxPriorityFeePerGas);
-    expect(tx.nonce).to.eq(EthImpl.numberTo0x(expectedTx.nonce));
-    expect(tx.r).to.eq(expectedTx.r);
-    expect(tx.s).to.eq(expectedTx.s);
-    expect(tx.to).to.eq(expectedTx.to);
-    expect(tx.transactionIndex).to.eq(expectedTx.transactionIndex);
-    expect(tx.type).to.eq(EthImpl.numberTo0x(expectedTx.type));
-    expect(tx.v).to.eq(EthImpl.numberTo0x(expectedTx.v));
-    expect(tx.value).to.eq(expectedTx.value);
-}
-
-export const assertBlock = (block, expectedBlock, txDetails = false) => {
-    expect(block).to.exist;
-    expect(block).to.not.be.null;
-
-    // verify aggregated info
-    expect(block.hash).equal(expectedBlock.hash);
-    expect(block.gasUsed).equal(expectedBlock.gasUsed);
-    expect(block.number).equal(expectedBlock.number);
-    expect(block.parentHash).equal(expectedBlock.parentHash);
-    expect(block.timestamp).equal(expectedBlock.timestamp);
-    expect(block.transactions.length).equal(expectedBlock.transactions.length);
-    for (let i = 0; i < expectedBlock.transactions.length; i++) {
-        if (!txDetails) {
-            expect(block.transactions[i] as string).equal(expectedBlock.transactions[i]);
-        }
-        else {
-            expect((block.transactions[i] as Transaction).hash).equal(expectedBlock.transactions[i]);
-        }
-    }
-
-    // verify expected constants
-    verifyBlockConstants(block);
-}
-
-export const verifyBlockConstants = (block: Block) => {
-    expect(block.gasLimit).equal(EthImpl.numberTo0x(15000000));
-    expect(block.baseFeePerGas).equal('0x84b6a5c400');
-    expect(block.difficulty).equal(EthImpl.zeroHex);
-    expect(block.extraData).equal(EthImpl.emptyHex);
-    expect(block.miner).equal(EthImpl.zeroAddressHex);
-    expect(block.mixHash).equal(EthImpl.zeroHex32Byte);
-    expect(block.nonce).equal(EthImpl.zeroHex8Byte);
-    expect(block.receiptsRoot).equal(EthImpl.zeroHex32Byte);
-    expect(block.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(block.stateRoot).equal(EthImpl.zeroHex32Byte);
-    expect(block.totalDifficulty).equal(EthImpl.zeroHex);
-    expect(block.uncles).to.deep.equal([]);
-};
-
 
 export const expectLogData = (res, log, tx) => {
     expect(res.address).to.eq(log.address);
-    expect(res.blockHash).to.eq(EthImpl.toHash32(tx.block_hash));
+    expect(res.blockHash).to.eq(toHash32(tx.block_hash));
     expect(res.blockHash.length).to.eq(66);
-    expect(res.blockNumber).to.eq(EthImpl.numberTo0x(tx.block_number));
+    expect(res.blockNumber).to.eq(numberTo0x(tx.block_number));
     expect(res.data).to.eq(log.data);
-    expect(res.logIndex).to.eq(EthImpl.numberTo0x(log.index));
+    expect(res.logIndex).to.eq(numberTo0x(log.index));
     expect(res.removed).to.eq(false);
     expect(res.topics).to.exist;
     expect(res.topics).to.deep.eq(log.topics);
     expect(res.transactionHash).to.eq(tx.hash);
     expect(res.transactionHash.length).to.eq(66);
-    expect(res.transactionIndex).to.eq(EthImpl.numberTo0x(tx.transaction_index));
+    expect(res.transactionIndex).to.eq(numberTo0x(tx.transaction_index));
 };
 
 export const expectLogData1 = (res) => {
@@ -447,7 +338,7 @@ export const contractTimestamp2 = '1653077542.701408897';
 export const contractTimestamp3 = '1653088542.123456789';
 export const contractId1 = '0.0.5001';
 export const contractId2 = '0.0.5002';
-export const signedTransactionHash = '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad'
+export const signedTransactionHash = '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad';
 
 export const defaultBlock = {
     'count': blockTransactionCount,
@@ -501,7 +392,23 @@ export const defaultContractResults = {
             'gas_used': gasUsed1,
             'hash': contractHash1,
             'timestamp': `${contractTimestamp1}`,
-            'to': `${contractAddress1}`
+            'to': `${contractAddress1}`,
+            "block_gas_used": 400000,
+            "block_hash": `${blockHash}`,
+            "block_number": `${blockNumber}`,
+            "chain_id": "0x12a",
+            "failed_initcode": null,
+            "gas_price": "0x4a817c80",
+            "max_fee_per_gas": "0x59",
+            "max_priority_fee_per_gas": "0x33",
+            "nonce": 5,
+            "r": "0xb5c21ab4dfd336e30ac2106cad4aa8888b1873a99bce35d50f64d2ec2cc5f6d9",
+            "result": "SUCCESS",
+            "s":  "0x1092806a99727a20c31836959133301b65a2bfa980f9795522d21a254e629110",
+            "status": "0x1",
+            "transaction_index": 1,
+            "type": 2,
+            "v": 1
         },
         {
             'amount': 0,
@@ -516,7 +423,23 @@ export const defaultContractResults = {
             'gas_used': gasUsed2,
             'hash': contractHash2,
             'timestamp': `${contractTimestamp2}`,
-            'to': `${contractAddress2}`
+            'to': `${contractAddress2}`,
+            "block_gas_used": 400000,
+            "block_hash": `${blockHash}`,
+            "block_number": `${blockNumber}`,
+            "chain_id": "0x12a",
+            "failed_initcode": null,
+            "gas_price": "0x4a817c80",
+            "max_fee_per_gas": "0x59",
+            "max_priority_fee_per_gas": "0x33",
+            "nonce": 6,
+            "r": "0xb5c21ab4dfd336e30ac2106cad4aa8888b1873a99bce35d50f64d2ec2cc5f6d9",
+            "result": "SUCCESS",
+            "s":  "0x1092806a99727a20c31836959133301b65a2bfa980f9795522d21a254e629110",
+            "status": "0x1",
+            "transaction_index": 2,
+            "type": 2,
+            "v": 1
         }
     ],
     'links': {
@@ -797,8 +720,87 @@ export const buildCryptoTransferTransaction = (from, to, amount, args: any = {})
     ],
         "valid_duration_seconds": "120",
         "valid_start_timestamp": "1669207645.620109637"
-    }
+    };
 };
+
+export const defaultEthereumTransactions = [
+    {
+        "bytes": null,
+        "charged_tx_fee": 0,
+        "consensus_timestamp": "1689672910.529610346",
+        "entity_id": null,
+        "max_fee": "100000000",
+        "memo_base64": "",
+        "name": "ETHEREUMTRANSACTION",
+        "nft_transfers": [],
+        "node": "0.0.7",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [],
+        "token_transfers": [],
+        "transaction_hash": "9VjM48D6NNaaY49C3MybTGNJkN0PwegeablbJgQeruHs6K+qXMwCNz/jQo0f1HE8",
+        "transaction_id": "0.0.1078@1686183420.196506746",
+        "transfers": [
+            {
+                "account": "0.0.2",
+                "amount": -681600000,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.36516",
+                "amount": 681600000,
+                "is_approval": false
+            }
+        ],
+        "valid_duration_seconds": "120",
+        "valid_start_timestamp": "1689672901.525163476"
+    },
+    {
+        "bytes": null,
+        "charged_tx_fee": 108530272,
+        "consensus_timestamp": "1689669806.068075774",
+        "entity_id": "0.0.58263",
+        "max_fee": "1065000000",
+        "memo_base64": "",
+        "name": "ETHEREUMTRANSACTION",
+        "nft_transfers": [],
+        "node": "0.0.4",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [],
+        "token_transfers": [],
+        "transaction_hash": "3rfGmWnoGQaDgnvI9u4YVTDBE7qBByL11fzK4mvGs/SOZ8myENbo7z9Pf7nVrHN6",
+        "transaction_id": "0.0.1078@1686183420.196506747",
+        "transfers": [
+            {
+                "account": "0.0.4",
+                "amount": 1998730,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.98",
+                "amount": 106531542,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.902",
+                "amount": -51730272,
+                "is_approval": false
+            },
+            {
+                "account": "0.0.36516",
+                "amount": -56800000,
+                "is_approval": false
+            }
+        ],
+        "valid_duration_seconds": "120",
+        "valid_start_timestamp": "1689669792.798100892"
+    }
+]
 
 export const defaultCallData = {
     "from": "0x0000000000000000000000000000000000001f41",

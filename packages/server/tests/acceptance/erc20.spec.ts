@@ -25,7 +25,7 @@ chai.use(solidity);
 
 import { AliasAccount } from '../clients/servicesClient';
 import { Utils } from '../helpers/utils';
-import { ethers, BigNumber } from 'ethers';
+import { ethers } from 'ethers';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import Assertions from '../helpers/assertions';
 import { EthImpl } from "@hashgraph/json-rpc-relay/src/lib/eth";
@@ -51,7 +51,7 @@ describe('@erc20 Acceptance Tests', async function () {
 
     const name = Utils.randomString(10);
     const symbol = Utils.randomString(5);
-    const initialSupply = BigNumber.from(10000);
+    const initialSupply = BigInt(10000);
 
     const ERC20 = 'ERC20 Contract';
     const HTS = 'HTS token';
@@ -100,12 +100,12 @@ describe('@erc20 Acceptance Tests', async function () {
             });
 
             it('has 18 decimals', async function () {
-                expect(await contract.decimals()).to.be.equal(18);
+                expect(await contract.decimals()).to.be.equal(BigInt(18));
             });
 
             it('Relay can execute "eth_getCode" for ERC20 contract with evmAddress', async function () {
-                const res = await relay.call('eth_getCode', [contract.address, 'latest'], requestId);
-                const expectedBytecode = `${EthImpl.redirectBytecodePrefix}${contract.address.slice(2)}${EthImpl.redirectBytecodePostfix}`
+                const res = await relay.call('eth_getCode', [contract.target, 'latest'], requestId);
+                const expectedBytecode = `${EthImpl.redirectBytecodePrefix}${contract.target.slice(2)}${EthImpl.redirectBytecodePostfix}`
                 if (testTitles[i].testName !== HTS) {
                     expect(res).to.eq(testTitles[i].expectedBytecode);
                 } else {
@@ -178,7 +178,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                 });
 
                                 it('emits a transfer event', async function () {
-                                    const transferEvent = (await tx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.Transfer)[0].args;
+                                    const transferEvent = (await tx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.Transfer)[0].args;
                                     expect(transferEvent.from).to.eq(tokenOwnerWallet.address);
                                     expect(transferEvent.to).to.eq(toWallet.address);
                                     expect(transferEvent.value).to.eq(amount);
@@ -206,14 +206,11 @@ describe('@erc20 Acceptance Tests', async function () {
 
                                 // issue #5652, HIP-584 mirror node does not support approve precompiles yet.
                                 it('emits an approval event', async function () {
-                                    // still cover erc20 approve event
-                                    if(testTitles[i].testName !== HTS){
-                                        const allowance = await contract.allowance(tokenOwner, spender);
-                                        const approvalEvent = (await tx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.Approval)[0].args;
-                                        expect(approvalEvent.owner).to.eq(tokenOwnerWallet.address);
-                                        expect(approvalEvent.spender).to.eq(spenderWallet.address);
-                                        expect(approvalEvent.value).to.eq(allowance);
-                                    }
+                                    const allowance = await contract.allowance(tokenOwner, spender);
+                                    const approvalEvent = (await tx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.Approval)[0].args;
+                                    expect(approvalEvent.owner).to.eq(tokenOwnerWallet.address);
+                                    expect(approvalEvent.spender).to.eq(spenderWallet.address);
+                                    expect(approvalEvent.value).to.eq(allowance);
                                 });
 
                                 describe('when the token owner has enough balance', function () {
@@ -243,7 +240,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                     });
 
                                     it('emits a transfer event', async function () {
-                                        const transferEvent = (await tx.wait()).events.filter(e => e.event === Constants.HTS_CONTRACT_EVENTS.Transfer)[0].args;
+                                        const transferEvent = (await tx.wait()).logs.filter(e => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.Transfer)[0].args;
                                         expect(transferEvent.from).to.eq(tokenOwnerWallet.address);
                                         expect(transferEvent.to).to.eq(toWallet.address);
                                         expect(transferEvent.value).to.eq(amount);
@@ -281,7 +278,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                 let allowance;
 
                                 before(async function () {
-                                    allowance = initialSupply.sub(1);
+                                    allowance = initialSupply - BigInt(1);
                                 });
 
                                 beforeEach(async function () {
@@ -291,10 +288,11 @@ describe('@erc20 Acceptance Tests', async function () {
                                 describe('when the token owner has enough balance', function () {
                                     let amount;
                                     before(async function () {
-                                        allowance = initialSupply.sub(1);
+                                        allowance = initialSupply - BigInt(1);
                                         amount = initialSupply;
                                         await contract.approve(spender, allowance, await Utils.gasOptions(requestId));
                                     });
+
 
                                     it('reverts', async function () {
                                         try {
@@ -304,9 +302,7 @@ describe('@erc20 Acceptance Tests', async function () {
                                             // eth_estimateGas gets called by ethers
                                             // so we need to catch the error and check that the reason is the expected one,
                                             // in addition to validating the CALL_EXCEPTION   
-                                            // Once issue #5652, HIP-584, on the mirror node is resolved, this should be changed to: 'ERC20: transfer amount exceeds balance'
-                                            expect(extractRevertReason(e.error.reason)).to.exist;
-                                            // expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: transfer amount exceeds balance');                                            
+                                            expect(extractRevertReason(e.error.reason)).to.be.equal('ERC20: insufficient allowance');
                                         }                                          
                                     });
                                 });
@@ -342,7 +338,7 @@ describe('@erc20 Acceptance Tests', async function () {
                             beforeEach(async function () {
 
                                 amount = initialSupply;
-                                to = ethers.constants.AddressZero;
+                                to = ethers.ZeroAddress;
                                 tokenOwnerWallet = accounts[2].wallet;
                                 await contract.connect(tokenOwnerWallet).approve(spender, amount, await Utils.gasOptions(requestId, 1_500_000));
                             });

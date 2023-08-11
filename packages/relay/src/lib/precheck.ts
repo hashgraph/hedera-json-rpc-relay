@@ -23,8 +23,8 @@ import { MirrorNodeClient } from './clients';
 import { EthImpl } from './eth';
 import { Logger } from 'pino';
 import constants from './constants';
-import { BigNumber, ethers, Transaction } from 'ethers';
-import { formatRequestIdMessage } from '../formatters';
+import { ethers, Transaction } from 'ethers';
+import { formatRequestIdMessage, prepend0x } from '../formatters';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
@@ -39,12 +39,12 @@ export class Precheck {
 
   public static parseTxIfNeeded(transaction: string | Transaction): Transaction {
     return typeof transaction === 'string'
-      ? ethers.utils.parseTransaction(transaction)
+      ? Transaction.from(transaction)
       : transaction;
   }
 
   value(tx: Transaction) {
-    if (tx.data === EthImpl.emptyHex && tx.value.lt(constants.TINYBAR_TO_WEIBAR_COEF)) {
+    if (tx.data === EthImpl.emptyHex && tx.value < constants.TINYBAR_TO_WEIBAR_COEF) {
       throw predefined.VALUE_TOO_LOW;
     }
   }
@@ -94,7 +94,7 @@ export class Precheck {
    */
   chainId(tx: Transaction, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const txChainId = EthImpl.prepend0x(Number(tx.chainId).toString(16));
+    const txChainId = prepend0x(Number(tx.chainId).toString(16));
     const passes = txChainId === this.chain;
     if (!passes) {
       this.logger.trace(`${requestIdPrefix} Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)`, JSON.stringify(tx), txChainId);
@@ -108,16 +108,16 @@ export class Precheck {
    */
   gasPrice(tx: Transaction, gasPrice: number, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const minGasPrice = ethers.BigNumber.from(gasPrice);
-    const txGasPrice = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
-    const passes = txGasPrice.gte(minGasPrice);
+    const minGasPrice = BigInt(gasPrice);
+    const txGasPrice = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
+    const passes = txGasPrice >= minGasPrice;
 
     if (!passes) {
       if (constants.GAS_PRICE_TINY_BAR_BUFFER) {
         // Check if failure is within buffer range (Often it's by 1 tinybar) as network gasprice calculation can change slightly.
         // e.g gasPrice=1450000000000, requiredGasPrice=1460000000000, in which case we should allow users to go through and let the network check
-        const txGasPriceWithBuffer = txGasPrice.add(ethers.BigNumber.from(constants.GAS_PRICE_TINY_BAR_BUFFER));
-        if (txGasPriceWithBuffer.gte(minGasPrice)) {
+        const txGasPriceWithBuffer = txGasPrice + BigInt(constants.GAS_PRICE_TINY_BAR_BUFFER);
+        if (txGasPriceWithBuffer >= minGasPrice) {
           return;
         }
       }
@@ -137,9 +137,9 @@ export class Precheck {
       passes: false,
       error: predefined.INSUFFICIENT_ACCOUNT_BALANCE
     };
-    const txGas = tx.gasPrice || tx.maxFeePerGas!.add(tx.maxPriorityFeePerGas!);
-    const txTotalValue = tx.value.add(txGas.mul(tx.gasLimit));
-    let tinybars: BigNumber;
+    const txGas = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
+    const txTotalValue = tx.value + txGas * tx.gasLimit;
+    let tinybars: BigInt;
 
     if (account == null) {
       this.logger.trace(`${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(tx)}, totalValue=${txTotalValue})`);
@@ -147,8 +147,8 @@ export class Precheck {
     }
 
     try {
-      tinybars = ethers.BigNumber.from(account.balance.balance.toString()).mul(constants.TINYBAR_TO_WEIBAR_COEF);
-      result.passes = tinybars.gte(txTotalValue);
+      tinybars = BigInt(account.balance.balance.toString()) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+      result.passes = tinybars >= txTotalValue;
     } catch (error: any) {
       this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);
       if (error instanceof JsonRpcError) {
@@ -170,10 +170,10 @@ export class Precheck {
    */
   gasLimit(tx: Transaction, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const gasLimit = tx.gasLimit.toNumber();
+    const gasLimit = Number(tx.gasLimit);
     const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
 
-    const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data, tx.to);
+    const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data, tx.to!);
 
 
     if (gasLimit > constants.BLOCK_GAS_LIMIT) {
