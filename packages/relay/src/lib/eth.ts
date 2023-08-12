@@ -544,12 +544,7 @@ export class EthImpl implements Eth {
         requestIdPrefix,
       );
       if (contractCallResponse?.result) {
-        // Workaround until mirror-node bugfix applied, currently mirror-node returns 21k for contract creation, which is wrong
-        if (!transaction.to && transaction.data !== '0x') {
-          gas = this.defaultGas;
-        } else {
-          gas = prepend0x(contractCallResponse.result);
-        }
+        gas = prepend0x(contractCallResponse.result);
       }
     } catch (e: any) {
       this.logger.error(
