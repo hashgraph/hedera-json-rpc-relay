@@ -143,7 +143,7 @@ describe('Filter API Test Suite', async function () {
 
     it('FILTER_API_ENABLED=false', async function () {
       process.env.FILTER_API_ENABLED='false';
-      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, {});
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, []);
       await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, [existingFilterId]);
       await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.getFilterChanges, true, filterService, [existingFilterId]);
     });
@@ -346,16 +346,6 @@ describe('Filter API Test Suite', async function () {
   describe('eth_getFilterChanges', async function() {
     it('should throw error for non-existing filters', async function () {
       await RelayAssertions.assertRejection(predefined.FILTER_NOT_FOUND, filterService.getFilterChanges, true, filterService, [nonExistingFilterId]);
-    });
-
-    it('should throw error for unsupported filter types', async function () {
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-      clientCache.set(cacheKey, {
-        ...blockFilterObject,
-        type: 'newPendingTransaction'
-      }, filterService.ethGetFilterChanges, constants.FILTER.TTL);
-
-      await RelayAssertions.assertRejection(predefined.FILTER_NOT_FOUND, filterService.getFilterChanges, true, filterService, [existingFilterId]);
     });
 
     it('should return the hashes of latest blocks', async function () {

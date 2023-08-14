@@ -645,7 +645,7 @@ app.useRpc('eth_newFilter', async (params: any) => {
 
 app.useRpc('eth_getFilterLogs', async (params: any) => {
   return logAndHandleResponse('eth_getFilterLogs', params, (requestId) =>
-    relay.eth().filterService().getFilterLogs(params?.[0], requestId));
+    relay.eth().filterService().getFilterLogs(params?.[0], false, requestId));
 });
 
 app.useRpc('eth_getFilterChanges', async (params: any) => {

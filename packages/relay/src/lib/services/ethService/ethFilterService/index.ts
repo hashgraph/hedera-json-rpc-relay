@@ -160,7 +160,7 @@ export class FilterService implements IFilterService {
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  public async getFilterLogs(filterId: string, requestIdPrefix?: string | undefined): Promise<any> {
+  public async getFilterLogs(filterId: string, checkLastQueried: boolean = false, requestIdPrefix?: string | undefined): Promise<any> {
     this.logger.trace(`${requestIdPrefix} getFilterLogs(${filterId})`);
     FilterService.requireFiltersEnabled();
 
@@ -172,7 +172,7 @@ export class FilterService implements IFilterService {
 
     return this.common.getLogs(
       null,
-      filter?.params.fromBlock,
+      checkLastQueried ? filter?.lastQueried : filter?.params.fromBlock,
       filter?.params.toBlock,
       filter?.params.address,
       filter?.params.topics,
@@ -187,33 +187,35 @@ export class FilterService implements IFilterService {
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
     const filter = this.cache.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
 
-    if (!filter || this.supportedTypes.indexOf(filter.type) === -1) {
+    if (!filter) {
       throw predefined.FILTER_NOT_FOUND;
     }
 
     let result, latestBlockNumber;
 
     if (filter.type === constants.FILTER.TYPE.LOG) {
-      // FIXME implement once https://github.com/hashgraph/hedera-json-rpc-relay/pull/1624 is merged
-      result = [];
-    }
-    else if (filter.type === constants.FILTER.TYPE.NEW_BLOCK) {
-      const fromBlock = filter.lastQueried || filter.params.blockAtCreation;
-      result = await this.mirrorNodeClient.getBlocks([`gte:${fromBlock}`], undefined, {
+      result = await this.getFilterLogs(filterId, true);
+
+      // get the latest block number and add 1 to exclude current results from the next response because
+      // the mirror node query executes "gte" not "gt"
+      latestBlockNumber = Number(
+        result.length ? result[result.length - 1].blockNumber : await this.common.getLatestBlockNumber(requestIdPrefix)
+      ) + 1;
+    } else if (filter.type === constants.FILTER.TYPE.NEW_BLOCK) {
+      result = await this.mirrorNodeClient.getBlocks([
+        `gte:${filter.lastQueried || filter.params.blockAtCreation}`
+      ], undefined, {
         order: 'asc'
       });
-      if (result?.blocks && result.blocks.length) {
-        latestBlockNumber = Number(result.blocks[result.blocks.length - 1].number);
-        result = result.blocks.map(r => r.hash);
-      }
-      else {
-        result = [];
-        const latestBlock = await this.common.getLatestBlockNumber(requestIdPrefix);
-        latestBlockNumber = Number(latestBlock);
-      }
+
+      latestBlockNumber = Number(
+        result?.blocks?.length ? result.blocks[result.blocks.length - 1].number : await this.common.getLatestBlockNumber(requestIdPrefix)
+      );
+
+      result = result?.blocks?.map(r => r.hash) || [];
     }
 
-    //update filter to refresh TTL and set lastQueried block number
+    // update filter to refresh TTL and set lastQueried block number
     this.cache.set(cacheKey, {
       type: filter.type,
       params: filter.params,
