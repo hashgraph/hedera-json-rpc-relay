@@ -385,7 +385,7 @@ describe('Filter API Test Suite', async function () {
       expect(secondCachedFilter.lastQueried).to.eq(defaultBlock.number + 4, `lastQueried is updated with latest block number at the time`);
     });
 
-    it('should return no blocks if the second request is in the same block', async function() {
+    it('should return no blocks if the second request is for the same block', async function() {
       restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock, number: defaultBlock.number + 3 }] });
       restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, {blocks: [
           { ...defaultBlock, number: defaultBlock.number + 1, hash: '0x1' }
@@ -408,5 +408,39 @@ describe('Filter API Test Suite', async function () {
       const resultSameBlock = (await filterService.getFilterChanges(existingFilterId));
       expect(resultSameBlock).to.be.empty;
     });
+  });
+
+  it('should return valid list of logs', async function() {
+    const filteredLogs = {
+      logs: defaultLogs1.map(log => {
+        return {
+          ...log,
+          block_number: 9
+        };
+      })
+    };
+    const customBlock = {
+      ...defaultBlock,
+      block_number: 9
+    };
+
+    restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [customBlock] });
+    restMock.onGet(`contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogs);
+    restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
+
+    const filterId = await filterService.newFilter('0x1');
+    const logs = await filterService.getFilterChanges(filterId);
+    expect(logs).to.not.be.empty;
+    logs.every(log => expect(Number(log.blockNumber)).to.equal(9));
+  });
+
+  it('should return valid list of logs', async function() {
+    restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
+    restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, []);
+    restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
+
+    const filterId = await filterService.newFilter('0x1');
+    const logs = await filterService.getFilterChanges(filterId);
+    expect(logs).to.be.empty;
   });
 });
