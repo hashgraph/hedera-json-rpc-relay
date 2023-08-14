@@ -40,35 +40,36 @@ describe("Subgraph", () => {
       const result = await getData(GRAVATAR_QUERY);
       const gravatars = result.data.gravatars;
 
-      expect(isEqual(gravatars, expected.gravatar.initial)).to.be.true;
+      expect(JSON.stringify(gravatars)).to.equal(JSON.stringify(expected.gravatar.initial));
     });
 
     it("Indexes past ExampleERC20 events correctly", async () => {
       const result = await getData(ERC20_QUERY);
       const erc20 = result.data.erc20S;
 
-      expect(isEqual(erc20, expected.erc20.initial)).to.be.true;
+      expect(JSON.stringify(erc20)).to.equal(JSON.stringify(expected.erc20.initial));
+
     });
 
     it("Indexes past ExampleERC721 events correctly", async () => {
       const result = await getData(ERC721_QUERY);
       const erc721 = result.data.erc721S;
 
-      expect(isEqual(erc721, expected.erc721.initial)).to.be.true;
+      expect(JSON.stringify(erc721)).to.equal(JSON.stringify(expected.erc721.initial));
     });
 
     it("Indexes past ExampleHTSFT events correctly", async () => {
       const result = await getData(HTSFT_QUERY);
       const htsft = result.data.htsfts;
 
-      expect(isEqual(htsft, expected.htsfts.initial)).to.be.true;
+      expect(JSON.stringify(htsft)).to.equal(JSON.stringify(expected.htsfts.initial));
     });
 
     it("Indexes past ExampleHTSNFT events correctly", async () => {
       const result = await getData(NFTHTS_QUERY);
       const htsnfts = result.data.htsnfts;
 
-      expect(isEqual(htsnfts, expected.htsnfts.initial)).to.be.true;
+      expect(JSON.stringify(htsnfts)).to.equal(JSON.stringify(expected.htsnfts.initial));
     });
   })
 
@@ -82,28 +83,28 @@ describe("Subgraph", () => {
       const result = await getData(GRAVATAR_QUERY);
       const gravatars = result.data.gravatars;
 
-      expect(isEqual(gravatars, expected.gravatar.updated)).to.be.true;
+      expect(JSON.stringify(gravatars)).to.equal(JSON.stringify(expected.gravatar.updated));
     });
 
     it("Indexes new ExampleERC20 events correctly", async () => {
       const result = await getData(ERC20_QUERY);
       const erc20 = result.data.erc20S;
 
-      expect(isEqual(erc20, expected.erc20.updated)).to.be.true;
+      expect(JSON.stringify(erc20)).to.equal(JSON.stringify(expected.erc20.updated));
     });
 
     it("Indexes new ExampleERC721 events correctly", async () => {
       const result = await getData(ERC721_QUERY);
       const erc721 = result.data.erc721S;
 
-      expect(isEqual(erc721, expected.erc721.updated)).to.be.true;
+      expect(JSON.stringify(erc721)).to.equal(JSON.stringify(expected.erc721.updated));
     });
 
     it("Indexes new ExampleHTSNFT events correctly", async () => {
       const result = await getData(NFTHTS_QUERY);
       const htsnfts = result.data.htsnfts;
 
-      expect(isEqual(htsnfts, expected.htsnfts.updated)).to.be.true;
+      expect(JSON.stringify(htsnfts)).to.equal(JSON.stringify(expected.htsnfts.updated));
     });
   })
 })

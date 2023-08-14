@@ -643,6 +643,11 @@ app.useRpc('eth_newFilter', async (params: any) => {
       requestId));
 });
 
+app.useRpc('eth_getFilterLogs', async (params: any) => {
+  return logAndHandleResponse('eth_getFilterLogs', params, (requestId) =>
+    relay.eth().filterService().getFilterLogs(params?.[0], requestId));
+});
+
 app.useRpc('eth_getFilterChanges', async (params: any) => {
   const filterId = params[0];
   return logAndHandleResponse('eth_getFilterChanges', [], (requestId) => relay.eth().filterService().getFilterChanges(filterId, requestId));

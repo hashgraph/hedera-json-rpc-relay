@@ -30,5 +30,7 @@ export interface IFilterService {
 
   newPendingTransactionFilter(requestIdPrefix?: string): JsonRpcError;
 
+  getFilterLogs(filterId: string, requestId?: string): Promise<any>
+
   getFilterChanges(filterId: string, requestIdPrefix?: string): Promise<string[] | Log[] | JsonRpcError>;
 }

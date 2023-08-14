@@ -244,7 +244,7 @@ export const predefined = {
   }),
   'FILTER_NOT_FOUND': new JsonRpcError({
     name: 'Filter not found',
-    code: -32015,
+    code: -32001,
     message: 'Filter not found'
-  }),
+  })
 };
