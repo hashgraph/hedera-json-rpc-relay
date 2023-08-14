@@ -721,7 +721,8 @@
                         }
                     ]
                 }
-            }
+            },
+            "tags": [{ "name": "alpha API"}]
         },
         {
             "name": "eth_protocolVersion",

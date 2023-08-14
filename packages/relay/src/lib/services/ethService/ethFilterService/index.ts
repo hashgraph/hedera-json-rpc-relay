@@ -160,7 +160,7 @@ export class FilterService implements IFilterService {
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  public async getFilterLogs(filterId: string, useLastQueried: boolean = false, requestIdPrefix?: string | undefined): Promise<any> {
+  public async getFilterLogs(filterId: string, requestIdPrefix?: string | undefined): Promise<any> {
     this.logger.trace(`${requestIdPrefix} getFilterLogs(${filterId})`);
     FilterService.requireFiltersEnabled();
 
@@ -172,7 +172,7 @@ export class FilterService implements IFilterService {
 
     return this.common.getLogs(
       null,
-      useLastQueried ? filter?.lastQueried : filter?.params.fromBlock,
+      filter?.params.fromBlock,
       filter?.params.toBlock,
       filter?.params.address,
       filter?.params.topics,
@@ -192,9 +192,15 @@ export class FilterService implements IFilterService {
     }
 
     let result, latestBlockNumber;
-
     if (filter.type === constants.FILTER.TYPE.LOG) {
-      result = await this.getFilterLogs(filterId, true);
+      result = await this.common.getLogs(
+        null,
+        filter?.lastQueried || filter?.params.fromBlock,
+        filter?.params.toBlock,
+        filter?.params.address,
+        filter?.params.topics,
+        requestIdPrefix
+      );
 
       // get the latest block number and add 1 to exclude current results from the next response because
       // the mirror node query executes "gte" not "gt"
@@ -213,6 +219,8 @@ export class FilterService implements IFilterService {
       );
 
       result = result?.blocks?.map(r => r.hash) || [];
+    } else if (this.supportedTypes.indexOf(filter.type) === -1) {
+      throw predefined.UNSUPPORTED_METHOD;
     }
 
     // update filter to refresh TTL and set lastQueried block number

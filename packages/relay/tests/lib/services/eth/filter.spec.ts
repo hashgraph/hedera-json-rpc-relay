@@ -135,6 +135,7 @@ describe('Filter API Test Suite', async function () {
       expect(filterId).to.exist;
       expect(RelayAssertions.validateHash(filterId, 32)).to.eq(true, 'returns valid filterId');
 
+      restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
       restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultLogs1);
       const filterChanges = await filterService.getFilterChanges(filterId);
       expect(filterChanges).to.exist;
