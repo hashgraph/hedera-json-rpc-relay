@@ -352,12 +352,12 @@ describe('Filter API Test Suite', async function () {
 
     it('should return the hashes of latest blocks', async function () {
       restMock.onGet(LATEST_BLOCK_QUERY).reply(200, {blocks: [{...defaultBlock, number: defaultBlock.number + 4}]});
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gte:${defaultBlock.number}&order=asc`).reply(200, {blocks: [
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, {blocks: [
           { ...defaultBlock, number: defaultBlock.number + 1, hash: '0x1'},
           { ...defaultBlock, number: defaultBlock.number + 2, hash: '0x2'},
           { ...defaultBlock, number: defaultBlock.number + 3, hash: '0x3'}
       ]});
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gte:${defaultBlock.number + 3}&order=asc`).reply(200, {blocks: []});
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number + 3}&order=asc`).reply(200, {blocks: []});
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
       clientCache.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
@@ -383,6 +383,30 @@ describe('Filter API Test Suite', async function () {
       const secondCachedFilter = clientCache.get(cacheKey, filterService.ethGetFilterChanges);
       expect(secondCachedFilter).to.exist;
       expect(secondCachedFilter.lastQueried).to.eq(defaultBlock.number + 4, `lastQueried is updated with latest block number at the time`);
+    });
+
+    it('should return no blocks if the second request is in the same block', async function() {
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock, number: defaultBlock.number + 3 }] });
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, {blocks: [
+          { ...defaultBlock, number: defaultBlock.number + 1, hash: '0x1' }
+        ]});
+
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number + 1}&order=asc`).reply(200, { blocks: [] });
+
+      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
+      clientCache.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
+
+      const cacheBefore = clientCache.get(cacheKey, filterService.ethGetFilterChanges);
+      expect(cacheBefore.lastQueried).to.be.null;
+
+      const resultCurrentBlock = await filterService.getFilterChanges(existingFilterId);
+      expect(resultCurrentBlock).to.not.be.empty;
+
+      const cacheAfter = clientCache.get(cacheKey, filterService.ethGetFilterChanges);
+      expect(cacheAfter.lastQueried).to.equal(defaultBlock.number + 1);
+
+      const resultSameBlock = (await filterService.getFilterChanges(existingFilterId));
+      expect(resultSameBlock).to.be.empty;
     });
   });
 });

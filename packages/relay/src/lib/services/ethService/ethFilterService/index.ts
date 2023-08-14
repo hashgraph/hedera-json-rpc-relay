@@ -209,7 +209,7 @@ export class FilterService implements IFilterService {
       ) + 1;
     } else if (filter.type === constants.FILTER.TYPE.NEW_BLOCK) {
       result = await this.mirrorNodeClient.getBlocks([
-        `gte:${filter.lastQueried || filter.params.blockAtCreation}`
+        `gt:${filter.lastQueried || filter.params.blockAtCreation}`
       ], undefined, {
         order: 'asc'
       });
