@@ -160,7 +160,7 @@ export class FilterService implements IFilterService {
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  public async getFilterLogs(filterId: string, checkLastQueried: boolean = false, requestIdPrefix?: string | undefined): Promise<any> {
+  public async getFilterLogs(filterId: string, useLastQueried: boolean = false, requestIdPrefix?: string | undefined): Promise<any> {
     this.logger.trace(`${requestIdPrefix} getFilterLogs(${filterId})`);
     FilterService.requireFiltersEnabled();
 
@@ -172,7 +172,7 @@ export class FilterService implements IFilterService {
 
     return this.common.getLogs(
       null,
-      checkLastQueried ? filter?.lastQueried : filter?.params.fromBlock,
+      useLastQueried ? filter?.lastQueried : filter?.params.fromBlock,
       filter?.params.toBlock,
       filter?.params.address,
       filter?.params.topics,
