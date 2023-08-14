@@ -21,6 +21,14 @@ The JSON-RPC Relay currently doesn't support monitoring events using filter API 
 
 New filter API methods can be added and handled by adding filter service, which expands the `eth` interface. Adding several new methods is needed and for saving the filter IDs it needs to utilize the already available cache.
 
+Each new method will be described in the IFilterService interface and will be implemented as follows:
+
+1. `eth_newFilter` have a flow for validating passed block parameters first, if this does not throw an error, it will create a filter with the requested properties.
+2. `eth_getFilterLogs` will just use the same implementation as `eth_getLogs`, as well as the limits, which should match.
+3. `eth_getFilterChanges` checks whether the requested filter exist in cache, which if true, leads to check if the request filter is supported. Depending on the type this method returns the requested information based on filter and finally updates the filer ttl, as well as last queired block (this information is needed, if this filter is called once more to return information from said block onwards.)
+4. `eth_uninstallFilter` is going to check whether the requested `filterId` exist, if yes will just delete it.
+5. `eth_newPendingTransactionFilter` will return NOT_IMPLEMENTED error, as this filter is not possible in Hedera.
+
 Parameters accepted in the `eth_newFilter` method are:
 
 - blockHash - Using blockHash is equivalent to fromBlock = toBlock = the block number with hash blockHash. If blockHash is present in the filter criteria, then neither fromBlock nor toBlock are allowed.
@@ -32,6 +40,8 @@ Parameters accepted in the `eth_newFilter` method are:
 Parameters accepted in `eth_uninstallFilter`, `eth_getFilterChanges` and `eth_getFilterLogs` methods are:
 
 - hex formated `filterId`.
+
+Implementation of `eth_getFilterChanges` is
 
 ### Filter Types
 
@@ -149,6 +159,7 @@ An existing `FILTER_ID` in hex format
 
 1. All filters expire after 5 minutes of inactivity (no queries). Env. variable can be `FILTER_CACHE_TTL`.
 2. Returned logs should have limitations, similar to those used in `eth_getLogs` method.
+3. Existing filter limitations. Env. variable can be `FILTER_CACHE_MAX`.
 
 ## Metric Capturing
 
@@ -159,6 +170,7 @@ Capture metrics for the following:
 3. The duration of active filters.
 4. The total amount of requests to the mirror node per filter.
 5. The amount of requests to the mirror node per filter that have returned non-null data.
+6. Amount of filters that were uninstalled by Time Limit vs Explicitly by the user.
 
 ## Tests
 
@@ -170,11 +182,14 @@ The following test cases should be covered but additional tests would be welcome
 4. Case where logs are within limit range.
 5. Case where logs are not within limit range.
 6. Case where no logs are available.
-7. E2E test using popular libraries (`ethers.js WebSocketProvider`).
+7. Case where there are Synthetic logs available.
+8. Case where new filter is created using different combinations of `blockHash` and `toBlock`/`fromBlock`.
+9. Negative test cases for new filter, including trying to create filter using `blockHash` and `toBlock`/`fromBlock`.
+10. E2E test using popular libraries (`ethers.js WebSocketProvider`).
 
 ## Non-Functional Requirements
 
-Users should be required to renew their filters, by calling again `eth_newFilter`, in the case of an inactivity. If for some reason the relay is restarted it will lose all cached filters.
+Users should be required to renew their filters, by calling again `eth_newFilter`, in the case of an inactivity. If for some reason the relay is restarted, all cache should be kept as this feature require distributed cache. In normal scenarios cache for filters will only be deleted by expired TTL.
 
 ## Deployment
 
@@ -199,3 +214,4 @@ Filter API will run alongside the already available HTTP server.
 2. Introduce `eth_uninstallFilter` and add acceptance and unit tests.
 3. Introduce `eth_getFilterChanges` and add acceptance and unit tests.
 4. Introduce `eth_getFilterLogs` and add acceptance and unit tests.
+5. Introduce `eth_newBlockFilter` and add acceptance and unit tests.
