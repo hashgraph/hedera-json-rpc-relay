@@ -22,8 +22,7 @@ require('dotenv').config();
 const { Web3 } = require('web3');
 
 module.exports = async () => {
-  const httpProvider = new Web3.providers.HttpProvider(process.env.RELAY_ENDPOINT);
-  const web3 = new Web3(httpProvider);
+  const web3 = new Web3(new Web3.providers.HttpProvider(process.env.RELAY_ENDPOINT));
   const wallet = web3.eth.accounts.privateKeyToAccount(process.env.OPERATOR_PRIVATE_KEY);
 
   const balance = await web3.eth.getBalance(wallet.address);
