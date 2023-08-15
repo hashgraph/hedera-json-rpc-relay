@@ -838,6 +838,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                     expect(RelayAssertions.validateHash(hash, 96)).to.eq(true);
                 });
 
+                await new Promise(r => setTimeout(r, 2000));
                 const result2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_FILTER_CHANGES, [filterId], requestId);
                 expect(result2).to.exist;
                 expect(result2.length).to.be.greaterThanOrEqual(1);
