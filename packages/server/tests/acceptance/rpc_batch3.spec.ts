@@ -826,7 +826,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 expect(result).to.eq(true);
             });
 
-            it(' should be able to call eth_getFilterChanges for NEW_BLOCK filter', async function () {
+            it('should be able to call eth_getFilterChanges for NEW_BLOCK filter', async function () {
                 const filterId = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_BLOCK_FILTER, [], requestId);
 
                 await new Promise(r => setTimeout(r, 4000));
