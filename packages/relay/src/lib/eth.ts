@@ -1264,6 +1264,15 @@ export class EthImpl implements Eth {
         estimate: false
       };
 
+          // Check "To" is a valid Contract or HTS Address
+      const toEntityType = await this.mirrorNodeClient.resolveEntityType(call.to, [constants.TYPE_TOKEN, constants.TYPE_CONTRACT], EthImpl.ethCall, requestIdPrefix);
+      if(!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
+        // log warning first
+        this.logger.warn(`${requestIdPrefix} Invalid contract address ${call.to} provided for eth_call`);
+        return EthImpl.emptyHex;
+      }
+
+
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestIdPrefix);
       return contractCallResponse?.result ? prepend0x(contractCallResponse.result) : EthImpl.emptyHex;
     } catch (e: any) {
