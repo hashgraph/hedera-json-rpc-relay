@@ -667,7 +667,7 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}, value: 123`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `The value passed is not a valid blockHash/blockNumber/blockTag value: 123`);
 
         }
       });
@@ -683,7 +683,7 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}, value: newest`);
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, 'The value passed is not a valid blockHash/blockNumber/blockTag value: newest');
         }
       });
     });
@@ -1641,7 +1641,7 @@ describe('RPC Server', async function() {
 
           Assertions.expectedError();
         } catch (error) {
-          console.log(error.response.data)
+          console.log(error.response.data);
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, `Invalid parameter 0: Can't use both blockHash and toBlock/fromBlock`);
         }
       });
