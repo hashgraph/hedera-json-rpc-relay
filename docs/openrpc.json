@@ -690,6 +690,25 @@
             "tags": [{ "name": "alpha API"}]
         },
         {
+            "name": "eth_getFilterLogs",
+            "summary": "Returns an array of all logs matching filter with given id.",
+            "params": [
+                {
+                    "name": "Filter ID",
+                    "schema": {
+                        "$ref": "#/components/schemas/hash16"
+                    }
+                }
+            ],
+            "result": {
+                "name": "Filter result",
+                "schema": {
+                    "$ref": "#/components/schemas/FilterResults"
+                }
+            },
+            "tags": [{ "name": "alpha API" }]
+        },
+        {
             "name": "eth_protocolVersion",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
             "params": [],
