@@ -125,11 +125,7 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
  * @returns tinybarValue
  */
 const weibarHexToTinyBarInt = (value: string): number | null => {
-    if ((value === null) || (value === '0x')) {
-        return null;
-    }
-
-    if (value) {
+    if ((value !== '0x') && (value != undefined)) {
         const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
         return Number(tinybarValue);
     }
