@@ -628,6 +628,11 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
  * Filter related endpoints:
  */
 
+/**
+ * Returns a filterId to be later used by eth_getFilterChanges for getting the logs since the last query
+ *
+ * returns: string
+ */
 app.useRpc('eth_newFilter', async (params: any) => {
   const filter = params[0];
   return logAndHandleResponse('eth_newFilter', [], (requestId) => relay.eth().filterService().newFilter(
@@ -636,6 +641,38 @@ app.useRpc('eth_newFilter', async (params: any) => {
       filter?.address,
       filter?.topics,
       requestId));
+});
+
+app.useRpc('eth_getFilterLogs', async (params: any) => {
+  return logAndHandleResponse('eth_getFilterLogs', params, (requestId) =>
+    relay.eth().filterService().getFilterLogs(params?.[0], requestId));
+});
+
+/**
+ * Returns a filterId to be later used by eth_getFilterChanges for getting the block hashes since the last query
+ *
+ * returns: string
+ */
+app.useRpc('eth_newBlockFilter', async (params: any) => {
+  return logAndHandleResponse('eth_newBlockFilter', [], (requestId) => relay.eth().filterService().newBlockFilter(requestId));
+});
+
+/**
+ * Not Supported
+ */
+app.useRpc('eth_newPendingTransactionFilter', async () => {
+    return logAndHandleResponse('eth_newPendingTransactionFilter', [], (requestId) => relay.eth().filterService().newPendingTransactionFilter(requestId));
+});
+
+/**
+ * It returns true if the filter was successfully uninstalled, otherwise false
+ * params: Filter Id - string
+ *
+ * returns: boolean
+ */
+app.useRpc('eth_uninstallFilter', async (params: any) => {
+  return logAndHandleResponse('eth_uninstallFilter', params, (requestId) =>
+      relay.eth().filterService().uninstallFilter(params?.[0], requestId));
 });
 
 /**
@@ -663,21 +700,6 @@ app.useRpc('eth_protocolVersion', async () => {
 
 app.useRpc('eth_coinbase', async () => {
   return logAndHandleResponse('eth_coinbase', [], (requestId) => relay.eth().coinbase(requestId));
-});
-
-app.useRpc('eth_newPendingTransactionFilter', async () => {
-  return logAndHandleResponse('eth_newPendingTransactionFilter', [], (requestId) => relay.eth().filterService().newPendingTransactionFilter(requestId));
-});
-
-/**
- * It returns true if the filter was successfully uninstalled, otherwise false
- * params: Filter Id - string
- *
- * returns: boolean
- */
-app.useRpc('eth_uninstallFilter', async (params: any) => {
-  return logAndHandleResponse('eth_uninstallFilter', params, (requestId) =>
-      relay.eth().filterService().uninstallFilter(params?.[0], requestId));
 });
 
 const rpcApp = app.rpcApp();

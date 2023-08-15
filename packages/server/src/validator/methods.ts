@@ -156,4 +156,10 @@ export const METHODS = {
       type: 'hex'
     }
   },
+  "eth_getFilterLogs": {
+    0: {
+      required: true,
+      type: 'hex'
+    }
+  },
 };

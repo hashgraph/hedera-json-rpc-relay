@@ -24,7 +24,7 @@ import constants from '../../../constants';
 import { IFilterService } from './IFilterService';
 import { CommonService } from './../ethCommonService';
 import {generateRandomHex} from "../../../../formatters";
-import {JsonRpcError, predefined} from "../../../errors/JsonRpcError";
+import { JsonRpcError, predefined } from "../../../errors/JsonRpcError";
 
 /**
  * Create a new Filter Service implementation.
@@ -55,6 +55,7 @@ export class FilterService implements IFilterService {
   private readonly cache: ClientCache;
   public readonly ethNewFilter = 'eth_newFilter';
   public readonly ethUninstallFilter = 'eth_uninstallFilter';
+  public readonly ethGetFilterLogs = 'eth_getFilterLogs';
 
   private readonly common: CommonService;
 
@@ -110,7 +111,23 @@ export class FilterService implements IFilterService {
       }
 
       return this.createFilter(constants.FILTER.TYPE.LOG, {
-        fromBlock, toBlock, address, topics
+        fromBlock: fromBlock === 'latest' ? await this.common.getLatestBlockNumber(requestIdPrefix) : fromBlock,
+        toBlock,
+        address,
+        topics
+      }, requestIdPrefix);
+    }
+    catch(e) {
+      return this.common.genericErrorHandler(e);
+    }
+  }
+
+  async newBlockFilter(requestIdPrefix?: string): Promise<string | JsonRpcError> {
+    this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
+    try {
+      FilterService.requireFiltersEnabled();
+      return this.createFilter(constants.FILTER.TYPE.NEW_BLOCK, {
+        blockAtCreation: await this.common.getLatestBlockNumber(requestIdPrefix)
       }, requestIdPrefix);
     }
     catch(e) {
@@ -136,5 +153,25 @@ export class FilterService implements IFilterService {
   public newPendingTransactionFilter(requestIdPrefix?: string | undefined): JsonRpcError {
     this.logger.trace(`${requestIdPrefix} newPendingTransactionFilter()`);
     return predefined.UNSUPPORTED_METHOD;
+  }
+
+  public async getFilterLogs(filterId: string, requestIdPrefix?: string | undefined): Promise<any> {
+    this.logger.trace(`${requestIdPrefix} getFilterLogs(${filterId})`);
+    FilterService.requireFiltersEnabled();
+
+    const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
+    const filter = this.cache.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
+    if (filter?.type != constants.FILTER.TYPE.LOG) {
+      throw predefined.FILTER_NOT_FOUND;
+    }
+
+    return this.common.getLogs(
+      null,
+      filter?.params.fromBlock,
+      filter?.params.toBlock,
+      filter?.params.address,
+      filter?.params.topics,
+      requestIdPrefix
+    );
   }
 }

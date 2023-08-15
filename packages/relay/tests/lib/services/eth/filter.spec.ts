@@ -28,7 +28,7 @@ import pino from 'pino';
 import constants from '../../../../src/lib/constants';
 import { ClientCache } from '../../../../src/lib/clients';
 import { FilterService, CommonService } from '../../../../src/lib/services/ethService';
-import {defaultEvmAddress, getRequestId, toHex, defaultBlock, defaultLogTopics} from "../../../helpers";
+import {defaultEvmAddress, getRequestId, toHex, defaultBlock, defaultLogTopics, defaultLogs1} from "../../../helpers";
 import RelayAssertions from "../../../assertions";
 import {predefined} from "../../../../src";
 
@@ -53,6 +53,17 @@ describe('Filter API Test Suite', async function () {
   const nonExistingFilterId = '0x1112231';
   const LATEST_BLOCK_QUERY = 'blocks?limit=1&order=desc';
   const BLOCK_BY_NUMBER_QUERY = 'blocks';
+
+  const validateFilterCache = (filterId, expectedFilterType, expectedParams = {}) => {
+    const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
+    const cachedFilter = clientCache.get(cacheKey);
+    expect(cachedFilter).to.exist;
+    expect(cachedFilter.type).to.exist;
+    expect(cachedFilter.type).to.eq(expectedFilterType);
+    expect(cachedFilter.params).to.exist;
+    expect(cachedFilter.params).to.deep.eq(expectedParams);
+    expect(cachedFilter.lastQueried).to.be.null;
+  }
 
   this.beforeAll(() => {
     clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
@@ -102,8 +113,8 @@ describe('Filter API Test Suite', async function () {
 
     it('FILTER_API_ENABLED is not specified', async function () {
       delete process.env.FILTER_API_ENABLED;
-      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, {});
-      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, {});
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, []);
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, []);
     });
 
     it('FILTER_API_ENABLED=true', async function () {
@@ -117,8 +128,8 @@ describe('Filter API Test Suite', async function () {
 
     it('FILTER_API_ENABLED=false', async function () {
       process.env.FILTER_API_ENABLED='false';
-      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, {});
-      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, {});
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.newFilter, true, filterService, []);
+      await RelayAssertions.assertRejection(predefined.UNSUPPORTED_METHOD, filterService.uninstallFilter, true, filterService, []);
     });
   });
 
@@ -154,15 +165,12 @@ describe('Filter API Test Suite', async function () {
 
     it('Creates a filter with type=log', async function() {
       const filterId = await filterService.newFilter(numberHex, 'latest', defaultEvmAddress, defaultLogTopics, getRequestId());
-
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-      const cachedFilter = clientCache.get(cacheKey);
-
-      expect(cachedFilter).to.exist;
-      expect(cachedFilter.type).to.exist;
-      expect(cachedFilter.type).to.eq(constants.FILTER.TYPE.LOG);
-      expect(cachedFilter.params).to.exist;
-      expect(cachedFilter.lastQueried).to.be.null;
+      validateFilterCache(filterId, constants.FILTER.TYPE.LOG, {
+        "fromBlock": numberHex,
+        "toBlock": "latest",
+        "address": defaultEvmAddress,
+        "topics": defaultLogTopics
+      });
     });
 
     it('validates fromBlock and toBlock', async function() {
@@ -195,6 +203,127 @@ describe('Filter API Test Suite', async function () {
       const result = await filterService.uninstallFilter(nonExistingFilterId);
 
       expect(result).to.eq(false);
+    });
+  });
+
+  describe('eth_newBlockFilter', async function() {
+    beforeEach(() => {
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, {blocks: [defaultBlock]});
+    })
+
+    it('Returns a valid filterId', async function() {
+      expect(RelayAssertions.validateHash(await filterService.newBlockFilter(), 32)).to.eq(true);
+    });
+
+    it('Creates a filter with type=new_block', async function() {
+      const filterId = await filterService.newBlockFilter(getRequestId());
+      validateFilterCache(filterId, constants.FILTER.TYPE.NEW_BLOCK, {
+        blockAtCreation: toHex(defaultBlock.number)
+      });
+    });
+  });
+
+  describe('eth_getFilterLogs', async function() {
+    it('should throw FILTER_NOT_FOUND for type=newBlock', async function() {
+      const filterIdBlockType = await filterService.createFilter(constants.FILTER.TYPE.NEW_BLOCK, filterObject);
+
+      await RelayAssertions.assertRejection(predefined.FILTER_NOT_FOUND, filterService.getFilterLogs, true, filterService, [filterIdBlockType]);
+    });
+
+    it('should throw FILTER_NOT_FOUND for type=pendingTransaction', async function() {
+      const filterIdBlockType = await filterService.createFilter(constants.FILTER.TYPE.PENDING_TRANSACTION, filterObject);
+
+      await RelayAssertions.assertRejection(predefined.FILTER_NOT_FOUND, filterService.getFilterLogs, true, filterService, [filterIdBlockType]);
+    });
+
+    it('should be able to get accurate logs with fromBlock filter', async function() {
+      const filteredLogs = {
+        logs: defaultLogs1.map(log => {
+          return {
+            ...log,
+            block_number: 2
+          };
+        })
+      };
+      const customBlock = {
+        ...defaultBlock,
+        block_number: 3
+      };
+
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [customBlock] });
+      restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
+      restMock.onGet(`contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogs);
+
+      const filterId = await filterService.newFilter('0x1');
+      const logs = await filterService.getFilterLogs(filterId);
+
+      expect(logs).to.not.be.empty;
+      logs.every(log => expect(Number(log.blockNumber)).to.be.greaterThan(1));
+    });
+
+    it('should be able to get accurate logs with toBlock filter', async function() {
+      const filteredLogs = {
+        logs: defaultLogs1.map(log => {
+          return { ...log, block_number: 2 };
+        })
+      };
+      const customBlock = {
+        ...defaultBlock,
+        block_number: 3
+      };
+
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [customBlock] });
+      restMock.onGet('blocks/3').reply(200, customBlock);
+      restMock.onGet(`contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogs);
+
+      const filterId = await filterService.newFilter(null, '0x3');
+      const logs = await filterService.getFilterLogs(filterId);
+
+      expect(logs).to.not.be.empty;
+      logs.every(log => expect(Number(log.blockNumber)).to.be.lessThan(3));
+    });
+
+    it('should be able to get accurate logs with address filter', async function() {
+      const filteredLogs = {
+        logs: defaultLogs1.map(log => {
+          return { ...log, address: defaultEvmAddress };
+        })
+      };
+
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
+      restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
+      restMock.onGet(`contracts/${defaultEvmAddress}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, filteredLogs);
+
+      const filterId = await filterService.newFilter(null, null, defaultEvmAddress);
+      const logs = await filterService.getFilterLogs(filterId);
+
+      expect(logs).to.not.be.empty;
+      logs.every(log => expect(log.address).to.equal(defaultEvmAddress));
+    });
+
+    it('should be able to get accurate logs with topics', async function() {
+      const customTopic = [
+        '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+      ];
+
+      const filteredLogs = {
+        logs: defaultLogs1.map(log => {
+          return {
+            ...log,
+            topics: customTopic
+          };
+        })
+      };
+
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
+      restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
+      restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&topic0=${customTopic[0]}&limit=100&order=asc`).reply(200, filteredLogs);
+
+      const filterId = await filterService.newFilter(null, null, null, customTopic);
+      const logs = await filterService.getFilterLogs(filterId);
+
+      expect(logs).to.not.be.empty;
+      logs.every(log => expect(log.topics).to.deep.equal(customTopic));
     });
   });
 });
