@@ -39,5 +39,4 @@ module.exports = async (amount = 100_000_000_000) => {
 
   await web3.eth.sendTransaction(transaction);
   console.log(`Balance after  tx: ${await web3.eth.getBalance(walletReceiver[0].address)}`);
-  
 };
