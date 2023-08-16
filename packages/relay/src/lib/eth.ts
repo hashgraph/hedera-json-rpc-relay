@@ -52,7 +52,7 @@ const createHash = require('keccak');
 const asm = require('@ethersproject/asm');
 
 interface LatestBlockNumberTimestamp {
-  blockNumber: string;
+  blockNumber: string | null;
   timeStampTo: string;
 }
 
@@ -458,7 +458,8 @@ export class EthImpl implements Eth {
     if (Array.isArray(blocks) && blocks.length > 0) {
       const currentBlock = numberTo0x(blocks[0].number);
       const timestamp = blocks[0].timestamp.to;
-      const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp };
+      const hash = blocks[0].hash;
+      const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp};
       // save the latest block number in cache
       this.cache.set(cacheKey, currentBlock, caller, this.ethBlockNumberCacheTtlMs, requestIdPrefix);
 
@@ -752,8 +753,19 @@ export class EthImpl implements Eth {
       } else {
         latestBlock = await this.blockNumberTimestamp(EthImpl.ethGetBalance, requestIdPrefix);
       }
-      const blockDiff = Number(latestBlock.blockNumber) - Number(blockNumberOrTagOrHash);
 
+      let blockHashNumber;
+      let isHash;
+
+      if (blockNumberOrTagOrHash != null && blockNumberOrTagOrHash.length > 32) {
+        isHash = true;
+      }
+
+      if (isHash && blockNumberOrTagOrHash != null) {
+        blockHashNumber = await this.mirrorNodeClient.getBlock(blockNumberOrTagOrHash);
+      }
+
+      const blockDiff = isHash ? Number(latestBlock.blockNumber) - Number(blockHashNumber.number) : Number(latestBlock.blockNumber) - Number(blockNumberOrTagOrHash);
       if (blockDiff <= latestBlockTolerance) {
         blockNumberOrTagOrHash = EthImpl.blockLatest;
       }
