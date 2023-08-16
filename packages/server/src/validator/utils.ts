@@ -3,7 +3,7 @@ import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 
 export function validateParam(index: number | string, param: any, validation: any) {
   const isArray = Array.isArray(validation.type);
-  const containsOr = validation.type.includes('|') ? true : false;
+  const containsOr = validation.type.includes('|');
   const paramType = getParamType(isArray, containsOr, validation.type);
 
   if (paramType === undefined) {
