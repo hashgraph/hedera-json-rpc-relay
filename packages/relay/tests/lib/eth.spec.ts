@@ -1431,6 +1431,9 @@ describe('Eth calls using MirrorNode', async function () {
           }
         }]
       });
+      restMock.onGet(`blocks/${blockHash}`).reply(200, {
+          number: 10000
+        });
       restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
         account: contractAddress1,
         balance: {
