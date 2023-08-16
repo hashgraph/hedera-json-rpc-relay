@@ -129,7 +129,7 @@ const isBigIntValid = (value: any): boolean => {
  * @returns tinybarValue
  */
 const weibarHexToTinyBarInt = (value: string): number | null => {
-    if ((value !== '0x') && (value != undefined)) {
+    if (value && value !== '0x') {
         const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
         return Number(tinybarValue);
     }
