@@ -352,11 +352,6 @@ describe('Formatters', () => {
             expect(weibarHexToTinyBarInt(value)).to.eq(null);
         });
 
-        it('should convert weibar hex value to tinybar number', () => {
-            const value = null;
-            expect(weibarHexToTinyBarInt(value)).to.be.null;
-        });
-
         it('should handle 0x value', () => {
             const value = "0x";
             expect(weibarHexToTinyBarInt(value)).to.eq(null);
