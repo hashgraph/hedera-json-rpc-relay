@@ -7,50 +7,13 @@ The purpose of a distributed cache is to improve the performance and scalability
 ## Goals
 
 1. **Scalability**: Distributed caches can be used to distribute the load across multiple instances of an application. As the application scales, the cache can help maintain consistent performance by providing a shared data store that all instances can access.
-2. **Improved Performance**: By sharing cache accross multiple JSON-RPC Relay instances, correct data will always be available for methods to access upon requests.
+2. **Improved Performance**: By sharing cache accross multiple JSON-RPC Relay instances, correct data will always be available to access upon requests for methods like `eth_subscribe` or services like Filter API, which require shared cache to function correctly.
 3. **Reduced Load on Mirror-Node**: By caching data and serving it directly from the cache, the load on the underlying data sources (such as Mirror-Node) is reduced. This can help prevent performance bottlenecks and overloading of these resources.
 
 ## Architecture
 
-For distributed cache JSON-RPC Relay will be using Redis and in order to establish connection and manage, it needs to utilize `node-redis` package. All cache managment will be done in the respective cache client, either for the internal `lru-cache` or shared redis, which methods will be defined by an interface. Using dependency injection pattern with dependency inversion all services that require cache will receive only abstraction in the constructor. This will allow for flexible usage of the cache without additional coupling, depending on the service need.
-Important details is that, if an operator does not want to use Redis, it does not need to, because all services that use shared cache will automatically switch to using internal `lru-cache`.
-
-### Diagram
-
-```mermaid
-flowchart TD
-    subgraph Relay Instance 1
-        subgraph Services Instance 1
-        A{{Filter Service}}
-        B{{Websocket Service}}
-        C{{History Service}}
-        end
-            subgraph Internal Cache Instance 1
-            D{{lru-cache}}
-            end
-    end
-    subgraph Distributed Cache
-    I{{Redis}}
-    end
-    subgraph Relay Instance 2
-        subgraph Services Instance 2
-        E{{Filter Service}}
-        F{{Websocket Service}}
-        G{{History Service}}
-        end
-            subgraph Internal Cache Instance 2
-            H{{lru-cache}}
-            end
-    end
-    A == Redis is enabled ==> I
-    E == Redis is enabled ==> I
-    A == Redis is disabled ==> D
-    E == Redis is disabled ==> H
-    B ==> D
-    C ==> D
-    F ==> H
-    G ==> H
-```
+For distributed cache JSON-RPC Relay will be using Redis and in order to establish connection and manage, it needs to utilize `redis` package. All cache managment will be done in the respective cache client, either for the internal `lru-cache` or shared redis, which methods will be defined by an interface. Adding Cache Client Service will help distributing and error handling of the cache clients, this will help by lowering coupling and higher cohesion of the classes, by separating responsibilities. `LocalLruCache` and `RedisCache` classes will be only responsible for getting, setting or deleting items from their respective caches. While the CacheClientService will be responsible for determining from which cache data should be requested or saved, depending on method preference or in the case of a disabled shared cache or loss of connection. By passing it along in the constructor, services will have access to both internal and shared cache. This way depending on the service needs, it can choose which cache is more suitable.
+Important details is that, if an operator does not want to use Redis or it went down for some reason, all services are going to use internal `lru-cache` instead.
 
 ### Interface
 
@@ -59,9 +22,171 @@ interface ICacheClient {
   get(key: string, callingMethod: string, requestIdPrefix?: string): any;
   set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string): void;
   delete(key: string, callingMethod: string, requestIdPrefix?: string): void;
-  purgeStale(): void;
   clear(): void;
 }
+```
+
+### Clases
+
+```javascript
+class LocalLRUCache implements ICacheClient{
+    /**
+     * The LRU cache used for caching items from requests.
+     *
+     * @private
+     */
+    private readonly cache;
+
+    public constructor() {
+        this.cache = new LRU(this.options);
+    }
+    get(key: string, callingMethod: string, requestIdPrefix?: string) {
+        // Get item from internal cache implementation
+    }
+
+    set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string) {
+        // Set item to internal cache implementation
+    }
+
+    delete(key: string, callingMethod: string, requestIdPrefix?: string) {
+        // Delete item from internal cache implementation
+    }
+
+    private purgeStale() {
+        // Delete any stale entries implementation.
+    }
+
+    clear() {
+        // Clear the cache entirely implementation.
+    }
+}
+```
+
+```javascript
+import { createClient } from 'redis';
+
+class RedisCache implements ICacheClient{
+    /**
+     * The Redis cache used for caching items from requests.
+     *
+     * @private
+     */
+    private readonly cache;
+
+    public constructor() {
+        const client = createClient({
+            url: ''
+        });
+        await client.connect();
+
+        this.cache = client;
+    }
+    get(key: string, callingMethod: string, requestIdPrefix?: string) {
+        // Get item from shared cache implementation
+    }
+
+    set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string) {
+        // Set item to shared cache implementation
+    }
+
+    delete(key: string, callingMethod: string, requestIdPrefix?: string) {
+        // Delete item from shared cache implementation
+    }
+
+    clear() {
+        // Clear the cache entirely implementation.
+    }
+}
+```
+
+```javascript
+class CacheClientService{
+    /**
+     * The LRU cache used for caching items from requests.
+     *
+     * @private
+     */
+    private readonly internalCache;
+
+    /**
+     * The Redis cache used for caching items from requests.
+     *
+     * @private
+     */
+    private readonly sharedCache;
+
+    public constructor() {
+        const internalCache = new LocalLRUCache();
+        const sharedCache = new RedisCache();
+    }
+
+    get(key: string, callingMethod: string, shared: boolean = false, requestIdPrefix?: string) {
+        // Depending on the shared boolean, this method decide from where it should request the data.
+        // Fallbacks to internalCache in case of error from the shared cache.
+        // Getting from shared cache depends on REDIS_ENABLED env. variable
+    }
+
+    set(key: string, value: any, callingMethod: string, shared: boolean = false, ttl?: number, requestIdPrefix?: string) {
+        // Depending on the shared boolean, this method decide where it should save the data.
+        // Fallbacks to internalCache in case of error from the shared cache.
+        // Setting to shared cache depends on REDIS_ENABLED env. variable
+    }
+
+    delete(key: string, callingMethod: string, shared: boolean = false, requestIdPrefix?: string) {
+        // Depending on the shared boolean, this method decide from where it should delete the data.
+        // Fallbacks to internalCache in case of error from the shared cache.
+        // Deleting from shared cache depends on REDIS_ENABLED env. variable
+    }
+
+    clear(shared: boolean = false) {
+        // In case of error does NOT fallback to shared cache.
+        // Clearing from shared cache depends on REDIS_ENABLED env. variable
+    }
+}
+```
+
+### Flowchart
+
+```mermaid
+flowchart TD
+    subgraph "`**Relay Instance 1**`"
+        subgraph Services Instance 1
+        A{{Filter Service}}
+        B{{Websocket Service}}
+        C{{History Service}}
+        end
+    end
+    subgraph "`**Cache**`"
+    I(Cache Client Service)
+    E{{RedisCache}}
+    F{{LocalLRUCache}}
+    end
+    subgraph "`**Relay Instance 2**`"
+        subgraph Services Instance 2
+        G{{Filter Service}}
+        H{{Websocket Service}}
+        K{{History Service}}
+        end
+    end
+A == shared ==> I
+B == shared ==> I
+C ==> I
+G == shared ==> I
+H == shared ==> I
+K ==> I
+I == shared and REDIS_ENABLED ==> E
+I == !shared or !REDIS_ENABLED ==> F
+```
+
+### State Diagram
+
+```mermaid
+stateDiagram-v2
+    Service --> CacheClientService: shared = true
+    Service --> CacheClientService: shared = false
+    CacheClientService --> RedisCache: shared and REDIS_ENABLED
+    CacheClientService --> LocalLRUCache: !shared or !REDIS_ENABLED
+    CacheClientService --> LocalLRUCache: no connection to shared
 ```
 
 ## Limits
@@ -73,19 +198,25 @@ interface ICacheClient {
 Capture metrics for the following:
 
 1. Log every service what kind of cache it's using.
-2. For each service log calls to `get`, `set`, `delete`.
+2. Each Implementation of ICacheClient will add a label with the type of cache:
+   1. service: originating service that uses the cache
+   2. method: originating method that uses the cache
+   3. keyLabel: a template for the key
+   4. cacheType: redis/lru
+   5. type: set/get/delete
 
 ## Tests
 
 The following test cases should be covered but additional tests would be welcome.
 
-1. Connecting to the redis server is sucesfull.
+1. Connecting to the redis server is successful.
 2. Fallback to `lru-cache` if redis is not available or respective feature flags are set.
 3. Cases where we set a cache.
 4. Cases where we get a cache.
 5. Cases where we try to get expired or deleted cache.
 6. Cases where we delete a cache.
 7. Cases where we try to delete non existing cache.
+8. More complex acceptance tests, like: call to relay instance 1 which sets cache value, then query for this cache from relay instance 2 and assertion whether it's the appropriate answer.
 
 ## Deployment
 
@@ -106,5 +237,11 @@ Environment variable are needed for enabling distributed cache - `REDIS_ENABLED`
 
 #### Milestone 2
 
-1. Implement cacheClient class refactor to utilize interface and `node-redis` package.
-2. Add new env. variable to the corresponding files, like env. example, helm charts and more.
+1. Implement cacheClient class refactor to utilize interface.
+2. Add new class for shared cache which uses `redis` package.
+3. Add new env. variable to the corresponding files, like env. example, helm charts and more.
+4. Refactor `eth_filter` and `eth_subscribe` to use shared cache, when available.
+
+#### Milestone 3
+
+1. Explore current internal cache usage and determine which should be moved to shared.
