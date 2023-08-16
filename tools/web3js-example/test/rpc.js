@@ -19,8 +19,7 @@
  */
 
 const { expect } = require('chai');
-const Web3 = require('web3');
-const Web3HttpProvider = require('web3-providers-http');
+const { Web3 } = require('web3');
 
 describe('RPC', function() {
   this.timeout(5 * 60000); // 5 minutes
@@ -38,12 +37,13 @@ describe('RPC', function() {
   it('should be able to transfer hbars between two accounts', async function() {
     const transferHbars = require('../scripts/transferHbars');
 
-    const web3 = new Web3(new Web3HttpProvider(process.env.RELAY_ENDPOINT));
+    const web3 = new Web3(new Web3.providers.HttpProvider(process.env.RELAY_ENDPOINT));
+
     const walletReceiver = await web3.eth.accounts.wallet.add(process.env.RECEIVER_PRIVATE_KEY);
 
-    const hbarsBefore = (await web3.eth.getBalance(walletReceiver.address)).toString();
+    const hbarsBefore = (await web3.eth.getBalance(walletReceiver[0].address)).toString();
     await transferHbars();
-    const hbarsAfter = (await web3.eth.getBalance(walletReceiver.address)).toString();
+    const hbarsAfter = (await web3.eth.getBalance(walletReceiver[0].address)).toString();
 
     expect(hbarsBefore).to.not.be.equal(hbarsAfter);
   });

@@ -1236,6 +1236,8 @@ export class EthImpl implements Eth {
     const gas = this.getCappedBlockGasLimit(call.gas, requestIdPrefix);
     const value: string | null = toNullableBigNumber(call.value);
 
+    this.contractCallFormat(call);
+
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
       if((process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === undefined) || (process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false')) {

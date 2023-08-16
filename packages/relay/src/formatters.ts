@@ -116,7 +116,7 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
         throw new Error(`Unable to parse numeric env var: '${envVarName}', constant: '${fallbackConstantKey}'`);
     }
     return value;
-}
+};
 
 /**
  * Parse weibar hex string to tinybar number, by applying tinybar to weibar coef.
@@ -125,12 +125,12 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
  * @returns tinybarValue
  */
 const weibarHexToTinyBarInt = (value: string): number | null => {
-    if (value) {
+    if (value && value !== '0x') {
         const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
         return Number(tinybarValue);
     }
     return null;
-}
+};
 
 const formatContractResult = (cr: any) => {
     if (cr === null) {
