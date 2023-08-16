@@ -458,7 +458,6 @@ export class EthImpl implements Eth {
     if (Array.isArray(blocks) && blocks.length > 0) {
       const currentBlock = numberTo0x(blocks[0].number);
       const timestamp = blocks[0].timestamp.to;
-      const hash = blocks[0].hash;
       const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp};
       // save the latest block number in cache
       this.cache.set(cacheKey, currentBlock, caller, this.ethBlockNumberCacheTtlMs, requestIdPrefix);
@@ -749,7 +748,6 @@ export class EthImpl implements Eth {
       if(blockNumberCached) {
         this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
         latestBlock = { blockNumber: blockNumberCached, timeStampTo: '0' };
-
       } else {
         latestBlock = await this.blockNumberTimestamp(EthImpl.ethGetBalance, requestIdPrefix);
       }
@@ -759,13 +757,12 @@ export class EthImpl implements Eth {
 
       if (blockNumberOrTagOrHash != null && blockNumberOrTagOrHash.length > 32) {
         isHash = true;
-      }
-
-      if (isHash && blockNumberOrTagOrHash != null) {
         blockHashNumber = await this.mirrorNodeClient.getBlock(blockNumberOrTagOrHash);
       }
 
-      const blockDiff = isHash ? Number(latestBlock.blockNumber) - Number(blockHashNumber.number) : Number(latestBlock.blockNumber) - Number(blockNumberOrTagOrHash);
+      const currentBlockNumber = isHash ? Number(blockHashNumber.number) : Number(blockNumberOrTagOrHash);
+
+      const blockDiff = Number(latestBlock.blockNumber) - currentBlockNumber;
       if (blockDiff <= latestBlockTolerance) {
         blockNumberOrTagOrHash = EthImpl.blockLatest;
       }
