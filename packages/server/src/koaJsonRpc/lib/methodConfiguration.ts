@@ -75,6 +75,9 @@ export const methodConfiguration = {
   eth_chainId: {
     total: tier2rateLimit,
   },
+  eth_getFilterChanges: {
+    total: tier2rateLimit,
+  },
   eth_getLogs: {
     total: tier2rateLimit,
   },

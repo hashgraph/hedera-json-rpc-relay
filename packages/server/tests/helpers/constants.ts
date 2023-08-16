@@ -68,7 +68,8 @@ const ETH_ENDPOINTS = {
     ETH_NEW_FILTER: 'eth_newFilter',
     ETH_NEW_BLOCK_FILTER: 'eth_newBlockFilter',
     ETH_NEW_PENDING_TRANSACTION_FILTER: 'eth_newPendingTransactionFilter',
-    ETH_UNINSTALL_FILTER: 'eth_uninstallFilter'
+    ETH_UNINSTALL_FILTER: 'eth_uninstallFilter',
+    ETH_GET_FILTER_CHANGES: 'eth_getFilterChanges'
 }
 
 //Events
