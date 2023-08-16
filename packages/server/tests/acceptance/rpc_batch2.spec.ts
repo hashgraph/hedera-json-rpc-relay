@@ -284,6 +284,12 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             expect(res).to.eq(ethers.toQuantity(ONE_WEIBAR));
         });
 
+        it('@release should execute "eth_getBalance" with latest block hash', async function () {
+            const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
+            const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, [Utils.idToEvmAddress(getBalanceContractId.toString()), numberTo0x(latestBlock.number)], requestId);
+            expect(res).to.eq(ethers.toQuantity(ONE_WEIBAR));
+        });
+
         it('@release should execute "eth_getBalance" with pending', async function () {
             const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, [Utils.idToEvmAddress(getBalanceContractId.toString()), 'pending'], requestId);
             expect(res).to.eq(ethers.toQuantity(ONE_WEIBAR));
