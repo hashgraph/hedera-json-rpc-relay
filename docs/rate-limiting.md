@@ -42,6 +42,7 @@ The following table highlights each relay endpoint and the TIER associated with 
 | `eth_getBlockTransactionCountByHash`      | TIER_2_RATE_LIMIT |
 | `eth_getBlockTransactionCountByNumber`    | TIER_2_RATE_LIMIT |
 | `eth_getFilterLogs`                       | TIER_2_RATE_LIMIT |
+| `eth_getFilterChanges`                    | TIER_2_RATE_LIMIT |
 | `eth_getLogs`                             | TIER_2_RATE_LIMIT |
 | `eth_getStorageAt`                        | TIER_2_RATE_LIMIT |
 | `eth_getTransactionByBlockHashAndIndex`   | TIER_2_RATE_LIMIT |

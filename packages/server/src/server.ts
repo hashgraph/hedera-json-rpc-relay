@@ -648,6 +648,11 @@ app.useRpc('eth_getFilterLogs', async (params: any) => {
     relay.eth().filterService().getFilterLogs(params?.[0], requestId));
 });
 
+app.useRpc('eth_getFilterChanges', async (params: any) => {
+  const filterId = params[0];
+  return logAndHandleResponse('eth_getFilterChanges', [], (requestId) => relay.eth().filterService().getFilterChanges(filterId, requestId));
+});
+
 /**
  * Returns a filterId to be later used by eth_getFilterChanges for getting the block hashes since the last query
  *
