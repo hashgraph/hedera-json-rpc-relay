@@ -496,7 +496,6 @@ export class EthImpl implements Eth {
         estimate: true
       }, requestIdPrefix);
       if (contractCallResponse?.result) {
-        console.log(contractCallResponse)
         // Workaround until mirror-node bugfix applied, currently mirror-node returns 21k for contract creation, which is wrong
         if (!transaction.to && transaction.data !== '0x') {
           gas = this.defaultGas;
@@ -1633,7 +1632,7 @@ export class EthImpl implements Eth {
     const params = { timestamp: timestampRangeParams };
 
     // get contract results logs using block timestamp range
-    const logs = await this.getLogsWithParams(null, params, requestIdPrefix);
+    const logs = await this.common.getLogsWithParams(null, params, requestIdPrefix);
 
     if (contractResults == null && logs.length == 0) {
       // contract result not found
@@ -1749,52 +1748,6 @@ export class EthImpl implements Eth {
     return numberTo0x(block.count);
   }
 
-  private async validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestIdPrefix?: string) {
-    try {
-      const block = await this.mirrorNodeClient.getBlock(blockHash, requestIdPrefix);
-      if (block) {
-        params.timestamp = [
-          `gte:${block.timestamp.from}`,
-          `lte:${block.timestamp.to}`
-        ];
-      } else {
-        return false;
-      }
-    }
-    catch(e: any) {
-      if (e instanceof MirrorNodeClientError && e.isNotFound()) {
-        return false;
-      }
-
-      throw e;
-    }
-
-    return true;
-  }
-
-  private addTopicsToParams(params: any, topics: any[] | null) {
-    if (topics) {
-      for (let i = 0; i < topics.length; i++) {
-        if (!_.isNil(topics[i])) {
-          params[`topic${i}`] = topics[i];
-        }
-      }
-    }
-  }
-
-  private async getLogsByAddress(address: string | [string], params: any, requestIdPrefix) {
-    const addresses = Array.isArray(address) ? address : [address];
-    const logPromises = addresses.map(addr => this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestIdPrefix));
-
-    const logResults = await Promise.all(logPromises);
-    const logs = logResults.flatMap(logResult => logResult ? logResult : [] );
-    logs.sort((a: any, b: any) => {
-      return a.timestamp >= b.timestamp ? 1 : -1;
-    });
-
-    return logs;
-  }
-
   private async getAccountLatestEthereumNonce(address: string, requestId?: string) {
     const accountData = await this.mirrorNodeClient.getAccount(address, requestId);
     if (accountData) {
@@ -1882,55 +1835,7 @@ export class EthImpl implements Eth {
   }
 
   async getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestIdPrefix?: string): Promise<Log[]> {
-    const EMPTY_RESPONSE = [];
-    const params: any = {};
-
-    if (blockHash) {
-      if ( !(await this.validateBlockHashAndAddTimestampToParams(params, blockHash, requestIdPrefix)) ) {
-        return EMPTY_RESPONSE;
-      }
-    } else if ( !(await this.common.validateBlockRangeAndAddTimestampToParams(params, fromBlock, toBlock, requestIdPrefix)) ) {
-      return EMPTY_RESPONSE;
-    }
-
-    this.addTopicsToParams(params, topics);
-
-    return this.getLogsWithParams(address, params, requestIdPrefix);
-  }
-
-  async getLogsWithParams(address: string | [string] | null, params, requestIdPrefix?: string): Promise<Log[]> {
-    const EMPTY_RESPONSE = [];
-
-    let logResults;
-    if (address) {
-      logResults = await this.getLogsByAddress(address, params, requestIdPrefix);
-    }
-    else {
-      logResults = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestIdPrefix);
-    }
-
-    if (!logResults) {
-      return EMPTY_RESPONSE;
-    }
-
-    const logs: Log[] = [];
-    for(const log of logResults) {
-      logs.push(
-          new Log({
-            address: log.address,
-            blockHash: toHash32(log.block_hash),
-            blockNumber: numberTo0x(log.block_number),
-            data: log.data,
-            logIndex: nullableNumberTo0x(log.index),
-            removed: false,
-            topics: log.topics,
-            transactionHash: toHash32(log.transaction_hash),
-            transactionIndex: nullableNumberTo0x(log.transaction_index)
-          })
-      );
-    }
-
-    return logs;
+    return this.common.getLogs(blockHash, fromBlock, toBlock, address, topics, requestIdPrefix);
   }
 
   async maxPriorityFeePerGas(requestIdPrefix?: string): Promise<string> {
