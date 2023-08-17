@@ -554,6 +554,11 @@ export class EthImpl implements Eth {
     if (transaction.gasPrice) {
       transaction.gasPrice = parseInt(transaction.gasPrice);
     }
+
+    // Support for web3js contract calls
+    if ((transaction.input) && (transaction.data === undefined)) {
+      transaction.data = transaction.input;
+    }
   }
 
   /**

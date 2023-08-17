@@ -3454,6 +3454,25 @@ describe('Eth calls using MirrorNode', async function () {
         "gas": maxGasLimitHex
       }, 'latest')).to.eventually.be.fulfilled.and.equal("0x1");
     });
+
+    // support for web3js.
+    it('the input is set with the encoded data for the data field', async function () {
+      restMock.onGet(`contracts/${accountAddress1}`).reply(200);
+      restMock.onGet(`accounts/${accountAddress1}${noTransactions}`).reply(200, {
+        account: "0.0.1723",
+        evm_address: accountAddress1
+      });
+      restMock.onGet(`contracts/${contractAddress2}`).reply(200);
+      restMock.onGet(`tokens/${contractId2}`).reply(200);
+      web3Mock.onPost(`contracts/call`).reply(200, {result: '0x1'});
+
+      await expect(ethImpl.call({
+        "from": accountAddress1,
+        "to": contractAddress2,
+        "input": contractCallData,
+        "gas": maxGasLimitHex
+      }, 'latest')).to.eventually.be.fulfilled.and.equal("0x1");
+    });    
   });
 
   describe('eth_call using consensus node', async function () {
