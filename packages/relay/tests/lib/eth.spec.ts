@@ -58,7 +58,7 @@ import {
 import pino from 'pino';
 import { Log, Transaction } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
-import { ClientCache, SDKClient } from '../../src/lib/clients';
+import { SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
@@ -69,6 +69,7 @@ import {v4 as uuid} from 'uuid';
 import { JsonRpcError } from '../../dist';
 import { hashNumber, numberTo0x, nullableNumberTo0x, toHash32 } from '../../dist/formatters';
 import * as _ from 'lodash';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 
 chai.use(chaiAsPromised);
 
@@ -83,10 +84,8 @@ let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
 let sdkClientStub;
 let getSdkClientStub;
-let mirrorNodeCache;
+let cacheService: CacheService;
 let defaultLogs, defaultDetailedContractResults2, defaultDetailedContractResults3;
-
-let clientCache;
 
 describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
@@ -96,12 +95,9 @@ describe('Eth calls using MirrorNode', async function () {
   const ethFeeHistoryValue = process.env.ETH_FEE_HISTORY_FIXED || 'true';
 
   this.beforeAll(() => {
-    clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
+    cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
-    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache);
-
-    // @ts-ignore
-    mirrorNodeCache = mirrorNodeInstance.cache;
+    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, cacheService);
 
     // @ts-ignore
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: "throwException" });
@@ -113,12 +109,12 @@ describe('Eth calls using MirrorNode', async function () {
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
 
-    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, clientCache);
+    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService);
 
     process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
     // @ts-ignore
-    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
+    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
   });
 
   this.afterAll(() => {
@@ -127,8 +123,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   this.beforeEach(() => {
     // reset cache and restMock
-    mirrorNodeCache.clear();
-    clientCache.clear();
+    cacheService.clear();
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
@@ -497,7 +492,7 @@ describe('Eth calls using MirrorNode', async function () {
     expect(blockNumber2).to.be.eq(blockNumber);
 
     // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
-    clientCache.clear();
+    cacheService.clear();
     // Third call should return new number using mirror node
     const newBlockNumber = 7;
     restMock.onGet('blocks?limit=1&order=desc').reply(200, {
@@ -663,7 +658,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with zero transactions', async function () {
-    mirrorNodeCache.clear();
+    cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, gas_used: 0});
     restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
@@ -687,7 +682,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with match and details', async function () {
-    mirrorNodeCache.clear();
+    cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
@@ -713,7 +708,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with match and details paginated', async function () {
-    mirrorNodeCache.clear();
+    cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockNumber}`).reply(200, defaultBlock);
     restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
@@ -741,7 +736,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with block match and contract revert', async function () {
-    mirrorNodeCache.clear();
+    cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockNumber}`).reply(200, {...defaultBlock, gas_used: gasUsed1});
     restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
@@ -765,7 +760,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with no match', async function () {
-    mirrorNodeCache.clear();
+    cacheService.clear();
     restMock.onGet(`blocks/${blockNumber}`).reply(400, {
       '_status': {
         'messages': [
@@ -961,7 +956,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByHash with block match and contract revert', async function () {
-    mirrorNodeCache.clear();
+    cacheService.clear();
     const randomBlock = {
       ...defaultBlock,
       'gas_used': 400000
@@ -982,7 +977,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockByHash with no match', async function () {
-    mirrorNodeCache.clear();
+    cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockHash}`).reply(400, {
       '_status': {
@@ -1029,7 +1024,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockTransactionCountByNumber with no match', async function () {
-    mirrorNodeCache.clear();
+      cacheService.clear();
     restMock.onGet(`blocks/${blockNumber}`).reply(400, {
       '_status': {
         'messages': [
@@ -1096,7 +1091,7 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   it('eth_getBlockTransactionCountByHash with no match', async function () {
-    mirrorNodeCache.clear();
+      cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${blockHash}`).reply(400, {
       '_status': {
@@ -1308,7 +1303,7 @@ describe('Eth calls using MirrorNode', async function () {
     this.beforeEach(() => {
       currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
       process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
-      ethImplLowTransactionCount = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
+      ethImplLowTransactionCount = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     });
 
     it('eth_getBlockByHash with greater number of transactions than the ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', async function () {
@@ -1392,7 +1387,7 @@ describe('Eth calls using MirrorNode', async function () {
         }
       });
       // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
-      clientCache.clear();
+      cacheService.clear();
 
       const resBalanceNew = await ethImpl.getBalance(contractAddress1, null, getRequestId());
       expect(newBalanceHex).to.equal(resBalanceNew);
@@ -1623,7 +1618,7 @@ describe('Eth calls using MirrorNode', async function () {
       };
 
       beforeEach(async () => {
-        mirrorNodeCache.clear();
+      
         restMock.onGet(`blocks?limit=1&order=desc`).reply(200, { blocks: [latestBlock] });
         restMock.onGet(`blocks/3`).reply(200, defaultBlock);
         restMock.onGet(`blocks/0`).reply(200, blockZero);
@@ -2451,7 +2446,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('with non-existing toBlock filter', async function () {
-      mirrorNodeCache.clear();
+    
       const filteredLogs = {
         logs: [defaultLogs.logs[0]]
       };
@@ -2596,7 +2591,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('with topics and blocks filter', async function () {
-      mirrorNodeCache.clear();
+    
       const filteredLogs = {
         logs: [defaultLogs.logs[0], defaultLogs.logs[1]]
       };
@@ -2828,8 +2823,8 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     this.beforeEach(function () {
-      mirrorNodeCache.clear();
-      clientCache.clear();
+    
+      cacheService.clear();
       restMock.reset();
       restMock.onGet(`network/fees`).reply(200, defaultNetworkFees);
     });
@@ -3099,7 +3094,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas empty call returns transfer cost with overridden default gas', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     restMock.onGet(`accounts/undefined${noTransactions}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({}, null);
     expect(gas).to.equal(numberTo0x(defaultGasOverride));
@@ -3114,7 +3109,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas empty input transfer cost with overridden default gas', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     restMock.onGet(`accounts/undefined${noTransactions}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({ data: "" }, null);
     expect(gas).to.equal(numberTo0x(defaultGasOverride));
@@ -3129,7 +3124,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_estimateGas zero input returns transfer cost with overridden default gas', async function () {
     const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
     process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
+    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     restMock.onGet(`accounts/undefined${noTransactions}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({ data: "0x" }, null);
     expect(gas).to.equal(numberTo0x(defaultGasOverride));
@@ -4279,7 +4274,7 @@ describe('Eth calls using MirrorNode', async function () {
     });
 
     it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when block not found', async function () {
-      mirrorNodeCache.clear();
+    
       restMock.onGet(`blocks/${blockNumber}`).reply(200, null);
       restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
 
@@ -4541,9 +4536,9 @@ describe('Eth', async function () {
   let ethImpl: EthImpl;
   this.beforeAll(() => {
     // @ts-ignore
-    clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
-    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache);
-    ethImpl = new EthImpl(null, mirrorNodeInstance, logger, "0x12a", registry, clientCache);
+    cacheService = new CacheService(logger.child({ name: `cache` }), registry);
+    mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, cacheService);
+    ethImpl = new EthImpl(null, mirrorNodeInstance, logger, "0x12a", registry, cacheService);
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: "throwException" });
   });
 
@@ -4749,7 +4744,7 @@ describe('Eth', async function () {
 
   describe('eth_getTransactionReceipt', async function () {
     this.beforeEach(() => {
-      clientCache.clear();
+      cacheService.clear();
     });
 
     it('returns `null` for non-existent hash', async function () {
@@ -4901,7 +4896,7 @@ describe('Eth', async function () {
 
     it('valid receipt on cache match', async function () {
       // clear cache
-      clientCache.clear();
+      cacheService.clear();
 
       // set cache with synthetic log
       const cacheKeySyntheticLog1 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${defaultDetailedContractResultByHash.hash}`;
@@ -4917,7 +4912,7 @@ describe('Eth', async function () {
         transactionIndex: nullableNumberTo0x(defaultLogs1[0].transaction_index)
       });
 
-      clientCache.set(cacheKeySyntheticLog1, cachedLog);
+      cacheService.set(cacheKeySyntheticLog1, cachedLog);
 
       // w no mirror node requests
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);

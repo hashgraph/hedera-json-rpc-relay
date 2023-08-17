@@ -30,7 +30,8 @@ import {AccountId, Client, ContractCallQuery, PrivateKey, TransactionId, Hbar, S
 const logger = pino();
 import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
-import { ClientCache, SDKClient } from '../../src/lib/clients';
+import { SDKClient } from '../../src/lib/clients';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 
 describe('SdkClient', async function () {
     this.timeout(20000);
@@ -51,7 +52,7 @@ describe('SdkClient', async function () {
         const duration = constants.HBAR_RATE_LIMIT_DURATION;
         const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-        sdkClient = new SDKClient(client, logger.child({ name: `consensus-node` }), hbarLimiter, { costHistogram: undefined, gasHistogram: undefined }, new ClientCache(logger.child({ name: `cache` }), registry));
+        sdkClient = new SDKClient(client, logger.child({ name: `consensus-node` }), hbarLimiter, { costHistogram: undefined, gasHistogram: undefined }, new CacheService(logger.child({ name: `cache` }), registry));
     })
 
     describe('increaseCostAndRetryExecution', async () => {
