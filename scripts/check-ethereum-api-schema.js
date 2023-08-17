@@ -1,10 +1,10 @@
 const { Octokit } = require('@octokit/rest');
-const fs = require('fs');
 const axios = require('axios');
+const openRpcData = require('../docs/openrpc.json');
 
 // Create an instance of Octokit and authenticate (you can use a personal access token or OAuth token)
 const octokit = new Octokit({
-    auth: process.env.GITHUB_PERSONAL_TOKEN
+    auth: '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'
 });
 let currentBlockHash;
 const relayUrl = 'http://127.0.0.1:7546';
@@ -24,22 +24,8 @@ async function getEthereumExecApis(relaySupportedMethods) {
         repo: 'execution-apis',
         path: '/tests', // The root path of the repository (to get all contents)
       });
-    const names = response.data.filter(object => relaySupportedMethods.includes(object.name));
 
-    return names;
-}
-
-async function getSupportedMethods() {
-    return new Promise((resolve, reject) => {
-        fs.readFile('../docs/openrpc.json', 'utf8', (err, data) => {
-            if (err) {
-                reject(err);
-            }
-
-            const jsonData = JSON.parse(data);
-            resolve(jsonData);
-        });
-    });
+    return response.data.filter(object => relaySupportedMethods.includes(object.name));
 }
 
 async function getFolderContent(path) {
@@ -105,9 +91,7 @@ function checkResponseFormat(actualReponse, expectedResponse) {
     const expectedResponseKeys = extractKeys(expectedResponse);
     const missingKeys = expectedResponseKeys.filter(key => !actualResponseKeys.includes(key));
 
-    const areEqual = actualResponseKeys.length === expectedResponseKeys.length && actualResponseKeys.every(item => expectedResponseKeys.includes(item));
-
-    if (!areEqual) {
+    if (missingKeys.length) {
         throw Error(`Response format is not matching, the response is missing ${missingKeys}`);
     }
 }
@@ -130,17 +114,16 @@ function extractKeys(obj, prefix = '') {
 
 async function main() {
     try {
-        const openRpcData = await getSupportedMethods();
         const latestBlock = await sendRequestToRelay(body);
         currentBlockHash = latestBlock.result.hash;
         const relaySupportedMethodNames = openRpcData.methods.map(method => method.name);
         const ethSupportedMethods = await getEthereumExecApis(relaySupportedMethodNames);
         const folders = ethSupportedMethods.map(each => each.path);
-        //sendRawTransaction - make it work with heder hash of transaction
+        //sendRawTransaction - make it work with hedera hash of transaction
+        //excluding temorary these methods
         const excludedValues = ['tests/eth_getTransactionByBlockHashAndIndex', 'tests/eth_getBalance', 'tests/eth_getTransactionByBlockNumberAndIndex',
                                 'tests/eth_getTransactionByHash', 'tests/eth_getTransactionReceipt', 'tests/eth_sendRawTransaction'];
         const filteredFolders = folders.filter(folderName => !excludedValues.includes(folderName));
-        console.log(filteredFolders);
         let fileContents = [];
         for (const folder of filteredFolders) {
             fileContents.push(await getFolderContent(folder));
