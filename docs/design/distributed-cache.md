@@ -120,19 +120,19 @@ class CacheClientService{
         const sharedCache = new RedisCache();
     }
 
-    get(key: string, callingMethod: string, shared: boolean = false, requestIdPrefix?: string) {
+    get(key: string, callingMethod: string, requestIdPrefix?: string, shared: boolean = false) {
         // Depending on the shared boolean, this method decide from where it should request the data.
         // Fallbacks to internalCache in case of error from the shared cache.
         // Getting from shared cache depends on REDIS_ENABLED env. variable
     }
 
-    set(key: string, value: any, callingMethod: string, shared: boolean = false, ttl?: number, requestIdPrefix?: string) {
+    set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string, shared: boolean = false) {
         // Depending on the shared boolean, this method decide where it should save the data.
         // Fallbacks to internalCache in case of error from the shared cache.
         // Setting to shared cache depends on REDIS_ENABLED env. variable
     }
 
-    delete(key: string, callingMethod: string, shared: boolean = false, requestIdPrefix?: string) {
+    delete(key: string, callingMethod: string, requestIdPrefix?: string, shared: boolean = false) {
         // Depending on the shared boolean, this method decide from where it should delete the data.
         // Fallbacks to internalCache in case of error from the shared cache.
         // Deleting from shared cache depends on REDIS_ENABLED env. variable
@@ -155,27 +155,41 @@ flowchart TD
         B{{Websocket Service}}
         C{{History Service}}
         end
+        subgraph "`**Cache Instance 1**`"
+            D(Cache Client Service)
+            E{{LocalLRUCache}}
+            L{{RedisCache}}
+        end
+        N(Internal Cache)
     end
-    subgraph "`**Cache**`"
-    I(Cache Client Service)
-    E{{RedisCache}}
-    F{{LocalLRUCache}}
-    end
+    K(Shared Cache)
     subgraph "`**Relay Instance 2**`"
         subgraph Services Instance 2
-        G{{Filter Service}}
-        H{{Websocket Service}}
-        K{{History Service}}
+        F{{Filter Service}}
+        G{{Websocket Service}}
+        H{{History Service}}
         end
+        subgraph "`**Cache Instance 2**`"
+            I(Cache Client Service)
+            J{{LocalLRUCache}}
+            M{{RedisCache}}
+        end
+        O(Internal Cache)
     end
-A == shared ==> I
-B == shared ==> I
-C ==> I
+A == shared ==> D
+B == shared ==> D
+C ==> D
+F == shared ==> I
 G == shared ==> I
-H == shared ==> I
-K ==> I
-I == shared and REDIS_ENABLED ==> E
-I == !shared or !REDIS_ENABLED ==> F
+H ==> I
+D == shared and REDIS_ENABLED ==> L
+I == shared and REDIS_ENABLED ==> M
+D == !shared or !REDIS_ENABLED ==> E
+I == !shared or !REDIS_ENABLED ==> J
+E ==> N
+J ==> O
+L ==> K
+M ==> K
 ```
 
 ### State Diagram
@@ -204,6 +218,7 @@ Capture metrics for the following:
    3. keyLabel: a template for the key
    4. cacheType: redis/lru
    5. type: set/get/delete
+   6. stateFeature: true/false. Describes if the cache entry is being used as cache or for sharing state storage
 
 ## Tests
 
