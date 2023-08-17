@@ -555,7 +555,7 @@ export class EthImpl implements Eth {
       transaction.gasPrice = parseInt(transaction.gasPrice);
     }
 
-    // Support for web3js contract calls
+    // Support either data or input. https://ethereum.github.io/execution-apis/api-documentation/ lists input but many EVM tools still use data.
     if ((transaction.input) && (transaction.data === undefined)) {
       transaction.data = transaction.input;
     }
