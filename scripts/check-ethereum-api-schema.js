@@ -6,6 +6,17 @@ const axios = require('axios');
 const octokit = new Octokit({
     auth: process.env.GITHUB_PERSONAL_TOKEN
 });
+let currentBlockHash;
+const relayUrl = 'http://127.0.0.1:7546';
+const body = {
+    "jsonrpc": "2.0",
+    "method": "eth_getBlockByNumber",
+    "params": [
+        "latest",
+        true
+    ],
+    "id": 0
+}; 
 
 async function getEthereumExecApis(relaySupportedMethods) {
     const response = await octokit.repos.getContent({
@@ -48,15 +59,13 @@ async function getFolderContent(path) {
         const fileContent = await getFileContent(response.data[0].path);
         fileContents.push(fileContent);
     }
-
-    const reqAndExpectedRes = splitReqAndRes(fileContents);
-    await sendRequestToRelay(reqAndExpectedRes);
+    return fileContents;
 }
 
 function splitReqAndRes(contents) {
     const newContents = [];
     contents.forEach((inputString) => {
-        const lines = inputString.split('\n');
+        const lines = inputString[0].split('\n');
         const filteredLines = lines.filter(line => line != '').map(line => line.slice(3));
     
         return newContents.push({request: filteredLines[0], response: filteredLines[1]});
@@ -76,34 +85,22 @@ async function getFileContent(path) {
     return content;
 }
 
-async function sendRequestToRelay(reqAndExpectedRes) {
-    const requests = [];
-    const url = 'http://127.0.0.1:7546';
-    //Need to get a hash
-    const hederaBlockHash = '0x43da6a71f66d6d46d2b487c8231c04f01b3ba3bd91d165266d8eb39de3c0152b';
-    for (const item of reqAndExpectedRes) {
-        const request = JSON.parse(item.request);
-        // if((request.method === 'eth_getBlockByHash' && request.params[0] === '0x7cb4dd3daba1f739d0c1ec7d998b4a2f6fd83019116455afa54ca4f49dfa0ad4') ||
-        // (request.method === 'eth_sendRawTransaction' && request.params[0] === '0xf86709843b9aca018261a894aa000000000000000000000000000000000000000a825544820a95a0281582922adf6475f5b2241f0a4f886dafa947ecdc5913703b7840344a566b45a05f685fc099161126637a12308f278a8cd162788a6c6d5aee4d425cde261ba35d')) {
-        //     request.params[0] = hederaBlockHash;
-        // }
-        requests.push(axios.post(url, request));
-    }
-    try {
-        const responses = await Promise.all(requests);
-        for (let i = 0; i < responses.length; i++) {
-          const response = responses[i];
-          checkResponse(response.data, JSON.parse(reqAndExpectedRes[i].response));
-        }
-    
-        return responses.map(response => response.data);
-      } catch (error) {
-        console.error('Error:', error.message);
-        throw error;
-      }
+async function sendRequestToRelay(request) {
+    const response = await axios.post(relayUrl, request);
+    return response.data;
 }
 
-function checkResponse(actualReponse, expectedResponse) {
+function checkRequestBody(request) {
+    if((request.method === 'eth_getBlockByHash' && request.params[0] === '0x7cb4dd3daba1f739d0c1ec7d998b4a2f6fd83019116455afa54ca4f49dfa0ad4') ||
+        (request.method === 'eth_sendRawTransaction' && request.params[0] === '0xf86709843b9aca018261a894aa000000000000000000000000000000000000000a825544820a95a0281582922adf6475f5b2241f0a4f886dafa947ecdc5913703b7840344a566b45a05f685fc099161126637a12308f278a8cd162788a6c6d5aee4d425cde261ba35d')
+        || (request.method === 'eth_getTransactionByBlockHashAndIndex')) {
+            request.params[0] = currentBlockHash;
+    }
+
+    return request;
+}
+
+function checkResponseFormat(actualReponse, expectedResponse) {
     const actualResponseKeys = extractKeys(actualReponse);
     const expectedResponseKeys = extractKeys(expectedResponse);
     const missingKeys = expectedResponseKeys.filter(key => !actualResponseKeys.includes(key));
@@ -131,26 +128,35 @@ function extractKeys(obj, prefix = '') {
     return keys;
   }
 
-async function fetchData() {
+async function main() {
     try {
         const openRpcData = await getSupportedMethods();
+        const latestBlock = await sendRequestToRelay(body);
+        currentBlockHash = latestBlock.result.hash;
         const relaySupportedMethodNames = openRpcData.methods.map(method => method.name);
         const ethSupportedMethods = await getEthereumExecApis(relaySupportedMethodNames);
         const folders = ethSupportedMethods.map(each => each.path);
-        //getBalance - not working with blockHash only with Number and Tag
         //sendRawTransaction - make it work with heder hash of transaction
-        //blockByHash missing withdrawal and withdrawalRoot
-        //blockByNumber missing withdrawal and withdrawalRoot
-        const excludedValues = ['tests/eth_getBalance','tests/eth_sendRawTransaction'];
+        const excludedValues = ['tests/eth_getTransactionByBlockHashAndIndex', 'tests/eth_getBalance', 'tests/eth_getTransactionByBlockNumberAndIndex',
+                                'tests/eth_getTransactionByHash', 'tests/eth_getTransactionReceipt', 'tests/eth_sendRawTransaction'];
         const filteredFolders = folders.filter(folderName => !excludedValues.includes(folderName));
+        console.log(filteredFolders);
+        let fileContents = [];
         for (const folder of filteredFolders) {
-            console.log("Executing test for", folder.slice(6));
-            await getFolderContent(folder);
+            fileContents.push(await getFolderContent(folder));
         }
+        const reqAndExpectedRes = splitReqAndRes(fileContents);
+
+        for (const item of reqAndExpectedRes) {
+            console.log("Executing test for", JSON.parse(item.request).method);
+            const modifiedRequest = checkRequestBody(JSON.parse(item.request));
+            const response = await sendRequestToRelay(modifiedRequest);
+            checkResponseFormat(response, JSON.parse(item.response));
+        }   
     }
     catch (error) {
        console.error(error);
     }
 }
 
-fetchData();
+main();
