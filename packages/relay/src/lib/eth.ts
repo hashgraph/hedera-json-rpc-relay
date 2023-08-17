@@ -554,6 +554,11 @@ export class EthImpl implements Eth {
     if (transaction.gasPrice) {
       transaction.gasPrice = parseInt(transaction.gasPrice);
     }
+
+    // Support either data or input. https://ethereum.github.io/execution-apis/api-documentation/ lists input but many EVM tools still use data.
+    if ((transaction.input) && (transaction.data === undefined)) {
+      transaction.data = transaction.input;
+    }
   }
 
   /**
@@ -1235,6 +1240,8 @@ export class EthImpl implements Eth {
     // Get a reasonable value for "gas" if it is not specified.
     const gas = this.getCappedBlockGasLimit(call.gas, requestIdPrefix);
     const value: string | null = toNullableBigNumber(call.value);
+
+    this.contractCallFormat(call);
 
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node

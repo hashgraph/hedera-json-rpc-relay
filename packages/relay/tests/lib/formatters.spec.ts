@@ -346,5 +346,25 @@ describe('Formatters', () => {
             const value = null;
             expect(weibarHexToTinyBarInt(value)).to.be.null;
         });
+
+        it('should handle 0x value', () => {
+            const value = "0x";
+            expect(weibarHexToTinyBarInt(value)).to.eq(null);
+        });
+
+        it('should handle 0x value', () => {
+            const value = "0x";
+            expect(weibarHexToTinyBarInt(value)).to.eq(null);
+        });
+
+        it('should 0x0', () => {
+            const value = "0x0";
+            expect(weibarHexToTinyBarInt(value)).to.eq(0);
+        });
+
+        it('should convert max int64 value in hex to tinybar number', () => {
+            const value = "0x7FFFFFFFFFFFFFFF";
+            expect(weibarHexToTinyBarInt(value)).to.eq(922337203);
+        });              
     });
 });
