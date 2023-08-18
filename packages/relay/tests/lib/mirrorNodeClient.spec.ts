@@ -371,6 +371,33 @@ describe('MirrorNodeClient', async function () {
     expect(result).to.be.null;
   });
 
+  it('getAccount (500) Unexpected error', async () => {
+    const evmAddress = '0x00000000000000000000000000000000000004f7';
+    mock.onGet(`accounts/${evmAddress}${noTransactions}`).reply(500, { error: 'unexpected error' });
+    let errorRaised = false;
+    try {
+      await mirrorNodeInstance.getAccount(evmAddress);
+    }
+    catch (error: any) {
+      errorRaised = true;
+      expect(error.message).to.equal(`Request failed with status code 500`);
+    }
+    expect(errorRaised).to.be.true;
+  });
+
+  it(`getAccount (400) validation error`, async () => {
+    const invalidAddress = "0x123";
+    mock.onGet(`accounts/${invalidAddress}${noTransactions}`).reply(400);
+    let errorRaised = false;
+    try {
+      await mirrorNodeInstance.getAccount(invalidAddress);
+    } catch (error: any) {
+      errorRaised = true;
+      expect(error.message).to.equal(`Request failed with status code 400`);
+    }
+    expect(errorRaised).to.be.true;
+  });
+
   it('`getTokenById`', async () => {
     mock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
 
@@ -1139,6 +1166,35 @@ describe('MirrorNodeClient', async function () {
       expect(transactions).to.exist;
       expect(transactions.transactions.length).to.equal(2);
     });
+
+    it('should throw Error with unexpected exception if mirror node returns unexpected error', async() => {
+      const address = '0x00000000000000000000000000000000000007b8';
+      mock.onGet(transactionPath(address, 1)).reply(500, { error: 'unexpected error' });
+      let errorRaised = false;
+      try {
+        await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(address, timestamp);
+      }
+      catch (error: any) {
+        errorRaised = true;
+        expect(error.message).to.equal(`Request failed with status code 500`);
+      }
+      expect(errorRaised).to.be.true;
+    });
+
+    it('should throw invalid address error if mirror node returns 400 error status', async() => {
+      const invalidAddress = '0x123';
+      mock.onGet(transactionPath(invalidAddress, 1)).reply(400, mockData.invalidParameter);
+      let errorRaised = false;
+      try {
+        await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(invalidAddress, timestamp);
+      } catch (error: any) {
+        errorRaised = true;
+        expect(error.message).to.equal(`Request failed with status code 400`);
+      }
+      expect(errorRaised).to.be.true;
+    });
+
+
   });
 
   describe('isValidContract', async() => {
