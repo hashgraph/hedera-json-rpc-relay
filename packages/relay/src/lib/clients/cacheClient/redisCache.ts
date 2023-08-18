@@ -21,6 +21,8 @@
 import { Logger } from 'pino';
 import { ICacheClient } from './ICacheClient';
 import { Registry } from 'prom-client';
+import { createClient, RedisClientType } from 'redis';
+import { RedisCacheError } from '../../errors/RedisCacheError';
 
 export class RedisCache implements ICacheClient {
   /**
@@ -35,9 +37,38 @@ export class RedisCache implements ICacheClient {
    */
   private readonly register: Registry;
 
+  private readonly client: RedisClientType;
+
   public constructor(logger: Logger, register: Registry) {
     this.logger = logger;
     this.register = register;
+
+    const redisUrl = process.env.REDIS_URL!;
+    const reconnectDelay = parseInt(process.env.REDIS_RECONNECT_DELAY || '1000');
+
+    this.client = createClient({
+      url: redisUrl,
+      socket: {
+        reconnectStrategy: (retries: number) => {
+          const delay = retries * reconnectDelay;
+          logger.warn(`Trying to reconnect with Redis, ${retries} left. Delay is ${delay} ms...`);
+          return delay;
+      }}
+    });
+    this.client.connect();
+
+    this.client.on("ready", function() {  
+      logger.info("Connected to Redis server successfully!");  
+    });
+
+    this.client.on("error", function(error) {
+      const redisError = new RedisCacheError(error);
+      if (redisError.isSocketClosed()) {
+        logger.error(`Error occured with Redis Connection. Error is: ${redisError.message}`);  
+      } else {
+        logger.error(`${redisError.fullError}`);
+      }
+   });
   }
 
   get(key: string, callingMethod: string, requestIdPrefix?: string | undefined) {
