@@ -3,7 +3,8 @@ import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 
 export function validateParam(index: number | string, param: any, validation: any) {
   const isArray = Array.isArray(validation.type);
-  const paramType = isArray ? Validator.TYPES[validation.type[0]] :Validator. TYPES[validation.type];
+  const containsOr = validation.type?.includes('|');
+  const paramType = getParamType(isArray, containsOr, validation.type);
 
   if (paramType === undefined) {
     throw predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
@@ -13,12 +14,37 @@ export function validateParam(index: number | string, param: any, validation: an
     throw predefined.MISSING_REQUIRED_PARAMETER(index);
   }
 
-  if (param != null) {
-    const result = isArray? paramType.test(index, param, validation.type[1]) : paramType.test(param);
+  if (param != null && Array.isArray(paramType)) {
+    const results: any[] = [];
+    for(const type of paramType) {
+      const validator = Validator.TYPES[type];
+      const result = validator.test(param);
+        results.push(result);
+    }
+    if(results.every((item) => item === false)) {
+      throw predefined.INVALID_PARAMETER(index, `The value passed is not a valid blockHash/blockNumber/blockTag value: ${param}`);
+    }
+  }
+
+  if (param != null && !Array.isArray(paramType)) {
+    const result = isArray ? paramType.test(index, param, validation.type[1]) : paramType.test(param);
     if(result === false) {
       throw predefined.INVALID_PARAMETER(index, `${paramType.error}, value: ${param}`);
     }
   }
+}
+
+function getParamType(isArray: boolean, containsOr: boolean, validationType: string) {
+  let paramType;
+  if(isArray && !containsOr) {
+    paramType = Validator.TYPES[validationType[0]];
+  } else if (!isArray && containsOr) {
+    paramType = validationType.split('|');
+  } else {
+    paramType = Validator.TYPES[validationType];
+  }
+
+  return paramType;
 }
 
 export function validateObject(object: any, filters: any) {

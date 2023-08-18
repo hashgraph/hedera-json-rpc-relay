@@ -14,7 +14,7 @@ export const METHODS = {
       required: true
     },
     1: {
-      type: 'blockNumber',
+      type: 'blockNumber|blockHash',
       required: true
     }
   },

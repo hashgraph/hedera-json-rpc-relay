@@ -52,7 +52,7 @@ const createHash = require('keccak');
 const asm = require('@ethersproject/asm');
 
 interface LatestBlockNumberTimestamp {
-  blockNumber: string;
+  blockNumber: string | null;
   timeStampTo: string;
 }
 
@@ -458,7 +458,7 @@ export class EthImpl implements Eth {
     if (Array.isArray(blocks) && blocks.length > 0) {
       const currentBlock = numberTo0x(blocks[0].number);
       const timestamp = blocks[0].timestamp.to;
-      const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp };
+      const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp};
       // save the latest block number in cache
       this.cache.set(cacheKey, currentBlock, caller, this.ethBlockNumberCacheTtlMs, requestIdPrefix);
 
@@ -739,40 +739,49 @@ export class EthImpl implements Eth {
    * @param account
    * @param blockNumberOrTag
    */
-  async getBalance(account: string, blockNumberOrTag: string | null, requestIdPrefix?: string) {
+  async getBalance(account: string, blockNumberOrTagOrHash: string | null, requestIdPrefix?: string) {
     const latestBlockTolerance = 1;
-    this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTag})`);
+    this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTagOrHash})`);
 
     let latestBlock: LatestBlockNumberTimestamp | null | undefined;
     // this check is required, because some tools like Metamask pass for parameter latest block, with a number (ex 0x30ea)
     // tolerance is needed, because there is a small delay between requesting latest block from blockNumber and passing it here
-    if (!this.common.blockTagIsLatestOrPending(blockNumberOrTag)) {
+    if (!this.common.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
       const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
       const blockNumberCached = this.cache.get(cacheKey, EthImpl.ethGetBalance);
 
       if(blockNumberCached) {
         this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
         latestBlock = { blockNumber: blockNumberCached, timeStampTo: '0' };
-
       } else {
         latestBlock = await this.blockNumberTimestamp(EthImpl.ethGetBalance, requestIdPrefix);
       }
-      const blockDiff = Number(latestBlock.blockNumber) - Number(blockNumberOrTag);
 
+      let blockHashNumber;
+      let isHash;
+
+      if (blockNumberOrTagOrHash != null && blockNumberOrTagOrHash.length > 32) {
+        isHash = true;
+        blockHashNumber = await this.mirrorNodeClient.getBlock(blockNumberOrTagOrHash);
+      }
+
+      const currentBlockNumber = isHash ? Number(blockHashNumber.number) : Number(blockNumberOrTagOrHash);
+
+      const blockDiff = Number(latestBlock.blockNumber) - currentBlockNumber;
       if (blockDiff <= latestBlockTolerance) {
-        blockNumberOrTag = EthImpl.blockLatest;
+        blockNumberOrTagOrHash = EthImpl.blockLatest;
       }
 
       // If ever we get the latest block from cache, and blockNumberOrTag is not latest, then we need to get the block timestamp
       // This should rarely happen.
-      if((blockNumberOrTag !== EthImpl.blockLatest) && (latestBlock.timeStampTo === "0")) {
+      if((blockNumberOrTagOrHash !== EthImpl.blockLatest) && (latestBlock.timeStampTo === "0")) {
         latestBlock = await this.blockNumberTimestamp(EthImpl.ethGetBalance, requestIdPrefix);
       }
     }
 
     // check cache first
     // create a key for the cache
-    const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTag}`;
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTagOrHash}`;
     let cachedBalance = this.cache.get(cacheKey, EthImpl.ethGetBalance);
     if (cachedBalance) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
@@ -785,8 +794,8 @@ export class EthImpl implements Eth {
     let mirrorAccount;
 
     try {
-      if (!this.common.blockTagIsLatestOrPending(blockNumberOrTag)) {
-        const block = await this.common.getHistoricalBlockResponse(blockNumberOrTag, true, requestIdPrefix);
+      if (!this.common.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
+        const block = await this.common.getHistoricalBlockResponse(blockNumberOrTagOrHash, true, requestIdPrefix);
         if (block) {
           blockNumber = block.number;
 
@@ -860,7 +869,7 @@ export class EthImpl implements Eth {
         this.logger.debug(
             `${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(
                 blockNumber
-            )}(${blockNumberOrTag}), returning 0x0 balance`
+            )}(${blockNumberOrTagOrHash}), returning 0x0 balance`
         );
         return EthImpl.zeroHex;
       }
@@ -1183,7 +1192,7 @@ export class EthImpl implements Eth {
       const contractExecuteResponse = await this.hapiService.getSDKClient().submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix);
       txSubmitted = true;
       // Wait for the record from the execution.
-      let txId = contractExecuteResponse.transactionId.toString();
+      const txId = contractExecuteResponse.transactionId.toString();
       const formattedId = formatTransactionIdWithoutQueryParams(txId);
 
       // handle formattedId being null

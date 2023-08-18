@@ -470,7 +470,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   this.beforeEach( () => {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
-  })
+  });
 
   it('"eth_blockNumber" should return the latest block number', async function () {
     restMock.onGet('blocks?limit=1&order=desc').reply(200, {
@@ -587,7 +587,7 @@ describe('Eth calls using MirrorNode', async function () {
       restMock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
       restMock.onGet('blocks?limit=1&order=desc').reply(200, mostRecentBlock);
       restMock.onGet(`contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`).reply(200, defaultEthGetBlockByLogs);
-    })
+    });
 
     it('eth_getBlockByNumber with match', async function () {
 
@@ -1420,6 +1420,31 @@ describe('Eth calls using MirrorNode', async function () {
       expect(resBalance).to.equal(defHexBalance);
     });
 
+    it('should return balance from mirror node with block hash passed as param the same as latest', async () => {
+      const blockHash = "0x43da6a71f66d6d46d2b487c8231c04f01b3ba3bd91d165266d8eb39de3c0152b";
+      restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000,
+          'timestamp': {
+            'from': `${blockTimestamp}.060890919`,
+            'to': '1651560389.060890949'
+          }
+        }]
+      });
+      restMock.onGet(`blocks/${blockHash}`).reply(200, {
+          number: 10000
+      });
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance
+        }
+      });
+
+      const resBalance = await ethImpl.getBalance(contractAddress1, blockHash, getRequestId());
+      expect(resBalance).to.equal(defHexBalance);
+    });
+
     it('should return balance from mirror node with block number passed as param, one behind latest', async () => {
       const blockNumber = "0x270F";
       restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
@@ -1439,6 +1464,37 @@ describe('Eth calls using MirrorNode', async function () {
       });
 
       const resBalance = await ethImpl.getBalance(contractAddress1, blockNumber, getRequestId());
+      expect(resBalance).to.equal(defHexBalance);
+    });
+
+    it('should return balance from mirror node with block hash passed as param, one behind latest', async () => {
+      const blockHash = "0x43da6a71f66d6d46d2b487c8231c04f01b3ba3bd91d165266d8eb39de3c0152b";
+      restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [{
+          number: 10000,
+          'timestamp': {
+            'from': `${blockTimestamp}.060890919`,
+            'to': '1651560389.060890949'
+          }
+        }]
+      });
+      restMock.onGet(`blocks/${blockHash}`).reply(200, {
+          number: 9998,
+          'timestamp': {
+            'from': '1651550386'
+          }
+      });
+
+      restMock.onGet(`balances?account.id=${contractAddress1}&timestamp=1651550386`).reply(200, {
+        account: contractAddress1,
+        balances: [
+          {
+            balance: defBalance
+          }
+        ]
+        });
+
+      const resBalance = await ethImpl.getBalance(contractAddress1, blockHash, getRequestId());
       expect(resBalance).to.equal(defHexBalance);
     });
 
