@@ -3,7 +3,7 @@ const axios = require('axios');
 const openRpcData = require('../docs/openrpc.json');
 require('ts-node/register');
 const helper = require('../packages/relay/tests/helpers.ts');
-
+let lastNonce = 24;
 // Create an instance of Octokit and authenticate (you can use a personal access token or OAuth token)
 const octokit = new Octokit({
     auth: process.env.GITHUB_PERSONAL_TOKEN
@@ -31,6 +31,7 @@ let transaction = {
     value,
     gasPrice,
     gasLimit: gasLimit,
+    type: 0
 };
 
 async function getEthereumExecApis(relaySupportedMethods) {
@@ -60,17 +61,21 @@ async function getFolderContent(path) {
         const fileContent = await getFileContent(response.data[0].path);
         fileContents.push(fileContent);
     }
+    console.log(fileContents);
     return fileContents;
 }
 
 function splitReqAndRes(contents) {
     const newContents = [];
-    contents.forEach((inputString) => {
-        const lines = inputString[0].split('\n');
-        const filteredLines = lines.filter(line => line != '').map(line => line.slice(3));
-    
-        return newContents.push({request: filteredLines[0], response: filteredLines[1]});
+    contents.forEach((content) => {
+        content.forEach((inputString) => {
+            const lines = inputString.split('\n');
+            const filteredLines = lines.filter(line => line != '').map(line => line.slice(3));
+        
+            return newContents.push({request: filteredLines[0], response: filteredLines[1]});
+        });
     });
+    console.log(newContents);
     return newContents;
 }
 
@@ -130,9 +135,13 @@ async function checkRequestBody(request) {
         request.params[0] = transactionAndBlockHash.transactionHash;
     }
     if (request.method === 'eth_sendRawTransaction') {
-        transaction.nonce = 1;
+        transaction.nonce = 26;
         const transactionHash = await helper.signTransaction(transaction, "0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd");
         request.params[0] = transactionHash;
+    }
+    if (request.method === 'eth_getBalance') {
+        request.params[0] = '0x5C41A21F14cFe9808cBEc1d91b55Ba75ed327Eb6';
+        request.params[1] = currentBlockHash;
     }
     return request;
 }
@@ -166,20 +175,20 @@ function extractKeys(obj, prefix = '') {
 async function main() {
     try {
         const latestBlock = await sendRequestToRelay(body);
-        transactionAndBlockHash = await signAndSendRawTransaction();
+        transactionAndBlockHash = await signAndSendRawTransaction()
+        lastNonce = lastNonce + 1;
         currentBlockHash = latestBlock.result.hash;
         const relaySupportedMethodNames = openRpcData.methods.map(method => method.name);
         const ethSupportedMethods = await getEthereumExecApis(relaySupportedMethodNames);
         const folders = ethSupportedMethods.map(each => each.path);
-        //temporary excluding these methods
-        //transaction by hash missing accessList and yParity
-        //get transaction receipt missing type
-        const excludedValues = ['tests/eth_getBalance', 'tests/eth_getTransactionByHash', 'tests/eth_getTransactionReceipt'];
+        //temporary excluded those until 1696 PR is merger
+        const excludedValues = ['tests/eth_getTransactionByHash','tests/eth_getTransactionReceipt'];
         const filteredFolders = folders.filter(folderName => !excludedValues.includes(folderName));
         let fileContents = [];
         for (const folder of filteredFolders) {
             fileContents.push(await getFolderContent(folder));
         }
+
         const reqAndExpectedRes = splitReqAndRes(fileContents);
 
         for (const item of reqAndExpectedRes) {
@@ -187,7 +196,7 @@ async function main() {
             const modifiedRequest = await checkRequestBody(JSON.parse(item.request));
             const response = await sendRequestToRelay(modifiedRequest);
             checkResponseFormat(response, JSON.parse(item.response));
-        }   
+        }
     }
     catch (error) {
        console.error(error);
