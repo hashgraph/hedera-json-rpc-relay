@@ -1058,13 +1058,11 @@
                     "withdrawals": {
                         "title": "Withdrawals",
                         "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/hash32"
-                        }
+                        "default": []
                     },
                     "withdrawalsRoot": {
                         "title": "Withdrawals root",
-                        "$ref": "#/components/schemas/hash32"
+                        "default": "0x0"
                     }
                 }
             },
