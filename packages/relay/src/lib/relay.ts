@@ -111,10 +111,14 @@ export class RelayImpl implements Relay {
             // Invoked when the registry collects its metrics' values.
             // Allows for updated account balance tracking
             try {
-                const account = await mirrorNodeClient.getAccount(clientMain.operatorAccountId!.toString());
-                const accountBalance = account.balance?.balance;
-                this.labels({ 'accountId': clientMain.operatorAccountId?.toString() })
-                    .set(accountBalance);
+                const account = await mirrorNodeClient.getAccountOrNull(clientMain.operatorAccountId!.toString());
+                if(account) {
+                    const accountBalance = account.balance?.balance;
+                    this.labels({'accountId': clientMain.operatorAccountId?.toString()})
+                        .set(accountBalance);
+                } else {
+                    logger.warn(`Account for given operator: ${clientMain.operatorAccountId?.toString()} not found on mirror node`);
+                }
             } catch (e: any) {
                 logger.error(e, `Error collecting operator balance. Skipping balance set`);
             }

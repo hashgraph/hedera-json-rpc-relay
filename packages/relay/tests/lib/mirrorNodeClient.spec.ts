@@ -249,7 +249,7 @@ describe('MirrorNodeClient', async function () {
       }
     });
 
-    const result = await mirrorNodeInstance.getAccount(alias);
+    const result = await mirrorNodeInstance.getAccountOrNull(alias);
     expect(result).to.exist;
     expect(result.links).to.exist;
     expect(result.links.next).to.equal(null);
@@ -358,17 +358,44 @@ describe('MirrorNodeClient', async function () {
   it('`getAccount`', async () => {
     mock.onGet(`accounts/${mockData.accountEvmAddress}${noTransactions}`).reply(200, mockData.account);
 
-    const result = await mirrorNodeInstance.getAccount(mockData.accountEvmAddress);
+    const result = await mirrorNodeInstance.getAccountOrNull(mockData.accountEvmAddress);
     expect(result).to.exist;
     expect(result.account).equal('0.0.1014');
   });
 
-  it('`getAccount` not found', async () => {
+  it('`getAccountOrNull` not found', async () => {
     const evmAddress = '0x00000000000000000000000000000000000003f6';
     mock.onGet(`accounts/${evmAddress}${noTransactions}`).reply(404, mockData.notFound);
 
-    const result = await mirrorNodeInstance.getAccount(evmAddress);
+    const result = await mirrorNodeInstance.getAccountOrNull(evmAddress);
     expect(result).to.be.null;
+  });
+
+  it('getAccountOrNull 500 Unexpected error', async () => {
+    const evmAddress = '0x00000000000000000000000000000000000004f7';
+    mock.onGet(`accounts/${evmAddress}${noTransactions}`).reply(500, { error: 'unexpected error' });
+    let errorRaised = false;
+    try {
+      await mirrorNodeInstance.getAccountOrNull(evmAddress);
+    }
+    catch (error: any) {
+      errorRaised = true;
+      expect(error.message).to.equal(`Request failed with status code 500`);
+    }
+    expect(errorRaised).to.be.true;
+  });
+
+  it(`getAccountOrNull validation error`, async () => {
+    const invalidAddress = "0x123";
+    mock.onGet(`accounts/${invalidAddress}${noTransactions}`).reply(400);
+    let errorRaised = false;
+    try {
+      await mirrorNodeInstance.getAccountOrNull(invalidAddress);
+    } catch (error: any) {
+      errorRaised = true;
+      expect(error.message).to.equal(`Invalid parameter ${invalidAddress}: Invalid 'address' field in transaction param. Address must be a valid 20 bytes hex string`);
+    }
+    expect(errorRaised).to.be.true;
   });
 
   it('`getTokenById`', async () => {
@@ -1026,7 +1053,7 @@ describe('MirrorNodeClient', async function () {
     it('if the method returns an immediate result it is called only once', async () => {
       mock.onGet(uri).reply(200, mockData.account);
 
-      const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
+      const result = await mirrorNodeInstance.repeatedRequest('getAccountOrNull', [mockData.accountEvmAddress], 3);
       expect(result).to.exist;
       expect(result.account).equal('0.0.1014');
 
@@ -1038,7 +1065,7 @@ describe('MirrorNodeClient', async function () {
       mock.onGet(uri).replyOnce(404, mockData.notFound)
           .onGet(uri).reply(200, mockData.account)
 
-      const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
+      const result = await mirrorNodeInstance.repeatedRequest('getAccountOrNull', [mockData.accountEvmAddress], 3);
       expect(result).to.exist;
       expect(result.account).equal('0.0.1014');
 
@@ -1046,7 +1073,7 @@ describe('MirrorNodeClient', async function () {
     });
 
     it('method is repeated the specified number of times if no result is found', async () => {
-      const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
+      const result = await mirrorNodeInstance.repeatedRequest('getAccountOrNull', [mockData.accountEvmAddress], 3);
       expect(result).to.be.null;
       expect(mock.history.get.length).to.eq(3); // is called three times
     });
@@ -1058,7 +1085,7 @@ describe('MirrorNodeClient', async function () {
           .onGet(uri).replyOnce(404, mockData.notFound)
           .onGet(uri).reply(200, mockData.account)
 
-      const result = await mirrorNodeInstance.repeatedRequest('getAccount', [mockData.accountEvmAddress], 3);
+      const result = await mirrorNodeInstance.repeatedRequest('getAccountOrNull', [mockData.accountEvmAddress], 3);
       expect(result).to.be.null;
       expect(mock.history.get.length).to.eq(3); // is called three times
     });
@@ -1113,29 +1140,57 @@ describe('MirrorNodeClient', async function () {
       ]
     };
 
-    it('should fail to fetch transaction by non existing account', async() => {
+    it('should fail to fetch transaction by non existing account and return null', async() => {
       mock.onGet(transactionPath(evmAddress, 1)).reply(404, mockData.notFound);
-      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(evmAddress, timestamp);
+      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestampOrNull(evmAddress, timestamp);
       expect(transactions).to.be.null;
     });
 
+    it('should throw Error with unexpected exception if mirror node returns unexpected error', async() => {
+      const address = '0x00000000000000000000000000000000000007b8';
+      mock.onGet(transactionPath(address, 1)).reply(500, { error: 'unexpected error' });
+      let errorRaised = false;
+      try {
+        await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestampOrNull(address, timestamp);
+      }
+      catch (error: any) {
+        errorRaised = true;
+        expect(error.message).to.equal(`Request failed with status code 500`);
+      }
+      expect(errorRaised).to.be.true;
+    });
+
+    it('should throw invalid address error if mirror node returns 400 error status', async() => {
+      const invalidAddress = '0x123';
+      mock.onGet(transactionPath(invalidAddress, 1)).reply(400, mockData.invalidParameter);
+      let errorRaised = false;
+      try {
+        await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestampOrNull(invalidAddress, timestamp);
+      } catch (error: any) {
+        errorRaised = true;
+        expect(error.message).to.equal(`Invalid parameter ${invalidAddress}: Invalid 'address' field in transaction param. Address must be a valid 20 bytes hex string`);
+      }
+      expect(errorRaised).to.be.true;
+    });
+
+
     it('should be able to fetch empty ethereum transactions for an account', async() => {
       mock.onGet(transactionPath(evmAddress, 1)).reply(200, { transactions: [] });
-      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(evmAddress, timestamp);
+      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestampOrNull(evmAddress, timestamp);
       expect(transactions).to.exist;
       expect(transactions.transactions.length).to.equal(0);
     });
 
     it('should be able to fetch single ethereum transactions for an account', async() => {
       mock.onGet(transactionPath(evmAddress, 1)).reply(200, { transactions: [defaultTransaction.transactions[0]] });
-      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(evmAddress, timestamp);
+      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestampOrNull(evmAddress, timestamp);
       expect(transactions).to.exist;
       expect(transactions.transactions.length).to.equal(1);
     });
 
     it('should be able to fetch ethereum transactions for an account', async() => {
       mock.onGet(transactionPath(evmAddress, 2)).reply(200, defaultTransaction);
-      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(evmAddress, timestamp, 2);
+      const transactions = await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestampOrNull(evmAddress, timestamp, 2);
       expect(transactions).to.exist;
       expect(transactions.transactions.length).to.equal(2);
     });

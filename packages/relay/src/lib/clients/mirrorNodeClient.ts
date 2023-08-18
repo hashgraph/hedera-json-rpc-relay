@@ -91,7 +91,7 @@ export class MirrorNodeClient {
     private readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
 
     static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
-        [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, []],
         [MirrorNodeClient.GET_BALANCE_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_BLOCK_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_BLOCKS_ENDPOINT, [400, 404]],
@@ -388,30 +388,66 @@ export class MirrorNodeClient {
         }
     }
 
+    private handleAccountNotFound(error: any, idOrAliasOrEvmAddress, requestIdPrefix) : null {
+        if(error instanceof MirrorNodeClientError) {
+            if (error.statusCode == 404) {
+                return null;
+
+            } else if (error.statusCode == 400) {
+                this.logger.debug(`${formatRequestIdMessage(requestIdPrefix)} Got Invalid Parameter when trying to fetch account from mirror node: ${JSON.stringify(error)}`);
+                throw predefined.INVALID_PARAMETER(idOrAliasOrEvmAddress, `Invalid 'address' field in transaction param. Address must be a valid 20 bytes hex string`);
+            }
+        }
+        // if is not a mirror node client error 400 or 404, rethrow
+        this.logger.error(`${formatRequestIdMessage(requestIdPrefix)} Unexpected error raised while fetching account from mirror-node: ${JSON.stringify(error)}`);
+        throw error;
+    }
+
     public async getAccount(idOrAliasOrEvmAddress: string, requestIdPrefix?: string) {
         return this.get(`${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?transactions=false`,
             MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
             requestIdPrefix);
     }
 
-    public async getAccountLatestEthereumTransactionsByTimestamp(idOrAliasOrEvmAddress: string, timestampTo: string, numberOfTransactions: number = 1, requestIdPrefix?: string) {
+    /**
+     * Returns account or null if account does not exist
+     * @param {string} idOrAliasOrEvmAddress commonly an evm address
+     * @param {string} requestIdPrefix optional request id prefix
+     */
+    public async getAccountOrNull(idOrAliasOrEvmAddress: string, requestIdPrefix?: string) {
+        try {
+            return await this.getAccount(idOrAliasOrEvmAddress, requestIdPrefix);
+        } catch (error: any) {
+            return this.handleAccountNotFound(error, idOrAliasOrEvmAddress, requestIdPrefix);
+        }
+    }
+
+    public async getAccountLatestEthereumTransactionsByTimestampOrNull(idOrAliasOrEvmAddress: string, timestampTo: string, numberOfTransactions: number = 1, requestIdPrefix?: string) {
         const queryParamObject = {};
         this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_TRANSACTION_TYPE_PROPERTY, MirrorNodeClient.ETHEREUM_TRANSACTION_TYPE);
         this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_TIMESTAMP_PROPERTY, `lte:${timestampTo}`);
         this.setLimitOrderParams(queryParamObject, this.getLimitOrderQueryParam(numberOfTransactions, constants.ORDER.DESC)); // get latest 2 transactions to infer for single case
         const queryParams = this.getQueryParams(queryParamObject);
 
-        return this.get(
-            `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}${queryParams}`,
-            MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
-            requestIdPrefix
-        );
+        try {
+            return await this.get(
+                `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}${queryParams}`,
+                MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
+                requestIdPrefix
+            );
+        } catch (error: any) {
+            return this.handleAccountNotFound(error, idOrAliasOrEvmAddress, requestIdPrefix);
+        }
     }
 
-    public async getAccountPageLimit(idOrAliasOrEvmAddress: string, requestIdPrefix?: string) {
-        return this.get(`${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?limit=${constants.MIRROR_NODE_QUERY_LIMIT}`,
-            MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
-            requestIdPrefix);
+    public async getAccountPageLimitOrNull(idOrAliasOrEvmAddress: string, requestIdPrefix?: string) {
+        try {
+            return await this.get(`${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?limit=${constants.MIRROR_NODE_QUERY_LIMIT}`,
+                MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
+                requestIdPrefix);
+        } catch (error: any) {
+            return this.handleAccountNotFound(error, idOrAliasOrEvmAddress, requestIdPrefix);
+        }
     }
     /*******************************************************************************
      * To be used to make paginated calls for the account information when the 
@@ -924,7 +960,7 @@ export class MirrorNodeClient {
         let data;
         try {
             const promises = [
-                searchableTypes.find(t => t === constants.TYPE_ACCOUNT) ? buildPromise(this.getAccount(entityIdentifier, requestIdPrefix).catch(() =>  {return null;})) : Promise.reject(),
+                searchableTypes.find(t => t === constants.TYPE_ACCOUNT) ? buildPromise(this.getAccountOrNull(entityIdentifier, requestIdPrefix).catch(() =>  {return null;})) : Promise.reject(),
             ];
 
             // only add long zero evm addresses for tokens as they do not refer to actual contract addresses but rather encoded entity nums            

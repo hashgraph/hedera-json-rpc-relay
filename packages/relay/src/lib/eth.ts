@@ -513,7 +513,7 @@ export class EthImpl implements Eth {
           const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${transaction.to}`;
           let toAccount: object | null = this.cache.get(accountCacheKey, EthImpl.ethEstimateGas);
           if (!toAccount) {
-            toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestIdPrefix);
+            toAccount = await this.mirrorNodeClient.getAccountOrNull(transaction.to, requestIdPrefix);
           }
 
           // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
@@ -807,7 +807,7 @@ export class EthImpl implements Eth {
             else {
               let currentBalance = 0;
               let balanceFromTxs = 0;
-              mirrorAccount = await this.mirrorNodeClient.getAccountPageLimit(account, requestIdPrefix);
+              mirrorAccount = await this.mirrorNodeClient.getAccountPageLimitOrNull(account, requestIdPrefix);
               if (mirrorAccount.balance) {
                 currentBalance = mirrorAccount.balance.balance;
               }
@@ -843,7 +843,7 @@ export class EthImpl implements Eth {
 
       if (!balanceFound && !mirrorAccount) {
         // If no balance and no account, then we need to make a request to the mirror node for the account.
-        mirrorAccount = await this.mirrorNodeClient.getAccountPageLimit(account, requestIdPrefix);
+        mirrorAccount = await this.mirrorNodeClient.getAccountPageLimitOrNull(account, requestIdPrefix);
         // Test if exists here
         if(mirrorAccount !== null && mirrorAccount !== undefined) {
           balanceFound = true;
@@ -1194,7 +1194,7 @@ export class EthImpl implements Eth {
         if (tx?.transactions?.length) {
           const result = tx.transactions[0].result;
           if (result === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
-            const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestIdPrefix);
+            const accountInfo = await this.mirrorNodeClient.getAccountOrNull(parsedTx.from!, requestIdPrefix);
             const accountNonce = accountInfo.ethereum_nonce;
             if (parsedTx.nonce > accountNonce) {
               throw predefined.NONCE_TOO_HIGH(parsedTx.nonce, accountNonce);
@@ -1439,7 +1439,7 @@ export class EthImpl implements Eth {
       const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${fromAddress}`;
       let accountResult: any | null = this.cache.get(accountCacheKey, EthImpl.ethGetTransactionByHash);
       if (!accountResult) {
-        accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestIdPrefix);
+        accountResult = await this.mirrorNodeClient.getAccountOrNull(fromAddress, requestIdPrefix);
         if (accountResult) {
           this.cache.set(accountCacheKey, accountResult, EthImpl.ethGetTransactionByHash, undefined, requestIdPrefix);
         }
@@ -1747,7 +1747,7 @@ export class EthImpl implements Eth {
   }
 
   private async getAccountLatestEthereumNonce(address: string, requestId?: string) {
-    const accountData = await this.mirrorNodeClient.getAccount(address, requestId);
+    const accountData = await this.mirrorNodeClient.getAccountOrNull(address, requestId);
     if (accountData) {
       // with HIP 729 ethereum_nonce should always be 0+ and null. Historical contracts may have a null value as the nonce was not tracked, return default EVM compliant 0x1 in this case
       return accountData.ethereum_nonce !== null ? numberTo0x(accountData.ethereum_nonce) : EthImpl.oneHex;
@@ -1773,7 +1773,7 @@ export class EthImpl implements Eth {
     }
 
     // get the latest 2 ethereum transactions for the account
-    const ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestamp(address, block.timestamp.to, 2, requestIdPrefix);
+    const ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestampOrNull(address, block.timestamp.to, 2, requestIdPrefix);
     if (ethereumTransactions == null || ethereumTransactions.transactions.length === 0) {
       return EthImpl.zeroHex;
     }

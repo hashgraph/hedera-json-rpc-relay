@@ -309,6 +309,19 @@ const mockData = {
                 }
             ]
         }
+    },
+
+    invalidParameter: {
+        "_status": {
+            "messages": [
+                {
+                    "message": "Invalid parameter: account.id"
+                },
+                {
+                    "message": "Invalid Transaction id. Please use \\shard.realm.num-sss-nnn\\ format where sss are seconds and nnn are nanoseconds"
+                }
+            ]
+        }
     }
 };
 

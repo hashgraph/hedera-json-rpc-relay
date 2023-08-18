@@ -67,7 +67,7 @@ export class Precheck {
   async verifyAccount(tx: Transaction, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     // verify account
-    const accountInfo = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
+    const accountInfo = await this.mirrorNodeClient.getAccountOrNull(tx.from!, requestId);
     if (accountInfo == null) {
       this.logger.trace(`${requestIdPrefix} Failed to retrieve address '${tx.from}' account details from mirror node on verify account precheck for sendRawTransaction(transaction=${JSON.stringify(tx)})`);
       throw predefined.RESOURCE_NOT_FOUND(`address '${tx.from}'.`);
