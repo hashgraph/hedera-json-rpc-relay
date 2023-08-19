@@ -813,7 +813,7 @@ export class EthImpl implements Eth {
                   requestIdPrefix
               );
               balanceFound = true;
-              if (balance.balances?.length) {
+              if (balance?.balances?.length) {
                 weibars = BigInt(balance.balances[0].balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
               }
             }
