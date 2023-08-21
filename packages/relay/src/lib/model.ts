@@ -45,6 +45,8 @@ export class Block {
     public readonly transactions:string[] | Transaction[] = [];
     public readonly transactionsRoot:string = '0x0';
     public readonly uncles:string[] = [];
+    public readonly withdrawals:string[] = [];
+    public readonly withdrawalsRoot: string = '0x0';
 
     constructor(args?:any) {
         if (args) {
@@ -69,6 +71,8 @@ export class Block {
             this.transactions = args.transactions;
             this.transactionsRoot = args.transactionsRoot;
             this.uncles = [];
+            this.withdrawals = [];
+            this.withdrawalsRoot = '0x0';
         }
     }
 

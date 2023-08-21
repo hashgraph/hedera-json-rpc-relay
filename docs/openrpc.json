@@ -953,7 +953,9 @@
                     "nonce",
                     "size",
                     "transactions",
-                    "uncles"
+                    "uncles",
+                    "withdrawals",
+                    "withdrawalsRoot"
                 ],
                 "properties": {
                     "parentHash": {
@@ -1052,6 +1054,15 @@
                         "items": {
                             "$ref": "#/components/schemas/hash32"
                         }
+                    },
+                    "withdrawals": {
+                        "title": "Withdrawals",
+                        "type": "array",
+                        "default": []
+                    },
+                    "withdrawalsRoot": {
+                        "title": "Withdrawals root",
+                        "default": "0x0"
                     }
                 }
             },
