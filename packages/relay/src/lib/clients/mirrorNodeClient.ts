@@ -91,7 +91,7 @@ export class MirrorNodeClient {
     private readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
 
     static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
-        [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [400, 404]],
+        [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [404]],
         [MirrorNodeClient.GET_BALANCE_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_BLOCK_ENDPOINT, [400, 404]],
         [MirrorNodeClient.GET_BLOCKS_ENDPOINT, [400, 404]],
