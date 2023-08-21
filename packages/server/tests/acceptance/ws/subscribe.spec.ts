@@ -133,7 +133,7 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(wsProvider.ready).to.eq(true);
         });
 
-        it('reveives ping messages', async function () {
+        it('receives ping messages', async function () {
             expect(wsProvider).to.exist;
             expect(wsProvider.ready).to.eq(true);
 
