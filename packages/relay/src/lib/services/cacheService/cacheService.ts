@@ -98,10 +98,10 @@ export class CacheService {
    * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
    * @returns {*} The cached value if found, otherwise null.
    */
-  public get(key: string, callingMethod: string, requestIdPrefix?: string, shared: boolean = false): any {
+  public async get(key: string, callingMethod: string, requestIdPrefix?: string, shared: boolean = false): Promise<any> {
     if (shared && this.isSharedCacheEnabled) {
       try {
-        return this.sharedCache.get(key, callingMethod, requestIdPrefix);
+        return await this.sharedCache.get(key, callingMethod, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(`Error occured while getting the cache from Redis. Fallback to internal cache. Error is: ${redisError.fullError}`);
@@ -123,17 +123,17 @@ export class CacheService {
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
    */
-  public set(
+  public async set(
     key: string,
     value: any,
     callingMethod: string,
     ttl?: number,
     requestIdPrefix?: string,
     shared: boolean = false
-  ): void {
+  ): Promise<void> {
     if (shared && this.isSharedCacheEnabled) {
       try {
-        return this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
+        return await this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(`Error occured while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`);

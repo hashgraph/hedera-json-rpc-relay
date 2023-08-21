@@ -899,7 +899,7 @@ export class MirrorNodeClient {
       requestIdPrefix?: string
     ) {
         const cachedLabel = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${entityIdentifier}`;
-        const cachedResponse: { type: string, entity: any } | undefined = this.cacheService.get(cachedLabel, callerName, requestIdPrefix);
+        const cachedResponse: { type: string, entity: any } | undefined = await this.cacheService.get(cachedLabel, callerName, requestIdPrefix);
         if (cachedResponse) {
             return cachedResponse;
         }
