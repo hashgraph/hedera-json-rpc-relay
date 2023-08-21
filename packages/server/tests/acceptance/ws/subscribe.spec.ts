@@ -142,7 +142,7 @@ describe('@web-socket Acceptance Tests', async function() {
                 pings++;
             });
 
-            await new Promise(resolve => setTimeout(resolve, 2100));
+            await new Promise(resolve => setTimeout(resolve, 2500));
 
             expect(pings).to.eq(3);
         });
@@ -274,10 +274,13 @@ describe('@web-socket Acceptance Tests', async function() {
 
                 let latestEventFromSubscription;
                 webSocket.on('message', function incoming(data) {
-                    if (subscriptionId == "") {
-                        subscriptionId = JSON.parse(data).result;
-                    } else {
-                        latestEventFromSubscription = JSON.parse(data);
+                    const parsed = JSON.parse(data);
+                    if (parsed.id !== null || parsed.method) {
+                        if (subscriptionId == "") {
+                            subscriptionId = parsed.result;
+                        } else {
+                            latestEventFromSubscription = parsed;
+                        }
                     }
                 });
 
