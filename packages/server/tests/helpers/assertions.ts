@@ -207,9 +207,9 @@ export default class Assertions {
             await method.apply(thisObj, args);
             Assertions.expectedError();
         } catch (e: any) {
-            expect(e.response).to.exist;
+            expect(e).to.have.any.keys('response', 'error');
 
-            const { error } = e.response.bodyJson;
+            const error = e?.response ? e.response.bodyJson : e.error;
             expect(error.code).to.equal(expectedError.code);
             expect(error.name).to.equal(expectedError.name);
             if (checkMessage) {

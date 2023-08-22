@@ -87,11 +87,11 @@ export default class RelayClient {
         } catch (e: any) {
             expect(e.response).to.exist;
 
-            const expectedError = predefined.UNSUPPORTED_METHOD;
+            const expectedUnsupportedError = predefined.UNSUPPORTED_METHOD;
             const { error } = e.response.bodyJson;
-            expect(error.code).to.equal(expectedError.code);
-            expect(error.name).to.equal(expectedError.name);
-            expect(error.message).to.include(expectedError.message);
+            expect(error.code).to.equal(expectedUnsupportedError.code);
+            expect(error.name).to.equal(expectedUnsupportedError.name);
+            expect(error.message).to.include(expectedUnsupportedError.message);
         }
     };
 
