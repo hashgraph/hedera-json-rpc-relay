@@ -1510,7 +1510,7 @@ export class EthImpl implements Eth {
         to: cachedLog.address,
         transactionHash: cachedLog.transactionHash,
         transactionIndex: cachedLog.transactionIndex,
-        type: EthImpl.twoHex, // 0x0 for legacy transactions, 0x1 for access list types, 0x2 for dynamic fees.
+        type: null, //null fro HAPI transactions
       };
 
       this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached synthetic receipt response: ${JSON.stringify(cachedResponse)}`);
