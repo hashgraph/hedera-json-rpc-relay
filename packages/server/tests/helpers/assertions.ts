@@ -199,7 +199,9 @@ export default class Assertions {
 
     static jsonRpcError(err: any, expectedError: JsonRpcError) {
         expect(err).to.exist;
-        expect(err.code).to.equal('SERVER_ERROR');
+        expect(err.code).to.equal(expectedError.code);
+        expect(err.name).to.equal(expectedError.name);
+        expect(err.message).to.include(expectedError.message);
     }
 
     static assertPredefinedRpcError = async (expectedError: JsonRpcError, method: () => Promise<any>, checkMessage: boolean, thisObj, args?: any[]): Promise<any> => {

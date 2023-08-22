@@ -65,12 +65,7 @@ export default class RelayClient {
             this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
             Assertions.expectedError();
         } catch (e: any) {
-            expect(e.response).to.exist;
-
-            const { error } = e.response.bodyJson;
-            expect(error.code).to.equal(expectedRpcError.code);
-            expect(error.name).to.equal(expectedRpcError.name);
-            expect(error.message).to.include(expectedRpcError.message);
+            Assertions.jsonRpcError(e?.response?.bodyJson?.error, expectedRpcError);
         }
     }
 
@@ -86,12 +81,7 @@ export default class RelayClient {
             Assertions.expectedError();
         } catch (e: any) {
             expect(e.response).to.exist;
-
-            const expectedUnsupportedError = predefined.UNSUPPORTED_METHOD;
-            const { error } = e.response.bodyJson;
-            expect(error.code).to.equal(expectedUnsupportedError.code);
-            expect(error.name).to.equal(expectedUnsupportedError.name);
-            expect(error.message).to.include(expectedUnsupportedError.message);
+            Assertions.unsupportedResponse(e.response.bodyJson);
         }
     };
 

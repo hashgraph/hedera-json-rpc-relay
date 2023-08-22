@@ -889,7 +889,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                                 expect(rejected).to.exist;
                                 expect(rejected).to.have.property('reason');
 
-                                Assertions.jsonRpcError(rejected.reason, predefined.NONCE_TOO_LOW(nonce + 1, nonce));
+                                Assertions.jsonRpcError(rejected?.reason?.response?.bodyJson?.error, predefined.NONCE_TOO_LOW(nonce, nonce + 1));
                             })
                     ]);
                 });
