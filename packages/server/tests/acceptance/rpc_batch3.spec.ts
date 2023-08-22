@@ -366,7 +366,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
                     it("009 should fail for missing 'to' field", async function () {
                         const callData = {
-                            from: `0x${accounts[0].address}`,
+                            from: accounts[0].address,
                             data: '0x0ec1551d'
                         };
 
@@ -426,6 +426,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
             await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], {
                 code: -32008,
+                name: 'Contract revert executed',
                 message: PURE_METHOD_ERROR_MESSAGE,
                 data: PURE_METHOD_ERROR_DATA
             }, requestId);
@@ -441,6 +442,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
             await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], {
                 code: -32008,
+                name: 'Contract revert executed',
                 message: VIEW_METHOD_ERROR_MESSAGE,
                 data: VIEW_METHOD_ERROR_DATA
             }, requestId);
@@ -544,6 +546,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         it(`Payable method ${payableMethodsData[i].method} throws an error`, async function () {
                             await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [hashes[i]], {
                                 code: -32008,
+                                name: 'Contract revert executed',
                                 message: payableMethodsData[i].message,
                                 data: payableMethodsData[i].errorData
                             }, requestId);
@@ -596,6 +599,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
                     await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], {
                         code: -32008,
+                        name: 'Contract revert executed',
                         message: element.message,
                         data: element.errorData
                     }, requestId);
