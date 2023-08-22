@@ -21,3 +21,4 @@ data:
   WS_MAX_CONNECTION_TTL: {{ .Values.config.WS_MAX_CONNECTION_TTL | quote }}
   WS_MULTIPLE_ADDRESSES_ENABLED: {{ .Values.config.WS_MULTIPLE_ADDRESSES_ENABLED | quote }}
   WS_SUBSCRIPTION_LIMIT: {{ .Values.config.WS_SUBSCRIPTION_LIMIT | quote }}
+  WS_PING_INTERVAL: {{ .Values.config.WS_PING_INTERVAL | quote }}
