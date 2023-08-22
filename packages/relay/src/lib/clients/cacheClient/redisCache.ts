@@ -112,11 +112,13 @@ export class RedisCache implements ICacheClient {
     //add metrics
   }
 
-  delete(key: string, callingMethod: string, requestIdPrefix?: string | undefined): void {
-    throw new Error('Method not implemented.');
+  async delete(key: string, callingMethod: string, requestIdPrefix?: string | undefined): Promise<void> {
+    await this.client.del(key);
+    this.logger.trace(`${requestIdPrefix} delete cache for ${key} on ${callingMethod} call`);
+    //add metrics
   }
 
-  clear(): void {
-    throw new Error('Method not implemented.');
+  async clear(): Promise<void> {
+    await this.client.flushAll();
   }
 }
