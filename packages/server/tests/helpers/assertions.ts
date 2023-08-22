@@ -209,7 +209,7 @@ export default class Assertions {
         } catch (e: any) {
             expect(e).to.have.any.keys('response', 'error');
 
-            const error = e?.response ? e.response.bodyJson : e.error;
+            const { error } = e?.response ? e.response.bodyJson : e;
             expect(error.code).to.equal(expectedError.code);
             expect(error.name).to.equal(expectedError.name);
             if (checkMessage) {
