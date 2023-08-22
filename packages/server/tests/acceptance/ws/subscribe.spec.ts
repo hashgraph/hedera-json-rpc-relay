@@ -31,7 +31,9 @@ import {predefined, WebSocketError} from '../../../../../packages/relay';
 import { ethers } from "ethers";
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import Assertions from "../../helpers/assertions";
-const LogContractJson = require('../../contracts/Logs.json');
+import LogContractJson from'../../contracts/Logs.json';
+import Constants from "../../helpers/constants";
+import IERC20Json from '../../contracts/openzeppelin/IERC20.json';
 
 const WS_RELAY_URL = `ws://localhost:${constants.WEB_SOCKET_PORT}`;
 
@@ -95,7 +97,8 @@ describe('@web-socket Acceptance Tests', async function() {
         const { socketServer } = global;
         server = socketServer;
 
-        accounts[0] = await servicesNode.createAliasAccount(30, relay.provider, requestId);
+        accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
+        accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
         // Deploy Log Contract
         logContractSigner = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
 
@@ -687,6 +690,63 @@ describe('@web-socket Acceptance Tests', async function() {
 
             // Only the logs from logContractSigner.target are captured
             expect(eventsReceived.length).to.eq(0);
+        });
+    });
+
+    describe('Subscribes to hts tokens and listens for synthetic log events', async function () {
+        let htsToken, wsHtsProvider, htsAccounts = [], htsEventsReceived = [];
+
+        before(async function() {
+            htsAccounts[0] = await servicesNode.createAliasAccount(400, relay.provider, requestId);
+            htsAccounts[1] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
+
+            const htsResult = await servicesNode.createHTS({
+                tokenName: 'TEST_TOKEN',
+                symbol: 'TKN',
+                treasuryAccountId: htsAccounts[0].accountId.toString(),
+                initialSupply: 100000,
+                adminPrivateKey: htsAccounts[0].privateKey
+            });
+
+            await servicesNode.associateHTSToken(htsAccounts[1].accountId, htsResult.receipt.tokenId, htsAccounts[1].privateKey, htsResult.client, requestId);
+
+            const tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
+            htsToken = new ethers.Contract(tokenAddress, IERC20Json.abi, htsAccounts[0].wallet);
+        });
+
+        beforeEach(async function() {
+            wsHtsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
+            htsEventsReceived = [];
+        });
+
+        afterEach(async function() {
+            await wsHtsProvider.websocket.close();
+        });
+
+        it('subscribes to hts token and captures all logs', async function() {
+            wsHtsProvider.on( {
+                address: htsToken.target
+            }, (event) => {
+                htsEventsReceived.push(event);
+            });
+
+            const balanceBefore = await htsToken.balanceOf(htsAccounts[1].wallet.address);
+            expect(balanceBefore.toString()).to.eq('0', 'verify initial balance');
+
+            const tx = await htsToken.transfer(htsAccounts[1].wallet.address, 1, Constants.GAS.LIMIT_1_000_000);
+            await tx.wait();
+
+            new Promise(resolve => setTimeout(resolve, 2000));
+
+            const balanceAfter = await htsToken.balanceOf(htsAccounts[1].wallet.address);
+            expect(balanceAfter.toString()).to.eq('1', 'token is successfully transferred');
+
+            expect(htsEventsReceived.length).to.eq(1, 'log is captured');
+            assertions.expectLogArgs(htsEventsReceived[0], htsToken, [
+                htsAccounts[0].wallet.address,
+                htsAccounts[1].wallet.address,
+                BigInt(1)
+            ]);
         });
     });
 

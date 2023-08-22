@@ -33,6 +33,7 @@ import ConnectionLimiter from "./ConnectionLimiter";
 import { formatRequestIdMessage } from "@hashgraph/json-rpc-relay/dist/formatters";
 import { EthSubscribeLogsParamsObject } from "@hashgraph/json-rpc-server/dist/validator";
 import { v4 as uuid } from 'uuid';
+import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -88,9 +89,10 @@ function getMultipleAddressesEnabled() {
 }
 
 async function validateIsContractAddress(address, requestId) {
-    const isContract = await mirrorNodeClient.isValidContract(address, requestId)
-    if (!isContract) {
-        throw new JsonRpcError(predefined.INVALID_PARAMETER(`filters.address`, `${address} is not a valid contract type or does not exists`), requestId);
+
+    const isContractOrToken = await mirrorNodeClient.resolveEntityType(address, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN], 'eth_subscribe', requestId)
+    if (!isContractOrToken) {
+        throw new JsonRpcError(predefined.INVALID_PARAMETER(`filters.address`, `${address} is not a valid contract or token type or does not exists`), requestId);
     }
 }
 
