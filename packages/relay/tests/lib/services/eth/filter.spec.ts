@@ -55,9 +55,9 @@ describe('Filter API Test Suite', async function () {
   const LATEST_BLOCK_QUERY = 'blocks?limit=1&order=desc';
   const BLOCK_BY_NUMBER_QUERY = 'blocks';
 
-  const validateFilterCache = (filterId, expectedFilterType, expectedParams = {}) => {
+  const validateFilterCache = async (filterId, expectedFilterType, expectedParams = {}) => {
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const cachedFilter = cacheService.get(cacheKey);
+    const cachedFilter = await cacheService.get(cacheKey);
     expect(cachedFilter).to.exist;
     expect(cachedFilter.type).to.exist;
     expect(cachedFilter.type).to.eq(expectedFilterType);
@@ -203,11 +203,11 @@ describe('Filter API Test Suite', async function () {
   describe('eth_uninstallFilter', async function() {
     it('should return true if filter is deleted', async function() {
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-      cacheService.set(cacheKey, filterObject, filterService.ethUninstallFilter, constants.FILTER.TTL, undefined);
+      await cacheService.set(cacheKey, filterObject, filterService.ethUninstallFilter, constants.FILTER.TTL, undefined);
 
       const result = await filterService.uninstallFilter(existingFilterId);
 
-      const isDeleted = cacheService.get(cacheKey, filterService.ethUninstallFilter, undefined) ? false : true;
+      const isDeleted = await cacheService.get(cacheKey, filterService.ethUninstallFilter, undefined) ? false : true;
       expect(result).to.eq(true);
       expect(isDeleted).to.eq(true);
     });
@@ -357,8 +357,8 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number + 3}&order=asc`).reply(200, { blocks: [] });
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-      cacheService.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
-      const cachedFilterBeforeCall = cacheService.get(cacheKey, filterService.ethGetFilterChanges);
+      await cacheService.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
+      const cachedFilterBeforeCall = await cacheService.get(cacheKey, filterService.ethGetFilterChanges);
       expect(cachedFilterBeforeCall).to.exist;
       expect(cachedFilterBeforeCall.lastQueried).to.not.exist;
 
@@ -369,7 +369,7 @@ describe('Filter API Test Suite', async function () {
       expect(result[0]).to.eq('0x1', 'result is in ascending order');
       expect(result[1]).to.eq('0x2');
       expect(result[2]).to.eq('0x3');
-      const cachedFilter = cacheService.get(cacheKey, filterService.ethGetFilterChanges);
+      const cachedFilter = await cacheService.get(cacheKey, filterService.ethGetFilterChanges);
       expect(cachedFilter).to.exist;
       expect(cachedFilter.lastQueried).to.eq(defaultBlock.number + 3, `lastQueried is updated with latest block number at the time`);
 
@@ -377,7 +377,7 @@ describe('Filter API Test Suite', async function () {
       expect(secondResult).to.exist;
       expect(secondResult.length).to.eq(0, 'second call returns no block hashes');
 
-      const secondCachedFilter = cacheService.get(cacheKey, filterService.ethGetFilterChanges);
+      const secondCachedFilter = await cacheService.get(cacheKey, filterService.ethGetFilterChanges);
       expect(secondCachedFilter).to.exist;
       expect(secondCachedFilter.lastQueried).to.eq(defaultBlock.number + 4, `lastQueried is updated with latest block number at the time`);
     });
@@ -393,15 +393,15 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number + 1}&order=asc`).reply(200, { blocks: [] });
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-      cacheService.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
+      await cacheService.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
 
-      const cacheBefore = cacheService.get(cacheKey, filterService.ethGetFilterChanges);
+      const cacheBefore = await cacheService.get(cacheKey, filterService.ethGetFilterChanges);
       expect(cacheBefore.lastQueried).to.be.null;
 
       const resultCurrentBlock = await filterService.getFilterChanges(existingFilterId);
       expect(resultCurrentBlock).to.not.be.empty;
 
-      const cacheAfter = cacheService.get(cacheKey, filterService.ethGetFilterChanges);
+      const cacheAfter = await cacheService.get(cacheKey, filterService.ethGetFilterChanges);
       expect(cacheAfter.lastQueried).to.equal(defaultBlock.number + 1);
 
       const resultSameBlock = (await filterService.getFilterChanges(existingFilterId));
@@ -449,7 +449,7 @@ describe('Filter API Test Suite', async function () {
       });
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-      cacheService.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
+      await cacheService.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
 
       const blocks = await filterService.getFilterChanges(existingFilterId);
       expect(blocks).to.be.empty;

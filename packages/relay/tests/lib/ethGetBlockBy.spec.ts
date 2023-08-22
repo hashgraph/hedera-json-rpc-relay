@@ -424,27 +424,27 @@ describe('eth_getBlockBy', async function () {
     const cacheKeySyntheticLog3 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${modelLog3.transactionHash}`;
 
     it('filterAndPopulateSyntheticContractResults showDetails=false sets cache', async function () {
-      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.null;
-      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.null;
-      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.null;
+      expect(await cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.null;
+      expect(await cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.null;
+      expect(await cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.null;
 
       ethImpl.filterAndPopulateSyntheticContractResults(false, referenceLogs, [], '1');
 
-      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
-      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
-      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
+      expect(await cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
+      expect(await cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
+      expect(await cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
     });
 
     it('filterAndPopulateSyntheticContractResults showDetails=true sets cache', async function () {
-      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.null;
-      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.null;
-      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.null;
+      expect(await cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.null;
+      expect(await cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.null;
+      expect(await cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.null;
 
       ethImpl.filterAndPopulateSyntheticContractResults(true, referenceLogs, [], '1');
 
-      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
-      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
-      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
+      expect(await cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
+      expect(await cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
+      expect(await cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
     });
   });
 });

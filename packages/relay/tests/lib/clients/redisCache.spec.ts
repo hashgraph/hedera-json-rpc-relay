@@ -40,6 +40,7 @@ describe('RedisCache Test Suite', async function () {
 
   this.beforeEach(() => {
     mock.stub(redisCache, 'set').returns(true);
+    mock.stub(redisCache, 'delete').returns(true);
   });
 
   this.afterEach(() => {
