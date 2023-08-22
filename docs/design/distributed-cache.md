@@ -237,6 +237,7 @@ The following test cases should be covered but additional tests would be welcome
 
 The Redis cache will need to run in a separate docker container alongside JSON-RPC Relay instances. A feature flag should be set and url specify in order for the relay instances to make connection with the shared cache.
 Environment variable are needed for enabling distributed cache - `REDIS_ENABLED` and for specifying cache address - `REDIS_URL`.
+Environment variable for reconnect delay configuration - `REDIS_RECONNECT_DELAY`, defaults to 1000ms, if none is specified.
 
 ## Answered Questions
 
