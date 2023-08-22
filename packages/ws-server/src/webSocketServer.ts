@@ -216,9 +216,11 @@ app.ws.use(async (ctx) => {
         ctx.websocket.send(JSON.stringify(response));
     });
 
-    setInterval(async () => {
-        ctx.websocket.send(JSON.stringify(jsonResp(null, null, null)));
-    }, pingInterval);
+    if (pingInterval > 0) {
+        setInterval(async () => {
+            ctx.websocket.send(JSON.stringify(jsonResp(null, null, null)));
+        }, pingInterval);
+    }
 });
 
 const httpApp = (new KoaJsonRpc(logger, register)).getKoaApp();
