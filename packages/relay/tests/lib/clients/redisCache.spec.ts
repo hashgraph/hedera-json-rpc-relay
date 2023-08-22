@@ -18,11 +18,11 @@
  *
  */
 
-import { pino } from "pino";
-import { RedisCache } from "../../../src/lib/clients";
-import { Registry } from "prom-client";
-import { createClient } from 'redis-mock';
-import { expect } from "chai";
+import { pino } from 'pino';
+import { RedisCache } from '../../../src/lib/clients';
+import { Registry } from 'prom-client';
+import { expect } from 'chai';
+import * as sinon from 'sinon';
 
 const logger = pino();
 const registry = new Registry();
@@ -31,80 +31,116 @@ let redisCache: RedisCache;
 const callingMethod = 'RedisCacheTest';
 
 describe.only('RedisCache Test Suite', async function () {
-    this.timeout(10000);
-
+  this.timeout(10000);
+  const mock = sinon.createSandbox();
 
   this.beforeAll(() => {
     redisCache = new RedisCache(logger.child({ name: `cache` }), registry);
-
-    // @ts-ignore
-    redisCache.client = createClient();
   });
 
   this.beforeEach(() => {
-    redisCache.clear();
+    mock.stub(redisCache, 'set').returns(true);
   });
 
-  describe('Get Test Suite', async function () {
+  this.afterEach(() => {
+    mock.restore();
+  });
+
+  describe('Get and Set Test Suite', async function () {
     it('should get null on empty cache', async function () {
-        const cacheValue = await redisCache.get('test', callingMethod);
-        expect(cacheValue).to.be.null;
+      mock.stub(redisCache, 'get').returns(null);
+      const cacheValue = await redisCache.get('test', callingMethod);
+      expect(cacheValue).to.be.null;
     });
 
     it('should get valid int cache', async function () {
+      const key = 'int';
+      const value = 1;
 
+      mock.stub(redisCache, 'get').returns(value);
+      await redisCache.set(key, value, callingMethod);
+
+      const cachedValue = await redisCache.get(key, callingMethod);
+      expect(cachedValue).equal(value);
     });
 
     it('should get valid boolean cache', async function () {
+      const key = 'boolean';
+      const value = false;
 
+      mock.stub(redisCache, 'get').returns(value);
+      await redisCache.set(key, value, callingMethod);
+
+      const cachedValue = await redisCache.get(key, callingMethod);
+      expect(cachedValue).equal(value);
     });
 
     it('should get valid array cache', async function () {
+      const key = 'array';
+      const value = ['false'];
 
+      mock.stub(redisCache, 'get').returns(value);
+      await redisCache.set(key, value, callingMethod);
+
+      const cachedValue = await redisCache.get(key, callingMethod);
+      expect(cachedValue).equal(value);
     });
 
     it('should get valid object cache', async function () {
+      const key = 'object';
+      const value = { result: true };
 
-    });
-  });
+      mock.stub(redisCache, 'get').returns(value);
+      await redisCache.set(key, value, callingMethod);
 
-  describe('Set Test Suite', async function () {
-    it('should set int cache', async function () {
-
-    });
-
-    it('should set boolean cache', async function () {
-
-    });
-
-    it('should set array cache', async function () {
-
-    });
-
-    it('should set object cache', async function () {
-
-    });
-
-    it('should set valid cache with custom ttl', async function () {
-
+      const cachedValue = await redisCache.get(key, callingMethod);
+      expect(cachedValue).equal(value);
     });
   });
 
   describe('Delete Test Suite', async function () {
     it('should delete int cache', async function () {
+      const key = 'int';
+      const value = 1;
 
+      await redisCache.set(key, value, callingMethod);
+      await redisCache.delete(key, callingMethod);
+
+      const cachedValue = await redisCache.get(key, callingMethod);
+      expect(cachedValue).to.be.null;
     });
 
     it('should delete boolean cache', async function () {
+      const key = 'boolean';
+      const value = false;
 
+      await redisCache.set(key, value, callingMethod);
+      await redisCache.delete(key, callingMethod);
+
+      const cachedValue = await redisCache.get(key, callingMethod);
+      expect(cachedValue).to.be.null;
     });
 
     it('should delete array cache', async function () {
+      const key = 'array';
+      const value = ['false'];
 
+      await redisCache.set(key, value, callingMethod);
+      await redisCache.delete(key, callingMethod);
+
+      const cachedValue = await redisCache.get(key, callingMethod);
+      expect(cachedValue).to.be.null;
     });
 
     it('should delete object cache', async function () {
+      const key = 'object';
+      const value = { result: true };
 
+      await redisCache.set(key, value, callingMethod);
+      await redisCache.delete(key, callingMethod);
+
+      const cachedValue = await redisCache.get(key, callingMethod);
+      expect(cachedValue).to.be.null;
     });
   });
 });

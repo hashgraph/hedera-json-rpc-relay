@@ -25,18 +25,21 @@ import { createClient, RedisClientType } from 'redis';
 import { RedisCacheError } from '../../errors/RedisCacheError';
 import constants from '../../constants';
 
+/**
+ * A class that provides caching functionality using Redis.
+ */
 export class RedisCache implements ICacheClient {
   /**
    * Configurable options used when initializing the cache.
    *
    * @private
    */
-    private readonly options = {
-      // The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
-      max: Number.parseInt(process.env.CACHE_MAX ?? constants.CACHE_MAX.toString()),
-      // Max time to live in ms, for items before they are considered stale.
-      ttl: Number.parseInt(process.env.CACHE_TTL ?? constants.CACHE_TTL.ONE_HOUR.toString()),
-    };
+  private readonly options = {
+    // The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
+    max: Number.parseInt(process.env.CACHE_MAX ?? constants.CACHE_MAX.toString()),
+    // Max time to live in ms, for items before they are considered stale.
+    ttl: Number.parseInt(process.env.CACHE_TTL ?? constants.CACHE_TTL.ONE_HOUR.toString()),
+  };
 
   /**
    * The logger used for logging all output from this class.
@@ -52,6 +55,12 @@ export class RedisCache implements ICacheClient {
 
   private readonly client: RedisClientType;
 
+  /**
+   * Creates an instance of `RedisCache`.
+   *
+   * @param {Logger} logger - The logger instance.
+   * @param {Registry} register - The metrics registry.
+   */
   public constructor(logger: Logger, register: Registry) {
     this.logger = logger;
     this.register = register;
@@ -85,6 +94,14 @@ export class RedisCache implements ICacheClient {
     });
   }
 
+  /**
+   * Retrieves a value from the cache.
+   *
+   * @param {string} key - The cache key.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} [requestIdPrefix] - The optional request ID prefix.
+   * @returns {Promise<any | null>} The cached value or null if not found.
+   */
   async get(key: string, callingMethod: string, requestIdPrefix?: string | undefined) {
     const result = await this.client.get(key);
     if (result) {
@@ -97,6 +114,16 @@ export class RedisCache implements ICacheClient {
     return null;
   }
 
+  /**
+   * Stores a value in the cache.
+   *
+   * @param {string} key - The cache key.
+   * @param {*} value - The value to be cached.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {number} [ttl] - The time-to-live (expiration) of the cache item in milliseconds.
+   * @param {string} [requestIdPrefix] - The optional request ID prefix.
+   * @returns {Promise<void>} A Promise that resolves when the value is cached.
+   */
   async set(
     key: string,
     value: any,
@@ -106,18 +133,33 @@ export class RedisCache implements ICacheClient {
   ): Promise<void> {
     const serializedValue = JSON.stringify(value);
     const resolvedTtl = ttl ?? this.options.ttl;
-    
+
     await this.client.setEx(key, resolvedTtl, serializedValue);
-    this.logger.trace(`${requestIdPrefix} caching ${key}: ${serializedValue} on ${callingMethod} for ${resolvedTtl} ms`);
+    this.logger.trace(
+      `${requestIdPrefix} caching ${key}: ${serializedValue} on ${callingMethod} for ${resolvedTtl} ms`
+    );
     //add metrics
   }
 
+  /**
+   * Deletes a value from the cache.
+   *
+   * @param {string} key - The cache key.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} [requestIdPrefix] - The optional request ID prefix.
+   * @returns {Promise<void>} A Promise that resolves when the value is deleted from the cache.
+   */
   async delete(key: string, callingMethod: string, requestIdPrefix?: string | undefined): Promise<void> {
     await this.client.del(key);
     this.logger.trace(`${requestIdPrefix} delete cache for ${key} on ${callingMethod} call`);
     //add metrics
   }
 
+  /**
+   * Clears the entire cache.
+   *
+   * @returns {Promise<void>} A Promise that resolves when the cache is cleared.
+   */
   async clear(): Promise<void> {
     await this.client.flushAll();
   }

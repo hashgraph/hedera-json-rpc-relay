@@ -568,12 +568,12 @@ export class EthImpl implements Eth {
   async gasPrice(requestIdPrefix?: string) {
     this.logger.trace(`${requestIdPrefix} gasPrice()`);
     try {
-      let gasPrice: number | undefined = await this.cacheService.get(constants.CACHE_KEY.GAS_PRICE, EthImpl.ethGasPrice, requestIdPrefix, true);
+      let gasPrice: number | undefined = await this.cacheService.get(constants.CACHE_KEY.GAS_PRICE, EthImpl.ethGasPrice, requestIdPrefix);
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix);
         // fees should not change so often we are safe with 1 day instead of 1 hour
-        this.cacheService.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, EthImpl.ethGasPrice, constants.CACHE_TTL.ONE_DAY, requestIdPrefix, true);
+        this.cacheService.set(constants.CACHE_KEY.GAS_PRICE, gasPrice, EthImpl.ethGasPrice, constants.CACHE_TTL.ONE_DAY, requestIdPrefix);
       }
 
       return numberTo0x(gasPrice);
