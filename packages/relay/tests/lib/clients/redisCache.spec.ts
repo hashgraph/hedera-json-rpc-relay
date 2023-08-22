@@ -30,7 +30,7 @@ let redisCache: RedisCache;
 
 const callingMethod = 'RedisCacheTest';
 
-describe.only('RedisCache Test Suite', async function () {
+describe('RedisCache Test Suite', async function () {
   this.timeout(10000);
   const mock = sinon.createSandbox();
 
@@ -106,6 +106,7 @@ describe.only('RedisCache Test Suite', async function () {
       await redisCache.set(key, value, callingMethod);
       await redisCache.delete(key, callingMethod);
 
+      mock.stub(redisCache, 'get').returns(null);
       const cachedValue = await redisCache.get(key, callingMethod);
       expect(cachedValue).to.be.null;
     });
@@ -117,6 +118,7 @@ describe.only('RedisCache Test Suite', async function () {
       await redisCache.set(key, value, callingMethod);
       await redisCache.delete(key, callingMethod);
 
+      mock.stub(redisCache, 'get').returns(null);
       const cachedValue = await redisCache.get(key, callingMethod);
       expect(cachedValue).to.be.null;
     });
@@ -128,6 +130,7 @@ describe.only('RedisCache Test Suite', async function () {
       await redisCache.set(key, value, callingMethod);
       await redisCache.delete(key, callingMethod);
 
+      mock.stub(redisCache, 'get').returns(null);
       const cachedValue = await redisCache.get(key, callingMethod);
       expect(cachedValue).to.be.null;
     });
@@ -139,6 +142,7 @@ describe.only('RedisCache Test Suite', async function () {
       await redisCache.set(key, value, callingMethod);
       await redisCache.delete(key, callingMethod);
 
+      mock.stub(redisCache, 'get').returns(null);
       const cachedValue = await redisCache.get(key, callingMethod);
       expect(cachedValue).to.be.null;
     });
