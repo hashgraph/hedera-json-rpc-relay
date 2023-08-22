@@ -424,12 +424,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: PURE_METHOD_CALL_DATA
             };
 
-            await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], {
-                code: -32008,
-                name: 'Contract revert executed',
-                message: PURE_METHOD_ERROR_MESSAGE,
-                data: PURE_METHOD_ERROR_DATA
-            }, requestId);
+            await relay.callFailing(
+              RelayCall.ETH_ENDPOINTS.ETH_CALL,
+              [callData, 'latest'],
+              predefined.CONTRACT_REVERT(PURE_METHOD_ERROR_MESSAGE, PURE_METHOD_ERROR_DATA),
+              requestId
+            );
         });
 
         it('Returns revert message for view methods', async () => {
@@ -440,12 +440,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 data: VIEW_METHOD_CALL_DATA
             };
 
-            await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], {
-                code: -32008,
-                name: 'Contract revert executed',
-                message: VIEW_METHOD_ERROR_MESSAGE,
-                data: VIEW_METHOD_ERROR_DATA
-            }, requestId);
+            await relay.callFailing(
+              RelayCall.ETH_ENDPOINTS.ETH_CALL,
+              [callData, 'latest'],
+              predefined.CONTRACT_REVERT(VIEW_METHOD_ERROR_MESSAGE, VIEW_METHOD_ERROR_DATA),
+              requestId
+            );
         });
 
         it('Returns revert reason in receipt for payable methods', async () => {
@@ -544,12 +544,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
                     for (let i = 0; i < payableMethodsData.length; i++) {
                         it(`Payable method ${payableMethodsData[i].method} throws an error`, async function () {
-                            await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [hashes[i]], {
-                                code: -32008,
-                                name: 'Contract revert executed',
-                                message: payableMethodsData[i].message,
-                                data: payableMethodsData[i].errorData
-                            }, requestId);
+                            await relay.callFailing(
+                              RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
+                              [hashes[i]],
+                              predefined.CONTRACT_REVERT(payableMethodsData[i].message, payableMethodsData[i].errorData),
+                              requestId
+                            );
                         });
                     }
                 });
@@ -597,12 +597,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                         data: element.data
                     };
 
-                    await relay.callFailing(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], {
-                        code: -32008,
-                        name: 'Contract revert executed',
-                        message: element.message,
-                        data: element.errorData
-                    }, requestId);
+                    await relay.callFailing(
+                      RelayCall.ETH_ENDPOINTS.ETH_CALL,
+                      [callData, 'latest'],
+                      predefined.CONTRACT_REVERT(element.message, element.errorData),
+                      requestId
+                    );
                 });
             }
         });
