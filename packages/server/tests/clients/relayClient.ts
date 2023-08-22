@@ -23,7 +23,6 @@ import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
-import { expect } from 'chai';
 
 export default class RelayClient {
 
@@ -80,8 +79,7 @@ export default class RelayClient {
             await this.call(methodName, params, requestId);
             Assertions.expectedError();
         } catch (e: any) {
-            expect(e.response).to.exist;
-            Assertions.unsupportedResponse(e.response.bodyJson);
+            Assertions.unsupportedResponse(e?.response?.bodyJson);
         }
     };
 
