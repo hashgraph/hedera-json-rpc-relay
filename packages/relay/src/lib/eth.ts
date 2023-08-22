@@ -1510,6 +1510,7 @@ export class EthImpl implements Eth {
         to: cachedLog.address,
         transactionHash: cachedLog.transactionHash,
         transactionIndex: cachedLog.transactionIndex,
+        type: EthImpl.twoHex, // 0x0 for legacy transactions, 0x1 for access list types, 0x2 for dynamic fees.
       };
 
       this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached synthetic receipt response: ${JSON.stringify(cachedResponse)}`);
@@ -1559,6 +1560,7 @@ export class EthImpl implements Eth {
         effectiveGasPrice: nanOrNumberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
         root: receiptResponse.root,
         status: receiptResponse.status,
+        type: numberTo0x(receiptResponse.type)
       };
 
       if (receiptResponse.error_message) {
