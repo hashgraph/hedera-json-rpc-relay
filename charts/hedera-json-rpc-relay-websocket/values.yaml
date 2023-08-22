@@ -28,6 +28,7 @@ config:
   WS_MAX_CONNECTION_TTL: 300000
   WS_MULTIPLE_ADDRESSES_ENABLED: false
   WS_SUBSCRIPTION_LIMIT: 100
+  WS_PING_INTERVAL: 1000
 
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []
