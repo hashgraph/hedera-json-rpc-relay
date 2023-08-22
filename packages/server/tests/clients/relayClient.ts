@@ -23,6 +23,7 @@ import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
+import { expect } from 'chai';
 
 export default class RelayClient {
 
@@ -63,7 +64,13 @@ export default class RelayClient {
             const res = await this.call(methodName, params, requestId);
             this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
             Assertions.expectedError();
-        } catch (err) {
+        } catch (e: any) {
+            expect(e.response).to.exist;
+
+            const { error } = e.response.bodyJson;
+            expect(error.code).to.equal(expectedRpcError.code);
+            expect(error.name).to.equal(expectedRpcError.name);
+            expect(error.message).to.include(expectedRpcError.message);
         }
     }
 
@@ -77,7 +84,14 @@ export default class RelayClient {
         try {
             await this.call(methodName, params, requestId);
             Assertions.expectedError();
-        } catch (err) {
+        } catch (e: any) {
+            expect(e.response).to.exist;
+
+            const expectedError = predefined.UNSUPPORTED_METHOD;
+            const { error } = e.response.bodyJson;
+            expect(error.code).to.equal(expectedError.code);
+            expect(error.name).to.equal(expectedError.name);
+            expect(error.message).to.include(expectedError.message);
         }
     };
 

@@ -239,8 +239,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
                 to: evmAddress,
                 data: BASIC_CONTRACT_PING_CALL_DATA
             };
-            const errorType = predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, `${errorMessagePrefixedStr}, value: 123`);
-            const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockHash': '0x123' }], requestId];
+            const errorType = predefined.INVALID_PARAMETER(`'blockNumber' for BlockNumberObject`, `Expected 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending", value: invalid_block_number`);
+            const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { 'blockNumber': 'invalid_block_number' }], requestId];
 
             await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
         });

@@ -580,7 +580,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
             });
 
-            it('should fail "eth_sendRawTransactxion" for Legacy 2930 transactions', async function () {
+            it('should not fail "eth_sendRawTransactxion" for Legacy 2930 transactions', async function () {
                 const transaction = {
                     ...defaultLegacy2930TransactionData,
                     to: mirrorContract.evm_address,
@@ -588,9 +588,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     gasPrice: await relay.gasPrice(requestId)
                 };
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
-                const error = predefined.INTERNAL_ERROR();
-
-                await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
+                const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+                const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+                expect(info).to.exist;
+                expect(info.result).to.equal('SUCCESS');
             });
 
             it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with gas price too low)', async function () {
@@ -824,7 +825,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     const signedTx = await accounts[2].wallet.signTransaction(transaction);
                     const error = predefined.GAS_PRICE_TOO_LOW(GAS_PRICE_TOO_LOW, GAS_PRICE_REF);
 
-                    await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
+                    await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
                 });
 
                 it('@release fail "eth_getTransactionReceipt" on precheck with wrong nonce error when sending a tx with the same nonce twice', async function () {
