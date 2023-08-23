@@ -2034,6 +2034,31 @@ describe('Eth calls using MirrorNode', async function () {
         const resBalance = await ethImpl.getBalance(notFoundEvmAddress, '1', getRequestId());
         expect(resBalance).to.equal(EthImpl.zeroHex);
       });
+
+      it('blockNumber is in the latest 15 minutes, mirror node balance for address not found 404 status', async () => {
+        // random eth address
+        const notFoundEvmAddress = "0x1234567890123456789012345678901234567890";
+        const blockTimestamp = '1651560900';
+        const recentBlockWithinLastfifteen = {
+          ...defaultBlock,
+          number: 2,
+          timestamp: {
+            from: '1651560899.060890921',
+            to: `${blockTimestamp}.060890941`,
+          },
+        };
+        restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
+        restMock.onGet(`accounts/${notFoundEvmAddress}?limit=100`).reply(404, {
+          _status: {
+            messages: [{ message: 'Not found' }]
+          }
+        });
+
+        const resBalance = await ethImpl.getBalance(notFoundEvmAddress, '2', getRequestId());
+        expect(resBalance).to.equal(EthImpl.zeroHex);
+
+      });
+
     });
 
     describe('Calculate balance at block timestamp', async function() {

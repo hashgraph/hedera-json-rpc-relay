@@ -136,6 +136,20 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(wsProvider.ready).to.eq(true);
         });
 
+        it('receives ping messages', async function () {
+            expect(wsProvider).to.exist;
+            expect(wsProvider.ready).to.eq(true);
+
+            let pings = 0;
+            wsProvider.websocket.on('message', (message) => {
+                pings++;
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 2500));
+
+            expect(pings).to.eq(3);
+        });
+
         it('Socket server responds to the eth_chainId event', async function () {
             const response = await wsProvider.send('eth_chainId', []);
             expect(response).to.eq(CHAIN_ID);
@@ -263,10 +277,13 @@ describe('@web-socket Acceptance Tests', async function() {
 
                 let latestEventFromSubscription;
                 webSocket.on('message', function incoming(data) {
-                    if (subscriptionId == "") {
-                        subscriptionId = JSON.parse(data).result;
-                    } else {
-                        latestEventFromSubscription = JSON.parse(data);
+                    const parsed = JSON.parse(data);
+                    if (parsed.id !== null || parsed.method) {
+                        if (subscriptionId == "") {
+                            subscriptionId = parsed.result;
+                        } else {
+                            latestEventFromSubscription = parsed;
+                        }
                     }
                 });
 

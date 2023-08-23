@@ -47,6 +47,8 @@ const mainLogger = pino({
     }
 });
 
+const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
+
 const logger = mainLogger.child({ name: 'rpc-ws-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
@@ -215,6 +217,12 @@ app.ws.use(async (ctx) => {
 
         ctx.websocket.send(JSON.stringify(response));
     });
+
+    if (pingInterval > 0) {
+        setInterval(async () => {
+            ctx.websocket.send(JSON.stringify(jsonResp(null, null, null)));
+        }, pingInterval);
+    }
 });
 
 const httpApp = (new KoaJsonRpc(logger, register)).getKoaApp();

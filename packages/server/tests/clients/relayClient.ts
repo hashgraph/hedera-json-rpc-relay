@@ -63,7 +63,8 @@ export default class RelayClient {
             const res = await this.call(methodName, params, requestId);
             this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
             Assertions.expectedError();
-        } catch (err) {
+        } catch (e: any) {
+            Assertions.jsonRpcError(e?.response?.bodyJson?.error, expectedRpcError);
         }
     }
 
@@ -77,7 +78,8 @@ export default class RelayClient {
         try {
             await this.call(methodName, params, requestId);
             Assertions.expectedError();
-        } catch (err) {
+        } catch (e: any) {
+            Assertions.unsupportedResponse(e?.response?.bodyJson);
         }
     };
 
