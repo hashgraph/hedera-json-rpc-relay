@@ -754,7 +754,7 @@ describe('@web-socket Acceptance Tests', async function() {
             const tx = await htsToken.transfer(htsAccounts[1].wallet.address, 1, Constants.GAS.LIMIT_1_000_000);
             await tx.wait();
 
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 3000));
 
             const balanceAfter = await htsToken.balanceOf(htsAccounts[1].wallet.address);
             expect(balanceAfter.toString()).to.eq('1', 'token is successfully transferred');
@@ -809,7 +809,7 @@ describe('@web-socket Acceptance Tests', async function() {
 
         it('Calling eth_subscribe Logs with a non existent address should fail', async function() {
             const missingContract = "0xea4168c4cbb744ec22dea4a4bfc5f74b6fe27816";
-            const expectedError = predefined.INVALID_PARAMETER(`filters.address`, `${missingContract} is not a valid contract type or does not exists`);
+            const expectedError = predefined.INVALID_PARAMETER(`filters.address`, `${missingContract} is not a valid contract or token type or does not exists`);
 
             await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, ['eth_subscribe', ["logs", {"address": missingContract}]]);
         });
