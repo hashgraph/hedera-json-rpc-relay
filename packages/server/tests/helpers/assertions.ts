@@ -199,19 +199,28 @@ export default class Assertions {
 
     static jsonRpcError(err: any, expectedError: JsonRpcError) {
         expect(err).to.exist;
-        expect(err.code).to.equal('SERVER_ERROR');
+        expect(err.code).to.equal(expectedError.code);
+        expect(err.name).to.equal(expectedError.name);
+        expect(err.message).to.include(expectedError.message);
     }
 
-    static assertPredefinedRpcError = async (error: JsonRpcError, method: () => Promise<any>, checkMessage: boolean, thisObj, args?: any[]): Promise<any> => {
+    static assertPredefinedRpcError = async (expectedError: JsonRpcError, method: () => Promise<any>, checkMessage: boolean, thisObj, args?: any[]): Promise<any> => {
         try {
             await method.apply(thisObj, args);
             Assertions.expectedError();
-        } catch (e) {
+        } catch (e: any) {
+            expect(e).to.have.any.keys('response', 'error');
+
+            const { error } = e?.response ? e.response.bodyJson : e;
+            expect(error.code).to.equal(expectedError.code);
+            expect(error.name).to.equal(expectedError.name);
+            if (checkMessage) {
+                expect(error.message).to.include(expectedError.message);
+            }
         }
     };
 
     static expectRevert = async (promise, code) => {
-
         try {
             const tx = await promise;
             const receipt = await tx.wait();
