@@ -35,10 +35,8 @@ export class RedisCache implements ICacheClient {
    * @private
    */
   private readonly options = {
-    // The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
-    max: Number.parseInt(process.env.CACHE_MAX ?? constants.CACHE_MAX.toString()),
     // Max time to live in ms, for items before they are considered stale.
-    ttl: Number.parseInt(process.env.CACHE_TTL ?? constants.CACHE_TTL.ONE_HOUR.toString()),
+    ttl: Number.parseInt(process.env.CACHE_TTL ?? constants.CACHE_TTL.ONE_HOUR.toString())
   };
 
   /**
@@ -81,15 +79,15 @@ export class RedisCache implements ICacheClient {
     this.client.connect();
 
     this.client.on('ready', function () {
-      logger.info('Connected to Redis server successfully!');
+      logger.info(`Connected to Redis server (${redisUrl}) successfully!`);
     });
 
     this.client.on('error', function (error) {
       const redisError = new RedisCacheError(error);
       if (redisError.isSocketClosed()) {
-        logger.error(`Error occured with Redis Connection. Error is: ${redisError.message}`);
+        logger.error(`Error occurred with Redis Connection when closing socket: ${redisError.message}`);
       } else {
-        logger.error(`${redisError.fullError}`);
+        logger.error(`Error occurred with Redis Connection: ${redisError.fullError}`);
       }
     });
   }

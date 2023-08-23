@@ -21,7 +21,7 @@
 import { Registry } from 'prom-client';
 import { Logger } from 'pino';
 import { LocalLRUCache, RedisCache } from '../../clients';
-import { ICacheClient } from '../../clients/cacheClient/ICacheClient';
+import { ICacheClient } from '../../clients/cache/ICacheClient';
 import { RedisCacheError } from '../../errors/RedisCacheError';
 
 export class CacheService {

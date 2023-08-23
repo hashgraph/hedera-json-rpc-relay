@@ -18,7 +18,7 @@
  *
  */
 
-export * from './cacheClient/localLRUCache';
-export * from './cacheClient/redisCache';
+export * from './cache/localLRUCache';
+export * from './cache/redisCache';
 export * from './mirrorNodeClient';
 export * from './sdkClient';
