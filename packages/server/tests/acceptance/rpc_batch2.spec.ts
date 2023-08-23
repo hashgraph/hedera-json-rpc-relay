@@ -197,7 +197,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 value: '0xa688906bd8b00000',
                 gas: '0xd97010',
                 accessList: []
-            }], predefined.MISSING_REQUIRED_PARAMETER(`'from' for TransactionObject: Expected 0x prefixed string representing the address (20 bytes), value: 0x114f60009ee6b84861c0cdae8829751e517b`), requestId);
+            }], predefined.INVALID_PARAMETER(`'from' for TransactionObject`, `Expected 0x prefixed string representing the address (20 bytes), value: 0x114f60009ee6b84861c0cdae8829751e517b`), requestId);
         });
 
         it('should not be able to execute "eth_estimateGas" with wrong to field', async function () {
@@ -207,7 +207,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 value: '0xa688906bd8b00000',
                 gas: '0xd97010',
                 accessList: []
-            }], predefined.MISSING_REQUIRED_PARAMETER(`'to' for TransactionObject: Expected 0x prefixed string representing the address (20 bytes), value: 0xae410f34f7487e2cd03396499cebb09b79f45`), requestId);
+            }], predefined.INVALID_PARAMETER(`'to' for TransactionObject`, `Expected 0x prefixed string representing the address (20 bytes), value: 0xae410f34f7487e2cd03396499cebb09b79f45`), requestId);
         });
 
         it('should not be able to execute "eth_estimateGas" with wrong value field', async function () {
@@ -217,7 +217,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 value: '123',
                 gas: '0xd97010',
                 accessList: []
-            }], predefined.MISSING_REQUIRED_PARAMETER(`'value' for TransactionObject: Expected 0x prefixed hexadecimal value, value: 123`), requestId);
+            }], predefined.INVALID_PARAMETER(`'value' for TransactionObject`, `Expected 0x prefixed hexadecimal value, value: 123`), requestId);
         });
 
         it('should not be able to execute "eth_estimateGas" with wrong gas field', async function () {
@@ -227,7 +227,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
                 value: '0xa688906bd8b00000',
                 gas: '123',
                 accessList: []
-            }], predefined.MISSING_REQUIRED_PARAMETER(`'gas' for TransactionObject: Expected 0x prefixed hexadecimal value, value: 123`), requestId);
+            }], predefined.INVALID_PARAMETER(`'gas' for TransactionObject`, `Expected 0x prefixed hexadecimal value, value: 123`), requestId);
         });
     });
 
