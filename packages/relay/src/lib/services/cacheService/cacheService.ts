@@ -123,17 +123,17 @@ export class CacheService {
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
    */
-  public async set(
+  public set(
     key: string,
     value: any,
     callingMethod: string,
     ttl?: number,
     requestIdPrefix?: string,
     shared: boolean = false
-  ): Promise<void> {
+  ): void {
     if (shared && this.isSharedCacheEnabled) {
       try {
-        return await this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
+        return this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(`Error occured while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`);

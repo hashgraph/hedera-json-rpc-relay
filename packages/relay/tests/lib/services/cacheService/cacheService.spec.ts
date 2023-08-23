@@ -50,7 +50,7 @@ describe('CacheService Test Suite', async function () {
             const key = 'string';
             const value = 'value';
 
-            await cacheService.set(key, value, callingMethod);
+            cacheService.set(key, value, callingMethod);
             const cachedValue = await cacheService.get(key, callingMethod);
 
             expect(cachedValue).eq(value);
@@ -60,7 +60,7 @@ describe('CacheService Test Suite', async function () {
             const key = 'string';
             const value = 'value';
 
-            await cacheService.set(key, value, callingMethod);
+            cacheService.set(key, value, callingMethod);
             await cacheService.delete(key, callingMethod);
             const cachedValue = await cacheService.get(key, callingMethod);
 
@@ -89,7 +89,7 @@ describe('CacheService Test Suite', async function () {
             const key = 'string';
             const value = 'value';
 
-            await cacheService.set(key, value, callingMethod, undefined, undefined, true);
+            cacheService.set(key, value, callingMethod, undefined, undefined, true);
 
             mock.stub(cacheService, 'get').returns(value);
             const cachedValue = await cacheService.get(key, callingMethod, undefined, true);
@@ -101,7 +101,7 @@ describe('CacheService Test Suite', async function () {
             const key = 'string';
             const value = 'value';
 
-            await cacheService.set(key, value, callingMethod, undefined, undefined, true);
+            cacheService.set(key, value, callingMethod, undefined, undefined, true);
 
             await cacheService.delete(key, callingMethod, undefined, true);
             mock.stub(cacheService, 'get').returns(null);
