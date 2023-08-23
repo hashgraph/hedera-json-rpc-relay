@@ -735,7 +735,7 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(balanceBefore.toString()).to.eq('0', 'verify initial balance');
 
             const tx = await htsToken.transfer(htsAccounts[1].wallet.address, 1, Constants.GAS.LIMIT_1_000_000);
-            const rec = await tx.wait();
+            await tx.wait();
 
             await new Promise(resolve => setTimeout(resolve, 2000));
 
