@@ -21,6 +21,8 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from './utils';
+import { numberTo0x } from '../../../relay/src/formatters';
+import { type } from 'os';
 
 export default class Assertions {
     static emptyHex = '0x';
@@ -174,6 +176,9 @@ export default class Assertions {
         expect(transactionReceipt.from, "Assert transactionReceipt: 'from' should equal mirrorNode response").to.eq(mirrorResult.from);
 
         expect(transactionReceipt.to, "Assert transactionReceipt: 'to' should equal mirrorNode response").to.eq(mirrorResult.to);
+        
+        expect(transactionReceipt.type, "Assert transactionReceipt: 'type' should exist").to.exist;
+        expect(transactionReceipt.type, "Assert transactionReceipt: 'type' should equal 0x mirrorNode response").to.eq(numberTo0x(mirrorResult.type));
     };
 
     public static feeHistory(res: any, expected: any) {

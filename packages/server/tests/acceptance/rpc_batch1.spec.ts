@@ -451,7 +451,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                     ...default155TransactionData,
                     to: mirrorContract.evm_address,
                     nonce: await relay.getAccountNonce(accounts[2].address, requestId),
-                    gasPrice: await relay.gasPrice(requestId)
+                    gasPrice: await relay.gasPrice(requestId),
+                    type: 0
                 };
 
                 const signedTx = await accounts[2].wallet.signTransaction(transaction);
@@ -461,6 +462,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const mirrorResult = await mirrorNode.get(`/contracts/results/${legacyTxHash}`, requestId);
 
                 const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [legacyTxHash], requestId);
+
                 Assertions.transactionReceipt(res, mirrorResult);
             });
 
@@ -481,6 +483,26 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
                 const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
                 const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [transactionHash], requestId);
+
+                Assertions.transactionReceipt(res, mirrorResult);
+            });  
+
+            it('@release should execute "eth_getTransactionReceipt" for hash of 2930 transaction', async function () {
+                const transaction = {
+                    ...defaultLegacy2930TransactionData,
+                    to: mirrorContract.evm_address,
+                    nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+                    gasPrice: await relay.gasPrice(requestId)
+                };
+
+                const signedTx = await accounts[2].wallet.signTransaction(transaction);
+                const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+                // Since the transactionId is not available in this context
+                // Wait for the transaction to be processed and imported in the mirror node with axios-retry
+                const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+
+                const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [transactionHash], requestId);
+
                 Assertions.transactionReceipt(res, mirrorResult);
             });
 
