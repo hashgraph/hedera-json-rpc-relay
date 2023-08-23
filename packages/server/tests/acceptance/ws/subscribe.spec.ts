@@ -699,6 +699,7 @@ describe('@web-socket Acceptance Tests', async function() {
         before(async function() {
             htsAccounts[0] = await servicesNode.createAliasAccount(400, relay.provider, requestId);
             htsAccounts[1] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
+            htsAccounts[2] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
 
             const htsResult = await servicesNode.createHTS({
                 tokenName: 'TEST_TOKEN',
@@ -709,6 +710,7 @@ describe('@web-socket Acceptance Tests', async function() {
             });
 
             await servicesNode.associateHTSToken(htsAccounts[1].accountId, htsResult.receipt.tokenId, htsAccounts[1].privateKey, htsResult.client, requestId);
+            await servicesNode.associateHTSToken(htsAccounts[2].accountId, htsResult.receipt.tokenId, htsAccounts[2].privateKey, htsResult.client, requestId);
 
             const tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
             htsToken = new ethers.Contract(tokenAddress, IERC20Json.abi, htsAccounts[0].wallet);
@@ -717,26 +719,25 @@ describe('@web-socket Acceptance Tests', async function() {
         beforeEach(async function() {
             wsHtsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
             htsEventsReceived = [];
+            wsHtsProvider.on( {
+                address: htsToken.target
+            }, (event) => {
+                htsEventsReceived.push(event);
+            });
         });
 
         afterEach(async function() {
             await wsHtsProvider.websocket.close();
         });
 
-        it('subscribes to hts token and captures all logs', async function() {
-            wsHtsProvider.on( {
-                address: htsToken.target
-            }, (event) => {
-                htsEventsReceived.push(event);
-            });
-
+        it('captures transfer events', async function() {
             const balanceBefore = await htsToken.balanceOf(htsAccounts[1].wallet.address);
             expect(balanceBefore.toString()).to.eq('0', 'verify initial balance');
 
             const tx = await htsToken.transfer(htsAccounts[1].wallet.address, 1, Constants.GAS.LIMIT_1_000_000);
-            await tx.wait();
+            const rec = await tx.wait();
 
-            new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
             const balanceAfter = await htsToken.balanceOf(htsAccounts[1].wallet.address);
             expect(balanceAfter.toString()).to.eq('1', 'token is successfully transferred');
@@ -745,6 +746,38 @@ describe('@web-socket Acceptance Tests', async function() {
             assertions.expectLogArgs(htsEventsReceived[0], htsToken, [
                 htsAccounts[0].wallet.address,
                 htsAccounts[1].wallet.address,
+                BigInt(1)
+            ]);
+        });
+
+        it('captures approve and transferFrom events', async function() {
+            const tx = await htsToken.approve(htsAccounts[1].wallet.address, 1, Constants.GAS.LIMIT_1_000_000);
+            await tx.wait();
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            const allowance = await htsToken.allowance(htsAccounts[0].wallet.address, htsAccounts[1].wallet.address);
+            expect(allowance.toString()).to.eq('1', 'token is successfully approved');
+
+            const tx2 = await htsToken.connect(htsAccounts[1].wallet).transferFrom(htsAccounts[0].wallet.address, htsAccounts[2].wallet.address, 1, Constants.GAS.LIMIT_1_000_000);
+            await tx2.wait();
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // FIXME enable assert when allowance bug is fixed in mirror node (expected to be fixed in v0.87)
+            // const allowanceAfter = await htsToken.allowance(htsAccounts[0].wallet.address, htsAccounts[1].wallet.address);
+            // expect(allowanceAfter.toString()).to.eq('0', 'token is successfully transferred');
+
+            expect(htsEventsReceived.length).to.eq(2, 'logs are captured');
+
+            assertions.expectLogArgs(htsEventsReceived[0], htsToken, [
+                htsAccounts[0].wallet.address,
+                htsAccounts[1].wallet.address,
+                BigInt(1)
+            ]);
+
+            assertions.expectLogArgs(htsEventsReceived[1], htsToken, [
+                htsAccounts[0].wallet.address,
+                htsAccounts[2].wallet.address,
                 BigInt(1)
             ]);
         });
