@@ -19,10 +19,10 @@
  */
 
 import { pino } from 'pino';
-import { RedisCache } from '../../../src/lib/clients';
-import { Registry } from 'prom-client';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
+import { RedisCache } from '../../../src/lib/clients';
+import { Registry } from 'prom-client';
 
 const logger = pino();
 const registry = new Registry();

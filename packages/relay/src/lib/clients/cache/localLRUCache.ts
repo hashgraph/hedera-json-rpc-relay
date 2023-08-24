@@ -25,6 +25,11 @@ import constants from '../../constants';
 
 const LRU = require('lru-cache');
 
+/**
+ * Represents a LocalLRUCache instance that uses an LRU (Least Recently Used) caching strategy
+ * for caching items internally from requests.
+ * @implements {ICacheClient}
+ */
 export class LocalLRUCache implements ICacheClient {
   /**
    * Configurable options used when initializing the cache.
