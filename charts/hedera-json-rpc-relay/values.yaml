@@ -49,7 +49,7 @@ config:
   HAPI_CLIENT_ERROR_RESET: [50]
   REDIS_ENABLED: false
   REDIS_URL: ''
-  REDIS_RECONNECT_DELAY: 1000
+  REDIS_RECONNECT_DELAY_MS: 1000
 
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []
@@ -62,7 +62,7 @@ cronjob:
     pullPolicy: IfNotPresent
     repository: postman/newman
     tag: 5.3.1-alpine
-  postman: ""  # Custom postman.json in base64 encoding
+  postman: '' # Custom postman.json in base64 encoding
   schedule: '@daily'
 
 fullnameOverride: ''
@@ -168,7 +168,7 @@ test:
     pullPolicy: IfNotPresent
     repository: postman/newman
     tag: 5.3.1-alpine
-  postman: ""  # Custom postman.json in base64 encoding
+  postman: '' # Custom postman.json in base64 encoding
 
 terminationGracePeriodSeconds: 60
 

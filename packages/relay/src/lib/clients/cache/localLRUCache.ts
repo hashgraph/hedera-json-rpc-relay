@@ -18,10 +18,10 @@
  *
  */
 
-import { Gauge, Registry } from 'prom-client';
 import { Logger } from 'pino';
-import constants from '../../constants';
+import { Gauge, Registry } from 'prom-client';
 import { ICacheClient } from './ICacheClient';
+import constants from '../../constants';
 
 const LRU = require('lru-cache');
 

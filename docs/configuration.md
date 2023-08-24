@@ -88,7 +88,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `FILTER_API_ENABLED`                        | "false"                  | Enables all filter related methods: `eth_newFilter`, `eth_uninstallFilter`, `eth_getFilterChanges`, `eth_getFilterLogs`, `eth_newBlockFilter`                                                                                                                                                          |
 | `REDIS_ENABLED`                             | "true"                   | Enable usage of Redis as shared cache                                                                                                                                                                                                                                                                  |
 | `REDIS_URL`                                 | "redis://127.0.0.1:6379" | Sets the url for the Redis shared cache                                                                                                                                                                                                                                                                |
-| `REDIS_RECONNECT_DELAY`                     | "1000"                   | Sets the delay between reconnect retries from the Redis client                                                                                                                                                                                                                                         |
+| `REDIS_RECONNECT_DELAY_MS`                  | "1000"                   | Sets the delay between reconnect retries from the Redis client in ms                                                                                                                                                                                                                                   |
 
 ## WS-Server
 
@@ -96,7 +96,7 @@ The following table lists the available properties along with their default valu
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
 | Name                            | Default  | Description                                                                             |
-| ------------------------------- |----------|-----------------------------------------------------------------------------------------|
+| ------------------------------- | -------- | --------------------------------------------------------------------------------------- |
 | `SUBSCRIPTIONS_ENABLED`         | "false"  | If enabled eth_subscribe will be enabled using WebSockets.                              |
 | `WS_MAX_CONNECTION_TTL`         | "300000" | Time in ms that the web socket connection is allowed to stay open, currently 5 minutes. |
 | `WS_CONNECTION_LIMIT`           | "10"     | Maximum amount of concurrent web socket connections allowed.                            |

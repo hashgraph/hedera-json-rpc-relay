@@ -18,10 +18,10 @@
  *
  */
 
-import { Logger } from 'pino';
-import { ICacheClient } from './ICacheClient';
-import { Registry } from 'prom-client';
 import { createClient, RedisClientType } from 'redis';
+import { Logger } from 'pino';
+import { Registry } from 'prom-client';
+import { ICacheClient } from './ICacheClient';
 import { RedisCacheError } from '../../errors/RedisCacheError';
 import constants from '../../constants';
 
@@ -36,7 +36,7 @@ export class RedisCache implements ICacheClient {
    */
   private readonly options = {
     // Max time to live in ms, for items before they are considered stale.
-    ttl: Number.parseInt(process.env.CACHE_TTL ?? constants.CACHE_TTL.ONE_HOUR.toString())
+    ttl: Number.parseInt(process.env.CACHE_TTL ?? constants.CACHE_TTL.ONE_HOUR.toString()),
   };
 
   /**
@@ -64,7 +64,7 @@ export class RedisCache implements ICacheClient {
     this.register = register;
 
     const redisUrl = process.env.REDIS_URL!;
-    const reconnectDelay = parseInt(process.env.REDIS_RECONNECT_DELAY || '1000');
+    const reconnectDelay = parseInt(process.env.REDIS_RECONNECT_DELAY_MS || '1000');
 
     this.client = createClient({
       url: redisUrl,
@@ -106,7 +106,7 @@ export class RedisCache implements ICacheClient {
       this.logger.trace(
         `${requestIdPrefix} returning cached value ${key}:${JSON.stringify(result)} on ${callingMethod} call`
       );
-      //add metrics
+      // TODO: add metrics
       return JSON.parse(result);
     }
     return null;
@@ -136,7 +136,7 @@ export class RedisCache implements ICacheClient {
     this.logger.trace(
       `${requestIdPrefix} caching ${key}: ${serializedValue} on ${callingMethod} for ${resolvedTtl} ms`
     );
-    //add metrics
+    // TODO: add metrics
   }
 
   /**
@@ -150,7 +150,7 @@ export class RedisCache implements ICacheClient {
   async delete(key: string, callingMethod: string, requestIdPrefix?: string | undefined): Promise<void> {
     await this.client.del(key);
     this.logger.trace(`${requestIdPrefix} delete cache for ${key} on ${callingMethod} call`);
-    //add metrics
+    // TODO: add metrics
   }
 
   /**

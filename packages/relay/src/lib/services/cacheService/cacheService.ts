@@ -18,12 +18,15 @@
  *
  */
 
-import { Registry } from 'prom-client';
 import { Logger } from 'pino';
-import { LocalLRUCache, RedisCache } from '../../clients';
+import { Registry } from 'prom-client';
 import { ICacheClient } from '../../clients/cache/ICacheClient';
+import { LocalLRUCache, RedisCache } from '../../clients';
 import { RedisCacheError } from '../../errors/RedisCacheError';
 
+/**
+ * A service that manages caching using different cache implementations based on configuration.
+ */
 export class CacheService {
   /**
    * The LRU cache used for caching items from requests.
@@ -89,27 +92,45 @@ export class CacheService {
   }
 
   /**
-   * Retrieves a cached value associated with the given key.
-   * If the shared cache is enabled and an error occurs while accessing it,
-   * the internal cache is used as a fallback.
-   * @param {string} key - The key associated with the cached value.
-   * @param {string} callingMethod - The name of the method calling the cache.
-   * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
-   * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
-   * @returns {*} The cached value if found, otherwise null.
+   * Retrieves a value from the cache asynchronously.
+   *
+   * @param {string} key - The cache key.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} [requestIdPrefix] - The optional request ID prefix.
+   * @param {boolean} [shared=false] - Whether to use the shared cache (optional, default: false).
+   * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
-  public async get(key: string, callingMethod: string, requestIdPrefix?: string, shared: boolean = false): Promise<any> {
+  public async getAsync(
+    key: string,
+    callingMethod: string,
+    requestIdPrefix?: string,
+    shared: boolean = false
+  ): Promise<any> {
     if (shared && this.isSharedCacheEnabled) {
       try {
         return await this.sharedCache.get(key, callingMethod, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
-        this.logger.error(`Error occured while getting the cache from Redis. Fallback to internal cache. Error is: ${redisError.fullError}`);
+        this.logger.error(
+          `${requestIdPrefix} Error occurred while getting the cache from Redis. Fallback to internal cache. Error is: ${redisError.fullError}`
+        );
       }
-      return this.internalCache.get(key, callingMethod, requestIdPrefix);
+      return null;
     } else {
       return this.internalCache.get(key, callingMethod, requestIdPrefix);
     }
+  }
+
+  /**
+   * Retrieves a value from the internal cache.
+   *
+   * @param {string} key - The cache key.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} [requestIdPrefix] - The optional request ID prefix.
+   * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
+   */
+  public get(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
+    return this.internalCache.get(key, callingMethod, requestIdPrefix);
   }
 
   /**
@@ -133,12 +154,13 @@ export class CacheService {
   ): void {
     if (shared && this.isSharedCacheEnabled) {
       try {
-        return this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
+        this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
-        this.logger.error(`Error occured while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`);
+        this.logger.error(
+          `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`
+        );
       }
-      this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
     } else {
       this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
     }
@@ -159,7 +181,9 @@ export class CacheService {
         return this.sharedCache.delete(key, callingMethod, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
-        this.logger.error(`Error occured while deleting cache from Redis. Error is: ${redisError.fullError}`);
+        this.logger.error(
+          `${requestIdPrefix} Error occurred while deleting cache from Redis. Error is: ${redisError.fullError}`
+        );
       }
     } else {
       this.internalCache.delete(key, callingMethod, requestIdPrefix);
@@ -172,13 +196,15 @@ export class CacheService {
    * Else the internal cache clearing is attempted.
    * @param {boolean} shared - Whether to clear the shared cache (optional, default: false).
    */
-  public clear(shared: boolean = false): void {
+  public clear(requestIdPrefix?: string, shared: boolean = false): void {
     if (shared && this.isSharedCacheEnabled) {
       try {
         return this.sharedCache.clear();
       } catch (error) {
         const redisError = new RedisCacheError(error);
-        this.logger.error(`Error occured while clearing Redis cache. Error is: ${redisError.fullError}`);
+        this.logger.error(
+          `${requestIdPrefix} Error occurred while clearing Redis cache. Error is: ${redisError.fullError}`
+        );
       }
     } else {
       this.internalCache.clear();

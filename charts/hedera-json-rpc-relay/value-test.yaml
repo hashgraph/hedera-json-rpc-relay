@@ -131,8 +131,8 @@ config:
   HAPI_CLIENT_ERROR_RESET: [50]
   REDIS_ENABLED: false
   REDIS_URL: ''
-  REDIS_RECONNECT_DELAY: 1000
-  
+  REDIS_RECONNECT_DELAY_MS: 1000
+
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:
   enabled: false
