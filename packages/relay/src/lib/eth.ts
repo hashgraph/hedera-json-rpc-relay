@@ -315,7 +315,7 @@ export class EthImpl implements Eth {
       } else { // once we finish testing and refining Fixed Fee method, we can remove this else block to clean up code
 
         const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join('')}`;
-        feeHistory = await this.cacheService.get(cacheKey, EthImpl.ethFeeHistory, requestIdPrefix);
+        feeHistory = this.cacheService.get(cacheKey, EthImpl.ethFeeHistory, requestIdPrefix);
         if (!feeHistory) {
           feeHistory = await this.getFeeHistory(blockCount, newestBlockNumber, latestBlockNumber, rewardPercentiles, requestIdPrefix);
           if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
@@ -512,7 +512,7 @@ export class EthImpl implements Eth {
         const value = Number(transaction.value);
         if (value > 0) {
           const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${transaction.to}`;
-          let toAccount: object | null = await this.cacheService.get(accountCacheKey, EthImpl.ethEstimateGas);
+          let toAccount: object | null = this.cacheService.get(accountCacheKey, EthImpl.ethEstimateGas);
           if (!toAccount) {
             toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestIdPrefix);
           }
@@ -568,7 +568,7 @@ export class EthImpl implements Eth {
   async gasPrice(requestIdPrefix?: string) {
     this.logger.trace(`${requestIdPrefix} gasPrice()`);
     try {
-      let gasPrice: number | undefined = await this.cacheService.get(constants.CACHE_KEY.GAS_PRICE, EthImpl.ethGasPrice, requestIdPrefix);
+      let gasPrice: number | undefined = this.cacheService.get(constants.CACHE_KEY.GAS_PRICE, EthImpl.ethGasPrice, requestIdPrefix);
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix);
@@ -749,7 +749,7 @@ export class EthImpl implements Eth {
     // tolerance is needed, because there is a small delay between requesting latest block from blockNumber and passing it here
     if (!this.common.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
       const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
-      const blockNumberCached = await this.cacheService.get(cacheKey, EthImpl.ethGetBalance);
+      const blockNumberCached = this.cacheService.get(cacheKey, EthImpl.ethGetBalance);
 
       if(blockNumberCached) {
         this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
@@ -783,7 +783,7 @@ export class EthImpl implements Eth {
     // check cache first
     // create a key for the cache
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTagOrHash}`;
-    let cachedBalance = await this.cacheService.get(cacheKey, EthImpl.ethGetBalance);
+    let cachedBalance = this.cacheService.get(cacheKey, EthImpl.ethGetBalance);
     if (cachedBalance) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
       return cachedBalance;
@@ -904,7 +904,7 @@ export class EthImpl implements Eth {
     }
 
     const cachedLabel = `getCode.${address}.${blockNumber}`;
-    const cachedResponse: string | undefined = await this.cacheService.get(cachedLabel, EthImpl.ethGetCode);
+    const cachedResponse: string | undefined = this.cacheService.get(cachedLabel, EthImpl.ethGetCode);
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
@@ -968,7 +968,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_HASH}_${hash}_${showDetails}`;
-    let block = await this.cacheService.get(cacheKey, EthImpl.ethGetBlockByHash);
+    let block = this.cacheService.get(cacheKey, EthImpl.ethGetBlockByHash);
     if (!block) {
       block = await this.getBlock(hash, showDetails, requestIdPrefix).catch((e: any) => {
         throw this.common.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
@@ -988,7 +988,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_NUMBER}_${blockNumOrTag}_${showDetails}`;
-    let block = await this.cacheService.get(cacheKey, EthImpl.ethGetBlockByNumber);
+    let block = this.cacheService.get(cacheKey, EthImpl.ethGetBlockByNumber);
     if (!block) {
       block = await this.getBlock(blockNumOrTag, showDetails, requestIdPrefix).catch((e: any) => {
         throw this.common.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for blockNum ${blockNumOrTag}`);
@@ -1011,7 +1011,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByHash(hash=${hash}, showDetails=%o)`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_HASH}_${hash}`;
-    const cachedResponse = await this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCountByHash);
+    const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCountByHash);
     if (cachedResponse) {
       this.logger.debug(`${requestIdPrefix} getBlockTransactionCountByHash returned cached response: ${cachedResponse}`);
       return cachedResponse;
@@ -1037,7 +1037,7 @@ export class EthImpl implements Eth {
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestIdPrefix);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_NUMBER}_${blockNum}`;
-    const cachedResponse = await this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCountByNumber);
+    const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCountByNumber);
     if (cachedResponse) {
       this.logger.debug(`${requestIdPrefix} getBlockTransactionCountByNumber returned cached response: ${cachedResponse}`);
       return cachedResponse;
@@ -1105,7 +1105,7 @@ export class EthImpl implements Eth {
 
     // cache considerations for high load
     const cacheKey = `eth_getTransactionCount_${address}_${blockNumOrTag}`;
-    let nonceCount = await this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCount);
+    let nonceCount = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCount);
     if (nonceCount) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(nonceCount)}`);
       return nonceCount;
@@ -1352,7 +1352,7 @@ export class EthImpl implements Eth {
       }
 
       const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:.${call.to}.${data}`;
-      const cachedResponse = await this.cacheService.get(cacheKey, EthImpl.ethCall);
+      const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethCall);
 
       if (cachedResponse != undefined) {
         this.logger.debug(`${requestIdPrefix} eth_call returned cached response: ${cachedResponse}`);
@@ -1456,7 +1456,7 @@ export class EthImpl implements Eth {
       fromAddress = contractResult.from.substring(0, 42);
 
       const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${fromAddress}`;
-      let accountResult: any | null = await this.cacheService.get(accountCacheKey, EthImpl.ethGetTransactionByHash);
+      let accountResult: any | null = this.cacheService.get(accountCacheKey, EthImpl.ethGetTransactionByHash);
       if (!accountResult) {
         accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestIdPrefix);
         if (accountResult) {
@@ -1489,14 +1489,14 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_RECEIPT}_${hash}`;
-    const cachedResponse = await this.cacheService.get(cacheKey, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
+    const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
     if (cachedResponse) {
       this.logger.debug(`${requestIdPrefix} getTransactionReceipt returned cached response: ${JSON.stringify(cachedResponse)}`);
       return cachedResponse;
     }
 
     const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
-    const cachedLog = await this.cacheService.get(cacheKeySyntheticLog, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
+    const cachedLog = this.cacheService.get(cacheKeySyntheticLog, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
     if (cachedLog) {
       const receipt: any  = {
         blockHash: cachedLog.blockHash,

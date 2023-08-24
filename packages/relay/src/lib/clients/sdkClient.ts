@@ -167,7 +167,7 @@ export class SDKClient {
     }
 
     async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
-        const cachedResponse: number | undefined = await this.cacheService.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, callerName);
+        const cachedResponse: number | undefined = this.cacheService.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, callerName);
         if (cachedResponse) {
             return cachedResponse;
         }

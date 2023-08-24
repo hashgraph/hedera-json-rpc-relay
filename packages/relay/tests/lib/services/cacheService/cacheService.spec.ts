@@ -51,7 +51,7 @@ describe('CacheService Test Suite', async function () {
       const value = 'value';
 
       cacheService.set(key, value, callingMethod);
-      const cachedValue = await cacheService.get(key, callingMethod);
+      const cachedValue = cacheService.get(key, callingMethod);
 
       expect(cachedValue).eq(value);
     });
@@ -61,8 +61,8 @@ describe('CacheService Test Suite', async function () {
       const value = 'value';
 
       cacheService.set(key, value, callingMethod);
-      await cacheService.delete(key, callingMethod);
-      const cachedValue = await cacheService.get(key, callingMethod);
+      cacheService.delete(key, callingMethod);
+      const cachedValue = cacheService.get(key, callingMethod);
 
       expect(cachedValue).to.be.null;
     });
@@ -85,26 +85,26 @@ describe('CacheService Test Suite', async function () {
     this.afterEach(() => {
       mock.restore();
     });
-    it('should be able to set and get from internal cache', async function () {
+    it('should be able to set and get from shared cache', async function () {
       const key = 'string';
       const value = 'value';
 
       cacheService.set(key, value, callingMethod, undefined, undefined, true);
 
-      mock.stub(cacheService, 'get').returns(value);
+      mock.stub(cacheService, 'getAsync').returns(value);
       const cachedValue = await cacheService.getAsync(key, callingMethod, undefined, true);
 
       expect(cachedValue).eq(value);
     });
 
-    it('should be able to set and delete from internal cache', async function () {
+    it('should be able to set and delete from shared cache', async function () {
       const key = 'string';
       const value = 'value';
 
       cacheService.set(key, value, callingMethod, undefined, undefined, true);
 
       await cacheService.delete(key, callingMethod, undefined, true);
-      mock.stub(cacheService, 'get').returns(null);
+      mock.stub(cacheService, 'getAsync').returns(null);
       const cachedValue = await cacheService.getAsync(key, callingMethod, undefined, true);
 
       expect(cachedValue).to.be.null;

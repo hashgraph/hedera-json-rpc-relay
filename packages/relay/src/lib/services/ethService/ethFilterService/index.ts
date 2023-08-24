@@ -146,7 +146,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.get(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+    const filter = this.cacheService.get(cacheKey, this.ethUninstallFilter, requestIdPrefix);
 
     if (filter) {
       this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix);
@@ -166,7 +166,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
+    const filter = this.cacheService.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
     if (filter?.type != constants.FILTER.TYPE.LOG) {
       throw predefined.FILTER_NOT_FOUND;
     }
@@ -186,7 +186,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
+    const filter = this.cacheService.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
 
     if (!filter) {
       throw predefined.FILTER_NOT_FOUND;

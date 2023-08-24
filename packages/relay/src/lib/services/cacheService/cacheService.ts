@@ -129,7 +129,7 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
-  public get(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
+  public get(key: string, callingMethod: string, requestIdPrefix?: string): any {
     return this.internalCache.get(key, callingMethod, requestIdPrefix);
   }
 
