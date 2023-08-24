@@ -173,6 +173,7 @@ export class SubscriptionController {
                         method: 'eth_subscription',
                         params: subscriptionData
                     }));
+                    sub.connection.limiter.resetConnectionTTLTimer(sub.connection)
                 }
             });
         }

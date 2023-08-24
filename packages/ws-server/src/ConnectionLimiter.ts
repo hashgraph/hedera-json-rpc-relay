@@ -20,7 +20,7 @@
 
 import { Logger } from "pino";
 import {WebSocketError} from "@hashgraph/json-rpc-relay";
-import {Histogram, Gauge, Registry, Counter} from "prom-client";
+import {Gauge, Registry, Counter} from "prom-client";
 
 type IpCounter = {
     [key: string]: number;
@@ -139,19 +139,8 @@ export default class ConnectionLimiter {
             return;
         }
 
-        // Limit connection TTL and close connection if its reached
-        const maxConnectionTTL = parseInt(process.env.WS_MAX_CONNECTION_TTL || '300000');
-        setTimeout(() => {
-            if (ctx.websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
-                this.logger.debug(`Closing connection ${ctx.websocket.id} due to reaching TTL of ${maxConnectionTTL}ms`);
-                try {
-                    this.connectionTTLCounter.inc();
-                    ctx.websocket.close(TTL_EXPIRED.code, TTL_EXPIRED.message);
-                } catch (e) {
-                    this.logger.error(`${ctx.websocket.id}: ${e}`);
-                }
-            }
-        }, maxConnectionTTL);
+        // Limit connection TTL and close connection when it is reached
+        this.startConnectionTTLTimer(ctx.websocket);
     }
 
     public incrementSubs(ctx) {
@@ -164,5 +153,30 @@ export default class ConnectionLimiter {
 
     public validateSubscriptionLimit(ctx) {
         return ctx.websocket.subscriptions < parseInt(process.env.WS_SUBSCRIPTION_LIMIT || '10');
+    }
+
+    // Starts a timeout timer that closes the connection
+    public startConnectionTTLTimer(websocket) {
+        const maxConnectionTTL = parseInt(process.env.WS_MAX_CONNECTION_TTL || '300000');
+        websocket.connectionTTL = setTimeout(() => {
+            if (websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
+                this.logger.debug(`Closing connection ${websocket.id} due to reaching TTL of ${maxConnectionTTL}ms`);
+                try {
+                    this.connectionTTLCounter.inc();
+                    websocket.close(TTL_EXPIRED.code, TTL_EXPIRED.message);
+                } catch (e) {
+                    this.logger.error(`${websocket.id}: ${e}`);
+                }
+            }
+        }, maxConnectionTTL);
+    }
+
+    // Resets the TTL connection timer
+    public resetConnectionTTLTimer(websocket) {
+        if (websocket?.connectionTTL) {
+            clearTimeout(websocket.connectionTTL);
+        }
+
+        this.startConnectionTTLTimer(websocket);
     }
 }

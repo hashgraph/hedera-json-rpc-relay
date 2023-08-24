@@ -110,9 +110,7 @@ describe('@web-socket Acceptance Tests', async function() {
         // restore original ENV value
         process.env.WS_MULTIPLE_ADDRESSES_ENABLED = originalWsMultipleAddressesEnabledValue;
 
-
         wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
-
         requestId = Utils.generateRequestId();
         // Stabilizes the initial connection test.
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -123,7 +121,7 @@ describe('@web-socket Acceptance Tests', async function() {
     this.afterEach(async () => {
         await wsProvider.destroy();
         await new Promise(resolve => setTimeout(resolve, 1000));
-        if (server) 
+        if (server)
             expect(server._connections).to.equal(0);
     });
 
@@ -506,16 +504,17 @@ describe('@web-socket Acceptance Tests', async function() {
     });
 
     describe('Connection TTL', async function () {
+        let TEST_TTL = 5000;
+
         this.beforeAll(async () => {
             // cache original ENV values
             originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL || '300000';
-            process.env.WS_MAX_CONNECTION_TTL = '10000';
+            process.env.WS_MAX_CONNECTION_TTL = TEST_TTL.toString();
         });
         this.afterAll(async () => {
             // Return ENV variables to their original value
             process.env.WS_MAX_CONNECTION_TTL = originalWsMaxConnectionTtl;
         });
-
 
         it('Connection TTL is enforced, should close all connections', async function () {
             const wsConn2 = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -544,6 +543,55 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(closeEventHandled2).to.eq(true);
             expect(closeEventHandled3).to.eq(true);
             expect(server._connections).to.equal(0);
+        });
+
+        describe('Connection TTL is reset', async function() {
+            const initialWaitTime = 2000;
+            let timeAtStart, closeEventHandled;
+
+            beforeEach(async () => {
+                timeAtStart = Date.now();
+
+                closeEventHandled = false;
+                wsProvider.websocket.on('close', (code, message) => {
+                    expect(code).to.equal(WebSocketError.TTL_EXPIRED.code);
+                    expect(message.toString('utf8')).to.equal(WebSocketError.TTL_EXPIRED.message);
+
+                    closeEventHandled = true;
+                    const timeAtDisconnect = Date.now();
+                    expect(timeAtDisconnect - timeAtStart).to.be.gte(TEST_TTL + initialWaitTime);
+                });
+            });
+
+            afterEach(async () => {
+                // wait for TTL to trigger + buffer time
+                await new Promise(resolve => setTimeout(resolve, TEST_TTL + 1000));
+                expect(closeEventHandled).to.eq(true);
+            });
+
+            it('when the client sends a message', async function() {
+                await new Promise(resolve => setTimeout(resolve, initialWaitTime));
+
+                const response = await wsProvider.send('eth_chainId', []);
+                expect(response).to.eq(CHAIN_ID);
+            });
+
+            it('when the server sends a message', async function() {
+                let eventCaptured = false;
+                wsProvider.on({address: logContractSigner.target}, function(data) {
+                    eventCaptured = true;
+                });
+
+                await new Promise(resolve => setTimeout(resolve, initialWaitTime));
+                const gasOptions = await Utils.gasOptions(requestId);
+                const tx = await logContractSigner.log1(5, gasOptions);
+                await tx.wait();
+
+                // buffer time
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                expect(eventCaptured).to.eq(true);
+            });
         });
     });
 
