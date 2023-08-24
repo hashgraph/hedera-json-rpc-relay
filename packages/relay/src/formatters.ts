@@ -20,7 +20,7 @@
 
 import constants from "./lib/constants";
 import crypto from "crypto";
-import { Transaction } from './lib/model';
+import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { BigNumber as BN } from "bignumber.js";
 
@@ -32,7 +32,7 @@ const hashNumber = (num) => {
 
 const generateRandomHex = (bytesLength = 16) => {
     return "0x" + crypto.randomBytes(bytesLength).toString('hex');
-}
+};
 
 /**
 * Format message prefix for logger.
@@ -73,11 +73,11 @@ const formatTransactionId = (transactionId: string): string | null => {
         return null;
     }
     
-    var transactionSplit = transactionId.split("@");
+    const transactionSplit = transactionId.split("@");
     const payer = transactionSplit[0];
     const timestamp = transactionSplit[1].replace(".","-");
     return `${payer}-${timestamp}`;
-}
+};
 
 /**
  * Retrieve formated transactionID without query params
@@ -137,28 +137,87 @@ const formatContractResult = (cr: any) => {
         return null;
     }
 
-    return new Transaction({
-        accessList: undefined,
-        blockHash: toHash32(cr.block_hash),
-        blockNumber: nullableNumberTo0x(cr.block_number),
-        chainId: cr.chain_id,
-        from: cr.from.substring(0, 42),
-        gas: nanOrNumberTo0x(cr.gas_used),
-        gasPrice: toNullIfEmptyHex(cr.gas_price),
-        hash: cr.hash.substring(0, 66),
-        input: cr.function_parameters,
-        maxPriorityFeePerGas: toNullIfEmptyHex(cr.max_priority_fee_per_gas),
-        maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas),
-        nonce: nanOrNumberTo0x(cr.nonce),
-        r: cr.r === null ? null : cr.r.substring(0, 66),
-        s: cr.s === null ? null : cr.s.substring(0, 66),
-        to: cr.to?.substring(0, 42),
-        transactionIndex: nullableNumberTo0x(cr.transaction_index),
-        type: nullableNumberTo0x(cr.type),
-        v: nanOrNumberTo0x(cr.v),
-        value: nanOrNumberTo0x(cr.amount)
-    });
-}
+    switch (cr.type) {
+        case 0: return new Transaction({
+            blockHash: toHash32(cr.block_hash),
+            blockNumber: nullableNumberTo0x(cr.block_number),
+            chainId: cr.chain_id,
+            from: cr.from.substring(0, 42),
+            gas: nanOrNumberTo0x(cr.gas_used),
+            gasPrice: toNullIfEmptyHex(cr.gas_price),
+            hash: cr.hash.substring(0, 66),
+            input: cr.function_parameters,
+            nonce: nanOrNumberTo0x(cr.nonce),
+            r: cr.r === null ? null : cr.r.substring(0, 66),
+            s: cr.s === null ? null : cr.s.substring(0, 66),
+            to: cr.to?.substring(0, 42),
+            transactionIndex: nullableNumberTo0x(cr.transaction_index),
+            type: nullableNumberTo0x(cr.type),
+            v: nanOrNumberTo0x(cr.v),
+            value: nanOrNumberTo0x(cr.amount)
+        }); // eip 155 fields
+        case 1: return new Transaction2930({
+            accessList: [],
+            blockHash: toHash32(cr.block_hash),
+            blockNumber: nullableNumberTo0x(cr.block_number),
+            chainId: cr.chain_id,
+            from: cr.from.substring(0, 42),
+            gas: nanOrNumberTo0x(cr.gas_used),
+            gasPrice: toNullIfEmptyHex(cr.gas_price),
+            hash: cr.hash.substring(0, 66),
+            input: cr.function_parameters,
+            maxPriorityFeePerGas: toNullIfEmptyHex(cr.max_priority_fee_per_gas),
+            maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas),
+            nonce: nanOrNumberTo0x(cr.nonce),
+            r: cr.r === null ? null : cr.r.substring(0, 66),
+            s: cr.s === null ? null : cr.s.substring(0, 66),
+            to: cr.to?.substring(0, 42),
+            transactionIndex: nullableNumberTo0x(cr.transaction_index),
+            type: nullableNumberTo0x(cr.type),
+            v: nanOrNumberTo0x(cr.v),
+            value: nanOrNumberTo0x(cr.amount)
+        }); // eip 2930 fields
+        case 2: return new Transaction1559({
+            blockHash: toHash32(cr.block_hash),
+            blockNumber: nullableNumberTo0x(cr.block_number),
+            chainId: cr.chain_id,
+            from: cr.from.substring(0, 42),
+            gas: nanOrNumberTo0x(cr.gas_used),
+            gasPrice: toNullIfEmptyHex(cr.gas_price),
+            hash: cr.hash.substring(0, 66),
+            input: cr.function_parameters,
+            maxPriorityFeePerGas: toNullIfEmptyHex(cr.max_priority_fee_per_gas),
+            maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas),
+            nonce: nanOrNumberTo0x(cr.nonce),
+            r: cr.r === null ? null : cr.r.substring(0, 66),
+            s: cr.s === null ? null : cr.s.substring(0, 66),
+            to: cr.to?.substring(0, 42),
+            transactionIndex: nullableNumberTo0x(cr.transaction_index),
+            type: nullableNumberTo0x(cr.type),
+            v: nanOrNumberTo0x(cr.v),
+            value: nanOrNumberTo0x(cr.amount)
+        }); // eip 1559 fields
+        case null: return new Transaction({
+            blockHash: toHash32(cr.block_hash),
+            blockNumber: nullableNumberTo0x(cr.block_number),
+            chainId: cr.chain_id,
+            from: cr.from.substring(0, 42),
+            gas: nanOrNumberTo0x(cr.gas_used),
+            gasPrice: toNullIfEmptyHex(cr.gas_price),
+            hash: cr.hash.substring(0, 66),
+            input: cr.function_parameters,
+            nonce: nanOrNumberTo0x(cr.nonce),
+            r: cr.r === null ? null : cr.r.substring(0, 66),
+            s: cr.s === null ? null : cr.s.substring(0, 66),
+            to: cr.to?.substring(0, 42),
+            transactionIndex: nullableNumberTo0x(cr.transaction_index),
+            type: nullableNumberTo0x(cr.type),
+            v: nanOrNumberTo0x(cr.v),
+            value: nanOrNumberTo0x(cr.amount)
+        }); //hapi
+    }
+    return null;
+};
 
 const prepend0x = (input: string): string => {
     return input.startsWith(EMPTY_HEX) ? input : EMPTY_HEX + input;
