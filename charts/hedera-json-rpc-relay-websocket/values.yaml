@@ -31,7 +31,7 @@ config:
   WS_PING_INTERVAL: 1000
   REDIS_ENABLED: false
   REDIS_URL: ''
-  REDIS_RECONNECT_DELAY: 1000
+  REDIS_RECONNECT_DELAY_MS: 1000
 
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []

@@ -24,4 +24,4 @@ data:
   WS_PING_INTERVAL: {{ .Values.config.WS_PING_INTERVAL | quote }}
   REDIS_ENABLED: {{ .Values.config.REDIS_ENABLED | quote }}
   REDIS_URL: {{ .Values.config.REDIS_URL | quote }}
-  REDIS_RECONNECT_DELAY: {{ .Values.config.REDIS_RECONNECT_DELAY | quote }}
+  REDIS_RECONNECT_DELAY_MS: {{ .Values.config.REDIS_RECONNECT_DELAY_MS | quote }}
