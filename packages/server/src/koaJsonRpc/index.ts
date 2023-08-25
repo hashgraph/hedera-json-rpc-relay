@@ -97,6 +97,7 @@ export default class KoaJsonRpc {
       let body, result;
 
       this.requestId = ctx.state.reqId;
+      ctx.set('request-id', this.requestId);
       
       if (this.token) {
         const headerToken = ctx.get('authorization').split(' ').pop();
