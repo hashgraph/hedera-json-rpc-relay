@@ -90,8 +90,25 @@ describe('RPC Server Acceptance Tests', function () {
       runLocalHederaNetwork();
     }
 
+<<<<<<< HEAD
     if (global.relayIsLocal) {
       runLocalRelay();
+=======
+    function runLocalHederaNetwork() {
+        // set env variables for docker images until local-node is updated
+        process.env['NETWORK_NODE_IMAGE_TAG'] = '0.41.0-alpha.3';
+        process.env['HAVEGED_IMAGE_TAG'] = '0.41.0-alpha.3';
+        process.env['MIRROR_IMAGE_TAG'] = '0.87.0-rc3';
+
+        console.log(`Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`);
+
+        console.log('Installing local node...');
+        shell.exec(`npm install @hashgraph/hedera-local -g`);
+
+        console.log('Starting local node...');
+        shell.exec(`hedera start -d`);
+        console.log('Hedera Hashgraph local node env started');
+>>>>>>> 72b55d4 (Turn back on allowance test now that fix is in mirror node.)
     }
 
     // cache start balance
