@@ -93,7 +93,7 @@ describe('@web-socket Acceptance Tests', async function() {
         "0x0000000000000000000000000000000000000000000000000000000000000007"
     ]
 
-    this.beforeAll(async () => {
+    before(async () => {
         const { socketServer } = global;
         server = socketServer;
 
@@ -109,7 +109,7 @@ describe('@web-socket Acceptance Tests', async function() {
         await new Promise(r => setTimeout(r, 5000));
     });
 
-    this.beforeEach(async () => {
+    beforeEach(async () => {
         // restore original ENV value
         process.env.WS_MULTIPLE_ADDRESSES_ENABLED = originalWsMultipleAddressesEnabledValue;
 
@@ -121,9 +121,11 @@ describe('@web-socket Acceptance Tests', async function() {
             expect(server._connections).to.equal(1);
     });
 
-    this.afterEach(async () => {
-        await wsProvider.destroy();
-        await new Promise(resolve => setTimeout(resolve, 1000));
+    afterEach(async () => {
+        if (wsProvider) {
+            await wsProvider.destroy();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
         if (server)
             expect(server._connections).to.equal(0);
     });
@@ -570,6 +572,8 @@ describe('@web-socket Acceptance Tests', async function() {
                 // wait for TTL to trigger + buffer time
                 await new Promise(resolve => setTimeout(resolve, TEST_TTL + 1000));
                 expect(closeEventHandled).to.eq(true);
+                // @ts-ignore
+                wsProvider = false;
             });
 
             it('when the client sends a message', async function() {
