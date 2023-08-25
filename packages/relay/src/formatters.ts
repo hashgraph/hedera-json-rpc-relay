@@ -137,84 +137,37 @@ const formatContractResult = (cr: any) => {
         return null;
     }
 
+    const commonFields = {
+        blockHash: toHash32(cr.block_hash),
+        blockNumber: nullableNumberTo0x(cr.block_number),
+        chainId: cr.chain_id,
+        from: cr.from.substring(0, 42),
+        gas: nanOrNumberTo0x(cr.gas_used),
+        gasPrice: toNullIfEmptyHex(cr.gas_price),
+        hash: cr.hash.substring(0, 66),
+        input: cr.function_parameters,
+        nonce: nanOrNumberTo0x(cr.nonce),
+        r: cr.r === null ? null : cr.r.substring(0, 66),
+        s: cr.s === null ? null : cr.s.substring(0, 66),
+        to: cr.to?.substring(0, 42),
+        transactionIndex: nullableNumberTo0x(cr.transaction_index),
+        type: nullableNumberTo0x(cr.type),
+        v: nanOrNumberTo0x(cr.v),
+        value: nanOrNumberTo0x(cr.amount),
+    };
+
     switch (cr.type) {
-        case 0: return new Transaction({
-            blockHash: toHash32(cr.block_hash),
-            blockNumber: nullableNumberTo0x(cr.block_number),
-            chainId: cr.chain_id,
-            from: cr.from.substring(0, 42),
-            gas: nanOrNumberTo0x(cr.gas_used),
-            gasPrice: toNullIfEmptyHex(cr.gas_price),
-            hash: cr.hash.substring(0, 66),
-            input: cr.function_parameters,
-            nonce: nanOrNumberTo0x(cr.nonce),
-            r: cr.r === null ? null : cr.r.substring(0, 66),
-            s: cr.s === null ? null : cr.s.substring(0, 66),
-            to: cr.to?.substring(0, 42),
-            transactionIndex: nullableNumberTo0x(cr.transaction_index),
-            type: nullableNumberTo0x(cr.type),
-            v: nanOrNumberTo0x(cr.v),
-            value: nanOrNumberTo0x(cr.amount)
-        }); // eip 155 fields
+        case 0: return new Transaction(commonFields); // eip 155 fields
         case 1: return new Transaction2930({
-            accessList: [],
-            blockHash: toHash32(cr.block_hash),
-            blockNumber: nullableNumberTo0x(cr.block_number),
-            chainId: cr.chain_id,
-            from: cr.from.substring(0, 42),
-            gas: nanOrNumberTo0x(cr.gas_used),
-            gasPrice: toNullIfEmptyHex(cr.gas_price),
-            hash: cr.hash.substring(0, 66),
-            input: cr.function_parameters,
-            maxPriorityFeePerGas: toNullIfEmptyHex(cr.max_priority_fee_per_gas),
-            maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas),
-            nonce: nanOrNumberTo0x(cr.nonce),
-            r: cr.r === null ? null : cr.r.substring(0, 66),
-            s: cr.s === null ? null : cr.s.substring(0, 66),
-            to: cr.to?.substring(0, 42),
-            transactionIndex: nullableNumberTo0x(cr.transaction_index),
-            type: nullableNumberTo0x(cr.type),
-            v: nanOrNumberTo0x(cr.v),
-            value: nanOrNumberTo0x(cr.amount)
+            ...commonFields,
+            accessList: []
         }); // eip 2930 fields
         case 2: return new Transaction1559({
-            blockHash: toHash32(cr.block_hash),
-            blockNumber: nullableNumberTo0x(cr.block_number),
-            chainId: cr.chain_id,
-            from: cr.from.substring(0, 42),
-            gas: nanOrNumberTo0x(cr.gas_used),
-            gasPrice: toNullIfEmptyHex(cr.gas_price),
-            hash: cr.hash.substring(0, 66),
-            input: cr.function_parameters,
+            ...commonFields,
             maxPriorityFeePerGas: toNullIfEmptyHex(cr.max_priority_fee_per_gas),
-            maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas),
-            nonce: nanOrNumberTo0x(cr.nonce),
-            r: cr.r === null ? null : cr.r.substring(0, 66),
-            s: cr.s === null ? null : cr.s.substring(0, 66),
-            to: cr.to?.substring(0, 42),
-            transactionIndex: nullableNumberTo0x(cr.transaction_index),
-            type: nullableNumberTo0x(cr.type),
-            v: nanOrNumberTo0x(cr.v),
-            value: nanOrNumberTo0x(cr.amount)
+            maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas)
         }); // eip 1559 fields
-        case null: return new Transaction({
-            blockHash: toHash32(cr.block_hash),
-            blockNumber: nullableNumberTo0x(cr.block_number),
-            chainId: cr.chain_id,
-            from: cr.from.substring(0, 42),
-            gas: nanOrNumberTo0x(cr.gas_used),
-            gasPrice: toNullIfEmptyHex(cr.gas_price),
-            hash: cr.hash.substring(0, 66),
-            input: cr.function_parameters,
-            nonce: nanOrNumberTo0x(cr.nonce),
-            r: cr.r === null ? null : cr.r.substring(0, 66),
-            s: cr.s === null ? null : cr.s.substring(0, 66),
-            to: cr.to?.substring(0, 42),
-            transactionIndex: nullableNumberTo0x(cr.transaction_index),
-            type: nullableNumberTo0x(cr.type),
-            v: nanOrNumberTo0x(cr.v),
-            value: nanOrNumberTo0x(cr.amount)
-        }); //hapi
+        case null: return new Transaction(commonFields); //hapi
     }
     return null;
 };
