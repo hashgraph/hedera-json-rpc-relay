@@ -83,7 +83,7 @@ describe('@web-socket Acceptance Tests', async function() {
     const accounts: AliasAccount[] = [];
     let logContractSigner;
     // Cached original ENV variables
-    let originalWsMaxConnectionTtl;
+    let originalWsMaxInactivityTtl;
     let originalWsMultipleAddressesEnabledValue;
 
     const topics = [
@@ -513,12 +513,12 @@ describe('@web-socket Acceptance Tests', async function() {
 
         this.beforeAll(async () => {
             // cache original ENV values
-            originalWsMaxConnectionTtl = process.env.WS_MAX_CONNECTION_TTL || '300000';
-            process.env.WS_MAX_CONNECTION_TTL = TEST_TTL.toString();
+            originalWsMaxInactivityTtl = process.env.WS_MAX_INACTIVITY_TTL || '300000';
+            process.env.WS_MAX_INACTIVITY_TTL = TEST_TTL.toString();
         });
         this.afterAll(async () => {
             // Return ENV variables to their original value
-            process.env.WS_MAX_CONNECTION_TTL = originalWsMaxConnectionTtl;
+            process.env.WS_MAX_INACTIVITY_TTL = originalWsMaxInactivityTtl;
         });
 
         it('Connection TTL is enforced, should close all connections', async function () {
@@ -543,7 +543,7 @@ describe('@web-socket Acceptance Tests', async function() {
                 expect(message.toString('utf8')).to.equal(WebSocketError.TTL_EXPIRED.message);
             })
 
-            await new Promise(resolve => setTimeout(resolve, parseInt(process.env.WS_MAX_CONNECTION_TTL) + 1000));
+            await new Promise(resolve => setTimeout(resolve, parseInt(process.env.WS_MAX_INACTIVITY_TTL) + 1000));
 
             expect(closeEventHandled2).to.eq(true);
             expect(closeEventHandled3).to.eq(true);

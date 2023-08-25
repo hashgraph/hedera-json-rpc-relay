@@ -138,7 +138,7 @@ app.ws.use(async (ctx) => {
 
     ctx.websocket.on('message', async (msg) => {
         // Receiving a message from the client resets the TTL timer
-        limiter.resetConnectionTTLTimer(ctx.websocket);
+        limiter.resetInactivityTTLTimer(ctx.websocket);
         const requestIdPrefix = formatRequestIdMessage(uuid());
         let request;
         try {
