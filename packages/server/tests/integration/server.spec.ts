@@ -1800,9 +1800,10 @@ class BaseTest {
   }
 
   static validRequestIdCheck(response) {
-    expect(response.headers, "Default response: headers should have 'request-id' property").to.have.property('request-id');
-    expect(response.headers['request-id'], "Default response: 'headers[request-id]' should not be null").not.to.be.null;
-    expect(response.headers['request-id'], "Default response: 'headers[request-id]' should not be undefined").not.to.be.undefined;
+    const requestIdHeaderName = "X-Request-Id";
+    expect(response.headers, `Default response: headers should have '${requestIdHeaderName}' property`).to.have.property('request-id');
+    expect(response.headers[requestIdHeaderName], `Default response: 'headers[${requestIdHeaderName}]' should not be null`).not.to.be.null;
+    expect(response.headers[requestIdHeaderName], `Default response: 'headers[${requestIdHeaderName}]' should not be undefined`).not.to.be.undefined;
   }
 
   static validResponseCheck(response, options:any = {status: 200, statusText: 'OK'}) {
