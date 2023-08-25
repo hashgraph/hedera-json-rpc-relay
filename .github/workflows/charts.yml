@@ -56,4 +56,4 @@ jobs:
         uses: helm/chart-testing-action@v2.4.0
 
       - name: Install chart
-        run: ct install --helm-extra-args="--timeout 20m" --all
+        run: ct install --helm-extra-args="--timeout 10m" --all
