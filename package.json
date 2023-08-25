@@ -63,7 +63,6 @@
         "lerna": "^7.1.4",
         "pino": "^7.11.0",
         "pino-pretty": "^7.6.1",
-        "pnpm": "^8.6.12",
         "prom-client": "^14.0.1",
         "typescript": "^4.6.3"
     },
