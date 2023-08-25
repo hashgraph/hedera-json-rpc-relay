@@ -55,5 +55,8 @@ jobs:
       - name: Install ct
         uses: helm/chart-testing-action@v2.4.0
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Install chart
         run: ct install --helm-extra-args="--timeout 10m" --all
