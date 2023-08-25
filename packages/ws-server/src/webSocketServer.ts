@@ -33,6 +33,7 @@ import ConnectionLimiter from "./ConnectionLimiter";
 import { formatRequestIdMessage } from "@hashgraph/json-rpc-relay/dist/formatters";
 import { EthSubscribeLogsParamsObject } from "@hashgraph/json-rpc-server/dist/validator";
 import { v4 as uuid } from 'uuid';
+import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
 
 const mainLogger = pino({
     name: 'hedera-json-rpc-relay',
@@ -89,10 +90,11 @@ function getMultipleAddressesEnabled() {
     return process.env.WS_MULTIPLE_ADDRESSES_ENABLED === 'true';
 }
 
-async function validateIsContractAddress(address, requestId) {
-    const isContract = await mirrorNodeClient.isValidContract(address, requestId)
-    if (!isContract) {
-        throw new JsonRpcError(predefined.INVALID_PARAMETER(`filters.address`, `${address} is not a valid contract type or does not exists`), requestId);
+async function validateIsContractOrTokenAddress(address, requestId) {
+
+    const isContractOrToken = await mirrorNodeClient.resolveEntityType(address, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN], constants.METHODS.ETH_SUBSCRIBE, requestId)
+    if (!isContractOrToken) {
+        throw new JsonRpcError(predefined.INVALID_PARAMETER(`filters.address`, `${address} is not a valid contract or token type or does not exists`), requestId);
     }
 }
 
@@ -107,10 +109,10 @@ async function validateSubscribeEthLogsParams(filters: any, requestId: string) {
     if (paramsObject.address) {
         if (Array.isArray(paramsObject.address)) {
             for (const address of paramsObject.address) {
-                await validateIsContractAddress(address, requestId);
+                await validateIsContractOrTokenAddress(address, requestId);
             }
         } else {
-            await validateIsContractAddress(paramsObject.address, requestId);
+            await validateIsContractOrTokenAddress(paramsObject.address, requestId);
         }
     }
 }
@@ -154,13 +156,13 @@ app.ws.use(async (ctx) => {
         methodsCounter.labels(method).inc();
         methodsCounterByIp.labels(ctx.request.ip, method).inc();
 
-        if (method === 'eth_subscribe') {
+        if (method === constants.METHODS.ETH_SUBSCRIBE) {
             if (limiter.validateSubscriptionLimit(ctx)) {
                 const event = params[0];
                 const filters = params[1];
                 let subscriptionId;
 
-                if (event === 'logs') {
+                if (event === constants.SUBSCRIBE_EVENTS.LOGS) {
                     try {
                         await validateSubscribeEthLogsParams(filters, requestIdPrefix);
                     } catch (error) {
@@ -176,10 +178,10 @@ app.ws.use(async (ctx) => {
                         subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
                     }
                 }
-                else if (event === 'newHeads') {
+                else if (event === constants.SUBSCRIBE_EVENTS.NEW_HEADS) {
                     response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
                 }
-                else if (event === 'newPendingTransactions') {
+                else if (event === constants.SUBSCRIBE_EVENTS.NEW_PENDING_TRANSACTIONS) {
                     response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
                 }
                 else {
@@ -196,7 +198,7 @@ app.ws.use(async (ctx) => {
                 response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
             }
         }
-        else if (method === 'eth_unsubscribe') {
+        else if (method === constants.METHODS.ETH_UNSUBSCRIBE) {
             const subId = params[0];
             const unsubbedCount = relay.subs()?.unsubscribe(ctx.websocket, subId);
             const success = unsubbedCount !== 0;
@@ -208,7 +210,7 @@ app.ws.use(async (ctx) => {
         }
 
         // Clients want to know the chainId after connecting
-        else if (method === 'eth_chainId') {
+        else if (method === constants.METHODS.ETH_CHAIN_ID) {
             response = jsonResp(request.id, null, CHAIN_ID);
         }
         else {
