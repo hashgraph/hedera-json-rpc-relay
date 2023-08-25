@@ -92,7 +92,7 @@ describe('CacheService Test Suite', async function () {
       cacheService.set(key, value, callingMethod, undefined, undefined, true);
 
       mock.stub(cacheService, 'getAsync').returns(value);
-      const cachedValue = await cacheService.getAsync(key, callingMethod, undefined, true);
+      const cachedValue = await cacheService.getAsync(key, callingMethod, undefined);
 
       expect(cachedValue).eq(value);
     });
@@ -105,7 +105,7 @@ describe('CacheService Test Suite', async function () {
 
       await cacheService.delete(key, callingMethod, undefined, true);
       mock.stub(cacheService, 'getAsync').returns(null);
-      const cachedValue = await cacheService.getAsync(key, callingMethod, undefined, true);
+      const cachedValue = await cacheService.getAsync(key, callingMethod, undefined);
 
       expect(cachedValue).to.be.null;
     });

@@ -97,27 +97,24 @@ export class CacheService {
    * @param {string} key - The cache key.
    * @param {string} callingMethod - The name of the calling method.
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
-   * @param {boolean} [shared=false] - Whether to use the shared cache (optional, default: false).
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
   public async getAsync(
     key: string,
     callingMethod: string,
-    requestIdPrefix?: string,
-    shared: boolean = false
+    requestIdPrefix?: string
   ): Promise<any> {
-    if (shared && this.isSharedCacheEnabled) {
-      try {
-        return await this.sharedCache.get(key, callingMethod, requestIdPrefix);
-      } catch (error) {
-        const redisError = new RedisCacheError(error);
-        this.logger.error(
-          `${requestIdPrefix} Error occurred while getting the cache from Redis. Fallback to internal cache. Error is: ${redisError.fullError}`
-        );
-      }
+    if (!this.isSharedCacheEnabled) {
       return null;
-    } else {
-      return this.internalCache.get(key, callingMethod, requestIdPrefix);
+    }
+
+    try {
+      return await this.sharedCache.get(key, callingMethod, requestIdPrefix);
+    } catch (error) {
+      const redisError = new RedisCacheError(error);
+      this.logger.error(
+        `${requestIdPrefix} Error occurred while getting the cache from Redis. Fallback to internal cache. Error is: ${redisError.fullError}`
+      );
     }
   }
 

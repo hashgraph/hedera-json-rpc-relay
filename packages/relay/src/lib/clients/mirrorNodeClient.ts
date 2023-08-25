@@ -517,13 +517,13 @@ export class MirrorNodeClient {
         return `${constants.CACHE_KEY.GET_CONTRACT}.valid.${contractIdOrAddress}`;
     }
 
-    public async getIsValidContractCache(contractIdOrAddress): Promise<any> {
+    public getIsValidContractCache(contractIdOrAddress): any {
         const cachedLabel = this.getIsValidContractCacheLabel(contractIdOrAddress);
         return this.cacheService.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
     }
 
     public async isValidContract(contractIdOrAddress: string, requestIdPrefix?: string, retries?: number) {
-        const cachedResponse: any = await this.getIsValidContractCache(contractIdOrAddress);
+        const cachedResponse: any = this.getIsValidContractCache(contractIdOrAddress);
         if (cachedResponse != undefined) {
             return cachedResponse;
         }

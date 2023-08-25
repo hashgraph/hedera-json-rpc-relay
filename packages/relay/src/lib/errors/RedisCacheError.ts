@@ -29,6 +29,10 @@ export class RedisCacheError {
     public message?: string;
     public stack?: string;
 
+    static ErrorMessages = {
+        SOCKET_CLOSED: "SocketClosedUnexpectedlyError"
+    }
+    
     /**
      * Creates a new RedisCacheError instance from the provided error object.
      * @constructor
@@ -42,6 +46,6 @@ export class RedisCacheError {
     }
 
     public isSocketClosed(): boolean {
-        return this.type === "SocketClosedUnexpectedlyError";
+        return this.type === RedisCacheError.ErrorMessages.SOCKET_CLOSED;
     }
   }
