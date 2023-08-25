@@ -142,6 +142,18 @@ export default {
             PENDING_TRANSACTION: 'pendingTransaction'
         },
         TTL: parseInt(process.env.FILTER_TTL || '300000')   // default is 5 minutes
+    },
+
+    METHODS: {
+        ETH_SUBSCRIBE: 'eth_subscribe',
+        ETH_UNSUBSCRIBE: 'eth_unsubscribe',
+        ETH_CHAIN_ID: 'eth_chainId',
+    },
+
+    SUBSCRIBE_EVENTS: {
+        LOGS: 'logs',
+        NEW_HEADS: 'newHeads',
+        NEW_PENDING_TRANSACTIONS: 'newPendingTransactions'
     }
 };
 
