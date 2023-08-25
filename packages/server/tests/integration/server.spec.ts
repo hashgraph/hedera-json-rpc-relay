@@ -1800,7 +1800,7 @@ class BaseTest {
   }
 
   static validRequestIdCheck(response) {
-    const requestIdHeaderName = "X-Request-Id";
+    const requestIdHeaderName = "X-Request-Id".toLowerCase();
     expect(response.headers, `Default response: headers should have '${requestIdHeaderName}' property`).to.have.property(requestIdHeaderName);
     expect(response.headers[requestIdHeaderName], `Default response: 'headers[${requestIdHeaderName}]' should not be null`).not.to.be.null;
     expect(response.headers[requestIdHeaderName], `Default response: 'headers[${requestIdHeaderName}]' should not be undefined`).not.to.be.undefined;
