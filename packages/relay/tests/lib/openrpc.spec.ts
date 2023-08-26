@@ -33,7 +33,7 @@ import { RelayImpl } from '../../src/lib/relay';
 import { Registry } from 'prom-client';
 
 import { EthImpl } from '../../src/lib/eth';
-import { ClientCache, SDKClient } from '../../src/lib/clients';
+import { SDKClient } from '../../src/lib/clients';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 import openRpcSchema from "../../../../docs/openrpc.json";
@@ -73,6 +73,7 @@ import { numberTo0x } from '../../../../packages/relay/src/formatters';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 import constants from '../../src/lib/constants';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 
 process.env.npm_package_version = "relay/0.0.1-SNAPSHOT";
 
@@ -112,18 +113,18 @@ describe("Open RPC Specification", function () {
 
         // @ts-ignore
         mock = new MockAdapter(instance, { onNoMatch: "throwException" });
-        const clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
+        const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
         // @ts-ignore
-        mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache, instance);
+        mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, cacheService, instance);
         const duration = constants.HBAR_RATE_LIMIT_DURATION;
         const total = constants.HBAR_RATE_LIMIT_TINYBAR;
         const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
 
-        clientServiceInstance = new ClientService(logger, registry, hbarLimiter, clientCache);
+        clientServiceInstance = new ClientService(logger, registry, hbarLimiter, cacheService);
         sdkClientStub = sinon.createStubInstance(SDKClient);
         sinon.stub(clientServiceInstance, "getSDKClient").returns(sdkClientStub);
         // @ts-ignore
-        ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
+        ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
 
         // mocked data
         mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });

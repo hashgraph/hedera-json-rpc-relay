@@ -34,6 +34,9 @@ jobs:
         run: npx hedera start -d  
         timeout-minutes: 5
 
+      - name: Compile contracts
+        run: npx hardhat compile
+
       - name: Deploy and interact with contracts
         run: npx hardhat prepare
       

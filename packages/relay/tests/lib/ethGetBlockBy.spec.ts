@@ -31,9 +31,9 @@ import pino from 'pino';
 import constants from '../../src/lib/constants';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
-import { ClientCache } from '../../src/lib/clients';
 import { Log, Transaction } from '../../src/lib/model';
 import { nullableNumberTo0x, numberTo0x, nanOrNumberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 
 const LRU = require('lru-cache');
 
@@ -43,7 +43,7 @@ const registry = new Registry();
 let restMock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
-let clientCache: ClientCache;
+let cacheService: CacheService;
 let mirrorNodeCache;
 
 
@@ -260,10 +260,10 @@ describe('eth_getBlockBy', async function () {
     let ethImpl: EthImpl;
 
     this.beforeAll(() => {
-      clientCache = new ClientCache(logger.child({ name: `cache` }), registry);
+      cacheService = new CacheService(logger.child({ name: `cache` }), registry);
 
       // @ts-ignore
-      mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, clientCache);
+      mirrorNodeInstance = new MirrorNodeClient(process.env.MIRROR_NODE_URL, logger.child({ name: `mirror-node` }), registry, cacheService);
 
       // @ts-ignore
       mirrorNodeCache = mirrorNodeInstance.cache;
@@ -275,19 +275,18 @@ describe('eth_getBlockBy', async function () {
       const total = constants.HBAR_RATE_LIMIT_TINYBAR;
       const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
 
-      hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, clientCache);
+      hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService);
 
       process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
       // @ts-ignore
-      ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, clientCache);
+      ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     });
 
 
     this.beforeEach(() => {
       // reset cache and restMock
-      mirrorNodeCache.clear();
-      clientCache.clear();
+      cacheService.clear();
       restMock.reset();
     });
 
@@ -425,27 +424,27 @@ describe('eth_getBlockBy', async function () {
     const cacheKeySyntheticLog3 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${modelLog3.transactionHash}`;
 
     it('filterAndPopulateSyntheticContractResults showDetails=false sets cache', async function () {
-      expect(clientCache.get(cacheKeySyntheticLog1, '', '')).to.be.null;
-      expect(clientCache.get(cacheKeySyntheticLog2, '', '')).to.be.null;
-      expect(clientCache.get(cacheKeySyntheticLog3, '', '')).to.be.null;
+      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.null;
+      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.null;
+      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.null;
 
       ethImpl.filterAndPopulateSyntheticContractResults(false, referenceLogs, [], '1');
 
-      expect(clientCache.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
-      expect(clientCache.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
-      expect(clientCache.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
+      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
+      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
+      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
     });
 
     it('filterAndPopulateSyntheticContractResults showDetails=true sets cache', async function () {
-      expect(clientCache.get(cacheKeySyntheticLog1, '', '')).to.be.null;
-      expect(clientCache.get(cacheKeySyntheticLog2, '', '')).to.be.null;
-      expect(clientCache.get(cacheKeySyntheticLog3, '', '')).to.be.null;
+      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.null;
+      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.null;
+      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.null;
 
       ethImpl.filterAndPopulateSyntheticContractResults(true, referenceLogs, [], '1');
 
-      expect(clientCache.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
-      expect(clientCache.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
-      expect(clientCache.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
+      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
+      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
+      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
     });
   });
 });

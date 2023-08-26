@@ -47,6 +47,9 @@ config:
   HAPI_CLIENT_TRANSACTION_RESET: 50
   HAPI_CLIENT_DURATION_RESET: 3600000
   HAPI_CLIENT_ERROR_RESET: [50]
+  REDIS_ENABLED: false
+  REDIS_URL: ''
+  REDIS_RECONNECT_DELAY_MS: 1000
 
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []

@@ -29,6 +29,9 @@ config:
   WS_MULTIPLE_ADDRESSES_ENABLED: false
   WS_SUBSCRIPTION_LIMIT: 100
   WS_PING_INTERVAL: 1000
+  REDIS_ENABLED: false
+  REDIS_URL: ''
+  REDIS_RECONNECT_DELAY_MS: 1000
 
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []
