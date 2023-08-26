@@ -55,7 +55,7 @@ import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
-import { ClientCache } from './clientCache';
+import { CacheService } from '../services/cacheService/cacheService';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -88,7 +88,7 @@ export class SDKClient {
      * LRU cache container.
      * @private
      */
-    private readonly cache: ClientCache;
+    private readonly cacheService: CacheService;
 
     private consensusNodeClientHistogramCost;
     private consensusNodeClientHistogramGasFee;
@@ -96,7 +96,7 @@ export class SDKClient {
     private maxChunks;
 
     // populate with consensusnode requests via SDK
-    constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, clientCache: ClientCache) {
+    constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, cacheService: CacheService) {
         this.clientMain = clientMain;
 
         if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
@@ -111,7 +111,7 @@ export class SDKClient {
         this.operatorAccountGauge = metrics.operatorGauge;
 
         this.hbarLimiter = hbarLimiter;
-        this.cache = clientCache;
+        this.cacheService = cacheService;
         this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     }
 
@@ -167,7 +167,7 @@ export class SDKClient {
     }
 
     async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
-        const cachedResponse: number | undefined = this.cache.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, callerName);
+        const cachedResponse: number | undefined = this.cacheService.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, callerName);
         if (cachedResponse) {
             return cachedResponse;
         }
@@ -183,7 +183,7 @@ export class SDKClient {
                 const exchangeRates = await this.getExchangeRate(callerName, requestId);
                 const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
-                this.cache.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, undefined, requestId);
+                this.cacheService.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, undefined, requestId);
                 return tinyBars;
             }
         }

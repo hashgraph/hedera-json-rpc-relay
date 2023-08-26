@@ -20,13 +20,13 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-import { AccountBalanceQuery, AccountId, Client, PrivateKey } from '@hashgraph/sdk';
+import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Registry, Counter, Gauge, Histogram } from 'prom-client';
+import { Registry, Counter, Histogram } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import constants from '../../constants';
 import HbarLimit from '../../hbarlimiter';
-import { ClientCache } from '../../clients';
+import { CacheService } from '../cacheService/cacheService';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -73,13 +73,13 @@ export default class HAPIService {
   private consensusNodeClientHistogramCost: Histogram;
   private consensusNodeClientHistogramGasFee: Histogram;
   private metrics: any;
-  private readonly cache: ClientCache;
+  private readonly cacheService: CacheService;
 
   /**
    * @param {Logger} logger
    * @param {Registry} register
    */
-  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit, clientCache) {
+  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit, cacheService) {
     dotenv.config({ path: findConfig('.env') || '' });
 
     this.logger = logger;
@@ -92,7 +92,7 @@ export default class HAPIService {
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
 
     this.metrics = { costHistogram: this.consensusNodeClientHistogramCost, gasHistogram: this.consensusNodeClientHistogramGasFee };
-    this.cache = clientCache;
+    this.cacheService = cacheService;
     this.client = this.initSDKClient(logger, this.metrics);
 
     const currentDateNow = Date.now();
@@ -189,7 +189,7 @@ export default class HAPIService {
    * @returns SDK Client
    */
   private initSDKClient(logger: Logger, metrics: any): SDKClient {
-    return new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), this.hbarLimiter, metrics, this.cache);
+    return new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), this.hbarLimiter, metrics, this.cacheService);
   }
 
   /**

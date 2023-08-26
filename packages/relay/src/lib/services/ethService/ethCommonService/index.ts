@@ -22,12 +22,13 @@ import constants from "../../../constants";
 import {JsonRpcError, predefined} from "../../../errors/JsonRpcError";
 import {ICommonService} from "./ICommonService";
 import { Logger } from 'pino';
-import { ClientCache, MirrorNodeClient } from '../../../clients';
+import { MirrorNodeClient } from '../../../clients';
 import { nullableNumberTo0x, numberTo0x, parseNumericEnvVar, toHash32 } from "../../../../formatters";
 import {SDKClientError} from "../../../errors/SDKClientError";
 import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
 import { Log } from '../../../model';
 import * as _ from 'lodash';
+import { CacheService } from "../../cacheService/cacheService";
 
 
 /**
@@ -36,7 +37,7 @@ import * as _ from 'lodash';
  * @param logger
  * @param chain
  * @param registry
- * @param clientCache
+ * @param cacheService
  */
 export class CommonService implements ICommonService {
     /**
@@ -56,7 +57,7 @@ export class CommonService implements ICommonService {
      *
      * @private
      */
-    private readonly cache: ClientCache;
+    private readonly cacheService: CacheService;
 
     static blockLatest = 'latest';
     static blockEarliest = 'earliest';
@@ -68,10 +69,10 @@ export class CommonService implements ICommonService {
     private readonly maxBlockRange = parseNumericEnvVar('MAX_BLOCK_RANGE', 'MAX_BLOCK_RANGE');
     private readonly ethBlockNumberCacheTtlMs = parseNumericEnvVar('ETH_BLOCK_NUMBER_CACHE_TTL_MS', 'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT');
 
-    constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, clientCache: ClientCache) {
+    constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService) {
         this.mirrorNodeClient = mirrorNodeClient;
         this.logger = logger;
-        this.cache = clientCache;
+        this.cacheService = cacheService;
     }
 
     public blockTagIsLatestOrPending = (tag) => {
@@ -170,7 +171,7 @@ export class CommonService implements ICommonService {
     public async getLatestBlockNumber(requestIdPrefix?: string): Promise<string> {
         // check for cached value
         const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
-        const blockNumberCached = this.cache.get(cacheKey, CommonService.latestBlockNumber);
+        const blockNumberCached = this.cacheService.get(cacheKey, CommonService.latestBlockNumber);
 
         if(blockNumberCached) {
             this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
@@ -182,7 +183,7 @@ export class CommonService implements ICommonService {
         if (Array.isArray(blocks) && blocks.length > 0) {
             const currentBlock = numberTo0x(blocks[0].number);
             // save the latest block number in cache
-            this.cache.set(cacheKey, currentBlock, CommonService.latestBlockNumber, this.ethBlockNumberCacheTtlMs, requestIdPrefix);
+            this.cacheService.set(cacheKey, currentBlock, CommonService.latestBlockNumber, this.ethBlockNumberCacheTtlMs, requestIdPrefix);
 
             return currentBlock;
         }

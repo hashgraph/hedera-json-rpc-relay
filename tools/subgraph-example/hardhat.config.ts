@@ -24,7 +24,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import "@typechain/hardhat";
 import "@nomiclabs/hardhat-waffle";
-import "@graphprotocol/hardhat-graph";
+import "hardhat-graph";
 import { task } from "hardhat/config";
 import { mintNFT, transferERC20, createGravatar, updateGravatarName, transferHtsFT, mintHtsNft } from "./scripts";
 import { Client, LocalProvider, TokenCreateTransaction, TokenMintTransaction, TokenSupplyType, TokenType, Wallet } from "@hashgraph/sdk";

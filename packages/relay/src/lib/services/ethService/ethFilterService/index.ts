@@ -19,13 +19,14 @@
  */
 
 import { Logger } from 'pino';
-import { ClientCache, MirrorNodeClient } from '../../../clients';
+import { MirrorNodeClient } from '../../../clients';
 import constants from '../../../constants';
 import { IFilterService } from './IFilterService';
 import { CommonService } from './../ethCommonService';
 import {generateRandomHex} from "../../../../formatters";
 import {JsonRpcError, predefined} from "../../../errors/JsonRpcError";
 import { Log } from '../../../model';
+import { CacheService } from '../../cacheService/cacheService';
 
 /**
  * Create a new Filter Service implementation.
@@ -33,7 +34,7 @@ import { Log } from '../../../model';
  * @param logger
  * @param chain
  * @param registry
- * @param clientCache
+ * @param cacheService
  */
 export class FilterService implements IFilterService {
   /**
@@ -53,7 +54,7 @@ export class FilterService implements IFilterService {
    *
    * @private
    */
-  private readonly cache: ClientCache;
+  private readonly cacheService: CacheService;
   public readonly ethNewFilter = 'eth_newFilter';
   public readonly ethUninstallFilter = 'eth_uninstallFilter';
   public readonly ethGetFilterLogs = 'eth_getFilterLogs';
@@ -62,10 +63,10 @@ export class FilterService implements IFilterService {
   private readonly common: CommonService;
   private readonly supportedTypes;
 
-  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, clientCache: ClientCache, common: CommonService) {
+  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService, common: CommonService) {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
-    this.cache = clientCache;
+    this.cacheService = cacheService;
     this.common = common;
 
     this.supportedTypes = [constants.FILTER.TYPE.LOG, constants.FILTER.TYPE.NEW_BLOCK];
@@ -80,7 +81,7 @@ export class FilterService implements IFilterService {
   createFilter(type: string, params: any, requestIdPrefix?: string): string {
     const filterId = generateRandomHex();
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    this.cache.set(cacheKey, {
+    this.cacheService.set(cacheKey, {
       type,
       params,
       lastQueried: null
@@ -145,10 +146,10 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cache.get(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+    const filter = this.cacheService.get(cacheKey, this.ethUninstallFilter, requestIdPrefix);
 
     if (filter) {
-      this.cache.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+      this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix);
       return true;
     }
 
@@ -165,7 +166,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cache.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
+    const filter = this.cacheService.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
     if (filter?.type != constants.FILTER.TYPE.LOG) {
       throw predefined.FILTER_NOT_FOUND;
     }
@@ -185,7 +186,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cache.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
+    const filter = this.cacheService.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
 
     if (!filter) {
       throw predefined.FILTER_NOT_FOUND;
@@ -224,7 +225,7 @@ export class FilterService implements IFilterService {
     }
 
     // update filter to refresh TTL and set lastQueried block number
-    this.cache.set(cacheKey, {
+    this.cacheService.set(cacheKey, {
       type: filter.type,
       params: filter.params,
       lastQueried: latestBlockNumber
