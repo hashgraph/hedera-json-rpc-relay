@@ -1799,6 +1799,13 @@ class BaseTest {
     });
   }
 
+  static validRequestIdCheck(response) {
+    const requestIdHeaderName = "X-Request-Id".toLowerCase();
+    expect(response.headers, `Default response: headers should have '${requestIdHeaderName}' property`).to.have.property(requestIdHeaderName);
+    expect(response.headers[requestIdHeaderName], `Default response: 'headers[${requestIdHeaderName}]' should not be null`).not.to.be.null;
+    expect(response.headers[requestIdHeaderName], `Default response: 'headers[${requestIdHeaderName}]' should not be undefined`).not.to.be.undefined;
+  }
+
   static validResponseCheck(response, options:any = {status: 200, statusText: 'OK'}) {
     expect(response.status).to.eq(options.status);
     expect(response.statusText).to.eq(options.statusText);
@@ -1815,6 +1822,7 @@ class BaseTest {
   static defaultResponseChecks(response) {
     BaseTest.validResponseCheck(response);
     BaseTest.validCorsCheck(response);
+    BaseTest.validRequestIdCheck(response);
     expect(response, "Default response: Should have 'data' property").to.have.property('data');
     expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
     expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
@@ -1825,6 +1833,7 @@ class BaseTest {
   }
 
   static errorResponseChecks(response, code, message, name?) {
+    BaseTest.validRequestIdCheck(response);
     expect(response, "Error response: should have 'data' property").to.have.property('data');
     expect(response.data, "Error response: 'data' should have 'id' property").to.have.property('id');
     expect(response.data, "Error response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
@@ -1860,6 +1869,7 @@ class BaseTest {
   }
 
   static invalidRequestSpecError(response: any, code: number, message: string) {
+    BaseTest.validRequestIdCheck(response);
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
     expect(response, "Default response: Should have 'data' property").to.have.property('data');
