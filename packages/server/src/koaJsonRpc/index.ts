@@ -48,8 +48,9 @@ const INTERNAL_ERROR = "INTERNAL ERROR";
 const INVALID_PARAMS_ERROR = "INVALID PARAMS ERROR";
 const INVALID_REQUEST = "INVALID REQUEST";
 const IP_RATE_LIMIT_EXCEEDED = "IP RATE LIMIT EXCEEDED";
-const JSON_RPC_ERROR = "JSON RPC ERROR"
+const JSON_RPC_ERROR = "JSON RPC ERROR";
 const METHOD_NOT_FOUND = "METHOD NOT FOUND";
+const REQUEST_ID_HEADER_NAME = "X-Request-Id";
 
 const responseSuccessStatusCode = '200';
 
@@ -97,6 +98,7 @@ export default class KoaJsonRpc {
       let body, result;
 
       this.requestId = ctx.state.reqId;
+      ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
       
       if (this.token) {
         const headerToken = ctx.get('authorization').split(' ').pop();
