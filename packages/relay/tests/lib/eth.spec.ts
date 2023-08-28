@@ -56,7 +56,7 @@ import {
 } from '../helpers';
 
 import pino from 'pino';
-import { Log, Transaction } from '../../src/lib/model';
+import { Log, Transaction, Transaction1559, Transaction2930 } from '../../src/lib/model';
 import constants from '../../src/lib/constants';
 import { ClientCache, SDKClient } from '../../src/lib/clients';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
@@ -285,6 +285,39 @@ describe('Eth calls using MirrorNode', async function () {
     'links': {
       'next': null
     }
+  };
+
+  const contractResultMock = {
+    address: '0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69',
+    amount: 20,
+    bloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+    call_result: '0x',
+    contract_id: '0.0.1012',
+    created_contract_ids: [],
+    error_message: null,
+    from: '0x00000000000000000000000000000000000003f7',
+    function_parameters: '0x',
+    gas_limit: 250000,
+    gas_used: 200000,
+    timestamp: '1692959189.214316721',
+    to: '0x00000000000000000000000000000000000003f4',
+    hash: '0x7e8a09541c80ccda1f5f40a1975e031ed46de5ad7f24cd4c37be9bac65149b9e',
+    block_hash: '0xa414a76539f84ae1c797fa10d00e49d5e7a1adae556dcd43084551e671623d2eba825bcb7bbfd5b7e3fe59d63d8a167f',
+    block_number: 61033,
+    logs: [],
+    result: 'SUCCESS',
+    transaction_index: 2,
+    state_changes: [],
+    status: '0x1',
+    failed_initcode: null,
+    block_gas_used: 200000,
+    chain_id: '0x12a',
+    gas_price: '0x',
+    r: '0x85b423416d0164d0b2464d880bccb0679587c00673af8e016c8f0ce573be69b2',
+    s: '0x3897a5ce2ace1f242d9c989cd9c163d79760af4266f3bf2e69ee288bcffb211a',
+    type: 2,
+    v: 1,
+    nonce: 9
   };
 
   const defaultLogTopics = [
@@ -1296,6 +1329,46 @@ describe('Eth calls using MirrorNode', async function () {
 
     const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), numberTo0x(defaultBlock.count));
     expect(result).to.equal(null);
+  });
+
+  it('eth_getTransactionByBlockHashAndIndex returns 155 transaction for type 0', async function () {
+    restMock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, {
+      'results' : [{
+        ...contractResultMock,
+        type: 0
+      }]
+    });
+    
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), numberTo0x(defaultBlock.count));
+    expect(result).to.be.an.instanceOf(Transaction);
+  });
+
+  it('eth_getTransactionByBlockHashAndIndex returns 2930 transaction for type 1', async function () {
+    restMock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, {
+      'results' : [{
+        ...contractResultMock,
+        type: 1,
+        access_list: []
+      }]
+    });
+
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), numberTo0x(defaultBlock.count));
+    expect(result).to.be.an.instanceOf(Transaction2930);
+  });
+
+  it('eth_getTransactionByBlockHashAndIndex returns 1559 transaction for type 2', async function () {
+    restMock.onGet(`contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`).reply(200, {
+      'results' : [{
+        ...contractResultMock,
+        type: 2,
+        access_list: [],
+        max_fee_per_gas: '0x47',
+        max_priority_fee_per_gas: '0x47'
+      }]
+    });
+
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash.toString(), numberTo0x(defaultBlock.count));
+    expect(result).to.be.an.instanceOf(Transaction1559);
   });
 
   describe('Block transaction count', async function () {
@@ -4941,15 +5014,89 @@ describe('Eth', async function () {
   });
 
   describe('eth_getTransactionByHash', async function () {
-    const uniqueTxHash = '0x27cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+    const from = '0x00000000000000000000000000000000000003f7';
+    const evm_address = '0xc37f417fa09933335240fca72dd257bfbde9c275';
+    const contractResultMock = {
+      address: '0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69',
+      amount: 20,
+      bloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+      call_result: '0x',
+      contract_id: '0.0.1012',
+      created_contract_ids: [],
+      error_message: null,
+      from: '0x00000000000000000000000000000000000003f7',
+      function_parameters: '0x',
+      gas_limit: 250000,
+      gas_used: 200000,
+      timestamp: '1692959189.214316721',
+      to: '0x00000000000000000000000000000000000003f4',
+      hash: '0x7e8a09541c80ccda1f5f40a1975e031ed46de5ad7f24cd4c37be9bac65149b9e',
+      block_hash: '0xa414a76539f84ae1c797fa10d00e49d5e7a1adae556dcd43084551e671623d2eba825bcb7bbfd5b7e3fe59d63d8a167f',
+      block_number: 61033,
+      logs: [],
+      result: 'SUCCESS',
+      transaction_index: 2,
+      state_changes: [],
+      status: '0x1',
+      failed_initcode: null,
+      block_gas_used: 200000,
+      chain_id: '0x12a',
+      gas_price: '0x',
+      r: '0x85b423416d0164d0b2464d880bccb0679587c00673af8e016c8f0ce573be69b2',
+      s: '0x3897a5ce2ace1f242d9c989cd9c163d79760af4266f3bf2e69ee288bcffb211a',
+      v: 1,
+      nonce: 9
+    };
 
-    beforeEach(function() {
+    this.beforeEach(function() {
+      restMock.reset();
       restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
         evm_address: `${defaultTransaction.from}`
       });
+      restMock.onGet(`accounts/${from}?transactions=false`).reply(200, {
+        evm_address: evm_address
+      });
+    });
+
+    it('returns 155 transaction for type 0', async function () {
+      const uniqueTxHash = '0x27cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {
+        ...contractResultMock,
+        type: 0
+      });
+      
+      const result = await ethImpl.getTransactionByHash(uniqueTxHash);
+      expect(result).to.be.an.instanceOf(Transaction);
+    });
+
+    it('returns 2930 transaction for type 1', async function () {
+      const uniqueTxHash = '0x28cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {
+        ...contractResultMock,
+        type: 1,
+        access_list: []
+      });
+
+      const result =  await ethImpl.getTransactionByHash(uniqueTxHash);
+      expect(result).to.be.an.instanceOf(Transaction2930);
+    });
+
+    it('returns 1559 transaction for type 2', async function () {
+      const uniqueTxHash = '0x27cad7b827375d12d73af57b7a3e84353645fd31305ea58ff52dda53ec640533';
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {
+        ...contractResultMock,
+        type: 2,
+        access_list: [],
+        max_fee_per_gas: '0x47',
+        max_priority_fee_per_gas: '0x47'
+      });
+
+      const result = await ethImpl.getTransactionByHash(uniqueTxHash);
+      expect(result).to.be.an.instanceOf(Transaction1559);
     });
 
     it('returns `null` for non-existing hash', async function () {
+      const uniqueTxHash = '0x27cAd7b838375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(404, {
         '_status': {
           'messages': [
