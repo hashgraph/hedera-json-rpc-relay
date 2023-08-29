@@ -77,11 +77,14 @@
         "nx": "16.5.5"
     },
     "lint-staged": {
-        "src/**/*.{ts}": [
+        "packages/**/src/**/*.ts": [
           "prettier --write"
         ],
-        "src/**/*.ts": [
-          "eslint --fix"
+        "!(packages/**/src/dist/)*.ts": [
+            "prettier --write"
+        ],
+        "!(packages/**/src/node_modules/)*.ts": [
+            "prettier --write"
         ]
       },
       "husky": {
