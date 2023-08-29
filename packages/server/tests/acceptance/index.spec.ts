@@ -86,7 +86,7 @@ describe('RPC Server Acceptance Tests', function () {
         }
 
         if (global.relayIsLocal) {
-            runLocalRelay();
+            await runLocalRelay();
         }
 
         // cache start balance
@@ -151,15 +151,15 @@ describe('RPC Server Acceptance Tests', function () {
         console.log('Hedera Hashgraph local node env started');
     }
 
-    function runLocalRelay() {
+    async function runLocalRelay() {
         // start local relay, stop relay instance in local
         shell.exec('docker stop json-rpc-relay');
         logger.info(`Start relay on port ${constants}`);
-        relayServer = app.listen({ port: constants.RELAY_PORT });
+        relayServer = await app.listen({ port: constants.RELAY_PORT });
 
         if (process.env.TEST_WS_SERVER === 'true') {
             logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
-            global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
+            global.socketServer = await wsApp.listen({ port: constants.WEB_SOCKET_PORT });
         }
     }
 

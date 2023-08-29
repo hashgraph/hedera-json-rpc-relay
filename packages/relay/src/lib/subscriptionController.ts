@@ -19,12 +19,11 @@
  */
 
 import { Logger } from 'pino';
-import LRU from "lru-cache";
 import crypto from "crypto";
-import constants from "./constants";
 import { Poller } from './poller';
 import {generateRandomHex} from '../formatters';
 import {Registry, Histogram, Counter} from "prom-client";
+import {CacheService} from "./services/cacheService/cacheService";
 
 export interface Subscriber {
     connection: any,
@@ -33,12 +32,13 @@ export interface Subscriber {
 }
 
 const CACHE_TTL = Number(process.env.WS_CACHE_TTL) || 20000;
+const NOTIFY_SUBSCRIBERS = 'notifySubscribers';
 
 export class SubscriptionController {
     private poller: Poller;
     private logger: Logger;
     private subscriptions: {[key: string]: Subscriber[]};
-    private cache;
+    private cacheService: CacheService;
     private activeSubscriptionHistogram: Histogram;
     private resultsSentToSubscribersCounter: Counter;
 
@@ -47,7 +47,7 @@ export class SubscriptionController {
         this.logger = logger;
         this.subscriptions = {};
 
-        this.cache = new LRU({ max: constants.CACHE_MAX, ttl: CACHE_TTL });
+        this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);
 
         const activeSubscriptionHistogramName = 'rpc_websocket_subscription_times';
         register.removeSingleMetric(activeSubscriptionHistogramName);
@@ -157,7 +157,7 @@ export class SubscriptionController {
 
     notifySubscribers(tag, data) {
         if (this.subscriptions[tag] && this.subscriptions[tag].length) {
-            this.subscriptions[tag].forEach(sub => {
+            this.subscriptions[tag].forEach(async sub => {
                 const subscriptionData = {
                     result: data,
                     subscription: sub.subscriptionId
@@ -165,8 +165,9 @@ export class SubscriptionController {
                 const hash = this.createHash(JSON.stringify(subscriptionData));
 
                 // If the hash exists in the cache then the data has recently been sent to the subscriber
-                if (!this.cache.get(hash)) {
-                    this.cache.set(hash, true);
+                const cachedHash = await this.cacheService.get(hash, NOTIFY_SUBSCRIBERS);
+                if (!cachedHash) {
+                    this.cacheService.set(hash, true, NOTIFY_SUBSCRIBERS, CACHE_TTL);
                     this.logger.debug(`Sending data from tag: ${tag} to subscriptionId: ${sub.subscriptionId}, connectionId: ${sub.connection.id}, data: ${subscriptionData}`);
                     this.resultsSentToSubscribersCounter.labels('sub.subscriptionId', tag).inc();
                     sub.connection.send(JSON.stringify({

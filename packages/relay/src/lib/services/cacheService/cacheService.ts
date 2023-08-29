@@ -58,18 +58,26 @@ export class CacheService {
    * Used for reference to the state of REDIS_ENABLED and REDIS_URL env. variables.
    */
   private readonly isSharedCacheEnabled: boolean;
+
+  /**
+   * Used to set a shared cache policy for the class instance
+   * @private
+   */
+  private readonly useSharedCache: boolean;
+
   /**
    * Represents a caching manager that utilizes various cache implementations based on configuration.
    * @param {Logger} logger - The logger used for logging all output from this class.
    * @param {Registry} register - The metrics register used for metrics tracking.
    */
-  public constructor(logger: Logger, register: Registry) {
+  public constructor(logger: Logger, register: Registry, useSharedCache: boolean = false) {
     this.logger = logger;
     this.register = register;
 
     this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     this.sharedCache = this.internalCache;
     this.isSharedCacheEnabled = this.isRedisEnabled();
+    this.useSharedCache = useSharedCache;
 
     if (this.isSharedCacheEnabled) {
       this.sharedCache = new RedisCache(logger.child({ name: 'redisCache' }), register);
@@ -89,6 +97,10 @@ export class CacheService {
       return true;
     }
     return false;
+  }
+
+  private shouldUseSharedCache(shared: boolean = false): boolean {
+    return (shared || this.useSharedCache) && this.isSharedCacheEnabled;
   }
 
   /**
@@ -126,8 +138,20 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
-  public get(key: string, callingMethod: string, requestIdPrefix?: string): any {
-    return this.internalCache.get(key, callingMethod, requestIdPrefix);
+  public async get(key: string, callingMethod: string, requestIdPrefix?: string, shared: boolean = false): Promise<any> {
+    if (this.shouldUseSharedCache(shared)) {
+      try {
+        return await this.sharedCache.get(key, callingMethod, requestIdPrefix);
+      } catch (error) {
+        const redisError = new RedisCacheError(error);
+        this.logger.error(
+            `${requestIdPrefix} Error occurred while getting the cache from Redis. Fallback to internal cache. Error is: ${redisError.fullError}`
+        );
+      }
+    }
+    else {
+      return this.internalCache.get(key, callingMethod, requestIdPrefix);
+    }
   }
 
   /**
@@ -149,7 +173,7 @@ export class CacheService {
     requestIdPrefix?: string,
     shared: boolean = false
   ): void {
-    if (shared && this.isSharedCacheEnabled) {
+    if ((shared || this.useSharedCache) && this.isSharedCacheEnabled) {
       try {
         this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
       } catch (error) {

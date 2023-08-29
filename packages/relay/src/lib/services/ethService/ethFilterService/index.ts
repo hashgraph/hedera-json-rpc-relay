@@ -27,6 +27,7 @@ import {generateRandomHex} from "../../../../formatters";
 import {JsonRpcError, predefined} from "../../../errors/JsonRpcError";
 import { Log } from '../../../model';
 import { CacheService } from '../../cacheService/cacheService';
+import {Registry} from "prom-client";
 
 /**
  * Create a new Filter Service implementation.
@@ -63,12 +64,20 @@ export class FilterService implements IFilterService {
   private readonly common: CommonService;
   private readonly supportedTypes;
 
-  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService, common: CommonService) {
-    this.mirrorNodeClient = mirrorNodeClient;
-    this.logger = logger;
-    this.cacheService = cacheService;
-    this.common = common;
+  constructor(logger: Logger, register: Registry) {
 
+    // Create new instance of cacheService with shared=true and pass it to the other services
+    this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register, true);
+    this.mirrorNodeClient = new MirrorNodeClient(
+        process.env.MIRROR_NODE_URL || '',
+        logger.child({ name: `mirror-node` }),
+        register,
+        this.cacheService,
+        undefined,
+        process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || ''
+    );
+    this.common = new CommonService(this.mirrorNodeClient, logger, this.cacheService);
+    this.logger = logger;
     this.supportedTypes = [constants.FILTER.TYPE.LOG, constants.FILTER.TYPE.NEW_BLOCK];
   }
 
@@ -146,7 +155,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cacheService.get(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+    const filter = await this.cacheService.get(cacheKey, this.ethUninstallFilter, requestIdPrefix);
 
     if (filter) {
       this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix);
@@ -166,7 +175,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cacheService.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
+    const filter = await this.cacheService.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
     if (filter?.type != constants.FILTER.TYPE.LOG) {
       throw predefined.FILTER_NOT_FOUND;
     }
@@ -186,7 +195,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cacheService.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
+    const filter = await this.cacheService.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
 
     if (!filter) {
       throw predefined.FILTER_NOT_FOUND;

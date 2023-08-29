@@ -76,8 +76,6 @@ export class RedisCache implements ICacheClient {
         },
       },
     });
-    this.client.connect();
-
     this.client.on('ready', function () {
       logger.info(`Connected to Redis server (${redisUrl}) successfully!`);
     });
@@ -90,6 +88,8 @@ export class RedisCache implements ICacheClient {
         logger.error(`Error occurred with Redis Connection: ${redisError.fullError}`);
       }
     });
+
+    this.client.connect();
   }
 
   /**

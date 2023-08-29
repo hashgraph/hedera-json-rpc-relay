@@ -51,7 +51,7 @@ describe('CacheService Test Suite', async function () {
       const value = 'value';
 
       cacheService.set(key, value, callingMethod);
-      const cachedValue = cacheService.get(key, callingMethod);
+      const cachedValue = await cacheService.get(key, callingMethod);
 
       expect(cachedValue).eq(value);
     });
@@ -62,7 +62,7 @@ describe('CacheService Test Suite', async function () {
 
       cacheService.set(key, value, callingMethod);
       cacheService.delete(key, callingMethod);
-      const cachedValue = cacheService.get(key, callingMethod);
+      const cachedValue = await cacheService.get(key, callingMethod);
 
       expect(cachedValue).to.be.null;
     });

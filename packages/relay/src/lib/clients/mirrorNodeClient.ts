@@ -483,7 +483,7 @@ export class MirrorNodeClient {
 
     public async getBlock(hashOrBlockNumber: string | number, requestIdPrefix?: string) {
         const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.${hashOrBlockNumber}`;
-        const cachedResponse: any = this.cacheService.get(cachedLabel, MirrorNodeClient.GET_BLOCK_ENDPOINT);
+        const cachedResponse: any = await this.cacheService.get(cachedLabel, MirrorNodeClient.GET_BLOCK_ENDPOINT);
         if (cachedResponse) {
             return cachedResponse;
         }
@@ -517,13 +517,13 @@ export class MirrorNodeClient {
         return `${constants.CACHE_KEY.GET_CONTRACT}.valid.${contractIdOrAddress}`;
     }
 
-    public getIsValidContractCache(contractIdOrAddress): any {
-        const cachedLabel = this.getIsValidContractCacheLabel(contractIdOrAddress);
+    public async getIsValidContractCache(contractIdOrAddress): Promise<any> {
+        const cachedLabel = await this.getIsValidContractCacheLabel(contractIdOrAddress);
         return this.cacheService.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
     }
 
     public async isValidContract(contractIdOrAddress: string, requestIdPrefix?: string, retries?: number) {
-        const cachedResponse: any = this.getIsValidContractCache(contractIdOrAddress);
+        const cachedResponse: any = await this.getIsValidContractCache(contractIdOrAddress);
         if (cachedResponse != undefined) {
             return cachedResponse;
         }
@@ -531,14 +531,14 @@ export class MirrorNodeClient {
         const contract = await this.getContractId(contractIdOrAddress, requestIdPrefix, retries);
         const valid = contract != null;
 
-        const cachedLabel = this.getIsValidContractCacheLabel(contractIdOrAddress);
+        const cachedLabel = await this.getIsValidContractCacheLabel(contractIdOrAddress);
         this.cacheService.set(cachedLabel, valid, MirrorNodeClient.GET_CONTRACT_ENDPOINT, constants.CACHE_TTL.ONE_DAY, requestIdPrefix);
         return valid;
     }
 
     public async getContractId(contractIdOrAddress: string, requestIdPrefix?: string, retries?: number) {
         const cachedLabel = `${constants.CACHE_KEY.GET_CONTRACT}.id.${contractIdOrAddress}`;
-        const cachedResponse: any = this.cacheService.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
+        const cachedResponse: any = await this.cacheService.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
         if (cachedResponse != undefined) {
             return cachedResponse;
         }
@@ -559,7 +559,7 @@ export class MirrorNodeClient {
 
     public async getContractResult(transactionIdOrHash: string, requestIdPrefix?: string) {
         const cacheKey = `${constants.CACHE_KEY.GET_CONTRACT_RESULT}.${transactionIdOrHash}`;
-        const cachedResponse = this.cacheService.get(cacheKey, MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT);
+        const cachedResponse = await this.cacheService.get(cacheKey, MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT);
 
         if(cachedResponse) {
             return cachedResponse;
@@ -693,7 +693,7 @@ export class MirrorNodeClient {
 
     public async getEarliestBlock(requestId?: string) {
         const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.earliest`;
-        const cachedResponse: any = this.cacheService.get(cachedLabel, MirrorNodeClient.GET_BLOCKS_ENDPOINT);
+        const cachedResponse: any = await this.cacheService.get(cachedLabel, MirrorNodeClient.GET_BLOCKS_ENDPOINT);
         if (cachedResponse != undefined) {
             return cachedResponse;
         }
@@ -899,7 +899,7 @@ export class MirrorNodeClient {
       requestIdPrefix?: string
     ) {
         const cachedLabel = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${entityIdentifier}`;
-        const cachedResponse: { type: string, entity: any } | undefined = this.cacheService.get(cachedLabel, callerName, requestIdPrefix);
+        const cachedResponse: { type: string, entity: any } | undefined = await this.cacheService.get(cachedLabel, callerName, requestIdPrefix);
         if (cachedResponse) {
             return cachedResponse;
         }
