@@ -120,7 +120,6 @@ export class Receipt {
 }
 
 export class Transaction {
-    public readonly accessList!: AccessListEntry[] | null;
     public readonly blockHash!: string | null;
     public readonly blockNumber!: string | null;
     public readonly chainId!: string;
@@ -129,8 +128,6 @@ export class Transaction {
     public readonly gasPrice!: string;
     public readonly hash!: string;
     public readonly input!: string;
-    public readonly maxPriorityFeePerGas!: string;
-    public readonly maxFeePerGas!: string;
     public readonly nonce!: string;
     public readonly r!: string;
     public readonly s!: string;
@@ -141,7 +138,6 @@ export class Transaction {
     public readonly value!: string;
 
     constructor(args: any) {
-        this.accessList = args.accessList;
         this.blockHash = args.blockHash;
         this.blockNumber = args.blockNumber;
         this.chainId = args.chainId;
@@ -150,8 +146,6 @@ export class Transaction {
         this.gasPrice = args.gasPrice;
         this.hash = args.hash;
         this.input = args.input;
-        this.maxPriorityFeePerGas = args.maxPriorityFeePerGas;
-        this.maxFeePerGas = args.maxFeePerGas;
         this.nonce = args.nonce;
         this.r = args.r;
         this.s = args.s;
@@ -160,6 +154,26 @@ export class Transaction {
         this.type = args.type;
         this.v = args.v;
         this.value = args.value;
+    }
+}
+
+export class Transaction2930 extends Transaction {
+    public readonly accessList!: AccessListEntry[] | null | [];
+
+    constructor(args: any) {
+        super(args);
+        this.accessList = args.accessList;
+    }
+}
+
+export class Transaction1559 extends Transaction2930 {
+    public readonly maxPriorityFeePerGas!: string;
+    public readonly maxFeePerGas!: string;
+
+    constructor(args: any) {
+        super(args);
+        this.maxPriorityFeePerGas = args.maxPriorityFeePerGas;
+        this.maxFeePerGas = args.maxFeePerGas;
     }
 }
 

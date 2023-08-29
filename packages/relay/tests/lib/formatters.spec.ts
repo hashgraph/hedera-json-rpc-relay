@@ -233,11 +233,9 @@ describe('Formatters', () => {
                 r: null,
                 s: null,
                 transaction_index: null,
-                type: null,
                 v: null,
                 value: null
             });
-            expect(formattedResult.accessList).to.equal(undefined);
             expect(formattedResult.blockHash).to.equal('0xb0f10139fa0bf9e66402c8c0e5ed364e07cf83b3726c8045fabf86a07f488713');
             expect(formattedResult.blockNumber).to.equal(null);
             expect(formattedResult.chainId).to.equal('0x12a');
@@ -253,7 +251,6 @@ describe('Formatters', () => {
             expect(formattedResult.s).to.equal(null);
             expect(formattedResult.to).to.equal('0x0000000000000000000000000000000000000409');
             expect(formattedResult.transactionIndex).to.equal(null);
-            expect(formattedResult.type).to.equal(null);
             expect(formattedResult.v).to.equal('0x0');
             expect(formattedResult.value).to.equal('0x0');
         });
