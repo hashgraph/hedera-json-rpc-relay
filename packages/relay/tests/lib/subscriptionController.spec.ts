@@ -29,19 +29,24 @@ import sinon from 'sinon';
 import dotenv from "dotenv";
 import path from 'path';
 import {Registry} from "prom-client";
+import ConnectionLimiter from "@hashgraph/json-rpc-ws-server/dist/ConnectionLimiter";
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();
+const register = new Registry();
+const limiter = new ConnectionLimiter(logger, register);
 let ethImpl: EthImpl;
 let poller: Poller;
 
 class MockWsConnection {
 
     id: string;
+    limiter: ConnectionLimiter;
 
     constructor(id: string) {
         this.id = id;
+        this.limiter = limiter;
     }
 
     send(msg) {

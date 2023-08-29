@@ -119,6 +119,7 @@ async function validateSubscribeEthLogsParams(filters: any, requestId: string) {
 
 app.ws.use(async (ctx) => {
     ctx.websocket.id = relay.subs()?.generateId();
+    ctx.websocket.limiter = limiter;
     const connectionIdPrefix = formatConnectionIdMessage(ctx.websocket.id);
     const connectionRequestIdPrefix = formatRequestIdMessage(uuid());
     logger.info(`${connectionIdPrefix} ${connectionRequestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`);
@@ -136,7 +137,8 @@ app.ws.use(async (ctx) => {
     limiter.applyLimits(ctx);
 
     ctx.websocket.on('message', async (msg) => {
-        ctx.websocket.id = relay.subs()?.generateId();
+        // Receiving a message from the client resets the TTL timer
+        limiter.resetInactivityTTLTimer(ctx.websocket);
         const requestIdPrefix = formatRequestIdMessage(uuid());
         let request;
         try {

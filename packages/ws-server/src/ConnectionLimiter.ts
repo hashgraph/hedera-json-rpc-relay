@@ -20,7 +20,7 @@
 
 import { Logger } from "pino";
 import {WebSocketError} from "@hashgraph/json-rpc-relay";
-import {Histogram, Gauge, Registry, Counter} from "prom-client";
+import {Gauge, Registry, Counter} from "prom-client";
 
 type IpCounter = {
     [key: string]: number;
@@ -36,7 +36,7 @@ export default class ConnectionLimiter {
     private ipConnectionsGauge: Gauge;
     private ipConnectionLimitCounter: Counter;
     private connectionLimitCounter: Counter;
-    private connectionTTLCounter: Counter;
+    private inactivityTTLCounter: Counter;
     private register: Registry;
 
     constructor(logger: Logger, register: Registry) {
@@ -80,10 +80,10 @@ export default class ConnectionLimiter {
             registers: [register]
         });
 
-        const connectionTTLLimitMetric = 'rpc_websocket_total_connection_limit_by_ttl_enforced';
-        this.register.removeSingleMetric(connectionTTLLimitMetric);
-        this.connectionTTLCounter = new Counter({
-            name: connectionTTLLimitMetric,
+        const inactivityTTLLimitMetric = 'rpc_websocket_total_connection_limit_by_ttl_enforced';
+        this.register.removeSingleMetric(inactivityTTLLimitMetric);
+        this.inactivityTTLCounter = new Counter({
+            name: inactivityTTLLimitMetric,
             help: 'Relay websocket total connection ttl limits enforced',
             registers: [register]
         });
@@ -139,19 +139,8 @@ export default class ConnectionLimiter {
             return;
         }
 
-        // Limit connection TTL and close connection if its reached
-        const maxConnectionTTL = parseInt(process.env.WS_MAX_CONNECTION_TTL || '300000');
-        setTimeout(() => {
-            if (ctx.websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
-                this.logger.debug(`Closing connection ${ctx.websocket.id} due to reaching TTL of ${maxConnectionTTL}ms`);
-                try {
-                    this.connectionTTLCounter.inc();
-                    ctx.websocket.close(TTL_EXPIRED.code, TTL_EXPIRED.message);
-                } catch (e) {
-                    this.logger.error(`${ctx.websocket.id}: ${e}`);
-                }
-            }
-        }, maxConnectionTTL);
+        // Limit connection TTL and close connection when it is reached
+        this.startInactivityTTLTimer(ctx.websocket);
     }
 
     public incrementSubs(ctx) {
@@ -164,5 +153,30 @@ export default class ConnectionLimiter {
 
     public validateSubscriptionLimit(ctx) {
         return ctx.websocket.subscriptions < parseInt(process.env.WS_SUBSCRIPTION_LIMIT || '10');
+    }
+
+    // Starts a timeout timer that closes the connection
+    public startInactivityTTLTimer(websocket) {
+        const maxInactivityTTL = parseInt(process.env.WS_MAX_INACTIVITY_TTL || '300000');
+        websocket.inactivityTTL = setTimeout(() => {
+            if (websocket.readyState !== 3) { // 3 = CLOSED, Avoid closing already closed connections
+                this.logger.debug(`Closing connection ${websocket.id} due to reaching TTL of ${maxInactivityTTL}ms`);
+                try {
+                    this.inactivityTTLCounter.inc();
+                    websocket.close(TTL_EXPIRED.code, TTL_EXPIRED.message);
+                } catch (e) {
+                    this.logger.error(`${websocket.id}: ${e}`);
+                }
+            }
+        }, maxInactivityTTL);
+    }
+
+    // Resets the inactivity TTL timer
+    public resetInactivityTTLTimer(websocket) {
+        if (websocket?.inactivityTTL) {
+            clearTimeout(websocket.inactivityTTL);
+        }
+
+        this.startInactivityTTLTimer(websocket);
     }
 }
