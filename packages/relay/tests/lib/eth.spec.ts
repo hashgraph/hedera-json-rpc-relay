@@ -5171,7 +5171,8 @@ describe('Eth', async function () {
     it('handles transactions with v as null', async function () {
       const detailedResultsWithNullNullableValues = {
         ...defaultDetailedContractResultByHash,
-        v: null
+        v: null,
+        type: 0
       };
       const uniqueTxHash = '0xb4cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 

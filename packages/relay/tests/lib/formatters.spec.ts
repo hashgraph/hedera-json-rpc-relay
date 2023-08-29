@@ -217,7 +217,8 @@ describe('Formatters', () => {
             expect(formattedResult.to).to.equal('0x0000000000000000000000000000000000000409');
             expect(formattedResult.transactionIndex).to.equal('0x9');
             expect(formattedResult.type).to.equal('0x2');
-            expect(formattedResult.v).to.equal('0x1');
+            expect(formattedResult.yParity).to.equal('0x1');
+            expect(formattedResult.v).to.equal(undefined);
             expect(formattedResult.value).to.equal('0x0');
         });
 
@@ -251,7 +252,8 @@ describe('Formatters', () => {
             expect(formattedResult.s).to.equal(null);
             expect(formattedResult.to).to.equal('0x0000000000000000000000000000000000000409');
             expect(formattedResult.transactionIndex).to.equal(null);
-            expect(formattedResult.v).to.equal('0x0');
+            expect(formattedResult.v).to.equal(undefined);
+            expect(formattedResult.yParity).to.equal('0x0');
             expect(formattedResult.value).to.equal('0x0');
         });
     });
