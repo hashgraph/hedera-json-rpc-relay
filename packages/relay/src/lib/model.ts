@@ -134,7 +134,7 @@ export class Transaction {
     public readonly to!: string | null;
     public readonly transactionIndex!: string | null;
     public readonly type!: string;
-    public readonly v!: string;
+    public readonly v: string | null;
     public readonly value!: string;
 
     constructor(args: any) {
@@ -159,9 +159,12 @@ export class Transaction {
 
 export class Transaction2930 extends Transaction {
     public readonly accessList!: AccessListEntry[] | null | [];
+    public readonly yParity! : string | null;
 
     constructor(args: any) {
-        super(args);
+        const {v, ...parentArgs} = args;
+        super(parentArgs);
+        this.yParity = v;
         this.accessList = args.accessList;
     }
 }
