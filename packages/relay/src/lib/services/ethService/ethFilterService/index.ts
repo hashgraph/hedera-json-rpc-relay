@@ -42,32 +42,32 @@ export class FilterService implements IFilterService {
    * The interface through which we interact with the mirror node
    * @private
    */
-  private readonly mirrorNodeClient: MirrorNodeClient;
+  public readonly mirrorNodeClient: MirrorNodeClient;
 
   /**
    * The logger used for logging all output from this class.
    * @private
    */
-  private readonly logger: Logger;
+  public readonly logger: Logger;
 
   /**
    * The LRU cache used for caching items from requests.
    *
    * @private
    */
-  private readonly cacheService: CacheService;
+  public readonly cacheService: CacheService;
   public readonly ethNewFilter = 'eth_newFilter';
   public readonly ethUninstallFilter = 'eth_uninstallFilter';
   public readonly ethGetFilterLogs = 'eth_getFilterLogs';
   public readonly ethGetFilterChanges = 'eth_getFilterChanges';
 
-  private readonly common: CommonService;
+  public readonly common: CommonService;
   private readonly supportedTypes;
 
-  constructor(logger: Logger, register: Registry) {
+  constructor(logger: Logger, register: Registry, useSharedCache: boolean) {
 
     // Create new instance of cacheService with shared=true and pass it to the other services
-    this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register, true);
+    this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register, useSharedCache);
     this.mirrorNodeClient = new MirrorNodeClient(
         process.env.MIRROR_NODE_URL || '',
         logger.child({ name: `mirror-node` }),

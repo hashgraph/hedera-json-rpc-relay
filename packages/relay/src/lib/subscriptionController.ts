@@ -155,9 +155,9 @@ export class SubscriptionController {
         return subCount;
     }
 
-    notifySubscribers(tag, data) {
+    async notifySubscribers(tag, data) {
         if (this.subscriptions[tag] && this.subscriptions[tag].length) {
-            this.subscriptions[tag].forEach(async sub => {
+            for (const sub of this.subscriptions[tag]) {
                 const subscriptionData = {
                     result: data,
                     subscription: sub.subscriptionId
@@ -175,7 +175,7 @@ export class SubscriptionController {
                         params: subscriptionData
                     }));
                 }
-            });
+            }
         }
     }
 }

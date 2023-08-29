@@ -26,7 +26,7 @@ import { Registry } from 'prom-client';
 import { MirrorNodeClient } from '../../../../src/lib/clients/mirrorNodeClient';
 import pino from 'pino';
 import constants from '../../../../src/lib/constants';
-import { FilterService, CommonService } from '../../../../src/lib/services/ethService';
+import { FilterService } from '../../../../src/lib/services/ethService';
 import {defaultEvmAddress, getRequestId, toHex, defaultBlock, defaultLogTopics, defaultLogs1} from "../../../helpers";
 import RelayAssertions from "../../../assertions";
 import {predefined} from "../../../../src";
@@ -75,24 +75,11 @@ describe('Filter API Test Suite', async function () {
       lastQueried: null
     };
 
-    cacheService = new CacheService(logger.child({ name: `cache` }), registry);
-    // @ts-ignore
-    mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL,
-      logger.child({ name: `mirror-node` }),
-      registry,
-      cacheService
-    );
-
-    // @ts-ignore
+    filterService = new FilterService(logger, registry, false);
+    cacheService = filterService.cacheService;
+    mirrorNodeInstance = filterService.mirrorNodeClient;
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
-
-    // @ts-ignore
     web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
-
-    // @ts-ignore
-    const common = new CommonService(mirrorNodeInstance, logger, cacheService);
-    filterService = new FilterService(mirrorNodeInstance, logger, cacheService, common);
   });
 
   this.beforeEach(() => {

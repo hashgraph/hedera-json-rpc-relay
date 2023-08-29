@@ -114,7 +114,7 @@ describe("subscriptionController", async function() {
         const spy = sandbox.spy(wsConnection, 'send');
         const testData = "test example data";
 
-        subscriptionController.notifySubscribers(`{"event":"logs"}`, testData);
+        await subscriptionController.notifySubscribers(`{"event":"logs"}`, testData);
 
         expect(spy.getCall(0).args[0]).to.be.eq(`{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId}"}}`);
     });
@@ -131,7 +131,7 @@ describe("subscriptionController", async function() {
         const spy2 = sandbox.spy(wsConnection2, 'send');
         const testData = "test example data";
 
-        subscriptionController.notifySubscribers(`{"event":"logs"}`, testData);
+        await subscriptionController.notifySubscribers(`{"event":"logs"}`, testData);
 
         expect(spy1.getCall(0).args[0]).to.be.eq(`{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId1}"}}`);
         expect(spy2.getCall(0).args[0]).to.be.eq(`{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId2}"}}`);
@@ -145,9 +145,9 @@ describe("subscriptionController", async function() {
         const spy = sandbox.spy(wsConnection, 'send');
         const testData = "test example data cached";
 
-        subscriptionController.notifySubscribers(`{"event":"logs"}`, testData);
-        subscriptionController.notifySubscribers(`{"event":"logs"}`, testData); // should hit cache
-        subscriptionController.notifySubscribers(`{"event":"logs"}`, testData); // should hit cache
+        await subscriptionController.notifySubscribers(`{"event":"logs"}`, testData);
+        await subscriptionController.notifySubscribers(`{"event":"logs"}`, testData); // should hit cache
+        await subscriptionController.notifySubscribers(`{"event":"logs"}`, testData); // should hit cache
 
         expect(spy.getCall(0).args[0]).to.be.eq(`{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId}"}}`);
         expect(spy.callCount).to.be.eq(1); // even after making 3 calls, only 1 time spy reports being called on send method
@@ -160,7 +160,7 @@ describe("subscriptionController", async function() {
         const spy = sandbox.spy(wsConnection, 'send');
         const testData = "test example data cached";
 
-        subscriptionController.notifySubscribers(`{"event":"logs" filters:{"topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}}`, testData);
+        await subscriptionController.notifySubscribers(`{"event":"logs" filters:{"topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}}`, testData);
 
         expect(spy.callCount).to.be.eq(0);
     });

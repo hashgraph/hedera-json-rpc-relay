@@ -225,7 +225,7 @@ export class EthImpl implements Eth {
     this.ethExecutionsCounter = this.initEthExecutionCounter(registry);
 
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
-    this.filterServiceImpl = new FilterService(logger, registry);
+    this.filterServiceImpl = new FilterService(logger, registry, true);
   }
 
   private initEthExecutionCounter(register: Registry) {
