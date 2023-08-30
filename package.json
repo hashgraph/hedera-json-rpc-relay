@@ -80,10 +80,10 @@
         "packages/**/src/**/*.ts": [
           "prettier --write"
         ],
-        "!(packages/**/src/dist/)*.ts": [
+        "!(packages/**/dist/)*.ts": [
             "prettier --write"
         ],
-        "!(packages/**/src/node_modules/)*.ts": [
+        "!(packages/**/node_modules/)*.ts": [
             "prettier --write"
         ]
       },
