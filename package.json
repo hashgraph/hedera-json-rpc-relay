@@ -53,7 +53,8 @@
         "openrpctest": "ts-mocha packages/relay/tests/lib/openrpc.spec.ts --exit",
         "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts",
         "check:node": "ts-node packages/server/tests/helpers/nodeCheck.ts",
-        "bump-version": "SEM_VER=${npm_config_semver} SNAPSHOT=${npm_config_snapshot} node scripts/.bump-version.js"
+        "bump-version": "SEM_VER=${npm_config_semver} SNAPSHOT=${npm_config_snapshot} node scripts/.bump-version.js",
+        "prepare": "husky install"
     },
     "dependencies": {
         "@hashgraph/hedera-local": "^2.12.0",
