@@ -200,7 +200,7 @@ describe('Formatters', () => {
 
         it('should return a valid match', () => {
             const formattedResult: any = formatContractResult(contractResult);
-            expect(formattedResult.accessList).to.equal(undefined);
+            expect(formattedResult.accessList).to.deep.eq([]);
             expect(formattedResult.blockHash).to.equal('0xb0f10139fa0bf9e66402c8c0e5ed364e07cf83b3726c8045fabf86a07f488713');
             expect(formattedResult.blockNumber).to.equal('0x210');
             expect(formattedResult.chainId).to.equal('0x12a');

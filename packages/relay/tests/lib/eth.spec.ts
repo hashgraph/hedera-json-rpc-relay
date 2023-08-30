@@ -4618,7 +4618,7 @@ describe('Eth', async function () {
   const contractEvmAddress = '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9';
   const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
   const defaultTransaction = {
-    "accessList": undefined,
+    "accessList": [],
     "blockHash": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
     "blockNumber": "0x11",
     "chainId": "0x12a",

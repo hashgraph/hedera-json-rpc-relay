@@ -55,7 +55,7 @@ export default class RelayAssertions {
         expect(tx).to.exist;
         if (tx == null) return;
     
-        expect(tx.accessList).to.eq(expectedTx.accessList);
+        expect(tx.accessList).to.deep.eq(expectedTx.accessList);
         expect(tx.blockHash).to.eq(expectedTx.blockHash);
         expect(tx.blockNumber).to.eq(expectedTx.blockNumber);
         expect(tx.chainId).to.eq(expectedTx.chainId);
