@@ -81,6 +81,9 @@
         "packages/**/src/**/*.ts": [
           "prettier --write"
         ],
+        "packages/**/tests/**/*.ts": [
+            "prettier --write"
+        ],
         "!(packages/**/dist/)*.ts": [
             "prettier --write"
         ],
