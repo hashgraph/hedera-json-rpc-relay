@@ -129,7 +129,7 @@ function App() {
     const tx = await signer.sendTransaction({
       to: hbarsToAddress,
       value: hbarsAmount,
-      gasLimit: 600_000
+      gasLimit: 1_000_000
     });
     await tx.wait();
 
