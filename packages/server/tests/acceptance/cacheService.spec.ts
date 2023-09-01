@@ -47,14 +47,14 @@ const getConnectedClients = async () => {
     return 0;
 }
 
-const clearAllTestCache = async () => {
+const clearAllTestCacheFromRedis = async () => {
     const keys = await redis.keys(`${DATA_LABEL_PREFIX}*`);
     for(const key of keys) {
         await redis.del(key);
     }
 }
 
-describe('@cache-service Acceptance Tests', function () {
+describe('@cache-service Acceptance Tests for shared cache', function () {
     let cacheService: CacheService;
 
     before(async () => {
@@ -67,11 +67,11 @@ describe('@cache-service Acceptance Tests', function () {
         const connectedClientsAfter = await getConnectedClients();
         expect(connectedClientsAfter).to.eq(connectedClientsBefore + 1, 'successfully connected to redis server');
 
-        await clearAllTestCache();
+        await clearAllTestCacheFromRedis();
     });
 
     afterEach(async () => {
-        await clearAllTestCache();
+        await clearAllTestCacheFromRedis();
     })
 
     it('Correctly performs set, get and delete operations', async () => {
@@ -115,7 +115,25 @@ describe('@cache-service Acceptance Tests', function () {
         expect(deletedCacheFromService).to.eq(null, 'getAsync method cannot read expired cache');
     })
 
-    // Fallback to lru-cache if redis is not available or respective feature flags are set.
+    it('Fallsback to local cache for REDIS_ENABLED !== true', async () => {
+        const dataLabel = `${DATA_LABEL_PREFIX}3`;
 
-    // More complex acceptance tests, like: call to relay instance 1 which sets cache value, then query for this cache from relay instance 2 and assertion whether it's the appropriate answer.
+        process.env.REDIS_ENABLED = 'false';
+        const connectedClientsBefore = await getConnectedClients();
+        const serviceWithDisabledRedis = new CacheService(global.logger, registry);
+        await new Promise(r => setTimeout(r, 1000));
+        const connectedClientsAfter = await getConnectedClients();
+        expect(connectedClientsAfter).to.eq(connectedClientsBefore, 'does not connect to redis server');
+
+        serviceWithDisabledRedis.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
+        await new Promise(r => setTimeout(r, 200));
+
+        const dataInRedis = await redis.get(dataLabel);
+        expect(dataInRedis).to.eq(null, 'data is not stored in shared cache');
+
+        const dataInLRU = serviceWithDisabledRedis.get(dataLabel, CALLING_METHOD);
+        expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
+
+        process.env.REDIS_ENABLED = 'true';
+    });
 });
