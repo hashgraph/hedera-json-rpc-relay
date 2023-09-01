@@ -134,6 +134,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             const expectedRes = `0x${(400000).toString(16)}`;
             const estimatedGas = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
                 to: basicContract.evm_address,
+                // must pass in valid bytecode to get a valid estimate
                 data: BASIC_CONTRACT_ESTIMATE_GAS_CALL_DATA
             }], requestId);
             expect(estimatedGas).to.contain('0x');
