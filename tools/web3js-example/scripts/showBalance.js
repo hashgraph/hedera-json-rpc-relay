@@ -18,8 +18,8 @@
  *
  */
 
-require('dotenv').config();
-const { Web3 } = require('web3');
+require("dotenv").config();
+const { Web3 } = require("web3");
 
 module.exports = async () => {
   const web3 = new Web3(new Web3.providers.HttpProvider(process.env.RELAY_ENDPOINT));

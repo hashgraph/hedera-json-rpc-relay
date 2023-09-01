@@ -18,7 +18,7 @@
  *
  */
 
-const { ethers } = require('hardhat');
+const { ethers } = require("hardhat");
 
 module.exports = async () => {
   const wallet = (await ethers.getSigners())[0];

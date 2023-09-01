@@ -38,40 +38,39 @@
  *
  */
 
-require('dotenv').config();
-const HDWalletProvider = require('@truffle/hdwallet-provider');
+require("dotenv").config();
+const HDWalletProvider = require("@truffle/hdwallet-provider");
 
 module.exports = {
   networks: {
     development: {
       host: process.env.RELAY_URL,
       port: process.env.RELAY_PORT,
-      network_id: '*',
-      provider: () => new HDWalletProvider([
-          process.env.OPERATOR_PRIVATE_KEY,
-          process.env.RECEIVER_PRIVATE_KEY
-        ],
-        `${process.env.RELAY_URL}:${process.env.RELAY_PORT}`
-      ),
+      network_id: "*",
+      provider: () =>
+        new HDWalletProvider(
+          [process.env.OPERATOR_PRIVATE_KEY, process.env.RECEIVER_PRIVATE_KEY],
+          `${process.env.RELAY_URL}:${process.env.RELAY_PORT}`,
+        ),
       // minimum required gas is 150_000, we recommend doubling it
-      gas: 300000
-    }
+      gas: 300000,
+    },
   },
 
   mocha: {
     // 5 minutes
-    timeout: 5 * 60000
+    timeout: 5 * 60000,
   },
 
   compilers: {
     solc: {
-      version: '0.8.15',
+      version: "0.8.15",
       settings: {
         optimizer: {
           enabled: true,
-          runs: 200
-        }
-      }
-    }
-  }
+          runs: 200,
+        },
+      },
+    },
+  },
 };

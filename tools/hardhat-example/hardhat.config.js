@@ -18,33 +18,33 @@
  *
  */
 
-require('dotenv').config();
-require('@nomicfoundation/hardhat-toolbox');
-require('@nomicfoundation/hardhat-chai-matchers');
-require('@nomiclabs/hardhat-ethers');
+require("dotenv").config();
+require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-chai-matchers");
+require("@nomiclabs/hardhat-ethers");
 
-task('show-balance', async () => {
-  const showBalance = require('./scripts/showBalance');
+task("show-balance", async () => {
+  const showBalance = require("./scripts/showBalance");
   return showBalance();
 });
 
-task('transfer-hbars', async () => {
-  const transferHbar = require('./scripts/transferHbars');
+task("transfer-hbars", async () => {
+  const transferHbar = require("./scripts/transferHbars");
   return transferHbar();
 });
 
-task('deploy-contract', async () => {
-  const deployContract = require('./scripts/deployContract');
+task("deploy-contract", async () => {
+  const deployContract = require("./scripts/deployContract");
   return deployContract();
 });
 
-task('contract-view-call', async (taskArgs) => {
-  const contractViewCall = require('./scripts/contractViewCall');
+task("contract-view-call", async (taskArgs) => {
+  const contractViewCall = require("./scripts/contractViewCall");
   return contractViewCall(taskArgs.contractAddress);
 });
 
-task('contract-call', async (taskArgs) => {
-  const contractCall = require('./scripts/contractCall');
+task("contract-call", async (taskArgs) => {
+  const contractCall = require("./scripts/contractCall");
   return contractCall(taskArgs.contractAddress, taskArgs.msg);
 });
 
@@ -54,7 +54,7 @@ module.exports = {
     timeout: 3600000,
   },
   solidity: {
-    version: '0.8.9',
+    version: "0.8.9",
     settings: {
       optimizer: {
         enabled: true,
@@ -62,7 +62,7 @@ module.exports = {
       },
     },
   },
-  defaultNetwork: 'local',
+  defaultNetwork: "local",
   networks: {
     local: {
       url: process.env.RELAY_ENDPOINT,
@@ -70,7 +70,7 @@ module.exports = {
       chainId: 298,
     },
     testnet: {
-      url: 'https://testnet.hashio.io/api',
+      url: "https://testnet.hashio.io/api",
       accounts: [],
       chainId: 296,
     },

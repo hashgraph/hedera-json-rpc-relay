@@ -28,12 +28,12 @@ import { HTSNFT, Transfer } from "../generated/schema";
 // type: TokenType!
 export function handleTransfer(event: TransferEvent): void {
   let token = HTSNFT.load(
-    event.address.toHexString() + "-" + event.params.tokenId.toString()
+    event.address.toHexString() + "-" + event.params.tokenId.toString(),
   );
 
   if (!token) {
     token = new HTSNFT(
-      event.address.toHexString() + "-" + event.params.tokenId.toString()
+      event.address.toHexString() + "-" + event.params.tokenId.toString(),
     );
     token.type = "HTSNFT";
     token.tokenId = event.params.tokenId;
@@ -42,7 +42,7 @@ export function handleTransfer(event: TransferEvent): void {
   }
 
   const transfer = new Transfer(
-    event.address.toHexString() + "-" + event.transaction.hash.toHexString()
+    event.address.toHexString() + "-" + event.transaction.hash.toHexString(),
   );
 
   transfer.from = event.params.from;

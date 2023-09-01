@@ -18,8 +18,8 @@
  *
  */
 
-const Greeter = artifacts.require('Greeter');
+const Greeter = artifacts.require("Greeter");
 
 module.exports = function (deployer) {
-  deployer.deploy(Greeter, 'initial_msg');
+  deployer.deploy(Greeter, "initial_msg");
 };
