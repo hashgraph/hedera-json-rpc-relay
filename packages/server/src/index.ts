@@ -18,7 +18,7 @@
  *
  */
 
-import app from './server';
+import app from "./server";
 
 async function main() {
   await app.listen({ port: process.env.SERVER_PORT || 7546 });

@@ -17,12 +17,12 @@
  * limitations under the License.
  *
  */
-import dotenv from 'dotenv';
-import path from 'path';
+import dotenv from "dotenv";
+import path from "path";
 
-dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, "../../../../../.env") });
 
-import CONSTANTS from '../../../../relay/dist/lib/constants';
+import CONSTANTS from "../../../../relay/dist/lib/constants";
 
 const tier1rateLimit = process.env.TIER_1_RATE_LIMIT || CONSTANTS.DEFAULT_RATE_LIMIT.TIER_1;
 const tier2rateLimit = process.env.TIER_2_RATE_LIMIT || CONSTANTS.DEFAULT_RATE_LIMIT.TIER_2;
@@ -170,5 +170,5 @@ export const methodConfiguration = {
   },
   eth_getFilterLogs: {
     total: tier2rateLimit,
-  }
+  },
 };

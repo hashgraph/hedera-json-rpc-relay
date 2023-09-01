@@ -18,13 +18,11 @@
  *
  */
 
-
 /**
-* Format message prefix for logger.
-*/
+ * Format message prefix for logger.
+ */
 const formatRequestIdMessage = (requestId?: string): string => {
-    return requestId ? `[Request ID: ${requestId}]` : '';
+  return requestId ? `[Request ID: ${requestId}]` : "";
 };
-
 
 export { formatRequestIdMessage };

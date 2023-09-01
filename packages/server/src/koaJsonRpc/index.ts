@@ -18,14 +18,14 @@
  *
  */
 
-import { methodConfiguration } from './lib/methodConfiguration';
-import InvalidParamsError from './lib/RpcInvalidError';
-import jsonResp from './lib/RpcResponse';
-import RateLimit from '../rateLimit';
-import parse from 'co-body';
-import dotenv from 'dotenv';
-import path from 'path';
-import { Logger } from 'pino';
+import { methodConfiguration } from "./lib/methodConfiguration";
+import InvalidParamsError from "./lib/RpcInvalidError";
+import jsonResp from "./lib/RpcResponse";
+import RateLimit from "../rateLimit";
+import parse from "co-body";
+import dotenv from "dotenv";
+import path from "path";
+import { Logger } from "pino";
 
 import {
   ParseError,
@@ -33,14 +33,14 @@ import {
   InternalError,
   IPRateLimitExceeded,
   MethodNotFound,
-  Unauthorized
-} from './lib/RpcError';
-import Koa from 'koa';
-import { Registry } from 'prom-client';
-import { JsonRpcError } from '@hashgraph/json-rpc-relay';
+  Unauthorized,
+} from "./lib/RpcError";
+import Koa from "koa";
+import { Registry } from "prom-client";
+import { JsonRpcError } from "@hashgraph/json-rpc-relay";
 
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
-dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, "../../../../../.env") });
 
 import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
 
@@ -52,7 +52,7 @@ const JSON_RPC_ERROR = "JSON RPC ERROR";
 const METHOD_NOT_FOUND = "METHOD NOT FOUND";
 const REQUEST_ID_HEADER_NAME = "X-Request-Id";
 
-const responseSuccessStatusCode = '200';
+const responseSuccessStatusCode = "200";
 
 export default class KoaJsonRpc {
   private registry: any;
@@ -66,13 +66,15 @@ export default class KoaJsonRpc {
   private requestId: string;
   private logger: Logger;
   private startTimestamp!: number;
-  private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == 'true';
+  private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == "true";
 
   constructor(logger: Logger, register: Registry, opts?) {
     this.koaApp = new Koa();
-    this.requestId = '';
-    this.limit = '1mb';
-    this.duration = process.env.LIMIT_DURATION ? parseInt(process.env.LIMIT_DURATION) : constants.DEFAULT_RATE_LIMIT.DURATION;
+    this.requestId = "";
+    this.limit = "1mb";
+    this.duration = process.env.LIMIT_DURATION
+      ? parseInt(process.env.LIMIT_DURATION)
+      : constants.DEFAULT_RATE_LIMIT.DURATION;
     this.registry = Object.create(null);
     this.registryTotal = Object.create(null);
     this.methodConfig = methodConfiguration;
@@ -80,7 +82,7 @@ export default class KoaJsonRpc {
       this.limit = opts.limit || this.limit;
     }
     this.logger = logger;
-    this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
+    this.rateLimit = new RateLimit(logger.child({ name: "ip-rate-limit" }), register, this.duration);
   }
 
   useRpc(name, func) {
@@ -99,9 +101,9 @@ export default class KoaJsonRpc {
 
       this.requestId = ctx.state.reqId;
       ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
-      
+
       if (this.token) {
-        const headerToken = ctx.get('authorization').split(' ').pop();
+        const headerToken = ctx.get("authorization").split(" ").pop();
         if (headerToken !== this.token) {
           ctx.body = jsonResp(null, new Unauthorized(), undefined);
           return;
@@ -120,16 +122,20 @@ export default class KoaJsonRpc {
       const methodName = body.method;
 
       if (
-        body.jsonrpc !== '2.0' ||
-        !hasOwnProperty(body, 'method') ||
+        body.jsonrpc !== "2.0" ||
+        !hasOwnProperty(body, "method") ||
         this.hasInvalidReqestId(body) ||
-        !hasOwnProperty(body, 'id') ||
-        ctx.request.method !== 'POST'
+        !hasOwnProperty(body, "id") ||
+        ctx.request.method !== "POST"
       ) {
         ctx.body = jsonResp(body.id || null, new InvalidRequest(), undefined);
         ctx.status = 400;
         ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
-        this.logger.warn(`[${this.getRequestId()}] Invalid request, body.jsonrpc: ${body.jsonrpc}, body[method]: ${body.method}, body[id]: ${body.id}, ctx.request.method: ${ctx.request.method}`);
+        this.logger.warn(
+          `[${this.getRequestId()}] Invalid request, body.jsonrpc: ${body.jsonrpc}, body[method]: ${
+            body.method
+          }, body[id]: ${body.id}, ctx.request.method: ${ctx.request.method}`,
+        );
         return;
       }
 
@@ -140,7 +146,6 @@ export default class KoaJsonRpc {
         return;
       }
 
- 
       const methodTotalLimit = this.registryTotal[methodName];
       if (this.rateLimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit, this.requestId)) {
         ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
@@ -167,7 +172,7 @@ export default class KoaJsonRpc {
 
       ctx.body = jsonResp(body.id, null, result);
       if (result instanceof JsonRpcError) {
-        ctx.status = (result.code == -32603) ? 500 : 400;
+        ctx.status = result.code == -32603 ? 500 : 400;
         ctx.state.status = `${ctx.status} (${JSON_RPC_ERROR})`;
       }
     };
@@ -182,12 +187,13 @@ export default class KoaJsonRpc {
   }
 
   hasInvalidReqestId(body): boolean {
-    const hasId = hasOwnProperty(body, 'id');
-    if (this.requestIdIsOptional && !hasId)
-    {          
+    const hasId = hasOwnProperty(body, "id");
+    if (this.requestIdIsOptional && !hasId) {
       // If the request is invalid, we still want to return a valid JSON-RPC response, default id to 0
-      body.id = '0';
-      this.logger.warn(`[${this.getRequestId()}] Optional JSON-RPC 2.0 request id encountered. Will continue and default id to 0 in response`);
+      body.id = "0";
+      this.logger.warn(
+        `[${this.getRequestId()}] Optional JSON-RPC 2.0 request id encountered. Will continue and default id to 0 in response`,
+      );
       return false;
     }
 

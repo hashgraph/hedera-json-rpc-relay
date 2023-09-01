@@ -1,165 +1,165 @@
 export const METHODS = {
-  "eth_estimateGas": {
+  eth_estimateGas: {
     0: {
-      type: 'transaction',
-      required: true
+      type: "transaction",
+      required: true,
     },
     1: {
-      type: 'blockNumber'
-    }
+      type: "blockNumber",
+    },
   },
-  "eth_getBalance": {
+  eth_getBalance: {
     0: {
-      type: 'address',
-      required: true
+      type: "address",
+      required: true,
     },
     1: {
-      type: 'blockNumber|blockHash',
-      required: true
-    }
+      type: "blockNumber|blockHash",
+      required: true,
+    },
   },
-  "eth_getCode": {
+  eth_getCode: {
     0: {
-      type: 'address',
-      required: true
+      type: "address",
+      required: true,
     },
     1: {
-      type: 'blockNumber',
-      required: true
-    }
+      type: "blockNumber",
+      required: true,
+    },
   },
-  "eth_getBlockByNumber": {
+  eth_getBlockByNumber: {
     0: {
       required: true,
-      type: 'blockNumber'
-    },
-    1: {
-      required: true,
-      type: 'boolean'
-    }
-  },
-  "eth_getBlockByHash": {
-    0: {
-      required: true,
-      type: 'blockHash'
+      type: "blockNumber",
     },
     1: {
       required: true,
-      type: 'boolean'
-    }
+      type: "boolean",
+    },
   },
-  "eth_getTransactionCount": {
+  eth_getBlockByHash: {
     0: {
       required: true,
-      type: 'address'
+      type: "blockHash",
     },
     1: {
       required: true,
-      type: 'blockNumber'
-    }
+      type: "boolean",
+    },
   },
-  "eth_call": {
+  eth_getTransactionCount: {
     0: {
       required: true,
-      type: 'transaction'
+      type: "address",
     },
     1: {
       required: true,
-      type: 'blockParams'
-    }
+      type: "blockNumber",
+    },
   },
-  "eth_sendRawTransaction": {
+  eth_call: {
     0: {
       required: true,
-      type: 'hex'
-    }
-  },
-  "eth_getTransactionReceipt": {
-    0: {
-      required: true,
-      type: 'transactionHash'
-    }
-  },
-  "eth_getTransactionByHash": {
-    0: {
-      required: true,
-      type: 'transactionHash'
-    }
-  },
-  "eth_feeHistory": {
-    0: {
-      required: true,
-      type: 'hex'
+      type: "transaction",
     },
     1: {
       required: true,
-      type: 'blockNumber'
+      type: "blockParams",
+    },
+  },
+  eth_sendRawTransaction: {
+    0: {
+      required: true,
+      type: "hex",
+    },
+  },
+  eth_getTransactionReceipt: {
+    0: {
+      required: true,
+      type: "transactionHash",
+    },
+  },
+  eth_getTransactionByHash: {
+    0: {
+      required: true,
+      type: "transactionHash",
+    },
+  },
+  eth_feeHistory: {
+    0: {
+      required: true,
+      type: "hex",
+    },
+    1: {
+      required: true,
+      type: "blockNumber",
     },
     2: {
-      type: ['array']
-    }
+      type: ["array"],
+    },
   },
-  "eth_getBlockTransactionCountByHash": {
+  eth_getBlockTransactionCountByHash: {
     0: {
       required: true,
-      type: 'blockHash'
-    }
+      type: "blockHash",
+    },
   },
-  "eth_getBlockTransactionCountByNumber": {
+  eth_getBlockTransactionCountByNumber: {
     0: {
       required: true,
-      type: 'blockNumber'
-    }
+      type: "blockNumber",
+    },
   },
-  "eth_getLogs": {
+  eth_getLogs: {
     0: {
-      type: 'filter',
-      required: true
-    }
+      type: "filter",
+      required: true,
+    },
   },
-  "eth_getStorageAt": {
+  eth_getStorageAt: {
     0: {
       required: true,
-      type: 'address'
+      type: "address",
     },
     1: {
       required: true,
-      type: 'hex'
+      type: "hex",
     },
     2: {
-      type: 'blockNumber'
-    }
+      type: "blockNumber",
+    },
   },
-  "eth_getTransactionByBlockHashAndIndex": {
+  eth_getTransactionByBlockHashAndIndex: {
     0: {
       required: true,
-      type: 'blockHash'
+      type: "blockHash",
     },
     1: {
       required: true,
-      type: 'hex'
-    }
+      type: "hex",
+    },
   },
-  "eth_getTransactionByBlockNumberAndIndex": {
+  eth_getTransactionByBlockNumberAndIndex: {
     0: {
       required: true,
-      type: 'blockNumber'
+      type: "blockNumber",
     },
     1: {
       required: true,
-      type: 'hex'
-    }
+      type: "hex",
+    },
   },
-  "eth_uninstallFilter": {
+  eth_uninstallFilter: {
     0: {
       required: true,
-      type: 'hex'
-    }
+      type: "hex",
+    },
   },
-  "eth_getFilterLogs": {
+  eth_getFilterLogs: {
     0: {
       required: true,
-      type: 'hex'
-    }
+      type: "hex",
+    },
   },
 };

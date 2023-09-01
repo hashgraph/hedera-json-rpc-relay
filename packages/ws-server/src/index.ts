@@ -18,7 +18,7 @@
  *
  */
 
-import { app, httpApp } from './webSocketServer';
+import { app, httpApp } from "./webSocketServer";
 import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
 
 async function main() {

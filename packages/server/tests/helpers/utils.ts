@@ -18,115 +18,136 @@
  *
  */
 
-import { ethers } from 'ethers';
-import Assertions from './assertions';
-import crypto from 'crypto';
+import { ethers } from "ethers";
+import Assertions from "./assertions";
+import crypto from "crypto";
 
 export class Utils {
+  static toHex = (num) => {
+    return parseInt(num).toString(16);
+  };
 
-    static toHex = (num) => {
-        return parseInt(num).toString(16);
-    };
+  static idToEvmAddress = (id): string => {
+    Assertions.assertId(id);
+    const [shard, realm, num] = id.split(".");
 
-    static idToEvmAddress = (id): string => {
-        Assertions.assertId(id);
-        const [shard, realm, num] = id.split('.');
+    return [
+      "0x",
+      this.toHex(shard).padStart(8, "0"),
+      this.toHex(realm).padStart(16, "0"),
+      this.toHex(num).padStart(16, "0"),
+    ].join("");
+  };
 
-        return [
-            '0x',
-            this.toHex(shard).padStart(8, '0'),
-            this.toHex(realm).padStart(16, '0'),
-            this.toHex(num).padStart(16, '0')
-        ].join('');
-    };
+  static tinyBarsToWeibars = (value) => {
+    return ethers.parseUnits(Number(value).toString(), 10);
+  };
 
-    static tinyBarsToWeibars = (value) => {
-        return ethers.parseUnits(Number(value).toString(), 10);
-    };
+  static randomString(length) {
+    let result = "";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
 
-    static randomString(length) {
-        let result = '';
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-        for ( let i = 0; i < length; i++ ) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
+  /**
+   * Generates random trace id for requests.
+   *
+   * returns: string
+   */
+  static generateRequestId = (): string => {
+    return crypto.randomUUID();
+  };
+
+  /**
+   * Format message prefix for logger.
+   */
+  static formatRequestIdMessage = (requestId?: string): string => {
+    return requestId ? `[Request ID: ${requestId}]` : "";
+  };
+
+  static deployContractWithEthers = async (constructorArgs: any[] = [], contractJson, wallet, relay) => {
+    const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
+    let contract = await factory.deploy(...constructorArgs);
+    await contract.waitForDeployment();
+
+    // re-init the contract with the deployed address
+    const receipt = await relay.provider.getTransactionReceipt(contract.deploymentTransaction()?.hash);
+    contract = new ethers.Contract(receipt.to, contractJson.abi, wallet);
+
+    return contract;
+  };
+
+  // The main difference between this and deployContractWithEthers is that this does not re-init the contract with the deployed address
+  // and that results in the contract address coming in EVM Format instead of LongZero format
+  static deployContractWithEthersV2 = async (constructorArgs: any[] = [], contractJson, wallet) => {
+    const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
+    const contract = await factory.deploy(...constructorArgs);
+    await contract.waitForDeployment();
+    // no need to re-init the contract with the deployed address
+    return contract;
+  };
+
+  static createHTS = async (
+    tokenName,
+    symbol,
+    adminAccount,
+    initialSupply,
+    abi,
+    associatedAccounts,
+    owner,
+    servicesNode,
+    requestId,
+  ) => {
+    const htsResult = await servicesNode.createHTS({
+      tokenName,
+      symbol,
+      treasuryAccountId: adminAccount.accountId.toString(),
+      initialSupply,
+      adminPrivateKey: adminAccount.privateKey,
+    });
+
+    // Associate and approve token for all accounts
+    for (const account of associatedAccounts) {
+      await servicesNode.associateHTSToken(
+        account.accountId,
+        htsResult.receipt.tokenId,
+        account.privateKey,
+        htsResult.client,
+        requestId,
+      );
+      await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId, htsResult.client, requestId);
     }
 
-    /**
-     * Generates random trace id for requests.
-     *
-     * returns: string
-     */
-    static generateRequestId = () : string => {
-        return crypto.randomUUID();
+    // Setup initial balance of token owner account
+    await servicesNode.transferHTSToken(
+      owner.accountId,
+      htsResult.receipt.tokenId,
+      initialSupply,
+      htsResult.client,
+      requestId,
+    );
+    const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
+    return new ethers.Contract(evmAddress, abi, owner.wallet);
+  };
+
+  static add0xPrefix = (num) => {
+    return num.startsWith("0x") ? num : "0x" + num;
+  };
+
+  static gasOptions = async (requestId, gasLimit = 1_500_000) => {
+    return {
+      gasLimit: gasLimit,
+      gasPrice: await global.relay.gasPrice(requestId),
     };
-    
-    /**
-    * Format message prefix for logger.
-    */
-    static formatRequestIdMessage = (requestId?: string): string => {
-        return requestId ? `[Request ID: ${requestId}]` : '';
-    };
+  };
 
-    static deployContractWithEthers = async (constructorArgs:any[] = [], contractJson, wallet, relay) => {
-        const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
-        let contract = await factory.deploy(...constructorArgs);
-        await contract.waitForDeployment();
-
-        // re-init the contract with the deployed address
-        const receipt = await relay.provider.getTransactionReceipt(contract.deploymentTransaction()?.hash);
-        contract = new ethers.Contract(receipt.to, contractJson.abi, wallet);
-
-        return contract;
-    };
-
-    // The main difference between this and deployContractWithEthers is that this does not re-init the contract with the deployed address
-    // and that results in the contract address coming in EVM Format instead of LongZero format
-    static deployContractWithEthersV2 = async (constructorArgs:any[] = [], contractJson, wallet) => {
-        const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
-        const contract = await factory.deploy(...constructorArgs);
-        await contract.waitForDeployment();
-        // no need to re-init the contract with the deployed address
-        return contract;
-    };
-
-    static createHTS = async (tokenName, symbol, adminAccount, initialSupply, abi, associatedAccounts, owner, servicesNode, requestId) => {
-        const htsResult = await servicesNode.createHTS({
-            tokenName,
-            symbol,
-            treasuryAccountId: adminAccount.accountId.toString(),
-            initialSupply,
-            adminPrivateKey: adminAccount.privateKey,
-        });
-
-        // Associate and approve token for all accounts
-        for (const account of associatedAccounts) {
-            await servicesNode.associateHTSToken(account.accountId, htsResult.receipt.tokenId, account.privateKey, htsResult.client, requestId);
-            await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId, htsResult.client, requestId);
-        }
-
-        // Setup initial balance of token owner account
-        await servicesNode.transferHTSToken(owner.accountId, htsResult.receipt.tokenId, initialSupply, htsResult.client, requestId);
-        const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
-        return new ethers.Contract(evmAddress, abi, owner.wallet);
-    };
-
-    static add0xPrefix = (num) => {
-        return num.startsWith('0x') ? num : '0x' + num;
-    };
-
-    static gasOptions = async (requestId, gasLimit = 1_500_000) => {
-        return  {
-            gasLimit: gasLimit,
-            gasPrice: await global.relay.gasPrice(requestId)
-        };
+  static convertEthersResultIntoStringsArray = (res) => {
+    if (typeof res === "object") {
+      return res.toArray().map((e) => Utils.convertEthersResultIntoStringsArray(e));
     }
-
-    static convertEthersResultIntoStringsArray = (res) => {
-        if (typeof res === 'object') {
-            return res.toArray().map(e => Utils.convertEthersResultIntoStringsArray(e));
-        }
-        return res.toString();
-    };
+    return res.toString();
+  };
 }
