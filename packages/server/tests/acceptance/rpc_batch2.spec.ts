@@ -60,7 +60,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
     const ONE_WEIBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 18)));
 
-    const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
     const BASIC_CONTRACT_ESTIMATE_GAS_CALL_DATA = '0x6080604052348015600f57600080fd5b50609e8061001e6000396000f3fe608060405260043610602a5760003560e01c80635c36b18614603557806383197ef014605557600080fd5b36603057005b600080fd5b348015604057600080fd5b50600160405190815260200160405180910390f35b348015606057600080fd5b50606633ff5b00fea2646970667358221220886a6d6d6c88bcfc0063129ca2391a3d98aee75ad7fe3e870ec6679215456a3964736f6c63430008090033';
     const EXCHANGE_RATE_FILE_ID = "0.0.112";
     const EXCHANGE_RATE_FILE_CONTENT_DEFAULT = "0a1008b0ea0110f9bb1b1a0608f0cccf9306121008b0ea0110e9c81a1a060880e9cf9306";
@@ -135,7 +134,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
             const expectedRes = `0x${(400000).toString(16)}`;
             const estimatedGas = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{
                 to: basicContract.evm_address,
-                data: BASIC_CONTRACT_PING_CALL_DATA
+                data: BASIC_CONTRACT_ESTIMATE_GAS_CALL_DATA
             }], requestId);
             expect(estimatedGas).to.contain('0x');
             expect(estimatedGas).to.equal(expectedRes);
