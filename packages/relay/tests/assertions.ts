@@ -55,7 +55,7 @@ export default class RelayAssertions {
         expect(tx).to.exist;
         if (tx == null) return;
     
-        expect(tx.accessList).to.eq(expectedTx.accessList);
+        expect(tx.accessList).to.deep.eq(expectedTx.accessList);
         expect(tx.blockHash).to.eq(expectedTx.blockHash);
         expect(tx.blockNumber).to.eq(expectedTx.blockNumber);
         expect(tx.chainId).to.eq(expectedTx.chainId);
@@ -72,7 +72,11 @@ export default class RelayAssertions {
         expect(tx.to).to.eq(expectedTx.to);
         expect(tx.transactionIndex).to.eq(expectedTx.transactionIndex);
         expect(tx.type).to.eq(numberTo0x(expectedTx.type));
-        expect(tx.v).to.eq(numberTo0x(expectedTx.v));
+        if(tx.type === "0x1" || tx.type === "0x2") {
+            expect(tx.yParity).to.eq(numberTo0x(expectedTx.v));
+        } else {
+            expect(tx.v).to.eq(numberTo0x(expectedTx.v));
+        }
         expect(tx.value).to.eq(expectedTx.value);
     };
     
