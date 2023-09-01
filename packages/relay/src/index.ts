@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,16 @@
  *
  */
 
-import { Block, Log, Receipt, Transaction } from './lib/model';
-import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
-import WebSocketError from './lib/errors/WebSocketError';
-import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
-import {MirrorNodeClient} from "./lib/clients";
-import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
+import { Block, Log, Receipt, Transaction } from "./lib/model";
+import { JsonRpcError, predefined } from "./lib/errors/JsonRpcError";
+import WebSocketError from "./lib/errors/WebSocketError";
+import { MirrorNodeClientError } from "./lib/errors/MirrorNodeClientError";
+import { MirrorNodeClient } from "./lib/clients";
+import { IFilterService } from "./lib/services/ethService/ethFilterService/IFilterService";
 
 export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError };
 
-export { RelayImpl } from './lib/relay';
+export { RelayImpl } from "./lib/relay";
 
 export interface Relay {
   web3(): Web3;
@@ -60,14 +60,13 @@ export interface Net {
 }
 
 export interface Eth {
-
   blockNumber(requestId?: string): Promise<string>;
 
   call(call: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError>;
 
   coinbase(requestId?: string): JsonRpcError;
 
-  estimateGas(transaction:any, blockParam: string| null, requestId?: string): Promise<string | JsonRpcError>;
+  estimateGas(transaction: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError>;
 
   gasPrice(requestId?: string): Promise<string>;
 
@@ -79,15 +78,22 @@ export interface Eth {
 
   getBlockTransactionCountByHash(hash: string, requestId?: string): Promise<string | null>;
 
-  getBlockTransactionCountByNumber(blockNum: string, requestId?: string): Promise<string | null>
+  getBlockTransactionCountByNumber(blockNum: string, requestId?: string): Promise<string | null>;
 
   getCode(address: string, blockNumber: string | null, requestId?: string): Promise<string>;
 
   chainId(requestId?: string): string;
 
-  getLogs(blockHash: string|null, fromBlock: string|null, toBlock: string|null, address: string|null, topics: any[]|null, requestId?: string): Promise<Log[]>;
+  getLogs(
+    blockHash: string | null,
+    fromBlock: string | null,
+    toBlock: string | null,
+    address: string | null,
+    topics: any[] | null,
+    requestId?: string,
+  ): Promise<Log[]>;
 
-  getStorageAt(address: string, slot: string, blockNumber: string|null, requestId?: string): Promise<string>;
+  getStorageAt(address: string, slot: string, blockNumber: string | null, requestId?: string): Promise<string>;
 
   getTransactionByBlockHashAndIndex(hash: string, index: string, requestId?: string): Promise<Transaction | null>;
 
@@ -109,7 +115,12 @@ export interface Eth {
 
   getWork(requestId?: string): JsonRpcError;
 
-  feeHistory(blockCount: number, newestBlock: string, rewardPercentiles: Array<number>|null, requestId?: string): Promise<any>;
+  feeHistory(
+    blockCount: number,
+    newestBlock: string,
+    rewardPercentiles: Array<number> | null,
+    requestId?: string,
+  ): Promise<any>;
 
   hashrate(requestId?: string): Promise<string>;
 

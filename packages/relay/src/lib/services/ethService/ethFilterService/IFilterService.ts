@@ -19,18 +19,24 @@
  */
 
 import { JsonRpcError } from "../../../errors/JsonRpcError";
-import { Log } from '../../../model';
+import { Log } from "../../../model";
 
 export interface IFilterService {
-  newFilter(fromBlock: string, toBlock: string, address?: string, topics?: any[], requestIdPrefix?: string):  Promise<string | JsonRpcError>;
+  newFilter(
+    fromBlock: string,
+    toBlock: string,
+    address?: string,
+    topics?: any[],
+    requestIdPrefix?: string,
+  ): Promise<string | JsonRpcError>;
 
-  newBlockFilter(requestIdPrefix?: string):  Promise<string | JsonRpcError>;
+  newBlockFilter(requestIdPrefix?: string): Promise<string | JsonRpcError>;
 
   uninstallFilter(filterId: string, requestId?: string): Promise<boolean>;
 
   newPendingTransactionFilter(requestIdPrefix?: string): JsonRpcError;
 
-  getFilterLogs(filterId: string, requestId?: string): Promise<any>
+  getFilterLogs(filterId: string, requestId?: string): Promise<any>;
 
   getFilterChanges(filterId: string, requestIdPrefix?: string): Promise<string[] | Log[] | JsonRpcError>;
 }

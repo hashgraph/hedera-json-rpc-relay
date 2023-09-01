@@ -2,7 +2,7 @@
  * ‌
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@
 
 import http from "k6/http";
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
+import { TestScenarioBuilder } from "../../lib/common.js";
+import { isNonErrorResponse, httpParams, getPayLoad } from "./common.js";
 
 const url = __ENV.RELAY_BASE_URL;
 
-const methodName = 'eth_feeHistory';
-const {options, run} = new TestScenarioBuilder()
+const methodName = "eth_feeHistory";
+const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request(() => http.post(url, getPayLoad(methodName, ["0x1", "latest", []]), httpParams))
   .check(methodName, (r) => isNonErrorResponse(r))
@@ -34,4 +34,4 @@ const {options, run} = new TestScenarioBuilder()
   .maxDuration(4500)
   .build();
 
-export {options, run};
+export { options, run };

@@ -2,7 +2,7 @@
  * ‌
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,27 +22,28 @@ import {
   computeLatestContractResultParameters,
   computeLatestEthereumTransactionParameters,
   computeLatestLogParameters,
-  setDefaultValuesForEnvParameters
+  setDefaultValuesForEnvParameters,
 } from "../../lib/parameters.js";
 
 const scParams = JSON.parse(open("../../prepare/.smartContractParams.json"));
 
 const computeTestParameters = (configuration) =>
-  Object.assign({},
+  Object.assign(
+    {},
     computeLatestContractResultParameters(configuration),
     computeLatestEthereumTransactionParameters(configuration),
-    computeLatestLogParameters(configuration)
+    computeLatestLogParameters(configuration),
   );
 
 const setupTestParameters = () => {
   setDefaultValuesForEnvParameters();
-  const baseApiUrl = __ENV['MIRROR_BASE_URL'];
-  const testParametersMap = computeTestParameters({baseApiUrl: `${baseApiUrl}/api/v1`});
+  const baseApiUrl = __ENV["MIRROR_BASE_URL"];
+  const testParametersMap = computeTestParameters({ baseApiUrl: `${baseApiUrl}/api/v1` });
   return Object.assign(testParametersMap, scParams, {
     MIRROR_BASE_URL: baseApiUrl,
-    RELAY_BASE_URL: __ENV['RELAY_BASE_URL'],
-    DEFAULT_LIMIT: __ENV.DEFAULT_LIMIT
+    RELAY_BASE_URL: __ENV["RELAY_BASE_URL"],
+    DEFAULT_LIMIT: __ENV.DEFAULT_LIMIT,
   });
 };
 
-export {setupTestParameters};
+export { setupTestParameters };

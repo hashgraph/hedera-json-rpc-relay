@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@
  *
  */
 
-import { JsonRpcError, predefined } from './errors/JsonRpcError';
-import { MirrorNodeClient } from './clients';
-import { EthImpl } from './eth';
-import { Logger } from 'pino';
-import constants from './constants';
-import { ethers, Transaction } from 'ethers';
-import { formatRequestIdMessage, prepend0x } from '../formatters';
+import { JsonRpcError, predefined } from "./errors/JsonRpcError";
+import { MirrorNodeClient } from "./clients";
+import { EthImpl } from "./eth";
+import { Logger } from "pino";
+import constants from "./constants";
+import { ethers, Transaction } from "ethers";
+import { formatRequestIdMessage, prepend0x } from "../formatters";
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
@@ -38,9 +38,7 @@ export class Precheck {
   }
 
   public static parseTxIfNeeded(transaction: string | Transaction): Transaction {
-    return typeof transaction === 'string'
-      ? Transaction.from(transaction)
-      : transaction;
+    return typeof transaction === "string" ? Transaction.from(transaction) : transaction;
   }
 
   value(tx: Transaction) {
@@ -54,7 +52,6 @@ export class Precheck {
    * @param gasPrice
    */
   async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId?: string) {
-    
     this.gasLimit(parsedTx, requestId);
     const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
     await this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
@@ -69,7 +66,13 @@ export class Precheck {
     // verify account
     const accountInfo = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
     if (accountInfo == null) {
-      this.logger.trace(`${requestIdPrefix} Failed to retrieve address '${tx.from}' account details from mirror node on verify account precheck for sendRawTransaction(transaction=${JSON.stringify(tx)})`);
+      this.logger.trace(
+        `${requestIdPrefix} Failed to retrieve address '${
+          tx.from
+        }' account details from mirror node on verify account precheck for sendRawTransaction(transaction=${JSON.stringify(
+          tx,
+        )})`,
+      );
       throw predefined.RESOURCE_NOT_FOUND(`address '${tx.from}'.`);
     }
 
@@ -81,7 +84,9 @@ export class Precheck {
    */
   async nonce(tx: Transaction, accountInfoNonce: number, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    this.logger.trace(`${requestIdPrefix} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`);
+    this.logger.trace(
+      `${requestIdPrefix} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`,
+    );
 
     // @ts-ignore
     if (accountInfoNonce > tx.nonce) {
@@ -97,7 +102,11 @@ export class Precheck {
     const txChainId = prepend0x(Number(tx.chainId).toString(16));
     const passes = txChainId === this.chain;
     if (!passes) {
-      this.logger.trace(`${requestIdPrefix} Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)`, JSON.stringify(tx), txChainId);
+      this.logger.trace(
+        `${requestIdPrefix} Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)`,
+        JSON.stringify(tx),
+        txChainId,
+      );
       throw predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain);
     }
   }
@@ -122,7 +131,12 @@ export class Precheck {
         }
       }
 
-      this.logger.trace(`${requestIdPrefix} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`, JSON.stringify(tx), txGasPrice, minGasPrice);
+      this.logger.trace(
+        `${requestIdPrefix} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`,
+        JSON.stringify(tx),
+        txGasPrice,
+        minGasPrice,
+      );
       throw predefined.GAS_PRICE_TOO_LOW(txGasPrice, minGasPrice);
     }
   }
@@ -135,14 +149,18 @@ export class Precheck {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const result = {
       passes: false,
-      error: predefined.INSUFFICIENT_ACCOUNT_BALANCE
+      error: predefined.INSUFFICIENT_ACCOUNT_BALANCE,
     };
     const txGas = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
     const txTotalValue = tx.value + txGas * tx.gasLimit;
     let tinybars: BigInt;
 
     if (account == null) {
-      this.logger.trace(`${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(tx)}, totalValue=${txTotalValue})`);
+      this.logger.trace(
+        `${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(
+          tx,
+        )}, totalValue=${txTotalValue})`,
+      );
       throw predefined.RESOURCE_NOT_FOUND(`tx.from '${tx.from}'.`);
     }
 
@@ -150,7 +168,12 @@ export class Precheck {
       tinybars = BigInt(account.balance.balance.toString()) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
       result.passes = tinybars >= txTotalValue;
     } catch (error: any) {
-      this.logger.trace(`${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`, JSON.stringify(tx), txTotalValue, error.message);
+      this.logger.trace(
+        `${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`,
+        JSON.stringify(tx),
+        txTotalValue,
+        error.message,
+      );
       if (error instanceof JsonRpcError) {
         // preserve original error
         throw error;
@@ -160,7 +183,12 @@ export class Precheck {
     }
 
     if (!result.passes) {
-      this.logger.trace(`${requestIdPrefix} Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountTinyBarBalance=%s)`, JSON.stringify(tx), txTotalValue, tinybars);
+      this.logger.trace(
+        `${requestIdPrefix} Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountTinyBarBalance=%s)`,
+        JSON.stringify(tx),
+        txTotalValue,
+        tinybars,
+      );
       throw predefined.INSUFFICIENT_ACCOUNT_BALANCE;
     }
   }
@@ -171,16 +199,25 @@ export class Precheck {
   gasLimit(tx: Transaction, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const gasLimit = Number(tx.gasLimit);
-    const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
+    const failBaseLog = "Failed gasLimit precheck for sendRawTransaction(transaction=%s).";
 
     const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data, tx.to!);
 
-
     if (gasLimit > constants.BLOCK_GAS_LIMIT) {
-      this.logger.trace(`${requestIdPrefix} ${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`, JSON.stringify(tx), gasLimit, constants.BLOCK_GAS_LIMIT);
+      this.logger.trace(
+        `${requestIdPrefix} ${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`,
+        JSON.stringify(tx),
+        gasLimit,
+        constants.BLOCK_GAS_LIMIT,
+      );
       throw predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.BLOCK_GAS_LIMIT);
     } else if (gasLimit < intrinsicGasCost) {
-      this.logger.trace(`${requestIdPrefix} ${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`, JSON.stringify(tx), gasLimit, intrinsicGasCost);
+      this.logger.trace(
+        `${requestIdPrefix} ${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`,
+        JSON.stringify(tx),
+        gasLimit,
+        intrinsicGasCost,
+      );
       throw predefined.GAS_LIMIT_TOO_LOW(gasLimit, intrinsicGasCost);
     }
   }
@@ -192,11 +229,11 @@ export class Precheck {
    * @private
    */
   private static transactionIntrinsicGasCost(data: string, to: string | undefined) {
-    const isCreate = (to == undefined) || (to.length == 0);
+    const isCreate = to == undefined || to.length == 0;
 
     let zeros = 0;
 
-    const dataBytes = Buffer.from(data, 'hex');
+    const dataBytes = Buffer.from(data, "hex");
 
     for (const c of dataBytes) {
       if (c == 0) {
@@ -204,8 +241,11 @@ export class Precheck {
       }
     }
 
-    const nonZeros = data.replace('0x', '').length - zeros;
-    const cost = constants.TX_BASE_COST + constants.TX_DATA_ZERO_COST * zeros + constants.ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
+    const nonZeros = data.replace("0x", "").length - zeros;
+    const cost =
+      constants.TX_BASE_COST +
+      constants.TX_DATA_ZERO_COST * zeros +
+      constants.ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
     return isCreate ? cost + constants.TX_CREATE_EXTRA : cost;
   }
 }

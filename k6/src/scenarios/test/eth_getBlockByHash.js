@@ -2,7 +2,7 @@
  * ‌
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,19 +20,25 @@
 
 import http from "k6/http";
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import { TestScenarioBuilder } from "../../lib/common.js";
+import { isNonErrorResponse, httpParams, getPayLoad } from "./common.js";
+import { setupTestParameters } from "./bootstrapEnvParameters.js";
 
-const methodName = 'eth_getBlockByHash';
-const {options, run} = new TestScenarioBuilder()
+const methodName = "eth_getBlockByHash";
+const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
-  .request((testParameters) => http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [testParameters.DEFAULT_BLOCK_HASH, true]), httpParams))
+  .request((testParameters) =>
+    http.post(
+      testParameters.RELAY_BASE_URL,
+      getPayLoad(methodName, [testParameters.DEFAULT_BLOCK_HASH, true]),
+      httpParams,
+    ),
+  )
   .check(methodName, (r) => isNonErrorResponse(r))
   .testDuration("3s")
   .maxDuration(2000)
   .build();
 
-export {options, run};
+export { options, run };
 
 export const setup = setupTestParameters;

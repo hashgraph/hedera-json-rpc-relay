@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,17 @@
  *
  */
 
-import { expect } from 'chai';
-import { Registry } from 'prom-client';
-import { RelayImpl } from '../../src/lib/relay';
+import { expect } from "chai";
+import { Registry } from "prom-client";
+import { RelayImpl } from "../../src/lib/relay";
 
-import pino from 'pino';
+import pino from "pino";
 const logger = pino();
 
 const Relay = new RelayImpl(logger, new Registry());
 
-describe('Net', async function() {
-  it('should execute "net_listening"', async function() {
+describe("Net", async function () {
+  it('should execute "net_listening"', async function () {
     const result = await Relay.net().listening();
     expect(result).to.eq(false);
   });

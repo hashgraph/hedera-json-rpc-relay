@@ -2,7 +2,7 @@
  * ‌
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,34 +19,33 @@
  */
 
 import http from "k6/http";
-import {randomIntBetween} from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
+import { randomIntBetween } from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
+import { TestScenarioBuilder } from "../../lib/common.js";
+import { isNonErrorResponse, httpParams, getPayLoad } from "./common.js";
 
 const url = __ENV.RELAY_BASE_URL;
 
-const methodName = 'eth_call';
-const {options, run} = new TestScenarioBuilder()
+const methodName = "eth_call";
+const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request((testParameters) => {
+    // select a random contract address
+    const contractIndex = randomIntBetween(0, testParameters.contractsAddresses.length - 1);
+    const contractAddress = testParameters.contractsAddresses[contractIndex];
+    // select a random  from  address
+    const fromIndex = randomIntBetween(0, testParameters.wallets.length - 1);
+    const from = testParameters.wallets[fromIndex].address;
 
-      // select a random contract address
-      const contractIndex = randomIntBetween(0, testParameters.contractsAddresses.length-1);
-      const contractAddress = testParameters.contractsAddresses[contractIndex];
-      // select a random  from  address
-      const fromIndex = randomIntBetween(0, testParameters.wallets.length-1);
-      const from = testParameters.wallets[fromIndex].address;
-
-      return  http.post(
-              url,
-              getPayLoad(methodName, [{"from":from,"to":contractAddress,"data":"0xcfae3217"}, "latest"]),
-              httpParams
-          );
-    })
+    return http.post(
+      url,
+      getPayLoad(methodName, [{ from: from, to: contractAddress, data: "0xcfae3217" }, "latest"]),
+      httpParams,
+    );
+  })
   .check(methodName, (r) => isNonErrorResponse(r))
   .testDuration("3s")
   .maxDuration(2000)
   .build();
 
-export {options, run};
+export { options, run };

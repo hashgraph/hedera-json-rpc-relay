@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  *
  */
 
-import { Web3 } from '../index';
-import { Client } from '@hashgraph/sdk';
+import { Web3 } from "../index";
+import { Client } from "@hashgraph/sdk";
 
 export class Web3Impl implements Web3 {
   private client: Client;
@@ -29,6 +29,6 @@ export class Web3Impl implements Web3 {
   }
 
   clientVersion(): string {
-    return 'relay/' + process.env.npm_package_version ?? '';
+    return "relay/" + process.env.npm_package_version ?? "";
   }
 }

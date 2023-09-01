@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  *
  */
 
-import { Net } from '../index';
-import { Client } from '@hashgraph/sdk';
+import { Net } from "../index";
+import { Client } from "@hashgraph/sdk";
 
 export class NetImpl implements Net {
   private client: Client;

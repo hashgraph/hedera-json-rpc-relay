@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,15 +23,15 @@ import { Status } from "@hashgraph/sdk";
 export class SDKClientError extends Error {
   public status: Status = Status.Unknown;
   private validNetworkError: boolean = false;
-  
+
   constructor(e: any, message?: string) {
     super(e?.status?._code ? e.message : message);
 
-    if(e?.status?._code) {
+    if (e?.status?._code) {
       this.validNetworkError = true;
       this.status = e.status;
     }
-  
+
     Object.setPrototypeOf(this, SDKClientError.prototype);
   }
 
@@ -48,8 +48,11 @@ export class SDKClientError extends Error {
   }
 
   public isInvalidContractId(): boolean {
-    return this.isValidNetworkError() && 
-      (this.statusCode === Status.InvalidContractId._code || this.message?.includes(Status.InvalidContractId.toString()));
+    return (
+      this.isValidNetworkError() &&
+      (this.statusCode === Status.InvalidContractId._code ||
+        this.message?.includes(Status.InvalidContractId.toString()))
+    );
   }
 
   public isContractDeleted(): boolean {
@@ -73,4 +76,3 @@ export class SDKClientError extends Error {
     return this.statusCode === Status.InvalidTransactionId._code;
   }
 }
-  

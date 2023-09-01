@@ -2,7 +2,7 @@
  * ‌
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,19 +20,29 @@
 
 import http from "k6/http";
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
+import { TestScenarioBuilder } from "../../lib/common.js";
+import { isNonErrorResponse, httpParams, getPayLoad } from "./common.js";
 
 const url = __ENV.RELAY_BASE_URL;
 
-const methodName = 'eth_estimateGas';
-const {options, run} = new TestScenarioBuilder()
+const methodName = "eth_estimateGas";
+const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
-  .request(() => http.post(
-    url, 
-    getPayLoad(methodName, [{"from": "0x8aff0a12f3e8d55cc718d36f84e002c335df2f4a", "to": "0x5c7687810ce3eae6cda44d0e6c896245cd4f97c6", "data": "0x6740d36c0000000000000000000000000000000000000000000000000000000000000005"}, "latest"]), 
-    httpParams))
+  .request(() =>
+    http.post(
+      url,
+      getPayLoad(methodName, [
+        {
+          from: "0x8aff0a12f3e8d55cc718d36f84e002c335df2f4a",
+          to: "0x5c7687810ce3eae6cda44d0e6c896245cd4f97c6",
+          data: "0x6740d36c0000000000000000000000000000000000000000000000000000000000000005",
+        },
+        "latest",
+      ]),
+      httpParams,
+    ),
+  )
   .check(methodName, (r) => isNonErrorResponse(r))
   .build();
 
-export {options, run};
+export { options, run };

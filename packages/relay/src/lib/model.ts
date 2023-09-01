@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,33 +19,33 @@
  */
 
 // Used for fake implementation of block history
-import { Status, TransactionRecord } from '@hashgraph/sdk';
+import { Status, TransactionRecord } from "@hashgraph/sdk";
 
 export class Block {
-  public readonly timestamp: string = '0x' + new Date().valueOf().toString(16);
+  public readonly timestamp: string = "0x" + new Date().valueOf().toString(16);
   public number!: string;
   public hash!: string;
 
-  public readonly difficulty: string = '0x1';
-  public readonly extraData: string = '';
-  public readonly gasLimit: string = '0xe4e1c0';
-  public readonly baseFeePerGas: string = '0xa54f4c3c00';
-  public readonly gasUsed: string = '0x0';
-  public readonly logsBloom: string = '0x0';
-  public readonly miner: string = '';
-  public readonly mixHash: string = '0x0000000000000000000000000000000000000000000000000000000000000000';
-  public readonly nonce: string = '0x0000000000000000';
+  public readonly difficulty: string = "0x1";
+  public readonly extraData: string = "";
+  public readonly gasLimit: string = "0xe4e1c0";
+  public readonly baseFeePerGas: string = "0xa54f4c3c00";
+  public readonly gasUsed: string = "0x0";
+  public readonly logsBloom: string = "0x0";
+  public readonly miner: string = "";
+  public readonly mixHash: string = "0x0000000000000000000000000000000000000000000000000000000000000000";
+  public readonly nonce: string = "0x0000000000000000";
   public parentHash!: string;
-  public readonly receiptsRoot: string = '0x0';
-  public readonly sha3Uncles: string = '0x0';
-  public readonly size: string = '0x0';
-  public readonly stateRoot: string = '0x0';
-  public readonly totalDifficulty: string = '0x1';
+  public readonly receiptsRoot: string = "0x0";
+  public readonly sha3Uncles: string = "0x0";
+  public readonly size: string = "0x0";
+  public readonly stateRoot: string = "0x0";
+  public readonly totalDifficulty: string = "0x1";
   public readonly transactions: string[] | Transaction[] = [];
-  public readonly transactionsRoot: string = '0x0';
+  public readonly transactionsRoot: string = "0x0";
   public readonly uncles: string[] = [];
   public readonly withdrawals: string[] = [];
-  public readonly withdrawalsRoot: string = '0x0';
+  public readonly withdrawalsRoot: string = "0x0";
 
   constructor(args?: any) {
     if (args) {
@@ -71,7 +71,7 @@ export class Block {
       this.transactionsRoot = args.transactionsRoot;
       this.uncles = [];
       this.withdrawals = [];
-      this.withdrawalsRoot = '0x0';
+      this.withdrawalsRoot = "0x0";
     }
   }
 
@@ -104,20 +104,20 @@ export class Receipt {
     const contractAddress =
       record.contractFunctionResult == undefined
         ? undefined
-        : '0x' + record.contractFunctionResult.contractId?.toSolidityAddress();
+        : "0x" + record.contractFunctionResult.contractId?.toSolidityAddress();
 
     this.transactionHash = txHash;
-    this.transactionIndex = '0x0';
+    this.transactionIndex = "0x0";
     this.blockNumber = block.number;
     this.blockHash = block.hash;
-    this.from = '0x';
+    this.from = "0x";
     // TODO this.to = record.contractFunctionResult?.contractId;
     this.cumulativeGasUsed = Number(gasUsed).toString(16);
     this.gasUsed = Number(gasUsed).toString(16);
     this.contractAddress = contractAddress;
     this.logs = [];
-    this.logsBloom = '';
-    this.status = record.receipt.status == Status.Success ? '0x1' : '0x0';
+    this.logsBloom = "";
+    this.status = record.receipt.status == Status.Success ? "0x1" : "0x0";
   }
 }
 

@@ -48,23 +48,23 @@ import {
   PrecheckStatusError,
   TransactionRecordQuery,
   Hbar,
-} from '@hashgraph/sdk';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { Logger } from 'pino';
-import { formatRequestIdMessage } from '../../formatters';
-import HbarLimit from '../hbarlimiter';
-import constants from './../constants';
-import { SDKClientError } from './../errors/SDKClientError';
-import { JsonRpcError, predefined } from './../errors/JsonRpcError';
-import { CacheService } from '../services/cacheService/cacheService';
+} from "@hashgraph/sdk";
+import { BigNumber } from "@hashgraph/sdk/lib/Transfer";
+import { Logger } from "pino";
+import { formatRequestIdMessage } from "../../formatters";
+import HbarLimit from "../hbarlimiter";
+import constants from "./../constants";
+import { SDKClientError } from "./../errors/SDKClientError";
+import { JsonRpcError, predefined } from "./../errors/JsonRpcError";
+import { CacheService } from "../services/cacheService/cacheService";
 
-const _ = require('lodash');
-const LRU = require('lru-cache');
+const _ = require("lodash");
+const LRU = require("lru-cache");
 
 export class SDKClient {
-  static transactionMode = 'TRANSACTION';
-  static queryMode = 'QUERY';
-  static recordMode = 'RECORD';
+  static transactionMode = "TRANSACTION";
+  static queryMode = "QUERY";
+  static recordMode = "RECORD";
   /**
    * The client to use for connecting to the main consensus network. The account
    * associated with this client will pay for all operations on the main network.
@@ -205,7 +205,7 @@ export class SDKClient {
 
     const feeSchedules = await this.getFeeSchedule(callerName, requestId);
     if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
-      throw new SDKClientError({}, 'Invalid FeeSchedules proto format');
+      throw new SDKClientError({}, "Invalid FeeSchedules proto format");
     }
 
     for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
@@ -243,7 +243,7 @@ export class SDKClient {
   ): Promise<TransactionResponse> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
-    const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
+    const interactingEntity = ethereumTransactionData.toJSON()["to"].toString();
 
     if (ethereumTransactionData.toBytes().length <= 5120) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
@@ -263,7 +263,7 @@ export class SDKClient {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId);
     }
 
-    const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction');
+    const tinybarsGasFee = await this.getTinyBarGasFee("eth_sendRawTransaction");
     ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.BLOCK_GAS_LIMIT)));
 
     return this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId);
@@ -278,7 +278,7 @@ export class SDKClient {
     requestId?: string,
   ): Promise<ContractFunctionResult> {
     const contract = SDKClient.prune0x(to);
-    const contractId = contract.startsWith('00000000000')
+    const contractId = contract.startsWith("00000000000")
       ? ContractId.fromSolidityAddress(contract)
       : ContractId.fromEvmAddress(0, 0, contract);
 
@@ -286,7 +286,7 @@ export class SDKClient {
 
     // data is optional and can be omitted in which case fallback function will be employed
     if (data) {
-      contractCallQuery.setFunctionParameters(Buffer.from(SDKClient.prune0x(data), 'hex'));
+      contractCallQuery.setFunctionParameters(Buffer.from(SDKClient.prune0x(data), "hex"));
     }
 
     if (from) {
@@ -311,7 +311,7 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let retries = 0;
     let resp;
-    while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || '1') > retries) {
+    while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || "1") > retries) {
       try {
         resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestId);
         return resp;
@@ -602,7 +602,7 @@ export class SDKClient {
 
   private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
     const resolvedCost = cost ? cost : 0;
-    const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
+    const resolvedGas = typeof gas === "object" ? gas.toInt() : 0;
     this.consensusNodeClientHistogramCost.labels(mode, type, status, caller, interactingEntity).observe(resolvedCost);
     this.consensusNodeClientHistogramGasFee.labels(mode, type, status, caller, interactingEntity).observe(resolvedGas);
   };
@@ -613,7 +613,7 @@ export class SDKClient {
    * @private
    */
   private static prune0x(input: string): string {
-    return input.startsWith('0x') ? input.substring(2) : input;
+    return input.startsWith("0x") ? input.substring(2) : input;
   }
 
   private static HbarToWeiBar(balance: AccountBalance): BigNumber {
@@ -639,7 +639,7 @@ export class SDKClient {
     interactingEntity?: string,
   ) => {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const hexedCallData = Buffer.from(callData).toString('hex');
+    const hexedCallData = Buffer.from(callData).toString("hex");
 
     const fileCreateTx = await new FileCreateTransaction()
       .setContents(hexedCallData.substring(0, 4096))

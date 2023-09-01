@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,24 +18,24 @@
  *
  */
 
-import dotenv from 'dotenv';
-import findConfig from 'find-config';
-dotenv.config({ path: findConfig('.env') || '' });
-import { Relay, Eth, Net, Web3, Subs } from '../index';
-import { Web3Impl } from './web3';
-import { NetImpl } from './net';
-import { EthImpl } from './eth';
-import { Poller } from './poller';
-import { SubscriptionController } from './subscriptionController';
-import { Client } from '@hashgraph/sdk';
-import { Logger } from 'pino';
-import { MirrorNodeClient } from './clients';
-import { Gauge, Registry } from 'prom-client';
-import HAPIService from './services/hapiService/hapiService';
-import constants from './constants';
-import HbarLimit from './hbarlimiter';
-import { prepend0x } from '../formatters';
-import { CacheService } from './services/cacheService/cacheService';
+import dotenv from "dotenv";
+import findConfig from "find-config";
+dotenv.config({ path: findConfig(".env") || "" });
+import { Relay, Eth, Net, Web3, Subs } from "../index";
+import { Web3Impl } from "./web3";
+import { NetImpl } from "./net";
+import { EthImpl } from "./eth";
+import { Poller } from "./poller";
+import { SubscriptionController } from "./subscriptionController";
+import { Client } from "@hashgraph/sdk";
+import { Logger } from "pino";
+import { MirrorNodeClient } from "./clients";
+import { Gauge, Registry } from "prom-client";
+import HAPIService from "./services/hapiService/hapiService";
+import constants from "./constants";
+import HbarLimit from "./hbarlimiter";
+import { prepend0x } from "../formatters";
+import { CacheService } from "./services/cacheService/cacheService";
 
 export class RelayImpl implements Relay {
   private readonly clientMain: Client;
@@ -47,19 +47,18 @@ export class RelayImpl implements Relay {
   private readonly cacheService: CacheService;
 
   constructor(logger: Logger, register: Registry) {
-    logger.info('Configurations successfully loaded');
+    logger.info("Configurations successfully loaded");
 
-    const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
+    const hederaNetwork: string = (process.env.HEDERA_NETWORK || "{}").toLowerCase();
 
-    const configuredChainId =
-      process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
+    const configuredChainId = process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || "298";
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
-    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
+    const hbarLimiter = new HbarLimit(logger.child({ name: "hbar-rate-limit" }), Date.now(), total, duration, register);
 
-    this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);
+    this.cacheService = new CacheService(logger.child({ name: "cache-service" }), register);
     const hapiService = new HAPIService(logger, register, hbarLimiter, this.cacheService);
     this.clientMain = hapiService.getMainClientInstance();
 
@@ -67,59 +66,64 @@ export class RelayImpl implements Relay {
     this.netImpl = new NetImpl(this.clientMain, chainId);
 
     this.mirrorNodeClient = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      process.env.MIRROR_NODE_URL || "",
       logger.child({ name: `mirror-node` }),
       register,
       this.cacheService,
       undefined,
-      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || ''
+      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || "",
     );
 
     this.ethImpl = new EthImpl(
       hapiService,
       this.mirrorNodeClient,
-      logger.child({ name: 'relay-eth' }),
+      logger.child({ name: "relay-eth" }),
       chainId,
       register,
-      this.cacheService);
+      this.cacheService,
+    );
 
-    if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
+    if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === "true") {
       const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
       this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }
 
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
-    logger.info('Relay running with chainId=%s', chainId);
+    logger.info("Relay running with chainId=%s", chainId);
   }
 
   /**
- * Initialize operator account metrics
- * @param {Client} clientMain
- * @param {MirrorNodeClient} mirrorNodeClient
- * @param {Logger} logger
- * @param {Registry} register
- * @returns {Gauge} Operator Metric
- */
-  private initOperatorMetric(clientMain: Client, mirrorNodeClient: MirrorNodeClient, logger: Logger, register: Registry) {
-    const metricGaugeName = 'rpc_relay_operator_balance';
+   * Initialize operator account metrics
+   * @param {Client} clientMain
+   * @param {MirrorNodeClient} mirrorNodeClient
+   * @param {Logger} logger
+   * @param {Registry} register
+   * @returns {Gauge} Operator Metric
+   */
+  private initOperatorMetric(
+    clientMain: Client,
+    mirrorNodeClient: MirrorNodeClient,
+    logger: Logger,
+    register: Registry,
+  ) {
+    const metricGaugeName = "rpc_relay_operator_balance";
     register.removeSingleMetric(metricGaugeName);
     return new Gauge({
-        name: metricGaugeName,
-        help: 'Relay operator balance gauge',
-        labelNames: ['mode', 'type', 'accountId'],
-        registers: [register],
-        async collect() {
-            // Invoked when the registry collects its metrics' values.
-            // Allows for updated account balance tracking
-            try {
-                const account = await mirrorNodeClient.getAccount(clientMain.operatorAccountId!.toString());
-                const accountBalance = account.balance?.balance;
-                this.labels({ 'accountId': clientMain.operatorAccountId?.toString() })
-                    .set(accountBalance);
-            } catch (e: any) {
-                logger.error(e, `Error collecting operator balance. Skipping balance set`);
-            }
-        },
+      name: metricGaugeName,
+      help: "Relay operator balance gauge",
+      labelNames: ["mode", "type", "accountId"],
+      registers: [register],
+      async collect() {
+        // Invoked when the registry collects its metrics' values.
+        // Allows for updated account balance tracking
+        try {
+          const account = await mirrorNodeClient.getAccount(clientMain.operatorAccountId!.toString());
+          const accountBalance = account.balance?.balance;
+          this.labels({ accountId: clientMain.operatorAccountId?.toString() }).set(accountBalance);
+        } catch (e: any) {
+          logger.error(e, `Error collecting operator balance. Skipping balance set`);
+        }
+      },
     });
   }
 

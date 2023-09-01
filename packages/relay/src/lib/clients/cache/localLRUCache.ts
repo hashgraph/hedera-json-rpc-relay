@@ -18,12 +18,12 @@
  *
  */
 
-import { Logger } from 'pino';
-import { Gauge, Registry } from 'prom-client';
-import { ICacheClient } from './ICacheClient';
-import constants from '../../constants';
+import { Logger } from "pino";
+import { Gauge, Registry } from "prom-client";
+import { ICacheClient } from "./ICacheClient";
+import constants from "../../constants";
 
-const LRU = require('lru-cache');
+const LRU = require("lru-cache");
 
 /**
  * Represents a LocalLRUCache instance that uses an LRU (Least Recently Used) caching strategy
@@ -82,11 +82,11 @@ export class LocalLRUCache implements ICacheClient {
       this.cacheKeyGauge.set(this.cache.size);
     };
 
-    const metricCounterName = 'rpc_relay_cache';
+    const metricCounterName = "rpc_relay_cache";
     register.removeSingleMetric(metricCounterName);
     this.cacheKeyGauge = new Gauge({
       name: metricCounterName,
-      help: 'Relay LRU cache gauge',
+      help: "Relay LRU cache gauge",
       registers: [register],
       async collect() {
         cacheSizeCollect();
