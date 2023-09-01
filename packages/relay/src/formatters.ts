@@ -152,7 +152,7 @@ const formatContractResult = (cr: any) => {
         to: cr.to?.substring(0, 42),
         transactionIndex: nullableNumberTo0x(cr.transaction_index),
         type: nullableNumberTo0x(cr.type),
-        v: nanOrNumberTo0x(cr.v),
+        v: cr.type === null ? null : nanOrNumberTo0x(cr.v),
         value: nanOrNumberTo0x(cr.amount),
     };
 
@@ -164,6 +164,7 @@ const formatContractResult = (cr: any) => {
         }); // eip 2930 fields
         case 2: return new Transaction1559({
             ...commonFields,
+            accessList: [],
             maxPriorityFeePerGas: toNullIfEmptyHex(cr.max_priority_fee_per_gas),
             maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas)
         }); // eip 1559 fields

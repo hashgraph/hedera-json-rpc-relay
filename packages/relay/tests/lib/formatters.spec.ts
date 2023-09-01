@@ -200,7 +200,7 @@ describe('Formatters', () => {
 
         it('should return a valid match', () => {
             const formattedResult: any = formatContractResult(contractResult);
-            expect(formattedResult.accessList).to.equal(undefined);
+            expect(formattedResult.accessList).to.deep.eq([]);
             expect(formattedResult.blockHash).to.equal('0xb0f10139fa0bf9e66402c8c0e5ed364e07cf83b3726c8045fabf86a07f488713');
             expect(formattedResult.blockNumber).to.equal('0x210');
             expect(formattedResult.chainId).to.equal('0x12a');
@@ -217,7 +217,8 @@ describe('Formatters', () => {
             expect(formattedResult.to).to.equal('0x0000000000000000000000000000000000000409');
             expect(formattedResult.transactionIndex).to.equal('0x9');
             expect(formattedResult.type).to.equal('0x2');
-            expect(formattedResult.v).to.equal('0x1');
+            expect(formattedResult.yParity).to.equal('0x1');
+            expect(formattedResult.v).to.equal(undefined);
             expect(formattedResult.value).to.equal('0x0');
         });
 
@@ -251,7 +252,8 @@ describe('Formatters', () => {
             expect(formattedResult.s).to.equal(null);
             expect(formattedResult.to).to.equal('0x0000000000000000000000000000000000000409');
             expect(formattedResult.transactionIndex).to.equal(null);
-            expect(formattedResult.v).to.equal('0x0');
+            expect(formattedResult.v).to.equal(undefined);
+            expect(formattedResult.yParity).to.equal('0x0');
             expect(formattedResult.value).to.equal('0x0');
         });
     });
