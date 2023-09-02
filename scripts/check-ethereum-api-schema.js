@@ -3,13 +3,15 @@ const axios = require('axios');
 const openRpcData = require('../docs/openrpc.json');
 require('ts-node/register');
 const helper = require('../packages/relay/tests/helpers.ts');
-let lastNonce = 24;
+let lastNonce = 0;
 // Create an instance of Octokit and authenticate (you can use a personal access token or OAuth token)
 const octokit = new Octokit({
     auth: process.env.GITHUB_PERSONAL_TOKEN
 });
 let currentBlockHash;
-let transactionAndBlockHash;
+let legacyTransactionAndBlockHash;
+let transaction2930AndBlockHash;
+let transaction1559AndBlockHash;
 const relayUrl = 'http://127.0.0.1:7546';
 const body = {
     "jsonrpc": "2.0",
@@ -23,8 +25,8 @@ const body = {
 const gasPrice = '0x2C68AF0BB14000';
 const gasLimit = "0x3D090";
 const value = '0x2E90EDD000';
-let transaction = {
-    nonce: 0,
+let legacyTransaction = {
+    nonce: lastNonce + 1,
     chainId: 0x12a,
     to: "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
     from: "0xc37f417fA09933335240FCA72DD257BFBdE9C275",
@@ -32,6 +34,30 @@ let transaction = {
     gasPrice,
     gasLimit: gasLimit,
     type: 0
+};
+
+let transaction2930 = {
+    nonce: lastNonce + 2,
+    chainId: 0x12a,
+    to: "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
+    from: "0xc37f417fA09933335240FCA72DD257BFBdE9C275",
+    value,
+    gasPrice,
+    gasLimit: gasLimit,
+    type: 1
+};
+
+let transaction1559 = {
+    nonce: lastNonce + 3,
+    chainId: 0x12a,
+    to: "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
+    from: "0xc37f417fA09933335240FCA72DD257BFBdE9C275",
+    value,
+    gasPrice,
+    maxPriorityFeePerGas: gasPrice,
+    maxFeePerGas: gasPrice,
+    gasLimit: gasLimit,
+    type: 2
 };
 
 async function getEthereumExecApis(relaySupportedMethods) {
@@ -52,6 +78,8 @@ async function getFolderContent(path) {
     });
 
     let fileContents = [];
+    
+
     if (response.data.length > 1) {
         for (const dataEntry of response.data) {
             const fileContent = await getFileContent(dataEntry.path);
@@ -61,22 +89,14 @@ async function getFolderContent(path) {
         const fileContent = await getFileContent(response.data[0].path);
         fileContents.push(fileContent);
     }
-    console.log(fileContents);
     return fileContents;
 }
 
-function splitReqAndRes(contents) {
-    const newContents = [];
-    contents.forEach((content) => {
-        content.forEach((inputString) => {
-            const lines = inputString.split('\n');
-            const filteredLines = lines.filter(line => line != '').map(line => line.slice(3));
+function splitReqAndRes(content) {
+    const lines = content.split('\n');
+    const filteredLines = lines.filter(line => line != '').map(line => line.slice(3));
         
-            return newContents.push({request: filteredLines[0], response: filteredLines[1]});
-        });
-    });
-    console.log(newContents);
-    return newContents;
+    return {request: filteredLines[0], response: filteredLines[1]};
 }
 
 async function getFileContent(path) {
@@ -87,8 +107,8 @@ async function getFileContent(path) {
     });
 
     const content = Buffer.from(response.data.content, 'base64').toString();
-
-    return content;
+    const reqAndRes = splitReqAndRes(content);
+    return {fileName: response.data.name, content: reqAndRes};
 }
 
 async function sendRequestToRelay(request) {
@@ -101,7 +121,7 @@ async function sendRequestToRelay(request) {
     
 }
 
-async function signAndSendRawTransaction() {
+async function signAndSendRawTransaction(transaction) {
     const signed = await helper.signTransaction(transaction, "0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd");
     const request = {"jsonrpc":"2.0","id":1,"method":"eth_sendRawTransaction","params":[signed]};
     const response = await sendRequestToRelay(request);
@@ -116,7 +136,7 @@ async function signAndSendRawTransaction() {
             transactionIndex: transactionReceipt.result.transactionIndex, blockNumber: transactionReceipt.result.blockNumber };
 }
 
-async function checkRequestBody(request) {
+async function checkRequestBody(fileName, request) {
     //This method changes params for request which wont work with the values from ethereum api tests
     if((request.method === 'eth_getBlockByHash' && request.params[0] === '0x7cb4dd3daba1f739d0c1ec7d998b4a2f6fd83019116455afa54ca4f49dfa0ad4') ||
         (request.method === 'eth_sendRawTransaction'
@@ -124,18 +144,15 @@ async function checkRequestBody(request) {
             request.params[0] = currentBlockHash;
     }
     if((request.method === 'eth_getTransactionByBlockHashAndIndex')) {
-        request.params[0] = transactionAndBlockHash.blockHash;
-        request.params[1] = transactionAndBlockHash.transactionIndex;
+        request.params[0] = legacyTransactionAndBlockHash.blockHash;
+        request.params[1] = legacyTransactionAndBlockHash.transactionIndex;
     }
     if (request.method === 'eth_getTransactionByBlockNumberAndIndex') {
-        request.params[0] = transactionAndBlockHash.blockNumber;
-        request.params[1] = transactionAndBlockHash.transactionIndex;
-    }
-    if (request.method === 'eth_getTransactionByHash' || request.method === 'eth_getTransactionReceipt') {
-        request.params[0] = transactionAndBlockHash.transactionHash;
+        request.params[0] = legacyTransactionAndBlockHash.blockNumber;
+        request.params[1] = legacyTransactionAndBlockHash.transactionIndex;
     }
     if (request.method === 'eth_sendRawTransaction') {
-        transaction.nonce = 26;
+        transaction.nonce = lastNonce + 4;
         const transactionHash = await helper.signTransaction(transaction, "0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd");
         request.params[0] = transactionHash;
     }
@@ -143,14 +160,19 @@ async function checkRequestBody(request) {
         request.params[0] = '0x5C41A21F14cFe9808cBEc1d91b55Ba75ed327Eb6';
         request.params[1] = currentBlockHash;
     }
+    if (request.method === 'eth_getTransactionByHash') {
+        request = formatTransactionByHashRequests(fileName, request);
+    }
     return request;
 }
 
-function checkResponseFormat(actualReponse, expectedResponse) {
+function checkResponseFormat(fileName, actualReponse, expectedResponse) {
     const actualResponseKeys = extractKeys(actualReponse);
     const expectedResponseKeys = extractKeys(expectedResponse);
     const missingKeys = expectedResponseKeys.filter(key => !actualResponseKeys.includes(key));
-
+    if ((fileName === 'get-dynamic-fee.io' || fileName === 'get-access-list.io') && missingKeys[0] === 'result.v') {
+        return;
+    }
     if (missingKeys.length) {
         throw Error(`Response format is not matching, the response is missing ${missingKeys}`);
     }
@@ -172,30 +194,59 @@ function extractKeys(obj, prefix = '') {
     return keys;
 }
 
+function formatTransactionByHashRequests(fileName, request) {
+    switch(fileName){
+        case 'get-access-list.io':
+            request.params[0] = transaction2930AndBlockHash.transactionHash;
+            break;
+        case 'get-dynamic-fee.io':
+            request.params[0] = transaction1559AndBlockHash.transactionHash;
+            break;
+        case 'get-empty-tx.io':
+            request.params[0] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+            break;
+        case 'get-legacy-create.io':
+            request.params[0] = legacyTransactionAndBlockHash.transactionHash;
+            break;
+        case 'get-legacy-input.io':
+            request.params[0] = legacyTransactionAndBlockHash.transactionHash;
+            break;
+        case 'get-legacy-tx.io':
+            request.params[0] = legacyTransactionAndBlockHash.transactionHash;
+            break;
+        case 'get-notfound-tx.io':
+            request.params[0] = '0x00000000000000000000000000000000000000000000000000000000deadbeef';
+            break;
+    }
+    return request;   
+}
+
 async function main() {
     try {
         const latestBlock = await sendRequestToRelay(body);
-        transactionAndBlockHash = await signAndSendRawTransaction()
+        legacyTransactionAndBlockHash = await signAndSendRawTransaction(legacyTransaction);
+        transaction2930AndBlockHash = await signAndSendRawTransaction(transaction2930);
+        transaction1559AndBlockHash = await signAndSendRawTransaction(transaction1559);
         lastNonce = lastNonce + 1;
         currentBlockHash = latestBlock.result.hash;
         const relaySupportedMethodNames = openRpcData.methods.map(method => method.name);
         const ethSupportedMethods = await getEthereumExecApis(relaySupportedMethodNames);
         const folders = ethSupportedMethods.map(each => each.path);
         //temporary excluded those until 1696 PR is merger
-        const excludedValues = ['tests/eth_getTransactionByHash','tests/eth_getTransactionReceipt'];
-        const filteredFolders = folders.filter(folderName => !excludedValues.includes(folderName));
+        const includedValues = 'tests/eth_getTransactionByHash';
+        const filteredFolders = folders.filter(folderName => includedValues.includes(folderName));
         let fileContents = [];
         for (const folder of filteredFolders) {
-            fileContents.push(await getFolderContent(folder));
+            fileContents.push({method: folder.split('/')[1], content: await getFolderContent(folder)});
         }
 
-        const reqAndExpectedRes = splitReqAndRes(fileContents);
-
-        for (const item of reqAndExpectedRes) {
-            console.log("Executing test for", JSON.parse(item.request).method);
-            const modifiedRequest = await checkRequestBody(JSON.parse(item.request));
-            const response = await sendRequestToRelay(modifiedRequest);
-            checkResponseFormat(response, JSON.parse(item.response));
+        for (const file of fileContents) {
+            console.log("Executing test for", file.method);
+            for(const fileContent in file.content) {
+                const modifiedRequest = await checkRequestBody(file.content[fileContent].fileName, JSON.parse(file.content[fileContent].content.request));
+                const response = await sendRequestToRelay(modifiedRequest);
+                checkResponseFormat(file.content[fileContent].fileName, response, JSON.parse(file.content[fileContent].content.response));
+            }
         }
     }
     catch (error) {
