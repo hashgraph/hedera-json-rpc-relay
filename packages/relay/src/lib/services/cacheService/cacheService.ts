@@ -96,8 +96,10 @@ export class CacheService {
      *  cacheType - redis/lru
      *  method - The CacheService method being called
      */
+    const metricName = 'rpc_cache_service_methods_counter';
+    this.register.removeSingleMetric(metricName);
     this.cacheMethodsCounter = new Counter({
-      name: 'rpc_cache_service_methods_counter',
+      name: metricName,
       help: 'Counter for calls to methods of CacheService separated by CallingMethod and CacheType',
       registers: [register],
       labelNames: ['callingMethod', 'cacheType', 'method'],
