@@ -2,16 +2,19 @@ const { Octokit } = require('@octokit/rest');
 const axios = require('axios');
 const openRpcData = require('../docs/openrpc.json');
 require('ts-node/register');
+require('dotenv').config();
 const helper = require('../packages/relay/tests/helpers.ts');
 let lastNonce = 0;
 // Create an instance of Octokit and authenticate (you can use a personal access token or OAuth token)
+const GITHUB_PERSONAL_TOKEN = process.env.GITHUB_PERSONAL_TOKEN;
 const octokit = new Octokit({
-    auth: process.env.GITHUB_PERSONAL_TOKEN
+    auth: GITHUB_PERSONAL_TOKEN
 });
 let currentBlockHash;
 let legacyTransactionAndBlockHash;
 let transaction2930AndBlockHash;
 let transaction1559AndBlockHash;
+let createContractLegacyTransactionAndBlockHash;
 const relayUrl = 'http://127.0.0.1:7546';
 const body = {
     "jsonrpc": "2.0",
@@ -60,6 +63,17 @@ let transaction1559 = {
     type: 2
 };
 
+let createContractLegacyTransaction = {
+    nonce: lastNonce + 4,
+    chainId: 0x12a,
+    to: null,
+    from: "0xc37f417fA09933335240FCA72DD257BFBdE9C275",
+    gasLimit: gasLimit,
+    gasPrice: gasPrice,
+    type: 0,
+    data: "0x608060405234801561001057600080fd5b506040516105fc3803806105fc83398101604081905261002f9161015f565b8051610042906000906020840190610080565b507fad181ee258ff92d26bf7ed2e6b571ef1cba3afc45f028b863b0f02adaffc2f0681604051610072919061020b565b60405180910390a150610279565b82805461008c9061023e565b90600052602060002090601f0160209004810192826100ae57600085556100f4565b82601f106100c757805160ff19168380011785556100f4565b828001600101855582156100f4579182015b828111156100f45782518255916020019190600101906100d9565b50610100929150610104565b5090565b5b808211156101005760008155600101610105565b634e487b7160e01b600052604160045260246000fd5b60005b8381101561014a578181015183820152602001610132565b83811115610159576000848401525b50505050565b60006020828403121561017157600080fd5b81516001600160401b038082111561018857600080fd5b818401915084601f83011261019c57600080fd5b8151818111156101ae576101ae610119565b604051601f8201601f19908116603f011681019083821181831017156101d6576101d6610119565b816040528281528760208487010111156101ef57600080fd5b61020083602083016020880161012f565b979650505050505050565b602081526000825180602084015261022a81604085016020870161012f565b601f01601f19169190910160400192915050565b600181811c9082168061025257607f821691505b6020821081141561027357634e487b7160e01b600052602260045260246000fd5b50919050565b610374806102886000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c8063a41368621461003b578063cfae321714610050575b600080fd5b61004e6100493660046101fd565b61006e565b005b6100586100bc565b60405161006591906102ae565b60405180910390f35b805161008190600090602084019061014e565b507fad181ee258ff92d26bf7ed2e6b571ef1cba3afc45f028b863b0f02adaffc2f06816040516100b191906102ae565b60405180910390a150565b6060600080546100cb90610303565b80601f01602080910402602001604051908101604052809291908181526020018280546100f790610303565b80156101445780601f1061011957610100808354040283529160200191610144565b820191906000526020600020905b81548152906001019060200180831161012757829003601f168201915b5050505050905090565b82805461015a90610303565b90600052602060002090601f01602090048101928261017c57600085556101c2565b82601f1061019557805160ff19168380011785556101c2565b828001600101855582156101c2579182015b828111156101c25782518255916020019190600101906101a7565b506101ce9291506101d2565b5090565b5b808211156101ce57600081556001016101d3565b634e487b7160e01b600052604160045260246000fd5b60006020828403121561020f57600080fd5b813567ffffffffffffffff8082111561022757600080fd5b818401915084601f83011261023b57600080fd5b81358181111561024d5761024d6101e7565b604051601f8201601f19908116603f01168101908382118183101715610275576102756101e7565b8160405282815287602084870101111561028e57600080fd5b826020860160208301376000928101602001929092525095945050505050565b600060208083528351808285015260005b818110156102db578581018301518582016040015282016102bf565b818111156102ed576000604083870101525b50601f01601f1916929092016040019392505050565b600181811c9082168061031757607f821691505b6020821081141561033857634e487b7160e01b600052602260045260246000fd5b5091905056fea2646970667358221220d450959bd13a5c79ab8546a400f6af65e1c3d24b6877b871e663861bbf17234664736f6c63430008090033000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000076e696b6f6c617900000000000000000000000000000000000000000000000000"
+};
+
 async function getEthereumExecApis(relaySupportedMethods) {
     const response = await octokit.repos.getContent({
         owner: 'ethereum',
@@ -77,18 +91,10 @@ async function getFolderContent(path) {
         path: `/${path}`,
     });
 
-    let fileContents = [];
-    
+    const fileContents = await Promise.all(response.data.map(async (dataEntry) => {
+        return await getFileContent(dataEntry.path);
+    }));
 
-    if (response.data.length > 1) {
-        for (const dataEntry of response.data) {
-            const fileContent = await getFileContent(dataEntry.path);
-            fileContents.push(fileContent);
-        }
-    } else {
-        const fileContent = await getFileContent(response.data[0].path);
-        fileContents.push(fileContent);
-    }
     return fileContents;
 }
 
@@ -117,13 +123,20 @@ async function sendRequestToRelay(request) {
         return response.data;
     } catch(error) {
         console.error(error);
+        throw error;
     }
     
 }
 
 async function signAndSendRawTransaction(transaction) {
     const signed = await helper.signTransaction(transaction, "0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd");
-    const request = {"jsonrpc":"2.0","id":1,"method":"eth_sendRawTransaction","params":[signed]};
+    const request = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "eth_sendRawTransaction",
+        "params": [signed]
+    };
+
     const response = await sendRequestToRelay(request);
     const requestTransactionReceipt = {
         "id": "test_id",
@@ -132,8 +145,12 @@ async function signAndSendRawTransaction(transaction) {
         "params": [response.result]
     };
     const transactionReceipt = await sendRequestToRelay(requestTransactionReceipt);
-    return {transactionHash: response.result, blockHash: transactionReceipt.result.blockHash,
-            transactionIndex: transactionReceipt.result.transactionIndex, blockNumber: transactionReceipt.result.blockNumber };
+    return {
+        transactionHash: response.result, 
+        blockHash: transactionReceipt.result.blockHash,
+        transactionIndex: transactionReceipt.result.transactionIndex,
+        blockNumber: transactionReceipt.result.blockNumber
+    };
 }
 
 async function checkRequestBody(fileName, request) {
@@ -152,16 +169,16 @@ async function checkRequestBody(fileName, request) {
         request.params[1] = legacyTransactionAndBlockHash.transactionIndex;
     }
     if (request.method === 'eth_sendRawTransaction') {
-        transaction.nonce = lastNonce + 4;
-        const transactionHash = await helper.signTransaction(transaction, "0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd");
+        legacyTransaction.nonce = lastNonce + 5;
+        const transactionHash = await helper.signTransaction(legacyTransaction, "0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd");
         request.params[0] = transactionHash;
     }
     if (request.method === 'eth_getBalance') {
         request.params[0] = '0x5C41A21F14cFe9808cBEc1d91b55Ba75ed327Eb6';
         request.params[1] = currentBlockHash;
     }
-    if (request.method === 'eth_getTransactionByHash') {
-        request = formatTransactionByHashRequests(fileName, request);
+    if (request.method === 'eth_getTransactionByHash' || request.method === 'eth_getTransactionReceipt') {
+        request = formatTransactionByHashAndReceiptRequests(fileName, request);
     }
     return request;
 }
@@ -194,7 +211,7 @@ function extractKeys(obj, prefix = '') {
     return keys;
 }
 
-function formatTransactionByHashRequests(fileName, request) {
+function formatTransactionByHashAndReceiptRequests(fileName, request) {
     switch(fileName){
         case 'get-access-list.io':
             request.params[0] = transaction2930AndBlockHash.transactionHash;
@@ -206,12 +223,18 @@ function formatTransactionByHashRequests(fileName, request) {
             request.params[0] = "0x0000000000000000000000000000000000000000000000000000000000000000";
             break;
         case 'get-legacy-create.io':
-            request.params[0] = legacyTransactionAndBlockHash.transactionHash;
+            request.params[0] = createContractLegacyTransactionAndBlockHash.transactionHash;
             break;
         case 'get-legacy-input.io':
-            request.params[0] = legacyTransactionAndBlockHash.transactionHash;
+            request.params[0] = createContractLegacyTransactionAndBlockHash.transactionHash;
+            break;
+        case 'get-legacy-contract.io':
+            request.params[0] = createContractLegacyTransactionAndBlockHash.transactionHash;
             break;
         case 'get-legacy-tx.io':
+            request.params[0] = legacyTransactionAndBlockHash.transactionHash;
+            break;
+        case 'get-legacy-receipt.io':
             request.params[0] = legacyTransactionAndBlockHash.transactionHash;
             break;
         case 'get-notfound-tx.io':
@@ -221,32 +244,32 @@ function formatTransactionByHashRequests(fileName, request) {
     return request;   
 }
 
+async function processFileContent(fileContent) {
+    console.log("Executing for ", fileContent.fileName);
+    const modifiedRequest = await checkRequestBody(fileContent.fileName, JSON.parse(fileContent.content.request));
+    const response = await sendRequestToRelay(modifiedRequest);
+    checkResponseFormat(fileContent.fileName, response, JSON.parse(fileContent.content.response));
+}
+
 async function main() {
     try {
         const latestBlock = await sendRequestToRelay(body);
         legacyTransactionAndBlockHash = await signAndSendRawTransaction(legacyTransaction);
         transaction2930AndBlockHash = await signAndSendRawTransaction(transaction2930);
         transaction1559AndBlockHash = await signAndSendRawTransaction(transaction1559);
-        lastNonce = lastNonce + 1;
+        createContractLegacyTransactionAndBlockHash = await signAndSendRawTransaction(createContractLegacyTransaction);
         currentBlockHash = latestBlock.result.hash;
         const relaySupportedMethodNames = openRpcData.methods.map(method => method.name);
         const ethSupportedMethods = await getEthereumExecApis(relaySupportedMethodNames);
         const folders = ethSupportedMethods.map(each => each.path);
-        //temporary excluded those until 1696 PR is merger
-        const includedValues = 'tests/eth_getTransactionByHash';
-        const filteredFolders = folders.filter(folderName => includedValues.includes(folderName));
         let fileContents = [];
-        for (const folder of filteredFolders) {
+        for (const folder of folders) {
             fileContents.push({method: folder.split('/')[1], content: await getFolderContent(folder)});
         }
 
         for (const file of fileContents) {
-            console.log("Executing test for", file.method);
-            for(const fileContent in file.content) {
-                const modifiedRequest = await checkRequestBody(file.content[fileContent].fileName, JSON.parse(file.content[fileContent].content.request));
-                const response = await sendRequestToRelay(modifiedRequest);
-                checkResponseFormat(file.content[fileContent].fileName, response, JSON.parse(file.content[fileContent].content.response));
-            }
+            console.log("Executing for method ", file.method);
+            await Promise.all(file.content.map(processFileContent));
         }
     }
     catch (error) {
