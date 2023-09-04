@@ -19,13 +19,9 @@ New Debug API methods can be added and handled by adding debug service, which wi
 export interface Debug {
   traceTransaction(transactionHash, { tracer, tracerConfig });
 
-  accountRange(blockNrOrHash, start, maxResults);
-
   getModifiedAccountsByHash(startHash, endHash);
 
   getModifiedAccountsByNumber(startNum, endNum);
-
-  verbosity(level);
 }
 ```
 
@@ -36,20 +32,12 @@ class DebugService implements Debug{
     // Implementation of traceTranscation depending on passed params.
   }
 
-  accountRange(blockNrOrHash, start, maxResults) {
-    // Implementation of accountRange depending on passed params.
-  }
-
   getModifiedAccountsByHash(startHash, endHash){ 
     // Implementation of getModifiedAccountsByHash depending on passed params.
   }
 
   getModifiedAccountsByNumber(startNum, endNum){
     // Implementation of getModifiedAccountsByNumber depending on passed params.
-  }
-
-  verbosity(level){
-    // Implementation of verbosity depending on passed params.
   }
 }
 ```
@@ -62,6 +50,21 @@ class DebugService implements Debug{
 `transactionHash` - string - This is the hash of the transaction that we want to trace.
 `tracer` - string - to specify the type of tracer. In the beginning only `callTracer` will be accepted.
 `tracerConfig` - object - consists of one property inside called `onlyTopCall`, which is a boolean. 
+
+#### Returns 
+`object` - trace object: 
+
+1. `type` - string - CALL or CREATE
+2. `from` - string	- address
+3. `to` - string	- address
+4. `value`	- string	- hex-encoded amount of value transfer
+5. `gas`	- string	- hex-encoded gas provided for call
+6. `gasUsed` - string	 -hex-encoded gas used during call
+7. `input` - string	 -call data
+8. `output` - string	- return data
+9. `error` - string	- error, if any
+10. `revertReason` - string - Solidity revert reason, if any
+11. `calls` - []callframe	- list of sub-calls
 
 #### Example Request
 
@@ -210,30 +213,6 @@ class DebugService implements Debug{
 }
 ```
 
-### Method description
-
-`debug_accountRange` - Enumerates all accounts at a given block with paging capability. 
-
-#### Parameters
-blockNrOrHash - string - Block hash or number, also accepts tag - "earliest", "latest" or "pending"
-start - an array of prefixs against which to match account addresses (report only on accounts addresses that begin with this prefix, default matches all accounts)
-maxResults - number - the maximum number of accounts to retreive
-
-#### Example Request
-
-```JSON
-{
-    "jsonrpc": "2.0",
-    "method": "debug_accountRange",
-    "params": [
-        "0x12345",
-        [0],
-        5
-    ],
-    "id": 1
-}
-```
-
 
 ### Method description
 
@@ -242,6 +221,9 @@ maxResults - number - the maximum number of accounts to retreive
 #### Parameters
 startHash - string - the first hash of block at which to retreive data
 endHash - string - the last hash of block at which to retreive data. Optional, defaults to startHash
+
+#### Returns 
+addresses - array of addresses
 
 #### Example Request
 
@@ -258,6 +240,17 @@ endHash - string - the last hash of block at which to retreive data. Optional, d
 ```
 
 #### Example Response
+```JSON
+ {
+  "jsonrpc": "2.0",
+  "id": 1,
+    "result": [
+      "0x8c0041566e0bc27efe285a9e98d0b4217a46809c",
+      "0x3ee18b2214aff97000d974cf647e7c347e8fa585",
+      "0x76364611e457b1f97cd58ffc332ddc7561a193f6"
+    ]
+ }
+```
 
 ### Method description
 
@@ -266,6 +259,9 @@ endHash - string - the last hash of block at which to retreive data. Optional, d
 #### Parameters
 startNum - number - start block number
 endNum - number - end block number. Optional, defaults to startNum
+
+#### Returns 
+addresses - array of addresses
 
 #### Example Request
 ```JSON
@@ -281,43 +277,50 @@ endNum - number - end block number. Optional, defaults to startNum
 ```
 
 #### Example Response
-
-### Method description
-
-`debug_verbosity` - Sets the logging verbosity ceiling.
-
-#### Parameters
-`level` - number - Sets the logging level.
-
-#### Example Request
 ```JSON
-{"jsonrpc": "2.0",
-         "id": 1,
-         "method": "debug_verbosity",
-         "params": [5]
-       }
+ {
+  "jsonrpc": "2.0",
+  "id": 1,
+    "result": [
+      "0x8c0041566e0bc27efe285a9e98d0b4217a46809c",
+      "0x3ee18b2214aff97000d974cf647e7c347e8fa585",
+      "0x76364611e457b1f97cd58ffc332ddc7561a193f6"
+    ]
+ }
 ```
 
 ## Error Codes
 
+| Error Codes |        Error message        |                              Solution                               |
+| :---------: | :-------------------------: | :-----------------------------------------------------------------: |
+|    32000    |      Transaction not found.      | Occurs when user is trying to trace non-existing transaction. |
+|    32001    | Block hash not found. |          Occurs when user is trying to get modified accounts for non-existing block hash.           |
+|    32002    | Block number not found. |          Occurs when user is trying to get modified accounts for non-existing block number.           |
 
 ## Limits
-
+1. Trying to get modified accounts for more than ex. 100 blocks. Env. variable can be `DEBUG_MODIFIED_ACCOUNTS_LIMIT`
 
 
 ## Metric Capturing
 
+Capture metrics for the following:
 
+1. Log every call to all filter API method, as a total amount.
+2. Log every success or fail for each new API method, as a total amount.
 
 ## Tests
+The following test cases should be covered but additional tests would be welcome.
 
-
-
-## Non-Functional Requirements
+1. Overall functionality of the methods.
+2. Test different scenarios with all possible parameter combinations.
+3. Case where transaction is not found for `debug_traceTransaction`.
+4. Case where block hash is not found for `debug_getModifiedAccountsByHash`.
+5. Case where block number is not found for `debug_getModifiedAccountsByNumber`.
 
 
 ## Deployment
 
+Debug API will run alongside the already available HTTP server.
 
 ## Answered Questions
 
@@ -325,7 +328,10 @@ endNum - number - end block number. Optional, defaults to startNum
 2. What new interfaces and classes would it need ?
 3. What new endpoints will be exposed ?
 4. What kind of parameters each method accepts ?
-5. What is the expected request and response ?
+5. What kind of response is expected to return ?
+6. What is the expected request and response ?
+7. What limits should be introduced ? 
+8. What metrics should be captured ?
 
 
 ## Tasks (in suggested order):
@@ -338,9 +344,9 @@ endNum - number - end block number. Optional, defaults to startNum
 
 1. Implement new interfaces and classes.
 2. Implement `debug_traceTransaction`.
+3. Add needed acceptance tests for `debug_traceTransaction`.
 
 #### Milestone 3
-1. Implement `debug_accountRange`.
-2. Implement `debug_getModifiedAccountsByHash`.
-3. Implement `debug_getModifiedAccountsByNumber`.
-4. Implement `debug_verbosity`.
+1. Implement `debug_getModifiedAccountsByHash`.
+2. Implement `debug_getModifiedAccountsByNumber`.
+3. Add needed acceptance tests for both new methods.
