@@ -1,0 +1,141 @@
+# Default values for json-rpc-relay.
+affinity: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+config:
+  # This value should be in decimal, not hexadecimal format. Defaulted to testnet
+  CHAIN_ID: ''
+  DEV_MODE: false
+
+  # Valid options are `previewnet`, `testnet`, and `mainnet` for remote options. For local use {'127.0.01:50211':'0.0.3'}. For IPs use {'$IPv4_ADDR_1:$PORT_1':'$ACCOUNT_ID_1'} form
+  HEDERA_NETWORK: ''
+  LOG_LEVEL: ''
+  MIRROR_NODE_RETRIES: 3
+  MIRROR_NODE_RETRY_DELAY: 250
+  MIRROR_NODE_LIMIT_PARAM: 100
+  MIRROR_NODE_URL: ''
+  SUBSCRIPTIONS_ENABLED: true  # must be true for websocket
+  WEB_SOCKET_PORT: 8546
+  WEB_SOCKET_HTTP_PORT: 8547
+  WS_CONNECTION_LIMIT_PER_IP: 10
+  WS_CONNECTION_LIMIT: 100
+  WS_MAX_INACTIVITY_TTL: 300000
+  WS_MULTIPLE_ADDRESSES_ENABLED: false
+  WS_SUBSCRIPTION_LIMIT: 100
+  WS_PING_INTERVAL: 1000
+  REDIS_ENABLED: false
+  REDIS_URL: ''
+  REDIS_RECONNECT_DELAY_MS: 1000
+
+# -- Extra environment variables from existing secrets or configmaps
+extraEnvFrom: []
+# - secretRef:
+#     name: '{{ .Release.Name }}-env'
+
+fullnameOverride: ''
+
+global:
+  namespaceOverride: ''
+
+image:
+  pullPolicy: IfNotPresent
+  registry: ghcr.io
+  repository: hashgraph/hedera-json-rpc-relay
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ''
+
+imagePullSecrets: []
+
+ingress:
+  enabled: false
+  className: ''
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+livenessProbe:
+  failureThreshold: 5
+  httpGet:
+    path: /health/liveness
+    port: metrics
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 5
+
+nameOverride: ''
+
+nodeSelector: {}
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+ports:
+  - name: websocket
+    containerPort: 8546
+  - name: metrics  # port for http endpoints (metrics and health)
+    containerPort: 8547
+
+replicaCount: 2
+
+resources:
+  limits:
+    cpu: 1100m
+    memory: 350Mi
+  requests:
+    cpu: 1100m
+    memory: 350Mi
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: false
+
+service:
+  annotations: {}
+  port: 8546
+  type: ClusterIP
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ''
+
+tolerations: []
+
+readinessProbe:
+  failureThreshold: 5
+  httpGet:
+    path: /health/readiness
+    port: metrics
+  initialDelaySeconds: 20
+  timeoutSeconds: 5
+
+terminationGracePeriodSeconds: 60
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 10%
+    maxUnavailable: 25%

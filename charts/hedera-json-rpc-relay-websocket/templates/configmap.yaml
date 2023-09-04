@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "json-rpc-relay-ws.fullname" . }}
+  labels:
+    app:  {{ template "json-rpc-relay-ws.name" . }}
+    {{ include "json-rpc-relay-ws.labels" . | nindent 4 }}
+data:
+  CHAIN_ID: {{ .Values.config.CHAIN_ID | quote }}
+  DEV_MODE: {{ .Values.config.DEV_MODE | quote }}
+  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in" .Values.config.HEDERA_NETWORK | toJson | quote }}
+  MIRROR_NODE_LIMIT_PARAM: {{ .Values.config.MIRROR_NODE_LIMIT_PARAM | quote }}
+  MIRROR_NODE_RETRIES: {{ .Values.config.MIRROR_NODE_RETRIES | quote }}
+  MIRROR_NODE_RETRY_DELAY: {{ .Values.config.MIRROR_NODE_RETRY_DELAY | quote }}
+  MIRROR_NODE_URL: {{ .Values.config.MIRROR_NODE_URL | quote }}
+  SUBSCRIPTIONS_ENABLED: {{ .Values.config.SUBSCRIPTIONS_ENABLED | quote }}
+  WEB_SOCKET_HTTP_PORT: {{ .Values.config.WEB_SOCKET_HTTP_PORT | quote }}
+  WEB_SOCKET_PORT: {{ .Values.config.WEB_SOCKET_PORT | quote }}
+  WS_CONNECTION_LIMIT_PER_IP: {{ .Values.config.WS_CONNECTION_LIMIT_PER_IP | quote }}
+  WS_CONNECTION_LIMIT: {{ .Values.config.WS_CONNECTION_LIMIT | quote }}
+  WS_MAX_INACTIVITY_TTL: {{ .Values.config.WS_MAX_INACTIVITY_TTL | quote }}
+  WS_MULTIPLE_ADDRESSES_ENABLED: {{ .Values.config.WS_MULTIPLE_ADDRESSES_ENABLED | quote }}
+  WS_SUBSCRIPTION_LIMIT: {{ .Values.config.WS_SUBSCRIPTION_LIMIT | quote }}
+  WS_PING_INTERVAL: {{ .Values.config.WS_PING_INTERVAL | quote }}
+  REDIS_ENABLED: {{ .Values.config.REDIS_ENABLED | quote }}
+  REDIS_URL: {{ .Values.config.REDIS_URL | quote }}
+  REDIS_RECONNECT_DELAY_MS: {{ .Values.config.REDIS_RECONNECT_DELAY_MS | quote }}
