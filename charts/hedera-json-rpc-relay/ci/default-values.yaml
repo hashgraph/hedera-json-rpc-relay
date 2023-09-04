@@ -7,3 +7,11 @@ config:
 image:
   registry: registry:5001
   tag: test
+  
+resources:
+  limits:
+    cpu: 500m
+    memory: 350Mi
+  requests:
+    cpu: 500m
+    memory: 350Mi

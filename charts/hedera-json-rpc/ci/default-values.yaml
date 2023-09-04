@@ -9,6 +9,13 @@ relay:
     registry: registry:5001
     tag: test
 
+  resources:
+    limits:
+      cpu: 500m
+      memory: 350Mi
+    requests:
+      cpu: 500m
+      memory: 350Mi
 ws:
   config:
     CHAIN_ID: '0x128'
@@ -18,3 +25,10 @@ ws:
   image:
     registry: registry:5001
     tag: test
+  resources:
+  limits:
+    cpu: 500m
+    memory: 350Mi
+  requests:
+    cpu: 500m
+    memory: 350Mi
