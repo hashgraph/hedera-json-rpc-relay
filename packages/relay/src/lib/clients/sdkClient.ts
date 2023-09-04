@@ -19,37 +19,38 @@
  */
 
 import {
-    AccountBalance,
-    AccountBalanceQuery,
-    AccountId, AccountInfoQuery,
-    Client,
-    ContractByteCodeQuery,
-    ContractCallQuery,
-    ExchangeRates,
-    FeeSchedules,
-    FileContentsQuery,
-    ContractId,
-    ContractFunctionResult,
-    TransactionResponse,
-    AccountInfo,
-    HbarUnit,
-    TransactionId,
-    FeeComponents,
-    Query,
-    Transaction,
-    TransactionRecord,
-    Status,
-    FileCreateTransaction,
-    FileAppendTransaction,
-    FileInfoQuery,
-    EthereumTransaction,
-    EthereumTransactionData,
-    PrecheckStatusError,
-    TransactionRecordQuery,
-    Hbar,
+  AccountBalance,
+  AccountBalanceQuery,
+  AccountId,
+  AccountInfoQuery,
+  Client,
+  ContractByteCodeQuery,
+  ContractCallQuery,
+  ExchangeRates,
+  FeeSchedules,
+  FileContentsQuery,
+  ContractId,
+  ContractFunctionResult,
+  TransactionResponse,
+  AccountInfo,
+  HbarUnit,
+  TransactionId,
+  FeeComponents,
+  Query,
+  Transaction,
+  TransactionRecord,
+  Status,
+  FileCreateTransaction,
+  FileAppendTransaction,
+  FileInfoQuery,
+  EthereumTransaction,
+  EthereumTransactionData,
+  PrecheckStatusError,
+  TransactionRecordQuery,
+  Hbar,
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { Logger } from "pino";
+import { Logger } from 'pino';
 import { formatRequestIdMessage } from '../../formatters';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
@@ -61,523 +62,621 @@ const _ = require('lodash');
 const LRU = require('lru-cache');
 
 export class SDKClient {
-    static transactionMode = 'TRANSACTION';
-    static queryMode = 'QUERY';
-    static recordMode = 'RECORD';
-    /**
-     * The client to use for connecting to the main consensus network. The account
-     * associated with this client will pay for all operations on the main network.
-     *
-     * @private
-     */
-    private readonly clientMain: Client;
+  static transactionMode = 'TRANSACTION';
+  static queryMode = 'QUERY';
+  static recordMode = 'RECORD';
+  /**
+   * The client to use for connecting to the main consensus network. The account
+   * associated with this client will pay for all operations on the main network.
+   *
+   * @private
+   */
+  private readonly clientMain: Client;
 
-    /**
-     * The logger used for logging all output from this class.
-     * @private
-     */
-    private readonly logger: Logger;
+  /**
+   * The logger used for logging all output from this class.
+   * @private
+   */
+  private readonly logger: Logger;
 
-    /**
-     * This limiter tracks hbar expenses and limits.
-     * @private
-     */
-    private readonly hbarLimiter: HbarLimit;
+  /**
+   * This limiter tracks hbar expenses and limits.
+   * @private
+   */
+  private readonly hbarLimiter: HbarLimit;
 
-    /**
-     * LRU cache container.
-     * @private
-     */
-    private readonly cacheService: CacheService;
+  /**
+   * LRU cache container.
+   * @private
+   */
+  private readonly cacheService: CacheService;
 
-    private consensusNodeClientHistogramCost;
-    private consensusNodeClientHistogramGasFee;
-    private operatorAccountGauge;
-    private maxChunks;
+  private consensusNodeClientHistogramCost;
+  private consensusNodeClientHistogramGasFee;
+  private operatorAccountGauge;
+  private maxChunks;
 
-    // populate with consensusnode requests via SDK
-    constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, cacheService: CacheService) {
-        this.clientMain = clientMain;
+  // populate with consensusnode requests via SDK
+  constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, cacheService: CacheService) {
+    this.clientMain = clientMain;
 
-        if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
-            // sets the maximum time in ms for the SDK to wait when submitting
-            // a transaction/query before throwing a TIMEOUT error
-            this.clientMain = clientMain.setMaxExecutionTime(Number(process.env.CONSENSUS_MAX_EXECUTION_TIME));
-        }
-
-        this.logger = logger;
-        this.consensusNodeClientHistogramCost = metrics.costHistogram;
-        this.consensusNodeClientHistogramGasFee = metrics.gasHistogram;
-        this.operatorAccountGauge = metrics.operatorGauge;
-
-        this.hbarLimiter = hbarLimiter;
-        this.cacheService = cacheService;
-        this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
+    if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
+      // sets the maximum time in ms for the SDK to wait when submitting
+      // a transaction/query before throwing a TIMEOUT error
+      this.clientMain = clientMain.setMaxExecutionTime(Number(process.env.CONSENSUS_MAX_EXECUTION_TIME));
     }
 
-    async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
-        return this.executeQuery(new AccountBalanceQuery()
-            .setAccountId(AccountId.fromString(account)), this.clientMain, callerName, account, requestId);
+    this.logger = logger;
+    this.consensusNodeClientHistogramCost = metrics.costHistogram;
+    this.consensusNodeClientHistogramGasFee = metrics.gasHistogram;
+    this.operatorAccountGauge = metrics.operatorGauge;
+
+    this.hbarLimiter = hbarLimiter;
+    this.cacheService = cacheService;
+    this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
+  }
+
+  async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
+    return this.executeQuery(
+      new AccountBalanceQuery().setAccountId(AccountId.fromString(account)),
+      this.clientMain,
+      callerName,
+      account,
+      requestId,
+    );
+  }
+
+  async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
+    const balance = await this.getAccountBalance(account, callerName, requestId);
+    return balance.hbars.to(HbarUnit.Tinybar);
+  }
+
+  async getAccountBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
+    const balance = await this.getAccountBalance(account, callerName, requestId);
+    return SDKClient.HbarToWeiBar(balance);
+  }
+
+  async getAccountInfo(address: string, callerName: string, requestId?: string): Promise<AccountInfo> {
+    return this.executeQuery(
+      new AccountInfoQuery().setAccountId(AccountId.fromString(address)),
+      this.clientMain,
+      callerName,
+      address,
+      requestId,
+    );
+  }
+
+  async getContractByteCode(
+    shard: number | Long,
+    realm: number | Long,
+    address: string,
+    callerName: string,
+    requestId?: string,
+  ): Promise<Uint8Array> {
+    const contractByteCodeQuery = new ContractByteCodeQuery().setContractId(
+      ContractId.fromEvmAddress(shard, realm, address),
+    );
+    const cost = await contractByteCodeQuery.getCost(this.clientMain);
+
+    return this.executeQuery(
+      contractByteCodeQuery.setQueryPayment(cost),
+      this.clientMain,
+      callerName,
+      address,
+      requestId,
+    );
+  }
+
+  async getContractBalance(contract: string, callerName: string, requestId?: string): Promise<AccountBalance> {
+    return this.executeQuery(
+      new AccountBalanceQuery().setContractId(ContractId.fromString(contract)),
+      this.clientMain,
+      callerName,
+      contract,
+      requestId,
+    );
+  }
+
+  async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
+    const balance = await this.getContractBalance(account, callerName, requestId);
+    return SDKClient.HbarToWeiBar(balance);
+  }
+
+  async getExchangeRate(callerName: string, requestId?: string): Promise<ExchangeRates> {
+    const exchangeFileBytes = await this.getFileIdBytes(constants.EXCHANGE_RATE_FILE_ID, callerName, requestId);
+
+    return ExchangeRates.fromBytes(exchangeFileBytes);
+  }
+
+  async getFeeSchedule(callerName: string, requestId?: string): Promise<FeeSchedules> {
+    const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID, callerName, requestId);
+
+    return FeeSchedules.fromBytes(feeSchedulesFileBytes);
+  }
+
+  async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
+    const cachedResponse: number | undefined = this.cacheService.get(
+      constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
+      callerName,
+    );
+    if (cachedResponse) {
+      return cachedResponse;
     }
 
-    async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
-        const balance = await this.getAccountBalance(account, callerName, requestId);
-        return balance.hbars.to(HbarUnit.Tinybar);
-    }
-    
-    async getAccountBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
-        const balance = await this.getAccountBalance(account, callerName, requestId);
-        return SDKClient.HbarToWeiBar(balance);
+    const feeSchedules = await this.getFeeSchedule(callerName, requestId);
+    if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
+      throw new SDKClientError({}, 'Invalid FeeSchedules proto format');
     }
 
-    async getAccountInfo(address: string, callerName: string, requestId?: string): Promise<AccountInfo> {
-        return this.executeQuery(new AccountInfoQuery()
-            .setAccountId(AccountId.fromString(address)), this.clientMain, callerName, address, requestId);
+    for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
+      if (schedule.hederaFunctionality?._code === constants.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
+        // get exchange rate & convert to tiny bar
+        const exchangeRates = await this.getExchangeRate(callerName, requestId);
+        const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
+
+        this.cacheService.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, undefined, requestId);
+        return tinyBars;
+      }
     }
 
-    async getContractByteCode(shard: number | Long, realm: number | Long, address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
-        const contractByteCodeQuery = new ContractByteCodeQuery().setContractId(ContractId.fromEvmAddress(shard, realm, address));
-        const cost = await contractByteCodeQuery
-            .getCost(this.clientMain);
+    throw new SDKClientError({}, `${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
+  }
 
-        return this.executeQuery(contractByteCodeQuery
-            .setQueryPayment(cost), this.clientMain, callerName, address, requestId);
-    }
+  async getFileIdBytes(address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
+    return this.executeQuery(
+      new FileContentsQuery().setFileId(address),
+      this.clientMain,
+      callerName,
+      address,
+      requestId,
+    );
+  }
 
-    async getContractBalance(contract: string, callerName: string, requestId?: string): Promise<AccountBalance> {
-        return this.executeQuery(new AccountBalanceQuery()
-            .setContractId(ContractId.fromString(contract)), this.clientMain, callerName, contract, requestId);
-    }
+  async getRecord(transactionResponse: TransactionResponse) {
+    return transactionResponse.getRecord(this.clientMain);
+  }
 
-    async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
-        const balance = await this.getContractBalance(account, callerName, requestId);
-        return SDKClient.HbarToWeiBar(balance);
-    }
+  async submitEthereumTransaction(
+    transactionBuffer: Uint8Array,
+    callerName: string,
+    requestId?: string,
+  ): Promise<TransactionResponse> {
+    const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
+    const ethereumTransaction = new EthereumTransaction();
+    const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
 
-    async getExchangeRate(callerName: string, requestId?: string): Promise<ExchangeRates> {
-        const exchangeFileBytes = await this.getFileIdBytes(constants.EXCHANGE_RATE_FILE_ID, callerName, requestId);
-
-        return ExchangeRates.fromBytes(exchangeFileBytes);
-    }
-
-    async getFeeSchedule(callerName: string, requestId?: string): Promise<FeeSchedules> {
-        const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID, callerName, requestId);
-
-        return FeeSchedules.fromBytes(feeSchedulesFileBytes);
-    }
-
-    async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
-        const cachedResponse: number | undefined = this.cacheService.get(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, callerName);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-
-        const feeSchedules = await this.getFeeSchedule(callerName, requestId);
-        if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
-            throw new SDKClientError({}, 'Invalid FeeSchedules proto format');
-        }
-
-        for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
-            if (schedule.hederaFunctionality?._code === constants.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
-                // get exchange rate & convert to tiny bar
-                const exchangeRates = await this.getExchangeRate(callerName, requestId);
-                const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
-
-                this.cacheService.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, undefined, requestId);
-                return tinyBars;
-            }
-        }
-
-        throw new SDKClientError({}, `${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
-    }
-
-    async getFileIdBytes(address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
-        return this.executeQuery(new FileContentsQuery()
-            .setFileId(address), this.clientMain, callerName, address, requestId);
-    }
-
-    async getRecord(transactionResponse: TransactionResponse) {
-        return transactionResponse.getRecord(this.clientMain);
-    }
-
-    async submitEthereumTransaction(transactionBuffer: Uint8Array, callerName: string, requestId?: string): Promise<TransactionResponse> {
-        const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
-        const ethereumTransaction = new EthereumTransaction();
-        const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
-
-        if (ethereumTransactionData.toBytes().length <= 5120) {
-            ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
-        } else {
-            const fileId = await this.createFile(ethereumTransactionData.callData, this.clientMain, requestId);
-            if(!fileId) {
-                const requestIdPrefix = formatRequestIdMessage(requestId);
-                throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
-            }
-            ethereumTransactionData.callData = new Uint8Array();
-            ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId)
-        }
-
-        const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction');
-        ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.BLOCK_GAS_LIMIT)));
-
-        return this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId);
-    }
-
-    async submitContractCallQuery(to: string, data: string, gas: number, from: string, callerName: string, requestId?: string): Promise<ContractFunctionResult> {
-        const contract = SDKClient.prune0x(to);
-        const contractId = contract.startsWith("00000000000")
-            ? ContractId.fromSolidityAddress(contract)
-            : ContractId.fromEvmAddress(0, 0, contract);
-
-        const contractCallQuery = new ContractCallQuery()
-            .setContractId(contractId)
-            .setGas(gas);
-
-        // data is optional and can be omitted in which case fallback function will be employed
-        if (data) {
-            contractCallQuery.setFunctionParameters(Buffer.from(SDKClient.prune0x(data), 'hex'));
-        }
-
-        if (from) {
-            contractCallQuery.setSenderAccountId(AccountId.fromEvmAddress(0,0, from))
-        }
-
-        if (this.clientMain.operatorAccountId !== null) {
-            contractCallQuery
-                .setPaymentTransactionId(TransactionId.generate(this.clientMain.operatorAccountId));
-        }
-
-        return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestId);
-    }
-
-    async submitContractCallQueryWithRetry(to: string, data: string, gas: number, from: string, callerName: string, requestId?: string): Promise<ContractFunctionResult> {
+    if (ethereumTransactionData.toBytes().length <= 5120) {
+      ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
+    } else {
+      const fileId = await this.createFile(
+        ethereumTransactionData.callData,
+        this.clientMain,
+        requestId,
+        callerName,
+        interactingEntity,
+      );
+      if (!fileId) {
         const requestIdPrefix = formatRequestIdMessage(requestId);
-        let retries = 0;
-        let resp;
-        while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || '1') > retries) {
-            try {
-                resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestId);
-                return resp;
-            } catch (e: any) {
-                const sdkClientError = new SDKClientError(e, e.message);
-                if (sdkClientError.isTimeoutExceeded()) {
-                    const delay = retries * 1000;
-                    this.logger.trace(`${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`);
-                    retries++;
-                    await new Promise(r => setTimeout(r, delay));
-                    continue;
-                }
-                if (e instanceof JsonRpcError) {
-                    throw e;
-                }
-                throw sdkClientError;
-            }
-        }
+        throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
+      }
+      ethereumTransactionData.callData = new Uint8Array();
+      ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId);
+    }
+
+    const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction');
+    ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.BLOCK_GAS_LIMIT)));
+
+    return this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId);
+  }
+
+  async submitContractCallQuery(
+    to: string,
+    data: string,
+    gas: number,
+    from: string,
+    callerName: string,
+    requestId?: string,
+  ): Promise<ContractFunctionResult> {
+    const contract = SDKClient.prune0x(to);
+    const contractId = contract.startsWith('00000000000')
+      ? ContractId.fromSolidityAddress(contract)
+      : ContractId.fromEvmAddress(0, 0, contract);
+
+    const contractCallQuery = new ContractCallQuery().setContractId(contractId).setGas(gas);
+
+    // data is optional and can be omitted in which case fallback function will be employed
+    if (data) {
+      contractCallQuery.setFunctionParameters(Buffer.from(SDKClient.prune0x(data), 'hex'));
+    }
+
+    if (from) {
+      contractCallQuery.setSenderAccountId(AccountId.fromEvmAddress(0, 0, from));
+    }
+
+    if (this.clientMain.operatorAccountId !== null) {
+      contractCallQuery.setPaymentTransactionId(TransactionId.generate(this.clientMain.operatorAccountId));
+    }
+
+    return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestId);
+  }
+
+  async submitContractCallQueryWithRetry(
+    to: string,
+    data: string,
+    gas: number,
+    from: string,
+    callerName: string,
+    requestId?: string,
+  ): Promise<ContractFunctionResult> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    let retries = 0;
+    let resp;
+    while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || '1') > retries) {
+      try {
+        resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestId);
         return resp;
+      } catch (e: any) {
+        const sdkClientError = new SDKClientError(e, e.message);
+        if (sdkClientError.isTimeoutExceeded()) {
+          const delay = retries * 1000;
+          this.logger.trace(
+            `${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`,
+          );
+          retries++;
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+        if (e instanceof JsonRpcError) {
+          throw e;
+        }
+        throw sdkClientError;
+      }
+    }
+    return resp;
+  }
+
+  async increaseCostAndRetryExecution(
+    query: Query<any>,
+    baseCost: Hbar,
+    client: Client,
+    maxRetries: number,
+    currentRetry: number,
+    requestId?: string,
+  ) {
+    const baseMultiplier = constants.QUERY_COST_INCREMENTATION_STEP;
+    const multiplier = Math.pow(baseMultiplier, currentRetry);
+
+    const cost = Hbar.fromTinybars(baseCost._valueInTinybar.multipliedBy(multiplier).toFixed(0));
+
+    try {
+      const resp = await query.setQueryPayment(cost).execute(client);
+      return { resp, cost };
+    } catch (e: any) {
+      const sdkClientError = new SDKClientError(e, e.message);
+      if (maxRetries > currentRetry && sdkClientError.isInsufficientTxFee()) {
+        const newRetry = currentRetry + 1;
+        this.logger.info(`${requestId} Retrying query execution with increased cost, retry number: ${newRetry}`);
+        return await this.increaseCostAndRetryExecution(query, baseCost, client, maxRetries, newRetry, requestId);
+      }
+
+      throw e;
+    }
+  }
+
+  private convertGasPriceToTinyBars = (feeComponents: FeeComponents | undefined, exchangeRates: ExchangeRates) => {
+    // gas -> tinCents:  gas / 1000
+    // tinCents -> tinyBars: tinCents * exchangeRate (hbarEquiv/ centsEquiv)
+    if (feeComponents === undefined || feeComponents.contractTransactionGas === undefined) {
+      return constants.DEFAULT_TINY_BAR_GAS;
     }
 
-    async increaseCostAndRetryExecution(query: Query<any>, baseCost: Hbar, client: Client, maxRetries: number, currentRetry: number, requestId?: string) {
-        const baseMultiplier = constants.QUERY_COST_INCREMENTATION_STEP;
-        const multiplier = Math.pow(baseMultiplier, currentRetry);
+    return Math.ceil(
+      (feeComponents.contractTransactionGas.toNumber() / 1_000) *
+        (exchangeRates.currentRate.hbars / exchangeRates.currentRate.cents),
+    );
+  };
 
-        const cost = Hbar.fromTinybars(
-            baseCost._valueInTinybar.multipliedBy(multiplier).toFixed(0)
+  private executeQuery = async (
+    query: Query<any>,
+    client: Client,
+    callerName: string,
+    interactingEntity: string,
+    requestId?: string,
+  ) => {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const currentDateNow = Date.now();
+    try {
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.queryMode, callerName);
+      if (shouldLimit) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+
+      let resp, cost;
+      if (query.paymentTransactionId) {
+        const baseCost = await query.getCost(this.clientMain);
+        const res = await this.increaseCostAndRetryExecution(query, baseCost, client, 3, 0, requestId);
+        resp = res.resp;
+        cost = res.cost.toTinybars().toNumber();
+        this.hbarLimiter.addExpense(cost, currentDateNow);
+      } else {
+        resp = await query.execute(client);
+        cost = query._queryPayment?.toTinybars().toNumber();
+      }
+
+      this.logger.info(
+        `${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${Status.Success} (${Status.Success._code}), cost: ${query._queryPayment}`,
+      );
+      this.captureMetrics(
+        SDKClient.queryMode,
+        query.constructor.name,
+        Status.Success,
+        cost,
+        0,
+        callerName,
+        interactingEntity,
+      );
+      return resp;
+    } catch (e: any) {
+      const cost = query._queryPayment?.toTinybars().toNumber();
+      const sdkClientError = new SDKClientError(e, e.message);
+      this.captureMetrics(
+        SDKClient.queryMode,
+        query.constructor.name,
+        sdkClientError.status,
+        cost,
+        0,
+        callerName,
+        interactingEntity,
+      );
+      this.logger.trace(
+        `${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${query._queryPayment}`,
+      );
+      if (cost) {
+        this.hbarLimiter.addExpense(cost, currentDateNow);
+      }
+
+      if (e instanceof PrecheckStatusError && e.contractFunctionResult?.errorMessage) {
+        throw predefined.CONTRACT_REVERT(e.contractFunctionResult.errorMessage);
+      }
+
+      if (e instanceof JsonRpcError) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+
+      if (sdkClientError.isGrpcTimeout()) {
+        throw predefined.REQUEST_TIMEOUT;
+      }
+      throw sdkClientError;
+    }
+  };
+
+  private executeTransaction = async (
+    transaction: Transaction,
+    callerName: string,
+    interactingEntity: string,
+    requestId?: string,
+  ): Promise<TransactionResponse> => {
+    const transactionType = transaction.constructor.name;
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const currentDateNow = Date.now();
+    try {
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+      if (shouldLimit) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+
+      this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
+      const resp = await transaction.execute(this.clientMain);
+      this.logger.info(
+        `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
+      );
+      return resp;
+    } catch (e: any) {
+      const sdkClientError = new SDKClientError(e, e.message);
+      let transactionFee: number | Hbar = 0;
+
+      // if valid network error utilize transaction id
+      if (sdkClientError.isValidNetworkError()) {
+        try {
+          const transactionRecord = await new TransactionRecordQuery()
+            .setTransactionId(transaction.transactionId!)
+            .setNodeAccountIds(transaction.nodeAccountIds!)
+            .setValidateReceiptStatus(false)
+            .execute(this.clientMain);
+          transactionFee = transactionRecord.transactionFee;
+
+          this.captureMetrics(
+            SDKClient.transactionMode,
+            transactionType,
+            sdkClientError.status,
+            transactionFee.toTinybars().toNumber(),
+            transactionRecord?.contractFunctionResult?.gasUsed,
+            callerName,
+            interactingEntity,
+          );
+
+          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+        } catch (err: any) {
+          const recordQueryError = new SDKClientError(err, err.message);
+          this.logger.error(
+            recordQueryError,
+            `${requestIdPrefix} Error raised during TransactionRecordQuery for ${transaction.transactionId}`,
+          );
+        }
+      }
+
+      this.logger.trace(
+        `${requestIdPrefix} ${transaction.transactionId} ${callerName} ${transactionType} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+      );
+      if (e instanceof JsonRpcError) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+      throw sdkClientError;
+    }
+  };
+
+  async executeGetTransactionRecord(
+    resp: TransactionResponse,
+    transactionName: string,
+    callerName: string,
+    interactingEntity: string,
+    requestId?: string,
+  ): Promise<TransactionRecord> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const currentDateNow = Date.now();
+    try {
+      if (!resp.getRecord) {
+        throw new SDKClientError(
+          {},
+          `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(resp)}`,
         );
+      }
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, transactionName);
+      if (shouldLimit) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
 
+      const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
+      const cost = transactionRecord.transactionFee.toTinybars().toNumber();
+      this.hbarLimiter.addExpense(cost, currentDateNow);
+      this.logger.info(
+        `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionName} record status: ${Status.Success} (${Status.Success._code}), cost: ${transactionRecord.transactionFee}`,
+      );
+      this.captureMetrics(
+        SDKClient.transactionMode,
+        transactionName,
+        transactionRecord.receipt.status,
+        cost,
+        transactionRecord?.contractFunctionResult?.gasUsed,
+        callerName,
+        interactingEntity,
+      );
+
+      this.hbarLimiter.addExpense(cost, currentDateNow);
+
+      return transactionRecord;
+    } catch (e: any) {
+      // capture sdk record retrieval errors and shorten familiar stack trace
+      const sdkClientError = new SDKClientError(e, e.message);
+      let transactionFee: number | Hbar = 0;
+      if (sdkClientError.isValidNetworkError()) {
         try {
-            const resp = await query.setQueryPayment(cost).execute(client);
-            return {resp, cost};
-        }
-        catch(e: any) {
-            const sdkClientError = new SDKClientError(e, e.message);
-            if (maxRetries > currentRetry && sdkClientError.isInsufficientTxFee()) {
-                const newRetry = currentRetry + 1;
-                this.logger.info(`${requestId} Retrying query execution with increased cost, retry number: ${newRetry}`);
-                return await this.increaseCostAndRetryExecution(query, baseCost, client, maxRetries, newRetry, requestId);
-            }
+          // pull transaction record for fee
+          const transactionRecord = await new TransactionRecordQuery()
+            .setTransactionId(resp.transactionId!)
+            .setNodeAccountIds([resp.nodeId])
+            .setValidateReceiptStatus(false)
+            .execute(this.clientMain);
+          transactionFee = transactionRecord.transactionFee;
 
-            throw e;
+          this.captureMetrics(
+            SDKClient.transactionMode,
+            transactionName,
+            sdkClientError.status,
+            transactionFee.toTinybars().toNumber(),
+            transactionRecord?.contractFunctionResult?.gasUsed,
+            callerName,
+            interactingEntity,
+          );
+
+          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+        } catch (err: any) {
+          const recordQueryError = new SDKClientError(err, err.message);
+          this.logger.error(
+            recordQueryError,
+            `${requestIdPrefix} Error raised during TransactionRecordQuery for ${resp.transactionId}`,
+          );
         }
+      }
+
+      this.logger.debug(
+        `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionName} record status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+      );
+
+      if (e instanceof JsonRpcError) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+      throw sdkClientError;
+    }
+  }
+
+  private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
+    const resolvedCost = cost ? cost : 0;
+    const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
+    this.consensusNodeClientHistogramCost.labels(mode, type, status, caller, interactingEntity).observe(resolvedCost);
+    this.consensusNodeClientHistogramGasFee.labels(mode, type, status, caller, interactingEntity).observe(resolvedGas);
+  };
+
+  /**
+   * Internal helper method that removes the leading 0x if there is one.
+   * @param input
+   * @private
+   */
+  private static prune0x(input: string): string {
+    return input.startsWith('0x') ? input.substring(2) : input;
+  }
+
+  private static HbarToWeiBar(balance: AccountBalance): BigNumber {
+    return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
+  }
+
+  private createFile = async (
+    callData: Uint8Array,
+    client: Client,
+    requestId?: string,
+    callerName?: string,
+    interactingEntity?: string,
+  ) => {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const hexedCallData = Buffer.from(callData).toString('hex');
+
+    const fileCreateTx = await new FileCreateTransaction()
+      .setContents(hexedCallData.substring(0, 4096))
+      .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
+    const fileCreateTxResponse = await fileCreateTx.execute(client);
+    const { fileId } = await fileCreateTxResponse.getReceipt(client);
+
+    const createFileRecord = await fileCreateTxResponse.getRecord(this.clientMain);
+    this.captureMetrics(
+      SDKClient.transactionMode,
+      fileCreateTx.constructor.name,
+      Status.Success,
+      createFileRecord.transactionFee.toTinybars().toNumber(),
+      createFileRecord?.contractFunctionResult?.gasUsed,
+      callerName,
+      interactingEntity,
+    );
+
+    if (fileId && callData.length > 4096) {
+      const fileAppendTx = await new FileAppendTransaction()
+        .setFileId(fileId)
+        .setContents(hexedCallData.substring(4096, hexedCallData.length))
+        .setChunkSize(4096)
+        .setMaxChunks(this.maxChunks);
+      const fileAppendTxResponse = await fileAppendTx.execute(client);
+
+      const fileAppendRecord = await fileAppendTxResponse.getRecord(this.clientMain);
+      this.captureMetrics(
+        SDKClient.transactionMode,
+        fileAppendTx.constructor.name,
+        Status.Success,
+        fileAppendRecord.transactionFee.toTinybars().toNumber(),
+        fileAppendRecord?.contractFunctionResult?.gasUsed,
+        callerName,
+        interactingEntity,
+      );
     }
 
-    private convertGasPriceToTinyBars = (feeComponents: FeeComponents | undefined, exchangeRates: ExchangeRates) => {
-        // gas -> tinCents:  gas / 1000
-        // tinCents -> tinyBars: tinCents * exchangeRate (hbarEquiv/ centsEquiv)
-        if (feeComponents === undefined || feeComponents.contractTransactionGas === undefined) {
-            return constants.DEFAULT_TINY_BAR_GAS;
-        }
+    // Ensure that the calldata file is not empty
+    if (fileId) {
+      const fileSize = await (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
 
-        return Math.ceil(
-            (feeComponents.contractTransactionGas.toNumber() / 1_000) * (exchangeRates.currentRate.hbars / exchangeRates.currentRate.cents)
-        );
-    };
-
-    private executeQuery = async (query: Query<any>, client: Client, callerName: string, interactingEntity: string, requestId?: string) => {
-        const requestIdPrefix = formatRequestIdMessage(requestId);
-        const currentDateNow = Date.now();
-        try {
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.queryMode, callerName);
-            if (shouldLimit) {
-                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-            }
-
-            let resp, cost;
-            if (query.paymentTransactionId) {
-                const baseCost = await query.getCost(this.clientMain);
-                const res = await this.increaseCostAndRetryExecution(query, baseCost, client, 3, 0, requestId);
-                resp = res.resp;
-                cost = res.cost.toTinybars().toNumber();
-                this.hbarLimiter.addExpense(cost, currentDateNow);
-            }
-            else {
-                resp = await query.execute(client);
-                cost = query._queryPayment?.toTinybars().toNumber();
-            }
-
-            this.logger.info(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${Status.Success} (${Status.Success._code}), cost: ${query._queryPayment}`);
-            this.captureMetrics(
-                SDKClient.queryMode,
-                query.constructor.name,
-                Status.Success,
-                cost,
-                0,
-                callerName,
-                interactingEntity);
-            return resp;
-        }
-        catch (e: any) {
-            const cost = query._queryPayment?.toTinybars().toNumber();
-            const sdkClientError = new SDKClientError(e, e.message);
-            this.captureMetrics(
-                SDKClient.queryMode,
-                query.constructor.name,
-                sdkClientError.status,
-                cost,
-                0,
-                callerName,
-                interactingEntity);
-            this.logger.trace(`${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${query._queryPayment}`);
-            if (cost) {
-                this.hbarLimiter.addExpense(cost, currentDateNow);
-            }
-
-            if (e instanceof PrecheckStatusError && e.contractFunctionResult?.errorMessage) {
-                throw predefined.CONTRACT_REVERT(e.contractFunctionResult.errorMessage);
-            }
-
-            if (e instanceof JsonRpcError){
-                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-            }
-
-            if (sdkClientError.isGrpcTimeout()) {
-                throw predefined.REQUEST_TIMEOUT;
-            }
-            throw sdkClientError;
-        }
-    };
-
-    private executeTransaction = async (transaction: Transaction, callerName: string, interactingEntity: string, requestId?: string): Promise<TransactionResponse> => {
-        const transactionType = transaction.constructor.name;
-        const requestIdPrefix = formatRequestIdMessage(requestId);
-        const currentDateNow = Date.now();
-        try {
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
-            if (shouldLimit) {
-                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-            }
-
-            this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
-            const resp = await transaction.execute(this.clientMain);
-            this.logger.info(`${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`);
-            return resp;
-        }
-        catch (e: any) {
-            const sdkClientError = new SDKClientError(e, e.message);
-            let transactionFee: number | Hbar = 0;
-
-            // if valid network error utilize transaction id
-            if (sdkClientError.isValidNetworkError()) {
-
-                try {
-                    const transactionRecord = await new TransactionRecordQuery()
-                        .setTransactionId(transaction.transactionId!)
-                        .setNodeAccountIds(transaction.nodeAccountIds!)
-                        .setValidateReceiptStatus(false)
-                        .execute(this.clientMain);
-                    transactionFee = transactionRecord.transactionFee;
-
-                    this.captureMetrics(
-                        SDKClient.transactionMode,
-                        transactionType,
-                        sdkClientError.status,
-                        transactionFee.toTinybars().toNumber(),
-                        transactionRecord?.contractFunctionResult?.gasUsed,
-                        callerName,
-                        interactingEntity);
-
-                    this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-                } catch (err: any) {
-                    const recordQueryError = new SDKClientError(err, err.message);
-                    this.logger.error(recordQueryError, `${requestIdPrefix} Error raised during TransactionRecordQuery for ${transaction.transactionId}`);
-                }
-            }
-
-            this.logger.trace(`${requestIdPrefix} ${transaction.transactionId} ${callerName} ${transactionType} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`);
-            if (e instanceof JsonRpcError){
-                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-            }
-            throw sdkClientError;
-        }
-    };
-
-    async executeGetTransactionRecord(resp: TransactionResponse, transactionName: string, callerName: string, interactingEntity: string, requestId?: string): Promise<TransactionRecord> {
-        const requestIdPrefix = formatRequestIdMessage(requestId);
-        const currentDateNow = Date.now();
-        try {
-            if (!resp.getRecord) {
-                throw new SDKClientError({}, `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(resp)}`);
-            }
-            const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, transactionName);
-            if (shouldLimit) {
-                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-            }
-
-            const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
-            const cost = transactionRecord.transactionFee.toTinybars().toNumber();
-            this.hbarLimiter.addExpense(cost, currentDateNow);
-            this.logger.info(`${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionName} record status: ${Status.Success} (${Status.Success._code}), cost: ${transactionRecord.transactionFee}`);
-            this.captureMetrics(
-                SDKClient.transactionMode,
-                transactionName,
-                transactionRecord.receipt.status,
-                cost,
-                transactionRecord?.contractFunctionResult?.gasUsed,
-                callerName,
-                interactingEntity);
-
-            this.hbarLimiter.addExpense(cost, currentDateNow);
-
-            return transactionRecord;
-        }
-        catch (e: any) {
-            // capture sdk record retrieval errors and shorten familiar stack trace
-            const sdkClientError = new SDKClientError(e, e.message);
-            let transactionFee: number | Hbar = 0;
-            if (sdkClientError.isValidNetworkError()) {
-                try {
-                    // pull transaction record for fee
-                    const transactionRecord = await new TransactionRecordQuery()
-                        .setTransactionId(resp.transactionId!)
-                        .setNodeAccountIds([resp.nodeId])
-                        .setValidateReceiptStatus(false)
-                        .execute(this.clientMain);
-                    transactionFee = transactionRecord.transactionFee;
-
-                    this.captureMetrics(
-                        SDKClient.transactionMode,
-                        transactionName,
-                        sdkClientError.status,
-                        transactionFee.toTinybars().toNumber(),
-                        transactionRecord?.contractFunctionResult?.gasUsed,
-                        callerName,
-                        interactingEntity);
-
-                    this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-                } catch (err: any) {
-                    const recordQueryError = new SDKClientError(err, err.message);
-                    this.logger.error(recordQueryError, `${requestIdPrefix} Error raised during TransactionRecordQuery for ${resp.transactionId}`);
-                }
-            }
-
-            this.logger.debug(`${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionName} record status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`);
-            
-            if (e instanceof JsonRpcError){
-                throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-            }
-            throw sdkClientError;
-        }
-    };
-
-    private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
-        const resolvedCost = cost ? cost : 0;
-        const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
-        this.consensusNodeClientHistogramCost.labels(
-          mode,
-          type,
-          status,
-          caller,
-          interactingEntity)
-          .observe(resolvedCost);
-        this.consensusNodeClientHistogramGasFee.labels(
-          mode,
-          type,
-          status,
-          caller,
-          interactingEntity)
-          .observe(resolvedGas);
-    };
-
-    /**
-     * Internal helper method that removes the leading 0x if there is one.
-     * @param input
-     * @private
-     */
-    private static prune0x(input: string): string {
-        return input.startsWith('0x')
-            ? input.substring(2)
-            : input;
+      if (callData.length > 0 && fileSize.isZero()) {
+        throw new SDKClientError({}, `${requestIdPrefix} Created file is empty. `);
+      }
+      this.logger.trace(`${requestIdPrefix} Created file with fileId: ${fileId} and file size ${fileSize}`);
     }
 
-    private static HbarToWeiBar(balance: AccountBalance): BigNumber {
-        return balance.hbars
-        .to(HbarUnit.Tinybar)
-        .multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
-    }
-
-    private createFile = async (callData: Uint8Array, client: Client, requestId?: string) => {
-        const requestIdPrefix = formatRequestIdMessage(requestId);
-        const hexedCallData = Buffer.from(callData).toString("hex");
-
-        const fileId = (
-            (
-                await (
-                    await new FileCreateTransaction()
-                        .setContents(hexedCallData.substring(0, 4096))
-                        .setKeys(
-                            client.operatorPublicKey
-                                ? [client.operatorPublicKey]
-                                : []
-                        )
-                        .execute(client)
-                ).getReceipt(client)
-            ).fileId
-        );
-
-        if (fileId && callData.length > 4096) {
-            await new FileAppendTransaction()
-                .setFileId(fileId)
-                .setContents(
-                    hexedCallData.substring(4096, hexedCallData.length)
-                )
-                .setChunkSize(4096)
-                .setMaxChunks(this.maxChunks)
-                .execute(client);
-        }
-
-        // Ensure that the calldata file is not empty
-        if(fileId) {
-            const fileSize = await (
-                await new FileInfoQuery()
-                .setFileId(fileId)
-                .execute(client)
-            ).size;    
-
-            if(callData.length > 0 && fileSize.isZero()) {
-                throw new SDKClientError({}, `${requestIdPrefix} Created file is empty. `);
-            }    
-            this.logger.trace(`${requestIdPrefix} Created file with fileId: ${fileId} and file size ${fileSize}`);
-        }
-
-        return fileId;
-    }
+    return fileId;
+  };
 }
