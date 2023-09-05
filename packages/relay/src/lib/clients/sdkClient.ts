@@ -620,7 +620,7 @@ export class SDKClient {
     return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
   }
 
-  private async calculateFileAppendTxTotalTinybarsCost(fileAppendTx: FileAppendTransaction): Promise<Number> {
+  private async calculateFileAppendTxTotalTinybarsCost(fileAppendTx: FileAppendTransaction): Promise<number> {
     // @ts-ignore
     const fileAppendTxs = fileAppendTx._transactionIds.list.map((txId) =>
       new TransactionRecordQuery().setTransactionId(txId).execute(this.clientMain),
