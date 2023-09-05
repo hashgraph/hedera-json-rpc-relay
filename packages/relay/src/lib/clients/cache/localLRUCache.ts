@@ -63,9 +63,6 @@ export class LocalLRUCache implements ICacheClient {
   private readonly register: Registry;
   private cacheKeyGauge: Gauge<string>;
 
-  private static getCacheLabel = 'get';
-  private static setCacheLabel = 'set';
-
   /**
    * Represents a LocalLRUCache instance that uses an LRU (Least Recently Used) caching strategy
    * for caching items internally from requests.
@@ -89,8 +86,7 @@ export class LocalLRUCache implements ICacheClient {
     register.removeSingleMetric(metricCounterName);
     this.cacheKeyGauge = new Gauge({
       name: metricCounterName,
-      help: 'Relay cache gauge',
-      labelNames: ['key', 'type', 'method'],
+      help: 'Relay LRU cache gauge',
       registers: [register],
       async collect() {
         cacheSizeCollect();
@@ -109,9 +105,8 @@ export class LocalLRUCache implements ICacheClient {
   public get(key: string, callingMethod: string, requestIdPrefix?: string): any {
     const value = this.cache.get(key);
     if (value !== undefined) {
-      this.cacheKeyGauge.labels('', LocalLRUCache.getCacheLabel, callingMethod || '').inc(1);
       this.logger.trace(
-        `${requestIdPrefix} returning cached value ${key}:${JSON.stringify(value)} on ${callingMethod} call`
+        `${requestIdPrefix} returning cached value ${key}:${JSON.stringify(value)} on ${callingMethod} call`,
       );
       return value;
     }
@@ -132,7 +127,6 @@ export class LocalLRUCache implements ICacheClient {
     const resolvedTtl = ttl ?? this.options.ttl;
     this.logger.trace(`${requestIdPrefix} caching ${key}:${JSON.stringify(value)} for ${resolvedTtl} ms`);
     this.cache.set(key, value, { ttl: resolvedTtl });
-    this.cacheKeyGauge.labels('', LocalLRUCache.setCacheLabel, callingMethod || '').inc(1);
   }
 
   /**

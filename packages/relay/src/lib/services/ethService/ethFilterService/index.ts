@@ -85,7 +85,7 @@ export class FilterService implements IFilterService {
       type,
       params,
       lastQueried: null
-    }, this.ethNewFilter, constants.FILTER.TTL, requestIdPrefix);
+    }, this.ethNewFilter, constants.FILTER.TTL, requestIdPrefix, true);
     this.logger.trace(`${requestIdPrefix} created filter with TYPE=${type}, params: ${params}`);
     return filterId;
   }
@@ -146,10 +146,10 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cacheService.get(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethUninstallFilter, requestIdPrefix);
 
     if (filter) {
-      this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+      this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix, true);
       return true;
     }
 
@@ -166,7 +166,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cacheService.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
     if (filter?.type != constants.FILTER.TYPE.LOG) {
       throw predefined.FILTER_NOT_FOUND;
     }
@@ -186,7 +186,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cacheService.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
 
     if (!filter) {
       throw predefined.FILTER_NOT_FOUND;
@@ -229,7 +229,7 @@ export class FilterService implements IFilterService {
       type: filter.type,
       params: filter.params,
       lastQueried: latestBlockNumber
-    }, this.ethGetFilterChanges, constants.FILTER.TTL, requestIdPrefix);
+    }, this.ethGetFilterChanges, constants.FILTER.TTL, requestIdPrefix, true);
 
     return result;
   }
