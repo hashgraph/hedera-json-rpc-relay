@@ -86,7 +86,7 @@ async function getFolderContent(path) {
         return await getFileContent(dataEntry.path);
     }));
 
-    return fileContents;
+    return {method: path.split('/')[1], content: fileContents};
 }
 
 function splitReqAndRes(content) {
@@ -284,10 +284,8 @@ async function main() {
         const relaySupportedMethodNames = openRpcData.methods.map(method => method.name);
         const ethSupportedMethods = await getEthereumExecApis(relaySupportedMethodNames);
         const folders = ethSupportedMethods.map(each => each.path);
-        let fileContents = [];
-        for (const folder of folders) {
-            fileContents.push({method: folder.split('/')[1], content: await getFolderContent(folder)});
-        }
+
+        const fileContents = await Promise.all(folders.map(getFolderContent));
 
         for (const file of fileContents) {
             console.log("Executing for method ", file.method);
