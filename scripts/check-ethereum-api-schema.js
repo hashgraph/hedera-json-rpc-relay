@@ -4,35 +4,29 @@ const openRpcData = require('../docs/openrpc.json');
 require('ts-node/register');
 require('dotenv').config();
 const helper = require('../packages/relay/tests/helpers.ts');
-let lastNonce = 0;
-// Create an instance of Octokit and authenticate (you can use a personal access token or OAuth token)
-const GITHUB_PERSONAL_TOKEN = process.env.GITHUB_PERSONAL_TOKEN;
+
+// Create an instance of Octokit and authenticate (you can use an access token or OAuth token)
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const octokit = new Octokit({
-    auth: GITHUB_PERSONAL_TOKEN
+    auth: GITHUB_TOKEN
 });
 let currentBlockHash;
 let legacyTransactionAndBlockHash;
 let transaction2930AndBlockHash;
 let transaction1559AndBlockHash;
 let createContractLegacyTransactionAndBlockHash;
+
+const sendAccountAddress = '0xc37f417fA09933335240FCA72DD257BFBdE9C275';
+const receiveAccountAddress = '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69';
 const relayUrl = 'http://127.0.0.1:7546';
-const body = {
-    "jsonrpc": "2.0",
-    "method": "eth_getBlockByNumber",
-    "params": [
-        "latest",
-        true
-    ],
-    "id": 0
-};
 const gasPrice = '0x2C68AF0BB14000';
 const gasLimit = "0x3D090";
 const value = '0x2E90EDD000';
+
 let legacyTransaction = {
-    nonce: lastNonce + 1,
     chainId: 0x12a,
-    to: "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
-    from: "0xc37f417fA09933335240FCA72DD257BFBdE9C275",
+    to: receiveAccountAddress,
+    from: sendAccountAddress,
     value,
     gasPrice,
     gasLimit: gasLimit,
@@ -40,10 +34,9 @@ let legacyTransaction = {
 };
 
 let transaction2930 = {
-    nonce: lastNonce + 2,
     chainId: 0x12a,
-    to: "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
-    from: "0xc37f417fA09933335240FCA72DD257BFBdE9C275",
+    to: receiveAccountAddress,
+    from: sendAccountAddress,
     value,
     gasPrice,
     gasLimit: gasLimit,
@@ -51,10 +44,9 @@ let transaction2930 = {
 };
 
 let transaction1559 = {
-    nonce: lastNonce + 3,
     chainId: 0x12a,
-    to: "0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69",
-    from: "0xc37f417fA09933335240FCA72DD257BFBdE9C275",
+    to: receiveAccountAddress,
+    from: sendAccountAddress,
     value,
     gasPrice,
     maxPriorityFeePerGas: gasPrice,
@@ -64,10 +56,9 @@ let transaction1559 = {
 };
 
 let createContractLegacyTransaction = {
-    nonce: lastNonce + 4,
     chainId: 0x12a,
     to: null,
-    from: "0xc37f417fA09933335240FCA72DD257BFBdE9C275",
+    from: sendAccountAddress,
     gasLimit: gasLimit,
     gasPrice: gasPrice,
     type: 0,
@@ -129,6 +120,8 @@ async function sendRequestToRelay(request) {
 }
 
 async function signAndSendRawTransaction(transaction) {
+    const transactionCount = await getTransactionCount();
+    transaction.nonce = parseInt(transactionCount, 16);
     const signed = await helper.signTransaction(transaction, "0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd");
     const request = {
         "jsonrpc": "2.0",
@@ -169,7 +162,8 @@ async function checkRequestBody(fileName, request) {
         request.params[1] = legacyTransactionAndBlockHash.transactionIndex;
     }
     if (request.method === 'eth_sendRawTransaction') {
-        legacyTransaction.nonce = lastNonce + 5;
+        const transactionCount = await getTransactionCount()
+        legacyTransaction.nonce = parseInt(transactionCount, 16);
         const transactionHash = await helper.signTransaction(legacyTransaction, "0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd");
         request.params[0] = transactionHash;
     }
@@ -251,14 +245,42 @@ async function processFileContent(fileContent) {
     checkResponseFormat(fileContent.fileName, response, JSON.parse(fileContent.content.response));
 }
 
+async function getTransactionCount() {
+    const request = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "eth_getTransactionCount",
+        "params": [sendAccountAddress, "latest"]
+    };
+
+    const response = await sendRequestToRelay(request);
+
+    return response.result;
+}
+
+async function getLatestBlockHash() {
+    const request = {
+        "jsonrpc": "2.0",
+        "method": "eth_getBlockByNumber",
+        "params": [
+            "latest",
+            false
+        ],
+        "id": 0
+    };
+
+    const response = await sendRequestToRelay(request);
+
+    return response.result.hash;
+}
+
 async function main() {
     try {
-        const latestBlock = await sendRequestToRelay(body);
         legacyTransactionAndBlockHash = await signAndSendRawTransaction(legacyTransaction);
         transaction2930AndBlockHash = await signAndSendRawTransaction(transaction2930);
         transaction1559AndBlockHash = await signAndSendRawTransaction(transaction1559);
         createContractLegacyTransactionAndBlockHash = await signAndSendRawTransaction(createContractLegacyTransaction);
-        currentBlockHash = latestBlock.result.hash;
+        currentBlockHash = await getLatestBlockHash();
         const relaySupportedMethodNames = openRpcData.methods.map(method => method.name);
         const ethSupportedMethods = await getEthereumExecApis(relaySupportedMethodNames);
         const folders = ethSupportedMethods.map(each => each.path);
