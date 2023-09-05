@@ -79,7 +79,7 @@ describe('RPC Server Acceptance Tests', function () {
     NETWORK,
     OPERATOR_ID,
     OPERATOR_KEY,
-    logger.child({ name: `services-test-client` })
+    logger.child({ name: `services-test-client` }),
   );
   global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
   global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
@@ -216,12 +216,12 @@ describe('RPC Server Acceptance Tests', function () {
 
   function runLocalHederaNetwork() {
     // set env variables for docker images until local-node is updated
-    process.env['NETWORK_NODE_IMAGE_TAG'] = '0.42.0-alpha.2';
-    process.env['HAVEGED_IMAGE_TAG'] = '0.42.0-alpha.2';
-    process.env['MIRROR_IMAGE_TAG'] = '0.87.0';
+    process.env['NETWORK_NODE_IMAGE_TAG'] = '0.41.0-alpha.3';
+    process.env['HAVEGED_IMAGE_TAG'] = '0.41.0-alpha.3';
+    process.env['MIRROR_IMAGE_TAG'] = '0.86.0-beta1';
 
     console.log(
-      `Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`
+      `Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`,
     );
     console.log(
       `Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`,
