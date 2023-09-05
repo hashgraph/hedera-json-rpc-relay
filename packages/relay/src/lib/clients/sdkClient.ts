@@ -620,6 +620,17 @@ export class SDKClient {
     return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
   }
 
+  private async calculateFileAppendTxTotalTinybarsCost(fileAppendTx): Promise<Number> {
+    // @ts-ignore
+    const fileAppendTxs = fileAppendTx._transactionIds.list.map((txId) =>
+      new TransactionRecordQuery().setTransactionId(txId).execute(this.clientMain),
+    );
+
+    return (await Promise.all(fileAppendTxs)).reduce((base, record) => {
+      return base + record.transactionFee.toTinybars().toNumber();
+    }, 0);
+  }
+
   private createFile = async (
     callData: Uint8Array,
     client: Client,
@@ -653,15 +664,14 @@ export class SDKClient {
         .setContents(hexedCallData.substring(4096, hexedCallData.length))
         .setChunkSize(4096)
         .setMaxChunks(this.maxChunks);
-      const fileAppendTxResponse = await fileAppendTx.execute(client);
+      await fileAppendTx.execute(client);
 
-      const fileAppendRecord = await fileAppendTxResponse.getRecord(this.clientMain);
       this.captureMetrics(
         SDKClient.transactionMode,
         fileAppendTx.constructor.name,
         Status.Success,
-        fileAppendRecord.transactionFee.toTinybars().toNumber(),
-        fileAppendRecord?.contractFunctionResult?.gasUsed,
+        await this.calculateFileAppendTxTotalTinybarsCost(fileAppendTx),
+        0,
         callerName,
         interactingEntity,
       );
