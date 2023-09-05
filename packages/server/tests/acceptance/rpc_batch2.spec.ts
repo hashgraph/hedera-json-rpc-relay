@@ -61,6 +61,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   const ONE_WEIBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 18)));
 
   const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
+  const PING_CALL_ESTIMATED_GAS = '0x00000000000060e2';
   const EXCHANGE_RATE_FILE_ID = '0.0.112';
   const EXCHANGE_RATE_FILE_CONTENT_DEFAULT = '0a1008b0ea0110f9bb1b1a0608f0cccf9306121008b0ea0110e9c81a1a060880e9cf9306';
   const FEE_SCHEDULE_FILE_ID = '0.0.111';
@@ -138,11 +139,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     });
 
     it('@release should execute "eth_estimateGas" for contract call', async function () {
-      const expectedRes = `0x${(400000).toString(16)}`;
       const estimatedGas = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
         [
           {
+            to: `0x${basicContract.contractId.toSolidityAddress()}`,
             from: accounts[0].address,
             data: BASIC_CONTRACT_PING_CALL_DATA,
           },
@@ -150,7 +151,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         requestId,
       );
       expect(estimatedGas).to.contain('0x');
-      expect(estimatedGas).to.equal(expectedRes);
+      expect(estimatedGas).to.equal(PING_CALL_ESTIMATED_GAS);
     });
 
     // Skip this test for now because of bug in mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/6612 in Additional bug fixes
