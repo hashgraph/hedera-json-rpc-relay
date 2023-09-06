@@ -1,0 +1,21 @@
+{{- if .Values.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: 
+  labels:
+    app.kubernetes.io/name: mainnet-websocket
+    release: prometheus-operator
+spec:
+  namespaceSelector:
+    matchNames:
+    - mainnet
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mainnet-websocket
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+
+{{- end }}
