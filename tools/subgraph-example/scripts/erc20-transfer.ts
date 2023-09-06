@@ -22,11 +22,11 @@ export async function transferERC20(receiver: string, hre: any) {
   const networks = await import("../subgraph/networks.json");
 
   const provider = new hre.ethers.providers.JsonRpcProvider(
-    process.env.RELAY_ENDPOINT
+    process.env.RELAY_ENDPOINT,
   );
   const wallet = new hre.ethers.Wallet(
     <string>process.env.OPERATOR_PRIVATE_KEY,
-    provider
+    provider,
   );
 
   const recipient = new hre.ethers.Wallet(receiver, provider);
@@ -34,7 +34,9 @@ export async function transferERC20(receiver: string, hre: any) {
   const ERC20 = await hre.ethers.getContractFactory("ExampleERC20");
   const erc20 = ERC20.attach(networks.local.ExampleERC20.address);
 
-  const tx = await erc20.connect(wallet).transfer(recipient.address, 1, {gasLimit: 500_000});
+  const tx = await erc20
+    .connect(wallet)
+    .transfer(recipient.address, 1, { gasLimit: 500_000 });
 
   const receipt = await tx.wait();
 

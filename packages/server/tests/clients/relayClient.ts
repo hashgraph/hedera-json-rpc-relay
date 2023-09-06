@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,107 +25,117 @@ import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
 
 export default class RelayClient {
+  private readonly provider: ethers.JsonRpcProvider;
+  private readonly logger: Logger;
 
-    private readonly provider: ethers.JsonRpcProvider;
-    private readonly logger: Logger;
+  constructor(relayUrl: string, logger: Logger) {
+    this.logger = logger;
+    let fr: ethers.FetchRequest = new ethers.FetchRequest(relayUrl);
+    this.provider = new ethers.JsonRpcProvider(fr, undefined, {
+      batchMaxCount: 1,
+    });
+  }
 
-    constructor(relayUrl: string, logger: Logger) {
-        this.logger = logger;
-        let fr: ethers.FetchRequest = new ethers.FetchRequest(relayUrl);
-        this.provider = new ethers.JsonRpcProvider(fr, undefined, {
-            batchMaxCount: 1
-        });
+  /**
+   * Calls the specified methodName with the provided params
+   * @param methodName
+   * @param params
+   * @param requestId
+   */
+  async call(methodName: string, params: any[], requestId?: string) {
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+
+    const result = await this.provider.send(methodName, params);
+    this.logger.trace(
+      `${requestIdPrefix} [POST] to relay '${methodName}' with params [${JSON.stringify(
+        params,
+      )}] returned ${JSON.stringify(result)}`,
+    );
+    return result;
+  }
+
+  /**
+   * Calls the specified methodName with the provided params and asserts that it fails
+   * @param methodName
+   * @param params
+   * @param requestId
+   */
+  async callFailing(
+    methodName: string,
+    params: any[],
+    expectedRpcError = predefined.INTERNAL_ERROR(),
+    requestId?: string,
+  ) {
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+    try {
+      const res = await this.call(methodName, params, requestId);
+      this.logger.trace(
+        `${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`,
+      );
+      Assertions.expectedError();
+    } catch (e: any) {
+      Assertions.jsonRpcError(e?.response?.bodyJson?.error, expectedRpcError);
     }
+  }
 
-    /**
-     * Calls the specified methodName with the provided params
-     * @param methodName
-     * @param params
-     * @param requestId
-     */
-    async call(methodName: string, params: any[], requestId?: string) {
-        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-
-        const result = await this.provider.send(methodName, params);
-        this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${JSON.stringify(params)}] returned ${JSON.stringify(result)}`);
-        return result;
-    };
-
-    /**
-     * Calls the specified methodName with the provided params and asserts that it fails
-     * @param methodName
-     * @param params
-     * @param requestId
-     */
-    async callFailing(methodName: string, params: any[], expectedRpcError = predefined.INTERNAL_ERROR(), requestId?: string) {
-        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-        try {
-            const res = await this.call(methodName, params, requestId);
-            this.logger.trace(`${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`);
-            Assertions.expectedError();
-        } catch (e: any) {
-            Assertions.jsonRpcError(e?.response?.bodyJson?.error, expectedRpcError);
-        }
+  /**
+   * Calls the specified methodName and asserts that it is not supported
+   * @param methodName
+   * @param params
+   * @param requestId
+   */
+  async callUnsupported(methodName: string, params: any[], requestId?: string) {
+    try {
+      await this.call(methodName, params, requestId);
+      Assertions.expectedError();
+    } catch (e: any) {
+      Assertions.unsupportedResponse(e?.response?.bodyJson);
     }
+  }
 
-    /**
-     * Calls the specified methodName and asserts that it is not supported
-     * @param methodName
-     * @param params
-     * @param requestId
-     */
-    async callUnsupported(methodName: string, params: any[], requestId?: string) {
-        try {
-            await this.call(methodName, params, requestId);
-            Assertions.expectedError();
-        } catch (e: any) {
-            Assertions.unsupportedResponse(e?.response?.bodyJson);
-        }
-    };
+  /**
+   * Gets the account balance by executing `eth_getBalance`
+   * @param address
+   * @param block
+   * @param requestId
+   */
+  async getBalance(address, block = 'latest', requestId?: string) {
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+    this.logger.debug(`${requestIdPrefix} [POST] to relay eth_getBalance for address ${address}]`);
+    return this.provider.getBalance(address, block);
+  }
 
-    /**
-     * Gets the account balance by executing `eth_getBalance`
-     * @param address
-     * @param block
-     * @param requestId
-     */
-    async getBalance(address, block = 'latest', requestId?: string) {
-        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-        this.logger.debug(`${requestIdPrefix} [POST] to relay eth_getBalance for address ${address}]`);
-        return this.provider.getBalance(address, block);
-    };
+  /**
+   * @param evmAddress
+   * @param requestId
+   * Returns: The nonce of the account with the provided `evmAddress`
+   */
+  async getAccountNonce(evmAddress, requestId?: string): Promise<number> {
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+    this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_getTransactionCount for address ${evmAddress}`);
+    const nonce = await this.provider.send('eth_getTransactionCount', [evmAddress, 'latest']);
+    return Number(nonce);
+  }
 
-    /**
-     * @param evmAddress
-     * @param requestId
-     * Returns: The nonce of the account with the provided `evmAddress`
-     */
-    async getAccountNonce(evmAddress, requestId?: string): Promise<number> {
-        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-        this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_getTransactionCount for address ${evmAddress}`);
-        const nonce = await this.provider.send('eth_getTransactionCount', [evmAddress, 'latest']);
-        return Number(nonce);
-    };
+  /**
+   * This invokes the relay logic from eth.ts/sendRawTransaction.
+   *
+   * Returns: Transaction hash
+   * @param signedTx
+   * @param requestId
+   */
+  async sendRawTransaction(signedTx, requestId?: string): Promise<string> {
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+    this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_sendRawTransaction`);
+    return this.provider.send('eth_sendRawTransaction', [signedTx]);
+  }
 
-    /**
-     * This invokes the relay logic from eth.ts/sendRawTransaction.
-     *
-     * Returns: Transaction hash
-     * @param signedTx
-     * @param requestId
-     */
-    async sendRawTransaction(signedTx, requestId?: string): Promise<string> {
-        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-        this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_sendRawTransaction`);
-        return this.provider.send('eth_sendRawTransaction', [signedTx]);
-    };
-
-    /**
-     * @param requestId
-     *
-     * Returns the result of eth_gasPrice as a Number.
-     */
-    async gasPrice(requestId?: string): Promise<number> {
-        return Number(await this.call('eth_gasPrice', [], requestId));
-    }
+  /**
+   * @param requestId
+   *
+   * Returns the result of eth_gasPrice as a Number.
+   */
+  async gasPrice(requestId?: string): Promise<number> {
+    return Number(await this.call('eth_gasPrice', [], requestId));
+  }
 }

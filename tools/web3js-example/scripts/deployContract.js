@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay - Web3js Example
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,11 @@ module.exports = async (contractParam) => {
   const Greeter = new web3.eth.Contract(abi);
   const greeter = await Greeter.deploy({
     data: bytecode,
-    arguments: [contractParam]
+    arguments: [contractParam],
   });
   const contract = await greeter.send({
     from: wallet[0].address,
-    gas: 300000
+    gas: 300000,
   });
 
   console.log(`Greeter deployed to: ${contract._address}`);

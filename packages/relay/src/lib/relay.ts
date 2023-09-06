@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,7 @@ export class RelayImpl implements Relay {
 
     const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
 
-    const configuredChainId =
-      process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
+    const configuredChainId = process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
@@ -72,7 +71,7 @@ export class RelayImpl implements Relay {
       register,
       this.cacheService,
       undefined,
-      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || ''
+      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
     );
 
     this.ethImpl = new EthImpl(
@@ -81,7 +80,8 @@ export class RelayImpl implements Relay {
       logger.child({ name: 'relay-eth' }),
       chainId,
       register,
-      this.cacheService);
+      this.cacheService,
+    );
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
       const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
@@ -93,33 +93,37 @@ export class RelayImpl implements Relay {
   }
 
   /**
- * Initialize operator account metrics
- * @param {Client} clientMain
- * @param {MirrorNodeClient} mirrorNodeClient
- * @param {Logger} logger
- * @param {Registry} register
- * @returns {Gauge} Operator Metric
- */
-  private initOperatorMetric(clientMain: Client, mirrorNodeClient: MirrorNodeClient, logger: Logger, register: Registry) {
+   * Initialize operator account metrics
+   * @param {Client} clientMain
+   * @param {MirrorNodeClient} mirrorNodeClient
+   * @param {Logger} logger
+   * @param {Registry} register
+   * @returns {Gauge} Operator Metric
+   */
+  private initOperatorMetric(
+    clientMain: Client,
+    mirrorNodeClient: MirrorNodeClient,
+    logger: Logger,
+    register: Registry,
+  ) {
     const metricGaugeName = 'rpc_relay_operator_balance';
     register.removeSingleMetric(metricGaugeName);
     return new Gauge({
-        name: metricGaugeName,
-        help: 'Relay operator balance gauge',
-        labelNames: ['mode', 'type', 'accountId'],
-        registers: [register],
-        async collect() {
-            // Invoked when the registry collects its metrics' values.
-            // Allows for updated account balance tracking
-            try {
-                const account = await mirrorNodeClient.getAccount(clientMain.operatorAccountId!.toString());
-                const accountBalance = account.balance?.balance;
-                this.labels({ 'accountId': clientMain.operatorAccountId?.toString() })
-                    .set(accountBalance);
-            } catch (e: any) {
-                logger.error(e, `Error collecting operator balance. Skipping balance set`);
-            }
-        },
+      name: metricGaugeName,
+      help: 'Relay operator balance gauge',
+      labelNames: ['mode', 'type', 'accountId'],
+      registers: [register],
+      async collect() {
+        // Invoked when the registry collects its metrics' values.
+        // Allows for updated account balance tracking
+        try {
+          const account = await mirrorNodeClient.getAccount(clientMain.operatorAccountId!.toString());
+          const accountBalance = account.balance?.balance;
+          this.labels({ accountId: clientMain.operatorAccountId?.toString() }).set(accountBalance);
+        } catch (e: any) {
+          logger.error(e, `Error collecting operator balance. Skipping balance set`);
+        }
+      },
     });
   }
 

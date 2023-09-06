@@ -18,16 +18,24 @@
  *
  */
 
-import {JsonRpcError} from "../../../errors/JsonRpcError";
+import { JsonRpcError } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
 
 export interface ICommonService {
-
   blockTagIsLatestOrPending(tag: any): boolean;
 
-  validateBlockRangeAndAddTimestampToParams(params: any, fromBlock: string, toBlock: string, requestIdPrefix?: string): Promise<boolean>;
+  validateBlockRangeAndAddTimestampToParams(
+    params: any,
+    fromBlock: string,
+    toBlock: string,
+    requestIdPrefix?: string,
+  ): Promise<boolean>;
 
-  getHistoricalBlockResponse(blockNumberOrTag?: string | null, returnLatest?: boolean, requestIdPrefix?: string | undefined): Promise<any>;
+  getHistoricalBlockResponse(
+    blockNumberOrTag?: string | null,
+    returnLatest?: boolean,
+    requestIdPrefix?: string | undefined,
+  ): Promise<any>;
 
   getLatestBlockNumber(requestIdPrefix?: string): Promise<string>;
 
@@ -41,5 +49,12 @@ export interface ICommonService {
 
   getLogsWithParams(address: string | [string] | null, params, requestIdPrefix?: string): Promise<Log[]>;
 
-  getLogs(blockHash: string | null, fromBlock: string | 'latest', toBlock: string | 'latest', address: string | [string] | null, topics: any[] | null, requestIdPrefix?: string): Promise<Log[]>;
+  getLogs(
+    blockHash: string | null,
+    fromBlock: string | 'latest',
+    toBlock: string | 'latest',
+    address: string | [string] | null,
+    topics: any[] | null,
+    requestIdPrefix?: string,
+  ): Promise<Log[]>;
 }

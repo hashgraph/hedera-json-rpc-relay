@@ -2,7 +2,7 @@
  * ‌
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,30 +18,26 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse, httpParams, getPayLoad} from "./common.js";
+import { TestScenarioBuilder } from '../../lib/common.js';
+import { isNonErrorResponse, httpParams, getPayLoad } from './common.js';
 
 const url = __ENV.RELAY_BASE_URL;
 
-
 const methodName = 'eth_sendRawTransaction';
-const {options, run} = new TestScenarioBuilder()
+const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request((testParameters, iteration, vuIndex, iterationByVu) => {
-        if(vuIndex >= testParameters.wallets.length) return; // VU index is greater than the number of wallets
-        const  signedTxsByVu =  testParameters.wallets[vuIndex].signedTxs;
-        const lastValidSignedTrx = (parseInt(signedTxsByVu.length) >= parseInt(iterationByVu)) ? iterationByVu : signedTxsByVu.length-1;
-        return http.post(
-          url,
-          getPayLoad(methodName, [signedTxsByVu[lastValidSignedTrx]]),
-          httpParams);
-      }
-  )
+    if (vuIndex >= testParameters.wallets.length) return; // VU index is greater than the number of wallets
+    const signedTxsByVu = testParameters.wallets[vuIndex].signedTxs;
+    const lastValidSignedTrx =
+      parseInt(signedTxsByVu.length) >= parseInt(iterationByVu) ? iterationByVu : signedTxsByVu.length - 1;
+    return http.post(url, getPayLoad(methodName, [signedTxsByVu[lastValidSignedTrx]]), httpParams);
+  })
   .check(methodName, (r) => isNonErrorResponse(r))
-  .testDuration("5s")
+  .testDuration('5s')
   .maxDuration(4000)
   .build();
 
-export {options, run};
+export { options, run };
