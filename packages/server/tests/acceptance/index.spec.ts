@@ -142,7 +142,7 @@ describe('RPC Server Acceptance Tests', function () {
     // set env variables for docker images until local-node is updated
     process.env['NETWORK_NODE_IMAGE_TAG'] = '0.41.0-alpha.3';
     process.env['HAVEGED_IMAGE_TAG'] = '0.41.0-alpha.3';
-    process.env['MIRROR_IMAGE_TAG'] = '0.86.0-beta1';
+    process.env['MIRROR_IMAGE_TAG'] = 'main';
 
     console.log(
       `Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`,
@@ -159,6 +159,7 @@ describe('RPC Server Acceptance Tests', function () {
   function runLocalRelay() {
     // start local relay, stop relay instance in local
     shell.exec('docker stop json-rpc-relay');
+
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
     relayServer = app.listen({ port: constants.RELAY_PORT });
 
