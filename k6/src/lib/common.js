@@ -18,24 +18,24 @@
  * ‍
  */
 
-import { check, sleep } from "k6";
-import { Gauge } from "k6/metrics";
-import { randomIntBetween } from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
+import { check, sleep } from 'k6';
+import { Gauge } from 'k6/metrics';
+import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
-import { setDefaultValuesForEnvParameters } from "./parameters.js";
+import { setDefaultValuesForEnvParameters } from './parameters.js';
 
 setDefaultValuesForEnvParameters();
 
-const SCENARIO_DURATION_METRIC_NAME = "scenario_duration";
+const SCENARIO_DURATION_METRIC_NAME = 'scenario_duration';
 
-function getOptions(maxDuration = __ENV["DEFAULT_MAX_DURATION"]) {
-  if (parseInt(__ENV["DEFAULT_MAX_DURATION"]) > parseInt(maxDuration)) {
-    maxDuration = __ENV["DEFAULT_MAX_DURATION"];
+function getOptions(maxDuration = __ENV['DEFAULT_MAX_DURATION']) {
+  if (parseInt(__ENV['DEFAULT_MAX_DURATION']) > parseInt(maxDuration)) {
+    maxDuration = __ENV['DEFAULT_MAX_DURATION'];
   }
 
   return {
     thresholds: {
-      checks: [`rate>=${__ENV["DEFAULT_PASS_RATE"]}`], // min % that should pass the checks,
+      checks: [`rate>=${__ENV['DEFAULT_PASS_RATE']}`], // min % that should pass the checks,
       http_req_duration: [`p(95)<${maxDuration}`], // 95% requests should receive response in less than max duration
     },
     insecureSkipTLSVerify: true,
@@ -46,17 +46,17 @@ function getOptions(maxDuration = __ENV["DEFAULT_MAX_DURATION"]) {
 
 function getScenarioOptions(testDuration = __ENV.DEFAULT_DURATION) {
   if (
-    parseInt(__ENV["DEFAULT_DURATION"].toString().substring(0, __ENV["DEFAULT_DURATION"].toString().length - 1)) >
+    parseInt(__ENV['DEFAULT_DURATION'].toString().substring(0, __ENV['DEFAULT_DURATION'].toString().length - 1)) >
     parseInt(testDuration.substring(0, testDuration.length - 1))
   ) {
-    testDuration = __ENV["DEFAULT_DURATION"];
+    testDuration = __ENV['DEFAULT_DURATION'];
   }
 
   return {
     duration: testDuration,
-    exec: "run",
-    executor: "constant-vus",
-    gracefulStop: (__ENV.DEFAULT_GRACEFUL_STOP != null && __ENV.DEFAULT_GRACEFUL_STOP) || "5s",
+    exec: 'run',
+    executor: 'constant-vus',
+    gracefulStop: (__ENV.DEFAULT_GRACEFUL_STOP != null && __ENV.DEFAULT_GRACEFUL_STOP) || '5s',
     vus: __ENV.DEFAULT_VUS,
   };
 }
@@ -92,12 +92,12 @@ function getOptionsWithScenario(name, tags = {}, maxDuration = undefined, testDu
 }
 
 function isLoadTest() {
-  return __ENV.TEST_TYPE === "load";
+  return __ENV.TEST_TYPE === 'load';
 }
 
 function getFilteredTests(tests) {
-  if (__ENV.FILTER_TEST && __ENV.FILTER_TEST !== "*") {
-    const filteredTests = __ENV.FILTER_TEST.split(",");
+  if (__ENV.FILTER_TEST && __ENV.FILTER_TEST !== '*') {
+    const filteredTests = __ENV.FILTER_TEST.split(',');
 
     const newTests = {};
     for (let i = 0; i < filteredTests.length; i++) {
@@ -114,9 +114,9 @@ function getFilteredTests(tests) {
 function getSequentialTestScenarios(tests) {
   tests = getFilteredTests(tests);
 
-  let startTime = "0s";
-  let duration = "0s";
-  let gracefulStop = "0s";
+  let startTime = '0s';
+  let duration = '0s';
+  let gracefulStop = '0s';
 
   const funcs = {};
   const scenarios = {};
@@ -143,14 +143,14 @@ function getSequentialTestScenarios(tests) {
       // thresholds
       const tag = `scenario:${scenarioName}`;
       for (const [name, threshold] of Object.entries(testThresholds)) {
-        if (name === "http_req_duration") {
-          thresholds[getMetricNameWithTags(name, tag, "expected_response:true")] = threshold;
+        if (name === 'http_req_duration') {
+          thresholds[getMetricNameWithTags(name, tag, 'expected_response:true')] = threshold;
         } else {
           thresholds[getMetricNameWithTags(name, tag)] = threshold;
         }
       }
-      thresholds[getMetricNameWithTags("http_reqs", tag)] = ["count>0"];
-      thresholds[getMetricNameWithTags(SCENARIO_DURATION_METRIC_NAME, tag)] = ["value>0"];
+      thresholds[getMetricNameWithTags('http_reqs', tag)] = ['count>0'];
+      thresholds[getMetricNameWithTags(SCENARIO_DURATION_METRIC_NAME, tag)] = ['value>0'];
     }
   }
 
@@ -196,11 +196,11 @@ function defaultMetrics() {
 }
 
 function getTestType() {
-  return __ENV.TEST_TYPE !== undefined && __ENV.TEST_TYPE === "load" ? "load" : "performance";
+  return __ENV.TEST_TYPE !== undefined && __ENV.TEST_TYPE === 'load' ? 'load' : 'performance';
 }
 
 function markdownReport(data, isFirstColumnUrl, scenarios) {
-  const firstColumnName = isFirstColumnUrl ? "URL" : "Scenario";
+  const firstColumnName = isFirstColumnUrl ? 'URL' : 'Scenario';
   const header = `| ${firstColumnName} | VUS | Reqs | Pass % | RPS (1/s) | Pass RPS (1/s) | Avg. Req Duration (ms) | Median (ms) | Min (ms) | Max (ms) | P(90) (ms) | P(95) (ms) | Comment |
 |----------|-----|------|--------|-----|----------|-------------------|-------|-----|-----|-------|-------|---------|`;
 
@@ -211,13 +211,13 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
   for (const [key, value] of Object.entries(metrics)) {
     let name;
     if (checksRegex.test(key)) {
-      name = "checks";
+      name = 'checks';
     } else if (httpReqDurationRegex.test(key)) {
-      name = "http_req_duration";
+      name = 'http_req_duration';
     } else if (httpReqsRegex.test(key)) {
-      name = "http_reqs";
+      name = 'http_reqs';
     } else if (scenarioDurationRegex.test(key)) {
-      name = "scenario_duration";
+      name = 'scenario_duration';
     } else {
       continue;
     }
@@ -235,28 +235,28 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
   }
 
   // Generate the markdown report
-  let markdown = "# K6 Performance Test Results \n\n";
-  markdown += `JSON-RPC-RELAY URL:  ${__ENV["RELAY_BASE_URL"]}\n\n`;
+  let markdown = '# K6 Performance Test Results \n\n';
+  markdown += `JSON-RPC-RELAY URL:  ${__ENV['RELAY_BASE_URL']}\n\n`;
   markdown += `Timestamp: ${new Date(Date.now()).toISOString()} \n\n`;
-  markdown += `Duration: ${__ENV["DEFAULT_DURATION"]} \n\n`;
+  markdown += `Duration: ${__ENV['DEFAULT_DURATION']} \n\n`;
   markdown += `Test Type: ${getTestType()} \n\n`;
-  markdown += `Virtual Users (VUs): ${__ENV["DEFAULT_VUS"]} \n\n`;
+  markdown += `Virtual Users (VUs): ${__ENV['DEFAULT_VUS']} \n\n`;
 
   markdown += `${header}\n`;
   for (const scenario of Object.keys(scenarioMetrics).sort()) {
     try {
       const scenarioMetric = scenarioMetrics[scenario];
-      const passPercentage = (scenarioMetric["checks"].values.rate * 100.0).toFixed(2);
-      const httpReqs = scenarioMetric["http_reqs"].values.count;
-      const duration = scenarioMetric["scenario_duration"].values.value; // in ms
+      const passPercentage = (scenarioMetric['checks'].values.rate * 100.0).toFixed(2);
+      const httpReqs = scenarioMetric['http_reqs'].values.count;
+      const duration = scenarioMetric['scenario_duration'].values.value; // in ms
       const rps = (((httpReqs * 1.0) / duration) * 1000).toFixed(2);
       const passRps = ((rps * passPercentage) / 100.0).toFixed(2);
-      const httpReqDuration = scenarioMetric["http_req_duration"].values.avg.toFixed(2);
-      const httpP95Duration = scenarioMetric["http_req_duration"].values["p(95)"].toFixed(2);
-      const httpP90Duration = scenarioMetric["http_req_duration"].values["p(90)"].toFixed(2);
-      const httpMedDuration = scenarioMetric["http_req_duration"].values["med"].toFixed(2);
-      const httpMinDuration = scenarioMetric["http_req_duration"].values["min"].toFixed(2);
-      const httpMaxDuration = scenarioMetric["http_req_duration"].values["max"].toFixed(2);
+      const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
+      const httpP95Duration = scenarioMetric['http_req_duration'].values['p(95)'].toFixed(2);
+      const httpP90Duration = scenarioMetric['http_req_duration'].values['p(90)'].toFixed(2);
+      const httpMedDuration = scenarioMetric['http_req_duration'].values['med'].toFixed(2);
+      const httpMinDuration = scenarioMetric['http_req_duration'].values['min'].toFixed(2);
+      const httpMaxDuration = scenarioMetric['http_req_duration'].values['max'].toFixed(2);
 
       const firstColumn = isFirstColumnUrl ? scenarioUrls[scenario] : scenario;
       markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${httpReqs} | ${passPercentage} | ${rps} | ${passRps} | ${httpReqDuration} | ${httpMedDuration} | ${httpMinDuration} | ${httpMaxDuration} | ${httpP90Duration} | ${httpP95Duration} | |\n`;
@@ -284,7 +284,7 @@ function TestScenarioBuilder() {
         const response = that._request(testParameters, iteration, vuIndex, iterationByVu);
         check(response, that._checks);
         // if Load test, then we need to sleep for random time between 1 and 5 seconds
-        if (getTestType() === "load") {
+        if (getTestType() === 'load') {
           sleep(randomIntBetween(1, 5));
         }
       },

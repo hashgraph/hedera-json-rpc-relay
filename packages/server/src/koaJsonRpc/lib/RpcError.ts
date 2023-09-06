@@ -27,7 +27,7 @@ export class JsonRpcError extends Error {
     this.message = message;
     this.code = code;
 
-    if (typeof data !== "undefined") {
+    if (typeof data !== 'undefined') {
       this.data = data;
     }
   }
@@ -35,25 +35,25 @@ export class JsonRpcError extends Error {
 
 export class ParseError extends JsonRpcError {
   constructor() {
-    super("Parse error", -32700, undefined);
+    super('Parse error', -32700, undefined);
   }
 }
 
 export class InvalidRequest extends JsonRpcError {
   constructor() {
-    super("Invalid Request", -32600, undefined);
+    super('Invalid Request', -32600, undefined);
   }
 }
 
 export class MethodNotFound extends JsonRpcError {
   constructor() {
-    super("Method not found", -32601, undefined);
+    super('Method not found', -32601, undefined);
   }
 }
 
 export class InvalidParams extends JsonRpcError {
   constructor() {
-    super("Invalid params", -32602, undefined);
+    super('Invalid params', -32602, undefined);
   }
 }
 
@@ -63,7 +63,7 @@ export class InternalError extends JsonRpcError {
     if (err && err.message) {
       message = err.message;
     } else {
-      message = "Internal error";
+      message = 'Internal error';
     }
     super(message, -32603, undefined);
   }
@@ -71,16 +71,16 @@ export class InternalError extends JsonRpcError {
 
 export class Unauthorized extends JsonRpcError {
   constructor() {
-    super("Unauthorized", -32604, undefined);
+    super('Unauthorized', -32604, undefined);
   }
 }
 
 export class ServerError extends JsonRpcError {
   constructor(code) {
     if (code < -32099 || code > -32000) {
-      throw new Error("Invalid error code");
+      throw new Error('Invalid error code');
     }
-    super("Server error", code, undefined);
+    super('Server error', code, undefined);
   }
 }
 
@@ -92,6 +92,6 @@ export class IPRateLimitExceeded extends JsonRpcError {
 
 export class HBARRateLimitExceeded extends JsonRpcError {
   constructor() {
-    super("HBAR Rate limit exceeded", -32606, undefined);
+    super('HBAR Rate limit exceeded', -32606, undefined);
   }
 }

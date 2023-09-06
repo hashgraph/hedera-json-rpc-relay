@@ -18,11 +18,11 @@
  *
  */
 
-import { Logger } from "pino";
-import { Counter, Registry } from "prom-client";
-import { ICacheClient } from "../../clients/cache/ICacheClient";
-import { LocalLRUCache, RedisCache } from "../../clients";
-import { RedisCacheError } from "../../errors/RedisCacheError";
+import { Logger } from 'pino';
+import { Counter, Registry } from 'prom-client';
+import { ICacheClient } from '../../clients/cache/ICacheClient';
+import { LocalLRUCache, RedisCache } from '../../clients';
+import { RedisCacheError } from '../../errors/RedisCacheError';
 
 /**
  * A service that manages caching using different cache implementations based on configuration.
@@ -65,15 +65,15 @@ export class CacheService {
    */
 
   private static readonly cacheTypes = {
-    REDIS: "redis",
-    LRU: "lru",
+    REDIS: 'redis',
+    LRU: 'lru',
   };
 
   private static readonly methods = {
-    GET: "get",
-    GET_ASYNC: "getAsync",
-    SET: "set",
-    DELETE: "delete",
+    GET: 'get',
+    GET_ASYNC: 'getAsync',
+    SET: 'set',
+    DELETE: 'delete',
   };
 
   private readonly cacheMethodsCounter: Counter;
@@ -82,12 +82,12 @@ export class CacheService {
     this.logger = logger;
     this.register = register;
 
-    this.internalCache = new LocalLRUCache(logger.child({ name: "localLRUCache" }), register);
+    this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     this.sharedCache = this.internalCache;
     this.isSharedCacheEnabled = this.isRedisEnabled();
 
     if (this.isSharedCacheEnabled) {
-      this.sharedCache = new RedisCache(logger.child({ name: "redisCache" }), register);
+      this.sharedCache = new RedisCache(logger.child({ name: 'redisCache' }), register);
     }
 
     /**
@@ -96,13 +96,13 @@ export class CacheService {
      *  cacheType - redis/lru
      *  method - The CacheService method being called
      */
-    const metricName = "rpc_cache_service_methods_counter";
+    const metricName = 'rpc_cache_service_methods_counter';
     this.register.removeSingleMetric(metricName);
     this.cacheMethodsCounter = new Counter({
       name: metricName,
-      help: "Counter for calls to methods of CacheService separated by CallingMethod and CacheType",
+      help: 'Counter for calls to methods of CacheService separated by CallingMethod and CacheType',
       registers: [register],
-      labelNames: ["callingMethod", "cacheType", "method"],
+      labelNames: ['callingMethod', 'cacheType', 'method'],
     });
   }
 
@@ -112,8 +112,8 @@ export class CacheService {
    * @returns {boolean} Returns true if Redis caching is enabled, otherwise false.
    */
   private isRedisEnabled(): boolean {
-    const redisEnabled = process.env.REDIS_ENABLED && process.env.REDIS_ENABLED === "true";
-    const redisUrlValid = process.env.REDIS_URL && process.env.REDIS_URL !== "";
+    const redisEnabled = process.env.REDIS_ENABLED && process.env.REDIS_ENABLED === 'true';
+    const redisUrlValid = process.env.REDIS_URL && process.env.REDIS_URL !== '';
 
     if (redisEnabled && redisUrlValid) {
       return true;

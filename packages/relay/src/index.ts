@@ -18,16 +18,16 @@
  *
  */
 
-import { Block, Log, Receipt, Transaction } from "./lib/model";
-import { JsonRpcError, predefined } from "./lib/errors/JsonRpcError";
-import WebSocketError from "./lib/errors/WebSocketError";
-import { MirrorNodeClientError } from "./lib/errors/MirrorNodeClientError";
-import { MirrorNodeClient } from "./lib/clients";
-import { IFilterService } from "./lib/services/ethService/ethFilterService/IFilterService";
+import { Block, Log, Receipt, Transaction } from './lib/model';
+import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
+import WebSocketError from './lib/errors/WebSocketError';
+import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
+import { MirrorNodeClient } from './lib/clients';
+import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
 
 export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError };
 
-export { RelayImpl } from "./lib/relay";
+export { RelayImpl } from './lib/relay';
 
 export interface Relay {
   web3(): Web3;

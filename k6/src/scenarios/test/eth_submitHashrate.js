@@ -18,14 +18,14 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import { TestScenarioBuilder } from "../../lib/common.js";
-import { httpParams, getPayLoad, is400Status } from "./common.js";
+import { TestScenarioBuilder } from '../../lib/common.js';
+import { httpParams, getPayLoad, is400Status } from './common.js';
 
 const url = __ENV.RELAY_BASE_URL;
 
-const methodName = "eth_submitHashrate";
+const methodName = 'eth_submitHashrate';
 const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request(() => http.post(url, getPayLoad(methodName), httpParams))

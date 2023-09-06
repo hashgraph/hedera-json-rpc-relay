@@ -18,8 +18,8 @@
  *
  */
 
-import { Net } from "../index";
-import { Client } from "@hashgraph/sdk";
+import { Net } from '../index';
+import { Client } from '@hashgraph/sdk';
 
 export class NetImpl implements Net {
   private client: Client;

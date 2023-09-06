@@ -18,13 +18,13 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import { TestScenarioBuilder } from "../../lib/common.js";
-import { isNonErrorResponse, httpParams, getPayLoad } from "./common.js";
-import { setupTestParameters } from "./bootstrapEnvParameters.js";
+import { TestScenarioBuilder } from '../../lib/common.js';
+import { isNonErrorResponse, httpParams, getPayLoad } from './common.js';
+import { setupTestParameters } from './bootstrapEnvParameters.js';
 
-const methodName = "eth_getBlockByHash";
+const methodName = 'eth_getBlockByHash';
 const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request((testParameters) =>
@@ -35,7 +35,7 @@ const { options, run } = new TestScenarioBuilder()
     ),
   )
   .check(methodName, (r) => isNonErrorResponse(r))
-  .testDuration("3s")
+  .testDuration('3s')
   .maxDuration(2000)
   .build();
 

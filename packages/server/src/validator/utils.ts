@@ -1,9 +1,9 @@
-import { Validator } from ".";
-import { JsonRpcError, predefined } from "@hashgraph/json-rpc-relay";
+import { Validator } from '.';
+import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 
 export function validateParam(index: number | string, param: any, validation: any) {
   const isArray = Array.isArray(validation.type);
-  const containsOr = validation.type?.includes("|");
+  const containsOr = validation.type?.includes('|');
   const paramType = getParamType(isArray, containsOr, validation.type);
 
   if (paramType === undefined) {
@@ -42,7 +42,7 @@ function getParamType(isArray: boolean, containsOr: boolean, validationType: str
   if (isArray && !containsOr) {
     paramType = Validator.TYPES[validationType[0]];
   } else if (!isArray && containsOr) {
-    paramType = validationType.split("|");
+    paramType = validationType.split('|');
   } else {
     paramType = Validator.TYPES[validationType];
   }

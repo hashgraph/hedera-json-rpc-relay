@@ -18,8 +18,8 @@
  *
  */
 
-import { Logger } from "pino";
-import { Registry, Counter } from "prom-client";
+import { Logger } from 'pino';
+import { Registry, Counter } from 'prom-client';
 
 export default class HbarLimit {
   private enabled: boolean = false;
@@ -44,13 +44,13 @@ export default class HbarLimit {
     this.remainingBudget = this.total;
     this.reset = currentDateNow + this.duration;
 
-    const metricCounterName = "rpc_relay_hbar_rate_limit";
+    const metricCounterName = 'rpc_relay_hbar_rate_limit';
     register.removeSingleMetric(metricCounterName);
     this.hbarLimitCounter = new Counter({
       name: metricCounterName,
-      help: "Relay Hbar limit counter",
+      help: 'Relay Hbar limit counter',
       registers: [register],
-      labelNames: ["mode", "methodName"],
+      labelNames: ['mode', 'methodName'],
     });
   }
 

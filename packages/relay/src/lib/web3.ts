@@ -18,8 +18,8 @@
  *
  */
 
-import { Web3 } from "../index";
-import { Client } from "@hashgraph/sdk";
+import { Web3 } from '../index';
+import { Client } from '@hashgraph/sdk';
 
 export class Web3Impl implements Web3 {
   private client: Client;
@@ -29,6 +29,6 @@ export class Web3Impl implements Web3 {
   }
 
   clientVersion(): string {
-    return "relay/" + process.env.npm_package_version ?? "";
+    return 'relay/' + process.env.npm_package_version ?? '';
   }
 }

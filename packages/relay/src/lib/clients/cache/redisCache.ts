@@ -18,12 +18,12 @@
  *
  */
 
-import { createClient, RedisClientType } from "redis";
-import { Logger } from "pino";
-import { Registry } from "prom-client";
-import { ICacheClient } from "./ICacheClient";
-import { RedisCacheError } from "../../errors/RedisCacheError";
-import constants from "../../constants";
+import { createClient, RedisClientType } from 'redis';
+import { Logger } from 'pino';
+import { Registry } from 'prom-client';
+import { ICacheClient } from './ICacheClient';
+import { RedisCacheError } from '../../errors/RedisCacheError';
+import constants from '../../constants';
 
 /**
  * A class that provides caching functionality using Redis.
@@ -64,7 +64,7 @@ export class RedisCache implements ICacheClient {
     this.register = register;
 
     const redisUrl = process.env.REDIS_URL!;
-    const reconnectDelay = parseInt(process.env.REDIS_RECONNECT_DELAY_MS || "1000");
+    const reconnectDelay = parseInt(process.env.REDIS_RECONNECT_DELAY_MS || '1000');
 
     this.client = createClient({
       url: redisUrl,
@@ -78,11 +78,11 @@ export class RedisCache implements ICacheClient {
     });
     this.client.connect();
 
-    this.client.on("ready", function () {
+    this.client.on('ready', function () {
       logger.info(`Connected to Redis server (${redisUrl}) successfully!`);
     });
 
-    this.client.on("error", function (error) {
+    this.client.on('error', function (error) {
       const redisError = new RedisCacheError(error);
       if (redisError.isSocketClosed()) {
         logger.error(`Error occurred with Redis Connection when closing socket: ${redisError.message}`);

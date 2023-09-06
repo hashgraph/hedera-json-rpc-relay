@@ -19,23 +19,23 @@
  */
 
 // external resources
-import { expect } from "chai";
-import { ethers } from "ethers";
-import { AliasAccount } from "../clients/servicesClient";
-import Assertions from "../helpers/assertions";
-import { Utils } from "../helpers/utils";
-import { ContractFunctionParameters } from "@hashgraph/sdk";
+import { expect } from 'chai';
+import { ethers } from 'ethers';
+import { AliasAccount } from '../clients/servicesClient';
+import Assertions from '../helpers/assertions';
+import { Utils } from '../helpers/utils';
+import { ContractFunctionParameters } from '@hashgraph/sdk';
 
 // local resources
-import parentContractJson from "../contracts/Parent.json";
-import logsContractJson from "../contracts/Logs.json";
-import { predefined } from "../../../relay/src/lib/errors/JsonRpcError";
-import Constants from "../../../relay/src/lib/constants";
-import RelayCalls from "../../tests/helpers/constants";
+import parentContractJson from '../contracts/Parent.json';
+import logsContractJson from '../contracts/Logs.json';
+import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import Constants from '../../../relay/src/lib/constants';
+import RelayCalls from '../../tests/helpers/constants';
 const Address = RelayCalls;
-import { numberTo0x } from "../../../../packages/relay/src/formatters";
+import { numberTo0x } from '../../../../packages/relay/src/formatters';
 
-describe("@api-batch-1 RPC Server Acceptance Tests", function () {
+describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
   const accounts: AliasAccount[] = [];
@@ -52,12 +52,12 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const INCORRECT_CHAIN_ID = 999;
-  const GAS_PRICE_TOO_LOW = "0x1";
-  const GAS_PRICE_REF = "0x123456";
+  const GAS_PRICE_TOO_LOW = '0x1';
+  const GAS_PRICE_REF = '0x123456';
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(Constants.TINYBAR_TO_WEIBAR_COEF));
   const sendRawTransaction = relay.sendRawTransaction;
 
-  describe("RPC Server Acceptance Tests", function () {
+  describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
     this.beforeAll(async () => {
@@ -70,7 +70,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
 
       const params = new ContractFunctionParameters().addUint256(1);
       contractExecuteTimestamp = (
-        await accounts[0].client.executeContractCall(contractId, "createChild", params, 75000, requestId)
+        await accounts[0].client.executeContractCall(contractId, 'createChild', params, 75000, requestId)
       ).contractExecuteTimestamp;
 
       // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
@@ -90,43 +90,43 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
       requestId = Utils.generateRequestId();
     });
 
-    describe("eth_getLogs", () => {
+    describe('eth_getLogs', () => {
       let log0Block, log4Block, contractAddress, contractAddress2, latestBlock, tenBlocksBehindLatest;
 
       before(async () => {
         const logsContract = await servicesNode.deployContract(logsContractJson);
 
         const mirrorNodeResp = await mirrorNode.get(`/contracts/${logsContract.contractId}`, requestId);
-        expect(mirrorNodeResp).to.have.property("evm_address");
+        expect(mirrorNodeResp).to.have.property('evm_address');
         expect(mirrorNodeResp.env_address).to.not.be.null;
         contractAddress = mirrorNodeResp.evm_address;
 
         const logsContract2 = await servicesNode.deployContract(logsContractJson);
         const mirrorNodeResp2 = await mirrorNode.get(`/contracts/${logsContract2.contractId}`, requestId);
-        expect(mirrorNodeResp2).to.have.property("evm_address");
+        expect(mirrorNodeResp2).to.have.property('evm_address');
         expect(mirrorNodeResp2.env_address).to.not.be.null;
         contractAddress2 = mirrorNodeResp2.evm_address;
 
         const params = new ContractFunctionParameters().addUint256(1);
-        await accounts[1].client.executeContractCall(logsContract.contractId, "log0", params, 75000, requestId);
-        await accounts[1].client.executeContractCall(logsContract.contractId, "log1", params, 75000, requestId);
+        await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params, 75000, requestId);
+        await accounts[1].client.executeContractCall(logsContract.contractId, 'log1', params, 75000, requestId);
 
         params.addUint256(1);
-        await accounts[1].client.executeContractCall(logsContract.contractId, "log2", params, 75000, requestId);
+        await accounts[1].client.executeContractCall(logsContract.contractId, 'log2', params, 75000, requestId);
 
         params.addUint256(1);
-        await accounts[1].client.executeContractCall(logsContract.contractId, "log3", params, 75000, requestId);
+        await accounts[1].client.executeContractCall(logsContract.contractId, 'log3', params, 75000, requestId);
 
         params.addUint256(1);
-        await accounts[1].client.executeContractCall(logsContract.contractId, "log4", params, 75000, requestId);
-        await accounts[1].client.executeContractCall(logsContract2.contractId, "log4", params, 75000, requestId);
+        await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params, 75000, requestId);
+        await accounts[1].client.executeContractCall(logsContract2.contractId, 'log4', params, 75000, requestId);
 
         await new Promise((r) => setTimeout(r, 5000));
         latestBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
         tenBlocksBehindLatest = latestBlock - 10;
       });
 
-      it("@release should deploy a contract", async () => {
+      it('@release should deploy a contract', async () => {
         //empty params for get logs defaults to latest block, which doesn't have required logs, that's why we fetch the last 10
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -142,8 +142,8 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         expect(logs.length).to.be.greaterThan(0);
         const txIndexLogIndexMapping: any[] = [];
         for (const i in logs) {
-          expect(logs[i]).to.have.property("address");
-          expect(logs[i]).to.have.property("logIndex");
+          expect(logs[i]).to.have.property('address');
+          expect(logs[i]).to.have.property('logIndex');
 
           const key = `${logs[i].transactionHash}---${logs[i].logIndex}`;
           txIndexLogIndexMapping.push(key);
@@ -159,8 +159,8 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
           requestId,
         );
         expect(log0Block).to.exist;
-        expect(log0Block).to.have.property("blockNumber");
-        expect(log0Block.nonce).to.equal("0x0");
+        expect(log0Block).to.have.property('blockNumber');
+        expect(log0Block.nonce).to.equal('0x0');
 
         log4Block = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
@@ -168,11 +168,11 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
           requestId,
         );
         expect(log4Block).to.exist;
-        expect(log4Block).to.have.property("blockNumber");
-        expect(log4Block.nonce).to.equal("0x0");
+        expect(log4Block).to.have.property('blockNumber');
+        expect(log4Block.nonce).to.equal('0x0');
       });
 
-      it("should be able to use `fromBlock` param", async () => {
+      it('should be able to use `fromBlock` param', async () => {
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
@@ -191,7 +191,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         }
       });
 
-      it("should not be able to use `toBlock` without `fromBlock` param if `toBlock` is not latest", async () => {
+      it('should not be able to use `toBlock` without `fromBlock` param if `toBlock` is not latest', async () => {
         await relay.callFailing(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
@@ -204,7 +204,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         );
       });
 
-      it("should be able to use range of `fromBlock` and `toBlock` params", async () => {
+      it('should be able to use range of `fromBlock` and `toBlock` params', async () => {
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
@@ -226,7 +226,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         }
       });
 
-      it("should be able to use `address` param", async () => {
+      it('should be able to use `address` param', async () => {
         //when we pass only address, it defaults to the latest block
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -245,7 +245,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         }
       });
 
-      it("should be able to use `address` param with multiple addresses", async () => {
+      it('should be able to use `address` param with multiple addresses', async () => {
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
@@ -266,7 +266,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         expect(logs[5].address).to.equal(contractAddress2);
       });
 
-      it("should be able to use `blockHash` param", async () => {
+      it('should be able to use `blockHash` param', async () => {
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
@@ -284,7 +284,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         }
       });
 
-      it("should return empty result for  non-existing `blockHash`", async () => {
+      it('should return empty result for  non-existing `blockHash`', async () => {
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
@@ -299,7 +299,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         expect(logs.length).to.be.eq(0);
       });
 
-      it("should be able to use `topics` param", async () => {
+      it('should be able to use `topics` param', async () => {
         const logs = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS, [
           {
             fromBlock: log0Block.blockNumber,
@@ -330,10 +330,10 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         }
       });
 
-      it("should be able to return more than 2 logs with limit of 2 logs per request", async () => {
+      it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
         //for the purpose of the test, we are settings limit to 2, and fetching all.
         //setting mirror node limit to 2 for this test only
-        process.env["MIRROR_NODE_LIMIT_PARAM"] = "2";
+        process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
         // calculate blocks behind latest, so we can fetch logs from the past.
         // if current block is less than 10, we will fetch logs from the beginning otherwise we will fetch logs from 10 blocks behind latest
         const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
@@ -346,7 +346,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
           [
             {
               fromBlock: numberTo0x(blocksBehindLatest),
-              toBlock: "latest",
+              toBlock: 'latest',
               address: [contractAddress, contractAddress2],
             },
           ],
@@ -356,7 +356,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
       });
     });
 
-    describe("Block related RPC calls", () => {
+    describe('Block related RPC calls', () => {
       let mirrorBlock;
       let mirrorContractResults;
       const mirrorTransactions: any[] = [];
@@ -485,7 +485,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
       it('should execute "eth_getBlockTransactionCountByNumber"', async function () {
         it('@release should execute "eth_blockNumber"', async function () {
           const mirrorBlocks = await mirrorNode.get(`blocks`, requestId);
-          expect(mirrorBlocks).to.have.property("blocks");
+          expect(mirrorBlocks).to.have.property('blocks');
           expect(mirrorBlocks.blocks.length).to.gt(0);
           const mirrorBlockNumber = mirrorBlocks.blocks[0].number;
 
@@ -500,7 +500,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
       });
     });
 
-    describe("Transaction related RPC Calls", () => {
+    describe('Transaction related RPC Calls', () => {
       const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
       const defaultGasLimit = numberTo0x(3_000_000);
       const defaultLegacyTransactionData = {
@@ -667,7 +667,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         const error = predefined.INTERNAL_ERROR();
 
         await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [
-          signedTx + "11",
+          signedTx + '11',
           requestId,
         ]);
       });
@@ -695,7 +695,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
       });
 
       it('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
-        const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, "latest", requestId);
+        const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
         const transaction = {
           ...default155TransactionData,
           to: mirrorContract.evm_address,
@@ -708,7 +708,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-        const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, "latest", requestId);
+        const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
         const balanceChange = receiverEndBalance - receiverInitialBalance;
         expect(balanceChange.toString()).to.eq(Number(ONE_TINYBAR).toString());
       });
@@ -737,7 +737,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
           gasPrice: await relay.gasPrice(requestId),
         };
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
-        const error = predefined.UNSUPPORTED_CHAIN_ID("0x0", CHAIN_ID);
+        const error = predefined.UNSUPPORTED_CHAIN_ID('0x0', CHAIN_ID);
 
         await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
       });
@@ -767,7 +767,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
         const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         expect(info).to.exist;
-        expect(info.result).to.equal("SUCCESS");
+        expect(info.result).to.equal('SUCCESS');
       });
 
       it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with gas price too low)', async function () {
@@ -831,7 +831,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
       });
 
       it('should execute "eth_sendRawTransaction" for London transactions', async function () {
-        const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, "latest", requestId);
+        const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
         const gasPrice = await relay.gasPrice(requestId);
 
         const transaction = {
@@ -847,7 +847,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
-        const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, "latest", requestId);
+        const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
         const balanceChange = receiverEndBalance - receiverInitialBalance;
         expect(balanceChange.toString()).to.eq(Number(ONE_TINYBAR).toString());
       });
@@ -861,20 +861,20 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
           maxPriorityFeePerGas: gasPrice,
           maxFeePerGas: gasPrice,
           gasLimit: defaultGasLimit,
-          data: "0x" + "00".repeat(5121),
+          data: '0x' + '00'.repeat(5121),
         };
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
         const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
-        expect(info).to.have.property("contract_id");
+        expect(info).to.have.property('contract_id');
         expect(info.contract_id).to.not.be.null;
-        expect(info).to.have.property("created_contract_ids");
+        expect(info).to.have.property('created_contract_ids');
         expect(info.created_contract_ids.length).to.be.equal(1);
       });
 
       it('should execute "eth_sendRawTransaction" and deploy a contract with more than 2 HBAR transaction fee and less than max transaction fee', async function () {
-        const balanceBefore = await relay.getBalance(accounts[2].wallet.address, "latest", requestId);
+        const balanceBefore = await relay.getBalance(accounts[2].wallet.address, 'latest', requestId);
 
         const gasPrice = await relay.gasPrice(requestId);
         const transaction = {
@@ -884,16 +884,16 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
           maxPriorityFeePerGas: gasPrice,
           maxFeePerGas: gasPrice,
           gasLimit: Constants.BLOCK_GAS_LIMIT,
-          data: "0x" + "00".repeat(40000),
+          data: '0x' + '00'.repeat(40000),
         };
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
         const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
-        const balanceAfter = await relay.getBalance(accounts[2].wallet.address, "latest", requestId);
-        expect(info).to.have.property("contract_id");
+        const balanceAfter = await relay.getBalance(accounts[2].wallet.address, 'latest', requestId);
+        expect(info).to.have.property('contract_id');
         expect(info.contract_id).to.not.be.null;
-        expect(info).to.have.property("created_contract_ids");
+        expect(info).to.have.property('created_contract_ids');
         expect(info.created_contract_ids.length).to.be.equal(1);
         const diffInHbars =
           BigInt(balanceBefore - balanceAfter) / BigInt(Constants.TINYBAR_TO_WEIBAR_COEF) / BigInt(100_000_000);
@@ -912,7 +912,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
           maxPriorityFeePerGas: gasPrice,
           maxFeePerGas: gasPrice,
           gasLimit: Constants.BLOCK_GAS_LIMIT,
-          data: "0x" + "00".repeat(60000),
+          data: '0x' + '00'.repeat(60000),
         };
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const error = predefined.INTERNAL_ERROR();
@@ -920,7 +920,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
         await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
       });
 
-      describe("Prechecks", async function () {
+      describe('Prechecks', async function () {
         it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
           const transaction = {
             ...default155TransactionData,
@@ -929,7 +929,7 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
             chainId: INCORRECT_CHAIN_ID,
           };
           const signedTx = await accounts[2].wallet.signTransaction(transaction);
-          const error = predefined.UNSUPPORTED_CHAIN_ID("0x3e7", CHAIN_ID);
+          const error = predefined.UNSUPPORTED_CHAIN_ID('0x3e7', CHAIN_ID);
 
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
         });
@@ -1059,13 +1059,13 @@ describe("@api-batch-1 RPC Server Acceptance Tests", function () {
               relay.sendRawTransaction(signedTx1, requestId),
               relay.sendRawTransaction(signedTx1, requestId),
             ]).then((values) => {
-              const fulfilled = values.find((obj) => obj.status === "fulfilled");
-              const rejected = values.find((obj) => obj.status === "rejected");
+              const fulfilled = values.find((obj) => obj.status === 'fulfilled');
+              const rejected = values.find((obj) => obj.status === 'rejected');
 
               expect(fulfilled).to.exist;
-              expect(fulfilled).to.have.property("value");
+              expect(fulfilled).to.have.property('value');
               expect(rejected).to.exist;
-              expect(rejected).to.have.property("reason");
+              expect(rejected).to.have.property('reason');
 
               Assertions.jsonRpcError(
                 rejected?.reason?.response?.bodyJson?.error,

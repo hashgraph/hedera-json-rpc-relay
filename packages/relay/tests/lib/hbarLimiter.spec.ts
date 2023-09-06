@@ -18,15 +18,15 @@
  *
  */
 
-import { expect } from "chai";
-import pino from "pino";
-import HbarLimit from "../../src/lib/hbarlimiter";
-import { Registry } from "prom-client";
+import { expect } from 'chai';
+import pino from 'pino';
+import HbarLimit from '../../src/lib/hbarlimiter';
+import { Registry } from 'prom-client';
 
 const registry = new Registry();
 const logger = pino();
 
-describe("HBAR Rate Limiter", async function () {
+describe('HBAR Rate Limiter', async function () {
   this.timeout(20000);
   let rateLimiter: HbarLimit;
   let currentDateNow: number;
@@ -39,13 +39,13 @@ describe("HBAR Rate Limiter", async function () {
     currentDateNow = Date.now();
   });
 
-  it("should be disabled, if we pass invalid total", async function () {
+  it('should be disabled, if we pass invalid total', async function () {
     rateLimiter = new HbarLimit(logger, currentDateNow, invalidTotal, validDuration, registry);
 
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();
     const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, "QUERY", "eth_call");
+    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call');
     rateLimiter.addExpense(validTotal, currentDateNow);
 
     expect(isEnabled).to.equal(false);
@@ -54,13 +54,13 @@ describe("HBAR Rate Limiter", async function () {
     expect(limiterRemainingBudget).to.equal(0);
   });
 
-  it("should be disabled, if we pass invalid duration", async function () {
+  it('should be disabled, if we pass invalid duration', async function () {
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, invalidDuration, registry);
 
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();
     const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, "QUERY", "eth_call");
+    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call');
     rateLimiter.addExpense(validTotal, currentDateNow);
 
     expect(isEnabled).to.equal(false);
@@ -69,13 +69,13 @@ describe("HBAR Rate Limiter", async function () {
     expect(limiterRemainingBudget).to.equal(0);
   });
 
-  it("should be disabled, if we pass both invalid duration and total", async function () {
+  it('should be disabled, if we pass both invalid duration and total', async function () {
     rateLimiter = new HbarLimit(logger, currentDateNow, invalidTotal, invalidDuration, registry);
 
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();
     const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, "QUERY", "eth_call");
+    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call');
     rateLimiter.addExpense(validTotal, currentDateNow);
 
     expect(isEnabled).to.equal(false);
@@ -84,13 +84,13 @@ describe("HBAR Rate Limiter", async function () {
     expect(limiterRemainingBudget).to.equal(0);
   });
 
-  it("should be enabled, if we pass valid duration and total", async function () {
+  it('should be enabled, if we pass valid duration and total', async function () {
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
 
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();
     const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, "QUERY", "eth_call");
+    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call');
 
     expect(isEnabled).to.equal(true);
     expect(shouldRateLimit).to.equal(false);
@@ -98,7 +98,7 @@ describe("HBAR Rate Limiter", async function () {
     expect(limiterRemainingBudget).to.equal(validTotal);
   });
 
-  it("should not rate limit", async function () {
+  it('should not rate limit', async function () {
     const cost = 10000000;
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
     rateLimiter.addExpense(cost, currentDateNow);
@@ -106,7 +106,7 @@ describe("HBAR Rate Limiter", async function () {
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();
     const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, "TRANSACTION", "eth_sendRawTransaction");
+    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'TRANSACTION', 'eth_sendRawTransaction');
 
     expect(isEnabled).to.equal(true);
     expect(shouldRateLimit).to.equal(false);
@@ -114,7 +114,7 @@ describe("HBAR Rate Limiter", async function () {
     expect(limiterRemainingBudget).to.equal(validTotal - cost);
   });
 
-  it("should rate limit", async function () {
+  it('should rate limit', async function () {
     const cost = 1000000000;
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
     rateLimiter.addExpense(cost, currentDateNow);
@@ -122,7 +122,7 @@ describe("HBAR Rate Limiter", async function () {
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();
     const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, "TRANSACTION", "eth_sendRawTransaction");
+    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'TRANSACTION', 'eth_sendRawTransaction');
 
     expect(isEnabled).to.equal(true);
     expect(shouldRateLimit).to.equal(true);
@@ -130,14 +130,14 @@ describe("HBAR Rate Limiter", async function () {
     expect(limiterRemainingBudget).to.equal(validTotal - cost);
   });
 
-  it("should reset budget, while checking if we should rate limit", async function () {
+  it('should reset budget, while checking if we should rate limit', async function () {
     const cost = 1000000000;
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
     rateLimiter.addExpense(cost, currentDateNow);
 
     const isEnabled = rateLimiter.isEnabled();
     const futureDate = currentDateNow + validDuration * 2;
-    const shouldRateLimit = rateLimiter.shouldLimit(futureDate, "TRANSACTION", "eth_sendRawTransaction");
+    const shouldRateLimit = rateLimiter.shouldLimit(futureDate, 'TRANSACTION', 'eth_sendRawTransaction');
     const limiterResetTime = rateLimiter.getResetTime();
     const limiterRemainingBudget = rateLimiter.getRemainingBudget();
 
@@ -147,16 +147,16 @@ describe("HBAR Rate Limiter", async function () {
     expect(limiterRemainingBudget).to.equal(validTotal);
   });
 
-  it("should reset budget, while adding expense", async function () {
+  it('should reset budget, while adding expense', async function () {
     const cost = 1000000000;
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
 
     rateLimiter.addExpense(cost, currentDateNow);
-    const shouldRateLimitBefore = rateLimiter.shouldLimit(currentDateNow, "TRANSACTION", "eth_sendRawTransaction");
+    const shouldRateLimitBefore = rateLimiter.shouldLimit(currentDateNow, 'TRANSACTION', 'eth_sendRawTransaction');
 
     const futureDate = currentDateNow + validDuration * 2;
     rateLimiter.addExpense(100, futureDate);
-    const shouldRateLimitAfter = rateLimiter.shouldLimit(futureDate, "TRANSACTION", "eth_sendRawTransaction");
+    const shouldRateLimitAfter = rateLimiter.shouldLimit(futureDate, 'TRANSACTION', 'eth_sendRawTransaction');
 
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();

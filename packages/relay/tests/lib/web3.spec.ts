@@ -18,23 +18,23 @@
  *
  */
 
-import path from "path";
-import dotenv from "dotenv";
-import { expect } from "chai";
-import { Registry } from "prom-client";
-import { RelayImpl } from "../../src/lib/relay";
+import path from 'path';
+import dotenv from 'dotenv';
+import { expect } from 'chai';
+import { Registry } from 'prom-client';
+import { RelayImpl } from '../../src/lib/relay';
 
-dotenv.config({ path: path.resolve(__dirname, "../test.env") });
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
-import pino from "pino";
+import pino from 'pino';
 const logger = pino();
 
 const Relay = new RelayImpl(logger, new Registry());
 
-describe("Web3", async function () {
+describe('Web3', async function () {
   it('should execute "web3_clientVersion"', async function () {
     const clientVersion = await Relay.web3().clientVersion();
 
-    expect(clientVersion).to.be.equal("relay/" + process.env.npm_package_version);
+    expect(clientVersion).to.be.equal('relay/' + process.env.npm_package_version);
   });
 });

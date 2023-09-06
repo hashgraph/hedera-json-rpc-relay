@@ -18,19 +18,19 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import { TestScenarioBuilder } from "../../lib/common.js";
-import { httpParams, getPayLoad, isNonErrorResponse } from "./common.js";
-import { setupTestParameters } from "./bootstrapEnvParameters.js";
+import { TestScenarioBuilder } from '../../lib/common.js';
+import { httpParams, getPayLoad, isNonErrorResponse } from './common.js';
+import { setupTestParameters } from './bootstrapEnvParameters.js';
 
-const methodName = "eth_getStorageAt";
+const methodName = 'eth_getStorageAt';
 const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request((testParameters) => {
     return http.post(
       testParameters.RELAY_BASE_URL,
-      getPayLoad(methodName, [testParameters.contractAddress, "0x0", "latest"]),
+      getPayLoad(methodName, [testParameters.contractAddress, '0x0', 'latest']),
       httpParams,
     );
   })

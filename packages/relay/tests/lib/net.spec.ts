@@ -18,16 +18,16 @@
  *
  */
 
-import { expect } from "chai";
-import { Registry } from "prom-client";
-import { RelayImpl } from "../../src/lib/relay";
+import { expect } from 'chai';
+import { Registry } from 'prom-client';
+import { RelayImpl } from '../../src/lib/relay';
 
-import pino from "pino";
+import pino from 'pino';
 const logger = pino();
 
 const Relay = new RelayImpl(logger, new Registry());
 
-describe("Net", async function () {
+describe('Net', async function () {
   it('should execute "net_listening"', async function () {
     const result = await Relay.net().listening();
     expect(result).to.eq(false);

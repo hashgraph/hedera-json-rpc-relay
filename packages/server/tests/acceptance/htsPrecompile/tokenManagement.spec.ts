@@ -19,19 +19,19 @@
  */
 
 // external resources
-import { solidity } from "ethereum-waffle";
-import chai, { expect } from "chai";
-import Constants from "../../helpers/constants";
+import { solidity } from 'ethereum-waffle';
+import chai, { expect } from 'chai';
+import Constants from '../../helpers/constants';
 
 chai.use(solidity);
 
-import { AliasAccount } from "../../clients/servicesClient";
-import Assertions from "../../helpers/assertions";
-import { ethers } from "ethers";
-import ERC20MockJson from "../../contracts/ERC20Mock.json";
-import TokenManagementJson from "../../contracts/TokenManagementContract.json";
-import { Utils } from "../../helpers/utils";
-import relayConstants from "@hashgraph/json-rpc-relay/dist/lib/constants";
+import { AliasAccount } from '../../clients/servicesClient';
+import Assertions from '../../helpers/assertions';
+import { ethers } from 'ethers';
+import ERC20MockJson from '../../contracts/ERC20Mock.json';
+import TokenManagementJson from '../../contracts/TokenManagementContract.json';
+import { Utils } from '../../helpers/utils';
+import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 /**
  * Tests for:
@@ -50,7 +50,7 @@ import relayConstants from "@hashgraph/json-rpc-relay/dist/lib/constants";
  * unpauseToken
  * updateTokenExpiryInfo
  */
-describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", async function () {
+describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, mirrorNode, relay }: any = global;
 
@@ -156,7 +156,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
   async function createHTSToken() {
     const mainContract = new ethers.Contract(mainContractAddress, TokenManagementJson.abi, accounts[0].wallet);
     const tx = await mainContract.createFungibleTokenPublic(accounts[0].wallet.address, {
-      value: BigInt("10000000000000000000"),
+      value: BigInt('10000000000000000000'),
       gasLimit: 10000000,
     });
     const { tokenAddress } = (await tx.wait()).logs.filter(
@@ -169,7 +169,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
   async function createNftHTSToken() {
     const mainContract = new ethers.Contract(mainContractAddress, TokenManagementJson.abi, accounts[0].wallet);
     const tx = await mainContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
-      value: BigInt("10000000000000000000"),
+      value: BigInt('10000000000000000000'),
       gasLimit: 10000000,
     });
     const { tokenAddress } = (await tx.wait()).logs.filter(
@@ -179,7 +179,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
     return tokenAddress;
   }
 
-  describe("HTS Precompile Wipe Tests", async function () {
+  describe('HTS Precompile Wipe Tests', async function () {
     let tokenAddress, tokenContract, nftAddress;
 
     before(async function () {
@@ -264,7 +264,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       await tx.wait();
     });
 
-    it("should revert if attempting to wipe more tokens than the owned amount", async function () {
+    it('should revert if attempting to wipe more tokens than the owned amount', async function () {
       const wipeAmount = 100;
       const balanceBefore = await tokenContract.balanceOf(accounts[1].wallet.address);
 
@@ -280,7 +280,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(balanceBefore.toString()).to.eq(balanceAfter.toString());
     });
 
-    it("should be able to execute wipeTokenAccount", async function () {
+    it('should be able to execute wipeTokenAccount', async function () {
       const wipeAmount = 3;
       const balanceBefore = await tokenContract.balanceOf(accounts[1].wallet.address);
 
@@ -300,12 +300,12 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(Number(balanceAfter.toString()) + wipeAmount).to.equal(Number(balanceBefore.toString()));
     });
 
-    it("should be able to execute wipeTokenAccountNFT", async function () {
+    it('should be able to execute wipeTokenAccountNFT', async function () {
       let NftSerialNumber, serials;
 
       // Mint an NFT
       {
-        const tx = await mainContract.mintTokenPublic(nftAddress, 0, ["0x02"], Constants.GAS.LIMIT_1_000_000);
+        const tx = await mainContract.mintTokenPublic(nftAddress, 0, ['0x02'], Constants.GAS.LIMIT_1_000_000);
         const { responseCode } = (await tx.wait()).logs.filter(
           (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode,
         )[0].args;
@@ -375,8 +375,8 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
     });
   });
 
-  describe("HTS Precompile for token check methods", async function () {
-    it("should return false for isToken with passed contract address", async function () {
+  describe('HTS Precompile for token check methods', async function () {
+    it('should return false for isToken with passed contract address', async function () {
       const tx = await mainContract.isTokenPublic(mainContractAddress, Constants.GAS.LIMIT_50_000);
       const txReceipt = await tx.wait();
 
@@ -390,7 +390,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(isTokenFlag).to.equal(false);
     });
 
-    it("should return true for isToken with passed token address", async function () {
+    it('should return true for isToken with passed token address', async function () {
       const tx = await mainContract.isTokenPublic(HTSTokenContractAddress, Constants.GAS.LIMIT_50_000);
       const txReceipt = await tx.wait();
 
@@ -404,7 +404,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(isTokenFlag).to.equal(true);
     });
 
-    it("should return 0 for getTokenType with passed FUNGIBLE_COMMON token", async function () {
+    it('should return 0 for getTokenType with passed FUNGIBLE_COMMON token', async function () {
       const tx = await mainContract.getTokenTypePublic(HTSTokenContractAddress, Constants.GAS.LIMIT_50_000);
       const txReceipt = await tx.wait();
 
@@ -418,7 +418,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(tokenType).to.equal(BigInt(0));
     });
 
-    it("should return 1 for getTokenType with passed HTS NON_FUNGIBLE_UNIQUE token", async function () {
+    it('should return 1 for getTokenType with passed HTS NON_FUNGIBLE_UNIQUE token', async function () {
       const tx = await mainContract.getTokenTypePublic(NftHTSTokenContractAddress, Constants.GAS.LIMIT_50_000);
       const txReceipt = await tx.wait();
 
@@ -432,7 +432,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(tokenType).to.equal(BigInt(1));
     });
 
-    it("should throw an exception for getTokenType with passed contract address", async function () {
+    it('should throw an exception for getTokenType with passed contract address', async function () {
       await Assertions.expectRevert(
         mainContract.getTokenTypePublic(mainContractAddress, Constants.GAS.LIMIT_50_000),
         Constants.CALL_EXCEPTION,
@@ -440,10 +440,10 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
     });
   });
 
-  describe("HTS update token info test", async function () {
-    const TOKEN_UPDATE_NAME = "tokenUpdateName";
-    const TOKEN_UPDATE_SYMBOL = "tokenUpdateSymbol";
-    const TOKEN_UPDATE_MEMO = "tokenUpdateMemo";
+  describe('HTS update token info test', async function () {
+    const TOKEN_UPDATE_NAME = 'tokenUpdateName';
+    const TOKEN_UPDATE_SYMBOL = 'tokenUpdateSymbol';
+    const TOKEN_UPDATE_MEMO = 'tokenUpdateMemo';
 
     function setUpdatedValues(token) {
       token[0] = TOKEN_UPDATE_NAME;
@@ -466,7 +466,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       return accountEvmAddress.evm_address;
     }
 
-    it("should update fungible token properties", async function () {
+    it('should update fungible token properties', async function () {
       const txBeforeInfo = await mainContract.getTokenInfoPublic(
         HTSTokenContractAddress,
         Constants.GAS.LIMIT_1_000_000,
@@ -499,7 +499,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       await checkUpdatedTokenInfo(tokenInfoAfter);
     });
 
-    it("should update non-fungible token properties", async function () {
+    it('should update non-fungible token properties', async function () {
       const txBeforeInfo = await mainContract.getTokenInfoPublic(
         NftHTSTokenContractAddress,
         Constants.GAS.LIMIT_1_000_000,
@@ -535,7 +535,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
     });
   });
 
-  describe("HTS Precompile Freeze/Unfreeze Tests", async function () {
+  describe('HTS Precompile Freeze/Unfreeze Tests', async function () {
     async function checkTokenFrozen(contractOwner, tokenAddress, expectedValue: boolean) {
       const txBefore = await contractOwner.isFrozenPublic(
         tokenAddress,
@@ -569,7 +569,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(defaultTokenFreezeStatus).to.equal(expectedValue);
     }
 
-    it("should be able to freeze and unfreeze fungible token transfers", async function () {
+    it('should be able to freeze and unfreeze fungible token transfers', async function () {
       // expect the token to not be frozen
       await checkTokenFrozen(mainContractOwner, HTSTokenContractAddress, false);
 
@@ -605,7 +605,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       await checkTokenFrozen(mainContractOwner, HTSTokenContractAddress, false);
     });
 
-    it("should be able to freeze and unfreeze non-fungible token transfers", async function () {
+    it('should be able to freeze and unfreeze non-fungible token transfers', async function () {
       // expect the token to not be frozen
       await checkTokenFrozen(mainContractOwner, NftHTSTokenContractAddress, false);
 
@@ -641,7 +641,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       await checkTokenFrozen(mainContractOwner, NftHTSTokenContractAddress, false);
     });
 
-    it("should create fungible token with default freeze status true", async function () {
+    it('should create fungible token with default freeze status true', async function () {
       // change default freeze status
       const txSetDefaultFreezeStatus = await mainContractOwner.setFreezeDefaultStatus(
         true,
@@ -655,7 +655,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
 
       // create token with new default freeze status
       const tx = await mainContractOwner.createFungibleTokenPublic(accounts[0].wallet.address, {
-        value: BigInt("10000000000000000000"),
+        value: BigInt('10000000000000000000'),
         gasLimit: 10000000,
       });
 
@@ -667,7 +667,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       await checkTokenDefaultFreezeStatus(mainContractOwner, tokenAddress, newDefaultFreezeStatus);
     });
 
-    it("should create non fungible token with default freeze status true", async function () {
+    it('should create non fungible token with default freeze status true', async function () {
       // change default freeze status
       const txSetDefaultFreezeStatus = await mainContractOwner.setFreezeDefaultStatus(
         true,
@@ -681,7 +681,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
 
       // create non fungible token with new default freeze status
       const tx = await mainContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
-        value: BigInt("10000000000000000000"),
+        value: BigInt('10000000000000000000'),
         gasLimit: 10000000,
       });
       const { tokenAddress } = (await tx.wait()).logs.filter(
@@ -693,8 +693,8 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
     });
   });
 
-  describe("HTS Precompile Pause/Unpause Tests", async function () {
-    it("should be able to pause fungible token", async () => {
+  describe('HTS Precompile Pause/Unpause Tests', async function () {
+    it('should be able to pause fungible token', async () => {
       const txTokenInfoBefore = await mainContract.getTokenInfoPublic(HTSTokenContractAddress);
       const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.TokenInfo,
@@ -715,7 +715,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(pauseStatusAfter).to.equal(true);
     });
 
-    it("should be able to unpause fungible token", async () => {
+    it('should be able to unpause fungible token', async () => {
       const txTokenInfoBefore = await mainContract.getTokenInfoPublic(HTSTokenContractAddress);
       const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.TokenInfo,
@@ -736,7 +736,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(pauseStatusAfter).to.equal(false);
     });
 
-    it("should be able to pause non fungible token", async () => {
+    it('should be able to pause non fungible token', async () => {
       const txTokenInfoBefore = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress);
       const { pauseStatus: pauseStatusBefore } = (await txTokenInfoBefore.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.TokenInfo,
@@ -757,7 +757,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(pauseStatusAfter).to.equal(true);
     });
 
-    it("should be able to unpause non fungible token", async () => {
+    it('should be able to unpause non fungible token', async () => {
       const mainContract = new ethers.Contract(mainContractAddress, TokenManagementJson.abi, accounts[0].wallet);
 
       const txTokenInfoBefore = await mainContract.getTokenInfoPublic(NftHTSTokenContractAddress);
@@ -781,7 +781,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
     });
   });
 
-  describe("HTS Precompile Token Expiry Info Tests", async function () {
+  describe('HTS Precompile Token Expiry Info Tests', async function () {
     const AUTO_RENEW_PERIOD = BigInt(8000000);
     const NEW_AUTO_RENEW_PERIOD = 7999900;
     const AUTO_RENEW_SECOND = 0;
@@ -793,7 +793,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       return accountEvmAddress.evm_address;
     }
 
-    it("should be able to get and update fungible token expiry info", async function () {
+    it('should be able to get and update fungible token expiry info', async function () {
       //get current epoch + auto renew period , which result to expiry info second
       const epoch = parseInt((Date.now() / 1000 + Number(NEW_AUTO_RENEW_PERIOD)).toFixed(0));
 
@@ -848,7 +848,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(Number(tokenExpiryInfoAfter.second)).to.be.closeTo(epoch, 400);
     });
 
-    it("should be able to get and update non fungible token expiry info", async function () {
+    it('should be able to get and update non fungible token expiry info', async function () {
       //get current epoch + auto renew period , which result to expiry info second
       const epoch = parseInt((Date.now() / 1000 + NEW_AUTO_RENEW_PERIOD).toFixed(0));
       // get current expiry info
@@ -906,8 +906,8 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
     });
   });
 
-  describe("HTS Precompile Key management Tests", async function () {
-    it("should be able to execute updateTokenKeys", async function () {
+  describe('HTS Precompile Key management Tests', async function () {
+    it('should be able to execute updateTokenKeys', async function () {
       // Get key value before update
       const getKeyTx = await mainContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
       const originalKey = (await getKeyTx.wait()).logs.filter(
@@ -916,8 +916,8 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       const updateKey = [
         false,
         Constants.ZERO_HEX,
-        "0x",
-        "0x03dfcc94dfd843649cc594ada5ac6627031454602aa190223f996de25a05828f36",
+        '0x',
+        '0x03dfcc94dfd843649cc594ada5ac6627031454602aa190223f996de25a05828f36',
         Constants.ZERO_HEX,
       ];
 
@@ -947,7 +947,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(updatedKey.ECDSA_secp256k1).to.not.eq(originalKey.ECDSA_secp256k1);
     });
 
-    it("should be able to execute getTokenKey", async function () {
+    it('should be able to execute getTokenKey', async function () {
       const tx = await mainContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
       const result = await tx.wait();
       const { responseCode } = result.logs.filter(
@@ -959,7 +959,7 @@ describe("@tokenmanagement HTS Precompile Token Management Acceptance Tests", as
       expect(key).to.exist;
       expect(key.inheritAccountKey).to.eq(false);
       expect(key.contractId).to.eq(Constants.ZERO_HEX);
-      expect(key.ed25519).to.eq("0x");
+      expect(key.ed25519).to.eq('0x');
       expect(key.ECDSA_secp256k1).to.exist;
       expect(key.delegatableContractId).to.eq(Constants.ZERO_HEX);
     });

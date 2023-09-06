@@ -19,19 +19,19 @@
  */
 
 // external resources
-import { solidity } from "ethereum-waffle";
-import chai, { expect } from "chai";
+import { solidity } from 'ethereum-waffle';
+import chai, { expect } from 'chai';
 //Constants are imported with different definitions for better readability in the code.
-import Constants from "../../tests/helpers/constants";
+import Constants from '../../tests/helpers/constants';
 
 chai.use(solidity);
 
-import { AliasAccount } from "../clients/servicesClient";
-import { ethers } from "ethers";
-import BaseHTSJson from "../contracts/contracts_v1/BaseHTS.json";
-import { Utils } from "../helpers/utils";
+import { AliasAccount } from '../clients/servicesClient';
+import { ethers } from 'ethers';
+import BaseHTSJson from '../contracts/contracts_v1/BaseHTS.json';
+import { Utils } from '../helpers/utils';
 
-describe("@htsprecompilev1 HTS Precompile V1 Acceptance Tests", async function () {
+describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, relay, mirrorNode }: any = global;
 
@@ -99,7 +99,7 @@ describe("@htsprecompilev1 HTS Precompile V1 Acceptance Tests", async function (
   async function createHTSToken() {
     const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
     const tx = await baseHTSContract.createFungibleTokenPublic(accounts[0].wallet.address, {
-      value: BigInt("10000000000000000000"),
+      value: BigInt('10000000000000000000'),
       gasLimit: 1_000_000,
     });
     const { tokenAddress } = (await tx.wait()).logs.filter(
@@ -112,7 +112,7 @@ describe("@htsprecompilev1 HTS Precompile V1 Acceptance Tests", async function (
   async function createNftHTSToken() {
     const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);
     const tx = await baseHTSContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
-      value: BigInt("10000000000000000000"),
+      value: BigInt('10000000000000000000'),
       gasLimit: 1_000_000,
     });
     const { tokenAddress } = (await tx.wait()).logs.filter(
@@ -128,7 +128,7 @@ describe("@htsprecompilev1 HTS Precompile V1 Acceptance Tests", async function (
       accounts[0].wallet.address,
       HTSTokenContractAddress,
       {
-        value: BigInt("20000000000000000000"),
+        value: BigInt('20000000000000000000'),
         gasLimit: 1_000_000,
       },
     );
@@ -140,7 +140,7 @@ describe("@htsprecompilev1 HTS Precompile V1 Acceptance Tests", async function (
     return tokenAddress;
   }
 
-  it("should create associate to a fungible token", async function () {
+  it('should create associate to a fungible token', async function () {
     HTSTokenContractAddress = await createHTSToken();
 
     const txCO = await baseHTSContractOwner.associateTokenPublic(
@@ -174,7 +174,7 @@ describe("@htsprecompilev1 HTS Precompile V1 Acceptance Tests", async function (
     ).to.equal(TX_SUCCESS_CODE);
   });
 
-  it("should create and associate to an nft", async function () {
+  it('should create and associate to an nft', async function () {
     NftHTSTokenContractAddress = await createNftHTSToken();
 
     const txCO = await baseHTSContractOwner.associateTokenPublic(
@@ -208,7 +208,7 @@ describe("@htsprecompilev1 HTS Precompile V1 Acceptance Tests", async function (
     ).to.equal(TX_SUCCESS_CODE);
   });
 
-  it("should create and associate to a fungible token with custom fees", async function () {
+  it('should create and associate to a fungible token with custom fees', async function () {
     HTSTokenWithCustomFeesContractAddress = await createHTSTokenWithCustomFees();
 
     const baseHTSContractOwner = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);

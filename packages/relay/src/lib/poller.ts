@@ -18,9 +18,9 @@
  *
  */
 
-import { Eth } from "../index";
-import { Logger } from "pino";
-import { Registry, Gauge } from "prom-client";
+import { Eth } from '../index';
+import { Logger } from 'pino';
+import { Registry, Gauge } from 'prom-client';
 
 export interface Poll {
   tag: string;
@@ -28,7 +28,7 @@ export interface Poll {
   lastPolled?: string;
 }
 
-const LOGGER_PREFIX = "Poller:";
+const LOGGER_PREFIX = 'Poller:';
 
 export class Poller {
   private eth: Eth;
@@ -45,11 +45,11 @@ export class Poller {
     this.polls = [];
     this.pollingInterval = Number(process.env.WS_POLLING_INTERVAL) || 500;
 
-    const activePollsGaugeName = "rpc_websocket_active_polls";
+    const activePollsGaugeName = 'rpc_websocket_active_polls';
     register.removeSingleMetric(activePollsGaugeName);
     this.activePollsGauge = new Gauge({
       name: activePollsGaugeName,
-      help: "Relay websocket active polls count",
+      help: 'Relay websocket active polls count',
       registers: [register],
     });
   }
@@ -62,11 +62,11 @@ export class Poller {
         const { event, filters } = JSON.parse(poll.tag);
         let data;
 
-        if (event === "logs") {
+        if (event === 'logs') {
           data = await this.eth.getLogs(
             null,
-            poll.lastPolled || this.latestBlock || "latest",
-            "latest",
+            poll.lastPolled || this.latestBlock || 'latest',
+            'latest',
             filters?.address || null,
             filters?.topics || null,
           );

@@ -18,5 +18,5 @@
  *
  */
 
-export * from "./ethCommonService";
-export * from "./ethFilterService";
+export * from './ethCommonService';
+export * from './ethFilterService';

@@ -3,13 +3,16 @@
 Simple implementation of React + Metamask + Hedera Hashgraph
 
 ## Prerequisite
+
 You must have running:
+
 - JSON-RPC Relay on port :7546
 - Hedera Local Node
 
 ## Configuration
 
 Create `.env` file based on `.env.example`
+
 ```
 # example local setup
 HEDERA_NETWORK={"127.0.0.1:50211":"0.0.3"}
@@ -23,12 +26,14 @@ In the project directory:
 
 1. Run `npm install`
 2. Run `npm run bootstrap` - only once to setup accounts, tokens etc.
-2. Run `npm run start`
+3. Run `npm run start`
 
 Dapp should be available at [http://localhost:3000](http://localhost:3000)
 
 ## Integration Tests
+
 1. Add additional settings to `.env` file - the settings are used by cypress to add new network and accounts to the Metamask(only in the **testing** environment, **NOT** in your real Metamask).
+
 ```
 # example local setup
 NETWORK_NAME='Hedera Local'         # name of the network to be added in metamask
@@ -39,10 +44,12 @@ IS_TESTNET=false                    # is public testnet
 PRIVATE_KEY=                        # private key of the main account
 RECEIVER_PRIVATE_KEY=               # private key of the second account
 ```
+
 2. Run `npm run bootstrap`
 3. Run `npm run test`
 
 Available operations:
+
 - [x] Connect with Metamask
 - [x] Show connected account's `address` & `balance`
 - [x] Sign custom message and extract public key
@@ -56,9 +63,10 @@ Available operations:
 - [x] Transfer HBAR tokens
 
 ## Screenshots
-* *Disconnected account*
-![alt text](./images/screenshot1.png "")
-* *Connected account with contract interaction*
-![alt text](./images/screenshot2.png "")
-* *Transfer HTS Tokens*
-![alt text](./images/screenshot3.png "")
+
+- _Disconnected account_
+  ![alt text](./images/screenshot1.png)
+- _Connected account with contract interaction_
+  ![alt text](./images/screenshot2.png)
+- _Transfer HTS Tokens_
+  ![alt text](./images/screenshot3.png)

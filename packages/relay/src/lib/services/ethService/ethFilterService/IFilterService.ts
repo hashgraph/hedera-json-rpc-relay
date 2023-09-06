@@ -18,8 +18,8 @@
  *
  */
 
-import { JsonRpcError } from "../../../errors/JsonRpcError";
-import { Log } from "../../../model";
+import { JsonRpcError } from '../../../errors/JsonRpcError';
+import { Log } from '../../../model';
 
 export interface IFilterService {
   newFilter(

@@ -18,12 +18,12 @@
  *
  */
 
-require("dotenv").config();
-const fs = require("fs");
-const { Web3 } = require("web3");
+require('dotenv').config();
+const fs = require('fs');
+const { Web3 } = require('web3');
 
 module.exports = async (contractParam) => {
-  const { abi, bytecode } = await JSON.parse(fs.readFileSync(__dirname + "/../contract/Greeter.json"));
+  const { abi, bytecode } = await JSON.parse(fs.readFileSync(__dirname + '/../contract/Greeter.json'));
 
   const web3 = new Web3(new Web3.providers.HttpProvider(process.env.RELAY_ENDPOINT));
   const wallet = await web3.eth.accounts.wallet.add(process.env.OPERATOR_PRIVATE_KEY);

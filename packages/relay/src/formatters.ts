@@ -18,32 +18,32 @@
  *
  */
 
-import constants from "./lib/constants";
-import crypto from "crypto";
-import { Transaction, Transaction1559, Transaction2930 } from "./lib/model";
-import { BigNumber } from "@hashgraph/sdk/lib/Transfer";
-import { BigNumber as BN } from "bignumber.js";
+import constants from './lib/constants';
+import crypto from 'crypto';
+import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
+import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { BigNumber as BN } from 'bignumber.js';
 
-const EMPTY_HEX = "0x";
+const EMPTY_HEX = '0x';
 
 const hashNumber = (num) => {
   return EMPTY_HEX + num.toString(16);
 };
 
 const generateRandomHex = (bytesLength = 16) => {
-  return "0x" + crypto.randomBytes(bytesLength).toString("hex");
+  return '0x' + crypto.randomBytes(bytesLength).toString('hex');
 };
 
 /**
  * Format message prefix for logger.
  */
 const formatRequestIdMessage = (requestId?: string): string => {
-  return requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : "";
+  return requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
 };
 
 function hexToASCII(str: string): string {
   const hex = str.toString();
-  let ascii = "";
+  let ascii = '';
   for (let n = 0; n < hex.length; n += 2) {
     ascii += String.fromCharCode(parseInt(hex.substring(n, n + 2), 16));
   }
@@ -57,12 +57,12 @@ function hexToASCII(str: string): string {
  * @param message
  */
 const decodeErrorMessage = (message?: string): string => {
-  if (!message) return "";
+  if (!message) return '';
 
   // If the message does not start with 0x, it is not an error message, return it as is
   if (!message.includes(EMPTY_HEX)) return message;
 
-  message = message.replace(/^0x/, ""); // Remove the starting 0x
+  message = message.replace(/^0x/, ''); // Remove the starting 0x
   const strLen = parseInt(message.slice(8 + 64, 8 + 128), 16); // Get the length of the readable text
   const resultCodeHex = message.slice(8 + 128, 8 + 128 + strLen * 2); // Extract the hex of the text
   return hexToASCII(resultCodeHex);
@@ -73,9 +73,9 @@ const formatTransactionId = (transactionId: string): string | null => {
     return null;
   }
 
-  const transactionSplit = transactionId.split("@");
+  const transactionSplit = transactionId.split('@');
   const payer = transactionSplit[0];
-  const timestamp = transactionSplit[1].replace(".", "-");
+  const timestamp = transactionSplit[1].replace('.', '-');
   return `${payer}-${timestamp}`;
 };
 
@@ -94,7 +94,7 @@ const formatTransactionIdWithoutQueryParams = (transactionId: string): string | 
   }
 
   // split the formattedTransactionIdWithQueryParams with `?` and return the formatedID without params
-  return formattedTransactionIdWithQueryParams.split("?")[0];
+  return formattedTransactionIdWithQueryParams.split('?')[0];
 };
 
 /**
@@ -107,11 +107,11 @@ const formatTransactionIdWithoutQueryParams = (transactionId: string): string | 
  * @throws An error if both the env var and constant are invalid
  */
 const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): number => {
-  let value: number = Number.parseInt(process.env[envVarName] ?? "", 10);
+  let value: number = Number.parseInt(process.env[envVarName] ?? '', 10);
   if (!isNaN(value)) {
     return value;
   }
-  value = Number.parseInt((constants[fallbackConstantKey] ?? "").toString());
+  value = Number.parseInt((constants[fallbackConstantKey] ?? '').toString());
   if (isNaN(value)) {
     throw new Error(`Unable to parse numeric env var: '${envVarName}', constant: '${fallbackConstantKey}'`);
   }
@@ -125,7 +125,7 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
  * @returns tinybarValue
  */
 const weibarHexToTinyBarInt = (value: string): number | null => {
-  if (value && value !== "0x") {
+  if (value && value !== '0x') {
     const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
     return Number(tinybarValue);
   }
@@ -198,7 +198,7 @@ const toHash32 = (value: string): string => {
 };
 
 const toNullableBigNumber = (value: string): string | null => {
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     return new BN(value).toString();
   }
 

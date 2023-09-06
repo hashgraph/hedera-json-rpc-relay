@@ -18,7 +18,7 @@
  *
  */
 
-import { Status } from "@hashgraph/sdk";
+import { Status } from '@hashgraph/sdk';
 
 export class SDKClientError extends Error {
   public status: Status = Status.Unknown;
@@ -68,7 +68,7 @@ export class SDKClientError extends Error {
   }
 
   public isTimeoutExceeded(): boolean {
-    return this.statusCode === Status.Unknown._code && this.message?.includes("timeout exceeded");
+    return this.statusCode === Status.Unknown._code && this.message?.includes('timeout exceeded');
   }
 
   public isGrpcTimeout(): boolean {

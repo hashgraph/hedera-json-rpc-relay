@@ -36,7 +36,7 @@ export class MirrorNodeClientError extends Error {
   };
 
   static messages = {
-    INVALID_HEX: "data field invalid hexadecimal string",
+    INVALID_HEX: 'data field invalid hexadecimal string',
   };
 
   constructor(error: any, statusCode: number) {
@@ -81,10 +81,10 @@ export class MirrorNodeClientError extends Error {
   }
 
   public isNotSupportedSystemContractOperaton(): boolean {
-    return this.message === "Precompile not supported";
+    return this.message === 'Precompile not supported';
   }
 
   isFailInvalid() {
-    return this.message === "FAIL_INVALID";
+    return this.message === 'FAIL_INVALID';
   }
 }

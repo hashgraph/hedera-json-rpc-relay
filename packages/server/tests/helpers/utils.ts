@@ -18,9 +18,9 @@
  *
  */
 
-import { ethers } from "ethers";
-import Assertions from "./assertions";
-import crypto from "crypto";
+import { ethers } from 'ethers';
+import Assertions from './assertions';
+import crypto from 'crypto';
 
 export class Utils {
   static toHex = (num) => {
@@ -29,14 +29,14 @@ export class Utils {
 
   static idToEvmAddress = (id): string => {
     Assertions.assertId(id);
-    const [shard, realm, num] = id.split(".");
+    const [shard, realm, num] = id.split('.');
 
     return [
-      "0x",
-      this.toHex(shard).padStart(8, "0"),
-      this.toHex(realm).padStart(16, "0"),
-      this.toHex(num).padStart(16, "0"),
-    ].join("");
+      '0x',
+      this.toHex(shard).padStart(8, '0'),
+      this.toHex(realm).padStart(16, '0'),
+      this.toHex(num).padStart(16, '0'),
+    ].join('');
   };
 
   static tinyBarsToWeibars = (value) => {
@@ -44,8 +44,8 @@ export class Utils {
   };
 
   static randomString(length) {
-    let result = "";
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    let result = '';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
     for (let i = 0; i < length; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -65,7 +65,7 @@ export class Utils {
    * Format message prefix for logger.
    */
   static formatRequestIdMessage = (requestId?: string): string => {
-    return requestId ? `[Request ID: ${requestId}]` : "";
+    return requestId ? `[Request ID: ${requestId}]` : '';
   };
 
   static deployContractWithEthers = async (constructorArgs: any[] = [], contractJson, wallet, relay) => {
@@ -134,7 +134,7 @@ export class Utils {
   };
 
   static add0xPrefix = (num) => {
-    return num.startsWith("0x") ? num : "0x" + num;
+    return num.startsWith('0x') ? num : '0x' + num;
   };
 
   static gasOptions = async (requestId, gasLimit = 1_500_000) => {
@@ -145,7 +145,7 @@ export class Utils {
   };
 
   static convertEthersResultIntoStringsArray = (res) => {
-    if (typeof res === "object") {
+    if (typeof res === 'object') {
       return res.toArray().map((e) => Utils.convertEthersResultIntoStringsArray(e));
     }
     return res.toString();

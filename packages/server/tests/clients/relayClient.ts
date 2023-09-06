@@ -18,11 +18,11 @@
  *
  */
 
-import { ethers } from "ethers";
-import { Logger } from "pino";
-import Assertions from "../helpers/assertions";
-import { predefined } from "../../../relay/src/lib/errors/JsonRpcError";
-import { Utils } from "../helpers/utils";
+import { ethers } from 'ethers';
+import { Logger } from 'pino';
+import Assertions from '../helpers/assertions';
+import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { Utils } from '../helpers/utils';
 
 export default class RelayClient {
   private readonly provider: ethers.JsonRpcProvider;
@@ -99,7 +99,7 @@ export default class RelayClient {
    * @param block
    * @param requestId
    */
-  async getBalance(address, block = "latest", requestId?: string) {
+  async getBalance(address, block = 'latest', requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     this.logger.debug(`${requestIdPrefix} [POST] to relay eth_getBalance for address ${address}]`);
     return this.provider.getBalance(address, block);
@@ -113,7 +113,7 @@ export default class RelayClient {
   async getAccountNonce(evmAddress, requestId?: string): Promise<number> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_getTransactionCount for address ${evmAddress}`);
-    const nonce = await this.provider.send("eth_getTransactionCount", [evmAddress, "latest"]);
+    const nonce = await this.provider.send('eth_getTransactionCount', [evmAddress, 'latest']);
     return Number(nonce);
   }
 
@@ -127,7 +127,7 @@ export default class RelayClient {
   async sendRawTransaction(signedTx, requestId?: string): Promise<string> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_sendRawTransaction`);
-    return this.provider.send("eth_sendRawTransaction", [signedTx]);
+    return this.provider.send('eth_sendRawTransaction', [signedTx]);
   }
 
   /**
@@ -136,6 +136,6 @@ export default class RelayClient {
    * Returns the result of eth_gasPrice as a Number.
    */
   async gasPrice(requestId?: string): Promise<number> {
-    return Number(await this.call("eth_gasPrice", [], requestId));
+    return Number(await this.call('eth_gasPrice', [], requestId));
   }
 }

@@ -18,8 +18,8 @@
  *
  */
 
-import { JsonRpcError } from "../../../errors/JsonRpcError";
-import { Log } from "../../../model";
+import { JsonRpcError } from '../../../errors/JsonRpcError';
+import { Log } from '../../../model';
 
 export interface ICommonService {
   blockTagIsLatestOrPending(tag: any): boolean;
@@ -51,8 +51,8 @@ export interface ICommonService {
 
   getLogs(
     blockHash: string | null,
-    fromBlock: string | "latest",
-    toBlock: string | "latest",
+    fromBlock: string | 'latest',
+    toBlock: string | 'latest',
     address: string | [string] | null,
     topics: any[] | null,
     requestIdPrefix?: string,

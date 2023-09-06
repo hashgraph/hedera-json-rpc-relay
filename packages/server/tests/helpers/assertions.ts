@@ -17,21 +17,21 @@
  * limitations under the License.
  *
  */
-import { expect } from "chai";
-import { ethers } from "ethers";
-import { JsonRpcError, predefined } from "../../../relay/src/lib/errors/JsonRpcError";
-import { Utils } from "./utils";
-import { numberTo0x } from "../../../relay/src/formatters";
-import { type } from "os";
+import { expect } from 'chai';
+import { ethers } from 'ethers';
+import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { Utils } from './utils';
+import { numberTo0x } from '../../../relay/src/formatters';
+import { type } from 'os';
 
 export default class Assertions {
-  static emptyHex = "0x";
-  static zeroHex32Byte = "0x0000000000000000000000000000000000000000000000000000000000000000";
-  static zeroHex8Byte = "0x0000000000000000";
-  static emptyArrayHex = "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
+  static emptyHex = '0x';
+  static zeroHex32Byte = '0x0000000000000000000000000000000000000000000000000000000000000000';
+  static zeroHex8Byte = '0x0000000000000000';
+  static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static emptyBloom =
-    "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-  static ethEmptyTrie = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
+    '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+  static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasPrice = 710_000_000_000;
   static datedGasPrice = 570_000_000_000;
   static updatedGasPrice = 640_000_000_000;
@@ -39,16 +39,16 @@ export default class Assertions {
   static defaultGasUsed = 0.5;
 
   static assertId = (id) => {
-    const [shard, realm, num] = id.split(".");
-    expect(shard, "Id shard should not be null").to.not.be.null;
-    expect(realm, "Id realm should not be null").to.not.be.null;
-    expect(num, "Id num should not be null").to.not.be.null;
+    const [shard, realm, num] = id.split('.');
+    expect(shard, 'Id shard should not be null').to.not.be.null;
+    expect(realm, 'Id realm should not be null').to.not.be.null;
+    expect(num, 'Id num should not be null').to.not.be.null;
   };
 
   static unsupportedResponse = (resp: any) => {
-    expect(resp.error.code, "Unsupported response.error.code should equal -32601").to.eq(-32601);
+    expect(resp.error.code, 'Unsupported response.error.code should equal -32601').to.eq(-32601);
     expect(
-      resp.error.message.endsWith("Unsupported JSON-RPC method"),
+      resp.error.message.endsWith('Unsupported JSON-RPC method'),
       "Unsupported response.error.code should end with 'Unsupported JSON-RPC method'",
     ).to.be.true;
   };
@@ -68,7 +68,7 @@ export default class Assertions {
     // Assert static values
     expect(relayResponse.baseFeePerGas).to.exist;
 
-    if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== "false") {
+    if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
       expect(relayResponse.baseFeePerGas).to.be.equal(ethers.toQuantity(this.defaultGasPrice));
     } else {
       expect(Number(relayResponse.baseFeePerGas)).to.be.gt(0);
@@ -125,7 +125,7 @@ export default class Assertions {
       ethers.toQuantity(mirrorNodeResponse.gas_used),
     );
     expect(relayResponse.timestamp, "Assert block: 'timestamp' should equal mirrorNode response").to.equal(
-      ethers.toQuantity(Number(mirrorNodeResponse.timestamp.from.split(".")[0])),
+      ethers.toQuantity(Number(mirrorNodeResponse.timestamp.from.split('.')[0])),
     );
     if (relayResponse.transactions.length) {
       expect(
@@ -188,7 +188,7 @@ export default class Assertions {
 
   static transactionReceipt = (transactionReceipt, mirrorResult) => {
     expect(transactionReceipt.blockHash, "Assert transactionReceipt: 'blockHash' should exists").to.exist;
-    expect(transactionReceipt.blockHash, "Assert transactionReceipt: 'blockHash' should not be 0x0").to.not.eq("0x0");
+    expect(transactionReceipt.blockHash, "Assert transactionReceipt: 'blockHash' should not be 0x0").to.not.eq('0x0');
     expect(
       transactionReceipt.blockHash,
       "Assert transactionReceipt: 'vablockHashlue' should equal mirrorNode response",
@@ -220,7 +220,7 @@ export default class Assertions {
     ).to.eq(mirrorResult.gas_used);
 
     expect(transactionReceipt.logsBloom, "Assert transactionReceipt: 'logsBloom' should exist").to.exist;
-    expect(transactionReceipt.logsBloom, "Assert transactionReceipt: 'logsBloom' should not be 0x0").to.not.eq("0x0");
+    expect(transactionReceipt.logsBloom, "Assert transactionReceipt: 'logsBloom' should not be 0x0").to.not.eq('0x0');
     expect(
       transactionReceipt.logsBloom,
       "Assert transactionReceipt: 'logsBloom' should equal mirrorNode response",
@@ -230,7 +230,7 @@ export default class Assertions {
     expect(
       transactionReceipt.transactionHash,
       "Assert transactionReceipt: 'transactionHash' should equal mirrorNode response",
-    ).to.not.eq("0x0");
+    ).to.not.eq('0x0');
     expect(
       transactionReceipt.transactionHash,
       "Assert transactionReceipt: 'transactionHash' should equal mirrorNode response",
@@ -249,7 +249,7 @@ export default class Assertions {
       "Assert transactionReceipt: 'effectiveGasPrice' should be > 0",
     ).to.gt(0);
     const effectiveGas =
-      mirrorResult.max_fee_per_gas === undefined || mirrorResult.max_fee_per_gas == "0x"
+      mirrorResult.max_fee_per_gas === undefined || mirrorResult.max_fee_per_gas == '0x'
         ? mirrorResult.gas_price
         : mirrorResult.max_fee_per_gas;
     const mirrorEffectiveGasPrice = Utils.tinyBarsToWeibars(effectiveGas);
@@ -288,10 +288,10 @@ export default class Assertions {
 
   public static feeHistory(res: any, expected: any) {
     expect(res.baseFeePerGas, "Assert feeHistory: 'baseFeePerGas' should exist and be an Array").to.exist.to.be.an(
-      "Array",
+      'Array',
     );
     expect(res.gasUsedRatio, "Assert feeHistory: 'gasUsedRatio' should exist and be an Array").to.exist.to.be.an(
-      "Array",
+      'Array',
     );
     expect(res.oldestBlock, "Assert feeHistory: 'oldestBlock' should exist").to.exist;
     expect(
@@ -314,7 +314,7 @@ export default class Assertions {
     );
 
     if (expected.checkReward) {
-      expect(res.reward, "Assert feeHistory: 'reward' should exist and be an Array").to.exist.to.be.an("Array");
+      expect(res.reward, "Assert feeHistory: 'reward' should exist and be an Array").to.exist.to.be.an('Array');
       expect(res.reward.length, "Assert feeHistory: 'reward' length should equal passed expected value").to.equal(
         expected.resultCount,
       );
@@ -343,7 +343,7 @@ export default class Assertions {
       await method.apply(thisObj, args);
       Assertions.expectedError();
     } catch (e: any) {
-      expect(e).to.have.any.keys("response", "error");
+      expect(e).to.have.any.keys('response', 'error');
 
       const { error } = e?.response ? e.response.bodyJson : e;
       expect(error.code).to.equal(expectedError.code);

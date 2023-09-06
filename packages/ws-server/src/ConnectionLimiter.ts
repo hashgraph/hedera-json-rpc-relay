@@ -18,9 +18,9 @@
  *
  */
 
-import { Logger } from "pino";
-import { WebSocketError } from "@hashgraph/json-rpc-relay";
-import { Gauge, Registry, Counter } from "prom-client";
+import { Logger } from 'pino';
+import { WebSocketError } from '@hashgraph/json-rpc-relay';
+import { Gauge, Registry, Counter } from 'prom-client';
 
 type IpCounter = {
   [key: string]: number;
@@ -45,46 +45,46 @@ export default class ConnectionLimiter {
     this.connectedClients = 0;
     this.clientIps = {};
 
-    const activeConnectionsMetric = "rpc_websocket_active_connections";
+    const activeConnectionsMetric = 'rpc_websocket_active_connections';
     this.register.removeSingleMetric(activeConnectionsMetric);
 
     this.activeConnectionsGauge = new Gauge({
       name: activeConnectionsMetric,
-      help: "Relay websocket active connections",
+      help: 'Relay websocket active connections',
       registers: [register],
     });
 
-    const ipConnectionsMetric = "rpc_websocket_active_connections_per_ip";
+    const ipConnectionsMetric = 'rpc_websocket_active_connections_per_ip';
     this.register.removeSingleMetric(ipConnectionsMetric);
     this.ipConnectionsGauge = new Gauge({
       name: ipConnectionsMetric,
-      help: "Relay websocket active connections by ip",
-      labelNames: ["ip"],
+      help: 'Relay websocket active connections by ip',
+      labelNames: ['ip'],
       registers: [register],
     });
 
-    const connectionLimitMetric = "rpc_websocket_total_connection_limit_enforced";
+    const connectionLimitMetric = 'rpc_websocket_total_connection_limit_enforced';
     this.register.removeSingleMetric(connectionLimitMetric);
     this.connectionLimitCounter = new Counter({
       name: connectionLimitMetric,
-      help: "Relay websocket total connection limits enforced",
+      help: 'Relay websocket total connection limits enforced',
       registers: [register],
     });
 
-    const ipConnectionLimitMetric = "rpc_websocket_total_connection_limit_by_ip_enforced";
+    const ipConnectionLimitMetric = 'rpc_websocket_total_connection_limit_by_ip_enforced';
     this.register.removeSingleMetric(ipConnectionLimitMetric);
     this.ipConnectionLimitCounter = new Counter({
       name: ipConnectionLimitMetric,
-      help: "Relay websocket total connection limits by ip enforced",
-      labelNames: ["ip"],
+      help: 'Relay websocket total connection limits by ip enforced',
+      labelNames: ['ip'],
       registers: [register],
     });
 
-    const inactivityTTLLimitMetric = "rpc_websocket_total_connection_limit_by_ttl_enforced";
+    const inactivityTTLLimitMetric = 'rpc_websocket_total_connection_limit_by_ttl_enforced';
     this.register.removeSingleMetric(inactivityTTLLimitMetric);
     this.inactivityTTLCounter = new Counter({
       name: inactivityTTLLimitMetric,
-      help: "Relay websocket total connection ttl limits enforced",
+      help: 'Relay websocket total connection ttl limits enforced',
       registers: [register],
     });
   }
@@ -120,7 +120,7 @@ export default class ConnectionLimiter {
 
   public applyLimits(ctx) {
     // Limit total connections
-    if (this.connectedClients > parseInt(process.env.WS_CONNECTION_LIMIT || "10")) {
+    if (this.connectedClients > parseInt(process.env.WS_CONNECTION_LIMIT || '10')) {
       this.logger.info(
         `Closing connection ${ctx.websocket.id} due to exceeded maximum connections (${process.env.WS_CONNECTION_LIMIT})`,
       );
@@ -132,7 +132,7 @@ export default class ConnectionLimiter {
     const { ip } = ctx.request;
 
     // Limit connections from a single IP address
-    const limitPerIp = parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP || "10");
+    const limitPerIp = parseInt(process.env.WS_CONNECTION_LIMIT_PER_IP || '10');
     if (this.clientIps[ip] && this.clientIps[ip] > limitPerIp) {
       this.logger.info(
         `Closing connection ${ctx.websocket.id} due to exceeded maximum connections from a single IP (${this.clientIps[ip]}) for address ${ip}`,
@@ -155,12 +155,12 @@ export default class ConnectionLimiter {
   }
 
   public validateSubscriptionLimit(ctx) {
-    return ctx.websocket.subscriptions < parseInt(process.env.WS_SUBSCRIPTION_LIMIT || "10");
+    return ctx.websocket.subscriptions < parseInt(process.env.WS_SUBSCRIPTION_LIMIT || '10');
   }
 
   // Starts a timeout timer that closes the connection
   public startInactivityTTLTimer(websocket) {
-    const maxInactivityTTL = parseInt(process.env.WS_MAX_INACTIVITY_TTL || "300000");
+    const maxInactivityTTL = parseInt(process.env.WS_MAX_INACTIVITY_TTL || '300000');
     websocket.inactivityTTL = setTimeout(() => {
       if (websocket.readyState !== 3) {
         // 3 = CLOSED, Avoid closing already closed connections

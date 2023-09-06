@@ -1,46 +1,46 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Chip, Grid, TextField, Typography } from "@mui/material";
-import { Box, Container } from "@mui/system";
-import { ethers } from "ethers";
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Chip, Grid, TextField, Typography } from '@mui/material';
+import { Box, Container } from '@mui/system';
+import { ethers } from 'ethers';
 
-import useHederaSdk from "./hooks/useHederaSdk";
+import useHederaSdk from './hooks/useHederaSdk';
 
-import ContractInteractions from "./components/ContractInteractions";
-import TransferHTSTokensForm from "./components/TransferHTSTokensForm";
-import AssociateHTSTokensForm from "./components/AssociateHTSTokensForm";
-import ActivateHollowAccountForm from "./components/ActivateHollowAccountForm";
+import ContractInteractions from './components/ContractInteractions';
+import TransferHTSTokensForm from './components/TransferHTSTokensForm';
+import AssociateHTSTokensForm from './components/AssociateHTSTokensForm';
+import ActivateHollowAccountForm from './components/ActivateHollowAccountForm';
 
 function App() {
   const [errorMessage, setErrorMessage] = useState(null);
   const [signer, setSigner] = useState(null);
   const [address, setAddress] = useState(null);
   const [chain, setChain] = useState(null);
-  const [alias, setAlias] = useState("");
+  const [alias, setAlias] = useState('');
   const [balance, setBalance] = useState(null);
   const [hbarsAmount, setHbarsAmount] = useState(0);
-  const [hbarsToAddress, setHbarsToAddress] = useState("");
+  const [hbarsToAddress, setHbarsToAddress] = useState('');
   const [sendHbarMsg, setSendHbarMsg] = useState(null);
-  const [toBalanceAfterTransfer, setToBalanceAfterTransfer] = useState("");
+  const [toBalanceAfterTransfer, setToBalanceAfterTransfer] = useState('');
 
   const { recoveredPublicKeyToAccountId } = useHederaSdk();
 
   useEffect(() => {
     if (window.ethereum) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+      const provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
 
       setSigner(provider.getSigner());
 
-      window.ethereum.on("accountsChanged", changeConnectedAccount);
-      window.ethereum.on("chainChanged", (chainId) => {
+      window.ethereum.on('accountsChanged', changeConnectedAccount);
+      window.ethereum.on('chainChanged', (chainId) => {
         setErrorMessage(null);
         setAddress(null);
         setBalance(null);
-        setAlias("");
+        setAlias('');
         setChain(chainId);
         setHbarsAmount(0);
-        setHbarsToAddress("");
+        setHbarsToAddress('');
         setHbarsToAddress(null);
-        setToBalanceAfterTransfer("");
+        setToBalanceAfterTransfer('');
       });
     }
   }, []);
@@ -55,8 +55,8 @@ function App() {
 
   const status = useMemo(() => {
     return {
-      label: isAccountActivated ? "Account is active" : "Account not created yet",
-      color: isAccountActivated ? "success" : "error",
+      label: isAccountActivated ? 'Account is active' : 'Account not created yet',
+      color: isAccountActivated ? 'success' : 'error',
     };
   }, [isAccountActivated]);
 
@@ -65,8 +65,8 @@ function App() {
       let formattedBalance = null;
       if (accountAddress) {
         const accountBalance = await window.ethereum.request({
-          method: "eth_getBalance",
-          params: [accountAddress.toString(), "latest"],
+          method: 'eth_getBalance',
+          params: [accountAddress.toString(), 'latest'],
         });
         formattedBalance = ethers.utils.formatEther(accountBalance);
       }
@@ -84,10 +84,10 @@ function App() {
 
       setAddress(newAddress);
       setErrorMessage(null);
-      setAlias("");
+      setAlias('');
     } catch (err) {
       console.error(err);
-      setErrorMessage("There was a problem connecting to MetaMask");
+      setErrorMessage('There was a problem connecting to MetaMask');
     }
   };
 
@@ -95,22 +95,22 @@ function App() {
     if (window.ethereum) {
       try {
         const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
+          method: 'eth_requestAccounts',
         });
 
         await changeConnectedAccount(accounts[0]);
       } catch (err) {
         console.error(err);
-        setErrorMessage("There was a problem connecting to MetaMask");
+        setErrorMessage('There was a problem connecting to MetaMask');
       }
     } else {
-      setErrorMessage("Install MetaMask");
+      setErrorMessage('Install MetaMask');
     }
   }, []);
 
   const showAccountIdHandler = useCallback(async () => {
     try {
-      const message = address + "_" + Date.now();
+      const message = address + '_' + Date.now();
       const msgHash = ethers.utils.hashMessage(message);
       const msgHashBytes = ethers.utils.arrayify(msgHash);
 
@@ -136,12 +136,12 @@ function App() {
     setToBalanceAfterTransfer(
       ethers.utils.formatEther(
         await window.ethereum.request({
-          method: "eth_getBalance",
-          params: [hbarsToAddress, "latest"],
+          method: 'eth_getBalance',
+          params: [hbarsToAddress, 'latest'],
         }),
       ),
     );
-    setSendHbarMsg("Done");
+    setSendHbarMsg('Done');
   }, [signer, hbarsToAddress, hbarsAmount]);
 
   return (
@@ -153,20 +153,20 @@ function App() {
       ) : null}
       <Box display="flex" justifyContent="center" alignItems="center" paddingTop={10} paddingBottom={10}>
         <Button onClick={connectAccountHandler} disabled={isConnected} size="large" variant="contained" color="primary">
-          {isConnected ? "Connected" : "Connect Account"}
+          {isConnected ? 'Connected' : 'Connect Account'}
         </Button>
       </Box>
 
       <Grid container spacing={2} justifyContent="center">
         <Grid item md={8}>
           {/* Account Section */}
-          <Typography variant="h5" sx={{ textDecoration: "underline" }}>
-            {" "}
-            Setup Account{" "}
+          <Typography variant="h5" sx={{ textDecoration: 'underline' }}>
+            {' '}
+            Setup Account{' '}
           </Typography>
           <Typography variant="h6"> Address: {address} </Typography>
-          <Typography variant="h6">Balance: {balance ? balance + " HBAR" : null}</Typography>
-          <Typography variant="h6" style={{ wordBreak: "break-word" }}>
+          <Typography variant="h6">Balance: {balance ? balance + ' HBAR' : null}</Typography>
+          <Typography variant="h6" style={{ wordBreak: 'break-word' }}>
             Status: {isConnected ? <Chip label={status.label} color={status.color} /> : null}
           </Typography>
           <br />
@@ -180,14 +180,14 @@ function App() {
           >
             Show alias
           </Button>
-          <Typography id="aliasField" variant="h6" style={{ wordBreak: "break-word" }}>
+          <Typography id="aliasField" variant="h6" style={{ wordBreak: 'break-word' }}>
             {alias}
           </Typography>
           <br />
 
-          <Typography variant="h5" sx={{ textDecoration: "underline" }}>
-            {" "}
-            Send HBARs{" "}
+          <Typography variant="h5" sx={{ textDecoration: 'underline' }}>
+            {' '}
+            Send HBARs{' '}
           </Typography>
           <TextField
             id="sendHbarsToField"
@@ -209,8 +209,8 @@ function App() {
             onChange={(e) => setHbarsAmount(e.target.value)}
           />
           <Typography variant="h6" id="toBalanceAfterTransfer">
-            {" "}
-            Balance after transfer: {toBalanceAfterTransfer}{" "}
+            {' '}
+            Balance after transfer: {toBalanceAfterTransfer}{' '}
           </Typography>
           <Button
             id="sendHbarsBtn"
@@ -224,21 +224,21 @@ function App() {
           </Button>
           <br />
           <Typography id="sendHbarMsg" variant="h6">
-            {" "}
-            {sendHbarMsg}{" "}
+            {' '}
+            {sendHbarMsg}{' '}
           </Typography>
 
           {/* Contracts Section */}
-          <Box sx={{ mt: "2em", mb: "2em" }}>
+          <Box sx={{ mt: '2em', mb: '2em' }}>
             <ContractInteractions isConnected={isConnected} signer={signer} chain={chain} address={address} />
           </Box>
-          <Box sx={{ mt: "2em", mb: "2em" }}>
+          <Box sx={{ mt: '2em', mb: '2em' }}>
             <TransferHTSTokensForm isConnected={isConnected} signer={signer} chain={chain} address={address} />
           </Box>
-          <Box sx={{ mt: "2em", mb: "2em" }}>
+          <Box sx={{ mt: '2em', mb: '2em' }}>
             <AssociateHTSTokensForm isConnected={isConnected} signer={signer} chain={chain} address={address} />
           </Box>
-          <Box sx={{ mt: "2em", mb: "2em" }}>
+          <Box sx={{ mt: '2em', mb: '2em' }}>
             <ActivateHollowAccountForm isConnected={isConnected} signer={signer} chain={chain} address={address} />
           </Box>
         </Grid>

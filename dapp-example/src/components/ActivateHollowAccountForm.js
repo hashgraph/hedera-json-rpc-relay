@@ -1,18 +1,18 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { Button, TextField, Typography } from "@mui/material";
-import { ethers } from "ethers";
-import ContractTransferTx from "../contracts/ContractTransferTx.json";
-import bootstrapInfo from "../contracts/.bootstrapInfo.json";
+import React, { useState, useCallback, useEffect } from 'react';
+import { Button, TextField, Typography } from '@mui/material';
+import { ethers } from 'ethers';
+import ContractTransferTx from '../contracts/ContractTransferTx.json';
+import bootstrapInfo from '../contracts/.bootstrapInfo.json';
 
 const ActivateHollowAccountForm = ({ signer, isConnected, chain, address }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [hollowAccountAddress, setHollowAccountAddress] = useState("");
+  const [hollowAccountAddress, setHollowAccountAddress] = useState('');
   const [activateHollowAccountMsg, setActivateHollowAccountMsg] = useState(null);
 
   // clear state vars on a chain or address have changed
   useEffect(() => {
     setIsLoading(false);
-    setHollowAccountAddress("");
+    setHollowAccountAddress('');
     setActivateHollowAccountMsg(null);
   }, [chain, address]);
 
@@ -21,25 +21,25 @@ const ActivateHollowAccountForm = ({ signer, isConnected, chain, address }) => {
 
     try {
       setIsLoading(true);
-      setActivateHollowAccountMsg("Loading...");
+      setActivateHollowAccountMsg('Loading...');
 
       const tx = await contract.transferTo(hollowAccountAddress, 3_000_000_000, { gasLimit: 1_000_000 });
       const receipt = await tx.wait();
 
-      setActivateHollowAccountMsg(receipt.events[0].event == "Transferred" ? "Done" : "There was an error.");
+      setActivateHollowAccountMsg(receipt.events[0].event == 'Transferred' ? 'Done' : 'There was an error.');
       setIsLoading(false);
     } catch (e) {
       console.error(e);
-      setActivateHollowAccountMsg("There was an error.");
+      setActivateHollowAccountMsg('There was an error.');
       setIsLoading(false);
     }
   }, [signer, hollowAccountAddress]);
 
   return (
     <>
-      <Typography variant="h5" sx={{ textDecoration: "underline" }}>
-        {" "}
-        Activate Hollow Account{" "}
+      <Typography variant="h5" sx={{ textDecoration: 'underline' }}>
+        {' '}
+        Activate Hollow Account{' '}
       </Typography>
       <br />
       <TextField
@@ -64,8 +64,8 @@ const ActivateHollowAccountForm = ({ signer, isConnected, chain, address }) => {
       </Button>
       <br />
       <Typography id="activateHollowAccountMsg" variant="h6">
-        {" "}
-        {activateHollowAccountMsg}{" "}
+        {' '}
+        {activateHollowAccountMsg}{' '}
       </Typography>
     </>
   );

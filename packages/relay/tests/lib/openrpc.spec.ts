@@ -18,25 +18,25 @@
  *
  */
 
-import { expect } from "chai";
-import { validateOpenRPCDocument, parseOpenRPCDocument } from "@open-rpc/schema-utils-js";
+import { expect } from 'chai';
+import { validateOpenRPCDocument, parseOpenRPCDocument } from '@open-rpc/schema-utils-js';
 
-import Ajv from "ajv";
+import Ajv from 'ajv';
 
-import path from "path";
-import pino from "pino";
-import axios from "axios";
-import sinon from "sinon";
-import dotenv from "dotenv";
-import MockAdapter from "axios-mock-adapter";
-import { RelayImpl } from "../../src/lib/relay";
-import { Registry } from "prom-client";
+import path from 'path';
+import pino from 'pino';
+import axios from 'axios';
+import sinon from 'sinon';
+import dotenv from 'dotenv';
+import MockAdapter from 'axios-mock-adapter';
+import { RelayImpl } from '../../src/lib/relay';
+import { Registry } from 'prom-client';
 
-import { EthImpl } from "../../src/lib/eth";
-import { SDKClient } from "../../src/lib/clients";
-import { MirrorNodeClient } from "../../src/lib/clients/mirrorNodeClient";
+import { EthImpl } from '../../src/lib/eth';
+import { SDKClient } from '../../src/lib/clients';
+import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
-import openRpcSchema from "../../../../docs/openrpc.json";
+import openRpcSchema from '../../../../docs/openrpc.json';
 import {
   blockHash,
   blockNumber,
@@ -65,17 +65,17 @@ import {
   defaultTxHash,
   getRequestId,
   signedTransactionHash,
-} from "../helpers";
-import ClientService from "../../src/lib/services/hapiService/hapiService";
-import HbarLimit from "../../src/lib/hbarlimiter";
-import { numberTo0x } from "../../../../packages/relay/src/formatters";
+} from '../helpers';
+import ClientService from '../../src/lib/services/hapiService/hapiService';
+import HbarLimit from '../../src/lib/hbarlimiter';
+import { numberTo0x } from '../../../../packages/relay/src/formatters';
 
-dotenv.config({ path: path.resolve(__dirname, "../test.env") });
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
-import constants from "../../src/lib/constants";
-import { CacheService } from "../../src/lib/services/cacheService/cacheService";
+import constants from '../../src/lib/constants';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 
-process.env.npm_package_version = "relay/0.0.1-SNAPSHOT";
+process.env.npm_package_version = 'relay/0.0.1-SNAPSHOT';
 
 const logger = pino();
 const registry = new Registry();
@@ -86,9 +86,9 @@ let mirrorNodeInstance: MirrorNodeClient;
 let clientServiceInstance: ClientService;
 let sdkClientStub: any;
 
-const noTransactions = "?transactions=false";
+const noTransactions = '?transactions=false';
 
-describe("Open RPC Specification", function () {
+describe('Open RPC Specification', function () {
   let rpcDocument: any;
   let methodsResponseSchema: { [method: string]: any };
   let ethImpl: EthImpl;
@@ -105,16 +105,16 @@ describe("Open RPC Specification", function () {
 
     // mock axios
     const instance = axios.create({
-      baseURL: "https://localhost:5551/api/v1",
-      responseType: "json" as const,
+      baseURL: 'https://localhost:5551/api/v1',
+      responseType: 'json' as const,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       timeout: 10 * 1000,
     });
 
     // @ts-ignore
-    mock = new MockAdapter(instance, { onNoMatch: "throwException" });
+    mock = new MockAdapter(instance, { onNoMatch: 'throwException' });
     const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
@@ -126,19 +126,19 @@ describe("Open RPC Specification", function () {
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
-    const hbarLimiter = new HbarLimit(logger.child({ name: "hbar-rate-limit" }), Date.now(), total, duration, registry);
+    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
 
     clientServiceInstance = new ClientService(logger, registry, hbarLimiter, cacheService);
     sdkClientStub = sinon.createStubInstance(SDKClient);
-    sinon.stub(clientServiceInstance, "getSDKClient").returns(sdkClientStub);
+    sinon.stub(clientServiceInstance, 'getSDKClient').returns(sdkClientStub);
     // @ts-ignore
-    ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, "0x12a", registry, cacheService);
+    ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
 
     // mocked data
-    mock.onGet("blocks?limit=1&order=desc").reply(200, { blocks: [defaultBlock] });
+    mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
     mock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
     mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
-    mock.onGet("network/fees").reply(200, defaultNetworkFees);
+    mock.onGet('network/fees').reply(200, defaultNetworkFees);
     mock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultNetworkFees);
     mock.onGet(`contracts/${contractAddress1}`).reply(200, null);
     mock
@@ -186,7 +186,7 @@ describe("Open RPC Specification", function () {
     });
     mock
       .onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`)
-      .reply(200, { account: "0xbC989b7b17d18702663F44A6004cB538b9DfcBAc" });
+      .reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
 
     mock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
       from: `${defaultEvmAddress}`,
@@ -194,11 +194,11 @@ describe("Open RPC Specification", function () {
     for (const log of defaultLogs.logs) {
       mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
     }
-    mock.onPost(`contracts/call`, { ...defaultCallData, estimate: false }).reply(200, { result: "0x12" });
+    mock.onPost(`contracts/call`, { ...defaultCallData, estimate: false }).reply(200, { result: '0x12' });
     sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
     sdkClientStub.getAccountBalanceInTinyBar.returns(100000000000);
-    sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace("0x", ""), "hex"));
-    sdkClientStub.getAccountInfo.returns({ ethereumNonce: "0x1" });
+    sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));
+    sdkClientStub.getAccountInfo.returns({ ethereumNonce: '0x1' });
     sdkClientStub.submitEthereumTransaction.returns({});
   });
 
@@ -254,7 +254,7 @@ describe("Open RPC Specification", function () {
   });
 
   it('should execute "eth_feeHistory"', async function () {
-    const response = await ethImpl.feeHistory(1, "latest", [0]);
+    const response = await ethImpl.feeHistory(1, 'latest', [0]);
 
     validateResponseSchema(methodsResponseSchema.eth_feeHistory, response);
   });
@@ -266,7 +266,7 @@ describe("Open RPC Specification", function () {
   });
 
   it('should execute "eth_getBalance"', async function () {
-    const response = await ethImpl.getBalance(contractAddress1, "latest", getRequestId());
+    const response = await ethImpl.getBalance(contractAddress1, 'latest', getRequestId());
 
     validateResponseSchema(methodsResponseSchema.eth_getBalance, response);
   });
@@ -302,27 +302,27 @@ describe("Open RPC Specification", function () {
   });
 
   it('should execute "eth_getBlockTransactionCountByNumber" with block tag', async function () {
-    const response = await ethImpl.getBlockTransactionCountByNumber("latest");
+    const response = await ethImpl.getBlockTransactionCountByNumber('latest');
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockTransactionCountByNumber, response);
   });
 
   it('should execute "eth_getBlockTransactionCountByNumber" with block number', async function () {
-    const response = await ethImpl.getBlockTransactionCountByNumber("0x3");
+    const response = await ethImpl.getBlockTransactionCountByNumber('0x3');
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockTransactionCountByNumber, response);
   });
 
   it('should execute "eth_getCode" with block tag', async function () {
     mock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(404);
-    const response = await ethImpl.getCode(contractAddress1, "latest");
+    const response = await ethImpl.getCode(contractAddress1, 'latest');
 
     validateResponseSchema(methodsResponseSchema.eth_getCode, response);
   });
 
   it('should execute "eth_getCode" with block number', async function () {
     mock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(404);
-    const response = await ethImpl.getCode(contractAddress1, "0x3");
+    const response = await ethImpl.getCode(contractAddress1, '0x3');
 
     validateResponseSchema(methodsResponseSchema.eth_getCode, response);
   });
@@ -346,7 +346,7 @@ describe("Open RPC Specification", function () {
           `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}&limit=100&order=asc`,
       )
       .reply(200, filteredLogs);
-    mock.onGet("blocks?block.number=gte:0x5&block.number=lte:0x10").reply(200, {
+    mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
       blocks: [defaultBlock],
     });
     for (const log of filteredLogs.logs) {
@@ -384,7 +384,7 @@ describe("Open RPC Specification", function () {
       .onGet(`accounts/${contractAddress1}${noTransactions}`)
       .reply(200, { account: contractAddress1, ethereum_nonce: 5 });
     mock.onGet(`contracts/${contractAddress1}${noTransactions}`).reply(404);
-    const response = await ethImpl.getTransactionCount(contractAddress1, "latest");
+    const response = await ethImpl.getTransactionCount(contractAddress1, 'latest');
 
     validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);
   });

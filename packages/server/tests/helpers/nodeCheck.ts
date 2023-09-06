@@ -1,8 +1,8 @@
-const net = require("net");
+const net = require('net');
 
 (async function () {
-  const supportedEnvs = ["previewnet", "testnet", "mainnet"];
-  const network = process.env.HEDERA_NETWORK || "{}";
+  const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
+  const network = process.env.HEDERA_NETWORK || '{}';
 
   const isLocalNode = !supportedEnvs.includes(network.toLowerCase());
   if (isLocalNode) {
@@ -10,12 +10,12 @@ const net = require("net");
     const retries = 10;
     while (!nodeStarted && retries >= 0) {
       net
-        .createConnection("5600", "127.0.0.1")
-        .on("data", function () {
+        .createConnection('5600', '127.0.0.1')
+        .on('data', function () {
           nodeStarted = true;
-          console.log("Local node has been succefully started!");
+          console.log('Local node has been succefully started!');
         })
-        .on("error", (err) => {
+        .on('error', (err) => {
           console.log(`Waiting for local node, retrying in 15 seconds...`);
         });
 

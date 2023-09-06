@@ -18,9 +18,9 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import { logListName, resultListName, transactionListName } from "./constants.js";
+import { logListName, resultListName, transactionListName } from './constants.js';
 
 const getValidResponse = (requestUrl, requestBody, httpVerbMethod) => {
   const response = httpVerbMethod(requestUrl, JSON.stringify(requestBody));
@@ -67,7 +67,7 @@ const computeProperties = (propertyList, fallback) => {
 };
 
 export const computeLatestContractResultParameters = (configuration) =>
-  computeProperties(["DEFAULT_ENTITY_FROM", "DEFAULT_TIMESTAMP", "DEFAULT_ENTITY_TO"], () => {
+  computeProperties(['DEFAULT_ENTITY_FROM', 'DEFAULT_TIMESTAMP', 'DEFAULT_ENTITY_TO'], () => {
     const contractResultPath = `${configuration.baseApiUrl}/contracts/results?limit=1&order=desc`;
     const firstResult = getFirstEntity(contractResultPath, resultListName);
 
@@ -79,7 +79,7 @@ export const computeLatestContractResultParameters = (configuration) =>
   });
 
 export const computeLatestEthereumTransactionParameters = (configuration) =>
-  computeProperties(["DEFAULT_BLOCK_HASH", "DEFAULT_ETH_TRANSACTION_ID", "DEFAULT_TRANSACTION_HASH"], () => {
+  computeProperties(['DEFAULT_BLOCK_HASH', 'DEFAULT_ETH_TRANSACTION_ID', 'DEFAULT_TRANSACTION_HASH'], () => {
     const transactionResultPath = `${configuration.baseApiUrl}/transactions?transactiontype=ethereumtransaction&limit=1&order=desc&result=success`;
     const firstResult = getFirstEntity(transactionResultPath, transactionListName);
     const contractResultPath = `${configuration.baseApiUrl}/contracts/results/${firstResult.transaction_id}`;
@@ -93,7 +93,7 @@ export const computeLatestEthereumTransactionParameters = (configuration) =>
   });
 
 export const computeLatestLogParameters = (configuration) =>
-  computeProperties(["DEFAULT_CONTRACT_ADDRESS", "DEFAULT_LOG_TIMESTAMP"], () => {
+  computeProperties(['DEFAULT_CONTRACT_ADDRESS', 'DEFAULT_LOG_TIMESTAMP'], () => {
     const logResultPath = `${configuration.baseApiUrl}/contracts/results/logs?limit=1&order=desc`;
     const firstResult = getFirstEntity(logResultPath, logListName);
 
@@ -104,11 +104,11 @@ export const computeLatestLogParameters = (configuration) =>
   });
 
 export const setDefaultValuesForEnvParameters = () => {
-  __ENV["MIRROR_BASE_URL"] = __ENV["MIRROR_BASE_URL"] || "http://localhost:5551";
-  __ENV["RELAY_BASE_URL"] = __ENV["RELAY_BASE_URL"] || "http://localhost:7546";
-  __ENV["DEFAULT_DURATION"] = __ENV["DEFAULT_DURATION"] || "120s";
-  __ENV["DEFAULT_VUS"] = __ENV["DEFAULT_VUS"] || 10;
-  __ENV["DEFAULT_LIMIT"] = __ENV["DEFAULT_LIMIT"] || 100;
-  __ENV["DEFAULT_PASS_RATE"] = __ENV["DEFAULT_PASS_RATE"] || 0.95;
-  __ENV["DEFAULT_MAX_DURATION"] = __ENV["DEFAULT_MAX_DURATION"] || 500;
+  __ENV['MIRROR_BASE_URL'] = __ENV['MIRROR_BASE_URL'] || 'http://localhost:5551';
+  __ENV['RELAY_BASE_URL'] = __ENV['RELAY_BASE_URL'] || 'http://localhost:7546';
+  __ENV['DEFAULT_DURATION'] = __ENV['DEFAULT_DURATION'] || '120s';
+  __ENV['DEFAULT_VUS'] = __ENV['DEFAULT_VUS'] || 10;
+  __ENV['DEFAULT_LIMIT'] = __ENV['DEFAULT_LIMIT'] || 100;
+  __ENV['DEFAULT_PASS_RATE'] = __ENV['DEFAULT_PASS_RATE'] || 0.95;
+  __ENV['DEFAULT_MAX_DURATION'] = __ENV['DEFAULT_MAX_DURATION'] || 500;
 };

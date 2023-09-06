@@ -29,7 +29,7 @@ export class RedisCacheError {
   public stack?: string;
 
   static ErrorMessages = {
-    SOCKET_CLOSED: "SocketClosedUnexpectedlyError",
+    SOCKET_CLOSED: 'SocketClosedUnexpectedlyError',
   };
 
   /**

@@ -1,10 +1,10 @@
-import { Box, Button, InputAdornment, TextField, Typography } from "@mui/material";
-import { useCallback, useState } from "react";
-import useHederaSdk from "../hooks/useHederaSdkClient";
+import { Box, Button, InputAdornment, TextField, Typography } from '@mui/material';
+import { useCallback, useState } from 'react';
+import useHederaSdk from '../hooks/useHederaSdkClient';
 
 const AccountActivationForm = ({ isConnected, toAccountId, alias, isActive, evmAddress, fetchAccountBalance }) => {
-  const [mainAccountId, setMainAccountId] = useState("");
-  const [mainPrivateKey, setMainPrivateKey] = useState("");
+  const [mainAccountId, setMainAccountId] = useState('');
+  const [mainPrivateKey, setMainPrivateKey] = useState('');
   const [amount, setAmount] = useState(0);
 
   const { transferHbarsToAccount, getAccountInfo } = useHederaSdk();
@@ -28,17 +28,17 @@ const AccountActivationForm = ({ isConnected, toAccountId, alias, isActive, evmA
 
   return (
     <>
-      <Typography variant="h5" sx={{ textDecoration: "underline" }}>
-        {" "}
-        Account Activation{" "}
+      <Typography variant="h5" sx={{ textDecoration: 'underline' }}>
+        {' '}
+        Account Activation{' '}
       </Typography>
       {isConnected && !isActive ? (
-        <Typography variant="h6" style={{ wordBreak: "break-word" }} color="orange">
+        <Typography variant="h6" style={{ wordBreak: 'break-word' }} color="orange">
           Your hedera account is not active yet. You need to transfer HBAR in order to activate it.
         </Typography>
       ) : null}
 
-      <Box sx={{ display: "flex", flexWrap: "wrap" }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
         <TextField
           fullWidth
           label="Account Id"

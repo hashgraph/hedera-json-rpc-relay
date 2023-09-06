@@ -1,17 +1,17 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { Button, TextField, Typography } from "@mui/material";
-import { ethers } from "ethers";
-import IHRC from "../contracts/IHRC.json";
+import React, { useState, useCallback, useEffect } from 'react';
+import { Button, TextField, Typography } from '@mui/material';
+import { ethers } from 'ethers';
+import IHRC from '../contracts/IHRC.json';
 
 const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [htsTokenAddress, setHtsTokenAddress] = useState("");
+  const [htsTokenAddress, setHtsTokenAddress] = useState('');
   const [htsTokenAssociateMsg, setHtsTokenAssocaiteMsg] = useState(null);
 
   // clear state vars on a chain or address have changed
   useEffect(() => {
     setIsLoading(false);
-    setHtsTokenAddress("");
+    setHtsTokenAddress('');
     setHtsTokenAssocaiteMsg(null);
   }, [chain, address]);
 
@@ -20,25 +20,25 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
 
     try {
       setIsLoading(true);
-      setHtsTokenAssocaiteMsg("Loading...");
+      setHtsTokenAssocaiteMsg('Loading...');
 
       const txAssociate = await hrcToken.associate({ gasLimit: 1_000_0000 });
       const receiptAssociate = await txAssociate.wait();
 
-      setHtsTokenAssocaiteMsg(receiptAssociate.status === 1 ? "Done" : "There was an error.");
+      setHtsTokenAssocaiteMsg(receiptAssociate.status === 1 ? 'Done' : 'There was an error.');
       setIsLoading(false);
     } catch (e) {
       console.error(e);
-      setHtsTokenAssocaiteMsg("There was an error.");
+      setHtsTokenAssocaiteMsg('There was an error.');
       setIsLoading(false);
     }
   }, [signer, htsTokenAddress]);
 
   return (
     <>
-      <Typography variant="h5" sx={{ textDecoration: "underline" }}>
-        {" "}
-        Associate HTS Tokens{" "}
+      <Typography variant="h5" sx={{ textDecoration: 'underline' }}>
+        {' '}
+        Associate HTS Tokens{' '}
       </Typography>
       <br />
       <TextField
@@ -63,8 +63,8 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
       </Button>
       <br />
       <Typography id="htsTokenAssociateMsg" variant="h6">
-        {" "}
-        {htsTokenAssociateMsg}{" "}
+        {' '}
+        {htsTokenAssociateMsg}{' '}
       </Typography>
     </>
   );

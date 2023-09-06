@@ -18,22 +18,22 @@
  *
  */
 
-import path from "path";
-import dotenv from "dotenv";
-import { expect } from "chai";
-import sinon from "sinon";
-import { Registry } from "prom-client";
-dotenv.config({ path: path.resolve(__dirname, "../test.env") });
+import path from 'path';
+import dotenv from 'dotenv';
+import { expect } from 'chai';
+import sinon from 'sinon';
+import { Registry } from 'prom-client';
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const registry = new Registry();
-import pino from "pino";
-import { AccountId, Client, ContractCallQuery, PrivateKey, TransactionId, Hbar, Status } from "@hashgraph/sdk";
+import pino from 'pino';
+import { AccountId, Client, ContractCallQuery, PrivateKey, TransactionId, Hbar, Status } from '@hashgraph/sdk';
 const logger = pino();
-import constants from "../../src/lib/constants";
-import HbarLimit from "../../src/lib/hbarlimiter";
-import { SDKClient } from "../../src/lib/clients";
-import { CacheService } from "../../src/lib/services/cacheService/cacheService";
+import constants from '../../src/lib/constants';
+import HbarLimit from '../../src/lib/hbarlimiter';
+import { SDKClient } from '../../src/lib/clients';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 
-describe("SdkClient", async function () {
+describe('SdkClient', async function () {
   this.timeout(20000);
   let sdkClient, client, hbarLimiter;
 
@@ -51,7 +51,7 @@ describe("SdkClient", async function () {
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
-    hbarLimiter = new HbarLimit(logger.child({ name: "hbar-rate-limit" }), Date.now(), total, duration, registry);
+    hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     sdkClient = new SDKClient(
       client,
       logger.child({ name: `consensus-node` }),
@@ -61,20 +61,20 @@ describe("SdkClient", async function () {
     );
   });
 
-  describe("increaseCostAndRetryExecution", async () => {
+  describe('increaseCostAndRetryExecution', async () => {
     let queryStub, contractCallQuery;
-    const successResponse = "0x00001";
+    const successResponse = '0x00001';
     const costTinybars = 1000;
     const baseCost = Hbar.fromTinybars(costTinybars);
 
     beforeEach(() => {
       contractCallQuery = new ContractCallQuery()
-        .setContractId("0.0.1010")
+        .setContractId('0.0.1010')
         .setPaymentTransactionId(TransactionId.generate(client.operatorAccountId));
-      queryStub = sinon.stub(contractCallQuery, "execute");
+      queryStub = sinon.stub(contractCallQuery, 'execute');
     });
 
-    it("executes the query", async () => {
+    it('executes the query', async () => {
       queryStub.returns(successResponse);
       let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(contractCallQuery, baseCost, client, 3, 0);
       expect(resp).to.eq(successResponse);
@@ -82,7 +82,7 @@ describe("SdkClient", async function () {
       expect(queryStub.callCount).to.eq(1);
     });
 
-    it("increases the cost when INSUFFICIENT_TX_FEE is thrown", async () => {
+    it('increases the cost when INSUFFICIENT_TX_FEE is thrown', async () => {
       queryStub.onCall(0).throws({
         status: Status.InsufficientTxFee,
       });
@@ -94,7 +94,7 @@ describe("SdkClient", async function () {
       expect(queryStub.callCount).to.eq(2);
     });
 
-    it("increases the cost when INSUFFICIENT_TX_FEE is thrown on every repeat", async () => {
+    it('increases the cost when INSUFFICIENT_TX_FEE is thrown on every repeat', async () => {
       queryStub.onCall(0).throws({
         status: Status.InsufficientTxFee,
       });
@@ -113,7 +113,7 @@ describe("SdkClient", async function () {
       expect(queryStub.callCount).to.eq(3);
     });
 
-    it("is repeated at most 4 times", async () => {
+    it('is repeated at most 4 times', async () => {
       try {
         queryStub.throws({
           status: Status.InsufficientTxFee,
@@ -126,8 +126,8 @@ describe("SdkClient", async function () {
       }
     });
 
-    it("should return cached getTinyBarGasFee value", async () => {
-      const getFeeScheduleStub = sinon.stub(sdkClient, "getFeeSchedule").callsFake(() => {
+    it('should return cached getTinyBarGasFee value', async () => {
+      const getFeeScheduleStub = sinon.stub(sdkClient, 'getFeeSchedule').callsFake(() => {
         return {
           current: {
             transactionFeeSchedule: [
@@ -145,11 +145,11 @@ describe("SdkClient", async function () {
           },
         };
       });
-      const getExchangeRateStub = sinon.stub(sdkClient, "getExchangeRate").callsFake(() => {});
-      const convertGasPriceToTinyBarsStub = sinon.stub(sdkClient, "convertGasPriceToTinyBars").callsFake(() => 0x160c);
+      const getExchangeRateStub = sinon.stub(sdkClient, 'getExchangeRate').callsFake(() => {});
+      const convertGasPriceToTinyBarsStub = sinon.stub(sdkClient, 'convertGasPriceToTinyBars').callsFake(() => 0x160c);
 
       for (let i = 0; i < 5; i++) {
-        await sdkClient.getTinyBarGasFee("");
+        await sdkClient.getTinyBarGasFee('');
       }
 
       sinon.assert.calledOnce(getFeeScheduleStub);

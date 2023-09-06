@@ -18,17 +18,17 @@
  *
  */
 
-import constants from "../../../constants";
-import { JsonRpcError, predefined } from "../../../errors/JsonRpcError";
-import { ICommonService } from "./ICommonService";
-import { Logger } from "pino";
-import { MirrorNodeClient } from "../../../clients";
-import { nullableNumberTo0x, numberTo0x, parseNumericEnvVar, toHash32 } from "../../../../formatters";
-import { SDKClientError } from "../../../errors/SDKClientError";
-import { MirrorNodeClientError } from "../../../errors/MirrorNodeClientError";
-import { Log } from "../../../model";
-import * as _ from "lodash";
-import { CacheService } from "../../cacheService/cacheService";
+import constants from '../../../constants';
+import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
+import { ICommonService } from './ICommonService';
+import { Logger } from 'pino';
+import { MirrorNodeClient } from '../../../clients';
+import { nullableNumberTo0x, numberTo0x, parseNumericEnvVar, toHash32 } from '../../../../formatters';
+import { SDKClientError } from '../../../errors/SDKClientError';
+import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
+import { Log } from '../../../model';
+import * as _ from 'lodash';
+import { CacheService } from '../../cacheService/cacheService';
 
 /**
  * Create a new Common Service implementation.
@@ -58,17 +58,17 @@ export class CommonService implements ICommonService {
    */
   private readonly cacheService: CacheService;
 
-  static blockLatest = "latest";
-  static blockEarliest = "earliest";
-  static blockPending = "pending";
+  static blockLatest = 'latest';
+  static blockEarliest = 'earliest';
+  static blockPending = 'pending';
 
   // function callerNames
-  static latestBlockNumber = "getLatestBlockNumber";
+  static latestBlockNumber = 'getLatestBlockNumber';
 
-  private readonly maxBlockRange = parseNumericEnvVar("MAX_BLOCK_RANGE", "MAX_BLOCK_RANGE");
+  private readonly maxBlockRange = parseNumericEnvVar('MAX_BLOCK_RANGE', 'MAX_BLOCK_RANGE');
   private readonly ethBlockNumberCacheTtlMs = parseNumericEnvVar(
-    "ETH_BLOCK_NUMBER_CACHE_TTL_MS",
-    "ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT",
+    'ETH_BLOCK_NUMBER_CACHE_TTL_MS',
+    'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT',
   );
 
   constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService) {
@@ -304,8 +304,8 @@ export class CommonService implements ICommonService {
 
   public async getLogs(
     blockHash: string | null,
-    fromBlock: string | "latest",
-    toBlock: string | "latest",
+    fromBlock: string | 'latest',
+    toBlock: string | 'latest',
     address: string | [string] | null,
     topics: any[] | null,
     requestIdPrefix?: string,

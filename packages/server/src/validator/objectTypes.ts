@@ -1,103 +1,103 @@
-import { Validator } from ".";
-import { predefined } from "@hashgraph/json-rpc-relay";
+import { Validator } from '.';
+import { predefined } from '@hashgraph/json-rpc-relay';
 
 export const OBJECTS_VALIDATIONS = {
   blockHashObject: {
     blockHash: {
-      type: "blockHash",
+      type: 'blockHash',
       nullable: false,
     },
   },
   blockNumberObject: {
     blockNumber: {
-      type: "blockNumber",
+      type: 'blockNumber',
       nullable: false,
     },
   },
   filter: {
     blockHash: {
-      type: "blockHash",
+      type: 'blockHash',
       nullable: false,
     },
     fromBlock: {
-      type: "blockNumber",
+      type: 'blockNumber',
       nullable: false,
     },
     toBlock: {
-      type: "blockNumber",
+      type: 'blockNumber',
       nullable: false,
     },
     address: {
-      type: "addressFilter",
+      type: 'addressFilter',
       nullable: false,
     },
     topics: {
-      type: "topics",
+      type: 'topics',
       nullable: false,
     },
   },
   transaction: {
     from: {
-      type: "address",
+      type: 'address',
       nullable: false,
     },
     to: {
-      type: "address",
+      type: 'address',
       nullable: false,
     },
     gas: {
-      type: "hex",
+      type: 'hex',
       nullable: false,
     },
     gasPrice: {
-      type: "hex",
+      type: 'hex',
       nullable: false,
     },
     maxPriorityFeePerGas: {
-      type: "hex",
+      type: 'hex',
       nullable: false,
     },
     maxFeePerGas: {
-      type: "hex",
+      type: 'hex',
       nullable: false,
     },
     value: {
-      type: "hex",
+      type: 'hex',
       nullable: false,
     },
     data: {
-      type: "hex",
+      type: 'hex',
       nullable: true,
     },
     type: {
-      type: "hex",
+      type: 'hex',
       nullable: false,
     },
     chainId: {
-      type: "hex",
+      type: 'hex',
       nullable: false,
     },
     nonce: {
-      type: "hex",
+      type: 'hex',
       nullable: false,
     },
     input: {
-      type: "hex",
+      type: 'hex',
       nullable: false,
     },
     accessList: {
-      type: "array",
+      type: 'array',
       nullable: false,
     },
   },
   ethSubscribeLogsParams: {
     address: {
-      type: "addressFilter",
+      type: 'addressFilter',
       nullable: false,
       required: false,
     },
     topics: {
-      type: "topics",
+      type: 'topics',
       nullable: false,
     },
   },

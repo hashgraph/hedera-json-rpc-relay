@@ -18,15 +18,15 @@
  * ‍
  */
 
-import http from "k6/http";
-import { randomIntBetween } from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
+import http from 'k6/http';
+import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
-import { TestScenarioBuilder } from "../../lib/common.js";
-import { isNonErrorResponse, httpParams, getPayLoad } from "./common.js";
+import { TestScenarioBuilder } from '../../lib/common.js';
+import { isNonErrorResponse, httpParams, getPayLoad } from './common.js';
 
 const url = __ENV.RELAY_BASE_URL;
 
-const methodName = "eth_call";
+const methodName = 'eth_call';
 const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request((testParameters) => {
@@ -39,12 +39,12 @@ const { options, run } = new TestScenarioBuilder()
 
     return http.post(
       url,
-      getPayLoad(methodName, [{ from: from, to: contractAddress, data: "0xcfae3217" }, "latest"]),
+      getPayLoad(methodName, [{ from: from, to: contractAddress, data: '0xcfae3217' }, 'latest']),
       httpParams,
     );
   })
   .check(methodName, (r) => isNonErrorResponse(r))
-  .testDuration("3s")
+  .testDuration('3s')
   .maxDuration(2000)
   .build();
 

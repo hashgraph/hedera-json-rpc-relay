@@ -18,19 +18,19 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import { TestScenarioBuilder } from "../../lib/common.js";
-import { isNonErrorResponse, httpParams, getPayLoad } from "./common.js";
-import { setupTestParameters } from "./bootstrapEnvParameters.js";
+import { TestScenarioBuilder } from '../../lib/common.js';
+import { isNonErrorResponse, httpParams, getPayLoad } from './common.js';
+import { setupTestParameters } from './bootstrapEnvParameters.js';
 
-const methodName = "eth_getTransactionByBlockHashAndIndex";
+const methodName = 'eth_getTransactionByBlockHashAndIndex';
 const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request((testParameters) => {
     return http.post(
       testParameters.RELAY_BASE_URL,
-      getPayLoad(methodName, [testParameters.DEFAULT_BLOCK_HASH, "0x0"]),
+      getPayLoad(methodName, [testParameters.DEFAULT_BLOCK_HASH, '0x0']),
       httpParams,
     );
   })

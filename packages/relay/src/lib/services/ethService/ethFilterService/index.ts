@@ -18,15 +18,15 @@
  *
  */
 
-import { Logger } from "pino";
-import { MirrorNodeClient } from "../../../clients";
-import constants from "../../../constants";
-import { IFilterService } from "./IFilterService";
-import { CommonService } from "./../ethCommonService";
-import { generateRandomHex } from "../../../../formatters";
-import { JsonRpcError, predefined } from "../../../errors/JsonRpcError";
-import { Log } from "../../../model";
-import { CacheService } from "../../cacheService/cacheService";
+import { Logger } from 'pino';
+import { MirrorNodeClient } from '../../../clients';
+import constants from '../../../constants';
+import { IFilterService } from './IFilterService';
+import { CommonService } from './../ethCommonService';
+import { generateRandomHex } from '../../../../formatters';
+import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
+import { Log } from '../../../model';
+import { CacheService } from '../../cacheService/cacheService';
 
 /**
  * Create a new Filter Service implementation.
@@ -55,10 +55,10 @@ export class FilterService implements IFilterService {
    * @private
    */
   private readonly cacheService: CacheService;
-  public readonly ethNewFilter = "eth_newFilter";
-  public readonly ethUninstallFilter = "eth_uninstallFilter";
-  public readonly ethGetFilterLogs = "eth_getFilterLogs";
-  public readonly ethGetFilterChanges = "eth_getFilterChanges";
+  public readonly ethNewFilter = 'eth_newFilter';
+  public readonly ethUninstallFilter = 'eth_uninstallFilter';
+  public readonly ethGetFilterLogs = 'eth_getFilterLogs';
+  public readonly ethGetFilterChanges = 'eth_getFilterChanges';
 
   private readonly common: CommonService;
   private readonly supportedTypes;
@@ -101,7 +101,7 @@ export class FilterService implements IFilterService {
    * Checks if the Filter API is enabled
    */
   static requireFiltersEnabled() {
-    if (!process.env.FILTER_API_ENABLED || process.env.FILTER_API_ENABLED !== "true") {
+    if (!process.env.FILTER_API_ENABLED || process.env.FILTER_API_ENABLED !== 'true') {
       throw predefined.UNSUPPORTED_METHOD;
     }
   }
@@ -115,8 +115,8 @@ export class FilterService implements IFilterService {
    * @param requestIdPrefix
    */
   async newFilter(
-    fromBlock: string = "latest",
-    toBlock: string = "latest",
+    fromBlock: string = 'latest',
+    toBlock: string = 'latest',
     address?: string,
     topics?: any[],
     requestIdPrefix?: string,
@@ -134,7 +134,7 @@ export class FilterService implements IFilterService {
       return this.createFilter(
         constants.FILTER.TYPE.LOG,
         {
-          fromBlock: fromBlock === "latest" ? await this.common.getLatestBlockNumber(requestIdPrefix) : fromBlock,
+          fromBlock: fromBlock === 'latest' ? await this.common.getLatestBlockNumber(requestIdPrefix) : fromBlock,
           toBlock,
           address,
           topics,
@@ -237,7 +237,7 @@ export class FilterService implements IFilterService {
         [`gt:${filter.lastQueried || filter.params.blockAtCreation}`],
         undefined,
         {
-          order: "asc",
+          order: 'asc',
         },
       );
 

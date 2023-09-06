@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { Button, Typography, TextField, Link } from "@mui/material";
-import Greeter from "../contracts/Greeter.json";
-import { ethers } from "ethers";
+import React, { useState, useCallback, useEffect } from 'react';
+import { Button, Typography, TextField, Link } from '@mui/material';
+import Greeter from '../contracts/Greeter.json';
+import { ethers } from 'ethers';
 
 const ContractInteractions = ({ signer, isConnected, chain, address }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -9,7 +9,7 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
   const [deployContractMsg, setDeployContractMsg] = useState(null);
   const [contractCallViewMsg, setContractCallViewMsg] = useState(null);
   const [contractCallUpdateMsg, setContractCallUpdateMsg] = useState(null);
-  const [contractCallUpdateMsgInput, setContractCallUpdateMsgInput] = useState("");
+  const [contractCallUpdateMsgInput, setContractCallUpdateMsgInput] = useState('');
 
   // clear state vars on a chain or address have changed
   useEffect(() => {
@@ -18,21 +18,21 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
     setDeployContractMsg(null);
     setContractCallViewMsg(null);
     setContractCallUpdateMsg(null);
-    setContractCallUpdateMsgInput("");
+    setContractCallUpdateMsgInput('');
   }, [chain, address]);
 
   const deployContractHandler = useCallback(async () => {
     try {
       setIsLoading(true);
-      setDeployContractMsg("Loading...");
+      setDeployContractMsg('Loading...');
 
       const contractFactory = new ethers.ContractFactory(Greeter.abi, Greeter.bytecode, signer);
-      const contract = await contractFactory.deploy("initial_msg");
+      const contract = await contractFactory.deploy('initial_msg');
       const receipt = await contract.deployTransaction.wait();
       setContractAddress(receipt.contractAddress);
 
       setIsLoading(false);
-      setDeployContractMsg("Addr: " + receipt.contractAddress);
+      setDeployContractMsg('Addr: ' + receipt.contractAddress);
     } catch (error) {
       console.error(error.message);
       setDeployContractMsg(null);
@@ -43,12 +43,12 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
   const contractCallViewHandler = useCallback(async () => {
     try {
       setIsLoading(true);
-      setContractCallViewMsg("Loading...");
+      setContractCallViewMsg('Loading...');
 
       const contract = new ethers.Contract(contractAddress, Greeter.abi, signer);
       const call = await contract.greet();
 
-      setContractCallViewMsg("Result: " + call);
+      setContractCallViewMsg('Result: ' + call);
       setIsLoading(false);
     } catch (error) {
       console.error(error.message);
@@ -62,39 +62,39 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
       if (!contractCallUpdateMsgInput) return;
 
       setIsLoading(true);
-      setContractCallUpdateMsg("Loading...");
+      setContractCallUpdateMsg('Loading...');
 
       const contract = new ethers.Contract(contractAddress, Greeter.abi, signer);
       const tx = await contract.setGreeting(contractCallUpdateMsgInput);
       await tx.wait();
 
-      setContractCallUpdateMsg("Updated text: " + contractCallUpdateMsgInput);
+      setContractCallUpdateMsg('Updated text: ' + contractCallUpdateMsgInput);
       setIsLoading(false);
     } catch (error) {
       console.error(error.message);
       setContractCallUpdateMsg(null);
-      setContractCallUpdateMsgInput("");
+      setContractCallUpdateMsgInput('');
       setIsLoading(false);
     }
   }, [signer, contractAddress, contractCallUpdateMsgInput]);
 
   return (
     <>
-      <Typography variant="h5" sx={{ textDecoration: "underline" }}>
-        {" "}
-        Contract Interactions{" "}
+      <Typography variant="h5" sx={{ textDecoration: 'underline' }}>
+        {' '}
+        Contract Interactions{' '}
       </Typography>
       <br />
       <Typography variant="h6">
-        {" "}
-        Source:{" "}
+        {' '}
+        Source:{' '}
         <Link
           href="https://github.com/NomicFoundation/hardhat/blob/master/packages/hardhat-core/sample-projects/basic/contracts/Greeter.sol"
           rel="noreferrer"
           target="_blank"
         >
           Greeter.sol
-        </Link>{" "}
+        </Link>{' '}
       </Typography>
 
       <Button
@@ -123,8 +123,8 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
       </Button>
       <br />
       <Typography id="contractViewMsg" variant="h6">
-        {" "}
-        {contractCallViewMsg}{" "}
+        {' '}
+        {contractCallViewMsg}{' '}
       </Typography>
       <br />
       <TextField
@@ -149,8 +149,8 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
       </Button>
       <br />
       <Typography id="contractUpdateMsg" variant="h6">
-        {" "}
-        {contractCallUpdateMsg}{" "}
+        {' '}
+        {contractCallUpdateMsg}{' '}
       </Typography>
     </>
   );

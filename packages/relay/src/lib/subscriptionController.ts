@@ -18,13 +18,13 @@
  *
  */
 
-import { Logger } from "pino";
-import LRU from "lru-cache";
-import crypto from "crypto";
-import constants from "./constants";
-import { Poller } from "./poller";
-import { generateRandomHex } from "../formatters";
-import { Registry, Histogram, Counter } from "prom-client";
+import { Logger } from 'pino';
+import LRU from 'lru-cache';
+import crypto from 'crypto';
+import constants from './constants';
+import { Poller } from './poller';
+import { generateRandomHex } from '../formatters';
+import { Registry, Histogram, Counter } from 'prom-client';
 
 export interface Subscriber {
   connection: any;
@@ -49,11 +49,11 @@ export class SubscriptionController {
 
     this.cache = new LRU({ max: constants.CACHE_MAX, ttl: CACHE_TTL });
 
-    const activeSubscriptionHistogramName = "rpc_websocket_subscription_times";
+    const activeSubscriptionHistogramName = 'rpc_websocket_subscription_times';
     register.removeSingleMetric(activeSubscriptionHistogramName);
     this.activeSubscriptionHistogram = new Histogram({
       name: activeSubscriptionHistogramName,
-      help: "Relay websocket active subscription timer",
+      help: 'Relay websocket active subscription timer',
       registers: [register],
       buckets: [
         0.05, // fraction of a second
@@ -68,18 +68,18 @@ export class SubscriptionController {
       ],
     });
 
-    const resultsSentToSubscribersCounterName = "rpc_websocket_poll_received_results";
+    const resultsSentToSubscribersCounterName = 'rpc_websocket_poll_received_results';
     register.removeSingleMetric(resultsSentToSubscribersCounterName);
     this.resultsSentToSubscribersCounter = new Counter({
-      name: "rpc_websocket_poll_received_results",
-      help: "Relay websocket counter for the unique results sent to subscribers",
+      name: 'rpc_websocket_poll_received_results',
+      help: 'Relay websocket counter for the unique results sent to subscribers',
       registers: [register],
-      labelNames: ["subId", "tag"],
+      labelNames: ['subId', 'tag'],
     });
   }
 
   createHash(data) {
-    return crypto.createHash("sha256").update(data.toString()).digest("hex");
+    return crypto.createHash('sha256').update(data.toString()).digest('hex');
   }
 
   // Generates a random 16 byte hex string
@@ -168,10 +168,10 @@ export class SubscriptionController {
           this.logger.debug(
             `Sending data from tag: ${tag} to subscriptionId: ${sub.subscriptionId}, connectionId: ${sub.connection.id}, data: ${subscriptionData}`,
           );
-          this.resultsSentToSubscribersCounter.labels("sub.subscriptionId", tag).inc();
+          this.resultsSentToSubscribersCounter.labels('sub.subscriptionId', tag).inc();
           sub.connection.send(
             JSON.stringify({
-              method: "eth_subscription",
+              method: 'eth_subscription',
               params: subscriptionData,
             }),
           );

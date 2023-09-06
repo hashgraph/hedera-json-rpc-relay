@@ -18,13 +18,13 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import { TestScenarioBuilder } from "../../lib/common.js";
-import { isNonErrorResponse, httpParams, getPayLoad } from "./common.js";
-import { setupTestParameters } from "./bootstrapEnvParameters.js";
+import { TestScenarioBuilder } from '../../lib/common.js';
+import { isNonErrorResponse, httpParams, getPayLoad } from './common.js';
+import { setupTestParameters } from './bootstrapEnvParameters.js';
 
-const methodName = "eth_getTransactionReceipt";
+const methodName = 'eth_getTransactionReceipt';
 const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
   .request((testParameters) => {

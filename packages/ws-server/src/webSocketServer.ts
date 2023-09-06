@@ -17,29 +17,29 @@
  * limitations under the License.
  *
  */
-import dotenv from "dotenv";
-import path from "path";
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
-import Koa from "koa";
-import jsonResp from "@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse";
-import KoaJsonRpc from "@hashgraph/json-rpc-server/dist/koaJsonRpc";
-import websockify from "koa-websocket";
-import { Relay, RelayImpl, predefined, JsonRpcError } from "@hashgraph/json-rpc-relay";
-import { Registry, Counter } from "prom-client";
-import pino from "pino";
+import Koa from 'koa';
+import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
+import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
+import websockify from 'koa-websocket';
+import { Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
+import { Registry, Counter } from 'prom-client';
+import pino from 'pino';
 
-import ConnectionLimiter from "./ConnectionLimiter";
-import { formatRequestIdMessage } from "@hashgraph/json-rpc-relay/dist/formatters";
-import { EthSubscribeLogsParamsObject } from "@hashgraph/json-rpc-server/dist/validator";
-import { v4 as uuid } from "uuid";
-import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
+import ConnectionLimiter from './ConnectionLimiter';
+import { formatRequestIdMessage } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { EthSubscribeLogsParamsObject } from '@hashgraph/json-rpc-server/dist/validator';
+import { v4 as uuid } from 'uuid';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 const mainLogger = pino({
-  name: "hedera-json-rpc-relay",
-  level: process.env.LOG_LEVEL || "trace",
+  name: 'hedera-json-rpc-relay',
+  level: process.env.LOG_LEVEL || 'trace',
   transport: {
-    target: "pino-pretty",
+    target: 'pino-pretty',
     options: {
       colorize: true,
       translateTime: true,
@@ -49,7 +49,7 @@ const mainLogger = pino({
 
 const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
 
-const logger = mainLogger.child({ name: "rpc-ws-server" });
+const logger = mainLogger.child({ name: 'rpc-ws-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger, register);
 const limiter = new ConnectionLimiter(logger, register);
@@ -60,21 +60,21 @@ const app = websockify(new Koa());
 const CHAIN_ID = relay.eth().chainId();
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
 
-const methodsCounterName = "rpc_websocket_method_counter";
+const methodsCounterName = 'rpc_websocket_method_counter';
 register.removeSingleMetric(methodsCounterName);
 const methodsCounter = new Counter({
-  name: "rpc_websocket_method_counter",
-  help: "Relay websocket total methods called",
-  labelNames: ["method"],
+  name: 'rpc_websocket_method_counter',
+  help: 'Relay websocket total methods called',
+  labelNames: ['method'],
   registers: [register],
 });
 
-const methodsCounterByIpName = "rpc_websocket_method_by_ip_counter";
+const methodsCounterByIpName = 'rpc_websocket_method_by_ip_counter';
 register.removeSingleMetric(methodsCounterByIpName);
 const methodsCounterByIp = new Counter({
   name: methodsCounterByIpName,
-  help: "Relay websocket methods called by ip",
-  labelNames: ["ip", "method"],
+  help: 'Relay websocket methods called by ip',
+  labelNames: ['ip', 'method'],
   registers: [register],
 });
 
@@ -87,7 +87,7 @@ async function handleConnectionClose(ctx) {
 }
 
 function getMultipleAddressesEnabled() {
-  return process.env.WS_MULTIPLE_ADDRESSES_ENABLED === "true";
+  return process.env.WS_MULTIPLE_ADDRESSES_ENABLED === 'true';
 }
 
 async function validateIsContractOrTokenAddress(address, requestId) {
@@ -136,7 +136,7 @@ app.ws.use(async (ctx) => {
   );
 
   // Close event handle
-  ctx.websocket.on("close", async (code, message) => {
+  ctx.websocket.on('close', async (code, message) => {
     logger.info(
       `${connectionIdPrefix} ${connectionRequestIdPrefix} Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`,
     );
@@ -149,13 +149,13 @@ app.ws.use(async (ctx) => {
   // Limit checks
   limiter.applyLimits(ctx);
 
-  ctx.websocket.on("message", async (msg) => {
+  ctx.websocket.on('message', async (msg) => {
     // Receiving a message from the client resets the TTL timer
     limiter.resetInactivityTTLTimer(ctx.websocket);
     const requestIdPrefix = formatRequestIdMessage(uuid());
     let request;
     try {
-      request = JSON.parse(msg.toString("ascii"));
+      request = JSON.parse(msg.toString('ascii'));
     } catch (e) {
       logger.error(
         `${connectionIdPrefix} ${requestIdPrefix} ${ctx.websocket.id}: Could not decode message from connection, message: ${msg}, error: ${e}`,
@@ -199,7 +199,7 @@ app.ws.use(async (ctx) => {
           if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
             response = jsonResp(
               request.id,
-              predefined.INVALID_PARAMETER("filters.address", "Only one contract address is allowed"),
+              predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
               undefined,
             );
           } else {
@@ -255,25 +255,25 @@ httpApp.use(async (ctx, next) => {
   /**
    * prometheus metrics exposure
    */
-  if (ctx.url === "/metrics") {
+  if (ctx.url === '/metrics') {
     ctx.status = 200;
     ctx.body = await register.metrics();
-  } else if (ctx.url === "/health/liveness") {
+  } else if (ctx.url === '/health/liveness') {
     /**
      * liveness endpoint
      */
     ctx.status = 200;
-  } else if (ctx.url === "/health/readiness") {
+  } else if (ctx.url === '/health/readiness') {
     /**
      * readiness endpoint
      */
     try {
       const result = relay.eth().chainId();
-      if (result.indexOf("0x12") >= 0) {
+      if (result.indexOf('0x12') >= 0) {
         ctx.status = 200;
-        ctx.body = "OK";
+        ctx.body = 'OK';
       } else {
-        ctx.body = "DOWN";
+        ctx.body = 'DOWN';
         ctx.status = 503; // UNAVAILABLE
       }
     } catch (e) {
@@ -286,15 +286,15 @@ httpApp.use(async (ctx, next) => {
 });
 
 const formatConnectionIdMessage = (connectionId?: string): string => {
-  return connectionId ? `[Connection ID: ${connectionId}]` : "";
+  return connectionId ? `[Connection ID: ${connectionId}]` : '';
 };
 
-process.on("unhandledRejection", (reason, p) => {
+process.on('unhandledRejection', (reason, p) => {
   logger.error(`Unhandled Rejection at: Promise: ${JSON.stringify(p)}, reason: ${reason}`);
 });
 
-process.on("uncaughtException", (err) => {
-  logger.error(err, "Uncaught Exception!");
+process.on('uncaughtException', (err) => {
+  logger.error(err, 'Uncaught Exception!');
 });
 
 export { app, httpApp };

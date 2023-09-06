@@ -18,13 +18,13 @@
  *
  */
 
-import { JsonRpcError, predefined } from "./errors/JsonRpcError";
-import { MirrorNodeClient } from "./clients";
-import { EthImpl } from "./eth";
-import { Logger } from "pino";
-import constants from "./constants";
-import { ethers, Transaction } from "ethers";
-import { formatRequestIdMessage, prepend0x } from "../formatters";
+import { JsonRpcError, predefined } from './errors/JsonRpcError';
+import { MirrorNodeClient } from './clients';
+import { EthImpl } from './eth';
+import { Logger } from 'pino';
+import constants from './constants';
+import { ethers, Transaction } from 'ethers';
+import { formatRequestIdMessage, prepend0x } from '../formatters';
 
 export class Precheck {
   private mirrorNodeClient: MirrorNodeClient;
@@ -38,7 +38,7 @@ export class Precheck {
   }
 
   public static parseTxIfNeeded(transaction: string | Transaction): Transaction {
-    return typeof transaction === "string" ? Transaction.from(transaction) : transaction;
+    return typeof transaction === 'string' ? Transaction.from(transaction) : transaction;
   }
 
   value(tx: Transaction) {
@@ -199,7 +199,7 @@ export class Precheck {
   gasLimit(tx: Transaction, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const gasLimit = Number(tx.gasLimit);
-    const failBaseLog = "Failed gasLimit precheck for sendRawTransaction(transaction=%s).";
+    const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
 
     const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data, tx.to!);
 
@@ -233,7 +233,7 @@ export class Precheck {
 
     let zeros = 0;
 
-    const dataBytes = Buffer.from(data, "hex");
+    const dataBytes = Buffer.from(data, 'hex');
 
     for (const c of dataBytes) {
       if (c == 0) {
@@ -241,7 +241,7 @@ export class Precheck {
       }
     }
 
-    const nonZeros = data.replace("0x", "").length - zeros;
+    const nonZeros = data.replace('0x', '').length - zeros;
     const cost =
       constants.TX_BASE_COST +
       constants.TX_DATA_ZERO_COST * zeros +

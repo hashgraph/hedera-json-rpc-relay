@@ -18,10 +18,10 @@
  * ‍
  */
 
-const errorField = "error";
-const resultField = "result";
+const errorField = 'error';
+const resultField = 'result';
 
-const isDebugMode = __ENV["DEBUG_MODE"] === "true";
+const isDebugMode = __ENV['DEBUG_MODE'] === 'true';
 
 function isNonErrorResponse(response) {
   if (isDebugMode) {
@@ -72,7 +72,7 @@ function isErrorResponse(response) {
 
 const httpParams = {
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 };
 
@@ -80,7 +80,7 @@ let requestId = 1;
 function getPayLoad(methodName, paramInput = []) {
   return JSON.stringify({
     id: requestId++,
-    jsonrpc: "2.0",
+    jsonrpc: '2.0',
     method: methodName,
     params: paramInput,
   });

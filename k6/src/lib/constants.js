@@ -18,6 +18,6 @@
  * ‍
  */
 
-export const logListName = "logs";
-export const resultListName = "results";
-export const transactionListName = "transactions";
+export const logListName = 'logs';
+export const resultListName = 'results';
+export const transactionListName = 'transactions';

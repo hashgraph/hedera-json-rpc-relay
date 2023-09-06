@@ -19,19 +19,19 @@
  */
 
 // external resources
-import { expect } from "chai";
-import { ethers } from "ethers";
-import { AliasAccount } from "../clients/servicesClient";
-import Assertions from "../helpers/assertions";
-import { ContractFunctionParameters } from "@hashgraph/sdk";
-import testConstants from "../../tests/helpers/constants";
+import { expect } from 'chai';
+import { ethers } from 'ethers';
+import { AliasAccount } from '../clients/servicesClient';
+import Assertions from '../helpers/assertions';
+import { ContractFunctionParameters } from '@hashgraph/sdk';
+import testConstants from '../../tests/helpers/constants';
 
 // local resources
-import parentContractJson from "../contracts/Parent.json";
-import { Utils } from "../helpers/utils";
-import relayConstants from "../../../../packages/relay/src/lib/constants";
+import parentContractJson from '../contracts/Parent.json';
+import { Utils } from '../helpers/utils';
+import relayConstants from '../../../../packages/relay/src/lib/constants';
 
-describe("@ratelimiter Rate Limiters Acceptance Tests", function () {
+describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds
 
   const accounts: AliasAccount[] = [];
@@ -45,12 +45,12 @@ describe("@ratelimiter Rate Limiters Acceptance Tests", function () {
   let requestId;
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
-  const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits("1", 10)));
+  const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
   const TIER_2_RATE_LIMIT = process.env.TIER_2_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_2;
   const LIMIT_DURATION = process.env.LIMIT_DURATION || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
-  describe("RPC Rate Limiter Acceptance Tests", () => {
-    it("should throw rate limit exceeded error", async function () {
+  describe('RPC Rate Limiter Acceptance Tests', () => {
+    it('should throw rate limit exceeded error', async function () {
       const sendMultipleRequests = async () => {
         for (let index = 0; index < TIER_2_RATE_LIMIT * 2; index++) {
           await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
@@ -67,7 +67,7 @@ describe("@ratelimiter Rate Limiters Acceptance Tests", function () {
       await new Promise((r) => setTimeout(r, LIMIT_DURATION));
     });
 
-    it("should not throw rate limit exceeded error", async function () {
+    it('should not throw rate limit exceeded error', async function () {
       for (let index = 0; index < TIER_2_RATE_LIMIT; index++) {
         await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
         // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
@@ -85,7 +85,7 @@ describe("@ratelimiter Rate Limiters Acceptance Tests", function () {
     });
   });
 
-  describe("HBAR Limiter Acceptance Tests", function () {
+  describe('HBAR Limiter Acceptance Tests', function () {
     this.timeout(480 * 1000); // 480 seconds
 
     this.beforeAll(async () => {
@@ -99,7 +99,7 @@ describe("@ratelimiter Rate Limiters Acceptance Tests", function () {
       contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
       const params = new ContractFunctionParameters().addUint256(1);
-      await accounts[0].client.executeContractCall(contractId, "createChild", params, 75000, requestId);
+      await accounts[0].client.executeContractCall(contractId, 'createChild', params, 75000, requestId);
 
       // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
       await new Promise((r) => setTimeout(r, 5000));
@@ -112,7 +112,7 @@ describe("@ratelimiter Rate Limiters Acceptance Tests", function () {
       requestId = Utils.generateRequestId();
     });
 
-    describe("HBAR Rate Limit Tests", () => {
+    describe('HBAR Rate Limit Tests', () => {
       const defaultGasPrice = Assertions.defaultGasPrice;
       const defaultGasLimit = 3_000_000;
 

@@ -52,12 +52,12 @@ import {
   CustomFixedFee,
   CustomFractionalFee,
   CustomRoyaltyFee,
-} from "@hashgraph/sdk";
-import { Logger } from "pino";
-import { ethers } from "ethers";
-import { Utils } from "../helpers/utils";
+} from '@hashgraph/sdk';
+import { Logger } from 'pino';
+import { ethers } from 'ethers';
+import { Utils } from '../helpers/utils';
 
-const supportedEnvs = ["previewnet", "testnet", "mainnet"];
+const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
 export default class ServicesClient {
   static TINYBAR_TO_WEIBAR_COEF = 10_000_000_000;
@@ -72,7 +72,7 @@ export default class ServicesClient {
     this.logger = logger;
     this.network = network;
 
-    if (!network) network = "{}";
+    if (!network) network = '{}';
     const opPrivateKey = PrivateKey.fromString(key);
     if (supportedEnvs.includes(network.toLowerCase())) {
       this.client = Client.forName(network);
@@ -117,11 +117,11 @@ export default class ServicesClient {
     this.logger.info(`${requestIdPrefix} Retrieve record for ${resp.transactionId.toString()}`);
     const record = await resp.getRecord(this.client);
     const nanoString = record.consensusTimestamp.nanos.toString();
-    const executedTimestamp = `${record.consensusTimestamp.seconds}.${nanoString.padStart(9, "0")}`;
+    const executedTimestamp = `${record.consensusTimestamp.seconds}.${nanoString.padStart(9, '0')}`;
     const transactionId = record.transactionId;
     const transactionIdNanoString = transactionId.validStart?.nanos.toString();
     const executedTransactionId = `${transactionId.accountId}-${transactionId.validStart
-      ?.seconds}-${transactionIdNanoString?.padStart(9, "0")}`;
+      ?.seconds}-${transactionIdNanoString?.padStart(9, '0')}`;
     this.logger.info(
       `${requestIdPrefix} executedTimestamp: ${executedTimestamp}, executedTransactionId: ${executedTransactionId}`,
     );
@@ -139,7 +139,7 @@ export default class ServicesClient {
         .setDecimals(3)
         .setInitialSupply(new Hbar(initialSupply).toTinybars())
         .setTreasuryAccountId(this._thisAccountId())
-        .setTransactionMemo("Relay test token create"),
+        .setTransactionMemo('Relay test token create'),
       requestId,
     );
 
@@ -155,7 +155,7 @@ export default class ServicesClient {
       await new TokenAssociateTransaction()
         .setAccountId(this._thisAccountId())
         .setTokenIds([tokenId])
-        .setTransactionMemo("Relay test token association"),
+        .setTransactionMemo('Relay test token association'),
       requestId,
     );
 
@@ -170,7 +170,7 @@ export default class ServicesClient {
       new TransferTransaction()
         .addTokenTransfer(tokenId, this._thisAccountId(), -amount)
         .addTokenTransfer(tokenId, recipient, amount)
-        .setTransactionMemo("Relay test token transfer"),
+        .setTransactionMemo('Relay test token transfer'),
       requestId,
     );
 
@@ -187,13 +187,13 @@ export default class ServicesClient {
 
   async createParentContract(contractJson, requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-    const contractByteCode = contractJson.deployedBytecode.replace("0x", "");
+    const contractByteCode = contractJson.deployedBytecode.replace('0x', '');
 
     const fileReceipt = await this.executeAndGetTransactionReceipt(
       new FileCreateTransaction()
         .setKeys([this.client.operatorPublicKey || this.DEFAULT_KEY])
         .setContents(contractByteCode)
-        .setTransactionMemo("Relay test file create"),
+        .setTransactionMemo('Relay test file create'),
       requestId,
     );
 
@@ -208,9 +208,9 @@ export default class ServicesClient {
         .setConstructorParameters(new ContractFunctionParameters())
         .setGas(75000)
         .setInitialBalance(1)
-        .setBytecodeFileId(fileId || "")
+        .setBytecodeFileId(fileId || '')
         .setAdminKey(this.client.operatorPublicKey || this.DEFAULT_KEY)
-        .setTransactionMemo("Relay test contract create"),
+        .setTransactionMemo('Relay test contract create'),
       requestId,
     );
 
@@ -237,7 +237,7 @@ export default class ServicesClient {
         .setContractId(contractId)
         .setGas(gasLimit)
         .setFunction(functionName, params)
-        .setTransactionMemo("Relay test contract execution"),
+        .setTransactionMemo('Relay test contract execution'),
       requestId,
     );
 
@@ -346,7 +346,7 @@ export default class ServicesClient {
       new TransferTransaction()
         .addHbarTransfer(this._thisAccountId(), new Hbar(initialBalance).negated())
         .addHbarTransfer(aliasAccountId, new Hbar(initialBalance))
-        .setTransactionMemo("Relay test crypto transfer"),
+        .setTransactionMemo('Relay test crypto transfer'),
       requestId,
     );
 
@@ -372,7 +372,7 @@ export default class ServicesClient {
   }
 
   _thisAccountId() {
-    return this.client.operatorAccountId || AccountId.fromString("0.0.0");
+    return this.client.operatorAccountId || AccountId.fromString('0.0.0');
   }
 
   async getOperatorBalance(): Promise<Hbar> {
@@ -392,8 +392,8 @@ export default class ServicesClient {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const response = await new FileUpdateTransaction()
       .setFileId(fileId)
-      .setContents(Buffer.from(content, "hex"))
-      .setTransactionMemo("Relay test update")
+      .setContents(Buffer.from(content, 'hex'))
+      .setTransactionMemo('Relay test update')
       .execute(this.client);
 
     const receipt = await response.getReceipt(this.client);
@@ -401,7 +401,7 @@ export default class ServicesClient {
   }
 
   async getAccountBalance(account: string | AccountId, requestId?: string): Promise<AccountBalance> {
-    const accountId = typeof account === "string" ? AccountId.fromString(account) : account;
+    const accountId = typeof account === 'string' ? AccountId.fromString(account) : account;
     return this.executeQuery(new AccountBalanceQuery().setAccountId(accountId), requestId);
   }
 
@@ -424,9 +424,9 @@ export default class ServicesClient {
 
   async createHTS(
     args = {
-      tokenName: "Default Name",
-      symbol: "HTS",
-      treasuryAccountId: "0.0.2",
+      tokenName: 'Default Name',
+      symbol: 'HTS',
+      treasuryAccountId: '0.0.2',
       initialSupply: 5000,
       adminPrivateKey: this.DEFAULT_KEY,
       kyc: null,
@@ -506,9 +506,9 @@ export default class ServicesClient {
 
   async createNFT(
     args = {
-      tokenName: "Default Name",
-      symbol: "HTS",
-      treasuryAccountId: "0.0.2",
+      tokenName: 'Default Name',
+      symbol: 'HTS',
+      treasuryAccountId: '0.0.2',
       maxSupply: 5000,
       adminPrivateKey: this.DEFAULT_KEY,
       customRoyaltyFees: false,
@@ -554,9 +554,9 @@ export default class ServicesClient {
 
   async mintNFT(
     args = {
-      tokenId: "0.0.1000",
-      metadata: "abcde",
-      treasuryAccountId: "0.0.2",
+      tokenId: '0.0.1000',
+      metadata: 'abcde',
+      treasuryAccountId: '0.0.2',
       adminPrivateKey: this.DEFAULT_KEY,
     },
   ) {
@@ -577,10 +577,10 @@ export default class ServicesClient {
 
   async grantKyc(
     args = {
-      tokenId: "0.0.1000",
-      treasuryAccountId: "0.0.2",
+      tokenId: '0.0.1000',
+      treasuryAccountId: '0.0.2',
       adminPrivateKey: this.DEFAULT_KEY,
-      accountId: "0.0.1001",
+      accountId: '0.0.1001',
     },
   ) {
     const htsClient = this.getClient();

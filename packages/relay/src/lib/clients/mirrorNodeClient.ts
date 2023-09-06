@@ -18,22 +18,22 @@
  *
  */
 
-import Axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import { MirrorNodeClientError } from "./../errors/MirrorNodeClientError";
-import { Logger } from "pino";
-import constants from "./../constants";
-import { Histogram, Registry } from "prom-client";
-import { formatRequestIdMessage, formatTransactionId } from "../../formatters";
-import axiosRetry from "axios-retry";
-import { predefined } from "../errors/JsonRpcError";
-import { SDKClientError } from "../errors/SDKClientError";
-import { install as betterLookupInstall } from "better-lookup";
-import { CacheService } from "../services/cacheService/cacheService";
+import Axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { MirrorNodeClientError } from './../errors/MirrorNodeClientError';
+import { Logger } from 'pino';
+import constants from './../constants';
+import { Histogram, Registry } from 'prom-client';
+import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
+import axiosRetry from 'axios-retry';
+import { predefined } from '../errors/JsonRpcError';
+import { SDKClientError } from '../errors/SDKClientError';
+import { install as betterLookupInstall } from 'better-lookup';
+import { CacheService } from '../services/cacheService/cacheService';
 
-const http = require("http");
-const https = require("https");
+const http = require('http');
+const https = require('https');
 
-type REQUEST_METHODS = "GET" | "POST";
+type REQUEST_METHODS = 'GET' | 'POST';
 
 export interface ILimitOrderParams {
   limit?: number;
@@ -59,34 +59,34 @@ export interface IContractLogsResultsParams {
 }
 
 export class MirrorNodeClient {
-  private static GET_ACCOUNTS_BY_ID_ENDPOINT = "accounts/";
-  private static GET_BALANCE_ENDPOINT = "balances";
-  private static GET_BLOCK_ENDPOINT = "blocks/";
-  private static GET_BLOCKS_ENDPOINT = "blocks";
-  private static GET_CONTRACT_ENDPOINT = "contracts/";
-  private static ADDRESS_PLACEHOLDER = "{address}";
-  private static TIMESTAMP_PLACEHOLDER = "{timestamp}";
-  private static CONTRACT_ID_PLACEHOLDER = "{contractId}";
-  private static TRANSACTION_ID_PLACEHOLDER = "{transactionId}";
+  private static GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
+  private static GET_BALANCE_ENDPOINT = 'balances';
+  private static GET_BLOCK_ENDPOINT = 'blocks/';
+  private static GET_BLOCKS_ENDPOINT = 'blocks';
+  private static GET_CONTRACT_ENDPOINT = 'contracts/';
+  private static ADDRESS_PLACEHOLDER = '{address}';
+  private static TIMESTAMP_PLACEHOLDER = '{timestamp}';
+  private static CONTRACT_ID_PLACEHOLDER = '{contractId}';
+  private static TRANSACTION_ID_PLACEHOLDER = '{transactionId}';
   private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
   private static GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
   private static GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT = `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
-  private static GET_CONTRACT_RESULT_ENDPOINT = "contracts/results/";
-  private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = "contracts/results/logs";
+  private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
+  private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
   private static GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
   private static CONTRACT_ADDRESS_STATE_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/state`;
-  private static GET_CONTRACT_RESULTS_ENDPOINT = "contracts/results";
-  private static GET_NETWORK_EXCHANGERATE_ENDPOINT = "network/exchangerate";
-  private static GET_NETWORK_FEES_ENDPOINT = "network/fees";
-  private static GET_TOKENS_ENDPOINT = "tokens";
-  private static GET_TRANSACTIONS_ENDPOINT = "transactions";
+  private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
+  private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
+  private static GET_NETWORK_FEES_ENDPOINT = 'network/fees';
+  private static GET_TOKENS_ENDPOINT = 'tokens';
+  private static GET_TRANSACTIONS_ENDPOINT = 'transactions';
   private static GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID = `transactions/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}`;
-  private static CONTRACT_CALL_ENDPOINT = "contracts/call";
+  private static CONTRACT_CALL_ENDPOINT = 'contracts/call';
 
-  private static ACCOUNT_TIMESTAMP_PROPERTY = "timestamp";
-  private static ACCOUNT_TRANSACTION_TYPE_PROPERTY = "transactiontype";
-  private static CONTRACT_RESULT_LOGS_PROPERTY = "logs";
-  private readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || "250");
+  private static ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
+  private static ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
+  private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
+  private readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
 
   static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
     [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [404]],
@@ -109,25 +109,25 @@ export class MirrorNodeClient {
     [MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT, [400, 404]],
   ]);
 
-  private static ETHEREUM_TRANSACTION_TYPE = "ETHEREUMTRANSACTION";
+  private static ETHEREUM_TRANSACTION_TYPE = 'ETHEREUMTRANSACTION';
 
   private static ORDER = {
-    ASC: "asc",
-    DESC: "desc",
+    ASC: 'asc',
+    DESC: 'desc',
   };
 
   private static unknownServerErrorHttpStatusCode = 567;
 
   // The following constants are used in requests objects
-  private static X_API_KEY = "x-api-key";
-  private static FORWARD_SLASH = "/";
-  private static HTTPS_PREFIX = "https://";
-  private static API_V1_POST_FIX = "api/v1/";
-  private static EMPTY_STRING = "";
-  private static REQUEST_PREFIX_SEPARATOR = ": ";
-  private static REQUEST_PREFIX_TRAILING_BRACKET = "]";
-  private static HTTP_GET = "GET";
-  private static REQUESTID_LABEL = "requestId";
+  private static X_API_KEY = 'x-api-key';
+  private static FORWARD_SLASH = '/';
+  private static HTTPS_PREFIX = 'https://';
+  private static API_V1_POST_FIX = 'api/v1/';
+  private static EMPTY_STRING = '';
+  private static REQUEST_PREFIX_SEPARATOR = ': ';
+  private static REQUEST_PREFIX_TRAILING_BRACKET = ']';
+  private static HTTP_GET = 'GET';
+  private static REQUESTID_LABEL = 'requestId';
 
   /**
    * The logger used for logging all output from this class.
@@ -157,23 +157,23 @@ export class MirrorNodeClient {
 
   protected createAxiosClient(baseUrl: string): AxiosInstance {
     // defualt values for axios clients to mirror node
-    const mirrorNodeTimeout = parseInt(process.env.MIRROR_NODE_TIMEOUT || "10000");
-    const mirrorNodeMaxRedirects = parseInt(process.env.MIRROR_NODE_MAX_REDIRECTS || "5");
-    const mirrorNodeHttpKeepAlive = process.env.MIRROR_NODE_HTTP_KEEP_ALIVE === "false" ? false : true;
-    const mirrorNodeHttpKeepAliveMsecs = parseInt(process.env.MIRROR_NODE_HTTP_KEEP_ALIVE_MSECS || "1000");
-    const mirrorNodeHttpMaxSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_SOCKETS || "300");
-    const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || "300");
-    const mirrorNodeHttpSocketTimeout = parseInt(process.env.MIRROR_NODE_HTTP_SOCKET_TIMEOUT || "60000");
-    const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === "true";
-    const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || "3");
-    const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE || "5");
-    const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || "250");
-    const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || "200");
+    const mirrorNodeTimeout = parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000');
+    const mirrorNodeMaxRedirects = parseInt(process.env.MIRROR_NODE_MAX_REDIRECTS || '5');
+    const mirrorNodeHttpKeepAlive = process.env.MIRROR_NODE_HTTP_KEEP_ALIVE === 'false' ? false : true;
+    const mirrorNodeHttpKeepAliveMsecs = parseInt(process.env.MIRROR_NODE_HTTP_KEEP_ALIVE_MSECS || '1000');
+    const mirrorNodeHttpMaxSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_SOCKETS || '300');
+    const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '300');
+    const mirrorNodeHttpSocketTimeout = parseInt(process.env.MIRROR_NODE_HTTP_SOCKET_TIMEOUT || '60000');
+    const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
+    const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '3');
+    const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE || '5');
+    const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
+    const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
     const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES
       ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES)
       : [404]; // by default we should only retry on 404 errors
     // by default will be true, unless explicitly set to false.
-    const useCacheableDnsLookup: boolean = process.env.MIRROR_NODE_AGENT_CACHEABLE_DNS === "false" ? false : true;
+    const useCacheableDnsLookup: boolean = process.env.MIRROR_NODE_AGENT_CACHEABLE_DNS === 'false' ? false : true;
 
     const httpAgent = new http.Agent({
       keepAlive: mirrorNodeHttpKeepAlive,
@@ -198,9 +198,9 @@ export class MirrorNodeClient {
 
     const axiosClient: AxiosInstance = Axios.create({
       baseURL: baseUrl,
-      responseType: "json" as const,
+      responseType: 'json' as const,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       timeout: mirrorNodeTimeout,
       maxRedirects: mirrorNodeMaxRedirects,
@@ -220,7 +220,7 @@ export class MirrorNodeClient {
       retryDelay: (retryCount, error) => {
         const request = error?.request?._header;
         // extract request id from request header. Request is located in 4th element separated by new line
-        const requestId = request ? request.split("\n")[3].substring(11, 47) : "";
+        const requestId = request ? request.split('\n')[3].substring(11, 47) : '';
         const requestIdPrefix = formatRequestIdMessage(requestId);
         const delay = isDevMode ? mirrorNodeRetryDelayDevMode || 200 : mirrorNodeRetryDelay * retryCount;
         this.logger.trace(`${requestIdPrefix} Retry delay ${delay} ms on '${error?.request?.path}'`);
@@ -249,8 +249,8 @@ export class MirrorNodeClient {
     }
 
     if (restClient !== undefined) {
-      this.restUrl = "";
-      this.web3Url = "";
+      this.restUrl = '';
+      this.web3Url = '';
 
       this.restClient = restClient;
       this.web3Client = web3Client ? web3Client : restClient;
@@ -266,12 +266,12 @@ export class MirrorNodeClient {
     this.register = register;
 
     // clear and create metric in registry
-    const metricHistogramName = "rpc_relay_mirror_response";
+    const metricHistogramName = 'rpc_relay_mirror_response';
     this.register.removeSingleMetric(metricHistogramName);
     this.mirrorResponseHistogram = new Histogram({
       name: metricHistogramName,
-      help: "Mirror node response method statusCode latency histogram",
-      labelNames: ["method", "statusCode"],
+      help: 'Mirror node response method statusCode latency histogram',
+      labelNames: ['method', 'statusCode'],
       registers: [register],
       buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000], // ms (milliseconds)
     });
@@ -331,7 +331,7 @@ export class MirrorNodeClient {
 
       // request specific config for axios-retry
       if (retries != null) {
-        axiosRequestConfig["axios-retry"] = { retries };
+        axiosRequestConfig['axios-retry'] = { retries };
       }
 
       if (method === MirrorNodeClient.HTTP_GET) {
@@ -362,12 +362,12 @@ export class MirrorNodeClient {
   }
 
   async get(path: string, pathLabel: string, requestIdPrefix?: string, retries?: number): Promise<any> {
-    return this.request(path, pathLabel, "GET", null, requestIdPrefix, retries);
+    return this.request(path, pathLabel, 'GET', null, requestIdPrefix, retries);
   }
 
   async post(path: string, data: any, pathLabel: string, requestIdPrefix?: string): Promise<any> {
     if (!data) data = {};
-    return this.request(path, pathLabel, "POST", data, requestIdPrefix);
+    return this.request(path, pathLabel, 'POST', data, requestIdPrefix);
   }
 
   handleError(
@@ -421,7 +421,7 @@ export class MirrorNodeClient {
 
     if (result?.links?.next && page < pageMax) {
       page++;
-      const next = result.links.next.replace(constants.NEXT_LINK_PREFIX, "");
+      const next = result.links.next.replace(constants.NEXT_LINK_PREFIX, '');
       return this.getPaginatedResults(next, pathLabel, resultProperty, requestIdPrefix, results, page, pageMax);
     } else {
       return results;
@@ -476,23 +476,23 @@ export class MirrorNodeClient {
   public async getAccountPaginated(url: string, requestIdPrefix?: string) {
     const queryParamObject = {};
     const accountId = this.extractAccountIdFromUrl(url, requestIdPrefix);
-    const params = new URLSearchParams(url.split("?")[1]);
+    const params = new URLSearchParams(url.split('?')[1]);
 
-    this.setQueryParam(queryParamObject, "limit", constants.MIRROR_NODE_QUERY_LIMIT);
-    this.setQueryParam(queryParamObject, "timestamp", params.get("timestamp"));
+    this.setQueryParam(queryParamObject, 'limit', constants.MIRROR_NODE_QUERY_LIMIT);
+    this.setQueryParam(queryParamObject, 'timestamp', params.get('timestamp'));
     const queryParams = this.getQueryParams(queryParamObject);
 
     return this.getPaginatedResults(
       `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${accountId}${queryParams}`,
       MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
-      "transactions",
+      'transactions',
       requestIdPrefix,
     );
   }
 
   public extractAccountIdFromUrl(url: string, requestIdPrefix?: string): string | null {
-    const substringStartIndex = url.indexOf("/accounts/") + "/accounts/".length;
-    if (url.startsWith("0x", substringStartIndex)) {
+    const substringStartIndex = url.indexOf('/accounts/') + '/accounts/'.length;
+    if (url.startsWith('0x', substringStartIndex)) {
       // evm addresss
       const regex = /\/accounts\/(0x[a-fA-F0-9]{40})/;
       const match = url.match(regex);
@@ -519,23 +519,23 @@ export class MirrorNodeClient {
     requestIdPrefix?: string,
   ) {
     const queryParamObject = {};
-    this.setQueryParam(queryParamObject, "account.id", accountId);
-    this.setQueryParam(queryParamObject, "timestamp", `gte:${timestampFrom}`);
-    this.setQueryParam(queryParamObject, "timestamp", `lt:${timestampTo}`);
+    this.setQueryParam(queryParamObject, 'account.id', accountId);
+    this.setQueryParam(queryParamObject, 'timestamp', `gte:${timestampFrom}`);
+    this.setQueryParam(queryParamObject, 'timestamp', `lt:${timestampTo}`);
     const queryParams = this.getQueryParams(queryParamObject);
 
     return this.getPaginatedResults(
       `${MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT}${queryParams}`,
       MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT,
-      "transactions",
+      'transactions',
       requestIdPrefix,
     );
   }
 
   public async getBalanceAtTimestamp(accountId: string, timestamp?: string, requestIdPrefix?: string) {
     const queryParamObject = {};
-    this.setQueryParam(queryParamObject, "account.id", accountId);
-    this.setQueryParam(queryParamObject, "timestamp", timestamp);
+    this.setQueryParam(queryParamObject, 'account.id', accountId);
+    this.setQueryParam(queryParamObject, 'timestamp', timestamp);
     const queryParams = this.getQueryParams(queryParamObject);
     return this.get(
       `${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
@@ -568,8 +568,8 @@ export class MirrorNodeClient {
     requestIdPrefix?: string,
   ) {
     const queryParamObject = {};
-    this.setQueryParam(queryParamObject, "block.number", blockNumber);
-    this.setQueryParam(queryParamObject, "timestamp", timestamp);
+    this.setQueryParam(queryParamObject, 'block.number', blockNumber);
+    this.setQueryParam(queryParamObject, 'timestamp', timestamp);
     this.setLimitOrderParams(queryParamObject, limitOrderParams);
     const queryParams = this.getQueryParams(queryParamObject);
     return this.get(
@@ -663,7 +663,7 @@ export class MirrorNodeClient {
       response != undefined &&
       response.transaction_index != undefined &&
       response.block_number != undefined &&
-      response.result === "SUCCESS"
+      response.result === 'SUCCESS'
     ) {
       this.cacheService.set(
         cacheKey,
@@ -704,7 +704,7 @@ export class MirrorNodeClient {
     return this.getPaginatedResults(
       `${MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT}${queryParams}`,
       MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT,
-      "results",
+      'results',
       requestIdPrefix,
       [],
       1,
@@ -756,12 +756,12 @@ export class MirrorNodeClient {
   ) {
     const queryParamObject = {};
     if (contractLogsResultsParams) {
-      this.setQueryParam(queryParamObject, "index", contractLogsResultsParams.index);
-      this.setQueryParam(queryParamObject, "timestamp", contractLogsResultsParams.timestamp);
-      this.setQueryParam(queryParamObject, "topic0", contractLogsResultsParams.topic0);
-      this.setQueryParam(queryParamObject, "topic1", contractLogsResultsParams.topic1);
-      this.setQueryParam(queryParamObject, "topic2", contractLogsResultsParams.topic2);
-      this.setQueryParam(queryParamObject, "topic3", contractLogsResultsParams.topic3);
+      this.setQueryParam(queryParamObject, 'index', contractLogsResultsParams.index);
+      this.setQueryParam(queryParamObject, 'timestamp', contractLogsResultsParams.timestamp);
+      this.setQueryParam(queryParamObject, 'topic0', contractLogsResultsParams.topic0);
+      this.setQueryParam(queryParamObject, 'topic1', contractLogsResultsParams.topic1);
+      this.setQueryParam(queryParamObject, 'topic2', contractLogsResultsParams.topic2);
+      this.setQueryParam(queryParamObject, 'topic3', contractLogsResultsParams.topic3);
     }
 
     this.setLimitOrderParams(queryParamObject, limitOrderParams);
@@ -852,7 +852,7 @@ export class MirrorNodeClient {
 
   public async getNetworkExchangeRate(timestamp?: string, requestIdPrefix?: string) {
     const queryParamObject = {};
-    this.setQueryParam(queryParamObject, "timestamp", timestamp);
+    this.setQueryParam(queryParamObject, 'timestamp', timestamp);
     const queryParams = this.getQueryParams(queryParamObject);
     return this.get(
       `${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`,
@@ -863,8 +863,8 @@ export class MirrorNodeClient {
 
   public async getNetworkFees(timestamp?: string, order?: string, requestIdPrefix?: string) {
     const queryParamObject = {};
-    this.setQueryParam(queryParamObject, "timestamp", timestamp);
-    this.setQueryParam(queryParamObject, "order", order);
+    this.setQueryParam(queryParamObject, 'timestamp', timestamp);
+    this.setQueryParam(queryParamObject, 'order', order);
     const queryParams = this.getQueryParams(queryParamObject);
     return this.get(
       `${MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT}${queryParams}`,
@@ -912,7 +912,7 @@ export class MirrorNodeClient {
     const contractResultsParams: IContractResultsParams = blockEndTimestamp
       ? { timestamp: `lte:${blockEndTimestamp}` }
       : {};
-    const limitOrderParams: ILimitOrderParams = this.getLimitOrderQueryParam(limit, "desc");
+    const limitOrderParams: ILimitOrderParams = this.getLimitOrderQueryParam(limit, 'desc');
     return this.getContractResultsByAddress(address, contractResultsParams, limitOrderParams, requestIdPrefix);
   }
 
@@ -929,9 +929,9 @@ export class MirrorNodeClient {
     const queryParamObject = {};
 
     if (blockEndTimestamp) {
-      this.setQueryParam(queryParamObject, "timestamp", blockEndTimestamp);
+      this.setQueryParam(queryParamObject, 'timestamp', blockEndTimestamp);
     }
-    this.setQueryParam(queryParamObject, "slot", slot);
+    this.setQueryParam(queryParamObject, 'slot', slot);
     this.setLimitOrderParams(queryParamObject, limitOrderParams);
     const queryParams = this.getQueryParams(queryParamObject);
     const apiEndpoint = MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT.replace(
@@ -956,7 +956,7 @@ export class MirrorNodeClient {
       return formattedId;
     }
     const queryParamObject = {};
-    this.setQueryParam(queryParamObject, "nonce", nonce);
+    this.setQueryParam(queryParamObject, 'nonce', nonce);
     const queryParams = this.getQueryParams(queryParamObject);
     const apiEndpoint = MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID.replace(
       MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER,
@@ -998,37 +998,37 @@ export class MirrorNodeClient {
   }
 
   getQueryParams(params: object) {
-    let paramString = "";
+    let paramString = '';
     for (const [key, value] of Object.entries(params)) {
-      let additionalString = "";
+      let additionalString = '';
       if (Array.isArray(value)) {
-        additionalString = value.map((v) => `${key}=${v}`).join("&");
+        additionalString = value.map((v) => `${key}=${v}`).join('&');
       } else {
         additionalString = `${key}=${value}`;
       }
-      paramString += paramString === "" ? `?${additionalString}` : `&${additionalString}`;
+      paramString += paramString === '' ? `?${additionalString}` : `&${additionalString}`;
     }
     return paramString;
   }
 
   setContractResultsParams(queryParamObject, contractResultsParams?: IContractResultsParams) {
     if (contractResultsParams) {
-      this.setQueryParam(queryParamObject, "block.hash", contractResultsParams.blockHash);
-      this.setQueryParam(queryParamObject, "block.number", contractResultsParams.blockNumber);
-      this.setQueryParam(queryParamObject, "from", contractResultsParams.from);
-      this.setQueryParam(queryParamObject, "internal", contractResultsParams.internal);
-      this.setQueryParam(queryParamObject, "timestamp", contractResultsParams.timestamp);
-      this.setQueryParam(queryParamObject, "transaction.index", contractResultsParams.transactionIndex);
+      this.setQueryParam(queryParamObject, 'block.hash', contractResultsParams.blockHash);
+      this.setQueryParam(queryParamObject, 'block.number', contractResultsParams.blockNumber);
+      this.setQueryParam(queryParamObject, 'from', contractResultsParams.from);
+      this.setQueryParam(queryParamObject, 'internal', contractResultsParams.internal);
+      this.setQueryParam(queryParamObject, 'timestamp', contractResultsParams.timestamp);
+      this.setQueryParam(queryParamObject, 'transaction.index', contractResultsParams.transactionIndex);
     }
   }
 
   setLimitOrderParams(queryParamObject, limitOrderParams?: ILimitOrderParams) {
     if (limitOrderParams) {
-      this.setQueryParam(queryParamObject, "limit", limitOrderParams.limit);
-      this.setQueryParam(queryParamObject, "order", limitOrderParams.order);
+      this.setQueryParam(queryParamObject, 'limit', limitOrderParams.limit);
+      this.setQueryParam(queryParamObject, 'order', limitOrderParams.order);
     } else {
-      this.setQueryParam(queryParamObject, "limit", parseInt(process.env.MIRROR_NODE_LIMIT_PARAM || "100"));
-      this.setQueryParam(queryParamObject, "order", constants.ORDER.ASC);
+      this.setQueryParam(queryParamObject, 'limit', parseInt(process.env.MIRROR_NODE_LIMIT_PARAM || '100'));
+      this.setQueryParam(queryParamObject, 'order', constants.ORDER.ASC);
     }
   }
 

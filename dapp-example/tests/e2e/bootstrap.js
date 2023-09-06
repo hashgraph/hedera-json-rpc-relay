@@ -1,12 +1,12 @@
-const HederaSDK = require("@hashgraph/sdk");
-const ethers = require("ethers");
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const HederaSDK = require('@hashgraph/sdk');
+const ethers = require('ethers');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
 const randomUppercaseString = (length = 5) => {
-  let result = "";
-  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let result = '';
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const charactersLength = characters.length;
 
   for (let i = 0; i < length; i++) {
@@ -18,8 +18,8 @@ const randomUppercaseString = (length = 5) => {
 
 const idToEvmAddress = (id) => {
   try {
-    const [shard, realm, num] = id.split(".");
-    return ["0x", toHex(shard).padStart(8, "0"), toHex(realm).padStart(16, "0"), toHex(num).padStart(16, "0")].join("");
+    const [shard, realm, num] = id.split('.');
+    return ['0x', toHex(shard).padStart(8, '0'), toHex(realm).padStart(16, '0'), toHex(num).padStart(16, '0')].join('');
   } catch (e) {
     throw new Error(`Can not transform id ${id} to evm address`);
   }
@@ -29,10 +29,10 @@ const toHex = (num) => {
   return parseInt(num).toString(16);
 };
 
-const supportedEnvs = ["previewnet", "testnet", "mainnet"];
+const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
 let client;
-const network = process.env.HEDERA_NETWORK || "{}";
+const network = process.env.HEDERA_NETWORK || '{}';
 if (supportedEnvs.includes(network.toLowerCase())) {
   client = HederaSDK.Client.forName(network);
 } else {
@@ -46,7 +46,7 @@ const createAccountFromCompressedPublicKey = async function (compressedPublicKey
   const transferTransaction = await new HederaSDK.TransferTransaction()
     .addHbarTransfer(HederaSDK.PublicKey.fromString(compressedPublicKey).toAccountId(0, 0), new HederaSDK.Hbar(100))
     .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-100))
-    .setTransactionMemo("relay dapp test crypto transfer")
+    .setTransactionMemo('relay dapp test crypto transfer')
     .execute(client);
 
   await transferTransaction.getReceipt(client);
@@ -79,7 +79,7 @@ const createHTSToken = async function () {
       .setTransactionId(HederaSDK.TransactionId.generate(client.operatorAccountId))
       .setNodeAccountIds([client._network.getNodeAccountIdsForExecute()[0]])
   )
-    .setTransactionMemo("relay dapp test token create")
+    .setTransactionMemo('relay dapp test token create')
     .execute(client);
 
   const receipt = await tokenCreate.getReceipt(client);
@@ -96,7 +96,7 @@ const associateHTSToken = async function (accountId, tokenId, pk) {
     await new HederaSDK.TokenAssociateTransaction()
       .setAccountId(accountId)
       .setTokenIds([tokenId])
-      .setTransactionMemo("relay dapp test token associate")
+      .setTransactionMemo('relay dapp test token associate')
       .freezeWith(client)
       .sign(HederaSDK.PrivateKey.fromStringECDSA(pk))
   ).execute(client);
@@ -109,7 +109,7 @@ const approveHTSToken = async function (spenderId, tokenId) {
   const amount = 100000000000;
   const tokenApprove = await new HederaSDK.AccountAllowanceApproveTransaction()
     .addTokenAllowance(tokenId, spenderId, amount)
-    .setTransactionMemo("relay dapp test allowance approval")
+    .setTransactionMemo('relay dapp test allowance approval')
     .execute(client);
 
   await tokenApprove.getReceipt(client);
@@ -123,7 +123,7 @@ const transferHTSToken = async function (accountId, tokenId) {
       .addTokenTransfer(tokenId, client.operatorAccountId, -amount)
       .addTokenTransfer(tokenId, accountId, amount)
   )
-    .setTransactionMemo("relay dapp test token transfer")
+    .setTransactionMemo('relay dapp test token transfer')
     .execute(client);
 
   await tokenTransfer.getReceipt(client);
@@ -131,7 +131,7 @@ const transferHTSToken = async function (accountId, tokenId) {
 };
 
 const deployHederaTokenService = async function (wallet) {
-  const contractArtifact = require("../../src/contracts/HederaTokenService.json");
+  const contractArtifact = require('../../src/contracts/HederaTokenService.json');
 
   const contractFactory = new ethers.ContractFactory(contractArtifact.abi, contractArtifact.bytecode, wallet);
   const contract = await contractFactory.deploy({ gasLimit: 1_000_000 });
@@ -141,7 +141,7 @@ const deployHederaTokenService = async function (wallet) {
 };
 
 const deployAndFundContractTransferTx = async function (wallet) {
-  const contractArtifact = require("../../src/contracts/ContractTransferTx.json");
+  const contractArtifact = require('../../src/contracts/ContractTransferTx.json');
 
   const contractFactory = new ethers.ContractFactory(contractArtifact.abi, contractArtifact.bytecode, wallet);
   const contract = await contractFactory.deploy({ gasLimit: 1_000_000 });
@@ -150,7 +150,7 @@ const deployAndFundContractTransferTx = async function (wallet) {
   await new HederaSDK.TransferTransaction()
     .addHbarTransfer(HederaSDK.AccountId.fromEvmAddress(0, 0, contractAddress), new HederaSDK.Hbar(100))
     .addHbarTransfer(HederaSDK.AccountId.fromString(process.env.OPERATOR_ID_MAIN), new HederaSDK.Hbar(-100))
-    .setTransactionMemo("relay dapp ContractTransferTx funding")
+    .setTransactionMemo('relay dapp ContractTransferTx funding')
     .execute(client);
 
   return contractAddress;
@@ -158,22 +158,22 @@ const deployAndFundContractTransferTx = async function (wallet) {
 
 (async () => {
   let mainPrivateKeyString = process.env.PRIVATE_KEY;
-  if (mainPrivateKeyString === "") {
+  if (mainPrivateKeyString === '') {
     mainPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw();
   }
   const mainWallet = new ethers.Wallet(mainPrivateKeyString, new ethers.providers.JsonRpcProvider(process.env.RPC_URL));
-  const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace("0x", "");
+  const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
   const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
   console.log(
     `Primary wallet account private: ${mainPrivateKeyString}, public: ${mainCompressedKey}, id: ${mainAccountId}`,
   );
 
   let receiverPrivateKeyString = process.env.RECEIVER_PRIVATE_KEY;
-  if (receiverPrivateKeyString === "") {
+  if (receiverPrivateKeyString === '') {
     receiverPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw();
   }
   const receiverWallet = new ethers.Wallet(receiverPrivateKeyString);
-  const receiverCompressedKey = receiverWallet._signingKey().compressedPublicKey.replace("0x", "");
+  const receiverCompressedKey = receiverWallet._signingKey().compressedPublicKey.replace('0x', '');
   const receiverAccountId = (await createAccountFromCompressedPublicKey(receiverCompressedKey)).accountId;
   console.log(
     `Receiver wallet account private: ${receiverPrivateKeyString}, public: ${receiverCompressedKey}, id: ${receiverAccountId}`,
@@ -194,7 +194,7 @@ const deployAndFundContractTransferTx = async function (wallet) {
   const { tokenId, tokenAddress } = await createHTSToken();
   const token2 = await createHTSToken();
   fs.writeFileSync(
-    path.resolve(__dirname + "../../../src/contracts/") + "/.bootstrapInfo.json",
+    path.resolve(__dirname + '../../../src/contracts/') + '/.bootstrapInfo.json',
     `{"HTS_ADDRESS":"${tokenAddress}", "HTS_SECOND_ADDRESS":"${token2.tokenAddress}", "HTS_CONTRACT_ADDRESS": "${HTSContractAddress}", "CONTRACT_TRANSFER_TX_ADDRESS": "${ContractTransferTxAddress}"}`,
   );
 

@@ -18,9 +18,9 @@
  *
  */
 
-import { Logger } from "pino";
-import { formatRequestIdMessage } from "../formatters";
-import { Counter, Registry } from "prom-client";
+import { Logger } from 'pino';
+import { formatRequestIdMessage } from '../formatters';
+import { Counter, Registry } from 'prom-client';
 
 export default class RateLimit {
   private duration: number;
@@ -33,18 +33,18 @@ export default class RateLimit {
     this.duration = duration;
     this.database = Object.create(null);
 
-    const metricCounterName = "rpc_relay_ip_rate_limit";
+    const metricCounterName = 'rpc_relay_ip_rate_limit';
     register.removeSingleMetric(metricCounterName);
     this.ipRateLimitCounter = new Counter({
       name: metricCounterName,
-      help: "Relay ip rate limit counter",
-      labelNames: ["methodName"],
+      help: 'Relay ip rate limit counter',
+      labelNames: ['methodName'],
       registers: [register],
     });
   }
 
   shouldRateLimit(ip: string, methodName: string, total: number, requestId: string): boolean {
-    if (process.env.RATE_LIMIT_DISABLED && process.env.RATE_LIMIT_DISABLED === "true") return false;
+    if (process.env.RATE_LIMIT_DISABLED && process.env.RATE_LIMIT_DISABLED === 'true') return false;
     this.precheck(ip, methodName, total);
     if (!this.shouldReset(ip)) {
       if (this.checkRemaining(ip, methodName)) {
@@ -52,7 +52,7 @@ export default class RateLimit {
         return false;
       }
 
-      const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : "";
+      const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
       this.logger.warn(
         `${requestIdPrefix}, Rate limit call to ${methodName}, ${this.database[ip].methodInfo[methodName].remaining} out of ${total} calls remaining`,
       );

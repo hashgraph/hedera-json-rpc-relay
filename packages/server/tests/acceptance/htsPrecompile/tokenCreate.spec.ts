@@ -19,20 +19,20 @@
  */
 
 // external resources
-import { solidity } from "ethereum-waffle";
-import chai, { expect } from "chai";
-import Constants from "../../helpers/constants";
+import { solidity } from 'ethereum-waffle';
+import chai, { expect } from 'chai';
+import Constants from '../../helpers/constants';
 
 chai.use(solidity);
 
-import { AliasAccount } from "../../clients/servicesClient";
-import { ethers } from "ethers";
-import ERC20MockJson from "../../contracts/ERC20Mock.json";
-import ERC721MockJson from "../../contracts/ERC721Mock.json";
-import TokenCreateJson from "../../contracts/TokenCreateContract.json";
-import { Utils } from "../../helpers/utils";
-import relayConstants from "@hashgraph/json-rpc-relay/dist/lib/constants";
-import Assertions from "../../helpers/assertions";
+import { AliasAccount } from '../../clients/servicesClient';
+import { ethers } from 'ethers';
+import ERC20MockJson from '../../contracts/ERC20Mock.json';
+import ERC721MockJson from '../../contracts/ERC721Mock.json';
+import TokenCreateJson from '../../contracts/TokenCreateContract.json';
+import { Utils } from '../../helpers/utils';
+import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import Assertions from '../../helpers/assertions';
 
 /**
  * Tests for:
@@ -56,13 +56,13 @@ import Assertions from "../../helpers/assertions";
  * revokeTokenKyc
  * setApprovalForAll
  */
-describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async function () {
+describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, mirrorNode, relay }: any = global;
 
   const TX_SUCCESS_CODE = BigInt(22);
-  const TOKEN_NAME = "tokenName";
-  const TOKEN_SYMBOL = "tokenSymbol";
+  const TOKEN_NAME = 'tokenName';
+  const TOKEN_SYMBOL = 'tokenSymbol';
   const TOKEN_MAX_SUPPLY = BigInt(1000);
   const TOKEN_DECIMALS = BigInt(8);
 
@@ -141,7 +141,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
     const gasOptions = await Utils.gasOptions(requestId, 15_000_000);
     const tx = await mainContract.createFungibleTokenPublic(accounts[0].wallet.address, {
-      value: BigInt("10000000000000000000"),
+      value: BigInt('10000000000000000000'),
       ...gasOptions,
     });
     const { tokenAddress } = (await tx.wait()).logs.filter(
@@ -155,7 +155,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
     const gasOptions = await Utils.gasOptions(requestId, 15_000_000);
     const tx = await mainContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
-      value: BigInt("10000000000000000000"),
+      value: BigInt('10000000000000000000'),
       ...gasOptions,
     });
     const { tokenAddress } = (await tx.wait()).logs.filter(
@@ -172,7 +172,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       accounts[0].wallet.address,
       HTSTokenContractAddress,
       {
-        value: BigInt("20000000000000000000"),
+        value: BigInt('20000000000000000000'),
         ...gasOptions,
       },
     );
@@ -184,7 +184,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     return tokenAddress;
   }
 
-  it("should associate to a token", async function () {
+  it('should associate to a token', async function () {
     const txCO = await mainContractOwner.associateTokenPublic(
       mainContractAddress,
       HTSTokenContractAddress,
@@ -216,7 +216,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     ).to.equal(TX_SUCCESS_CODE);
   });
 
-  it("should associate to a nft", async function () {
+  it('should associate to a nft', async function () {
     const txCO = await mainContractOwner.associateTokenPublic(
       mainContractAddress,
       NftHTSTokenContractAddress,
@@ -248,7 +248,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     ).to.equal(TX_SUCCESS_CODE);
   });
 
-  it("should associate to a token with custom fees", async function () {
+  it('should associate to a token with custom fees', async function () {
     //delay for hbar rate limiter to reset
     await new Promise((r) => setTimeout(r, relayConstants.HBAR_RATE_LIMIT_DURATION));
 
@@ -294,17 +294,17 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     ).to.equal(TX_SUCCESS_CODE);
   });
 
-  it("should check initial balances", async function () {
+  it('should check initial balances', async function () {
     expect(await HTSTokenContract.balanceOf(accounts[0].wallet.address)).to.equal(BigInt(1000));
     expect(await HTSTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(BigInt(0));
     expect(await HTSTokenContract.balanceOf(accounts[2].wallet.address)).to.equal(BigInt(0));
   });
 
-  it("should be able to mint a nft", async function () {
+  it('should be able to mint a nft', async function () {
     const tx = await mainContract.mintTokenPublic(
       NftHTSTokenContractAddress,
       0,
-      ["0x01"],
+      ['0x01'],
       Constants.GAS.LIMIT_5_000_000,
     );
     const { responseCode } = (await tx.wait()).logs.filter(
@@ -319,9 +319,9 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     expect(NftSerialNumber).to.be.greaterThan(0);
   });
 
-  describe("HTS Precompile Approval Tests", async function () {
+  describe('HTS Precompile Approval Tests', async function () {
     //When we use approve from our mainContract, it always gives approval only from itself (mainContract is owner).
-    it("should be able to approve anyone to spend tokens", async function () {
+    it('should be able to approve anyone to spend tokens', async function () {
       const amount = BigInt(13);
 
       const txBefore = await mainContract.allowancePublic(
@@ -430,7 +430,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       }
     });
 
-    it("should be able to execute setApprovalForAllPublic", async function () {
+    it('should be able to execute setApprovalForAllPublic', async function () {
       const txBefore = await mainContract.isApprovedForAllPublic(
         NftHTSTokenContractAddress,
         mainContractAddress,
@@ -469,7 +469,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       expect(afterFlag).to.equal(true);
     });
 
-    it("should be able to execute getApproved on nft", async function () {
+    it('should be able to execute getApproved on nft', async function () {
       const tx = await mainContractReceiverWalletFirst.getApprovedPublic(
         NftHTSTokenContractAddress,
         NftSerialNumber,
@@ -486,7 +486,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       expect(approved).to.equal(Constants.ZERO_HEX);
     });
 
-    it("should be able to transfer nft with transferFrom", async function () {
+    it('should be able to transfer nft with transferFrom', async function () {
       expect(await NFTokenContract.balanceOf(accounts[0].wallet.address)).to.equal(BigInt(1));
       expect(await NFTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(BigInt(0));
 
@@ -612,8 +612,8 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     });
   });
 
-  describe("HTS Precompile Get Token Info Tests", async function () {
-    it("should be able to get fungible token info", async () => {
+  describe('HTS Precompile Get Token Info Tests', async function () {
+    it('should be able to get fungible token info', async () => {
       const tx = await mainContract.getFungibleTokenInfoPublic(HTSTokenContractAddress);
 
       const { tokenInfo, decimals } = (await tx.wait()).logs.filter(
@@ -627,7 +627,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       expect(tokenInfo.token.symbol).to.equal(TOKEN_SYMBOL);
     });
 
-    it("should be able to get token info", async () => {
+    it('should be able to get token info', async () => {
       const tx = await mainContract.getTokenInfoPublic(HTSTokenContractAddress);
 
       const { token, totalSupply } = (await tx.wait()).logs.filter(
@@ -640,7 +640,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       expect(token.symbol).to.equal(TOKEN_SYMBOL);
     });
 
-    it("should be able to get non-fungible token info", async () => {
+    it('should be able to get non-fungible token info', async () => {
       const tx = await mainContract.getNonFungibleTokenInfoPublic(NftHTSTokenContractAddress, NftSerialNumber);
 
       const { tokenInfo, serialNumber } = (await tx.wait()).logs.filter(
@@ -654,7 +654,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     });
   });
 
-  describe("HTS Precompile KYC Tests", async function () {
+  describe('HTS Precompile KYC Tests', async function () {
     async function checkKyc(contractOwner, tokenAddress, accountAddress, expectedValue: boolean) {
       const tx = await contractOwner.isKycPublic(tokenAddress, accountAddress, Constants.GAS.LIMIT_1_000_000);
       const responseCodeIsKyc = (await tx.wait()).logs.filter(
@@ -683,15 +683,15 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       expect(defaultTokenKYCStatus).to.equal(expectedValue);
     }
 
-    it("should be able to get default KYC status for fungible token", async function () {
+    it('should be able to get default KYC status for fungible token', async function () {
       await checkTokenDefaultKYCStatus(mainContractOwner, HTSTokenContractAddress, false);
     });
 
-    it("should be able to get default KYC status for non fungible token", async function () {
+    it('should be able to get default KYC status for non fungible token', async function () {
       await checkTokenDefaultKYCStatus(mainContractOwner, NftHTSTokenContractAddress, false);
     });
 
-    it("should be able to grant KYC, tranfer hts tokens and revoke KYC", async function () {
+    it('should be able to grant KYC, tranfer hts tokens and revoke KYC', async function () {
       // check if KYC is revoked
       await checkKyc(mainContractOwner, HTSTokenContractAddress, accounts[2].wallet.address, false);
 
@@ -741,8 +741,8 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     });
   });
 
-  describe("HTS Precompile Custom Fees Tests", async function () {
-    it("should be able to get a custom token fees", async function () {
+  describe('HTS Precompile Custom Fees Tests', async function () {
+    it('should be able to get a custom token fees', async function () {
       const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
 
       const tx = await mainContract.getTokenCustomFeesPublic(HTSTokenWithCustomFeesContractAddress);
@@ -763,8 +763,8 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     });
   });
 
-  describe("HTS Precompile Delete Token Tests", async function () {
-    it("should be able to delete a token", async function () {
+  describe('HTS Precompile Delete Token Tests', async function () {
+    it('should be able to delete a token', async function () {
       const createdTokenAddress = await createHTSToken();
 
       const txBefore = await mainContract.getTokenInfoPublic(createdTokenAddress, Constants.GAS.LIMIT_1_000_000);
@@ -788,7 +788,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
     });
   });
 
-  describe("CryptoTransfer Tests", async function () {
+  describe('CryptoTransfer Tests', async function () {
     let NftSerialNumber;
     let NftSerialNumber2;
 
@@ -824,7 +824,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       ).to.equal(TX_SUCCESS_CODE);
     }
 
-    it("should be able to transfer fungible tokens", async function () {
+    it('should be able to transfer fungible tokens', async function () {
       await setKyc(HTSTokenContractAddress);
 
       // setup the transfer
@@ -855,13 +855,13 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       ).to.equal(TX_SUCCESS_CODE);
     });
 
-    it("should be able to transfer non-fungible tokens", async function () {
+    it('should be able to transfer non-fungible tokens', async function () {
       await setKyc(NftHTSTokenContractAddress);
       // Mint an NFT
       const txMint = await mainContract.mintTokenPublic(
         NftHTSTokenContractAddress,
         0,
-        ["0x03", "0x04"],
+        ['0x03', '0x04'],
         Constants.GAS.LIMIT_1_000_000,
       );
       expect(
@@ -900,12 +900,12 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       ).to.equal(TX_SUCCESS_CODE);
     });
 
-    it("should be able to transfer both fungible and non-fungible tokens in single cryptoTransfer", async function () {
+    it('should be able to transfer both fungible and non-fungible tokens in single cryptoTransfer', async function () {
       // Mint an NFT
       const txMint = await mainContract.mintTokenPublic(
         NftHTSTokenContractAddress,
         0,
-        ["0x05"],
+        ['0x05'],
         Constants.GAS.LIMIT_1_000_000,
       );
       expect(
@@ -952,7 +952,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       ).to.equal(TX_SUCCESS_CODE);
     });
 
-    it("should fail to swap approved fungible tokens", async function () {
+    it('should fail to swap approved fungible tokens', async function () {
       const txApproval1 = await mainContract.setApprovalForAllPublic(
         NftHTSTokenContractAddress,
         accounts[1].wallet.address,
@@ -1006,7 +1006,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       await Assertions.expectRevert(mainContract.cryptoTransferPublic(tokenTransferList), Constants.CALL_EXCEPTION);
     });
 
-    it("should fail to swap approved non-fungible tokens", async function () {
+    it('should fail to swap approved non-fungible tokens', async function () {
       const txApprove1 = await mainContract.setApprovalForAllPublic(
         NftHTSTokenContractAddress,
         accounts[1].wallet.address,
@@ -1053,7 +1053,7 @@ describe("@tokencreate HTS Precompile Token Create Acceptance Tests", async func
       await Assertions.expectRevert(mainContract.cryptoTransferPublic(tokenTransferList), Constants.CALL_EXCEPTION);
     });
 
-    it("should fail to transfer fungible and non-fungible tokens in a single tokenTransferList", async function () {
+    it('should fail to transfer fungible and non-fungible tokens in a single tokenTransferList', async function () {
       // setup the transfer
       const xferAmount = 10;
       const tokenTransferList = [
