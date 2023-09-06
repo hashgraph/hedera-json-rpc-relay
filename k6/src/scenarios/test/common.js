@@ -2,7 +2,7 @@
  * ‌
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@
  * ‍
  */
 
-const errorField = "error";
-const resultField = "result";
+const errorField = 'error';
+const resultField = 'result';
 
-const isDebugMode = __ENV['DEBUG_MODE'] === "true";
+const isDebugMode = __ENV['DEBUG_MODE'] === 'true';
 
 function isNonErrorResponse(response) {
-  if(isDebugMode) {
+  if (isDebugMode) {
     console.log(response);
   }
   //instead of doing multiple type checks,
@@ -42,7 +42,7 @@ function isNonErrorResponse(response) {
 }
 
 function is400Status(response) {
-  if(isDebugMode) {
+  if (isDebugMode) {
     console.log(response);
   }
   try {
@@ -53,7 +53,7 @@ function is400Status(response) {
 }
 
 function isErrorResponse(response) {
-  if(isDebugMode) {
+  if (isDebugMode) {
     console.log(response);
   }
   //instead of doing multiple type checks,
@@ -80,10 +80,10 @@ let requestId = 1;
 function getPayLoad(methodName, paramInput = []) {
   return JSON.stringify({
     id: requestId++,
-    jsonrpc: "2.0",
+    jsonrpc: '2.0',
     method: methodName,
-    params: paramInput
+    params: paramInput,
   });
 }
 
-export {isErrorResponse, isNonErrorResponse, httpParams, getPayLoad, is400Status};
+export { isErrorResponse, isNonErrorResponse, httpParams, getPayLoad, is400Status };

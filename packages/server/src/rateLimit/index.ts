@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,10 +36,10 @@ export default class RateLimit {
     const metricCounterName = 'rpc_relay_ip_rate_limit';
     register.removeSingleMetric(metricCounterName);
     this.ipRateLimitCounter = new Counter({
-        name: metricCounterName,
-        help: 'Relay ip rate limit counter',
-        labelNames: ['methodName'],
-        registers: [register],
+      name: metricCounterName,
+      help: 'Relay ip rate limit counter',
+      labelNames: ['methodName'],
+      registers: [register],
     });
   }
 
@@ -52,12 +52,13 @@ export default class RateLimit {
         return false;
       }
 
-
       const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
-      this.logger.warn(`${requestIdPrefix}, Rate limit call to ${methodName}, ${this.database[ip].methodInfo[methodName].remaining} out of ${total} calls remaining`);
+      this.logger.warn(
+        `${requestIdPrefix}, Rate limit call to ${methodName}, ${this.database[ip].methodInfo[methodName].remaining} out of ${total} calls remaining`,
+      );
 
       this.ipRateLimitCounter.labels(methodName).inc(1);
-     
+
       return true;
     } else {
       this.reset(ip, methodName, total);

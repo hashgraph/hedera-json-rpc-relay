@@ -2,7 +2,7 @@
  * ‌
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,18 @@
  * ‍
  */
 
-import {check, sleep} from "k6";
-import {Gauge} from 'k6/metrics';
-import {randomIntBetween} from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
+import { check, sleep } from 'k6';
+import { Gauge } from 'k6/metrics';
+import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
-import {setDefaultValuesForEnvParameters} from "./parameters.js";
+import { setDefaultValuesForEnvParameters } from './parameters.js';
 
 setDefaultValuesForEnvParameters();
 
 const SCENARIO_DURATION_METRIC_NAME = 'scenario_duration';
 
-function getOptions(maxDuration = __ENV['DEFAULT_MAX_DURATION']){
-
-  if(parseInt(__ENV['DEFAULT_MAX_DURATION']) > parseInt(maxDuration)){
+function getOptions(maxDuration = __ENV['DEFAULT_MAX_DURATION']) {
+  if (parseInt(__ENV['DEFAULT_MAX_DURATION']) > parseInt(maxDuration)) {
     maxDuration = __ENV['DEFAULT_MAX_DURATION'];
   }
 
@@ -45,9 +44,11 @@ function getOptions(maxDuration = __ENV['DEFAULT_MAX_DURATION']){
   };
 }
 
-function getScenarioOptions(testDuration = __ENV.DEFAULT_DURATION){
-
-  if(parseInt(__ENV['DEFAULT_DURATION'].toString().substring(0, __ENV['DEFAULT_DURATION'].toString().length-1)) > parseInt(testDuration.substring(0,testDuration.length-1))){
+function getScenarioOptions(testDuration = __ENV.DEFAULT_DURATION) {
+  if (
+    parseInt(__ENV['DEFAULT_DURATION'].toString().substring(0, __ENV['DEFAULT_DURATION'].toString().length - 1)) >
+    parseInt(testDuration.substring(0, testDuration.length - 1))
+  ) {
     testDuration = __ENV['DEFAULT_DURATION'];
   }
 
@@ -85,7 +86,7 @@ function getNextStartTime(startTime, duration, gracefulStop) {
 function getOptionsWithScenario(name, tags = {}, maxDuration = undefined, testDuration = undefined) {
   return Object.assign({}, getOptions(maxDuration), {
     scenarios: {
-      [name]: Object.assign({}, getScenarioOptions(testDuration), {tags}),
+      [name]: Object.assign({}, getScenarioOptions(testDuration), { tags }),
     },
   });
 }
@@ -94,9 +95,9 @@ function isLoadTest() {
   return __ENV.TEST_TYPE === 'load';
 }
 
-function getFilteredTests(tests){
-  if(__ENV.FILTER_TEST && __ENV.FILTER_TEST !== "*") {
-    const filteredTests = __ENV.FILTER_TEST.split(",");
+function getFilteredTests(tests) {
+  if (__ENV.FILTER_TEST && __ENV.FILTER_TEST !== '*') {
+    const filteredTests = __ENV.FILTER_TEST.split(',');
 
     const newTests = {};
     for (let i = 0; i < filteredTests.length; i++) {
@@ -130,7 +131,7 @@ function getSequentialTestScenarios(tests) {
       scenarios[scenarioName] = scenario;
 
       // update the scenario's startTime, so scenarios run in sequence
-      if(isLoadTest()) {
+      if (isLoadTest()) {
         scenario.startTime = 0;
       } else {
         scenario.startTime = getNextStartTime(startTime, duration, gracefulStop);
@@ -153,9 +154,9 @@ function getSequentialTestScenarios(tests) {
     }
   }
 
-  const testOptions = Object.assign({}, getOptions(), {scenarios, thresholds});
+  const testOptions = Object.assign({}, getOptions(), { scenarios, thresholds });
 
-  return {funcs, options: testOptions, scenarioDurationGauge: new Gauge(SCENARIO_DURATION_METRIC_NAME)};
+  return { funcs, options: testOptions, scenarioDurationGauge: new Gauge(SCENARIO_DURATION_METRIC_NAME) };
 }
 
 const checksRegex = /^checks{.*scenario:.*}$/;
@@ -171,31 +172,31 @@ function getScenario(metricKey) {
 
 function defaultMetrics() {
   return {
-    "checks": {
-      "values": {
-        "rate": 0
+    checks: {
+      values: {
+        rate: 0,
       },
     },
-    "http_req_duration": {
-      "values": {
-        "avg": 0
-      }
-    },
-    "http_reqs": {
-      "values": {
-        "count": 0
+    http_req_duration: {
+      values: {
+        avg: 0,
       },
     },
-    "scenario_duration": {
-      "values": {
-        "value": 0
-      }
-    }
+    http_reqs: {
+      values: {
+        count: 0,
+      },
+    },
+    scenario_duration: {
+      values: {
+        value: 0,
+      },
+    },
   };
 }
 
 function getTestType() {
-  return __ENV.TEST_TYPE !== undefined && __ENV.TEST_TYPE === "load" ? "load" : "performance";
+  return __ENV.TEST_TYPE !== undefined && __ENV.TEST_TYPE === 'load' ? 'load' : 'performance';
 }
 
 function markdownReport(data, isFirstColumnUrl, scenarios) {
@@ -204,7 +205,7 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
 |----------|-----|------|--------|-----|----------|-------------------|-------|-----|-----|-------|-------|---------|`;
 
   // collect the metrics
-  const {metrics} = data;
+  const { metrics } = data;
   const scenarioMetrics = {};
 
   for (const [key, value] of Object.entries(metrics)) {
@@ -223,7 +224,7 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
 
     const scenario = getScenario(key);
     const existingMetrics = scenarioMetrics[scenario] || defaultMetrics();
-    scenarioMetrics[scenario] = Object.assign(existingMetrics, {[name]: value});
+    scenarioMetrics[scenario] = Object.assign(existingMetrics, { [name]: value });
   }
 
   const scenarioUrls = {};
@@ -248,14 +249,14 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
       const passPercentage = (scenarioMetric['checks'].values.rate * 100.0).toFixed(2);
       const httpReqs = scenarioMetric['http_reqs'].values.count;
       const duration = scenarioMetric['scenario_duration'].values.value; // in ms
-      const rps = ((httpReqs * 1.0 / duration) * 1000).toFixed(2);
-      const passRps = (rps * passPercentage / 100.0).toFixed(2);
+      const rps = (((httpReqs * 1.0) / duration) * 1000).toFixed(2);
+      const passRps = ((rps * passPercentage) / 100.0).toFixed(2);
       const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
-      const httpP95Duration = scenarioMetric['http_req_duration'].values["p(95)"].toFixed(2);
-      const httpP90Duration = scenarioMetric['http_req_duration'].values["p(90)"].toFixed(2);
-      const httpMedDuration = scenarioMetric['http_req_duration'].values["med"].toFixed(2);
-      const httpMinDuration = scenarioMetric['http_req_duration'].values["min"].toFixed(2);
-      const httpMaxDuration = scenarioMetric['http_req_duration'].values["max"].toFixed(2);
+      const httpP95Duration = scenarioMetric['http_req_duration'].values['p(95)'].toFixed(2);
+      const httpP90Duration = scenarioMetric['http_req_duration'].values['p(90)'].toFixed(2);
+      const httpMedDuration = scenarioMetric['http_req_duration'].values['med'].toFixed(2);
+      const httpMinDuration = scenarioMetric['http_req_duration'].values['min'].toFixed(2);
+      const httpMaxDuration = scenarioMetric['http_req_duration'].values['max'].toFixed(2);
 
       const firstColumn = isFirstColumnUrl ? scenarioUrls[scenario] : scenario;
       markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${httpReqs} | ${passPercentage} | ${rps} | ${passRps} | ${httpReqDuration} | ${httpMedDuration} | ${httpMinDuration} | ${httpMaxDuration} | ${httpP90Duration} | ${httpP95Duration} | |\n`;
@@ -283,8 +284,8 @@ function TestScenarioBuilder() {
         const response = that._request(testParameters, iteration, vuIndex, iterationByVu);
         check(response, that._checks);
         // if Load test, then we need to sleep for random time between 1 and 5 seconds
-        if (getTestType() === "load") {
-            sleep(randomIntBetween(1, 5));
+        if (getTestType() === 'load') {
+          sleep(randomIntBetween(1, 5));
         }
       },
     };
@@ -315,7 +316,7 @@ function TestScenarioBuilder() {
     return this;
   };
 
-  this.maxDuration = function (maxDuration){
+  this.maxDuration = function (maxDuration) {
     this._maxDuration = maxDuration;
     return this;
   };
@@ -323,4 +324,4 @@ function TestScenarioBuilder() {
   return this;
 }
 
-export {getSequentialTestScenarios, markdownReport, TestScenarioBuilder};
+export { getSequentialTestScenarios, markdownReport, TestScenarioBuilder };

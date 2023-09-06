@@ -1,106 +1,106 @@
-import { Validator } from ".";
+import { Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
 
 export const OBJECTS_VALIDATIONS = {
-  "blockHashObject": {
-    "blockHash": {
-      type: "blockHash",
-      nullable: false
-    }
-  },
-  "blockNumberObject": {
-    "blockNumber": {
-      type: "blockNumber",
-      nullable: false
-    }
-  },
-  "filter": {
-    "blockHash": {
-      type: "blockHash",
-      nullable: false
-    },
-    "fromBlock": {
-      type: "blockNumber",
-      nullable: false
-    },
-    "toBlock": {
-      type: "blockNumber",
-      nullable: false
-    },
-    "address": {
-      type: "addressFilter",
-      nullable: false
-    },
-    "topics": {
-      type: "topics",
-      nullable: false
-    }
-  },
-  "transaction": {
-    "from": {
-      type: "address",
-      nullable: false
-    },
-    "to": {
-      type: "address",
-      nullable: false
-    },
-    "gas": {
-      type: "hex",
-      nullable: false
-    },
-    "gasPrice": {
-      type: "hex",
-      nullable: false
-    },
-    "maxPriorityFeePerGas": {
-      type: "hex",
-      nullable: false
-    },
-    "maxFeePerGas": {
-      type: "hex",
-      nullable: false
-    },
-    "value": {
-      type: "hex",
-      nullable: false
-    },
-    "data": {
-      type: "hex",
-      nullable: true
-    },
-    "type": {
-      type: "hex",
-      nullable: false
-    },
-    "chainId": {
-      type: "hex",
-      nullable: false
-    },
-    "nonce": {
-      type: "hex",
-      nullable: false
-    },
-    "input": {
-      type: "hex",
-      nullable: false
-    },
-    "accessList": {
-      type: "array",
-      nullable: false
-    }
-  },
-  "ethSubscribeLogsParams": {
-    "address" : {
-      type: "addressFilter",
+  blockHashObject: {
+    blockHash: {
+      type: 'blockHash',
       nullable: false,
-      required: false
     },
-    "topics" : {
-        type: "topics",
-        nullable: false
-    }
-  }
+  },
+  blockNumberObject: {
+    blockNumber: {
+      type: 'blockNumber',
+      nullable: false,
+    },
+  },
+  filter: {
+    blockHash: {
+      type: 'blockHash',
+      nullable: false,
+    },
+    fromBlock: {
+      type: 'blockNumber',
+      nullable: false,
+    },
+    toBlock: {
+      type: 'blockNumber',
+      nullable: false,
+    },
+    address: {
+      type: 'addressFilter',
+      nullable: false,
+    },
+    topics: {
+      type: 'topics',
+      nullable: false,
+    },
+  },
+  transaction: {
+    from: {
+      type: 'address',
+      nullable: false,
+    },
+    to: {
+      type: 'address',
+      nullable: false,
+    },
+    gas: {
+      type: 'hex',
+      nullable: false,
+    },
+    gasPrice: {
+      type: 'hex',
+      nullable: false,
+    },
+    maxPriorityFeePerGas: {
+      type: 'hex',
+      nullable: false,
+    },
+    maxFeePerGas: {
+      type: 'hex',
+      nullable: false,
+    },
+    value: {
+      type: 'hex',
+      nullable: false,
+    },
+    data: {
+      type: 'hex',
+      nullable: true,
+    },
+    type: {
+      type: 'hex',
+      nullable: false,
+    },
+    chainId: {
+      type: 'hex',
+      nullable: false,
+    },
+    nonce: {
+      type: 'hex',
+      nullable: false,
+    },
+    input: {
+      type: 'hex',
+      nullable: false,
+    },
+    accessList: {
+      type: 'array',
+      nullable: false,
+    },
+  },
+  ethSubscribeLogsParams: {
+    address: {
+      type: 'addressFilter',
+      nullable: false,
+      required: false,
+    },
+    topics: {
+      type: 'topics',
+      nullable: false,
+    },
+  },
 };
 
 export class TransactionObject {
@@ -132,7 +132,7 @@ export class TransactionObject {
   name() {
     return this.constructor.name;
   }
-};
+}
 
 export class FilterObject {
   blockHash: string;
@@ -141,7 +141,7 @@ export class FilterObject {
   address?: string | string[];
   topics?: string[] | string[][];
 
-  constructor (filter: any) {
+  constructor(filter: any) {
     Validator.hasUnexpectedParams(filter, OBJECTS_VALIDATIONS.filter, this.name());
     this.blockHash = filter.blockHash;
     this.fromBlock = filter.fromBlock;
@@ -161,12 +161,12 @@ export class FilterObject {
   name() {
     return this.constructor.name;
   }
-};
+}
 
 export class BlockHashObject {
   blockHash: string;
 
-  constructor (param: any) {
+  constructor(param: any) {
     Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.blockHashObject, this.name());
     this.blockHash = param.blockHash;
   }
@@ -178,12 +178,12 @@ export class BlockHashObject {
   name() {
     return this.constructor.name;
   }
-};
+}
 
 export class BlockNumberObject {
   blockNumber: string;
 
-  constructor (param: any) {
+  constructor(param: any) {
     Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.blockNumberObject, this.name());
     this.blockNumber = param.blockNumber;
   }
@@ -195,29 +195,34 @@ export class BlockNumberObject {
   name() {
     return this.constructor.name;
   }
-};
+}
 
 export class EthSubscribeLogsParamsObject {
-    address?: string | string[];
-    topics?: string[] | string[][];
+  address?: string | string[];
+  topics?: string[] | string[][];
 
-    constructor (param: any) {
-        Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.ethSubscribeLogsParams, this.name());
-        this.address = param.address;
-        this.topics = param.topics;
+  constructor(param: any) {
+    Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.ethSubscribeLogsParams, this.name());
+    this.address = param.address;
+    this.topics = param.topics;
+  }
+
+  validate() {
+    const valid = Validator.validateObject(this, OBJECTS_VALIDATIONS.ethSubscribeLogsParams);
+    // address and is not an empty array
+    if (
+      valid &&
+      Array.isArray(this.address) &&
+      this.address.length === 0 &&
+      OBJECTS_VALIDATIONS.ethSubscribeLogsParams.address.required
+    ) {
+      throw predefined.MISSING_REQUIRED_PARAMETER(`'address' for ${this.name()}`);
     }
 
-    validate() {
-        const valid = Validator.validateObject(this, OBJECTS_VALIDATIONS.ethSubscribeLogsParams);
-        // address and is not an empty array
-        if(valid && Array.isArray(this.address) && this.address.length === 0 && OBJECTS_VALIDATIONS.ethSubscribeLogsParams.address.required){
-          throw predefined.MISSING_REQUIRED_PARAMETER(`'address' for ${this.name()}`);
-        }
+    return valid;
+  }
 
-        return valid;
-    }
-
-    name() {
-        return this.constructor.name;
-    }
+  name() {
+    return this.constructor.name;
+  }
 }

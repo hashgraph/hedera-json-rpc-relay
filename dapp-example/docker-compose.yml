@@ -26,7 +26,7 @@ services:
     networks:
       - x11
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
 
   display:
     container_name: display
@@ -45,14 +45,7 @@ services:
     image: synthetixio/ngrok:457bb48776c3b14de232d9dda620ba9188dc40ac-base
     ports:
       - '4040:4040'
-    command:
-      [
-          'ngrok',
-          'http',
-          'display:8080',
-          '--authtoken',
-          '${NGROK_AUTH}'
-      ]
+    command: ['ngrok', 'http', 'display:8080', '--authtoken', '${NGROK_AUTH}']
     depends_on:
       - display
     networks:

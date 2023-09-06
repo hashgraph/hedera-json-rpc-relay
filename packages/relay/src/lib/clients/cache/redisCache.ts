@@ -104,7 +104,7 @@ export class RedisCache implements ICacheClient {
     const result = await this.client.get(key);
     if (result) {
       this.logger.trace(
-        `${requestIdPrefix} returning cached value ${key}:${JSON.stringify(result)} on ${callingMethod} call`
+        `${requestIdPrefix} returning cached value ${key}:${JSON.stringify(result)} on ${callingMethod} call`,
       );
       // TODO: add metrics
       return JSON.parse(result);
@@ -127,7 +127,7 @@ export class RedisCache implements ICacheClient {
     value: any,
     callingMethod: string,
     ttl?: number | undefined,
-    requestIdPrefix?: string | undefined
+    requestIdPrefix?: string | undefined,
   ): Promise<void> {
     const serializedValue = JSON.stringify(value);
     const resolvedTtl = (ttl ?? this.options.ttl) / 1000; // convert to seconds

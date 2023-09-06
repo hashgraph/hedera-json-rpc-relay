@@ -19,7 +19,7 @@
  */
 
 import { app, httpApp } from './webSocketServer';
-import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 async function main() {
   app.listen({ port: constants.WEB_SOCKET_PORT });

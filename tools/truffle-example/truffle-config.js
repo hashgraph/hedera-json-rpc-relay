@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay - Truffle Example
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,20 +47,19 @@ module.exports = {
       host: process.env.RELAY_URL,
       port: process.env.RELAY_PORT,
       network_id: '*',
-      provider: () => new HDWalletProvider([
-          process.env.OPERATOR_PRIVATE_KEY,
-          process.env.RECEIVER_PRIVATE_KEY
-        ],
-        `${process.env.RELAY_URL}:${process.env.RELAY_PORT}`
-      ),
+      provider: () =>
+        new HDWalletProvider(
+          [process.env.OPERATOR_PRIVATE_KEY, process.env.RECEIVER_PRIVATE_KEY],
+          `${process.env.RELAY_URL}:${process.env.RELAY_PORT}`,
+        ),
       // minimum required gas is 150_000, we recommend doubling it
-      gas: 300000
-    }
+      gas: 300000,
+    },
   },
 
   mocha: {
     // 5 minutes
-    timeout: 5 * 60000
+    timeout: 5 * 60000,
   },
 
   compilers: {
@@ -69,9 +68,9 @@ module.exports = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 200
-        }
-      }
-    }
-  }
+          runs: 200,
+        },
+      },
+    },
+  },
 };

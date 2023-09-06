@@ -1,4 +1,3 @@
-
 /*-
  *
  * Hedera JSON RPC Relay
@@ -24,28 +23,28 @@
  * @class
  */
 export class RedisCacheError {
-    public type: string;
-    public fullError?: string;
-    public message?: string;
-    public stack?: string;
+  public type: string;
+  public fullError?: string;
+  public message?: string;
+  public stack?: string;
 
-    static ErrorMessages = {
-        SOCKET_CLOSED: "SocketClosedUnexpectedlyError"
-    }
-    
-    /**
-     * Creates a new RedisCacheError instance from the provided error object.
-     * @constructor
-     * @param {any} error - The error object representing the Redis cache error.
-     */
-    constructor(error: any) {
-        this.type = error.type;
-        this.message = error.message;
-        this.stack = error.stack;
-        this.fullError = error;
-    }
+  static ErrorMessages = {
+    SOCKET_CLOSED: 'SocketClosedUnexpectedlyError',
+  };
 
-    public isSocketClosed(): boolean {
-        return this.type === RedisCacheError.ErrorMessages.SOCKET_CLOSED;
-    }
+  /**
+   * Creates a new RedisCacheError instance from the provided error object.
+   * @constructor
+   * @param {any} error - The error object representing the Redis cache error.
+   */
+  constructor(error: any) {
+    this.type = error.type;
+    this.message = error.message;
+    this.stack = error.stack;
+    this.fullError = error;
   }
+
+  public isSocketClosed(): boolean {
+    return this.type === RedisCacheError.ErrorMessages.SOCKET_CLOSED;
+  }
+}
