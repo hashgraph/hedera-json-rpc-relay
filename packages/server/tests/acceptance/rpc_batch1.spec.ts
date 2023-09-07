@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -539,6 +539,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
         Assertions.transaction(response, mirrorContractDetails);
       });
+
       it('should execute "eth_getTransactionByBlockHashAndIndex" for invalid block hash', async function () {
         const response = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,

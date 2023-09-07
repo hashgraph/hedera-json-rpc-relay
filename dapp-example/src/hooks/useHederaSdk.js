@@ -1,37 +1,36 @@
-import React from "react";
+import React from 'react';
 import { ethers } from 'ethers';
-import { PublicKey, Client, TransferTransaction, Hbar, AccountId, AccountInfoQuery } from "@hashgraph/sdk";
+import { PublicKey, Client, TransferTransaction, Hbar, AccountId, AccountInfoQuery } from '@hashgraph/sdk';
 
 const client = Client.forTestnet();
 
 const useHederaSdk = () => {
+  const recoveredPublicKeyToAccountId = (publicKey) => {
+    const compressed = ethers.utils.computePublicKey(ethers.utils.arrayify(publicKey), true);
 
-    const recoveredPublicKeyToAccountId = (publicKey) => {
-        const compressed = ethers.utils.computePublicKey(ethers.utils.arrayify(publicKey), true);
+    return PublicKey.fromString(compressed).toAccountId(0, 0);
+  };
 
-        return PublicKey.fromString(compressed).toAccountId(0, 0);
-    }
+  const transferHbarsToAccount = async (operatorId, operatorPrivateKey, amount, accountId) => {
+    client.setOperator(operatorId, operatorPrivateKey);
 
-    const transferHbarsToAccount = async (operatorId, operatorPrivateKey, amount, accountId) => {
-        client.setOperator(operatorId, operatorPrivateKey);
+    const transferTransaction = await new TransferTransaction()
+      .addHbarTransfer(client.operatorAccountId, new Hbar(amount).negated())
+      .addHbarTransfer(accountId, new Hbar(amount))
+      .execute(client);
 
-        const transferTransaction = await new TransferTransaction()
-            .addHbarTransfer(client.operatorAccountId, new Hbar(amount).negated())
-            .addHbarTransfer(accountId, new Hbar(amount))
-            .execute(client);
+    return transferTransaction.getReceipt(client);
+  };
 
-        return transferTransaction.getReceipt(client);
-    }
+  const getAccountInfo = async (evmAddress) => {
+    return new AccountInfoQuery({ accountId: AccountId.fromEvmAddress(0, 0, evmAddress) }).execute(client);
+  };
 
-    const getAccountInfo = async (evmAddress) => {
-        return new AccountInfoQuery({ accountId: AccountId.fromEvmAddress(0, 0, evmAddress) }).execute(client);
-    }
-
-    return {
-        recoveredPublicKeyToAccountId,
-        transferHbarsToAccount,
-        getAccountInfo
-    }
-}
+  return {
+    recoveredPublicKeyToAccountId,
+    transferHbarsToAccount,
+    getAccountInfo,
+  };
+};
 
 export default useHederaSdk;

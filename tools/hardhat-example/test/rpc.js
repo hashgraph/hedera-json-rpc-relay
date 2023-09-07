@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay - Hardhat Example
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ describe('RPC', function () {
     const msg = 'updated_msg';
     await hre.run('contract-call', { contractAddress, msg });
     // 5 seconds sleep to propagate the changes to mirror node
-    await new Promise(r => setTimeout(r, 5000));
+    await new Promise((r) => setTimeout(r, 5000));
     const res = await hre.run('contract-view-call', { contractAddress });
     expect(res).to.be.equal(msg);
   });

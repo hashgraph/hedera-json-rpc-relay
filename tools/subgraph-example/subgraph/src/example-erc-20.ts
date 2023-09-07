@@ -19,7 +19,7 @@
  */
 
 import { Transfer as TransferEvent } from "../generated/ExampleERC20/ExampleERC20";
-import { ERC20, Transfer } from "../generated/schema"
+import { ERC20, Transfer } from "../generated/schema";
 
 // SCHEMA:
 // id: ID! # String
@@ -37,7 +37,7 @@ export function handleTransfer(event: TransferEvent): void {
   }
 
   const transfer = new Transfer(
-    event.address.toHexString() + "-" + event.transaction.hash.toHexString()
+    event.address.toHexString() + "-" + event.transaction.hash.toHexString(),
   );
 
   transfer.from = event.params.from;
