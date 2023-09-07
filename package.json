@@ -37,6 +37,7 @@
         "acceptancetest:release": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit",
         "acceptancetest:ws": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@web-socket' --exit",
         "acceptancetest:precompile-calls": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@precompile-calls' --exit",
+        "acceptancetest:api-conformity": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-conformity' --exit",
         "build": "npx lerna run build",
         "build-and-test": "npx lerna run build && npx lerna run test",
         "build:docker": "docker build . -t ${npm_package_name}",

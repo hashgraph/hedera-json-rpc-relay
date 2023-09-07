@@ -238,7 +238,7 @@ async function processFileContent(fileContent) {
   checkResponseFormat(fileContent.fileName, response, JSON.parse(fileContent.content.response));
 }
 
-describe('Ethereum execution apis tests', function () {
+describe('@api-conformity Ethereum execution apis tests', function () {
   before(async () => {
     legacyTransactionAndBlockHash = await signAndSendRawTransaction(legacyTransaction);
     transaction2930AndBlockHash = await signAndSendRawTransaction(transaction2930);
@@ -246,33 +246,24 @@ describe('Ethereum execution apis tests', function () {
     createContractLegacyTransactionAndBlockHash = await signAndSendRawTransaction(createContractLegacyTransaction);
     currentBlockHash = await getLatestBlockHash();
   });
-  fs.readdir(directoryPath, (err, directories) => {
-    if (err) {
-      console.error('Error reading directory:', err);
-      return;
-    }
-    const relaySupportedMethodNames = openRpcData.methods.map((method) => method.name);
-    directories = directories.filter((directory) => relaySupportedMethodNames.includes(directory));
 
-    directories.forEach((directory) => {
-      const filePath = path.join(directoryPath, directory);
+  let directories = fs.readdirSync(directoryPath);
 
-      if (fs.statSync(filePath).isDirectory()) {
-        fs.readdir(path.resolve(directoryPath, directory), (err, files) => {
-          if (err) {
-            console.error('Error reading directory:', err);
-            return;
-          }
+  const relaySupportedMethodNames = openRpcData.methods.map((method) => method.name);
+  directories = directories.filter((directory) => relaySupportedMethodNames.includes(directory));
 
-          files.forEach((file) => {
-            it(`Executing for ${file}`, async () => {
-              const data = fs.readFileSync(file);
-              const missingKeys = processFileContent(file);
-              expect(missingKeys).to.not.be.empty;
-            });
-          });
+  for (const directory of directories) {
+    const filePath = path.join(directoryPath, directory);
+
+    if (fs.statSync(filePath).isDirectory()) {
+      const files = fs.readdirSync(path.resolve(directoryPath, directory));
+      for (const file of files) {
+        it(`Executing for ${file}`, async () => {
+          const data = fs.readFileSync(path.resolve(directoryPath, directory, file));
+          const missingKeys = processFileContent(file);
+          expect(missingKeys).to.not.be.empty;
         });
       }
-    });
-  });
+    }
+  }
 });
