@@ -598,6 +598,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
         const mirrorResult = await mirrorNode.get(`/contracts/results/${legacyTxHash}`, requestId);
+        mirrorResult.from = accounts[2].wallet.address;
+        mirrorResult.to = mirrorContract.evm_address;
 
         const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [legacyTxHash], requestId);
 
@@ -619,6 +621,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
         const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+        mirrorResult.from = accounts[2].wallet.address;
+        mirrorResult.to = mirrorContract.evm_address;
 
         const res = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
@@ -642,6 +646,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
         const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+        mirrorResult.from = accounts[2].wallet.address;
+        mirrorResult.to = mirrorContract.evm_address;
 
         const res = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
@@ -680,18 +686,23 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(res).to.be.null;
       });
 
-      it.only('should execute "eth_getTransactionReceipt" for a transfer transaction', async function () {
+      it('should execute "eth_getTransactionReceipt" for a transfer transaction', async function () {
         const tx = await accounts[0].wallet.sendTransaction({
           to: accounts[1].wallet,
           value: ethers.parseEther('1'),
         });
 
-        const rec = await tx.wait();
+        await tx.wait();
 
         const txByHash = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [tx.hash], requestId);
-        const mirrorResult = await mirrorNode.get(`/contracts/results/${tx.hash}`, requestId);
+        const receipt = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [tx.hash], requestId);
+        let mirrorResult = await mirrorNode.get(`/contracts/results/${tx.hash}`, requestId);
+
+        mirrorResult.from = accounts[0].wallet.address;
+        mirrorResult.to = accounts[1].wallet.address;
+
         Assertions.transaction(txByHash, mirrorResult);
-        Assertions.transactionReceipt(rec, mirrorResult);
+        Assertions.transactionReceipt(receipt, mirrorResult);
       });
 
       it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
@@ -1032,6 +1043,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           const signedTx = await accounts[2].wallet.signTransaction(transaction);
           const txHash1 = await relay.sendRawTransaction(signedTx, requestId);
           const mirrorResult = await mirrorNode.get(`/contracts/results/${txHash1}`, requestId);
+          mirrorResult.from = accounts[2].wallet.address;
+          mirrorResult.to = mirrorContract.evm_address;
+
           const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [txHash1], requestId);
           Assertions.transactionReceipt(res, mirrorResult);
           const error = predefined.NONCE_TOO_LOW(nonce, nonce + 1);
