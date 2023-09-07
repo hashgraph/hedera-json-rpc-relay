@@ -176,7 +176,7 @@ function checkResponseFormat(fileName, actualReponse, expectedResponse) {
   const expectedResponseKeys = extractKeys(expectedResponse);
   const missingKeys = expectedResponseKeys.filter((key) => !actualResponseKeys.includes(key));
   if ((fileName === 'get-dynamic-fee.io' || fileName === 'get-access-list.io') && missingKeys[0] === 'result.v') {
-    return;
+    return [];
   }
 
   return missingKeys;
@@ -231,11 +231,12 @@ function formatTransactionByHashAndReceiptRequests(fileName, request) {
   return request;
 }
 
-async function processFileContent(fileContent) {
-  console.log('Executing for ', fileContent.fileName);
-  const modifiedRequest = await checkRequestBody(fileContent.fileName, JSON.parse(fileContent.content.request));
+async function processFileContent(file, content) {
+  console.log('Executing for ', file);
+  const modifiedRequest = await checkRequestBody(file, JSON.parse(content.request));
   const response = await sendRequestToRelay(modifiedRequest);
-  checkResponseFormat(fileContent.fileName, response, JSON.parse(fileContent.content.response));
+  const missingKeys = checkResponseFormat(file, response, JSON.parse(content.response));
+  return missingKeys;
 }
 
 describe('@api-conformity Ethereum execution apis tests', function () {
@@ -258,10 +259,11 @@ describe('@api-conformity Ethereum execution apis tests', function () {
     if (fs.statSync(filePath).isDirectory()) {
       const files = fs.readdirSync(path.resolve(directoryPath, directory));
       for (const file of files) {
-        it(`Executing for ${file}`, async () => {
+        it(`Executing for ${directory}`, async () => {
           const data = fs.readFileSync(path.resolve(directoryPath, directory, file));
-          const missingKeys = processFileContent(file);
-          expect(missingKeys).to.not.be.empty;
+          const content = splitReqAndRes(data.toString('utf-8'));
+          const missingKeys = await processFileContent(file, content);
+          expect(missingKeys).to.be.empty;
         });
       }
     }
