@@ -1724,7 +1724,9 @@ export class EthImpl implements Eth {
       }
     }
 
-    const toAddress = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
+    const toAddress = contractResult.to
+      ? await this.resolveEvmAddress(contractResult.to, requestIdPrefix)
+      : contractResult.to;
 
     if (
       process.env.DEV_MODE &&
@@ -1825,8 +1827,10 @@ export class EthImpl implements Eth {
       const receipt: any = {
         blockHash: toHash32(receiptResponse.block_hash),
         blockNumber: numberTo0x(receiptResponse.block_number),
-        from: await this.resolveEvmAddress(receiptResponse.from, requestIdPrefix),
-        to: await this.resolveEvmAddress(receiptResponse.to, requestIdPrefix),
+        from: receiptResponse.from
+          ? await this.resolveEvmAddress(receiptResponse.from, requestIdPrefix)
+          : receiptResponse.from,
+        to: receiptResponse.to ? await this.resolveEvmAddress(receiptResponse.to, requestIdPrefix) : receiptResponse.to,
         cumulativeGasUsed: numberTo0x(receiptResponse.block_gas_used),
         gasUsed: nanOrNumberTo0x(receiptResponse.gas_used),
         contractAddress: receiptResponse.address,
