@@ -24,7 +24,7 @@ import { Registry } from 'prom-client';
 const registry = new Registry();
 const Redis = require('ioredis');
 
-const { hostname, port } = new URL(process.env.REDIS_URL || '');
+const { hostname, port } = new URL(process.env.REDIS_URL || 'redis://127.0.0.1:6379');
 const redis = new Redis({
   port: port,
   host: hostname,
