@@ -1662,10 +1662,14 @@ export class EthImpl implements Eth {
     }
   }
 
-  async resolveEvmAddress(address: string, requestIdPrefix?: string) {
+  async resolveEvmAddress(
+    address: string,
+    requestIdPrefix?: string,
+    searchableTypes = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+  ) {
     const entity = await this.mirrorNodeClient.resolveEntityType(
       address,
-      [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+      searchableTypes,
       EthImpl.ethGetCode,
       requestIdPrefix,
       0,
@@ -1700,29 +1704,9 @@ export class EthImpl implements Eth {
       );
     }
 
-    let fromAddress;
-    if (contractResult.from) {
-      fromAddress = contractResult.from.substring(0, 42);
-
-      const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${fromAddress}`;
-      let accountResult: any | null = this.cacheService.get(accountCacheKey, EthImpl.ethGetTransactionByHash);
-      if (!accountResult) {
-        accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestIdPrefix);
-        if (accountResult) {
-          this.cacheService.set(
-            accountCacheKey,
-            accountResult,
-            EthImpl.ethGetTransactionByHash,
-            undefined,
-            requestIdPrefix,
-          );
-        }
-      }
-
-      if (accountResult?.evm_address?.length > 0) {
-        fromAddress = accountResult.evm_address.substring(0, 42);
-      }
-    }
+    const fromAddress = contractResult.from
+      ? await this.resolveEvmAddress(contractResult.from, requestIdPrefix, [constants.TYPE_ACCOUNT])
+      : contractResult.to;
 
     const toAddress = contractResult.to
       ? await this.resolveEvmAddress(contractResult.to, requestIdPrefix)
@@ -1779,7 +1763,7 @@ export class EthImpl implements Eth {
         to: cachedLog.address,
         transactionHash: cachedLog.transactionHash,
         transactionIndex: cachedLog.transactionIndex,
-        type: null, //null fro HAPI transactions
+        type: null, // null from HAPI transactions
       };
 
       this.logger.debug(
