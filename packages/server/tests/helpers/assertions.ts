@@ -394,4 +394,14 @@ export default class Assertions {
       return [error.code, error.name, error.message].every((substring) => err.body.includes(substring));
     });
   };
+
+  static evmAddress = (address) => {
+    expect(address).to.match(/(\b0x[a-f0-9]{40}\b)/g, 'matches evm address format');
+    expect(address).to.not.match(/(\b0x(0){15})/g, 'does not contain 15 consecutive zeros');
+  };
+
+  static longZeroAddress = (address) => {
+    expect(address).to.match(/(\b0x[a-f0-9]{40}\b)/g, 'matches evm address format');
+    expect(address).to.match(/(\b0x(0){15})/g, 'contains 15 consecutive zeros');
+  };
 }

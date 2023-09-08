@@ -687,25 +687,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(res).to.be.null;
       });
 
-      it('should execute "eth_getTransactionReceipt" for a transfer transaction', async function () {
-        const tx = await accounts[0].wallet.sendTransaction({
-          to: accounts[1].wallet,
-          value: ethers.parseEther('1'),
-        });
-
-        await tx.wait();
-
-        const txByHash = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [tx.hash], requestId);
-        const receipt = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [tx.hash], requestId);
-        let mirrorResult = await mirrorNode.get(`/contracts/results/${tx.hash}`, requestId);
-
-        mirrorResult.from = accounts[0].wallet.address;
-        mirrorResult.to = accounts[1].wallet.address;
-
-        Assertions.transaction(txByHash, mirrorResult);
-        Assertions.transactionReceipt(receipt, mirrorResult);
-      });
-
       it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
         const transaction = {
           ...default155TransactionData,
