@@ -47,7 +47,7 @@ jobs:
       operator_id: ${{ inputs.operator_id }}
       operator_key: ${{ inputs.operator_key }}
 
-  api_conformity:
+  rpc_api_schema_conformity:
     name: API Conformity
     uses: ./.github/workflows/acceptance-workflow.yml
     with:

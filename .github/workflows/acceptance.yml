@@ -26,11 +26,11 @@ jobs:
     with:
       testfilter: api_batch3
 
-  api_conformity:
+  rpc_api_schema_conformity:
     name: API Conformity
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: api_conformity
+      testfilter: rpc_api_schema_conformity
 
   erc20:
     name: ERC20
