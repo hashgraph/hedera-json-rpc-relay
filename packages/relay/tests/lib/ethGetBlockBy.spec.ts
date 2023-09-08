@@ -34,6 +34,7 @@ import HbarLimit from '../../src/lib/hbarlimiter';
 import { Log, Transaction } from '../../src/lib/model';
 import { nullableNumberTo0x, numberTo0x, nanOrNumberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import * as sinon from 'sinon';
 
 const LRU = require('lru-cache');
 
@@ -260,6 +261,7 @@ const defaultNetworkFees = {
 describe('eth_getBlockBy', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
+  const sandbox = sinon.createSandbox();
 
   this.beforeAll(() => {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
@@ -294,6 +296,11 @@ describe('eth_getBlockBy', async function () {
     // reset cache and restMock
     cacheService.clear();
     restMock.reset();
+    sandbox.spy(cacheService, 'set');
+  });
+
+  afterEach(function () {
+    sandbox.restore();
   });
 
   const mirrorLogToModelLog = (mirrorLog) => {
@@ -432,6 +439,18 @@ describe('eth_getBlockBy', async function () {
     const cacheKeySyntheticLog2 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${modelLog2.transactionHash}`;
     const cacheKeySyntheticLog3 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${modelLog3.transactionHash}`;
 
+    function verifySharedCacheWasUsed() {
+      // verify shared cache was selected
+      const txCount = referenceLogs.length;
+      // @ts-ignore - spy
+      expect(cacheService.set.callCount).to.equal(txCount);
+      // @ts-ignore - spy
+      for (let i = 0; i < txCount; i++) {
+        // @ts-ignore - spy
+        expect(cacheService.set.getCall(i).args[5], 'shared cache should be used').to.equal(true);
+      }
+    }
+
     it('filterAndPopulateSyntheticContractResults showDetails=false sets cache', async function () {
       expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.null;
       expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.null;
@@ -442,6 +461,7 @@ describe('eth_getBlockBy', async function () {
       expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
       expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
       expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
+      verifySharedCacheWasUsed();
     });
 
     it('filterAndPopulateSyntheticContractResults showDetails=true sets cache', async function () {
@@ -454,6 +474,7 @@ describe('eth_getBlockBy', async function () {
       expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
       expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
       expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
+      verifySharedCacheWasUsed();
     });
   });
 });

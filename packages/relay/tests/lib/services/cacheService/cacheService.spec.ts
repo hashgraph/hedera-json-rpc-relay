@@ -66,6 +66,16 @@ describe('CacheService Test Suite', async function () {
 
       expect(cachedValue).to.be.null;
     });
+
+    it('should be able to get from internal cache when calling getSharedWithFallback', async function () {
+      const key = 'string';
+      const value = 'value';
+
+      cacheService.set(key, value, callingMethod, undefined, undefined, true);
+      const cachedValue = cacheService.getSharedWithFallback(key, callingMethod);
+
+      expect(cachedValue).eq(value);
+    });
   });
 
   describe('Shared Cache Test Suite', async function () {
@@ -108,6 +118,18 @@ describe('CacheService Test Suite', async function () {
       const cachedValue = await cacheService.getAsync(key, callingMethod, undefined);
 
       expect(cachedValue).to.be.null;
+    });
+
+    it('should be able to get from shared cache with fallback to internal cache', async function () {
+      const key = 'string';
+      const value = 'value';
+
+      cacheService.set(key, value, callingMethod, undefined, undefined, true);
+
+      mock.stub(cacheService, 'getAsync').returns(value);
+      const cachedValue = await cacheService.getSharedWithFallback(key, callingMethod, undefined);
+
+      expect(cachedValue).eq(value);
     });
   });
 });
