@@ -1737,7 +1737,7 @@ export class EthImpl implements Eth {
     }
 
     const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
-    const cachedLog = this.cacheService.getSharedWithFallback(
+    const cachedLog = await this.cacheService.getSharedWithFallback(
       cacheKeySyntheticLog,
       EthImpl.ethGetTransactionReceipt,
       requestIdPrefix,
