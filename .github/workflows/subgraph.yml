@@ -34,6 +34,9 @@ jobs:
         run: npx hedera start -d  
         timeout-minutes: 5
 
+      - name: Compile contracts
+        run: npx hardhat compile
+
       - name: Deploy and interact with contracts
         run: npx hardhat prepare
       
@@ -43,8 +46,8 @@ jobs:
       - name: Start local graph-node
         run: npm run graph-local -- --detach
 
-      - name: Sleep for 10 seconds
-        run: sleep 10s
+      - name: Sleep for 20 seconds
+        run: sleep 20s
         shell: bash
 
       - name: Create subgraph

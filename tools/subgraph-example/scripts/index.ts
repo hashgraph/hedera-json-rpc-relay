@@ -22,4 +22,4 @@ export * from "./manage-gravatar";
 export * from "./erc721-mint";
 export * from "./erc20-transfer";
 export * from "./htsnft-mint";
-export * from "./hts-transfer"
+export * from "./hts-transfer";

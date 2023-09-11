@@ -18,53 +18,55 @@
  *
  */
 
-import { newMockEvent } from "matchstick-as"
-import { ethereum, Address, BigInt } from "@graphprotocol/graph-ts"
+import { newMockEvent } from "matchstick-as";
+import { ethereum, Address, BigInt } from "@graphprotocol/graph-ts";
 import {
   Approval,
-  ExampleHTSFTTransfer
-} from "../generated/ExampleHTSFT/ExampleHTSFT"
+  ExampleHTSFTTransfer,
+} from "../generated/ExampleHTSFT/ExampleHTSFT";
 
 export function createApprovalEvent(
   owner: Address,
   spender: Address,
-  value: BigInt
+  value: BigInt,
 ): Approval {
-  let approvalEvent = changetype<Approval>(newMockEvent())
+  let approvalEvent = changetype<Approval>(newMockEvent());
 
-  approvalEvent.parameters = new Array()
+  approvalEvent.parameters = new Array();
 
   approvalEvent.parameters.push(
-    new ethereum.EventParam("owner", ethereum.Value.fromAddress(owner))
-  )
+    new ethereum.EventParam("owner", ethereum.Value.fromAddress(owner)),
+  );
   approvalEvent.parameters.push(
-    new ethereum.EventParam("spender", ethereum.Value.fromAddress(spender))
-  )
+    new ethereum.EventParam("spender", ethereum.Value.fromAddress(spender)),
+  );
   approvalEvent.parameters.push(
-    new ethereum.EventParam("value", ethereum.Value.fromUnsignedBigInt(value))
-  )
+    new ethereum.EventParam("value", ethereum.Value.fromUnsignedBigInt(value)),
+  );
 
-  return approvalEvent
+  return approvalEvent;
 }
 
 export function createExampleHTSFTTransferEvent(
   from: Address,
   to: Address,
-  value: BigInt
+  value: BigInt,
 ): ExampleHTSFTTransfer {
-  let exampleHtsFTTransferEvent = changetype<ExampleHTSFTTransfer>(newMockEvent())
+  let exampleHtsFTTransferEvent = changetype<ExampleHTSFTTransfer>(
+    newMockEvent(),
+  );
 
-  exampleHtsFTTransferEvent.parameters = new Array()
+  exampleHtsFTTransferEvent.parameters = new Array();
 
   exampleHtsFTTransferEvent.parameters.push(
-    new ethereum.EventParam("from", ethereum.Value.fromAddress(from))
-  )
+    new ethereum.EventParam("from", ethereum.Value.fromAddress(from)),
+  );
   exampleHtsFTTransferEvent.parameters.push(
-    new ethereum.EventParam("to", ethereum.Value.fromAddress(to))
-  )
+    new ethereum.EventParam("to", ethereum.Value.fromAddress(to)),
+  );
   exampleHtsFTTransferEvent.parameters.push(
-    new ethereum.EventParam("value", ethereum.Value.fromUnsignedBigInt(value))
-  )
+    new ethereum.EventParam("value", ethereum.Value.fromUnsignedBigInt(value)),
+  );
 
-  return exampleHtsFTTransferEvent
+  return exampleHtsFTTransferEvent;
 }

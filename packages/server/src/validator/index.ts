@@ -1,6 +1,6 @@
 import { validateParam } from './utils';
 
-export function validateParams(params: any, indexes: any)  {
+export function validateParams(params: any, indexes: any) {
   for (const index of Object.keys(indexes)) {
     const validation = indexes[Number(index)];
     const param = params[Number(index)];
@@ -9,9 +9,9 @@ export function validateParams(params: any, indexes: any)  {
   }
 }
 
-export * from "./constants";
-export * from "./types";
-export * from "./objectTypes";
-export * from "./utils";
-export * from "./methods";
-export * as Validator from ".";
+export * from './constants';
+export * from './types';
+export * from './objectTypes';
+export * from './utils';
+export * from './methods';
+export * as Validator from '.';

@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import {
   InternalError,
   IPRateLimitExceeded,
   MethodNotFound,
-  Unauthorized
+  Unauthorized,
 } from './lib/RpcError';
 import Koa from 'koa';
 import { Registry } from 'prom-client';
@@ -42,14 +42,15 @@ import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
-import constants from "@hashgraph/json-rpc-relay/dist/lib/constants";
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
-const INTERNAL_ERROR = "INTERNAL ERROR";
-const INVALID_PARAMS_ERROR = "INVALID PARAMS ERROR";
-const INVALID_REQUEST = "INVALID REQUEST";
-const IP_RATE_LIMIT_EXCEEDED = "IP RATE LIMIT EXCEEDED";
-const JSON_RPC_ERROR = "JSON RPC ERROR"
-const METHOD_NOT_FOUND = "METHOD NOT FOUND";
+const INTERNAL_ERROR = 'INTERNAL ERROR';
+const INVALID_PARAMS_ERROR = 'INVALID PARAMS ERROR';
+const INVALID_REQUEST = 'INVALID REQUEST';
+const IP_RATE_LIMIT_EXCEEDED = 'IP RATE LIMIT EXCEEDED';
+const JSON_RPC_ERROR = 'JSON RPC ERROR';
+const METHOD_NOT_FOUND = 'METHOD NOT FOUND';
+const REQUEST_ID_HEADER_NAME = 'X-Request-Id';
 
 const responseSuccessStatusCode = '200';
 
@@ -71,7 +72,9 @@ export default class KoaJsonRpc {
     this.koaApp = new Koa();
     this.requestId = '';
     this.limit = '1mb';
-    this.duration = process.env.LIMIT_DURATION ? parseInt(process.env.LIMIT_DURATION) : constants.DEFAULT_RATE_LIMIT.DURATION;
+    this.duration = process.env.LIMIT_DURATION
+      ? parseInt(process.env.LIMIT_DURATION)
+      : constants.DEFAULT_RATE_LIMIT.DURATION;
     this.registry = Object.create(null);
     this.registryTotal = Object.create(null);
     this.methodConfig = methodConfiguration;
@@ -97,7 +100,8 @@ export default class KoaJsonRpc {
       let body, result;
 
       this.requestId = ctx.state.reqId;
-      
+      ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
+
       if (this.token) {
         const headerToken = ctx.get('authorization').split(' ').pop();
         if (headerToken !== this.token) {
@@ -127,7 +131,11 @@ export default class KoaJsonRpc {
         ctx.body = jsonResp(body.id || null, new InvalidRequest(), undefined);
         ctx.status = 400;
         ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
-        this.logger.warn(`[${this.getRequestId()}] Invalid request, body.jsonrpc: ${body.jsonrpc}, body[method]: ${body.method}, body[id]: ${body.id}, ctx.request.method: ${ctx.request.method}`);
+        this.logger.warn(
+          `[${this.getRequestId()}] Invalid request, body.jsonrpc: ${body.jsonrpc}, body[method]: ${
+            body.method
+          }, body[id]: ${body.id}, ctx.request.method: ${ctx.request.method}`,
+        );
         return;
       }
 
@@ -138,7 +146,6 @@ export default class KoaJsonRpc {
         return;
       }
 
- 
       const methodTotalLimit = this.registryTotal[methodName];
       if (this.rateLimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit, this.requestId)) {
         ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
@@ -165,7 +172,7 @@ export default class KoaJsonRpc {
 
       ctx.body = jsonResp(body.id, null, result);
       if (result instanceof JsonRpcError) {
-        ctx.status = (result.code == -32603) ? 500 : 400;
+        ctx.status = result.code == -32603 ? 500 : 400;
         ctx.state.status = `${ctx.status} (${JSON_RPC_ERROR})`;
       }
     };
@@ -181,11 +188,12 @@ export default class KoaJsonRpc {
 
   hasInvalidReqestId(body): boolean {
     const hasId = hasOwnProperty(body, 'id');
-    if (this.requestIdIsOptional && !hasId)
-    {          
+    if (this.requestIdIsOptional && !hasId) {
       // If the request is invalid, we still want to return a valid JSON-RPC response, default id to 0
       body.id = '0';
-      this.logger.warn(`[${this.getRequestId()}] Optional JSON-RPC 2.0 request id encountered. Will continue and default id to 0 in response`);
+      this.logger.warn(
+        `[${this.getRequestId()}] Optional JSON-RPC 2.0 request id encountered. Will continue and default id to 0 in response`,
+      );
       return false;
     }
 

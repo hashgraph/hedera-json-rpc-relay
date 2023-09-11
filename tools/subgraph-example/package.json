@@ -33,7 +33,7 @@
     "typescript": "^4.9.3",
     "@hashgraph/hedera-local": "^2.12.0",
     "@openzeppelin/contracts": "^4.9.3",
-    "@graphprotocol/hardhat-graph": "0.1.0-alpha.2"
+    "hardhat-graph": "0.1.0-alpha.3"
   },
   "scripts": {
     "graph-test": "graph test",
@@ -47,6 +47,6 @@
     "subgraph-test": "hardhat test"
   },
   "overrides": {
-      "protobufjs": "^7.2.4"
+    "protobufjs": "^7.2.4"
   }
 }

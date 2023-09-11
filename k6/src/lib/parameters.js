@@ -2,7 +2,7 @@
  * ‌
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,7 @@
 
 import http from 'k6/http';
 
-import {
-  logListName,
-  resultListName,
-  transactionListName
-} from "./constants.js";
+import { logListName, resultListName, transactionListName } from './constants.js';
 
 const getValidResponse = (requestUrl, requestBody, httpVerbMethod) => {
   const response = httpVerbMethod(requestUrl, JSON.stringify(requestBody));
@@ -58,7 +54,7 @@ const copyEnvParamsFromEnvMap = (propertyList) => {
   }
   return {
     allPropertiesFound,
-    envProperties
+    envProperties,
   };
 };
 
@@ -71,47 +67,41 @@ const computeProperties = (propertyList, fallback) => {
 };
 
 export const computeLatestContractResultParameters = (configuration) =>
-  computeProperties(
-    ['DEFAULT_ENTITY_FROM', 'DEFAULT_TIMESTAMP', 'DEFAULT_ENTITY_TO'],
-    () => {
-      const contractResultPath = `${configuration.baseApiUrl}/contracts/results?limit=1&order=desc`;
-      const firstResult = getFirstEntity(contractResultPath, resultListName);
+  computeProperties(['DEFAULT_ENTITY_FROM', 'DEFAULT_TIMESTAMP', 'DEFAULT_ENTITY_TO'], () => {
+    const contractResultPath = `${configuration.baseApiUrl}/contracts/results?limit=1&order=desc`;
+    const firstResult = getFirstEntity(contractResultPath, resultListName);
 
-      return {
-        DEFAULT_ENTITY_FROM: firstResult.from.substring(0, 42),
-        DEFAULT_TIMESTAMP: firstResult.timestamp,
-        DEFAULT_ENTITY_TO: firstResult.to.substring(0, 42)
-      };
-    });
+    return {
+      DEFAULT_ENTITY_FROM: firstResult.from.substring(0, 42),
+      DEFAULT_TIMESTAMP: firstResult.timestamp,
+      DEFAULT_ENTITY_TO: firstResult.to.substring(0, 42),
+    };
+  });
 
 export const computeLatestEthereumTransactionParameters = (configuration) =>
-  computeProperties(
-    ['DEFAULT_BLOCK_HASH', 'DEFAULT_ETH_TRANSACTION_ID', 'DEFAULT_TRANSACTION_HASH'],
-    () => {
-      const transactionResultPath = `${configuration.baseApiUrl}/transactions?transactiontype=ethereumtransaction&limit=1&order=desc&result=success`;
-      const firstResult = getFirstEntity(transactionResultPath, transactionListName);
-      const contractResultPath = `${configuration.baseApiUrl}/contracts/results/${firstResult.transaction_id}`;
-      const secondResult = getValidResponse(contractResultPath, null, http.get);
+  computeProperties(['DEFAULT_BLOCK_HASH', 'DEFAULT_ETH_TRANSACTION_ID', 'DEFAULT_TRANSACTION_HASH'], () => {
+    const transactionResultPath = `${configuration.baseApiUrl}/transactions?transactiontype=ethereumtransaction&limit=1&order=desc&result=success`;
+    const firstResult = getFirstEntity(transactionResultPath, transactionListName);
+    const contractResultPath = `${configuration.baseApiUrl}/contracts/results/${firstResult.transaction_id}`;
+    const secondResult = getValidResponse(contractResultPath, null, http.get);
 
-      return {
-        DEFAULT_BLOCK_HASH: secondResult.block_hash.substring(0, 66),
-        DEFAULT_ETH_TRANSACTION_ID: firstResult.transaction_id,
-        DEFAULT_TRANSACTION_HASH: secondResult.hash.substring(0, 66)
-      };
-    });
+    return {
+      DEFAULT_BLOCK_HASH: secondResult.block_hash.substring(0, 66),
+      DEFAULT_ETH_TRANSACTION_ID: firstResult.transaction_id,
+      DEFAULT_TRANSACTION_HASH: secondResult.hash.substring(0, 66),
+    };
+  });
 
 export const computeLatestLogParameters = (configuration) =>
-  computeProperties(
-    ['DEFAULT_CONTRACT_ADDRESS', 'DEFAULT_LOG_TIMESTAMP'],
-    () => {
-      const logResultPath = `${configuration.baseApiUrl}/contracts/results/logs?limit=1&order=desc`;
-      const firstResult = getFirstEntity(logResultPath, logListName);
-      
-      return {
-        DEFAULT_CONTRACT_ADDRESS: firstResult.address,
-        DEFAULT_LOG_TIMESTAMP: firstResult.timestamp
-      };
-    });
+  computeProperties(['DEFAULT_CONTRACT_ADDRESS', 'DEFAULT_LOG_TIMESTAMP'], () => {
+    const logResultPath = `${configuration.baseApiUrl}/contracts/results/logs?limit=1&order=desc`;
+    const firstResult = getFirstEntity(logResultPath, logListName);
+
+    return {
+      DEFAULT_CONTRACT_ADDRESS: firstResult.address,
+      DEFAULT_LOG_TIMESTAMP: firstResult.timestamp,
+    };
+  });
 
 export const setDefaultValuesForEnvParameters = () => {
   __ENV['MIRROR_BASE_URL'] = __ENV['MIRROR_BASE_URL'] || 'http://localhost:5551';

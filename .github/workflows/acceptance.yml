@@ -68,3 +68,9 @@ jobs:
     with:
       testfilter: ws
       test_ws_server: true
+
+  cacheservice:
+    name: Cache Service
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: cache-service

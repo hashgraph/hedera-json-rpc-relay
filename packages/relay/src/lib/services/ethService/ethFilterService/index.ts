@@ -19,13 +19,14 @@
  */
 
 import { Logger } from 'pino';
-import { ClientCache, MirrorNodeClient } from '../../../clients';
+import { MirrorNodeClient } from '../../../clients';
 import constants from '../../../constants';
 import { IFilterService } from './IFilterService';
 import { CommonService } from './../ethCommonService';
-import {generateRandomHex} from "../../../../formatters";
-import {JsonRpcError, predefined} from "../../../errors/JsonRpcError";
+import { generateRandomHex } from '../../../../formatters';
+import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
+import { CacheService } from '../../cacheService/cacheService';
 
 /**
  * Create a new Filter Service implementation.
@@ -33,7 +34,7 @@ import { Log } from '../../../model';
  * @param logger
  * @param chain
  * @param registry
- * @param clientCache
+ * @param cacheService
  */
 export class FilterService implements IFilterService {
   /**
@@ -53,7 +54,7 @@ export class FilterService implements IFilterService {
    *
    * @private
    */
-  private readonly cache: ClientCache;
+  private readonly cacheService: CacheService;
   public readonly ethNewFilter = 'eth_newFilter';
   public readonly ethUninstallFilter = 'eth_uninstallFilter';
   public readonly ethGetFilterLogs = 'eth_getFilterLogs';
@@ -62,10 +63,10 @@ export class FilterService implements IFilterService {
   private readonly common: CommonService;
   private readonly supportedTypes;
 
-  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, clientCache: ClientCache, common: CommonService) {
+  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService, common: CommonService) {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
-    this.cache = clientCache;
+    this.cacheService = cacheService;
     this.common = common;
 
     this.supportedTypes = [constants.FILTER.TYPE.LOG, constants.FILTER.TYPE.NEW_BLOCK];
@@ -80,11 +81,18 @@ export class FilterService implements IFilterService {
   createFilter(type: string, params: any, requestIdPrefix?: string): string {
     const filterId = generateRandomHex();
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    this.cache.set(cacheKey, {
-      type,
-      params,
-      lastQueried: null
-    }, this.ethNewFilter, constants.FILTER.TTL, requestIdPrefix);
+    this.cacheService.set(
+      cacheKey,
+      {
+        type,
+        params,
+        lastQueried: null,
+      },
+      this.ethNewFilter,
+      constants.FILTER.TTL,
+      requestIdPrefix,
+      true,
+    );
     this.logger.trace(`${requestIdPrefix} created filter with TYPE=${type}, params: ${params}`);
     return filterId;
   }
@@ -106,8 +114,16 @@ export class FilterService implements IFilterService {
    * @param topics
    * @param requestIdPrefix
    */
-  async newFilter(fromBlock: string = 'latest', toBlock: string = 'latest', address?: string, topics?: any[], requestIdPrefix?: string): Promise<string | JsonRpcError> {
-    this.logger.trace(`${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`);
+  async newFilter(
+    fromBlock: string = 'latest',
+    toBlock: string = 'latest',
+    address?: string,
+    topics?: any[],
+    requestIdPrefix?: string,
+  ): Promise<string | JsonRpcError> {
+    this.logger.trace(
+      `${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`,
+    );
     try {
       FilterService.requireFiltersEnabled();
 
@@ -115,14 +131,17 @@ export class FilterService implements IFilterService {
         throw predefined.INVALID_BLOCK_RANGE;
       }
 
-      return this.createFilter(constants.FILTER.TYPE.LOG, {
-        fromBlock: fromBlock === 'latest' ? await this.common.getLatestBlockNumber(requestIdPrefix) : fromBlock,
-        toBlock,
-        address,
-        topics
-      }, requestIdPrefix);
-    }
-    catch(e) {
+      return this.createFilter(
+        constants.FILTER.TYPE.LOG,
+        {
+          fromBlock: fromBlock === 'latest' ? await this.common.getLatestBlockNumber(requestIdPrefix) : fromBlock,
+          toBlock,
+          address,
+          topics,
+        },
+        requestIdPrefix,
+      );
+    } catch (e) {
       return this.common.genericErrorHandler(e);
     }
   }
@@ -131,11 +150,14 @@ export class FilterService implements IFilterService {
     this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
     try {
       FilterService.requireFiltersEnabled();
-      return this.createFilter(constants.FILTER.TYPE.NEW_BLOCK, {
-        blockAtCreation: await this.common.getLatestBlockNumber(requestIdPrefix)
-      }, requestIdPrefix);
-    }
-    catch(e) {
+      return this.createFilter(
+        constants.FILTER.TYPE.NEW_BLOCK,
+        {
+          blockAtCreation: await this.common.getLatestBlockNumber(requestIdPrefix),
+        },
+        requestIdPrefix,
+      );
+    } catch (e) {
       return this.common.genericErrorHandler(e);
     }
   }
@@ -145,10 +167,10 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cache.get(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethUninstallFilter, requestIdPrefix);
 
     if (filter) {
-      this.cache.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+      this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix, true);
       return true;
     }
 
@@ -165,7 +187,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cache.get(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
     if (filter?.type != constants.FILTER.TYPE.LOG) {
       throw predefined.FILTER_NOT_FOUND;
     }
@@ -176,7 +198,7 @@ export class FilterService implements IFilterService {
       filter?.params.toBlock,
       filter?.params.address,
       filter?.params.topics,
-      requestIdPrefix
+      requestIdPrefix,
     );
   }
 
@@ -185,7 +207,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cache.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
 
     if (!filter) {
       throw predefined.FILTER_NOT_FOUND;
@@ -199,36 +221,50 @@ export class FilterService implements IFilterService {
         filter?.params.toBlock,
         filter?.params.address,
         filter?.params.topics,
-        requestIdPrefix
+        requestIdPrefix,
       );
 
       // get the latest block number and add 1 to exclude current results from the next response because
       // the mirror node query executes "gte" not "gt"
-      latestBlockNumber = Number(
-        result.length ? result[result.length - 1].blockNumber : await this.common.getLatestBlockNumber(requestIdPrefix)
-      ) + 1;
+      latestBlockNumber =
+        Number(
+          result.length
+            ? result[result.length - 1].blockNumber
+            : await this.common.getLatestBlockNumber(requestIdPrefix),
+        ) + 1;
     } else if (filter.type === constants.FILTER.TYPE.NEW_BLOCK) {
-      result = await this.mirrorNodeClient.getBlocks([
-        `gt:${filter.lastQueried || filter.params.blockAtCreation}`
-      ], undefined, {
-        order: 'asc'
-      });
-
-      latestBlockNumber = Number(
-        result?.blocks?.length ? result.blocks[result.blocks.length - 1].number : await this.common.getLatestBlockNumber(requestIdPrefix)
+      result = await this.mirrorNodeClient.getBlocks(
+        [`gt:${filter.lastQueried || filter.params.blockAtCreation}`],
+        undefined,
+        {
+          order: 'asc',
+        },
       );
 
-      result = result?.blocks?.map(r => r.hash) || [];
+      latestBlockNumber = Number(
+        result?.blocks?.length
+          ? result.blocks[result.blocks.length - 1].number
+          : await this.common.getLatestBlockNumber(requestIdPrefix),
+      );
+
+      result = result?.blocks?.map((r) => r.hash) || [];
     } else if (this.supportedTypes.indexOf(filter.type) === -1) {
       throw predefined.UNSUPPORTED_METHOD;
     }
 
     // update filter to refresh TTL and set lastQueried block number
-    this.cache.set(cacheKey, {
-      type: filter.type,
-      params: filter.params,
-      lastQueried: latestBlockNumber
-    }, this.ethGetFilterChanges, constants.FILTER.TTL, requestIdPrefix);
+    this.cacheService.set(
+      cacheKey,
+      {
+        type: filter.type,
+        params: filter.params,
+        lastQueried: latestBlockNumber,
+      },
+      this.ethGetFilterChanges,
+      constants.FILTER.TTL,
+      requestIdPrefix,
+      true,
+    );
 
     return result;
   }

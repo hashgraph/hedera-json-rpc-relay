@@ -1,4 +1,4 @@
-import { Validator } from ".";
+import { Validator } from '.';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 
 export function validateParam(index: number | string, param: any, validation: any) {
@@ -16,19 +16,22 @@ export function validateParam(index: number | string, param: any, validation: an
 
   if (param != null && Array.isArray(paramType)) {
     const results: any[] = [];
-    for(const type of paramType) {
+    for (const type of paramType) {
       const validator = Validator.TYPES[type];
       const result = validator.test(param);
-        results.push(result);
+      results.push(result);
     }
-    if(results.every((item) => item === false)) {
-      throw predefined.INVALID_PARAMETER(index, `The value passed is not a valid blockHash/blockNumber/blockTag value: ${param}`);
+    if (results.every((item) => item === false)) {
+      throw predefined.INVALID_PARAMETER(
+        index,
+        `The value passed is not a valid blockHash/blockNumber/blockTag value: ${param}`,
+      );
     }
   }
 
   if (param != null && !Array.isArray(paramType)) {
     const result = isArray ? paramType.test(index, param, validation.type[1]) : paramType.test(param);
-    if(result === false) {
+    if (result === false) {
       throw predefined.INVALID_PARAMETER(index, `${paramType.error}, value: ${param}`);
     }
   }
@@ -36,7 +39,7 @@ export function validateParam(index: number | string, param: any, validation: an
 
 function getParamType(isArray: boolean, containsOr: boolean, validationType: string) {
   let paramType;
-  if(isArray && !containsOr) {
+  if (isArray && !containsOr) {
     paramType = Validator.TYPES[validationType[0]];
   } else if (!isArray && containsOr) {
     paramType = validationType.split('|');
@@ -61,12 +64,18 @@ export function validateObject(object: any, filters: any) {
       try {
         result = Validator.TYPES[validation.type].test(param);
 
-        if(!result) {
-          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, `${Validator.TYPES[validation.type].error}, value: ${param}`);
+        if (!result) {
+          throw predefined.INVALID_PARAMETER(
+            `'${property}' for ${object.name()}`,
+            `${Validator.TYPES[validation.type].error}, value: ${param}`,
+          );
         }
-      } catch(error: any) {
+      } catch (error: any) {
         if (error instanceof JsonRpcError) {
-          throw predefined.INVALID_PARAMETER(`'${property}' for ${object.name()}`, `${Validator.TYPES[validation.type].error}, value: ${param}`);
+          throw predefined.INVALID_PARAMETER(
+            `'${property}' for ${object.name()}`,
+            `${Validator.TYPES[validation.type].error}, value: ${param}`,
+          );
         }
 
         throw error;
@@ -92,7 +101,7 @@ export function hasUnexpectedParams(actual: any, expected: any, object: string) 
   if (unknownParam) {
     throw predefined.INVALID_PARAMETER(`'${unknownParam}' for ${object}`, `Unknown parameter`);
   }
-};
+}
 
 export function requiredIsMissing(param: any, required: boolean) {
   return required && param === undefined;

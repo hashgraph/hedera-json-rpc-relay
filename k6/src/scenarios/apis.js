@@ -2,7 +2,7 @@
  * ‌
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,25 +19,25 @@
  */
 
 import exec from 'k6/execution';
-import {textSummary} from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
+import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 
-import {markdownReport} from "../lib/common.js";
-import {funcs, options, scenarioDurationGauge} from './test/index.js';
-import {setupTestParameters} from "./test/bootstrapEnvParameters.js";
+import { markdownReport } from '../lib/common.js';
+import { funcs, options, scenarioDurationGauge } from './test/index.js';
+import { setupTestParameters } from './test/bootstrapEnvParameters.js';
 
 function handleSummary(data) {
   return {
-    'stdout': textSummary(data, {indent: ' ', enableColors: true}),
+    stdout: textSummary(data, { indent: ' ', enableColors: true }),
     'report.md': markdownReport(data, false, options.scenarios),
   };
 }
 
 function run(testParameters) {
   const scenario = exec.scenario;
-  funcs[scenario.name](testParameters, scenario.iterationInTest, exec.vu.idInInstance-1,  exec.vu.iterationInScenario);
-  scenarioDurationGauge.add(Date.now() - scenario.startTime, {scenario: scenario.name});
+  funcs[scenario.name](testParameters, scenario.iterationInTest, exec.vu.idInInstance - 1, exec.vu.iterationInScenario);
+  scenarioDurationGauge.add(Date.now() - scenario.startTime, { scenario: scenario.name });
 }
 
-export {handleSummary, options, run};
+export { handleSummary, options, run };
 
 export const setup = setupTestParameters;

@@ -20,13 +20,13 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-import { AccountBalanceQuery, AccountId, Client, PrivateKey } from '@hashgraph/sdk';
+import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Registry, Counter, Gauge, Histogram } from 'prom-client';
+import { Registry, Counter, Histogram } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import constants from '../../constants';
 import HbarLimit from '../../hbarlimiter';
-import { ClientCache } from '../../clients';
+import { CacheService } from '../cacheService/cacheService';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -73,13 +73,13 @@ export default class HAPIService {
   private consensusNodeClientHistogramCost: Histogram;
   private consensusNodeClientHistogramGasFee: Histogram;
   private metrics: any;
-  private readonly cache: ClientCache;
+  private readonly cacheService: CacheService;
 
   /**
    * @param {Logger} logger
    * @param {Registry} register
    */
-  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit, clientCache) {
+  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit, cacheService) {
     dotenv.config({ path: findConfig('.env') || '' });
 
     this.logger = logger;
@@ -91,14 +91,17 @@ export default class HAPIService {
     this.consensusNodeClientHistogramCost = this.initCostMetric(register);
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
 
-    this.metrics = { costHistogram: this.consensusNodeClientHistogramCost, gasHistogram: this.consensusNodeClientHistogramGasFee };
-    this.cache = clientCache;
+    this.metrics = {
+      costHistogram: this.consensusNodeClientHistogramCost,
+      gasHistogram: this.consensusNodeClientHistogramGasFee,
+    };
+    this.cacheService = cacheService;
     this.client = this.initSDKClient(logger, this.metrics);
 
     const currentDateNow = Date.now();
     this.initialTransactionCount = parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!) || 0;
     this.initialResetDuration = parseInt(process.env.HAPI_CLIENT_DURATION_RESET!) || 0;
-    this.initialErrorCodes = JSON.parse(process.env.HAPI_CLIENT_ERROR_RESET || "[50]");
+    this.initialErrorCodes = JSON.parse(process.env.HAPI_CLIENT_ERROR_RESET || '[50]');
 
     this.transactionCount = this.initialTransactionCount;
     this.resetDuration = currentDateNow + this.initialResetDuration;
@@ -189,7 +192,13 @@ export default class HAPIService {
    * @returns SDK Client
    */
   private initSDKClient(logger: Logger, metrics: any): SDKClient {
-    return new SDKClient(this.clientMain, logger.child({ name: `consensus-node` }), this.hbarLimiter, metrics, this.cache);
+    return new SDKClient(
+      this.clientMain,
+      logger.child({ name: `consensus-node` }),
+      this.hbarLimiter,
+      metrics,
+      this.cacheService,
+    );
   }
 
   /**
@@ -211,7 +220,7 @@ export default class HAPIService {
       if (process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION && process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION) {
         client = client.setOperator(
           AccountId.fromString(process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION),
-          PrivateKey.fromString(process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION)
+          PrivateKey.fromString(process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION),
         );
       } else {
         logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
@@ -220,7 +229,7 @@ export default class HAPIService {
       if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
         client = client.setOperator(
           AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()),
-          PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN)
+          PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN),
         );
       } else {
         logger.warn(`Invalid 'OPERATOR' env variables provided`);
@@ -229,13 +238,13 @@ export default class HAPIService {
 
     client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
 
-    const SDK_REQUEST_TIMEOUT = parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000')
+    const SDK_REQUEST_TIMEOUT = parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000');
     client.setRequestTimeout(SDK_REQUEST_TIMEOUT);
 
     logger.info(
       `SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${
         client.operatorAccountId
-      } with request timeout value: ${SDK_REQUEST_TIMEOUT}`
+      } with request timeout value: ${SDK_REQUEST_TIMEOUT}`,
     );
 
     return client;
@@ -308,10 +317,10 @@ export default class HAPIService {
     const metricHistogramCost = 'rpc_relay_consensusnode_response';
     register.removeSingleMetric(metricHistogramCost);
     return new Histogram({
-        name: metricHistogramCost,
-        help: 'Relay consensusnode mode type status cost histogram',
-        labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-        registers: [register]
+      name: metricHistogramCost,
+      help: 'Relay consensusnode mode type status cost histogram',
+      labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+      registers: [register],
     });
   }
 
@@ -324,10 +333,10 @@ export default class HAPIService {
     const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
     register.removeSingleMetric(metricHistogramGasFee);
     return new Histogram({
-        name: metricHistogramGasFee,
-        help: 'Relay consensusnode mode type status gas fee histogram',
-        labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-        registers: [register]
+      name: metricHistogramGasFee,
+      help: 'Relay consensusnode mode type status gas fee histogram',
+      labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+      registers: [register],
     });
   }
 }
