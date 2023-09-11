@@ -18,6 +18,7 @@ const relayUrl = 'http://127.0.0.1:7546';
 const gasPrice = '0x2C68AF0BB14000';
 const gasLimit = '0x3D090';
 const value = '0x2E90EDD000';
+const localNodeAccountPrivateKey = '0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd';
 
 let legacyTransaction = {
   chainId: 0x12a,
@@ -111,12 +112,8 @@ async function sendRequestToRelay(request) {
 }
 
 async function signAndSendRawTransaction(transaction) {
-  const transactionCount = await getTransactionCount();
-  transaction.nonce = parseInt(transactionCount, 16);
-  const signed = await signTransaction(
-    transaction,
-    '0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd',
-  );
+  transaction.nonce = parseInt(await getTransactionCount(), 16);
+  const signed = await signTransaction(transaction, localNodeAccountPrivateKey);
   const request = {
     jsonrpc: '2.0',
     id: 1,
@@ -167,10 +164,7 @@ async function checkRequestBody(fileName, request) {
   }
   if (request.method === 'eth_sendRawTransaction') {
     legacyTransaction.nonce = parseInt(await getTransactionCount(), 16);
-    const transactionHash = await signTransaction(
-      legacyTransaction,
-      '0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd',
-    );
+    const transactionHash = await signTransaction(legacyTransaction, localNodeAccountPrivateKey);
     request.params[0] = transactionHash;
   }
   if (request.method === 'eth_getBalance') {
@@ -263,6 +257,7 @@ async function processFileContent(file, content) {
   const modifiedRequest = await checkRequestBody(file, JSON.parse(content.request));
   const response = await sendRequestToRelay(modifiedRequest);
   const missingKeys = checkResponseFormat(file, response, JSON.parse(content.response));
+
   return missingKeys;
 }
 
