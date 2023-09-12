@@ -19,6 +19,15 @@ const gasPrice = '0x2C68AF0BB14000';
 const gasLimit = '0x3D090';
 const value = '0x2E90EDD000';
 const localNodeAccountPrivateKey = '0x6e9d61a325be3f6675cf8b7676c70e4a004d2308e3e182370a41f5653d52c6bd';
+const ACCESS_LIST_FILE_NAME = 'get-access-list.io';
+const DYNAMIC_FEE_FILE_NAME = 'get-dynamic-fee.io';
+const EMPTY_TX_FILE_NAME = 'get-empty-tx.io';
+const LEGACY_CREATE_FILE_NAME = 'get-legacy-create.io';
+const LEGACY_INPUT_FILE_NAME = 'get-legacy-input.io';
+const LEGACY_CONTRACT_FILE_NAME = 'get-legacy-contract.io';
+const LEGACY_TX_FILE_NAME = 'get-legacy-tx.io';
+const LEGACY_RECEIPT_FILE_NAME = 'get-legacy-receipt.io';
+const NOT_FOUND_TX_FILE_NAME = 'get-notfound-tx.io';
 
 let legacyTransaction = {
   chainId: 0x12a,
@@ -181,7 +190,7 @@ function checkResponseFormat(fileName, actualReponse, expectedResponse) {
   const actualResponseKeys = extractKeys(actualReponse);
   const expectedResponseKeys = extractKeys(expectedResponse);
   const missingKeys = expectedResponseKeys.filter((key) => !actualResponseKeys.includes(key));
-  if ((fileName === 'get-dynamic-fee.io' || fileName === 'get-access-list.io') && missingKeys[0] === 'result.v') {
+  if ((fileName === DYNAMIC_FEE_FILE_NAME || fileName === ACCESS_LIST_FILE_NAME) && missingKeys[0] === 'result.v') {
     return [];
   }
 
@@ -213,31 +222,31 @@ function formatTransactionByHashAndReceiptRequests(fileName, request) {
    * @returns {Object} - The formatted request containing updated transaction and block hashes.
    */
   switch (fileName) {
-    case 'get-access-list.io':
+    case ACCESS_LIST_FILE_NAME:
       request.params[0] = transaction2930AndBlockHash.transactionHash;
       break;
-    case 'get-dynamic-fee.io':
+    case DYNAMIC_FEE_FILE_NAME:
       request.params[0] = transaction1559AndBlockHash.transactionHash;
       break;
-    case 'get-empty-tx.io':
+    case EMPTY_TX_FILE_NAME:
       request.params[0] = '0x0000000000000000000000000000000000000000000000000000000000000000';
       break;
-    case 'get-legacy-create.io':
+    case LEGACY_CREATE_FILE_NAME:
       request.params[0] = createContractLegacyTransactionAndBlockHash.transactionHash;
       break;
-    case 'get-legacy-input.io':
+    case LEGACY_INPUT_FILE_NAME:
       request.params[0] = createContractLegacyTransactionAndBlockHash.transactionHash;
       break;
-    case 'get-legacy-contract.io':
+    case LEGACY_CONTRACT_FILE_NAME:
       request.params[0] = createContractLegacyTransactionAndBlockHash.transactionHash;
       break;
-    case 'get-legacy-tx.io':
+    case LEGACY_TX_FILE_NAME:
       request.params[0] = legacyTransactionAndBlockHash.transactionHash;
       break;
-    case 'get-legacy-receipt.io':
+    case LEGACY_RECEIPT_FILE_NAME:
       request.params[0] = legacyTransactionAndBlockHash.transactionHash;
       break;
-    case 'get-notfound-tx.io':
+    case NOT_FOUND_TX_FILE_NAME:
       request.params[0] = '0x00000000000000000000000000000000000000000000000000000000deadbeef';
       break;
   }
