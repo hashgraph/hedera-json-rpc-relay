@@ -5610,6 +5610,24 @@ describe('Eth', async function () {
       expect(receipt.effectiveGasPrice).to.eq('0x0');
     });
 
+    it('Handles null type', async function () {
+      const contractResult = {
+        ...defaultDetailedContractResultByHash,
+        type: null,
+      };
+
+      const uniqueTxHash = '0x07cdd7b820375d10d73af57a6a3e84353645fdb1305ea58ff52daa53ec640533';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, contractResult);
+      restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
+      const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
+
+      expect(receipt).to.exist;
+      if (receipt == null) return;
+
+      expect(receipt.type).to.be.null;
+    });
+
     it('handles empty bloom', async function () {
       const receiptWith0xBloom = {
         ...defaultDetailedContractResultByHash,
