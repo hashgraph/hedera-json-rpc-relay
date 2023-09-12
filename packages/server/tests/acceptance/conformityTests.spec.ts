@@ -154,7 +154,7 @@ async function signAndSendRawTransaction(transaction) {
 
 async function checkRequestBody(fileName, request) {
   /**
-   * Modifies a request object for compatability with our relay.
+   * Modifies a request object for compatability with our network.
    *
    * @param {string} fileName - The name of the file associated with the request.
    * @param {Object} request - The request object to be modified.
@@ -175,9 +175,13 @@ async function checkRequestBody(fileName, request) {
     request.params[1] = legacyTransactionAndBlockHash.transactionIndex;
   }
   if (request.method === 'eth_sendRawTransaction') {
-    legacyTransaction.nonce = parseInt(await getTransactionCount(), 16);
-    const transactionHash = await signTransaction(legacyTransaction, localNodeAccountPrivateKey);
-    request.params[0] = transactionHash;
+    if (request.params[0] === ETHEREUM_NETWORK_SIGNED_TRANSACTION) {
+      request.params[0] = currentBlockHash;
+    } else {
+      legacyTransaction.nonce = parseInt(await getTransactionCount(), 16);
+      const transactionHash = await signTransaction(legacyTransaction, localNodeAccountPrivateKey);
+      request.params[0] = transactionHash;
+    }
   }
   if (request.method === 'eth_getBalance') {
     request.params[0] = ETHEREUM_NETWORK_ACCOUNT_HASH;
