@@ -45,13 +45,16 @@ class DebugService implements Debug{
 ### Method description
 
 `debug_traceTransaction` - Attempts to run the transaction in the exact same manner as it was executed on the network.
+This is achieved by utilizing the /api/v1/contracts/results/{transactionIdOrHash}/actions endpoint of the mirror node.
+The relevant fields retrieved from this endpoint are processed and formatted to generate the expected response as outlined below.
 
 #### Parameters
-`transactionHash` - string - This is the hash of the transaction that we want to trace.
-`tracer` - string - to specify the type of tracer. In the beginning only `callTracer` will be accepted.
-`tracerConfig` - object - consists of one property inside called `onlyTopCall`, which is a boolean. 
-
-#### Returns 
+`transactionHash` - string - This is the hash of the transaction that we want to trace. <br>
+`tracer` - string - to specify the type of tracer. Possible values are `callTracer` or `opcodeLogger`. In the beginning only `callTracer` will be accepted. <br>
+`tracerConfig` - object 
+  * One property for log tracer called `onlyTopCall`, which is a boolean. <br>
+  * For `opcodeLogger` it can have four properties - enableMemory, disableStack, disableStorage, enableReturnData - all booleans
+#### Returns for callTracer
 `object` - trace object: 
 
 1. `type` - string - CALL or CREATE
@@ -66,19 +69,21 @@ class DebugService implements Debug{
 10. `revertReason` - string - Solidity revert reason, if any
 11. `calls` - []callframe	- list of sub-calls
 
-#### Example Request
+#### Example Request callTracer
 
 ```JSON
-{"jsonrpc": "2.0",
-         "id": 1,
-         "method": "debug_traceTransaction",
-         "params": [
-          "0x8fc90a6c3ee3001cdcbbb685b4fbe67b1fa2bec575b15b0395fea5540d0901ae",
-          {
-               "tracer": "callTracer"
-          }
-         ]
-       }
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "debug_traceTransaction",
+  "params": 
+    [
+      "0x8fc90a6c3ee3001cdcbbb685b4fbe67b1fa2bec575b15b0395fea5540d0901ae",
+      {
+        "tracer": "callTracer"
+      }
+    ]
+}
 ```
 #### Example Response
 ```JSON
@@ -212,81 +217,73 @@ class DebugService implements Debug{
   }
 }
 ```
+#### Returns for opcodeLogger
 
+`object` - trace object:
+1. `pc`	- int - program counter
+2. `op` -	string - opcode to be executed
+3. `gas`- int -	remaining gas
+4. `gasCost`- int -	cost for executing op
+5. `memory`	- string[] -	EVM memory. Enabled via enableMemory
+6. `memSize`- int	- Size of memory
+7. `stack`- int[]	- EVM stack. Disabled via disableStack
+8. `returnData`	- string[]	- Last call's return data. Enabled via enableReturnData
+9. `storage` - map[hash]hash	- Storage slots of current contract read from and written to. Only emitted for SLOAD and SSTORE. Disabled via disableStorage
+10. `depth` -	int -	Current call depth
+11. `refund`	- int -	Refund counter
+12. `error` -	string -	Error message if any
 
-### Method description
-
-`debug_getModifiedAccountsByHash` - Returns all accounts that have changed between the two blocks specified. 
-
-#### Parameters
-startHash - string - the first hash of block at which to retreive data
-endHash - string - the last hash of block at which to retreive data. Optional, defaults to startHash
-
-#### Returns 
-addresses - array of addresses
-
-#### Example Request
-
+#### Example Request opcodeLogger
 ```JSON
 {
-	"jsonrpc":"2.0",
-	"method":"debug_getModifiedAccountsByHash",
-	"params":[
-		"0x2a1af018e33bcbd5015c96a356117a5251fcccf94a9c7c8f0148e25fdee37aec",
-		"0x4e3d3e7eee350df0ee6e94a44471ee2d22cfb174db89bbf8e6c5f6aef7b360c5"
-	],
-	"id":"1"
-}
-```
-
-#### Example Response
-```JSON
- {
   "jsonrpc": "2.0",
   "id": 1,
-    "result": [
-      "0x8c0041566e0bc27efe285a9e98d0b4217a46809c",
-      "0x3ee18b2214aff97000d974cf647e7c347e8fa585",
-      "0x76364611e457b1f97cd58ffc332ddc7561a193f6"
+  "method": "debug_traceTransaction",
+  "params": 
+    [
+      "0x8fc90a6c3ee3001cdcbbb685b4fbe67b1fa2bec575b15b0395fea5540d0901ae",
+      {
+        "tracer": "opcodeLogger"
+      }
     ]
- }
+}
 ```
-
-### Method description
-
-`debug_getModifiedAccountsByNumber` - Returns all accounts that have changed between the two blocks specified.
-
-#### Parameters
-startNum - number - start block number
-endNum - number - end block number. Optional, defaults to startNum
-
-#### Returns 
-addresses - array of addresses
-
-#### Example Request
+#### Example Response
 ```JSON
 {
-	"jsonrpc":"2.0",
-	"method":"debug_getModifiedAccountsByNumber",
-	"params":[
-		100,
-		200
-	],
-	"id":"1"
-}
-```
-
-#### Example Response
-```JSON
- {
   "jsonrpc": "2.0",
   "id": 1,
-    "result": [
-      "0x8c0041566e0bc27efe285a9e98d0b4217a46809c",
-      "0x3ee18b2214aff97000d974cf647e7c347e8fa585",
-      "0x76364611e457b1f97cd58ffc332ddc7561a193f6"
-    ]
- }
+  "result": {
+    gas: 85301,
+    returnValue: "",
+    structLogs: [{
+        depth: 1,
+        error: "",
+        gas: 162106,
+        gasCost: 3,
+        memory: null,
+        op: "PUSH1",
+        pc: 0,
+        stack: [],
+        storage: {}
+    },
+      /* snip */
+    {
+        depth: 1,
+        error: "",
+        gas: 100000,
+        gasCost: 0,
+        memory: ["0000000000000000000000000000000000000000000000000000000000000006", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000060"],
+        op: "STOP",
+        pc: 120,
+        stack: ["00000000000000000000000000000000000000000000000000000000d67cbec9"],
+        storage: {
+          0000000000000000000000000000000000000000000000000000000000000004: "8241fa522772837f0d05511f20caa6da1d5a3209000000000000000400000001",
+          0000000000000000000000000000000000000000000000000000000000000006: "0000000000000000000000000000000000000000000000000000000000000001",
+          f652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3f: "00000000000000000000000002e816afc1b5c0f39852131959d946eb3b07b5ad"
+        }
+    }]
+  }
 ```
 
 ## Error Codes
