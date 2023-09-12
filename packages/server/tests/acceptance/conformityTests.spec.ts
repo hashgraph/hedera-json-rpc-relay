@@ -28,6 +28,12 @@ const LEGACY_CONTRACT_FILE_NAME = 'get-legacy-contract.io';
 const LEGACY_TX_FILE_NAME = 'get-legacy-tx.io';
 const LEGACY_RECEIPT_FILE_NAME = 'get-legacy-receipt.io';
 const NOT_FOUND_TX_FILE_NAME = 'get-notfound-tx.io';
+const ETHEREUM_NETWORK_BLOCK_HASH = '0x7cb4dd3daba1f739d0c1ec7d998b4a2f6fd83019116455afa54ca4f49dfa0ad4';
+const ETHEREUM_NETWORK_SIGNED_TRANSACTION =
+  '0xf86709843b9aca018261a894aa000000000000000000000000000000000000000a825544820a95a0281582922adf6475f5b2241f0a4f886dafa947ecdc5913703b7840344a566b45a05f685fc099161126637a12308f278a8cd162788a6c6d5aee4d425cde261ba35d';
+const ETHEREUM_NETWORK_ACCOUNT_HASH = '0x5C41A21F14cFe9808cBEc1d91b55Ba75ed327Eb6';
+const EMPTY_TX_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const NONEXISTENT_TX_HASH = '0x00000000000000000000000000000000000000000000000000000000deadbeef';
 
 let legacyTransaction = {
   chainId: 0x12a,
@@ -155,11 +161,8 @@ async function checkRequestBody(fileName, request) {
    * @returns {Object} - The modified request object.
    */
   if (
-    (request.method === 'eth_getBlockByHash' &&
-      request.params[0] === '0x7cb4dd3daba1f739d0c1ec7d998b4a2f6fd83019116455afa54ca4f49dfa0ad4') ||
-    (request.method === 'eth_sendRawTransaction' &&
-      request.params[0] ===
-        '0xf86709843b9aca018261a894aa000000000000000000000000000000000000000a825544820a95a0281582922adf6475f5b2241f0a4f886dafa947ecdc5913703b7840344a566b45a05f685fc099161126637a12308f278a8cd162788a6c6d5aee4d425cde261ba35d')
+    (request.method === 'eth_getBlockByHash' && request.params[0] === ETHEREUM_NETWORK_BLOCK_HASH) ||
+    (request.method === 'eth_sendRawTransaction' && request.params[0] === ETHEREUM_NETWORK_SIGNED_TRANSACTION)
   ) {
     request.params[0] = currentBlockHash;
   }
@@ -177,7 +180,7 @@ async function checkRequestBody(fileName, request) {
     request.params[0] = transactionHash;
   }
   if (request.method === 'eth_getBalance') {
-    request.params[0] = '0x5C41A21F14cFe9808cBEc1d91b55Ba75ed327Eb6';
+    request.params[0] = ETHEREUM_NETWORK_ACCOUNT_HASH;
     request.params[1] = currentBlockHash;
   }
   if (request.method === 'eth_getTransactionByHash' || request.method === 'eth_getTransactionReceipt') {
@@ -229,7 +232,7 @@ function formatTransactionByHashAndReceiptRequests(fileName, request) {
       request.params[0] = transaction1559AndBlockHash.transactionHash;
       break;
     case EMPTY_TX_FILE_NAME:
-      request.params[0] = '0x0000000000000000000000000000000000000000000000000000000000000000';
+      request.params[0] = EMPTY_TX_HASH;
       break;
     case LEGACY_CREATE_FILE_NAME:
       request.params[0] = createContractLegacyTransactionAndBlockHash.transactionHash;
@@ -247,7 +250,7 @@ function formatTransactionByHashAndReceiptRequests(fileName, request) {
       request.params[0] = legacyTransactionAndBlockHash.transactionHash;
       break;
     case NOT_FOUND_TX_FILE_NAME:
-      request.params[0] = '0x00000000000000000000000000000000000000000000000000000000deadbeef';
+      request.params[0] = NONEXISTENT_TX_HASH;
       break;
   }
   return request;
