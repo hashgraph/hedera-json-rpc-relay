@@ -4,7 +4,6 @@ config:
   HEDERA_NETWORK: 'testnet'
   MIRROR_NODE_URL: 'https://testnet.mirrornode.hedera.com'
   SUBSCRIPTIONS_ENABLED: true
-  
 
 image:
   registry: registry:5001
@@ -13,7 +12,7 @@ image:
 resources:
   limits:
     cpu: 500m
-    memory: 350Mi
+    memory: 700Mi
   requests:
     cpu: 500m
     memory: 350Mi
