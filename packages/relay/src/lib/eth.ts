@@ -1662,6 +1662,32 @@ export class EthImpl implements Eth {
     }
   }
 
+  async resolveEvmAddress(
+    address: string,
+    requestIdPrefix?: string,
+    searchableTypes = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+  ) {
+    if (!address) return address;
+
+    const entity = await this.mirrorNodeClient.resolveEntityType(
+      address,
+      searchableTypes,
+      EthImpl.ethGetCode,
+      requestIdPrefix,
+      0,
+    );
+    let resolvedAddress = address;
+    if (
+      entity &&
+      (entity.type === constants.TYPE_CONTRACT || entity.type === constants.TYPE_ACCOUNT) &&
+      entity.entity?.evm_address
+    ) {
+      resolvedAddress = entity.entity.evm_address;
+    }
+
+    return resolvedAddress;
+  }
+
   /**
    * Gets a transaction by the provided hash
    *
@@ -1680,29 +1706,8 @@ export class EthImpl implements Eth {
       );
     }
 
-    let fromAddress;
-    if (contractResult.from) {
-      fromAddress = contractResult.from.substring(0, 42);
-
-      const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${fromAddress}`;
-      let accountResult: any | null = this.cacheService.get(accountCacheKey, EthImpl.ethGetTransactionByHash);
-      if (!accountResult) {
-        accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestIdPrefix);
-        if (accountResult) {
-          this.cacheService.set(
-            accountCacheKey,
-            accountResult,
-            EthImpl.ethGetTransactionByHash,
-            undefined,
-            requestIdPrefix,
-          );
-        }
-      }
-
-      if (accountResult?.evm_address?.length > 0) {
-        fromAddress = accountResult.evm_address.substring(0, 42);
-      }
-    }
+    const fromAddress = await this.resolveEvmAddress(contractResult.from, requestIdPrefix, [constants.TYPE_ACCOUNT]);
+    const toAddress = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
 
     if (
       process.env.DEV_MODE &&
@@ -1716,6 +1721,7 @@ export class EthImpl implements Eth {
     return formatContractResult({
       ...contractResult,
       from: fromAddress,
+      to: toAddress,
     });
   }
 
@@ -1754,7 +1760,7 @@ export class EthImpl implements Eth {
         to: cachedLog.address,
         transactionHash: cachedLog.transactionHash,
         transactionIndex: cachedLog.transactionIndex,
-        type: null, //null fro HAPI transactions
+        type: null, // null from HAPI transactions
       };
 
       this.logger.debug(
@@ -1802,8 +1808,8 @@ export class EthImpl implements Eth {
       const receipt: any = {
         blockHash: toHash32(receiptResponse.block_hash),
         blockNumber: numberTo0x(receiptResponse.block_number),
-        from: receiptResponse.from,
-        to: receiptResponse.to,
+        from: await this.resolveEvmAddress(receiptResponse.from, requestIdPrefix),
+        to: await this.resolveEvmAddress(receiptResponse.to, requestIdPrefix),
         cumulativeGasUsed: numberTo0x(receiptResponse.block_gas_used),
         gasUsed: nanOrNumberTo0x(receiptResponse.gas_used),
         contractAddress: receiptResponse.address,

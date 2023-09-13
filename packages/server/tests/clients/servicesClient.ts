@@ -166,7 +166,7 @@ export default class ServicesClient {
 
   async transferToken(tokenId, recipient: AccountId, amount = 10, requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-    await this.executeAndGetTransactionReceipt(
+    const receipt = await this.executeAndGetTransactionReceipt(
       new TransferTransaction()
         .addTokenTransfer(tokenId, this._thisAccountId(), -amount)
         .addTokenTransfer(tokenId, recipient, amount)
@@ -183,6 +183,8 @@ export default class ServicesClient {
     this.logger.debug(
       `${requestIdPrefix} Token balances for ${recipient.toString()} are ${balances.tokens.toString().toString()}`,
     );
+
+    return receipt;
   }
 
   async createParentContract(contractJson, requestId?: string) {

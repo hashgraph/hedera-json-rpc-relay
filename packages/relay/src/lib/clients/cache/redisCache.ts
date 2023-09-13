@@ -133,9 +133,7 @@ export class RedisCache implements ICacheClient {
     const resolvedTtl = (ttl ?? this.options.ttl) / 1000; // convert to seconds
 
     await this.client.setEx(key, resolvedTtl, serializedValue);
-    this.logger.trace(
-      `${requestIdPrefix} caching ${key}: ${serializedValue} on ${callingMethod} for ${resolvedTtl} s`
-    );
+    this.logger.trace(`${requestIdPrefix} caching ${key}: ${serializedValue} on ${callingMethod} for ${resolvedTtl} s`);
     // TODO: add metrics
   }
 

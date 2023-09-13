@@ -428,11 +428,12 @@ export class MirrorNodeClient {
     }
   }
 
-  public async getAccount(idOrAliasOrEvmAddress: string, requestIdPrefix?: string) {
+  public async getAccount(idOrAliasOrEvmAddress: string, requestIdPrefix?: string, retries?: number) {
     return this.get(
       `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?transactions=false`,
       MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
       requestIdPrefix,
+      retries,
     );
   }
 
@@ -579,11 +580,12 @@ export class MirrorNodeClient {
     );
   }
 
-  public async getContract(contractIdOrAddress: string, requestIdPrefix?: string) {
+  public async getContract(contractIdOrAddress: string, requestIdPrefix?: string, retries?: number) {
     return this.get(
       `${MirrorNodeClient.GET_CONTRACT_ENDPOINT}${contractIdOrAddress}`,
       MirrorNodeClient.GET_CONTRACT_ENDPOINT,
       requestIdPrefix,
+      retries,
     );
   }
 
@@ -894,11 +896,12 @@ export class MirrorNodeClient {
     ).replace(MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);
   }
 
-  public async getTokenById(tokenId: string, requestIdPrefix?: string) {
+  public async getTokenById(tokenId: string, requestIdPrefix?: string, retries?: number) {
     return this.get(
       `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}`,
       MirrorNodeClient.GET_TOKENS_ENDPOINT,
       requestIdPrefix,
+      retries,
     );
   }
 
@@ -1058,6 +1061,7 @@ export class MirrorNodeClient {
     searchableTypes: any[] = [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT, constants.TYPE_TOKEN],
     callerName: string,
     requestIdPrefix?: string,
+    retries?: number,
   ) {
     const cachedLabel = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${entityIdentifier}`;
     const cachedResponse: { type: string; entity: any } | undefined = this.cacheService.get(
@@ -1078,7 +1082,7 @@ export class MirrorNodeClient {
       );
 
     if (searchableTypes.find((t) => t === constants.TYPE_CONTRACT)) {
-      const contract = await this.getContract(entityIdentifier, requestIdPrefix).catch(() => {
+      const contract = await this.getContract(entityIdentifier, requestIdPrefix, retries).catch(() => {
         return null;
       });
       if (contract) {
@@ -1096,7 +1100,7 @@ export class MirrorNodeClient {
       const promises = [
         searchableTypes.find((t) => t === constants.TYPE_ACCOUNT)
           ? buildPromise(
-              this.getAccount(entityIdentifier, requestIdPrefix).catch(() => {
+              this.getAccount(entityIdentifier, requestIdPrefix, retries).catch(() => {
                 return null;
               }),
             )
@@ -1108,7 +1112,7 @@ export class MirrorNodeClient {
         promises.push(
           searchableTypes.find((t) => t === constants.TYPE_TOKEN)
             ? buildPromise(
-                this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestIdPrefix).catch(() => {
+                this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestIdPrefix, retries).catch(() => {
                   return null;
                 }),
               )

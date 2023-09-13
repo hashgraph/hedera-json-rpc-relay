@@ -18,7 +18,7 @@
  *
  */
 
-declare module "koa-jsonrpc" {
+declare module 'koa-jsonrpc' {
   export default function (...opts: any): koaJsonRpc;
 
   export class koaJsonRpc {
