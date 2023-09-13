@@ -62,9 +62,9 @@ The relevant fields retrieved from this endpoint are processed and formatted to 
 3. `to` - string	- address
 4. `value`	- string	- hex-encoded amount of value transfer
 5. `gas`	- string	- hex-encoded gas provided for call
-6. `gasUsed` - string	 -hex-encoded gas used during call
-7. `input` - string	 -call data
-8. `output` - string	- return data
+6. `gasUsed` - string - hex-encoded gas used during call
+7. `input` - string - call data
+8. `output` - string  - return data
 9. `error` - string	- error, if any
 10. `revertReason` - string - Solidity revert reason, if any
 11. `calls` - []callframe	- list of sub-calls
@@ -254,33 +254,33 @@ The relevant fields retrieved from this endpoint are processed and formatted to 
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    gas: 85301,
-    returnValue: "",
-    structLogs: [{
-        depth: 1,
-        error: "",
-        gas: 162106,
-        gasCost: 3,
-        memory: null,
-        op: "PUSH1",
-        pc: 0,
-        stack: [],
-        storage: {}
+    "gas": 85301,
+    "returnValue": "",
+    "structLogs": [{
+        "depth": 1,
+        "error": "",
+        "gas": 162106,
+        "gasCost": 3,
+        "memory": null,
+        "op": "PUSH1",
+        "pc": 0,
+        "stack": [],
+        "storage": {}
     },
       /* snip */
     {
-        depth: 1,
-        error: "",
-        gas: 100000,
-        gasCost: 0,
-        memory: ["0000000000000000000000000000000000000000000000000000000000000006", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000060"],
-        op: "STOP",
-        pc: 120,
-        stack: ["00000000000000000000000000000000000000000000000000000000d67cbec9"],
-        storage: {
-          0000000000000000000000000000000000000000000000000000000000000004: "8241fa522772837f0d05511f20caa6da1d5a3209000000000000000400000001",
-          0000000000000000000000000000000000000000000000000000000000000006: "0000000000000000000000000000000000000000000000000000000000000001",
-          f652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3f: "00000000000000000000000002e816afc1b5c0f39852131959d946eb3b07b5ad"
+        "depth": 1,
+        "error": "",
+        "gas": 100000,
+        "gasCost": 0,
+        "memory": ["0000000000000000000000000000000000000000000000000000000000000006", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000060"],
+        "op": "STOP",
+        "pc": 120,
+        "stack": ["00000000000000000000000000000000000000000000000000000000d67cbec9"],
+        "storage": {
+          "0000000000000000000000000000000000000000000000000000000000000004": "8241fa522772837f0d05511f20caa6da1d5a3209000000000000000400000001",
+          "0000000000000000000000000000000000000000000000000000000000000006": "0000000000000000000000000000000000000000000000000000000000000001",
+          "f652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3f": "00000000000000000000000002e816afc1b5c0f39852131959d946eb3b07b5ad"
         }
     }]
   }
@@ -308,12 +308,13 @@ Capture metrics for the following:
 ## Tests
 The following test cases should be covered but additional tests would be welcome.
 
-1. Overall functionality of the methods.
-2. Test different scenarios with all possible parameter combinations.
-3. Case where transaction is not found for `debug_traceTransaction`.
-4. Case where block hash is not found for `debug_getModifiedAccountsByHash`.
-5. Case where block number is not found for `debug_getModifiedAccountsByNumber`.
-
+1. Test `debug_traceTransaction` with `callTracer` and `onlyTopCall` set to true.
+2. Test `debug_traceTransaction` with `callTracer` and `onlyTopCall` set to false.
+3. Test `debug_traceTransaction` with `opcodeLogger` and all the tracerConfig values set to false.
+4. Test `debug_traceTransaction` with `opcodeLogger` and all the tracerConfig values set to true.
+5. Test `debug_traceTransaction` with `opcodeLogger` and all different combinations of tracerConfig values.
+6. Test `debug_traceTransaction` with hashes for the different types of transactions e.g Legacy, 1559, 2930.
+7. Case where transaction is not found for `debug_traceTransaction`.
 
 ## Deployment
 
