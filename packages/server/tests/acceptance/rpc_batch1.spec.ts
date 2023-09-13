@@ -389,6 +389,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           [mirrorBlock.hash.substring(0, 66), true],
           requestId,
         );
+        // Remove synthetic transactions
+        blockResult.transactions = blockResult.transactions.filter((transaction) => transaction.value !== '0x1234');
         Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
       });
 
@@ -416,6 +418,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           [numberTo0x(mirrorBlock.number), false],
           requestId,
         );
+        // Remove synthetic transactions
+        blockResult.transactions = blockResult.transactions.filter((transaction) => transaction.value !== '0x1234');
         Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
       });
 
@@ -425,6 +429,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           [numberTo0x(mirrorBlock.number), true],
           requestId,
         );
+        // Remove synthetic transactions
+        blockResult.transactions = blockResult.transactions.filter((transaction) => transaction.value !== '0x1234');
         Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
       });
 
