@@ -71,6 +71,7 @@ export class MirrorNodeClient {
   private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
   private static GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
   private static GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT = `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
+  private static GET_CONTRACTS_RESULTS_ACTIONS = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/actions`;
   private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
   private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
   private static GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
@@ -290,7 +291,7 @@ export class MirrorNodeClient {
     }
   }
 
-  private buildUrl(baseUrl: string) {
+  private buildUrl(baseUrl: string): string {
     if (!baseUrl.match(/^https?:\/\//)) {
       baseUrl = `${MirrorNodeClient.HTTPS_PREFIX}${baseUrl}`;
     }
@@ -377,7 +378,7 @@ export class MirrorNodeClient {
     effectiveStatusCode: number,
     method: REQUEST_METHODS,
     requestIdPrefix?: string,
-  ) {
+  ): null {
     const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
     const acceptedErrorResponses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
 
@@ -735,6 +736,14 @@ export class MirrorNodeClient {
     );
   }
 
+  public async getContractsResultsActions(transactionId: string): Promise<any> {
+    return this.get(
+      `${this.getContractResultsActionsByTransactionId(transactionId)}`,
+      MirrorNodeClient.GET_CONTRACTS_RESULTS_ACTIONS,
+      requestIdPrefix,
+    );
+  }
+
   public async getContractResultsByAddress(
     contractIdOrAddress: string,
     contractResultsParams?: IContractResultsParams,
@@ -907,6 +916,13 @@ export class MirrorNodeClient {
       MirrorNodeClient.CONTRACT_ID_PLACEHOLDER,
       contractId,
     ).replace(MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);
+  }
+
+  private getContractResultsActionsByTransactionId(transactionId: string) {
+    return MirrorNodeClient.GET_CONTRACTS_RESULTS_ACTIONS.replace(
+      MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER,
+      transactionId,
+    );
   }
 
   public async getTokenById(tokenId: string, requestIdPrefix?: string, retries?: number) {
