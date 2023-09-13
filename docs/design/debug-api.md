@@ -267,7 +267,7 @@ The relevant fields retrieved from this endpoint are processed and formatted to 
         "stack": [],
         "storage": {}
     },
-      /* snip */
+    /* skip */
     {
         "depth": 1,
         "error": "",
@@ -284,6 +284,7 @@ The relevant fields retrieved from this endpoint are processed and formatted to 
         }
     }]
   }
+}
 ```
 
 ## Error Codes
@@ -302,8 +303,8 @@ The relevant fields retrieved from this endpoint are processed and formatted to 
 
 Capture metrics for the following:
 
-1. Log every call to all filter API method, as a total amount.
-2. Log every success or fail for each new API method, as a total amount.
+1. Record each invocation of all debug API methods and maintain a cumulative count.
+2. Log every success or fail for each new API method and maintain a cumulative count.
 
 ## Tests
 The following test cases should be covered but additional tests would be welcome.
