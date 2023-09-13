@@ -3782,11 +3782,13 @@ describe('Eth calls using MirrorNode', async function () {
       data: '0x',
       value: '0xA186B8E9800',
       gasPrice: '0xF4240',
+      gas: '0xd97010',
     };
 
     ethImpl.contractCallFormat(transaction);
     expect(transaction.value).to.eq(1110);
     expect(transaction.gasPrice).to.eq(1000000);
+    expect(transaction.gas).to.eq(14250000);
   });
 
   describe('eth_gasPrice', async function () {
