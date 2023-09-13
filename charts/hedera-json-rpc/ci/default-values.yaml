@@ -12,7 +12,7 @@ relay:
   resources:
     limits:
       cpu: 500m
-      memory: 350Mi
+      memory: 700Mi
     requests:
       cpu: 500m
       memory: 350Mi
@@ -29,7 +29,7 @@ ws:
   resources:
   limits:
     cpu: 500m
-    memory: 350Mi
+    memory: 700Mi
   requests:
     cpu: 500m
     memory: 350Mi
