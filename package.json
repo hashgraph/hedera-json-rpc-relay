@@ -39,6 +39,7 @@
         "acceptancetest:ws": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@web-socket' --exit",
         "acceptancetest:precompile-calls": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@precompile-calls' --exit",
         "acceptancetest:cache-service": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@cache-service' --exit",
+        "acceptancetest:rpc_api_schema_conformity": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-conformity' --exit",
         "build": "npx lerna run build",
         "build-and-test": "npx lerna run build && npx lerna run test",
         "build:docker": "docker build . -t ${npm_package_name}",
@@ -72,6 +73,7 @@
         "pino-pretty": "^7.6.1",
         "prom-client": "^14.0.1",
         "redis": "^4.6.7",
+        "ts-node": "^10.9.1",
         "typescript": "^4.6.3"
     },
     "overrides": {
