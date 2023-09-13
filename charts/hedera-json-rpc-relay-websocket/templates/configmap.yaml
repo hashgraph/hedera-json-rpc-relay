@@ -13,7 +13,7 @@ data:
   MIRROR_NODE_RETRIES: {{ .Values.config.MIRROR_NODE_RETRIES | quote }}
   MIRROR_NODE_RETRY_DELAY: {{ .Values.config.MIRROR_NODE_RETRY_DELAY | quote }}
   MIRROR_NODE_URL: {{ .Values.config.MIRROR_NODE_URL | quote }}
-  SUBSCRIPTIONS_ENABLED: {{ .Values.config.SUBSCRIPTIONS_ENABLED | quote }}
+  SUBSCRIPTIONS_ENABLED: "true"
   WEB_SOCKET_HTTP_PORT: {{ .Values.config.WEB_SOCKET_HTTP_PORT | quote }}
   WEB_SOCKET_PORT: {{ .Values.config.WEB_SOCKET_PORT | quote }}
   WS_CONNECTION_LIMIT_PER_IP: {{ .Values.config.WS_CONNECTION_LIMIT_PER_IP | quote }}

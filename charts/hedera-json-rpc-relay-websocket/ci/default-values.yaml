@@ -3,16 +3,7 @@ config:
   CHAIN_ID: '0x128'
   HEDERA_NETWORK: 'testnet'
   MIRROR_NODE_URL: 'https://testnet.mirrornode.hedera.com'
-  SUBSCRIPTIONS_ENABLED: true
 
 image:
   registry: registry:5001
   tag: test
-
-resources:
-  limits:
-    cpu: 500m
-    memory: 700Mi
-  requests:
-    cpu: 500m
-    memory: 350Mi
