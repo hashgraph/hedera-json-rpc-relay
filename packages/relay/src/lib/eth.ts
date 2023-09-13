@@ -611,7 +611,9 @@ export class EthImpl implements Eth {
     if (transaction.gasPrice) {
       transaction.gasPrice = parseInt(transaction.gasPrice);
     }
-
+    if (transaction.gas) {
+      transaction.gas = parseInt(transaction.gas);
+    }
     // Support either data or input. https://ethereum.github.io/execution-apis/api-documentation/ lists input but many EVM tools still use data.
     if (transaction.input && transaction.data === undefined) {
       transaction.data = transaction.input;
