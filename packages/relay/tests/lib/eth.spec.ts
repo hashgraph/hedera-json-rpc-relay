@@ -23,7 +23,7 @@ import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { assert, expect } from 'chai';
 import { Registry } from 'prom-client';
-import sinon from 'sinon';
+import sinon, { createSandbox } from 'sinon';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '../../src/lib/relay';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
@@ -5317,16 +5317,21 @@ describe('Eth', async function () {
   this.timeout(10000);
 
   let ethImpl: EthImpl;
+  let sandbox: sinon.SinonSandbox;
+  let getFeeWeibarsStub: sinon.SinonStub;
+  let getBlockByHashStub: sinon.SinonStub;
+
   this.beforeAll(() => {
     // @ts-ignore
+    sandbox = createSandbox();
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL,
+      process.env.MIRROR_NODE_URL as string,
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
     );
-    ethImpl = new EthImpl(null, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
+    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
   });
 
@@ -5450,6 +5455,8 @@ describe('Eth', async function () {
 
   this.afterEach(() => {
     restMock.resetHandlers();
+    sandbox.restore();
+    cacheService.clear();
   });
 
   it('should execute "eth_chainId"', async function () {
@@ -5537,10 +5544,6 @@ describe('Eth', async function () {
   });
 
   describe('eth_getTransactionReceipt', async function () {
-    this.beforeEach(() => {
-      cacheService.clear();
-    });
-
     it('returns `null` for non-existent hash', async function () {
       const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
       restMock.onGet(`contracts/results/${txHash}`).reply(404, {
@@ -5708,9 +5711,8 @@ describe('Eth', async function () {
     });
 
     it('valid receipt on cache match', async function () {
-      // clear cache
-      cacheService.clear();
-
+      getBlockByHashStub = sandbox.stub(ethImpl, 'getBlockByHash');
+      getFeeWeibarsStub = sandbox.stub(ethImpl, <any>'getFeeWeibars').resolves(12500000000000000000);
       // set cache with synthetic log
       const cacheKeySyntheticLog1 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${defaultDetailedContractResultByHash.hash}`;
       const cachedLog = new Log({
@@ -5725,7 +5727,7 @@ describe('Eth', async function () {
         transactionIndex: nullableNumberTo0x(defaultLogs1[0].transaction_index),
       });
 
-      cacheService.set(cacheKeySyntheticLog1, cachedLog);
+      cacheService.set(cacheKeySyntheticLog1, cachedLog, EthImpl.ethGetTransactionReceipt);
 
       // w no mirror node requests
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
@@ -5735,7 +5737,7 @@ describe('Eth', async function () {
       expect(receipt.blockNumber).to.eq(cachedLog.blockNumber);
       expect(receipt.contractAddress).to.eq(cachedLog.address);
       expect(receipt.cumulativeGasUsed).to.eq(EthImpl.zeroHex);
-      expect(receipt.effectiveGasPrice).to.eq(EthImpl.zeroHex);
+      expect(receipt.effectiveGasPrice).to.eq(defaultReceipt.effectiveGasPrice);
       expect(receipt.from).to.eq(EthImpl.zeroAddressHex);
       expect(receipt.gasUsed).to.eq(EthImpl.zeroHex);
       expect(receipt.logs).to.deep.eq([cachedLog]);
@@ -5745,6 +5747,8 @@ describe('Eth', async function () {
       expect(receipt.transactionHash).to.eq(cachedLog.transactionHash);
       expect(receipt.transactionIndex).to.eq(cachedLog.transactionIndex);
       expect(receipt.root).to.eq(EthImpl.zeroHex32Byte);
+      expect(getBlockByHashStub.calledOnce).to.be.true;
+      expect(getFeeWeibarsStub.calledOnce).to.be.true;
     });
   });
 

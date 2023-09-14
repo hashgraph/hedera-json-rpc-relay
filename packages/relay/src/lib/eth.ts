@@ -1745,13 +1745,21 @@ export class EthImpl implements Eth {
       EthImpl.ethGetTransactionReceipt,
       requestIdPrefix,
     );
+
     if (cachedLog) {
+      const block = await this.getBlockByHash(cachedLog.blockHash, false);
+      const gasPriceForTimestamp = await this.getFeeWeibars(
+        EthImpl.ethGetTransactionReceipt,
+        requestIdPrefix,
+        block?.timestamp,
+      );
+
       const receipt: any = {
         blockHash: cachedLog.blockHash,
         blockNumber: cachedLog.blockNumber,
         contractAddress: cachedLog.address,
         cumulativeGasUsed: EthImpl.zeroHex,
-        effectiveGasPrice: EthImpl.zeroHex,
+        effectiveGasPrice: numberTo0x(gasPriceForTimestamp),
         from: EthImpl.zeroAddressHex,
         gasUsed: EthImpl.zeroHex,
         logs: [cachedLog],
