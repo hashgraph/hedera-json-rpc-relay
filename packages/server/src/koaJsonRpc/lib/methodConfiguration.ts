@@ -171,4 +171,7 @@ export const methodConfiguration = {
   eth_getFilterLogs: {
     total: tier2rateLimit,
   },
+  debug_traceTransaction: {
+    total: tier2rateLimit,
+  },
 };
