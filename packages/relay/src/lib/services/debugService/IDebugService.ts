@@ -19,5 +19,10 @@
  */
 
 export interface IDebugService {
-  debug_traceTransaction: (transactionHash: string, tracer: string, tracerConfig: object) => any;
+  debug_traceTransaction: (
+    transactionHash: string,
+    tracer: string,
+    tracerConfig: object,
+    requestIdPrefix?: string,
+  ) => Promise<any>;
 }
