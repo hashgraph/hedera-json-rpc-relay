@@ -1,4 +1,4 @@
-/*-
+/*
  *
  * Hedera JSON RPC Relay
  *
