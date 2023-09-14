@@ -29,7 +29,13 @@ export class DebugService implements IDebugService {
     this.cacheService = cacheService;
   }
 
-  async debug_traceTransaction(transactionHash: string, tracer: string, tracerConfig: object): any {
-    const response = await this.mirrorNodeClient.getContractsResultsActions(transactionHash);
+  async debug_traceTransaction(
+    transactionHash: string,
+    tracer: string,
+    tracerConfig: object,
+    requestIdPrefix?: string,
+  ): Promise<any> {
+    const response = await this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestIdPrefix);
+    console.log(response);
   }
 }

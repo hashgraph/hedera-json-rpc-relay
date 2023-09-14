@@ -24,6 +24,7 @@ import WebSocketError from './lib/errors/WebSocketError';
 import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
 import { MirrorNodeClient } from './lib/clients';
 import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
+import { IDebugService } from './lib/services/debugService/IDebugService';
 
 export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError };
 
@@ -147,4 +148,6 @@ export interface Eth {
   accounts(requestId?: string): Array<any>;
 
   filterService(): IFilterService;
+
+  debugService(): IDebugService;
 }

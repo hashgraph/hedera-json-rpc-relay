@@ -736,7 +736,7 @@ export class MirrorNodeClient {
     );
   }
 
-  public async getContractsResultsActions(transactionId: string): Promise<any> {
+  public async getContractsResultsActions(transactionId: string, requestIdPrefix?: string): Promise<any> {
     return this.get(
       `${this.getContractResultsActionsByTransactionId(transactionId)}`,
       MirrorNodeClient.GET_CONTRACTS_RESULTS_ACTIONS,

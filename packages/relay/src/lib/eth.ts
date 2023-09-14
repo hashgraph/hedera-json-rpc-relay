@@ -47,6 +47,8 @@ import { Transaction as EthersTransaction } from 'ethers';
 import { CommonService, FilterService } from './services/ethService';
 import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
 import { CacheService } from './services/cacheService/cacheService';
+import { DebugService } from './services/debugService';
+import { IDebugService } from './services/debugService/IDebugService';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -224,6 +226,11 @@ export class EthImpl implements Eth {
   private filterServiceImpl: FilterService;
 
   /**
+   * The Filter Service implemntation that takes care of all filter API operations.
+   */
+  private debugServiceImpl: DebugService;
+
+  /**
    * Create a new Eth implementation.
    * @param nodeClient
    * @param mirrorNodeClient
@@ -249,6 +256,7 @@ export class EthImpl implements Eth {
 
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
     this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
+    this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, cacheService);
   }
 
   private initEthExecutionCounter(register: Registry) {
@@ -265,6 +273,11 @@ export class EthImpl implements Eth {
   filterService(): IFilterService {
     return this.filterServiceImpl;
   }
+
+  debugService(): IDebugService {
+    return this.debugServiceImpl;
+  }
+
   /**
    * This method is implemented to always return an empty array. This is in alignment
    * with the behavior of Infura.
