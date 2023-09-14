@@ -1745,7 +1745,11 @@ export class EthImpl implements Eth {
     }
 
     const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
-    const cachedLog = this.cacheService.get(cacheKeySyntheticLog, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
+    const cachedLog = await this.cacheService.getSharedWithFallback(
+      cacheKeySyntheticLog,
+      EthImpl.ethGetTransactionReceipt,
+      requestIdPrefix,
+    );
     if (cachedLog) {
       const receipt: any = {
         blockHash: cachedLog.blockHash,
@@ -2000,7 +2004,14 @@ export class EthImpl implements Eth {
         transactionArray.push(transaction);
 
         const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
-        this.cacheService.set(cacheKey, log, EthImpl.ethGetBlockByHash, this.syntheticLogCacheTtl, requestIdPrefix);
+        this.cacheService.set(
+          cacheKey,
+          log,
+          EthImpl.ethGetBlockByHash,
+          this.syntheticLogCacheTtl,
+          requestIdPrefix,
+          true,
+        );
       });
     } else {
       filteredLogs = logs.filter((log) => !transactionArray.includes(log.transactionHash));
@@ -2008,7 +2019,14 @@ export class EthImpl implements Eth {
         transactionArray.push(log.transactionHash);
 
         const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
-        this.cacheService.set(cacheKey, log, EthImpl.ethGetBlockByHash, this.syntheticLogCacheTtl, requestIdPrefix);
+        this.cacheService.set(
+          cacheKey,
+          log,
+          EthImpl.ethGetBlockByHash,
+          this.syntheticLogCacheTtl,
+          requestIdPrefix,
+          true,
+        );
       });
 
       this.logger.trace(
