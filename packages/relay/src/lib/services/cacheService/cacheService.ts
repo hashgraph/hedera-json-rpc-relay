@@ -149,6 +149,21 @@ export class CacheService {
   }
 
   /**
+   * If SharedCacheEnabled will use shared, otherwise will fallback to internal cache.
+   * @param {string} key - The cache key.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} [requestIdPrefix] - The optional request ID prefix.
+   * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
+   */
+  public getSharedWithFallback(key: string, callingMethod: string, requestIdPrefix?: string): any {
+    if (this.isSharedCacheEnabled) {
+      return this.getAsync(key, callingMethod, requestIdPrefix);
+    } else {
+      return this.get(key, callingMethod, requestIdPrefix);
+    }
+  }
+
+  /**
    * Retrieves a value from the internal cache.
    *
    * @param {string} key - The cache key.

@@ -3782,11 +3782,13 @@ describe('Eth calls using MirrorNode', async function () {
       data: '0x',
       value: '0xA186B8E9800',
       gasPrice: '0xF4240',
+      gas: '0xd97010',
     };
 
     ethImpl.contractCallFormat(transaction);
     expect(transaction.value).to.eq(1110);
     expect(transaction.gasPrice).to.eq(1000000);
+    expect(transaction.gas).to.eq(14250000);
   });
 
   describe('eth_gasPrice', async function () {
@@ -5608,6 +5610,24 @@ describe('Eth', async function () {
       if (receipt == null) return;
 
       expect(receipt.effectiveGasPrice).to.eq('0x0');
+    });
+
+    it('Handles null type', async function () {
+      const contractResult = {
+        ...defaultDetailedContractResultByHash,
+        type: null,
+      };
+
+      const uniqueTxHash = '0x07cdd7b820375d10d73af57a6a3e84353645fdb1305ea58ff52daa53ec640533';
+
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, contractResult);
+      restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
+      const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
+
+      expect(receipt).to.exist;
+      if (receipt == null) return;
+
+      expect(receipt.type).to.be.null;
     });
 
     it('handles empty bloom', async function () {

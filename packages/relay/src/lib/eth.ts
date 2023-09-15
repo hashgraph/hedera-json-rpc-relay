@@ -611,7 +611,9 @@ export class EthImpl implements Eth {
     if (transaction.gasPrice) {
       transaction.gasPrice = parseInt(transaction.gasPrice);
     }
-
+    if (transaction.gas) {
+      transaction.gas = parseInt(transaction.gas);
+    }
     // Support either data or input. https://ethereum.github.io/execution-apis/api-documentation/ lists input but many EVM tools still use data.
     if (transaction.input && transaction.data === undefined) {
       transaction.data = transaction.input;
@@ -1662,6 +1664,32 @@ export class EthImpl implements Eth {
     }
   }
 
+  async resolveEvmAddress(
+    address: string,
+    requestIdPrefix?: string,
+    searchableTypes = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+  ) {
+    if (!address) return address;
+
+    const entity = await this.mirrorNodeClient.resolveEntityType(
+      address,
+      searchableTypes,
+      EthImpl.ethGetCode,
+      requestIdPrefix,
+      0,
+    );
+    let resolvedAddress = address;
+    if (
+      entity &&
+      (entity.type === constants.TYPE_CONTRACT || entity.type === constants.TYPE_ACCOUNT) &&
+      entity.entity?.evm_address
+    ) {
+      resolvedAddress = entity.entity.evm_address;
+    }
+
+    return resolvedAddress;
+  }
+
   /**
    * Gets a transaction by the provided hash
    *
@@ -1680,29 +1708,8 @@ export class EthImpl implements Eth {
       );
     }
 
-    let fromAddress;
-    if (contractResult.from) {
-      fromAddress = contractResult.from.substring(0, 42);
-
-      const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${fromAddress}`;
-      let accountResult: any | null = this.cacheService.get(accountCacheKey, EthImpl.ethGetTransactionByHash);
-      if (!accountResult) {
-        accountResult = await this.mirrorNodeClient.getAccount(fromAddress, requestIdPrefix);
-        if (accountResult) {
-          this.cacheService.set(
-            accountCacheKey,
-            accountResult,
-            EthImpl.ethGetTransactionByHash,
-            undefined,
-            requestIdPrefix,
-          );
-        }
-      }
-
-      if (accountResult?.evm_address?.length > 0) {
-        fromAddress = accountResult.evm_address.substring(0, 42);
-      }
-    }
+    const fromAddress = await this.resolveEvmAddress(contractResult.from, requestIdPrefix, [constants.TYPE_ACCOUNT]);
+    const toAddress = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
 
     if (
       process.env.DEV_MODE &&
@@ -1716,6 +1723,7 @@ export class EthImpl implements Eth {
     return formatContractResult({
       ...contractResult,
       from: fromAddress,
+      to: toAddress,
     });
   }
 
@@ -1737,7 +1745,11 @@ export class EthImpl implements Eth {
     }
 
     const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
-    const cachedLog = this.cacheService.get(cacheKeySyntheticLog, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
+    const cachedLog = await this.cacheService.getSharedWithFallback(
+      cacheKeySyntheticLog,
+      EthImpl.ethGetTransactionReceipt,
+      requestIdPrefix,
+    );
     if (cachedLog) {
       const receipt: any = {
         blockHash: cachedLog.blockHash,
@@ -1754,7 +1766,7 @@ export class EthImpl implements Eth {
         to: cachedLog.address,
         transactionHash: cachedLog.transactionHash,
         transactionIndex: cachedLog.transactionIndex,
-        type: null, //null fro HAPI transactions
+        type: null, // null from HAPI transactions
       };
 
       this.logger.debug(
@@ -1802,8 +1814,8 @@ export class EthImpl implements Eth {
       const receipt: any = {
         blockHash: toHash32(receiptResponse.block_hash),
         blockNumber: numberTo0x(receiptResponse.block_number),
-        from: receiptResponse.from,
-        to: receiptResponse.to,
+        from: await this.resolveEvmAddress(receiptResponse.from, requestIdPrefix),
+        to: await this.resolveEvmAddress(receiptResponse.to, requestIdPrefix),
         cumulativeGasUsed: numberTo0x(receiptResponse.block_gas_used),
         gasUsed: nanOrNumberTo0x(receiptResponse.gas_used),
         contractAddress: receiptResponse.address,
@@ -1814,7 +1826,7 @@ export class EthImpl implements Eth {
         effectiveGasPrice: nanOrNumberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
         root: receiptResponse.root,
         status: receiptResponse.status,
-        type: numberTo0x(receiptResponse.type),
+        type: nullableNumberTo0x(receiptResponse.type),
       };
 
       if (receiptResponse.error_message) {
@@ -1992,7 +2004,14 @@ export class EthImpl implements Eth {
         transactionArray.push(transaction);
 
         const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
-        this.cacheService.set(cacheKey, log, EthImpl.ethGetBlockByHash, this.syntheticLogCacheTtl, requestIdPrefix);
+        this.cacheService.set(
+          cacheKey,
+          log,
+          EthImpl.ethGetBlockByHash,
+          this.syntheticLogCacheTtl,
+          requestIdPrefix,
+          true,
+        );
       });
     } else {
       filteredLogs = logs.filter((log) => !transactionArray.includes(log.transactionHash));
@@ -2000,7 +2019,14 @@ export class EthImpl implements Eth {
         transactionArray.push(log.transactionHash);
 
         const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
-        this.cacheService.set(cacheKey, log, EthImpl.ethGetBlockByHash, this.syntheticLogCacheTtl, requestIdPrefix);
+        this.cacheService.set(
+          cacheKey,
+          log,
+          EthImpl.ethGetBlockByHash,
+          this.syntheticLogCacheTtl,
+          requestIdPrefix,
+          true,
+        );
       });
 
       this.logger.trace(

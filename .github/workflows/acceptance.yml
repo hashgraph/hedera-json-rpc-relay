@@ -26,6 +26,12 @@ jobs:
     with:
       testfilter: api_batch3
 
+  rpc_api_schema_conformity:
+    name: API Conformity
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: rpc_api_schema_conformity
+
   erc20:
     name: ERC20
     uses: ./.github/workflows/acceptance-workflow.yml
@@ -68,3 +74,9 @@ jobs:
     with:
       testfilter: ws
       test_ws_server: true
+
+  cacheservice:
+    name: Cache Service
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: cache-service

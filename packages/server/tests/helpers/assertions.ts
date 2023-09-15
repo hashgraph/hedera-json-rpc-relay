@@ -159,8 +159,8 @@ export default class Assertions {
       ethers.toQuantity(mirrorNodeResponse.block_number),
     );
     // expect(relayResponse.chainId).to.eq(mirrorNodeResponse.chain_id); // FIXME must not be null!
-    expect(relayResponse.from, "Assert transaction: 'from' should equal mirrorNode response").to.eq(
-      mirrorNodeResponse.from,
+    expect(relayResponse.from.toLowerCase(), "Assert transaction: 'from' should equal mirrorNode response").to.eq(
+      mirrorNodeResponse.from.toLowerCase(),
     );
     expect(relayResponse.gas, "Assert transaction: 'gas' should equal mirrorNode response").to.eq(
       ethers.toQuantity(mirrorNodeResponse.gas_used),
@@ -173,8 +173,8 @@ export default class Assertions {
       mirrorNodeResponse.function_parameters,
     );
     if (relayResponse.to || mirrorNodeResponse.to) {
-      expect(relayResponse.to, "Assert transaction: 'to' should equal mirrorNode response").to.eq(
-        mirrorNodeResponse.to,
+      expect(relayResponse.to.toLowerCase(), "Assert transaction: 'to' should equal mirrorNode response").to.eq(
+        mirrorNodeResponse.to.toLowerCase(),
       );
     }
     expect(
@@ -272,13 +272,15 @@ export default class Assertions {
       mirrorResult.logs,
     );
 
-    expect(transactionReceipt.from, "Assert transactionReceipt: 'from' should equal mirrorNode response").to.eq(
-      mirrorResult.from,
-    );
+    expect(
+      transactionReceipt.from.toLowerCase(),
+      "Assert transactionReceipt: 'from' should equal mirrorNode response",
+    ).to.eq(mirrorResult.from.toLowerCase());
 
-    expect(transactionReceipt.to, "Assert transactionReceipt: 'to' should equal mirrorNode response").to.eq(
-      mirrorResult.to,
-    );
+    expect(
+      transactionReceipt.to.toLowerCase(),
+      "Assert transactionReceipt: 'to' should equal mirrorNode response",
+    ).to.eq(mirrorResult.to.toLowerCase());
 
     expect(transactionReceipt.type, "Assert transactionReceipt: 'type' should exist").to.exist;
     expect(transactionReceipt.type, "Assert transactionReceipt: 'type' should equal 0x mirrorNode response").to.eq(
@@ -391,5 +393,15 @@ export default class Assertions {
       }
       return [error.code, error.name, error.message].every((substring) => err.body.includes(substring));
     });
+  };
+
+  static evmAddress = (address) => {
+    expect(address).to.match(/(\b0x[a-f0-9]{40}\b)/g, 'matches evm address format');
+    expect(address).to.not.match(/(\b0x(0){15})/g, 'does not contain 15 consecutive zeros');
+  };
+
+  static longZeroAddress = (address) => {
+    expect(address).to.match(/(\b0x[a-f0-9]{40}\b)/g, 'matches evm address format');
+    expect(address).to.match(/(\b0x(0){15})/g, 'contains 15 consecutive zeros');
   };
 }

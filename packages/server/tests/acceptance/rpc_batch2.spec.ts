@@ -38,6 +38,7 @@ import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
+import ERC20MockJson from '../contracts/ERC20Mock.json';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -55,6 +56,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   let mirrorContractDetails;
   let mirrorSecondaryAccount;
   let requestId;
+  let htsAddress;
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
@@ -95,6 +97,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       await accounts[0].client.executeContractCall(contractId, 'createChild', params, 75000, requestId)
     ).contractExecuteTimestamp;
     tokenId = await servicesNode.createToken(1000, requestId);
+    htsAddress = Utils.idToEvmAddress(tokenId.toString());
+
     logger.info('Associate and transfer tokens');
     await accounts[0].client.associateToken(tokenId, requestId);
     await accounts[1].client.associateToken(tokenId, requestId);
@@ -987,6 +991,107 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res.gasUsedRatio.length).to.be.gt(0);
       expect(res.oldestBlock).to.exist;
       expect(Number(res.oldestBlock)).to.be.gt(0);
+    });
+  });
+
+  describe('Formats of addresses in Transaction and Receipt results', () => {
+    const getTxData = async (hash) => {
+      const txByHash = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [hash], requestId);
+      const receipt = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [hash], requestId);
+      let mirrorResult = await mirrorNode.get(`/contracts/results/${hash}`, requestId);
+
+      return { txByHash, receipt, mirrorResult };
+    };
+
+    it('from/to Addresses in transaction between accounts are in evm format', async function () {
+      const tx = await accounts[0].wallet.sendTransaction({
+        to: accounts[1].wallet,
+        value: ethers.parseEther('1'),
+      });
+
+      await tx.wait();
+
+      let { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
+
+      mirrorResult.from = accounts[0].wallet.address;
+      mirrorResult.to = accounts[1].wallet.address;
+
+      Assertions.transaction(txByHash, mirrorResult);
+      Assertions.transactionReceipt(receipt, mirrorResult);
+
+      Assertions.evmAddress(txByHash.from);
+      Assertions.evmAddress(txByHash.to);
+      Assertions.evmAddress(receipt.from);
+      Assertions.evmAddress(receipt.to);
+    });
+
+    it('from/to Addresses in transaction to a contract (deployed through the relay) are in evm and long-zero format', async function () {
+      const relayContract = await Utils.deployContractWithEthers([], basicContractJson, accounts[0].wallet, relay);
+
+      const tx = await accounts[0].wallet.sendTransaction({
+        to: relayContract.target,
+        value: ethers.parseEther('1'),
+      });
+
+      await tx.wait();
+
+      let { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
+
+      mirrorResult.from = accounts[0].wallet.address;
+      mirrorResult.to = relayContract.target;
+
+      Assertions.transaction(txByHash, mirrorResult);
+      Assertions.transactionReceipt(receipt, mirrorResult);
+
+      Assertions.evmAddress(txByHash.from);
+      Assertions.evmAddress(txByHash.to);
+      Assertions.evmAddress(receipt.from);
+      Assertions.evmAddress(receipt.to);
+    });
+
+    it('from/to Addresses in transaction to a contract (deployed through HAPI tx) are in evm and long-zero format', async function () {
+      const tx = await accounts[0].wallet.sendTransaction({
+        to: mirrorContract.evm_address,
+        value: ethers.parseEther('1'),
+      });
+
+      await tx.wait();
+
+      let { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
+
+      mirrorResult.from = accounts[0].wallet.address;
+      mirrorResult.to = mirrorContract.evm_address;
+
+      Assertions.transaction(txByHash, mirrorResult);
+      Assertions.transactionReceipt(receipt, mirrorResult);
+
+      Assertions.evmAddress(txByHash.from);
+      Assertions.longZeroAddress(txByHash.to);
+      Assertions.evmAddress(receipt.from);
+      Assertions.longZeroAddress(receipt.to);
+    });
+
+    it('from/to Addresses when transferring HTS tokens to the tokenAddress are in evm and long-zero format', async function () {
+      const tokenAsERC20 = new ethers.Contract(htsAddress, ERC20MockJson.abi, accounts[0].wallet);
+      const tx = await tokenAsERC20.transfer(accounts[1].wallet.address, 1, await Utils.gasOptions(requestId));
+
+      await tx.wait();
+
+      let { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
+
+      mirrorResult.from = accounts[0].wallet.address;
+
+      // ignore assertion of logs to keep the test simple
+      receipt.logs = [];
+      mirrorResult.logs = [];
+
+      Assertions.transaction(txByHash, mirrorResult);
+      Assertions.transactionReceipt(receipt, mirrorResult);
+
+      Assertions.evmAddress(txByHash.from);
+      Assertions.longZeroAddress(txByHash.to);
+      Assertions.evmAddress(receipt.from);
+      Assertions.longZeroAddress(receipt.to);
     });
   });
 });
