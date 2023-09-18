@@ -21,7 +21,7 @@ services:
       ipfs: "ipfs:5001"
       ethereum: "local:http://host.docker.internal:7546"
       GRAPH_LOG: debug
-      ETHEREUM_REORG_THRESHOLD: 250
+      ETHEREUM_REORG_THRESHOLD: 0
       ETHEREUM_POLLING_INTERVAL: 1000
       GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 10
       ETHEREUM_BLOCK_BATCH_SIZE: 1
