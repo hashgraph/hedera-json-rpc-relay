@@ -21,7 +21,15 @@ services:
       ipfs: "ipfs:5001"
       ethereum: "local:http://host.docker.internal:7546"
       GRAPH_LOG: debug
+      ETHEREUM_REORG_THRESHOLD: 250
+      ETHEREUM_POLLING_INTERVAL: 1000
+      GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 10
+      ETHEREUM_BLOCK_BATCH_SIZE: 1
+      GRAPH_ETHEREUM_MAX_BLOCK_RANGE_SIZE: 1000
+      GRAPH_ETHEREUM_MAX_EVENT_ONLY_RANGE: 50
+      GRAPH_ETHEREUM_BLOCK_INGESTOR_MAX_CONCURRENT_JSON_RPC_CALLS_FOR_TXN_RECEIPTS: 100
       GRAPH_ETHEREUM_GENESIS_BLOCK_NUMBER: 1
+    restart: unless-stopped
   ipfs:
     image: ipfs/go-ipfs:v0.10.0
     ports:
