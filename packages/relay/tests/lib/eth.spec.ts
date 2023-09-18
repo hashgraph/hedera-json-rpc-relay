@@ -877,7 +877,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockByNumber with no match', async function () {
     cacheService.clear();
-    restMock.onGet(`blocks/${blockNumber}`).reply(400, {
+    restMock.onGet(`blocks/${blockNumber}`).reply(404, {
       _status: {
         messages: [
           {
@@ -1207,7 +1207,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_getBlockByHash with no match', async function () {
     cacheService.clear();
     // mirror node request mocks
-    restMock.onGet(`blocks/${blockHash}`).reply(400, {
+    restMock.onGet(`blocks/${blockHash}`).reply(404, {
       _status: {
         messages: [
           {
@@ -1260,7 +1260,7 @@ describe('Eth calls using MirrorNode', async function () {
 
   it('eth_getBlockTransactionCountByNumber with no match', async function () {
     cacheService.clear();
-    restMock.onGet(`blocks/${blockNumber}`).reply(400, {
+    restMock.onGet(`blocks/${blockNumber}`).reply(404, {
       _status: {
         messages: [
           {
@@ -1328,7 +1328,7 @@ describe('Eth calls using MirrorNode', async function () {
   it('eth_getBlockTransactionCountByHash with no match', async function () {
     cacheService.clear();
     // mirror node request mocks
-    restMock.onGet(`blocks/${blockHash}`).reply(400, {
+    restMock.onGet(`blocks/${blockHash}`).reply(404, {
       _status: {
         messages: [
           {
@@ -1397,7 +1397,7 @@ describe('Eth calls using MirrorNode', async function () {
       .onGet(
         `contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`,
       )
-      .reply(400, {
+      .reply(404, {
         _status: {
           messages: [
             {
@@ -2681,9 +2681,16 @@ describe('Eth calls using MirrorNode', async function () {
         )
         .reply(400, { _status: { messages: [{ message: 'Mocked error' }] } });
 
-      const result = await ethImpl.getLogs(null, null, null, null, null);
-      expect(result).to.exist;
-      expect(result.length).to.eq(0);
+      let errorReceived = false;
+      try {
+        const result = await ethImpl.getLogs(null, null, null, null, null);
+      } catch (error) {
+        errorReceived = true;
+        expect(error.statusCode).to.equal(400);
+        expect(error.message).to.eq('Mocked error');
+      }
+
+      expect(errorReceived, 'Error should be thrown').to.be.true;
     });
 
     it('no filters', async function () {

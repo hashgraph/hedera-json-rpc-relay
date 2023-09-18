@@ -68,8 +68,8 @@ describe('MirrorNodeClient', async function () {
 
   describe('handleError', async () => {
     const CONTRACT_CALL_ENDPOINT = 'contracts/call';
-    const nullResponseCodes = [404, 415, 500];
-    const errorRepsonseCodes = [501, 503, 400, 429];
+    const nullResponseCodes = [404];
+    const errorRepsonseCodes = [501, 503, 400, 429, 415, 500];
 
     for (const code of nullResponseCodes) {
       it(`returns null when ${code} is returned`, async () => {
