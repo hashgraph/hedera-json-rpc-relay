@@ -51,13 +51,17 @@ enum ORDER {
   DESC = 'desc',
 }
 
+export enum TracerType {
+  CallTracer = 'callTracer',
+  OpcodeLogger = 'opcodeLogger',
+}
+
 export default {
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
 
   CACHE_KEY,
   CACHE_TTL,
   CACHE_MAX: 1000,
-
   DEFAULT_TINY_BAR_GAS: 72, // (853454 / 1000) * (1 / 12)
   ETH_FUNCTIONALITY_CODE: 84,
   DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT: 1000,
