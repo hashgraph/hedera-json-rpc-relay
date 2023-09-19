@@ -141,7 +141,7 @@ app.getKoaApp().use(async (ctx, next) => {
     ctx.body = JSON.stringify(
       JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../docs/openrpc.json')).toString()),
       null,
-      2
+      2,
     );
   } else {
     return next();
@@ -166,7 +166,7 @@ app.getKoaApp().use(async (ctx, next) => {
   const options = {
     expose: ctx.get('Request-Id'),
     header: ctx.get('Request-Id'),
-    query: ctx.get('query')
+    query: ctx.get('query'),
   };
 
   for (const key in options) {
@@ -244,9 +244,9 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
         name: error.name,
         code: error.code,
         message: error.message,
-        data: error.data
+        data: error.data,
       },
-      requestId
+      requestId,
     );
   }
 };
@@ -282,7 +282,7 @@ app.useRpc('eth_blockNumber', async () => {
  */
 app.useRpc('eth_estimateGas', async (params: any) => {
   return logAndHandleResponse('eth_estimateGas', params, (requestId) =>
-    relay.eth().estimateGas(params?.[0], params?.[1], requestId)
+    relay.eth().estimateGas(params?.[0], params?.[1], requestId),
   );
 });
 
@@ -295,7 +295,7 @@ app.useRpc('eth_estimateGas', async (params: any) => {
  */
 app.useRpc('eth_getBalance', async (params: any) => {
   return logAndHandleResponse('eth_getBalance', params, (requestId) =>
-    relay.eth().getBalance(params?.[0], params?.[1], requestId)
+    relay.eth().getBalance(params?.[0], params?.[1], requestId),
   );
 });
 
@@ -308,7 +308,7 @@ app.useRpc('eth_getBalance', async (params: any) => {
  */
 app.useRpc('eth_getCode', async (params: any) => {
   return logAndHandleResponse('eth_getCode', params, (requestId) =>
-    relay.eth().getCode(params?.[0], params?.[1], requestId)
+    relay.eth().getCode(params?.[0], params?.[1], requestId),
   );
 });
 
@@ -330,7 +330,7 @@ app.useRpc('eth_chainId', async () => {
  */
 app.useRpc('eth_getBlockByNumber', async (params: any) => {
   return logAndHandleResponse('eth_getBlockByNumber', params, (requestId) =>
-    relay.eth().getBlockByNumber(params?.[0], Boolean(params?.[1]), requestId)
+    relay.eth().getBlockByNumber(params?.[0], Boolean(params?.[1]), requestId),
   );
 });
 
@@ -343,7 +343,7 @@ app.useRpc('eth_getBlockByNumber', async (params: any) => {
  */
 app.useRpc('eth_getBlockByHash', async (params: any) => {
   return logAndHandleResponse('eth_getBlockByHash', params, (requestId) =>
-    relay.eth().getBlockByHash(params?.[0], Boolean(params?.[1]), requestId)
+    relay.eth().getBlockByHash(params?.[0], Boolean(params?.[1]), requestId),
   );
 });
 
@@ -365,7 +365,7 @@ app.useRpc('eth_gasPrice', async () => {
  */
 app.useRpc('eth_getTransactionCount', async (params: any) => {
   return logAndHandleResponse('eth_getTransactionCount', params, (requestId) =>
-    relay.eth().getTransactionCount(params?.[0], params?.[1], requestId)
+    relay.eth().getTransactionCount(params?.[0], params?.[1], requestId),
   );
 });
 
@@ -387,7 +387,7 @@ app.useRpc('eth_call', async (params: any) => {
  */
 app.useRpc('eth_sendRawTransaction', async (params: any) => {
   return logAndHandleResponse('eth_sendRawTransaction', params, (requestId) =>
-    relay.eth().sendRawTransaction(params?.[0], requestId)
+    relay.eth().sendRawTransaction(params?.[0], requestId),
   );
 });
 
@@ -399,7 +399,7 @@ app.useRpc('eth_sendRawTransaction', async (params: any) => {
  */
 app.useRpc('eth_getTransactionReceipt', async (params: any) => {
   return logAndHandleResponse('eth_getTransactionReceipt', params, (requestId) =>
-    relay.eth().getTransactionReceipt(params?.[0], requestId)
+    relay.eth().getTransactionReceipt(params?.[0], requestId),
   );
 });
 
@@ -424,7 +424,7 @@ app.useRpc('eth_accounts', async () => {
  */
 app.useRpc('eth_getTransactionByHash', async (params: any) => {
   return logAndHandleResponse('eth_getTransactionByHash', params, (requestId) =>
-    relay.eth().getTransactionByHash(params[0], requestId)
+    relay.eth().getTransactionByHash(params[0], requestId),
   );
 });
 
@@ -442,7 +442,7 @@ app.useRpc('eth_getTransactionByHash', async (params: any) => {
  */
 app.useRpc('eth_feeHistory', async (params: any) => {
   return logAndHandleResponse('eth_feeHistory', params, (requestId) =>
-    relay.eth().feeHistory(Number(params?.[0]), params?.[1], params?.[2], requestId)
+    relay.eth().feeHistory(Number(params?.[0]), params?.[1], params?.[2], requestId),
   );
 });
 
@@ -454,7 +454,7 @@ app.useRpc('eth_feeHistory', async (params: any) => {
  */
 app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
   return logAndHandleResponse('eth_getBlockTransactionCountByHash', params, (requestId) =>
-    relay.eth().getBlockTransactionCountByHash(params?.[0], requestId)
+    relay.eth().getBlockTransactionCountByHash(params?.[0], requestId),
   );
 });
 
@@ -466,7 +466,7 @@ app.useRpc('eth_getBlockTransactionCountByHash', async (params: any) => {
  */
 app.useRpc('eth_getBlockTransactionCountByNumber', async (params: any) => {
   return logAndHandleResponse('eth_getBlockTransactionCountByNumber', params, (requestId) =>
-    relay.eth().getBlockTransactionCountByNumber(params?.[0], requestId)
+    relay.eth().getBlockTransactionCountByNumber(params?.[0], requestId),
   );
 });
 
@@ -480,7 +480,7 @@ app.useRpc('eth_getLogs', async (params: any) => {
   const filter = params[0];
 
   return logAndHandleResponse('eth_getLogs', params, (requestId) =>
-    relay.eth().getLogs(filter.blockHash, filter.fromBlock, filter.toBlock, filter.address, filter.topics, requestId)
+    relay.eth().getLogs(filter.blockHash, filter.fromBlock, filter.toBlock, filter.address, filter.topics, requestId),
   );
 });
 
@@ -494,7 +494,7 @@ app.useRpc('eth_getLogs', async (params: any) => {
  */
 app.useRpc('eth_getStorageAt', async (params: any) => {
   return logAndHandleResponse('eth_getStorageAt', params, (requestId) =>
-    relay.eth().getStorageAt(params?.[0], params?.[1], params?.[2], requestId)
+    relay.eth().getStorageAt(params?.[0], params?.[1], params?.[2], requestId),
   );
 });
 
@@ -507,7 +507,7 @@ app.useRpc('eth_getStorageAt', async (params: any) => {
  */
 app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
   return logAndHandleResponse('eth_getTransactionByBlockHashAndIndex', params, (requestId) =>
-    relay.eth().getTransactionByBlockHashAndIndex(params?.[0], params?.[1], requestId)
+    relay.eth().getTransactionByBlockHashAndIndex(params?.[0], params?.[1], requestId),
   );
 });
 
@@ -520,7 +520,7 @@ app.useRpc('eth_getTransactionByBlockHashAndIndex', async (params: any) => {
  */
 app.useRpc('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
   return logAndHandleResponse('eth_getTransactionByBlockNumberAndIndex', params, (requestId) =>
-    relay.eth().getTransactionByBlockNumberAndIndex(params?.[0], params?.[1], requestId)
+    relay.eth().getTransactionByBlockNumberAndIndex(params?.[0], params?.[1], requestId),
   );
 });
 
@@ -535,7 +535,7 @@ app.useRpc('eth_getTransactionByBlockNumberAndIndex', async (params: any) => {
  */
 app.useRpc('eth_getUncleByBlockHashAndIndex', async () => {
   return logAndHandleResponse('eth_getUncleByBlockHashAndIndex', [], (requestId) =>
-    relay.eth().getUncleByBlockHashAndIndex(requestId)
+    relay.eth().getUncleByBlockHashAndIndex(requestId),
   );
 });
 
@@ -549,7 +549,7 @@ app.useRpc('eth_getUncleByBlockHashAndIndex', async () => {
  */
 app.useRpc('eth_getUncleByBlockNumberAndIndex', async () => {
   return logAndHandleResponse('eth_getUncleByBlockNumberAndIndex', [], (requestId) =>
-    relay.eth().getUncleByBlockNumberAndIndex(requestId)
+    relay.eth().getUncleByBlockNumberAndIndex(requestId),
   );
 });
 
@@ -562,7 +562,7 @@ app.useRpc('eth_getUncleByBlockNumberAndIndex', async () => {
  */
 app.useRpc('eth_getUncleCountByBlockHash', async () => {
   return logAndHandleResponse('eth_getUncleCountByBlockHash', [], (requestId) =>
-    relay.eth().getUncleCountByBlockHash(requestId)
+    relay.eth().getUncleCountByBlockHash(requestId),
   );
 });
 
@@ -575,7 +575,7 @@ app.useRpc('eth_getUncleCountByBlockHash', async () => {
  */
 app.useRpc('eth_getUncleCountByBlockNumber', async () => {
   return logAndHandleResponse('eth_getUncleCountByBlockNumber', [], (requestId) =>
-    relay.eth().getUncleCountByBlockNumber(requestId)
+    relay.eth().getUncleCountByBlockNumber(requestId),
   );
 });
 
@@ -651,7 +651,7 @@ app.useRpc('web3_client_version', async () => {
  */
 app.useRpc('eth_maxPriorityFeePerGas', async () => {
   return logAndHandleResponse('eth_maxPriorityFeePerGas', [], (requestId) =>
-    relay.eth().maxPriorityFeePerGas(requestId)
+    relay.eth().maxPriorityFeePerGas(requestId),
   );
 });
 
@@ -662,9 +662,10 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
 app.useRpc('debug_traceTransaction', async (params: any) => {
   const transactionHash = params[0];
   const tracer = params[1];
+  console.log('TRACER IN SERVEEER', tracer.tracer);
   const tracerConfig = params[2];
   return logAndHandleResponse('debug_traceTransaction', [], (requestId) =>
-    relay.eth().debugService().debug_traceTransaction(transactionHash, tracer, tracerConfig, requestId)
+    relay.eth().debugService().debug_traceTransaction(transactionHash, tracer.tracer, tracerConfig, requestId),
   );
 });
 
@@ -683,7 +684,7 @@ app.useRpc('eth_newFilter', async (params: any) => {
     relay
       .eth()
       .filterService()
-      .newFilter(filter?.fromBlock, filter?.toBlock, filter?.address, filter?.topics, requestId)
+      .newFilter(filter?.fromBlock, filter?.toBlock, filter?.address, filter?.topics, requestId),
   );
 });
 
@@ -692,14 +693,14 @@ app.useRpc('eth_getFilterLogs', async (params: any) => {
     relay
       .eth()
       .filterService()
-      .getFilterLogs(params?.[0], requestId)
+      .getFilterLogs(params?.[0], requestId),
   );
 });
 
 app.useRpc('eth_getFilterChanges', async (params: any) => {
   const filterId = params[0];
   return logAndHandleResponse('eth_getFilterChanges', [], (requestId) =>
-    relay.eth().filterService().getFilterChanges(filterId, requestId)
+    relay.eth().filterService().getFilterChanges(filterId, requestId),
   );
 });
 
@@ -710,7 +711,7 @@ app.useRpc('eth_getFilterChanges', async (params: any) => {
  */
 app.useRpc('eth_newBlockFilter', async (params: any) => {
   return logAndHandleResponse('eth_newBlockFilter', [], (requestId) =>
-    relay.eth().filterService().newBlockFilter(requestId)
+    relay.eth().filterService().newBlockFilter(requestId),
   );
 });
 
@@ -719,7 +720,7 @@ app.useRpc('eth_newBlockFilter', async (params: any) => {
  */
 app.useRpc('eth_newPendingTransactionFilter', async () => {
   return logAndHandleResponse('eth_newPendingTransactionFilter', [], (requestId) =>
-    relay.eth().filterService().newPendingTransactionFilter(requestId)
+    relay.eth().filterService().newPendingTransactionFilter(requestId),
   );
 });
 
@@ -734,7 +735,7 @@ app.useRpc('eth_uninstallFilter', async (params: any) => {
     relay
       .eth()
       .filterService()
-      .uninstallFilter(params?.[0], requestId)
+      .uninstallFilter(params?.[0], requestId),
   );
 });
 
