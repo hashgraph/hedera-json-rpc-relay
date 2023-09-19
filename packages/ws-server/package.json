@@ -23,8 +23,8 @@
         "pnpm": "8.7.1"
     },
     "devDependencies": {
-        "@hashgraph/hedera-local": "^2.12.0",
-        "@hashgraph/sdk": "^2.31.0",
+        "@hashgraph/hedera-local": "^2.14.0",
+        "@hashgraph/sdk": "^2.34.1",
         "@koa/cors": "^3.1.0",
         "@types/chai": "^4.3.0",
         "@types/cors": "^2.8.12",

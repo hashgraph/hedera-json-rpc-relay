@@ -60,7 +60,7 @@
         "prepare": "husky install"
     },
     "dependencies": {
-        "@hashgraph/hedera-local": "^2.13.0",
+        "@hashgraph/hedera-local": "^2.14.0",
         "@open-rpc/schema-utils-js": "^1.16.1",
         "@types/find-config": "^1.0.1",
         "eslint-config-standard-with-typescript": "^39.0.0",
