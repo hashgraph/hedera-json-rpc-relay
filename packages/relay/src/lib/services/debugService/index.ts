@@ -1,9 +1,11 @@
-import { Logger } from 'pino';
-import { MirrorNodeClient } from '../../clients';
-import { IDebugService } from './IDebugService';
-import { CacheService } from '../cacheService/cacheService';
+import type { Logger } from 'pino';
+import type { MirrorNodeClient } from '../../clients';
+import type { IDebugService } from './IDebugService';
+import type { CacheService } from '../cacheService/cacheService';
+import type { CommonService } from '../ethService/ethCommonService';
+import { numberTo0x } from '../../../formatters';
+import { TracerType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
-import { CommonService } from '../ethService/ethCommonService';
 
 export class DebugService implements IDebugService {
   /**
@@ -36,25 +38,30 @@ export class DebugService implements IDebugService {
 
   /**
    * Checks if the Filter API is enabled
+   * @public
+   */
+  public static readonly isDebugAPIEnabled = process.env.DEBUG_API_ENABLED === 'true' || false;
+  /**
+   * Checks if the Filter API is enabled
    */
   static requireDebugAPIEnabled(): void {
-    if (!process.env.DEBUG_API_ENABLED || process.env.DEBUG_API_ENABLED !== 'true') {
+    if (!this.isDebugAPIEnabled) {
       throw predefined.UNSUPPORTED_METHOD;
     }
   }
 
   async debug_traceTransaction(
     transactionHash: string,
-    tracer: any,
-    tracerConfig: any,
-    requestIdPrefix?: string
+    tracer: TracerType,
+    tracerConfig: object,
+    requestIdPrefix?: string,
   ): Promise<any> {
     this.logger.trace(`${requestIdPrefix} debug_traceTransaction(${transactionHash})`);
     try {
       DebugService.requireDebugAPIEnabled();
-      if (tracer.tracer === 'callTracer') {
+      if (tracer === TracerType.CallTracer) {
         return await this.callTracer(transactionHash, tracerConfig, requestIdPrefix);
-      } else if (tracer.tracer === 'opcodeLogger') {
+      } else if (tracer === TracerType.OpcodeLogger) {
         throw Error('opcodeLogger is currently not supported');
       }
     } catch (e) {
@@ -71,7 +78,7 @@ export class DebugService implements IDebugService {
         gas: action.gas,
         gasUsed: action.gas_used,
         input: action.input,
-        output: action.result_data
+        output: action.result_data,
       };
     });
     return formattedResult;
@@ -99,20 +106,20 @@ export class DebugService implements IDebugService {
       gasUsed,
       function_parameters: input,
       call_result: output,
-      error_message: error
+      error_message: error,
     } = transactionsResponse;
     return {
       type,
       from,
       to,
-      value: amount === 0 ? '0x0' : amount,
+      value: amount === 0 ? '0x0' : numberTo0x(amount),
       gas,
       gasUsed,
       input,
       output,
       error,
       revertReason: error,
-      calls: formattedActions
+      calls: formattedActions,
     };
   }
 }
