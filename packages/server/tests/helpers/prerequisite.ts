@@ -13,7 +13,7 @@ const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
   if (USE_LOCAL_NODE) {
     process.env['NETWORK_NODE_IMAGE_TAG'] = '0.41.0-alpha.3';
     process.env['HAVEGED_IMAGE_TAG'] = '0.41.0-alpha.3';
-    process.env['MIRROR_IMAGE_TAG'] = '0.86.0-beta1';
+    process.env['MIRROR_IMAGE_TAG'] = '0.88.0';
 
     console.log(
       `Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`,
