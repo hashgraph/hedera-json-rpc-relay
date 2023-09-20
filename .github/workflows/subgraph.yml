@@ -56,5 +56,9 @@ jobs:
       - name: Deploy subgraph
         run: npm run deploy-local -- --network local --version-label 0.0.1
 
+      - name: Sleep for 30 seconds
+        run: sleep 30s
+        shell: bash
+
       - name: Run the tests
         run: npx hardhat test
