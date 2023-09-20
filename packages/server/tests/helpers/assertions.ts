@@ -20,9 +20,7 @@
 import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
-import { Utils } from './utils';
 import { numberTo0x } from '../../../relay/src/formatters';
-import { type } from 'os';
 
 export default class Assertions {
   static emptyHex = '0x';
@@ -186,7 +184,7 @@ export default class Assertions {
     );
   }
 
-  static transactionReceipt = (transactionReceipt, mirrorResult) => {
+  static transactionReceipt = (transactionReceipt, mirrorResult, effectiveGas) => {
     expect(transactionReceipt.blockHash, "Assert transactionReceipt: 'blockHash' should exists").to.exist;
     expect(transactionReceipt.blockHash, "Assert transactionReceipt: 'blockHash' should not be 0x0").to.not.eq('0x0');
     expect(
@@ -248,11 +246,7 @@ export default class Assertions {
       Number(transactionReceipt.effectiveGasPrice),
       "Assert transactionReceipt: 'effectiveGasPrice' should be > 0",
     ).to.gt(0);
-    const effectiveGas =
-      mirrorResult.max_fee_per_gas === undefined || mirrorResult.max_fee_per_gas == '0x'
-        ? mirrorResult.gas_price
-        : mirrorResult.max_fee_per_gas;
-    const mirrorEffectiveGasPrice = Utils.tinyBarsToWeibars(effectiveGas);
+    const mirrorEffectiveGasPrice = effectiveGas;
     expect(
       BigInt(transactionReceipt.effectiveGasPrice).toString(),
       "Assert transactionReceipt: 'effectiveGasPrice' should equal mirrorNode response",

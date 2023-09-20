@@ -12,15 +12,18 @@ export default class RelayAssertions {
     thisObj,
     args?: any[],
   ): Promise<any> => {
-    return await expect(method.apply(thisObj, args)).to.eventually.be.rejected.and.satisfy((err) => {
-      if (!checkMessage) {
-        return err.code === error.code && err.name === error.name;
-      }
-      return err.code === error.code && err.name === error.name && err.message === error.message;
-    });
+    return await expect(method.apply(thisObj, args), `${error.message}`).to.eventually.be.rejected.and.satisfy(
+      (err) => {
+        if (!checkMessage) {
+          return err.code === error.code && err.name === error.name;
+        }
+        return err.code === error.code && err.name === error.name && err.message === error.message;
+      },
+    );
   };
 
-  static assertTransactionReceipt = (receipt, expectedReceipt) => {
+  static assertTransactionReceipt = (receipt, expectedReceipt, liveData) => {
+    const { effectiveGasPrice } = liveData;
     expect(receipt).to.exist;
     if (receipt == null) return;
 
@@ -52,7 +55,7 @@ export default class RelayAssertions {
     expect(receipt.logsBloom).to.eq(expectedReceipt.logsBloom);
     expect(receipt.root).to.eq(expectedReceipt.root);
     expect(receipt.status).to.eq(expectedReceipt.status);
-    expect(receipt.effectiveGasPrice).to.eq(expectedReceipt.effectiveGasPrice);
+    expect(receipt.effectiveGasPrice).to.eq(effectiveGasPrice);
   };
 
   static assertTransaction = (tx, expectedTx) => {
