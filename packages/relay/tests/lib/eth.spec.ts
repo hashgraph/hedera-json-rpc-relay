@@ -3514,7 +3514,7 @@ describe('Eth calls using MirrorNode', async function () {
     web3Mock.onPost('contracts/call', { ...callData, estimate: true }).reply(200, { result: `0x61A80` });
 
     const gas = await ethImpl.estimateGas(callData, null);
-    expect(gas).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
+    expect(gas.toLowerCase()).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT).toLowerCase());
   });
 
   it('eth_estimateGas contract call returns default', async function () {
