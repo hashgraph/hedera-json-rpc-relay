@@ -56,5 +56,9 @@ jobs:
       - name: Deploy subgraph
         run: npm run deploy-local -- --network local --version-label 0.0.1
 
+      - name: Sleep for 10 seconds (allow time to index past events following new sub-graph deployment)
+        run: sleep 10s
+        shell: bash
+
       - name: Run the tests
         run: npx hardhat test
