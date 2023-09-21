@@ -210,7 +210,10 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
 
     const response = await methodFunction(requestIdPrefix);
     if (response instanceof JsonRpcError) {
-      logger.error(`${requestIdPrefix} ${response.message}`);
+      // log only if it is not a contract revert
+      if (!(response.code === predefined.CONTRACT_REVERT().code)) {
+        logger.error(`${requestIdPrefix} ${response.message}`);
+      }
       return new JsonRpcError(
         {
           name: response.name,

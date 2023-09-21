@@ -49,6 +49,7 @@ const INVALID_PARAMS_ERROR = 'INVALID PARAMS ERROR';
 const INVALID_REQUEST = 'INVALID REQUEST';
 const IP_RATE_LIMIT_EXCEEDED = 'IP RATE LIMIT EXCEEDED';
 const JSON_RPC_ERROR = 'JSON RPC ERROR';
+const CONTRACT_REVERT = 'CONTRACT REVERT';
 const METHOD_NOT_FOUND = 'METHOD NOT FOUND';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';
 
@@ -172,8 +173,24 @@ export default class KoaJsonRpc {
 
       ctx.body = jsonResp(body.id, null, result);
       if (result instanceof JsonRpcError) {
-        ctx.status = result.code == -32603 ? 500 : 400;
-        ctx.state.status = `${ctx.status} (${JSON_RPC_ERROR})`;
+        // What Status code to return for JsonRpcError
+        switch (result.code) {
+          // INTERNAL_ERROR
+          case -32603:
+            ctx.status = 500;
+            ctx.state.status = `${ctx.status} (${JSON_RPC_ERROR})`;
+            break;
+          // CONTRACT_REVERT
+          case -32008:
+            ctx.status = 200;
+            ctx.state.status = `${ctx.status} (${CONTRACT_REVERT})`;
+            break;
+          // ANYTHING ELSE
+          default:
+            ctx.status = 400;
+            ctx.state.status = `${ctx.status} (${JSON_RPC_ERROR})`;
+            break;
+        }
       }
     };
   }
