@@ -26,7 +26,6 @@ export class DebugService implements IDebugService {
   constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService, common: CommonService) {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
-    this.cacheService = cacheService;
     this.common = common;
   }
 
