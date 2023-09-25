@@ -142,7 +142,7 @@ export class FilterService implements IFilterService {
         requestIdPrefix,
       );
     } catch (e) {
-      return this.common.genericErrorHandler(e);
+      throw this.common.genericErrorHandler(e);
     }
   }
 
@@ -158,7 +158,7 @@ export class FilterService implements IFilterService {
         requestIdPrefix,
       );
     } catch (e) {
-      return this.common.genericErrorHandler(e);
+      throw this.common.genericErrorHandler(e);
     }
   }
 
