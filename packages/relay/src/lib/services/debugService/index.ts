@@ -20,12 +20,6 @@ export class DebugService implements IDebugService {
    */
   private readonly logger: Logger;
 
-  /**
-   * The LRU cache used for caching items from requests.
-   *
-   * @private
-   */
-  private readonly cacheService: CacheService;
   private readonly common: CommonService;
   public readonly debugTraceTransaction = 'debug_traceTransaction';
 
@@ -37,19 +31,31 @@ export class DebugService implements IDebugService {
   }
 
   /**
-   * Checks if the Filter API is enabled
+   * Checks if the Debug API is enabled
    * @public
    */
-  public static readonly isDebugAPIEnabled = process.env.DEBUG_API_ENABLED === 'true' || false;
-  /**
-   * Checks if the Filter API is enabled
-   */
+  public static readonly isDebugAPIEnabled = process.env.DEBUG_API_ENABLED ? true : false;
+
   static requireDebugAPIEnabled(): void {
-    if (!this.isDebugAPIEnabled) {
+    if (!process.env.DEBUG_API_ENABLED || process.env.DEBUG_API_ENABLED !== 'true') {
       throw predefined.UNSUPPORTED_METHOD;
     }
   }
 
+  /**
+   * Trace a transaction for debugging purposes.
+   *
+   * @async
+   * @param {string} transactionHash - The hash of the transaction to be traced.
+   * @param {TracerType} tracer - The type of tracer to use (either 'CallTracer' or 'OpcodeLogger').
+   * @param {object} tracerConfig - The configuration object for the tracer.
+   * @param {string} [requestIdPrefix] - An optional request id.
+   * @throws {Error} Throws an error if the specified tracer type is not supported or if an exception occurs during the trace.
+   * @returns {Promise<any>} A Promise that resolves to the result of the trace operation.
+   *
+   * @example
+   * const result = await debug_traceTransaction('0x123abc', TracerType.CallTracer, {"tracerConfig": {"onlyTopCall": false}}, some request id);
+   */
   async debug_traceTransaction(
     transactionHash: string,
     tracer: TracerType,
@@ -65,7 +71,7 @@ export class DebugService implements IDebugService {
         throw Error('opcodeLogger is currently not supported');
       }
     } catch (e) {
-      return this.common.genericErrorHandler(e);
+      throw this.common.genericErrorHandler(e);
     }
   }
 
@@ -92,29 +98,27 @@ export class DebugService implements IDebugService {
       actionsResponse = await this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestIdPrefix);
       transactionsResponse = await this.mirrorNodeClient.getContractResultWithRetry(transactionHash);
     } catch (e) {
-      return this.common.genericErrorHandler(e);
+      throw this.common.genericErrorHandler(e);
     }
 
     const actions = tracerConfig.tracerConfig.onlyTopCall ? [actionsResponse.actions[0]] : actionsResponse.actions;
     const formattedActions = DebugService.formatActionsResult(actions);
     const {
-      call_operation_type: type,
       from,
       to,
       amount,
-      gasLimit: gas,
-      gasUsed,
+      gas_limit: gas,
+      gas_used: gasUsed,
       function_parameters: input,
       call_result: output,
       error_message: error,
     } = transactionsResponse;
     return {
-      type,
       from,
       to,
       value: amount === 0 ? '0x0' : numberTo0x(amount),
-      gas,
-      gasUsed,
+      gas: numberTo0x(gas),
+      gasUsed: numberTo0x(gasUsed),
       input,
       output,
       error,
