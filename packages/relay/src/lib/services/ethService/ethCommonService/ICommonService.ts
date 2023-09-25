@@ -39,7 +39,7 @@ export interface ICommonService {
 
   getLatestBlockNumber(requestIdPrefix?: string): Promise<string>;
 
-  genericErrorHandler(error: any, logMessage?: string): JsonRpcError;
+  genericErrorHandler(error: any, logMessage?: string): void;
 
   validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestIdPrefix?: string): Promise<boolean>;
 
