@@ -311,11 +311,13 @@ describe('Debug API Test Suite', async function () {
       });
 
       it('Test opcodeLogger', async function () {
-        await expect(
-          debugService.debug_traceTransaction(transactionHash, opcodeLogger, tracerConfigTrue, getRequestId()),
-        )
-          .to.eventually.be.rejectedWith('Error invoking RPC: opcodeLogger is currently not supported')
-          .and.be.an.instanceOf(JsonRpcError);
+        const expectedError = predefined.INTERNAL_ERROR('opcodeLogger is currently not supported');
+        await RelayAssertions.assertRejection(expectedError, debugService.debug_traceTransaction, true, debugService, [
+          transactionHash,
+          opcodeLogger,
+          tracerConfigTrue,
+          getRequestId(),
+        ]);
       });
     });
 
@@ -339,16 +341,14 @@ describe('Debug API Test Suite', async function () {
       });
 
       it('test case for non-existing transaction', async function () {
-        await expect(
-          debugService.debug_traceTransaction(
-            nonExistentTransactionHash,
-            callTracer,
-            tracerConfigFalse,
-            getRequestId(),
-          ),
-        )
-          .to.eventually.be.rejectedWith('Error invoking RPC: Not found')
-          .and.be.an.instanceOf(JsonRpcError);
+        const expectedError = predefined.INTERNAL_ERROR('Not found');
+
+        await RelayAssertions.assertRejection(expectedError, debugService.debug_traceTransaction, true, debugService, [
+          nonExistentTransactionHash,
+          callTracer,
+          tracerConfigTrue,
+          getRequestId(),
+        ]);
       });
     });
   });
