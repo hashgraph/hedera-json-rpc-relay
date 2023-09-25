@@ -29,9 +29,7 @@ export async function mintNFT(receiver: string, hre: any) {
 
   const ERC721 = await hre.ethers.getContractFactory("ExampleERC721");
   const erc721 = ERC721.attach(networks.local.ExampleERC721.address);
-  const tx = await erc721
-    .connect(recipient)
-    .mint(recipient.address, { gasLimit: 500_000 });
+  const tx = await erc721.connect(recipient).mint(recipient.address);
 
   const receipt = await tx.wait();
   console.log("TX HASH:");

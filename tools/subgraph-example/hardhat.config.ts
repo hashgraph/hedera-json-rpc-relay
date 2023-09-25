@@ -52,7 +52,7 @@ task("deployERC20", "Deploys ERC20 contract", async (taskArgs, hre) => {
 
   const wallet = createWallet(hre);
   const ERC20 = await hre.ethers.getContractFactory(contractName, wallet);
-  const contract = await ERC20.deploy(20, { gasLimit: 500_000 });
+  const contract = await ERC20.deploy(20);
 
   await contract.deployed();
   const deployTx = await contract.deployTransaction.wait();
@@ -82,7 +82,7 @@ task("deployERC721", "Deploys ERC721 Contract", async (taskArgs, hre) => {
     contractName,
     wallet,
   );
-  const contract = await contractArtifacts.deploy({ gasLimit: 500_000 });
+  const contract = await contractArtifacts.deploy();
 
   await contract.deployed();
   const deployTx = await contract.deployTransaction.wait();
@@ -210,7 +210,7 @@ task("deployGravatar", "Deploys the passed contract", async (taskArgs, hre) => {
     contractName,
     wallet,
   );
-  const contract = await contractArtifacts.deploy({ gasLimit: 500_000 });
+  const contract = await contractArtifacts.deploy();
 
   await contract.deployed();
 

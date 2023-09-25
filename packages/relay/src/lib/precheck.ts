@@ -201,7 +201,7 @@ export class Precheck {
     const gasLimit = Number(tx.gasLimit);
     const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
 
-    const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data, tx.to!);
+    const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data);
 
     if (gasLimit > constants.BLOCK_GAS_LIMIT) {
       this.logger.trace(
@@ -223,29 +223,26 @@ export class Precheck {
   }
 
   /**
-   * Calculates the intrinsic gas cost based on the number of empty bytes and whether the transaction is CONTRACT_CREATE
+   * Calculates the intrinsic gas cost based on the number of bytes in the data field
    * @param data
-   * @param to
    * @private
    */
-  private static transactionIntrinsicGasCost(data: string, to: string | undefined) {
-    const isCreate = to == undefined || to.length == 0;
+  private static transactionIntrinsicGasCost(data: string) {
+    let trimmedData = data.replace('0x', '');
 
     let zeros = 0;
-
-    const dataBytes = Buffer.from(data, 'hex');
-
-    for (const c of dataBytes) {
-      if (c == 0) {
+    let nonZeros = 0;
+    for (let index = 0; index < trimmedData.length; index += 2) {
+      const bytes = trimmedData[index] + trimmedData[index + 1];
+      if (bytes === '00') {
         zeros++;
+      } else {
+        nonZeros++;
       }
     }
 
-    const nonZeros = data.replace('0x', '').length - zeros;
-    const cost =
-      constants.TX_BASE_COST +
-      constants.TX_DATA_ZERO_COST * zeros +
-      constants.ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
-    return isCreate ? cost + constants.TX_CREATE_EXTRA : cost;
+    return (
+      constants.TX_BASE_COST + constants.TX_DATA_ZERO_COST * zeros + constants.ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros
+    );
   }
 }

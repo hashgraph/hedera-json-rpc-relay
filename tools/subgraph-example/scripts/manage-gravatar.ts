@@ -37,9 +37,7 @@ export async function createGravatar(
   const Gravatar = await hre.ethers.getContractFactory("GravatarRegistry");
   const gravatar = Gravatar.attach(networks.local.GravatarRegistry.address);
 
-  const tx = await gravatar
-    .connect(wallet)
-    .createGravatar(name, url, { gasLimit: 500_000 });
+  const tx = await gravatar.connect(wallet).createGravatar(name, url);
 
   const receipt = await tx.wait();
   console.log("TX HASH:");
@@ -64,9 +62,7 @@ export async function updateGravatarName(
   const Gravatar = await hre.ethers.getContractFactory("GravatarRegistry");
   const gravatar = Gravatar.attach(networks.local.GravatarRegistry.address);
 
-  const tx = await gravatar
-    .connect(owner)
-    .updateGravatarName(name, { gasLimit: 500_000 });
+  const tx = await gravatar.connect(owner).updateGravatarName(name);
 
   const receipt = await tx.wait();
   console.log("TX HASH:");
