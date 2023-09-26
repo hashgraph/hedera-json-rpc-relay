@@ -9,3 +9,5 @@ tsconfig.tsbuildinfo
 **/**/coverage/
 **/**/.nyc_output/
 .DS_Store
+contracts
+cache

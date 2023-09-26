@@ -339,7 +339,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param account The account address associated with the token
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return kycGranted True if `account` has kyc granted for `token`
-    function isKyc(address token, address account) external returns (int64 responseCode, bool kycGranted){
+    function isKyc(address token, address account) public returns (int64 responseCode, bool kycGranted){
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.isKyc.selector, token, account));
         (responseCode, kycGranted) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false);
@@ -605,7 +605,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param token The token address
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return expiryInfo The expiry info of the token
-    function getTokenExpiryInfo(address token) external returns (int responseCode, IHederaTokenService.Expiry memory expiryInfo){
+    function getTokenExpiryInfo(address token) public returns (int responseCode, IHederaTokenService.Expiry memory expiryInfo){
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.getTokenExpiryInfo.selector, token));
         IHederaTokenService.Expiry memory defaultExpiryInfo;
