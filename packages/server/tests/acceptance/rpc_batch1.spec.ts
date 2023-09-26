@@ -892,6 +892,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           ...defaultLegacy2930TransactionData,
           value: 0,
           data: basicContract.bytecode,
+          nonce: await relay.getAccountNonce(accounts[2].address, requestId),
         };
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
@@ -912,6 +913,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           ...defaultLondonTransactionData,
           value: 0,
           data: basicContract.bytecode,
+          nonce: await relay.getAccountNonce(accounts[2].address, requestId),
         };
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
