@@ -201,7 +201,7 @@ app.getKoaApp().use(async (ctx, next) => {
 const logAndHandleResponse = async (methodName: any, methodParams: any, methodFunction: any) => {
   const requestId = app.getRequestId();
   const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
-
+  console.log(methodParams);
   try {
     const methodValidations = Validator.METHODS[methodName];
     if (methodValidations) {
@@ -655,11 +655,10 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
 
 app.useRpc('debug_traceTransaction', async (params: any) => {
   const transactionHash = params[0];
-  const tracer = params[1];
-  console.log('TRACER IN SERVEEER', tracer.tracer);
-  const tracerConfig = params[2];
-  return logAndHandleResponse('debug_traceTransaction', [], (requestId) =>
-    relay.eth().debugService().debug_traceTransaction(transactionHash, tracer.tracer, tracerConfig, requestId),
+  const tracer = params[1].tracer;
+  const tracerConfig = params[1].tracerConfig;
+  return logAndHandleResponse('debug_traceTransaction', [transactionHash, tracer, tracerConfig], (requestId) =>
+    relay.eth().debugService().debug_traceTransaction(transactionHash, tracer, tracerConfig, requestId),
   );
 });
 
