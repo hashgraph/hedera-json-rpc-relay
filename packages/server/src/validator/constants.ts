@@ -9,3 +9,7 @@ export const BLOCK_PARAMS_ERROR = `Expected ${HASH_ERROR} in object, 0x prefixed
 export const BLOCK_HASH_ERROR = `Expected ${HASH_ERROR} of a block`;
 export const TRANSACTION_HASH_ERROR = `Expected ${HASH_ERROR} of a transaction`;
 export const TOPIC_HASH_ERROR = `Expected ${HASH_ERROR} of a topic`;
+export enum TracerType {
+  CallTracer = 'callTracer',
+  OpcodeLogger = 'opcodeLogger',
+}
