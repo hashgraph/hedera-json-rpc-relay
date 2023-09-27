@@ -70,6 +70,7 @@ const ETH_ENDPOINTS = {
   ETH_NEW_PENDING_TRANSACTION_FILTER: 'eth_newPendingTransactionFilter',
   ETH_UNINSTALL_FILTER: 'eth_uninstallFilter',
   ETH_GET_FILTER_CHANGES: 'eth_getFilterChanges',
+  DEBUG_TRACE_TRANSACTION: 'debug_traceTransaction',
 };
 
 //Events
