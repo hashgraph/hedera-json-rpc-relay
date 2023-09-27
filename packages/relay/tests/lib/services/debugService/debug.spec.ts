@@ -40,7 +40,7 @@ chai.use(chaiAsPromised);
 const logger = pino();
 const registry = new Registry();
 
-let restMock: MockAdapter, web3Mock: MockAdapter;
+let restMock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let debugService: DebugService;
 let cacheService: CacheService;
@@ -50,8 +50,8 @@ describe('Debug API Test Suite', async function () {
 
   const transactionHash = '0xb7a433b014684558d4154c73de3ed360bd5867725239938c2143acb7a76bca82';
   const nonExistentTransactionHash = '0xb8a433b014684558d4154c73de3ed360bd5867725239938c2143acb7a76bca82';
-  const tracerConfigTrue = { tracerConfig: { onlyTopCall: true } };
-  const tracerConfigFalse = { tracerConfig: { onlyTopCall: false } };
+  const tracerConfigTrue = { onlyTopCall: true };
+  const tracerConfigFalse = { onlyTopCall: false };
   const callTracer: TracerType = TracerType.CallTracer;
   const opcodeLogger: TracerType = TracerType.OpcodeLogger;
   const CONTARCTS_RESULTS_ACTIONS = `contracts/results/${transactionHash}/actions`;
@@ -340,7 +340,7 @@ describe('Debug API Test Suite', async function () {
         restMock.reset();
       });
 
-      it('test case for non-existing transaction', async function () {
+      it('test case for non-existing transaction hash', async function () {
         const expectedError = predefined.INTERNAL_ERROR('Not found');
 
         await RelayAssertions.assertRejection(expectedError, debugService.debug_traceTransaction, true, debugService, [

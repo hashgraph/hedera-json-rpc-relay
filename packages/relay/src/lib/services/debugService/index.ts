@@ -100,7 +100,7 @@ export class DebugService implements IDebugService {
       throw this.common.genericErrorHandler(e);
     }
 
-    const actions = tracerConfig.tracerConfig.onlyTopCall ? [actionsResponse.actions[0]] : actionsResponse.actions;
+    const actions = tracerConfig.onlyTopCall ? [actionsResponse.actions[0]] : actionsResponse.actions;
     const formattedActions = DebugService.formatActionsResult(actions);
     const {
       from,
