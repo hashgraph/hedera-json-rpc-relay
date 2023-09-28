@@ -20,7 +20,7 @@
         "mocha": "^10.1.0",
         "pino": "^7.11.0",
         "pino-pretty": "^7.6.1",
-        "pnpm": "8.7.3"
+        "pnpm": "8.7.4"
     },
     "devDependencies": {
         "@hashgraph/hedera-local": "^2.12.0",
