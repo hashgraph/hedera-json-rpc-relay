@@ -63,6 +63,6 @@ jobs:
           max_attempts: 3
           timeout_minutes: 20
           command: npm run acceptancetest:${{ inputs.testfilter }}
-        env:
-          TEST_WS_SERVER: ${{ inputs.test_ws_server }}
-          SUBSCRIPTIONS_ENABLED: ${{ inputs.test_ws_server }}
+#        env:
+#          TEST_WS_SERVER: ${{ inputs.test_ws_server }}
+#          SUBSCRIPTIONS_ENABLED: ${{ inputs.test_ws_server }}
