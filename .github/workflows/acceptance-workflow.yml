@@ -53,16 +53,12 @@ jobs:
         run: |
           echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
           echo "OPERATOR_KEY_MAIN=${{ inputs.operator_key }}" >> $GITHUB_ENV
-
-#      - name: Setup tmate session
-#        uses: mxschmitt/action-tmate@v3
-
       - name: Run acceptance tests
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
           timeout_minutes: 20
           command: npm run acceptancetest:${{ inputs.testfilter }}
-#        env:
-#          TEST_WS_SERVER: ${{ inputs.test_ws_server }}
-#          SUBSCRIPTIONS_ENABLED: ${{ inputs.test_ws_server }}
+        env:
+         TEST_WS_SERVER: ${{ inputs.test_ws_server }}
+         SUBSCRIPTIONS_ENABLED: ${{ inputs.test_ws_server }}
