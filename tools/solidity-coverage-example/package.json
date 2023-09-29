@@ -1,11 +1,12 @@
 {
   "name": "solidity-coverage-example",
   "version": "1.0.0",
-  "description": "Solidity coverage example npm package. It is suppose to figure out what's supported and what's not possible based on the product limitations",
+  "description": "Solidity coverage example npm package. Highlights what's supported and what's not possible based on the product limitations",
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat coverage",
-    "build": "npx hardhat compile"
+    "build": "npx hardhat compile",
+    "coverage:serve": "npx http-server ./coverage"
   },
   "author": "",
   "license": "ISC",
@@ -13,5 +14,8 @@
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "hardhat": "^2.17.3",
     "solidity-coverage": "^0.8.4"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
   }
 }
