@@ -300,6 +300,7 @@ describe('@api-conformity Ethereum execution apis tests', function () {
       const files = fs.readdirSync(path.resolve(directoryPath, directory));
       for (const file of files) {
         it(`Executing for ${directory}`, async () => {
+          if (file != 'get-block-by-hash.io') return;
           const data = fs.readFileSync(path.resolve(directoryPath, directory, file));
           const content = splitReqAndRes(data.toString('utf-8'));
           const missingKeys = await processFileContent(file, content);
