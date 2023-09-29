@@ -23,7 +23,7 @@ import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { assert, expect } from 'chai';
 import { Registry } from 'prom-client';
-import sinon from 'sinon';
+import sinon, { createSandbox } from 'sinon';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { RelayImpl } from '../../src/lib/relay';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
@@ -87,6 +87,48 @@ let getSdkClientStub;
 let cacheService: CacheService;
 let defaultLogs, defaultDetailedContractResults2, defaultDetailedContractResults3;
 
+const blockTransactionCount = 77;
+const gasUsed1 = 200000;
+const gasUsed2 = 800000;
+const blockNumber = 3;
+const blockTimestamp = '1651560386';
+const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
+const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;
+
+const defaultBlock = {
+  count: blockTransactionCount,
+  hapi_version: '0.28.1',
+  hash: blockHash,
+  name: '2022-05-03T06_46_26.060890949Z.rcd',
+  number: blockNumber,
+  previous_hash: '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b',
+  size: null,
+  timestamp: {
+    from: `${blockTimestamp}.060890949`,
+    to: '1651560389.060890949',
+  },
+  gas_used: gasUsed1 + gasUsed2,
+  logs_bloom: '0x',
+};
+
+const defaultNetworkFees = {
+  fees: [
+    {
+      gas: 77,
+      transaction_type: 'ContractCall',
+    },
+    {
+      gas: 771,
+      transaction_type: 'ContractCreate',
+    },
+    {
+      gas: 57,
+      transaction_type: 'EthereumTransaction',
+    },
+  ],
+  timestamp: '1653644164.591111113',
+};
+
 describe('Eth calls using MirrorNode', async function () {
   this.timeout(10000);
 
@@ -140,22 +182,16 @@ describe('Eth calls using MirrorNode', async function () {
   });
 
   const TINYBAR_TO_WEIBAR_COEF_BIGINT = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
-  const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
-  const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;
+
   const blockHash2 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6c`;
   const blockHash3 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6d`;
   const blockHashPreviousTrimmed = '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298';
-  const blockNumber = 3;
   const blockNumber2 = 4;
   const blockNumber3 = 5;
   const blockNumberHex = `0x${blockNumber.toString(16)}`;
-  const blockTransactionCount = 77;
-  const gasUsed1 = 200000;
-  const gasUsed2 = 800000;
   const maxGasLimit = 250000;
   const maxGasLimitHex = numberTo0x(maxGasLimit);
   const contractCallData = '0xef641f44';
-  const blockTimestamp = '1651560386';
   const blockTimestampHex = numberTo0x(Number(blockTimestamp));
   const firstTransactionTimestampSeconds = '1653077541';
   const contractAddress1 = '0x000000000000000000000000000000000000055f';
@@ -179,22 +215,6 @@ describe('Eth calls using MirrorNode', async function () {
     '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100321234';
   const accountAddress1 = '0x13212A14deaf2775a5b3bEcC857806D5c719d3f2';
   const receiverAddress = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
-
-  const defaultBlock = {
-    count: blockTransactionCount,
-    hapi_version: '0.28.1',
-    hash: blockHash,
-    name: '2022-05-03T06_46_26.060890949Z.rcd',
-    number: blockNumber,
-    previous_hash: '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b',
-    size: null,
-    timestamp: {
-      from: `${blockTimestamp}.060890949`,
-      to: '1651560389.060890949',
-    },
-    gas_used: gasUsed1 + gasUsed2,
-    logs_bloom: '0x',
-  };
 
   const olderBlock = {
     count: blockTransactionCount,
@@ -428,23 +448,6 @@ describe('Eth calls using MirrorNode', async function () {
   const results = defaultContractResults.results;
   const totalGasUsed = numberTo0x(results[0].gas_used + results[1].gas_used);
 
-  const defaultNetworkFees = {
-    fees: [
-      {
-        gas: 77,
-        transaction_type: 'ContractCall',
-      },
-      {
-        gas: 771,
-        transaction_type: 'ContractCreate',
-      },
-      {
-        gas: 57,
-        transaction_type: 'EthereumTransaction',
-      },
-    ],
-    timestamp: '1653644164.591111113',
-  };
   const baseFeePerGasHex = numberTo0x(BigInt(defaultNetworkFees.fees[2].gas) * TINYBAR_TO_WEIBAR_COEF_BIGINT); // '0x84b6a5c400' -> 570_000_000_000 tb
 
   const defaultContract = {
@@ -2314,17 +2317,18 @@ describe('Eth calls using MirrorNode', async function () {
             next: `/api/v1/accounts/${contractId1}?limit=100&timestamp=lt:1651550575.060890941`,
           },
         });
-        const latestBlock = {
-          ...defaultBlock,
-          number: 4,
-          timestamp: {
-            from: '1651550595.060890941',
-            to: '1651550597.060890941',
-          },
-        };
 
         restMock.onGet('blocks?limit=1&order=desc').reply(200, {
-          blocks: [latestBlock],
+          blocks: [
+            {
+              ...defaultBlock,
+              number: 4,
+              timestamp: {
+                from: '1651550595.060890941',
+                to: '1651550597.060890941',
+              },
+            },
+          ],
         });
 
         const resBalance = await ethImpl.getBalance(contractId1, '1', getRequestId());
@@ -5317,16 +5321,20 @@ describe('Eth', async function () {
   this.timeout(10000);
 
   let ethImpl: EthImpl;
+  let sandbox: sinon.SinonSandbox;
+  let getCurrentGasPriceForBlockStub: sinon.SinonStub;
+
   this.beforeAll(() => {
     // @ts-ignore
+    sandbox = createSandbox();
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL,
+      process.env.MIRROR_NODE_URL as string,
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
     );
-    ethImpl = new EthImpl(null, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
+    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
   });
 
@@ -5448,8 +5456,17 @@ describe('Eth', async function () {
     root: undefined,
   };
 
+  const stubBlockAndFeesFunc = (sandbox: sinon.SinonSandbox) => {
+    const gasPrice = 12500000000000000000;
+    sandbox.stub(ethImpl, <any>'getCurrentGasPriceForBlock').resolves('0xad78ebc5ac620000');
+    sandbox.stub(ethImpl, <any>'getBlockByHash').resolves(defaultBlock);
+    sandbox.stub(ethImpl, <any>'getFeeWeibars').resolves(gasPrice);
+  };
+
   this.afterEach(() => {
     restMock.resetHandlers();
+    sandbox.restore();
+    cacheService.clear();
   });
 
   it('should execute "eth_chainId"', async function () {
@@ -5537,10 +5554,6 @@ describe('Eth', async function () {
   });
 
   describe('eth_getTransactionReceipt', async function () {
-    this.beforeEach(() => {
-      cacheService.clear();
-    });
-
     it('returns `null` for non-existent hash', async function () {
       const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
       restMock.onGet(`contracts/results/${txHash}`).reply(404, {
@@ -5560,16 +5573,21 @@ describe('Eth', async function () {
       // mirror node request mocks
       restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
+      stubBlockAndFeesFunc(sandbox);
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
+      const currentGasPrice = await ethImpl.gasPrice('valid receipt on match TEST');
+
       // Assert the data format
-      RelayAssertions.assertTransactionReceipt(receipt, defaultReceipt);
+      RelayAssertions.assertTransactionReceipt(receipt, defaultReceipt, {
+        effectiveGasPrice: currentGasPrice,
+      });
     });
 
     it('valid receipt on match should hit cache', async function () {
       restMock.onGet(`contracts/results/${defaultTxHash}`).replyOnce(200, defaultDetailedContractResultByHash);
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).replyOnce(404);
-
+      stubBlockAndFeesFunc(sandbox);
       for (let i = 0; i < 3; i++) {
         const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
         expect(receipt).to.exist;
@@ -5588,6 +5606,7 @@ describe('Eth', async function () {
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(200, {
         evm_address: contractEvmAddress,
       });
+      stubBlockAndFeesFunc(sandbox);
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
       expect(receipt).to.exist;
@@ -5600,25 +5619,6 @@ describe('Eth', async function () {
       expect(receipt.contractAddress).to.eq(contractEvmAddress);
     });
 
-    it('Handles null effectiveGasPrice', async function () {
-      const contractResult = {
-        ...defaultDetailedContractResultByHash,
-        gas_price: null,
-        max_fee_per_gas: null,
-      };
-
-      const uniqueTxHash = '0x07cdd7b820375d10d73af57a6a3e84353645fdb1305ea58ff52daa53ec640533';
-
-      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, contractResult);
-      restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
-      const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
-
-      expect(receipt).to.exist;
-      if (receipt == null) return;
-
-      expect(receipt.effectiveGasPrice).to.eq('0x0');
-    });
-
     it('Handles null type', async function () {
       const contractResult = {
         ...defaultDetailedContractResultByHash,
@@ -5629,6 +5629,7 @@ describe('Eth', async function () {
 
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, contractResult);
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
+      stubBlockAndFeesFunc(sandbox);
       const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
 
       expect(receipt).to.exist;
@@ -5642,12 +5643,15 @@ describe('Eth', async function () {
         ...defaultDetailedContractResultByHash,
         bloom: '0x',
       };
+
       restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWith0xBloom);
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
+      stubBlockAndFeesFunc(sandbox);
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
       expect(receipt).to.exist;
       if (receipt == null) return;
+
       expect(receipt.logsBloom).to.eq(EthImpl.emptyBloom);
     });
 
@@ -5662,6 +5666,7 @@ describe('Eth', async function () {
 
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, receiptWithErrorMessage);
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
+      stubBlockAndFeesFunc(sandbox);
       const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
 
       expect(receipt).to.exist;
@@ -5678,6 +5683,7 @@ describe('Eth', async function () {
       const uniqueTxHash = '0x08cad7b827375d12d73af57b6a3e84353645fd31305ea59ff52dda53ec640533';
       restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, receiptWithNullGasUsed);
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
+      stubBlockAndFeesFunc(sandbox);
       const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
 
       expect(receipt).to.exist;
@@ -5699,6 +5705,7 @@ describe('Eth', async function () {
       restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(200, {
         evm_address: contractEvmAddress,
       });
+      stubBlockAndFeesFunc(sandbox);
       const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
 
       expect(receipt).to.exist;
@@ -5708,9 +5715,9 @@ describe('Eth', async function () {
     });
 
     it('valid receipt on cache match', async function () {
-      // clear cache
-      cacheService.clear();
-
+      getCurrentGasPriceForBlockStub = sandbox
+        .stub(ethImpl, <any>'getCurrentGasPriceForBlock')
+        .resolves('0xad78ebc5ac620000');
       // set cache with synthetic log
       const cacheKeySyntheticLog1 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${defaultDetailedContractResultByHash.hash}`;
       const cachedLog = new Log({
@@ -5725,7 +5732,7 @@ describe('Eth', async function () {
         transactionIndex: nullableNumberTo0x(defaultLogs1[0].transaction_index),
       });
 
-      cacheService.set(cacheKeySyntheticLog1, cachedLog);
+      cacheService.set(cacheKeySyntheticLog1, cachedLog, EthImpl.ethGetTransactionReceipt);
 
       // w no mirror node requests
       const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
@@ -5735,7 +5742,7 @@ describe('Eth', async function () {
       expect(receipt.blockNumber).to.eq(cachedLog.blockNumber);
       expect(receipt.contractAddress).to.eq(cachedLog.address);
       expect(receipt.cumulativeGasUsed).to.eq(EthImpl.zeroHex);
-      expect(receipt.effectiveGasPrice).to.eq(EthImpl.zeroHex);
+      expect(receipt.effectiveGasPrice).to.eq(defaultReceipt.effectiveGasPrice);
       expect(receipt.from).to.eq(EthImpl.zeroAddressHex);
       expect(receipt.gasUsed).to.eq(EthImpl.zeroHex);
       expect(receipt.logs).to.deep.eq([cachedLog]);
@@ -5745,6 +5752,7 @@ describe('Eth', async function () {
       expect(receipt.transactionHash).to.eq(cachedLog.transactionHash);
       expect(receipt.transactionIndex).to.eq(cachedLog.transactionIndex);
       expect(receipt.root).to.eq(EthImpl.zeroHex32Byte);
+      expect(getCurrentGasPriceForBlockStub.calledOnce).to.be.true;
     });
   });
 
