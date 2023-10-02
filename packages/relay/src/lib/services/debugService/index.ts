@@ -102,8 +102,6 @@ export class DebugService implements IDebugService {
       throw this.common.genericErrorHandler(e);
     }
 
-    const actions = tracerConfig.onlyTopCall ? [actionsResponse.actions[0]] : actionsResponse.actions;
-    const formattedActions = DebugService.formatActionsResult(actions);
     const {
       from,
       to,
@@ -115,7 +113,7 @@ export class DebugService implements IDebugService {
       error_message: error,
     } = transactionsResponse;
 
-    const { call_type: type } = actions[0];
+    const { call_type: type } = actionsResponse.actions[0];
 
     return {
       type,
@@ -128,7 +126,7 @@ export class DebugService implements IDebugService {
       output,
       error,
       revertReason: error,
-      calls: formattedActions,
+      calls: tracerConfig.onlyTopCall ? undefined : DebugService.formatActionsResult(actionsResponse.actions),
     };
   }
 }
