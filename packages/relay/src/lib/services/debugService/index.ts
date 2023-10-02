@@ -80,12 +80,14 @@ export class DebugService implements IDebugService {
         type: action.call_operation_type,
         from: action.from,
         to: action.to,
-        gas: action.gas,
-        gasUsed: action.gas_used,
+        gas: numberTo0x(action.gas),
+        gasUsed: numberTo0x(action.gas_used),
         input: action.input,
         output: action.result_data,
+        value: numberTo0x(action.value),
       };
     });
+
     return formattedResult;
   }
 
@@ -112,7 +114,11 @@ export class DebugService implements IDebugService {
       call_result: output,
       error_message: error,
     } = transactionsResponse;
+
+    const { call_type: type } = actions[0];
+
     return {
+      type,
       from,
       to,
       value: amount === 0 ? '0x0' : numberTo0x(amount),
