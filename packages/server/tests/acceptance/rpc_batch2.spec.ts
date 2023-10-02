@@ -1015,9 +1015,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       mirrorResult.from = accounts[0].wallet.address;
       mirrorResult.to = accounts[1].wallet.address;
+      const currentPrice = await relay.gasPrice(requestId);
 
       Assertions.transaction(txByHash, mirrorResult);
-      Assertions.transactionReceipt(receipt, mirrorResult);
+      Assertions.transactionReceipt(receipt, mirrorResult, currentPrice);
 
       Assertions.evmAddress(txByHash.from);
       Assertions.evmAddress(txByHash.to);
@@ -1039,9 +1040,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       mirrorResult.from = accounts[0].wallet.address;
       mirrorResult.to = relayContract.target;
+      const currentPrice = await relay.gasPrice(requestId);
 
       Assertions.transaction(txByHash, mirrorResult);
-      Assertions.transactionReceipt(receipt, mirrorResult);
+      Assertions.transactionReceipt(receipt, mirrorResult, currentPrice);
 
       Assertions.evmAddress(txByHash.from);
       Assertions.evmAddress(txByHash.to);
@@ -1061,9 +1063,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       mirrorResult.from = accounts[0].wallet.address;
       mirrorResult.to = mirrorContract.evm_address;
+      const currentPrice = await relay.gasPrice(requestId);
 
       Assertions.transaction(txByHash, mirrorResult);
-      Assertions.transactionReceipt(receipt, mirrorResult);
+      Assertions.transactionReceipt(receipt, mirrorResult, currentPrice);
 
       Assertions.evmAddress(txByHash.from);
       Assertions.longZeroAddress(txByHash.to);
@@ -1084,9 +1087,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       // ignore assertion of logs to keep the test simple
       receipt.logs = [];
       mirrorResult.logs = [];
+      const currentPrice = await relay.gasPrice(requestId);
 
       Assertions.transaction(txByHash, mirrorResult);
-      Assertions.transactionReceipt(receipt, mirrorResult);
+      Assertions.transactionReceipt(receipt, mirrorResult, currentPrice);
 
       Assertions.evmAddress(txByHash.from);
       Assertions.longZeroAddress(txByHash.to);

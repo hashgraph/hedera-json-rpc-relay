@@ -31,14 +31,14 @@
         "type": "ERC20",
         "transfers": [
           {
-            "from": "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69",
-            "to": "0x05fba803be258049a27b820088bab1cad2058871",
-            "amount": "1"
-          },
-          {
             "from": "0x0000000000000000000000000000000000000000",
             "to": "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69",
             "amount": "20"
+          },
+          {
+            "from": "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69",
+            "to": "0x05fba803be258049a27b820088bab1cad2058871",
+            "amount": "1"
           }
         ]
       }
@@ -55,14 +55,14 @@
             "amount": "1"
           },
           {
-            "from": "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69",
-            "to": "0x05fba803be258049a27b820088bab1cad2058871",
-            "amount": "1"
-          },
-          {
             "from": "0x0000000000000000000000000000000000000000",
             "to": "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69",
             "amount": "20"
+          },
+          {
+            "from": "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69",
+            "to": "0x05fba803be258049a27b820088bab1cad2058871",
+            "amount": "1"
           }
         ]
       }

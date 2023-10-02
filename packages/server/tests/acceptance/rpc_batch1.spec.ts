@@ -24,7 +24,7 @@ import { ethers } from 'ethers';
 import { AliasAccount } from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
-import { ContractFunctionParameters } from '@hashgraph/sdk';
+import { ContractFunctionParameters, TransferTransaction } from '@hashgraph/sdk';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
@@ -33,8 +33,8 @@ import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 const Address = RelayCalls;
-import { numberTo0x } from '../../../../packages/relay/src/formatters';
 import basicContract from '../../tests/contracts/Basic.json';
+import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -50,6 +50,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let mirrorContract;
   let mirrorContractDetails;
   let requestId;
+  let hts;
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const INCORRECT_CHAIN_ID = 999;
@@ -610,8 +611,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         mirrorResult.to = mirrorContract.evm_address;
 
         const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [legacyTxHash], requestId);
+        const currentPrice = await relay.gasPrice(requestId);
 
-        Assertions.transactionReceipt(res, mirrorResult);
+        Assertions.transactionReceipt(res, mirrorResult, currentPrice);
       });
 
       it('@release should execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
@@ -637,8 +639,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           [transactionHash],
           requestId,
         );
+        const currentPrice = await relay.gasPrice(requestId);
 
-        Assertions.transactionReceipt(res, mirrorResult);
+        Assertions.transactionReceipt(res, mirrorResult, currentPrice);
       });
 
       it('@release should execute "eth_getTransactionReceipt" for hash of 2930 transaction', async function () {
@@ -662,8 +665,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           [transactionHash],
           requestId,
         );
+        const currentPrice = await relay.gasPrice(requestId);
 
-        Assertions.transactionReceipt(res, mirrorResult);
+        Assertions.transactionReceipt(res, mirrorResult, currentPrice);
       });
 
       it('@release should fail to execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
@@ -683,6 +687,53 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           signedTx + '11',
           requestId,
         ]);
+      });
+
+      it('@release should return the right "effectiveGasPrice" for SYNTHETIC HTS transaction', async function () {
+        const tokenId = await servicesNode.createToken(1000, requestId);
+        await accounts[2].client.associateToken(tokenId, requestId);
+        const currentPrice = await relay.gasPrice(requestId);
+        const transaction = new TransferTransaction()
+          .addTokenTransfer(tokenId, servicesNode._thisAccountId(), -10)
+          .addTokenTransfer(tokenId, accounts[2].accountId, 10)
+          .setTransactionMemo('Relay test token transfer');
+        const resp = await transaction.execute(servicesNode.client);
+        await resp.getRecord(servicesNode.client);
+        await new Promise((r) => setTimeout(r, 1000));
+        const logsRes = await mirrorNode.get(`/contracts/results/logs?limit=1`, requestId);
+        const blockNumber = logsRes.logs[0].block_number;
+        const formattedBlockNumber = prepend0x(blockNumber.toString(16));
+        const contractId = logsRes.logs[0].contract_id;
+        const transactionHash = logsRes.logs[0].transaction_hash;
+        if (contractId !== tokenId.toString()) {
+          return;
+        }
+
+        // load the block in cache
+        await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER, [formattedBlockNumber, true], requestId);
+        const receiptFromRelay = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
+          [transactionHash],
+          requestId,
+        );
+
+        expect(receiptFromRelay.effectiveGasPrice).to.equal(prepend0x(currentPrice.toString(16)));
+      });
+
+      it('@release should return the right "effectiveGasPrice" for SYNTHETIC Contract Call transaction', async function () {
+        const currentPrice = await relay.gasPrice(requestId);
+        const transactionHash = mirrorContractDetails.hash;
+        const formattedBlockNumber = prepend0x(mirrorContractDetails.block_number.toString(16));
+
+        // load the block in cache
+        await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER, [formattedBlockNumber, true], requestId);
+        const receiptFromRelay = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
+          [transactionHash],
+          requestId,
+        );
+
+        expect(receiptFromRelay.effectiveGasPrice).to.equal(prepend0x(currentPrice.toString(16)));
       });
 
       it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {
@@ -1080,7 +1131,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           mirrorResult.to = mirrorContract.evm_address;
 
           const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [txHash1], requestId);
-          Assertions.transactionReceipt(res, mirrorResult);
+          const currentPrice = await relay.gasPrice(requestId);
+          Assertions.transactionReceipt(res, mirrorResult, currentPrice);
           const error = predefined.NONCE_TOO_LOW(nonce, nonce + 1);
 
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);

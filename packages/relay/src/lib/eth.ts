@@ -544,12 +544,7 @@ export class EthImpl implements Eth {
         requestIdPrefix,
       );
       if (contractCallResponse?.result) {
-        // Workaround until mirror-node bugfix applied, currently mirror-node returns 21k for contract creation, which is wrong
-        if (!transaction.to && transaction.data !== '0x') {
-          gas = this.defaultGas;
-        } else {
-          gas = prepend0x(contractCallResponse.result);
-        }
+        gas = prepend0x(contractCallResponse.result);
       }
     } catch (e: any) {
       this.logger.error(
@@ -1750,13 +1745,15 @@ export class EthImpl implements Eth {
       EthImpl.ethGetTransactionReceipt,
       requestIdPrefix,
     );
+
     if (cachedLog) {
+      const gasPriceForTimestamp = await this.getCurrentGasPriceForBlock(cachedLog.blockHash);
       const receipt: any = {
         blockHash: cachedLog.blockHash,
         blockNumber: cachedLog.blockNumber,
         contractAddress: cachedLog.address,
         cumulativeGasUsed: EthImpl.zeroHex,
-        effectiveGasPrice: EthImpl.zeroHex,
+        effectiveGasPrice: gasPriceForTimestamp,
         from: EthImpl.zeroAddressHex,
         gasUsed: EthImpl.zeroHex,
         logs: [cachedLog],
@@ -1791,11 +1788,7 @@ export class EthImpl implements Eth {
       // block not found
       return null;
     } else {
-      const effectiveGas =
-        receiptResponse.max_fee_per_gas === undefined || receiptResponse.max_fee_per_gas == '0x'
-          ? receiptResponse.gas_price
-          : receiptResponse.max_fee_per_gas;
-
+      const effectiveGas = await this.getCurrentGasPriceForBlock(receiptResponse.blockHash);
       // support stricter go-eth client which requires the transaction hash property on logs
       const logs = receiptResponse.logs.map((log) => {
         return new Log({
@@ -1823,7 +1816,7 @@ export class EthImpl implements Eth {
         logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
         transactionHash: toHash32(receiptResponse.hash),
         transactionIndex: nullableNumberTo0x(receiptResponse.transaction_index),
-        effectiveGasPrice: nanOrNumberTo0x(Number.parseInt(effectiveGas) * 10_000_000_000),
+        effectiveGasPrice: effectiveGas,
         root: receiptResponse.root,
         status: receiptResponse.status,
         type: nullableNumberTo0x(receiptResponse.type),
@@ -1844,6 +1837,17 @@ export class EthImpl implements Eth {
       );
       return receipt;
     }
+  }
+
+  private async getCurrentGasPriceForBlock(blockHash: string, requestIdPrefix?: string): Promise<string> {
+    const block = await this.getBlockByHash(blockHash, false);
+    const gasPriceForTimestamp = await this.getFeeWeibars(
+      EthImpl.ethGetTransactionReceipt,
+      requestIdPrefix,
+      block?.timestamp,
+    );
+
+    return numberTo0x(gasPriceForTimestamp);
   }
 
   private static redirectBytecodeAddressReplace(address: string): string {

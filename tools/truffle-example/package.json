@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "license": "Apache-2.0",
   "dependencies": {
-    "@truffle/hdwallet-provider": "^2.1.13",
+    "@truffle/hdwallet-provider": "^2.1.15",
     "dotenv": "^16.3.1",
     "truffle": "^5.10.2"
   }
