@@ -33,6 +33,7 @@ import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 const Address = RelayCalls;
+import basicContract from '../../tests/contracts/Basic.json';
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
@@ -934,6 +935,50 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(info.contract_id).to.not.be.null;
         expect(info).to.have.property('created_contract_ids');
         expect(info.created_contract_ids.length).to.be.equal(1);
+      });
+
+      it('should execute "eth_sendRawTransaction" of type 1 and deploy a real contract', async function () {
+        //omitting the "to" and "nonce" fields when creating a new contract
+        const transaction = {
+          ...defaultLegacy2930TransactionData,
+          value: 0,
+          data: basicContract.bytecode,
+          nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+        };
+
+        const signedTx = await accounts[2].wallet.signTransaction(transaction);
+        const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+        expect(info).to.have.property('contract_id');
+        expect(info.contract_id).to.not.be.null;
+        expect(info).to.have.property('created_contract_ids');
+        expect(info.created_contract_ids.length).to.be.equal(1);
+        expect(info.max_fee_per_gas).to.eq('0x');
+        expect(info.max_priority_fee_per_gas).to.eq('0x');
+        expect(info).to.have.property('access_list');
+      });
+
+      it('should execute "eth_sendRawTransaction" of type 2 and deploy a real contract', async function () {
+        //omitting the "to" and "nonce" fields when creating a new contract
+        const transaction = {
+          ...defaultLondonTransactionData,
+          value: 0,
+          data: basicContract.bytecode,
+          nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+        };
+
+        const signedTx = await accounts[2].wallet.signTransaction(transaction);
+        const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+        expect(info).to.have.property('contract_id');
+        expect(info.contract_id).to.not.be.null;
+        expect(info).to.have.property('max_fee_per_gas');
+        expect(info).to.have.property('max_priority_fee_per_gas');
+        expect(info).to.have.property('created_contract_ids');
+        expect(info.created_contract_ids.length).to.be.equal(1);
+        expect(info).to.have.property('type');
+        expect(info.type).to.be.equal(2);
+        expect(info).to.have.property('access_list');
       });
 
       it('should execute "eth_sendRawTransaction" and deploy a contract with more than 2 HBAR transaction fee and less than max transaction fee', async function () {
