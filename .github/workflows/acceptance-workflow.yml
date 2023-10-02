@@ -53,6 +53,7 @@ jobs:
         run: |
           echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
           echo "OPERATOR_KEY_MAIN=${{ inputs.operator_key }}" >> $GITHUB_ENV
+
       - name: Run acceptance tests
         uses: nick-fields/retry@v2
         with:
