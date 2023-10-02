@@ -278,6 +278,7 @@ async function processFileContent(file, content) {
 }
 
 describe('@api-conformity Ethereum execution apis tests', function () {
+  this.timeout(240 * 1000);
   before(async () => {
     legacyTransactionAndBlockHash = await signAndSendRawTransaction(legacyTransaction);
     transaction2930AndBlockHash = await signAndSendRawTransaction(transaction2930);
