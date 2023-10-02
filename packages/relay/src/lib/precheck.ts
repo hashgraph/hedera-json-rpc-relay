@@ -223,7 +223,9 @@ export class Precheck {
   }
 
   /**
-   * Calculates the intrinsic gas cost based on the number of bytes in the data field
+   * Calculates the intrinsic gas cost based on the number of bytes in the data field.
+   * Using a loop that goes through every two characters in the string it counts the zero and non-zero bytes.
+   * Every two characters that are packed together and are both zero counts towards zero bytes.
    * @param data
    * @private
    */
