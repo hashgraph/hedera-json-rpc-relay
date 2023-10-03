@@ -5,7 +5,7 @@
     "hardhat": "^2.12.6"
   },
   "dependencies": {
-    "@hashgraph/hedera-local": "^2.15.0",
+    "@hashgraph/hedera-local": "^2.13.0",
     "dotenv": "^16.3.1"
   }
 }
