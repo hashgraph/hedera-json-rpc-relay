@@ -383,17 +383,22 @@ export class MirrorNodeClient {
 
     if (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1) {
       this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
-      if (pathLabel === MirrorNodeClient.CONTRACT_CALL_ENDPOINT) {
-        this.logger.warn(
-          `${requestIdPrefix} [${method}] ${path} Error details: ( StatusCode: '${effectiveStatusCode}', StatusText: '${
-            error.response.statusText
-          }', Data: '${JSON.stringify(error.response.data)}')`,
-        );
-      }
       return null;
     }
 
-    this.logger.error(new Error(error.message), `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
+    // Contract Call returns 400 for a CONTRACT_REVERT but is a valid response, expected and should not be logged as error:
+    if (pathLabel === MirrorNodeClient.CONTRACT_CALL_ENDPOINT && effectiveStatusCode === 400) {
+      this.logger.debug(
+        `${requestIdPrefix} [${method}] ${path} Contract Revert: ( StatusCode: '${effectiveStatusCode}', StatusText: '${
+          error.response.statusText
+        }', Detail: '${JSON.stringify(error.response.detail)}',Data: '${JSON.stringify(error.response.data)}')`,
+      );
+    } else {
+      this.logger.error(
+        new Error(error.message),
+        `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`,
+      );
+    }
 
     throw mirrorError;
   }

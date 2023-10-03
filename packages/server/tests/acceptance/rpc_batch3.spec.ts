@@ -40,6 +40,7 @@ import Assertions from '../helpers/assertions';
 import RelayCalls from '../helpers/constants';
 import RelayAssertions from '../../../../packages/relay/tests/assertions';
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
+import Axios from 'axios';
 
 describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -433,6 +434,55 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           }
         });
       }
+    });
+
+    it('eth_call contract revert returns 200 http status', async function () {
+      // preparing the contract data needed for a REVERT
+      let callerContract, callerAddress, defaultCallData, activeAccount;
+      activeAccount = accounts[1];
+      callerContract = await Utils.deployContractWithEthers([], callerContractJson, activeAccount.wallet, relay);
+      // Wait for creation to propagate
+      const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestId);
+      callerAddress = callerMirror.evm_address;
+      defaultCallData = {
+        from: activeAccount.address,
+        to: callerAddress,
+        gas: `0x7530`,
+      };
+      const callData = {
+        ...defaultCallData,
+        data: '0x3ec4de3800000000000000000000000067d8d32e9bf1a9968a5ff53b87d777aa8ebbee69',
+      };
+      const data = {
+        id: '2',
+        jsonrpc: '2.0',
+        method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
+        params: [callData, 'latest'],
+      };
+
+      // Since we want the http status code, we need to perform the call using a client http request instead of using the relay instance directly
+      const testClientPort = process.env.E2E_SERVER_PORT || '7546';
+      const testClient = Axios.create({
+        baseURL: 'http://localhost:' + testClientPort,
+        responseType: 'json' as const,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+        timeout: 30 * 1000,
+      });
+
+      // Performing the call
+      const response = await testClient.post('/', data);
+
+      // Asserting the response
+      expect(response).to.exist;
+      expect(response.status).to.be.equal(200);
+      expect(response.data).to.exist;
+      expect(response.data.error).to.exist;
+      expect(response.data.error.code).to.be.equal(-32008);
+      expect(response.data.error.message).to.contain('execution reverted: CONTRACT_REVERT_EXECUTED');
+      expect(response.data.error.name).to.be.equal('Contract revert executed');
     });
   });
 
