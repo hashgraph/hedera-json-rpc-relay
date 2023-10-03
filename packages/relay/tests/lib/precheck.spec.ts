@@ -440,17 +440,21 @@ describe('Precheck', async function () {
     const invalidTx = '0x60806040523480156200001157600080fd5b';
     it('should be able to calculate small contract create', function () {
       const mirrorNodeEstimation = 60364;
+      // This number represents the difference between the actual gas returned from the mirror node and the minimal required for deployment of this contract based only on the data field.
+      const gasDifferenceFromOtherFactors = 37964;
       // @ts-ignore
       const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(smallestContractCreate);
-      expect(intrinsicGasCost).to.be.lessThan(mirrorNodeEstimation);
+      expect(intrinsicGasCost).to.be.equal(mirrorNodeEstimation - gasDifferenceFromOtherFactors);
       expect(intrinsicGasCost).to.be.greaterThan(constants.TX_BASE_COST);
     });
 
     it('should be able to calculate normal contract create', function () {
       const mirrorNodeEstimation = 86351;
+      // This number represents the difference between the actual gas returned from the mirror node and the minimal required for deployment of this contract based only on the data field.
+      const gasDifferenceFromOtherFactors = 16739;
       // @ts-ignore
       const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(greeterContractCreate);
-      expect(intrinsicGasCost).to.be.lessThan(mirrorNodeEstimation);
+      expect(intrinsicGasCost).to.be.equal(mirrorNodeEstimation - gasDifferenceFromOtherFactors);
       expect(intrinsicGasCost).to.be.greaterThan(constants.TX_BASE_COST);
     });
 
