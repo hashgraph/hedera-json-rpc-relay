@@ -60,7 +60,7 @@
         "prepare": "husky install"
     },
     "dependencies": {
-        "@hashgraph/hedera-local": "^2.13.0",
+        "@hashgraph/hedera-local": "^2.15.0",
         "@open-rpc/schema-utils-js": "^1.16.1",
         "@types/find-config": "^1.0.1",
         "@types/sinon": "^10.0.16",
