@@ -316,6 +316,9 @@ The following test cases should be covered but additional tests would be welcome
 5. Test `debug_traceTransaction` with `opcodeLogger` and all different combinations of tracerConfig values.
 6. Test `debug_traceTransaction` with hashes for the different types of transactions e.g Legacy, 1559, 2930.
 7. Case where transaction is not found for `debug_traceTransaction`.
+8. Test failing CALL and CREATE transactions with and without a revert reason.
+9. Test against both successful and failing transactions for each transaction type and configuration combination.
+10. Test with nested calls of different types [STATICCALL, DELEGATECALL, etc]
 
 ## Deployment
 
