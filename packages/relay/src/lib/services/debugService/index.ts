@@ -74,7 +74,7 @@ export class DebugService implements IDebugService {
     }
   }
 
-  static formatActionsResult(result): object {
+  static formatActionsResult(result): [] {
     const formattedResult = result.map((action) => {
       return {
         type: action.call_operation_type,
@@ -113,7 +113,9 @@ export class DebugService implements IDebugService {
       error_message: error,
     } = transactionsResponse;
 
-    const { call_type: type, result_data_type: resultDataType } = actionsResponse.actions[0];
+    const { call_type: type } = actionsResponse.actions[0];
+    const formattedActions = DebugService.formatActionsResult(actionsResponse.actions);
+    console.log('Formatted actions', formattedActions);
 
     return {
       type,
@@ -126,7 +128,7 @@ export class DebugService implements IDebugService {
       output: resultDataType.includes('REVERT') ? error : output,
       error: error ?? undefined,
       revertReason: error ?? undefined,
-      calls: tracerConfig.onlyTopCall ? undefined : DebugService.formatActionsResult(actionsResponse.actions),
+      calls: tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.shift(),
     };
   }
 }
