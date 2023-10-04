@@ -1,11 +1,11 @@
 import type { Logger } from 'pino';
 import type { MirrorNodeClient } from '../../clients';
 import type { IDebugService } from './IDebugService';
-import type { CacheService } from '../cacheService/cacheService';
 import type { CommonService } from '../ethService/ethCommonService';
-import { numberTo0x } from '../../../formatters';
+import { decodeErrorMessage, numberTo0x } from '../../../formatters';
 import { TracerType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
+import constants from '../../constants';
 
 export class DebugService implements IDebugService {
   /**
@@ -21,12 +21,13 @@ export class DebugService implements IDebugService {
   private readonly logger: Logger;
 
   private readonly common: CommonService;
+
   public readonly debugTraceTransaction = 'debug_traceTransaction';
 
-  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService, common: CommonService) {
-    this.mirrorNodeClient = mirrorNodeClient;
+  constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, common: CommonService) {
     this.logger = logger;
     this.common = common;
+    this.mirrorNodeClient = mirrorNodeClient;
   }
 
   /**
@@ -74,12 +75,24 @@ export class DebugService implements IDebugService {
     }
   }
 
-  static formatActionsResult(result): [] {
-    const formattedResult = result.map((action) => {
+  async formatActionsResult(result, requestIdPrefix?: string): Promise<[] | any> {
+    const formattedResultPromises = result.map(async (action) => {
+      const resolvedFrom = await this.resolveAddress(
+        action.from,
+        [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+        requestIdPrefix,
+      );
+
+      const resolvedTo = await this.resolveAddress(
+        action.to,
+        [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+        requestIdPrefix,
+      );
+
       return {
         type: action.call_operation_type,
-        from: action.from,
-        to: action.to,
+        from: resolvedFrom,
+        to: resolvedTo,
         gas: numberTo0x(action.gas),
         gasUsed: numberTo0x(action.gas_used),
         input: action.input,
@@ -87,8 +100,32 @@ export class DebugService implements IDebugService {
         value: numberTo0x(action.value),
       };
     });
+    const formattedResult = await Promise.all(formattedResultPromises);
 
     return formattedResult;
+  }
+
+  async resolveAddress(
+    address: string,
+    types = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+    requestIdPrefix?: string,
+  ): Promise<string> {
+    const entity = await this.mirrorNodeClient.resolveEntityType(
+      address,
+      types,
+      'debug_traceTransaction',
+      requestIdPrefix,
+    );
+    let resolvedAddress = address;
+    if (
+      entity &&
+      (entity.type === constants.TYPE_CONTRACT || entity.type === constants.TYPE_ACCOUNT) &&
+      entity.entity?.evm_address
+    ) {
+      resolvedAddress = entity.entity.evm_address;
+    }
+
+    return resolvedAddress;
   }
 
   async callTracer(transactionHash: string, tracerConfig: any, requestIdPrefix?: string): Promise<object> {
@@ -115,21 +152,32 @@ export class DebugService implements IDebugService {
     } = transactionsResponse;
 
     const { call_type: type } = actionsResponse.actions[0];
-    const formattedActions = DebugService.formatActionsResult(actionsResponse.actions);
-    console.log('Formatted actions', formattedActions);
+    let formattedActions = await this.formatActionsResult(actionsResponse.actions, requestIdPrefix);
+    formattedActions =
+      tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.slice(1);
+    const fromToEvmAddress = await this.resolveAddress(
+      from,
+      [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+      requestIdPrefix,
+    );
+    const toToEvmAddress = await this.resolveAddress(
+      to,
+      [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+      requestIdPrefix,
+    );
 
     return {
       type,
-      from,
-      to,
+      from: fromToEvmAddress,
+      to: toToEvmAddress,
       value: amount === 0 ? '0x0' : numberTo0x(amount),
       gas: numberTo0x(gas),
       gasUsed: numberTo0x(gasUsed),
       input,
-      output: result !== 'SUCCESS' ? error : output,
+      output: result !== 'SUCCESS' ? decodeErrorMessage(error) : output,
       error: result !== 'SUCCESS' ? result : undefined,
-      revertReason: result !== 'SUCCESS' ? error : undefined,
-      calls: tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.shift(),
+      revertReason: result !== 'SUCCESS' ? decodeErrorMessage(error) : undefined,
+      calls: formattedActions,
     };
   }
 }
