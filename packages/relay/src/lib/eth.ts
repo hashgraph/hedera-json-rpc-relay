@@ -157,7 +157,7 @@ export class EthImpl implements Eth {
   );
   private readonly shouldPopulateSyntheticContractResults = process.env.ETH_POPULATE_SYNTHETIC_CONTRACT_RESULTS
     ? process.env.ETH_POPULATE_SYNTHETIC_CONTRACT_RESULTS === 'true'
-    : false;
+    : true;
   /**
    * Configurable options used when initializing the cache.
    *
