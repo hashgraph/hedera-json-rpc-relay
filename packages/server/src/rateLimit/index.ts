@@ -52,7 +52,7 @@ export default class RateLimit {
         return false;
       }
 
-      const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
+      const requestIdPrefix = formatRequestIdMessage(requestId);
       this.logger.warn(
         `${requestIdPrefix}, Rate limit call to ${methodName}, ${this.database[ip].methodInfo[methodName].remaining} out of ${total} calls remaining`,
       );

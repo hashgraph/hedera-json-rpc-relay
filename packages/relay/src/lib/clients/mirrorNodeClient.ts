@@ -341,7 +341,7 @@ export class MirrorNodeClient {
       }
 
       const ms = Date.now() - start;
-      this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${response.status} ${ms} ms`);
+      this.logger.debug(`${requestId} [${method}] ${path} ${response.status} ${ms} ms`);
       this.mirrorResponseHistogram.labels(pathLabel, response.status).observe(ms);
       return response.data;
     } catch (error: any) {
@@ -552,7 +552,11 @@ export class MirrorNodeClient {
 
   public async getBlock(hashOrBlockNumber: string | number, requestIdPrefix?: string) {
     const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.${hashOrBlockNumber}`;
-    const cachedResponse: any = this.cacheService.get(cachedLabel, MirrorNodeClient.GET_BLOCK_ENDPOINT);
+    const cachedResponse: any = this.cacheService.get(
+      cachedLabel,
+      MirrorNodeClient.GET_BLOCK_ENDPOINT,
+      requestIdPrefix,
+    );
     if (cachedResponse) {
       return cachedResponse;
     }
@@ -598,13 +602,13 @@ export class MirrorNodeClient {
     return `${constants.CACHE_KEY.GET_CONTRACT}.valid.${contractIdOrAddress}`;
   }
 
-  public getIsValidContractCache(contractIdOrAddress): any {
+  public getIsValidContractCache(contractIdOrAddress, requestIdPrefix?: string): any {
     const cachedLabel = this.getIsValidContractCacheLabel(contractIdOrAddress);
-    return this.cacheService.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
+    return this.cacheService.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT, requestIdPrefix);
   }
 
   public async isValidContract(contractIdOrAddress: string, requestIdPrefix?: string, retries?: number) {
-    const cachedResponse: any = this.getIsValidContractCache(contractIdOrAddress);
+    const cachedResponse: any = this.getIsValidContractCache(contractIdOrAddress, requestIdPrefix);
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
@@ -625,7 +629,11 @@ export class MirrorNodeClient {
 
   public async getContractId(contractIdOrAddress: string, requestIdPrefix?: string, retries?: number) {
     const cachedLabel = `${constants.CACHE_KEY.GET_CONTRACT}.id.${contractIdOrAddress}`;
-    const cachedResponse: any = this.cacheService.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT);
+    const cachedResponse: any = this.cacheService.get(
+      cachedLabel,
+      MirrorNodeClient.GET_CONTRACT_ENDPOINT,
+      requestIdPrefix,
+    );
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
@@ -818,7 +826,7 @@ export class MirrorNodeClient {
 
   public async getEarliestBlock(requestId?: string) {
     const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.earliest`;
-    const cachedResponse: any = this.cacheService.get(cachedLabel, MirrorNodeClient.GET_BLOCKS_ENDPOINT);
+    const cachedResponse: any = this.cacheService.get(cachedLabel, MirrorNodeClient.GET_BLOCKS_ENDPOINT, requestId);
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
