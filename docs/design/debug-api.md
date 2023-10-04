@@ -318,7 +318,8 @@ The following test cases should be covered but additional tests would be welcome
 7. Case where transaction is not found for `debug_traceTransaction`.
 8. Test failing CALL and CREATE transactions with and without a revert reason.
 9. Test against both successful and failing transactions for each transaction type and configuration combination.
-10. Test with nested calls of different types [STATICCALL, DELEGATECALL, etc]
+10. Test with nested calls of different types [STATICCALL, DELEGATECALL, etc].
+11. Test when users tries to debug without setting the config in the .env file.
 
 ## Deployment
 
