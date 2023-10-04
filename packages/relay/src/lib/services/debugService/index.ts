@@ -75,34 +75,33 @@ export class DebugService implements IDebugService {
     }
   }
 
-  async formatActionsResult(result, requestIdPrefix?: string): Promise<[] | any> {
-    const formattedResultPromises = result.map(async (action) => {
-      const resolvedFrom = await this.resolveAddress(
-        action.from,
-        [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-        requestIdPrefix,
-      );
-
-      const resolvedTo = await this.resolveAddress(
-        action.to,
-        [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-        requestIdPrefix,
-      );
-
-      return {
-        type: action.call_operation_type,
-        from: resolvedFrom,
-        to: resolvedTo,
-        gas: numberTo0x(action.gas),
-        gasUsed: numberTo0x(action.gas_used),
-        input: action.input,
-        output: action.result_data,
-        value: numberTo0x(action.value),
-      };
-    });
-    const formattedResult = await Promise.all(formattedResultPromises);
-
-    return formattedResult;
+  async formatActionsResult(result: any, requestIdPrefix?: string): Promise<[] | any> {
+    return await Promise.all(
+      result.map(async (action) => {
+        const [resolvedFrom, resolvedTo] = await Promise.all([
+          this.resolveAddress(
+            action.from,
+            [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+            requestIdPrefix,
+          ),
+          this.resolveAddress(
+            action.to,
+            [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+            requestIdPrefix,
+          ),
+        ]);
+        return {
+          type: action.call_operation_type,
+          from: resolvedFrom,
+          to: resolvedTo,
+          gas: numberTo0x(action.gas),
+          gasUsed: numberTo0x(action.gas_used),
+          input: action.input,
+          output: action.result_data,
+          value: numberTo0x(action.value),
+        };
+      }),
+    );
   }
 
   async resolveAddress(
@@ -116,68 +115,71 @@ export class DebugService implements IDebugService {
       'debug_traceTransaction',
       requestIdPrefix,
     );
-    let resolvedAddress = address;
     if (
       entity &&
       (entity.type === constants.TYPE_CONTRACT || entity.type === constants.TYPE_ACCOUNT) &&
       entity.entity?.evm_address
     ) {
-      resolvedAddress = entity.entity.evm_address;
+      return entity.entity.evm_address;
     }
 
-    return resolvedAddress;
+    return address;
   }
 
   async callTracer(transactionHash: string, tracerConfig: any, requestIdPrefix?: string): Promise<object> {
-    let actionsResponse;
-    let transactionsResponse;
-
     try {
-      actionsResponse = await this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestIdPrefix);
-      transactionsResponse = await this.mirrorNodeClient.getContractResultWithRetry(transactionHash);
+      const [actionsResponse, transactionsResponse] = await Promise.all([
+        this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestIdPrefix),
+        this.mirrorNodeClient.getContractResultWithRetry(transactionHash),
+      ]);
+
+      const { call_type: type } = actionsResponse.actions[0];
+      const formattedActions = await this.formatActionsResult(actionsResponse.actions, requestIdPrefix);
+      console.log('Formatted actions', formattedActions);
+      const {
+        from,
+        to,
+        amount,
+        gas_limit: gas,
+        gas_used: gasUsed,
+        function_parameters: input,
+        call_result: output,
+        error_message: error,
+        result,
+      } = transactionsResponse;
+
+      const [fromToEvmAddress, toToEvmAddress] = await Promise.all([
+        this.resolveAddress(
+          from,
+          [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+          requestIdPrefix,
+        ),
+        this.resolveAddress(
+          to,
+          [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+          requestIdPrefix,
+        ),
+      ]);
+      console.log('FROM EVM', fromToEvmAddress);
+      console.log('TO EVM', toToEvmAddress);
+      const value = amount === 0 ? '0x0' : numberTo0x(amount);
+      const errorResult = result !== 'SUCCESS' ? result : undefined;
+
+      return {
+        type,
+        from: fromToEvmAddress,
+        to: toToEvmAddress,
+        value,
+        gas: numberTo0x(gas),
+        gasUsed: numberTo0x(gasUsed),
+        input,
+        output: result !== 'SUCCESS' ? decodeErrorMessage(error) : output,
+        ...(result !== 'SUCCESS' && { error: errorResult }),
+        ...(result !== 'SUCCESS' && { revertReason: decodeErrorMessage(error) }),
+        calls: tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.slice(1),
+      };
     } catch (e) {
       throw this.common.genericErrorHandler(e);
     }
-
-    const {
-      from,
-      to,
-      amount,
-      gas_limit: gas,
-      gas_used: gasUsed,
-      function_parameters: input,
-      call_result: output,
-      error_message: error,
-      result,
-    } = transactionsResponse;
-
-    const { call_type: type } = actionsResponse.actions[0];
-    let formattedActions = await this.formatActionsResult(actionsResponse.actions, requestIdPrefix);
-    formattedActions =
-      tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.slice(1);
-    const fromToEvmAddress = await this.resolveAddress(
-      from,
-      [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-      requestIdPrefix,
-    );
-    const toToEvmAddress = await this.resolveAddress(
-      to,
-      [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-      requestIdPrefix,
-    );
-
-    return {
-      type,
-      from: fromToEvmAddress,
-      to: toToEvmAddress,
-      value: amount === 0 ? '0x0' : numberTo0x(amount),
-      gas: numberTo0x(gas),
-      gasUsed: numberTo0x(gasUsed),
-      input,
-      output: result !== 'SUCCESS' ? decodeErrorMessage(error) : output,
-      error: result !== 'SUCCESS' ? result : undefined,
-      revertReason: result !== 'SUCCESS' ? decodeErrorMessage(error) : undefined,
-      calls: formattedActions,
-    };
   }
 }
