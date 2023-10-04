@@ -111,6 +111,7 @@ export class DebugService implements IDebugService {
       function_parameters: input,
       call_result: output,
       error_message: error,
+      result,
     } = transactionsResponse;
 
     const { call_type: type } = actionsResponse.actions[0];
@@ -125,9 +126,9 @@ export class DebugService implements IDebugService {
       gas: numberTo0x(gas),
       gasUsed: numberTo0x(gasUsed),
       input,
-      output: resultDataType.includes('REVERT') ? error : output,
-      error: error ?? undefined,
-      revertReason: error ?? undefined,
+      output: result !== 'SUCCESS' ? error : output,
+      error: result !== 'SUCCESS' ? result : undefined,
+      revertReason: result !== 'SUCCESS' ? error : undefined,
       calls: tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.shift(),
     };
   }
