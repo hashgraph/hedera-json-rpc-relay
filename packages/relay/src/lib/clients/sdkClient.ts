@@ -198,6 +198,7 @@ export class SDKClient {
     const cachedResponse: number | undefined = this.cacheService.get(
       constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
       callerName,
+      requestId,
     );
     if (cachedResponse) {
       return cachedResponse;

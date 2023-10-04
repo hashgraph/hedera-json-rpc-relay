@@ -483,7 +483,7 @@ export class EthImpl implements Eth {
    */
   async blockNumber(requestIdPrefix?: string): Promise<string> {
     this.logger.trace(`${requestIdPrefix} blockNumber()`);
-    return this.common.getLatestBlockNumber();
+    return this.common.getLatestBlockNumber(requestIdPrefix);
   }
 
   /**
@@ -556,7 +556,11 @@ export class EthImpl implements Eth {
         const value = Number(transaction.value);
         if (value > 0) {
           const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${transaction.to}`;
-          let toAccount: object | null = this.cacheService.get(accountCacheKey, EthImpl.ethEstimateGas);
+          let toAccount: object | null = this.cacheService.get(
+            accountCacheKey,
+            EthImpl.ethEstimateGas,
+            requestIdPrefix,
+          );
           if (!toAccount) {
             toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestIdPrefix);
           }
@@ -825,7 +829,7 @@ export class EthImpl implements Eth {
     // tolerance is needed, because there is a small delay between requesting latest block from blockNumber and passing it here
     if (!this.common.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
       const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
-      const blockNumberCached = this.cacheService.get(cacheKey, EthImpl.ethGetBalance);
+      const blockNumberCached = this.cacheService.get(cacheKey, EthImpl.ethGetBalance, requestIdPrefix);
 
       if (blockNumberCached) {
         this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
@@ -859,7 +863,7 @@ export class EthImpl implements Eth {
     // check cache first
     // create a key for the cache
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTagOrHash}`;
-    let cachedBalance = this.cacheService.get(cacheKey, EthImpl.ethGetBalance);
+    let cachedBalance = this.cacheService.get(cacheKey, EthImpl.ethGetBalance, requestIdPrefix);
     if (cachedBalance) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
       return cachedBalance;
@@ -994,7 +998,7 @@ export class EthImpl implements Eth {
     }
 
     const cachedLabel = `getCode.${address}.${blockNumber}`;
-    const cachedResponse: string | undefined = this.cacheService.get(cachedLabel, EthImpl.ethGetCode);
+    const cachedResponse: string | undefined = this.cacheService.get(cachedLabel, EthImpl.ethGetCode, requestIdPrefix);
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
@@ -1083,7 +1087,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_HASH}_${hash}_${showDetails}`;
-    let block = this.cacheService.get(cacheKey, EthImpl.ethGetBlockByHash);
+    let block = this.cacheService.get(cacheKey, EthImpl.ethGetBlockByHash, requestIdPrefix);
     if (!block) {
       block = await this.getBlock(hash, showDetails, requestIdPrefix).catch((e: any) => {
         throw this.common.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
@@ -1103,7 +1107,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_NUMBER}_${blockNumOrTag}_${showDetails}`;
-    let block = this.cacheService.get(cacheKey, EthImpl.ethGetBlockByNumber);
+    let block = this.cacheService.get(cacheKey, EthImpl.ethGetBlockByNumber, requestIdPrefix);
     if (!block) {
       block = await this.getBlock(blockNumOrTag, showDetails, requestIdPrefix).catch((e: any) => {
         throw this.common.genericErrorHandler(
@@ -1129,7 +1133,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByHash(hash=${hash}, showDetails=%o)`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_HASH}_${hash}`;
-    const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCountByHash);
+    const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCountByHash, requestIdPrefix);
     if (cachedResponse) {
       this.logger.debug(
         `${requestIdPrefix} getBlockTransactionCountByHash returned cached response: ${cachedResponse}`,
@@ -1157,7 +1161,7 @@ export class EthImpl implements Eth {
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestIdPrefix);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_NUMBER}_${blockNum}`;
-    const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCountByNumber);
+    const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCountByNumber, requestIdPrefix);
     if (cachedResponse) {
       this.logger.debug(
         `${requestIdPrefix} getBlockTransactionCountByNumber returned cached response: ${cachedResponse}`,
@@ -1262,7 +1266,7 @@ export class EthImpl implements Eth {
 
     // cache considerations for high load
     const cacheKey = `eth_getTransactionCount_${address}_${blockNumOrTag}`;
-    let nonceCount = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCount);
+    let nonceCount = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionCount, requestIdPrefix);
     if (nonceCount) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(nonceCount)}`);
       return nonceCount;
@@ -1570,7 +1574,7 @@ export class EthImpl implements Eth {
       }
 
       const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:.${call.to}.${data}`;
-      const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethCall);
+      const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethCall, requestIdPrefix);
 
       if (cachedResponse != undefined) {
         this.logger.debug(`${requestIdPrefix} eth_call returned cached response: ${cachedResponse}`);
