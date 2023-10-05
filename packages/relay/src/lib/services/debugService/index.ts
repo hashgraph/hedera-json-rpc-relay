@@ -3,9 +3,9 @@ import type { MirrorNodeClient } from '../../clients';
 import type { IDebugService } from './IDebugService';
 import type { CommonService } from '../ethService/ethCommonService';
 import { decodeErrorMessage, numberTo0x } from '../../../formatters';
+import constants from '../../constants';
 import { TracerType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
-import constants from '../../constants';
 
 export class DebugService implements IDebugService {
   /**
@@ -34,7 +34,7 @@ export class DebugService implements IDebugService {
    * Checks if the Debug API is enabled
    * @public
    */
-  public static readonly isDebugAPIEnabled = process.env.DEBUG_API_ENABLED ? true : false;
+  public static readonly isDebugAPIEnabled = process.env.DEBUG_API_ENABLED;
 
   static requireDebugAPIEnabled(): void {
     if (!process.env.DEBUG_API_ENABLED || process.env.DEBUG_API_ENABLED !== 'true') {
@@ -160,8 +160,7 @@ export class DebugService implements IDebugService {
           requestIdPrefix,
         ),
       ]);
-      console.log('FROM EVM', fromToEvmAddress);
-      console.log('TO EVM', toToEvmAddress);
+
       const value = amount === 0 ? '0x0' : numberTo0x(amount);
       const errorResult = result !== 'SUCCESS' ? result : undefined;
 
@@ -173,7 +172,7 @@ export class DebugService implements IDebugService {
         gas: numberTo0x(gas),
         gasUsed: numberTo0x(gasUsed),
         input,
-        output: result !== 'SUCCESS' ? decodeErrorMessage(error) : output,
+        output: result !== 'SUCCESS' ? error : output,
         ...(result !== 'SUCCESS' && { error: errorResult }),
         ...(result !== 'SUCCESS' && { revertReason: decodeErrorMessage(error) }),
         calls: tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.slice(1),

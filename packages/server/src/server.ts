@@ -201,7 +201,7 @@ app.getKoaApp().use(async (ctx, next) => {
 const logAndHandleResponse = async (methodName: any, methodParams: any, methodFunction: any) => {
   const requestId = app.getRequestId();
   const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
-  console.log(methodParams);
+
   try {
     const methodValidations = Validator.METHODS[methodName];
     if (methodValidations) {
