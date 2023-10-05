@@ -137,79 +137,15 @@ describe('Debug API Test Suite', async function () {
   };
 
   const accountsResult = {
-    account: '0.0.1016',
-    alias: 'HIQQGUYDVWQLUWBHCSHSKS655OZEV2SZ6DADL7HN33PPLND7JUXPLU2O',
-    auto_renew_period: 7776000,
-    balance: {
-      balance: 999948880000,
-      timestamp: '1696451386.125213473',
-      tokens: [],
-    },
-    created_timestamp: '1696437345.028770670',
-    decline_reward: false,
-    deleted: false,
-    ethereum_nonce: 3,
     evm_address: '0xc37f417fa09933335240fca72dd257bfbde9c275',
-    expiry_timestamp: '1704213345.028770670',
-    key: {
-      _type: 'ECDSA_SECP256K1',
-      key: '035303ada0ba5827148f254bddebb24aea59f0c035fceddedef5b47f4d2ef5d34e',
-    },
-    max_automatic_token_associations: 0,
-    memo: 'auto-created account',
-    pending_reward: 0,
-    receiver_sig_required: false,
-    staked_account_id: null,
-    staked_node_id: null,
-    stake_period_start: null,
-    transactions: [],
   };
+
   const contractResult = {
-    admin_key: null,
-    auto_renew_account: null,
-    auto_renew_period: 7776000,
-    contract_id: '0.0.1033',
-    created_timestamp: '1696438011.462526385',
-    deleted: false,
     evm_address: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
-    expiration_timestamp: '1704214011.462526385',
-    file_id: null,
-    max_automatic_token_associations: 0,
-    memo: 'auto-created account',
-    nonce: 2,
-    obtainer_id: null,
-    permanent_removal: null,
-    proxy_account_id: null,
-    timestamp: {
-      from: '1696438011.462526385',
-      to: null,
-    },
-    bytecode: '0x',
-    runtime_bytecode: '0x',
   };
 
   const contractResultSecond = {
-    admin_key: null,
-    auto_renew_account: null,
-    auto_renew_period: 7776000,
-    contract_id: '0.0.1034',
-    created_timestamp: '1696438011.462526384',
-    deleted: false,
     evm_address: '0x91b1c451777122afc9b83f9b96160d7e59847ad7',
-    expiration_timestamp: '1704214011.462526384',
-    file_id: null,
-    max_automatic_token_associations: 0,
-    memo: 'auto-created account',
-    nonce: 1,
-    obtainer_id: null,
-    permanent_removal: null,
-    proxy_account_id: null,
-    timestamp: {
-      from: '1696438011.462526384',
-      to: null,
-    },
-    bytecode: '0x',
-    runtime_bytecode: '0x',
   };
 
   this.beforeAll(() => {
@@ -322,6 +258,7 @@ describe('Debug API Test Suite', async function () {
             },
           ],
         };
+
         const result = await debugService.debug_traceTransaction(
           transactionHash,
           callTracer,
