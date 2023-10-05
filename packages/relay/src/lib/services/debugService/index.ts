@@ -75,6 +75,14 @@ export class DebugService implements IDebugService {
     }
   }
 
+  /**
+   * Formats the result from the actions endpoint to the expected response
+   *
+   * @async
+   * @param {any} result - The response from the actions endpoint.
+   * @param {string} requestIdPrefix - The request prefix id.
+   * @returns {Promise<[] | any>} The formatted actions response in an array.
+   */
   async formatActionsResult(result: any, requestIdPrefix?: string): Promise<[] | any> {
     return await Promise.all(
       result.map(async (action, index) => {
@@ -90,9 +98,12 @@ export class DebugService implements IDebugService {
             requestIdPrefix,
           ),
         ]);
+
+        // The actions endpoint does not return input and output for the calls so we get them from another endpoint
+        // The first one is excluded because we take its input and output from the contracts/results/{transactionIdOrHash} endpoint
         const getContract =
           index !== 0 ? await this.mirrorNodeClient.getContract(action.to, requestIdPrefix) : undefined;
-        console.log(getContract);
+
         return {
           type: action.call_operation_type,
           from: resolvedFrom,
@@ -107,6 +118,15 @@ export class DebugService implements IDebugService {
     );
   }
 
+  /**
+   * Returns an address' evm equivalence.
+   *
+   * @async
+   * @param {string} address - The address to be resolved.
+   * @param {[string]} types - The possible types of the address.
+   * @param {string} requestIdPrefix - The request prefix id.
+   * @returns {Promise<string>} The address returned as an EVM address.
+   */
   async resolveAddress(
     address: string,
     types = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
@@ -118,6 +138,7 @@ export class DebugService implements IDebugService {
       'debug_traceTransaction',
       requestIdPrefix,
     );
+
     if (
       entity &&
       (entity.type === constants.TYPE_CONTRACT || entity.type === constants.TYPE_ACCOUNT) &&
@@ -129,6 +150,15 @@ export class DebugService implements IDebugService {
     return address;
   }
 
+  /**
+   * Returns the final formatted response for callTracer config.
+   *
+   * @async
+   * @param {string} transactionHash - The hash of the transaction to be debugged.
+   * @param {any} tracerConfig - The tracer config to be used.
+   * @param {string} requestIdPrefix - The request prefix id.
+   * @returns {Promise<object>} The formatted response.
+   */
   async callTracer(transactionHash: string, tracerConfig: any, requestIdPrefix?: string): Promise<object> {
     try {
       const [actionsResponse, transactionsResponse] = await Promise.all([
@@ -138,7 +168,7 @@ export class DebugService implements IDebugService {
 
       const { call_type: type } = actionsResponse.actions[0];
       const formattedActions = await this.formatActionsResult(actionsResponse.actions, requestIdPrefix);
-      console.log('Formatted actions', formattedActions);
+
       const {
         from,
         to,
@@ -178,6 +208,8 @@ export class DebugService implements IDebugService {
         output: result !== 'SUCCESS' ? error : output,
         ...(result !== 'SUCCESS' && { error: errorResult }),
         ...(result !== 'SUCCESS' && { revertReason: decodeErrorMessage(error) }),
+        // if we have two actions or more executed during the transaction the first one is returned in the top and the other ones in
+        // a calls array, although both are returned form the actions endpoint
         calls: tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.slice(1),
       };
     } catch (e) {
