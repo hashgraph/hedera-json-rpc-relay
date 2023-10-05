@@ -50,100 +50,166 @@ describe('Debug API Test Suite', async function () {
 
   const transactionHash = '0xb7a433b014684558d4154c73de3ed360bd5867725239938c2143acb7a76bca82';
   const nonExistentTransactionHash = '0xb8a433b014684558d4154c73de3ed360bd5867725239938c2143acb7a76bca82';
+  const contractAddress = '0x0000000000000000000000000000000000000409';
+  const senderAddress = '0x00000000000000000000000000000000000003f8';
+  const contractAddress2 = '0x000000000000000000000000000000000000040a';
   const tracerConfigTrue = { onlyTopCall: true };
   const tracerConfigFalse = { onlyTopCall: false };
   const callTracer: TracerType = TracerType.CallTracer;
   const opcodeLogger: TracerType = TracerType.OpcodeLogger;
   const CONTARCTS_RESULTS_ACTIONS = `contracts/results/${transactionHash}/actions`;
   const CONTRACTS_RESULTS_BY_HASH = `contracts/results/${transactionHash}`;
+  const CONTRACT_BY_ADDRESS = `contracts/${contractAddress}`;
+  const SENDER_BY_ADDRESS = `accounts/${senderAddress}?transactions=false`;
+  const CONTRACT_BY_ADDRESS2 = `contracts/${contractAddress2}`;
   const CONTRACTS_RESULTS_BY_NON_EXISTENT_HASH = `contracts/results/${nonExistentTransactionHash}`;
   const CONTRACT_RESULTS_BY_ACTIONS_NON_EXISTENT_HASH = `contracts/results/${nonExistentTransactionHash}/actions`;
 
   const contractsResultsByHashResult = {
     address: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
     amount: 0,
-    bloom:
-      '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-    call_result: '0x000000000000000000000000637a6a8e5a69c087c24983b05261f63f64ed7e9b',
-    contract_id: '0.0.1032',
-    created_contract_ids: [],
+    call_result: '0x2',
     error_message: null,
-    from: '0x00000000000000000000000000000000000003f7',
-    function_parameters: '0x5c929889',
+    from: '0x00000000000000000000000000000000000003f8',
+    function_parameters: '0x1',
     gas_limit: 300000,
     gas_used: 240000,
-    timestamp: '1695626842.324789307',
-    to: '0x0000000000000000000000000000000000000408',
-    hash: '0xf634a6a58aeeb723b1221a3a18a86fa1bd83e9e2f95dd021cf325e60352e3df6',
-    block_hash: '0xfce40b1e7236a8ef62e98078ff551efc8038185dd8f0c5cbd527f93b62d8be19f70c7217790538b9c2723d5bb86b28ff',
-    block_number: 381,
+    timestamp: '1696438011.462526383',
+    to: '0x0000000000000000000000000000000000000409',
+    hash: '0xe815a3403c81f277902000d7916606e9571c3a8c0854ef6871595466a43b5b1f',
+    block_hash: '0xa4c97b684587a2f1fc42e14ae743c336b97c58f752790482d12e44919f2ccb062807df5c9c0fa9a373b4d9726707f8b5',
+    block_number: 668,
     logs: [],
     result: 'SUCCESS',
-    transaction_index: 4,
-    state_changes: [
-      {
-        address: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
-        contract_id: '0.0.1032',
-        slot: '0x0000000000000000000000000000000000000000000000000000000000000001',
-        value_read: '0x00000000000000000000000091b1c451777122afc9b83f9b96160d7e59847ad7',
-        value_written: null,
-      },
-    ],
+    transaction_index: 5,
     status: '0x1',
     failed_initcode: null,
     access_list: '0x',
     block_gas_used: 240000,
     chain_id: '0x12a',
-    gas_price: '0x1312d0',
-    max_fee_per_gas: '0x',
-    max_priority_fee_per_gas: '0x',
-    r: '0x33effe0b5958ab86ce01590d46dbb1328097c4c3ada5b0d5e407c05147bcd94a',
-    s: '0x05f6aa6e805e64f1fb71ff8d3433378ccd2050faf4471b461ca0b1cc9800f4b4',
-    type: 0,
-    v: 0,
-    nonce: 1,
+    gas_price: '0x',
+    max_fee_per_gas: '0x47',
+    max_priority_fee_per_gas: '0x47',
+    type: 2,
+    nonce: 0,
   };
   const contractsResultsActionsResult = {
     actions: [
       {
         call_depth: 0,
-        call_operation_type: 'CALL',
-        call_type: 'CALL',
-        caller: '0.0.1015',
+        call_operation_type: 'CREATE',
+        call_type: 'CREATE',
+        caller: '0.0.1016',
         caller_type: 'ACCOUNT',
-        from: '0x00000000000000000000000000000000000003f7',
-        gas: 279000,
-        gas_used: 5439,
+        from: '0x00000000000000000000000000000000000003f8',
+        gas: 247000,
+        gas_used: 77324,
         index: 0,
-        input: '0x5c929889',
-        recipient: '0.0.1032',
+        input: '0x',
+        recipient: '0.0.1033',
         recipient_type: 'CONTRACT',
-        result_data: '0x000000000000000000000000637a6a8e5a69c087c24983b05261f63f64ed7e9b',
+        result_data: '0x',
         result_data_type: 'OUTPUT',
-        timestamp: '1695626842.324789307',
-        to: '0x0000000000000000000000000000000000000408',
+        timestamp: '1696438011.462526383',
+        to: '0x0000000000000000000000000000000000000409',
         value: 0,
       },
       {
         call_depth: 1,
-        call_operation_type: 'DELEGATECALL',
-        call_type: 'CALL',
-        caller: '0.0.1032',
+        call_operation_type: 'CREATE',
+        call_type: 'CREATE',
+        caller: '0.0.1033',
         caller_type: 'CONTRACT',
-        from: '0x0000000000000000000000000000000000000408',
-        gas: 50000,
-        gas_used: 148,
+        from: '0x0000000000000000000000000000000000000409',
+        gas: 189733,
+        gas_used: 75,
         index: 1,
-        input: '0x38cc4831',
-        recipient: '0.0.1033',
+        input: '0x',
+        recipient: '0.0.1034',
         recipient_type: 'CONTRACT',
-        result_data: '0x000000000000000000000000637a6a8e5a69c087c24983b05261f63f64ed7e9b',
+        result_data: '0x',
         result_data_type: 'OUTPUT',
-        timestamp: '1695626842.324789307',
-        to: '0x0000000000000000000000000000000000000409',
+        timestamp: '1696438011.462526383',
+        to: '0x000000000000000000000000000000000000040a',
         value: 0,
       },
     ],
+  };
+
+  const accountsResult = {
+    account: '0.0.1016',
+    alias: 'HIQQGUYDVWQLUWBHCSHSKS655OZEV2SZ6DADL7HN33PPLND7JUXPLU2O',
+    auto_renew_period: 7776000,
+    balance: {
+      balance: 999948880000,
+      timestamp: '1696451386.125213473',
+      tokens: [],
+    },
+    created_timestamp: '1696437345.028770670',
+    decline_reward: false,
+    deleted: false,
+    ethereum_nonce: 3,
+    evm_address: '0xc37f417fa09933335240fca72dd257bfbde9c275',
+    expiry_timestamp: '1704213345.028770670',
+    key: {
+      _type: 'ECDSA_SECP256K1',
+      key: '035303ada0ba5827148f254bddebb24aea59f0c035fceddedef5b47f4d2ef5d34e',
+    },
+    max_automatic_token_associations: 0,
+    memo: 'auto-created account',
+    pending_reward: 0,
+    receiver_sig_required: false,
+    staked_account_id: null,
+    staked_node_id: null,
+    stake_period_start: null,
+    transactions: [],
+  };
+  const contractResult = {
+    admin_key: null,
+    auto_renew_account: null,
+    auto_renew_period: 7776000,
+    contract_id: '0.0.1033',
+    created_timestamp: '1696438011.462526385',
+    deleted: false,
+    evm_address: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
+    expiration_timestamp: '1704214011.462526385',
+    file_id: null,
+    max_automatic_token_associations: 0,
+    memo: 'auto-created account',
+    nonce: 2,
+    obtainer_id: null,
+    permanent_removal: null,
+    proxy_account_id: null,
+    timestamp: {
+      from: '1696438011.462526385',
+      to: null,
+    },
+    bytecode: '0x',
+    runtime_bytecode: '0x',
+  };
+
+  const contractResultSecond = {
+    admin_key: null,
+    auto_renew_account: null,
+    auto_renew_period: 7776000,
+    contract_id: '0.0.1034',
+    created_timestamp: '1696438011.462526384',
+    deleted: false,
+    evm_address: '0x91b1c451777122afc9b83f9b96160d7e59847ad7',
+    expiration_timestamp: '1704214011.462526384',
+    file_id: null,
+    max_automatic_token_associations: 0,
+    memo: 'auto-created account',
+    nonce: 1,
+    obtainer_id: null,
+    permanent_removal: null,
+    proxy_account_id: null,
+    timestamp: {
+      from: '1696438011.462526384',
+      to: null,
+    },
+    bytecode: '0x',
+    runtime_bytecode: '0x',
   };
 
   this.beforeAll(() => {
@@ -160,17 +226,26 @@ describe('Debug API Test Suite', async function () {
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
 
     // @ts-ignore
-    web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
-
-    // @ts-ignore
     const common = new CommonService(mirrorNodeInstance, logger, cacheService);
-    debugService = new DebugService(mirrorNodeInstance, logger, cacheService, common);
+    debugService = new DebugService(mirrorNodeInstance, logger, common);
   });
 
   describe('debug_traceTransaction', async function () {
     beforeEach(() => {
       restMock.onGet(CONTARCTS_RESULTS_ACTIONS).reply(200, contractsResultsActionsResult);
       restMock.onGet(CONTRACTS_RESULTS_BY_HASH).reply(200, contractsResultsByHashResult);
+      restMock.onGet(CONTRACT_BY_ADDRESS).reply(200, contractResult);
+      restMock.onGet(SENDER_BY_ADDRESS).reply(200, accountsResult);
+      restMock.onGet(CONTRACT_BY_ADDRESS2).reply(200, contractResultSecond);
+      restMock.onGet(`contracts/${senderAddress}`).reply(404, {
+        _status: {
+          messages: [
+            {
+              message: 'Not found',
+            },
+          ],
+        },
+      });
     });
 
     afterEach(() => {
@@ -226,33 +301,24 @@ describe('Debug API Test Suite', async function () {
     describe('callTracer', async function () {
       it('Test call tracer with onlyTopCall false', async function () {
         const expectedResult = {
-          from: '0x00000000000000000000000000000000000003f7',
-          to: '0x0000000000000000000000000000000000000408',
+          type: 'CREATE',
+          from: '0xc37f417fa09933335240fca72dd257bfbde9c275',
+          to: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
           value: '0x0',
           gas: '0x493e0',
           gasUsed: '0x3a980',
-          input: '0x5c929889',
-          output: '0x000000000000000000000000637a6a8e5a69c087c24983b05261f63f64ed7e9b',
-          error: null,
-          revertReason: null,
+          input: '0x1',
+          output: '0x2',
           calls: [
             {
-              type: 'CALL',
-              from: '0x00000000000000000000000000000000000003f7',
-              to: '0x0000000000000000000000000000000000000408',
-              gas: 279000,
-              gasUsed: 5439,
-              input: '0x5c929889',
-              output: '0x000000000000000000000000637a6a8e5a69c087c24983b05261f63f64ed7e9b',
-            },
-            {
-              type: 'DELEGATECALL',
-              from: '0x0000000000000000000000000000000000000408',
-              to: '0x0000000000000000000000000000000000000409',
-              gas: 50000,
-              gasUsed: 148,
-              input: '0x38cc4831',
-              output: '0x000000000000000000000000637a6a8e5a69c087c24983b05261f63f64ed7e9b',
+              type: 'CREATE',
+              from: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
+              to: '0x91b1c451777122afc9b83f9b96160d7e59847ad7',
+              gas: '0x2e525',
+              gasUsed: '0x4b',
+              input: '0x',
+              output: '0x',
+              value: '0x0',
             },
           ],
         };
@@ -268,26 +334,15 @@ describe('Debug API Test Suite', async function () {
 
       it('Test call tracer with onlyTopCall true', async function () {
         const expectedResult = {
-          from: '0x00000000000000000000000000000000000003f7',
-          to: '0x0000000000000000000000000000000000000408',
+          type: 'CREATE',
+          from: '0xc37f417fa09933335240fca72dd257bfbde9c275',
+          to: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
           value: '0x0',
           gas: '0x493e0',
           gasUsed: '0x3a980',
-          input: '0x5c929889',
-          output: '0x000000000000000000000000637a6a8e5a69c087c24983b05261f63f64ed7e9b',
-          error: null,
-          revertReason: null,
-          calls: [
-            {
-              type: 'CALL',
-              from: '0x00000000000000000000000000000000000003f7',
-              to: '0x0000000000000000000000000000000000000408',
-              gas: 279000,
-              gasUsed: 5439,
-              input: '0x5c929889',
-              output: '0x000000000000000000000000637a6a8e5a69c087c24983b05261f63f64ed7e9b',
-            },
-          ],
+          input: '0x1',
+          output: '0x2',
+          calls: undefined,
         };
         const result = await debugService.debug_traceTransaction(
           transactionHash,
