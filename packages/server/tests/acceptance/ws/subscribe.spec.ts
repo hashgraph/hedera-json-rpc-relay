@@ -35,7 +35,7 @@ import LogContractJson from '../../contracts/Logs.json';
 import Constants from '../../helpers/constants';
 import IERC20Json from '../../contracts/openzeppelin/IERC20.json';
 
-const WS_RELAY_URL = `ws://localhost:${constants.WEB_SOCKET_PORT}`;
+const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
 
 const establishConnection = async () => {
   const provider = await new ethers.WebSocketProvider(WS_RELAY_URL);
