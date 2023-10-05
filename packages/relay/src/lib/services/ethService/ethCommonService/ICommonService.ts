@@ -17,8 +17,6 @@
  * limitations under the License.
  *
  */
-
-import { JsonRpcError } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
 
 export interface ICommonService {
