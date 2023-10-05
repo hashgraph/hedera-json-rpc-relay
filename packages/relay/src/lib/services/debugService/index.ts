@@ -77,7 +77,7 @@ export class DebugService implements IDebugService {
 
   async formatActionsResult(result: any, requestIdPrefix?: string): Promise<[] | any> {
     return await Promise.all(
-      result.map(async (action) => {
+      result.map(async (action, index) => {
         const [resolvedFrom, resolvedTo] = await Promise.all([
           this.resolveAddress(
             action.from,
@@ -90,14 +90,17 @@ export class DebugService implements IDebugService {
             requestIdPrefix,
           ),
         ]);
+        const getContract =
+          index !== 0 ? await this.mirrorNodeClient.getContract(action.to, requestIdPrefix) : undefined;
+        console.log(getContract);
         return {
           type: action.call_operation_type,
           from: resolvedFrom,
           to: resolvedTo,
           gas: numberTo0x(action.gas),
           gasUsed: numberTo0x(action.gas_used),
-          input: action.input,
-          output: action.result_data,
+          input: getContract?.bytecode ?? action.input,
+          output: getContract?.runtime_bytecode ?? action.result_data,
           value: numberTo0x(action.value),
         };
       }),
