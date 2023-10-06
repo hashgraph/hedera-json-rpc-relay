@@ -35,7 +35,7 @@ import LogContractJson from '../../contracts/Logs.json';
 import Constants from '../../helpers/constants';
 import IERC20Json from '../../contracts/openzeppelin/IERC20.json';
 
-const WS_RELAY_URL = `ws://localhost:${constants.WEB_SOCKET_PORT}`;
+const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
 
 const establishConnection = async () => {
   const provider = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -134,7 +134,7 @@ describe('@web-socket Acceptance Tests', async function () {
       expect(wsProvider.ready).to.eq(true);
     });
 
-    it('receives ping messages', async function () {
+    it('@release receives ping messages', async function () {
       expect(wsProvider).to.exist;
       expect(wsProvider.ready).to.eq(true);
 
@@ -148,7 +148,7 @@ describe('@web-socket Acceptance Tests', async function () {
       expect(pings).to.eq(3);
     });
 
-    it('Socket server responds to the eth_chainId event', async function () {
+    it('@release Socket server responds to the eth_chainId event', async function () {
       const response = await wsProvider.send('eth_chainId', []);
       expect(response).to.eq(CHAIN_ID);
     });
@@ -190,9 +190,9 @@ describe('@web-socket Acceptance Tests', async function () {
     });
 
     it('Multiple ws connections and multiple subscriptions per connection', async function () {
-      const wsConn1 = new ethers.WebSocketProvider(`ws://localhost:${constants.WEB_SOCKET_PORT}`);
+      const wsConn1 = new ethers.WebSocketProvider(`${WS_RELAY_URL}`);
 
-      const wsConn2 = new ethers.WebSocketProvider(`ws://localhost:${constants.WEB_SOCKET_PORT}`);
+      const wsConn2 = new ethers.WebSocketProvider(`${WS_RELAY_URL}`);
 
       // using WS providers with LoggerContract
       const loggerContractWS1 = new ethers.Contract(logContractSigner.target, LogContractJson.abi, wsConn1);
@@ -398,7 +398,7 @@ describe('@web-socket Acceptance Tests', async function () {
       webSocket.close();
     });
 
-    it('Expect Unsupported Method Error message when subscribing for "other" method', async function () {
+    it('@release Expect Unsupported Method Error message when subscribing for "other" method', async function () {
       const webSocket = new WebSocket(WS_RELAY_URL);
       let response = {};
       webSocket.on('message', function incoming(data) {
@@ -698,7 +698,7 @@ describe('@web-socket Acceptance Tests', async function () {
       expect(receiveRpcResultEvents.length).to.equal(6);
     });
 
-    it('Subscribes for contract logs for a specific contract address (using evmAddress)', async function () {
+    it('@release Subscribes for contract logs for a specific contract address (using evmAddress)', async function () {
       let eventsReceived = eventsReceivedGlobal[1];
 
       // Only the logs from logContractSigner.target are captured
@@ -711,7 +711,7 @@ describe('@web-socket Acceptance Tests', async function () {
       assertions.expectLogArgs(eventsReceived[4], logContractSigner, [BigInt(11), BigInt(22), BigInt(33), BigInt(44)]);
     });
 
-    it('Subscribes for contract logs for a specific contract address (using long zero address)', async function () {
+    it('@release Subscribes for contract logs for a specific contract address (using long zero address)', async function () {
       let eventsReceived = eventsReceivedGlobal[2];
 
       // Only the logs from logContractSigner.target are captured
@@ -818,7 +818,7 @@ describe('@web-socket Acceptance Tests', async function () {
       await wsHtsProvider.websocket.close();
     });
 
-    it('captures transfer events', async function () {
+    it('@release captures transfer events', async function () {
       const balanceBefore = await htsToken.balanceOf(htsAccounts[1].wallet.address);
       expect(balanceBefore.toString()).to.eq('0', 'verify initial balance');
 
@@ -838,7 +838,7 @@ describe('@web-socket Acceptance Tests', async function () {
       ]);
     });
 
-    it('captures approve and transferFrom events', async function () {
+    it('@release captures approve and transferFrom events', async function () {
       const tx = await htsToken.approve(htsAccounts[1].wallet.address, 1, Constants.GAS.LIMIT_1_000_000);
       await tx.wait();
 

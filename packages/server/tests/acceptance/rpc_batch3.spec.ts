@@ -938,7 +938,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const nonExstingFilter = '0x111222331';
 
     describe('Positive', async function () {
-      it('should be able to create a log filter', async function () {
+      it('@release should be able to create a log filter', async function () {
         const currentBlock = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId);
         expect(
           RelayAssertions.validateHash(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_FILTER, [], requestId), 32),
@@ -995,7 +995,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         ).to.eq(true, 'with all params');
       });
 
-      it('should be able to create a newBlock filter', async function () {
+      it('@release should be able to create a newBlock filter', async function () {
         expect(
           RelayAssertions.validateHash(
             await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_BLOCK_FILTER, [], requestId),
@@ -1016,7 +1016,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         expect(result).to.eq(true);
       });
 
-      it('should be able to call eth_getFilterChanges for NEW_BLOCK filter', async function () {
+      it('@release should be able to call eth_getFilterChanges for NEW_BLOCK filter', async function () {
         const filterId = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_NEW_BLOCK_FILTER, [], requestId);
 
         await new Promise((r) => setTimeout(r, 4000));
