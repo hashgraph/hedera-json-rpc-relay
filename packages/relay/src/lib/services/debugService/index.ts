@@ -1,3 +1,23 @@
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import type { Logger } from 'pino';
 import type { MirrorNodeClient } from '../../clients';
 import type { IDebugService } from './IDebugService';
@@ -6,7 +26,15 @@ import { decodeErrorMessage, numberTo0x } from '../../../formatters';
 import constants from '../../constants';
 import { TracerType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
+import { EthImpl } from '../../eth';
+const SUCCESS = 'SUCCESS';
 
+/**
+ * Represents a DebugService for tracing and debugging transactions and debugging
+ *
+ * @class
+ * @implements {IDebugService}
+ */
 export class DebugService implements IDebugService {
   /**
    * The interface through which we interact with the mirror node
@@ -20,10 +48,22 @@ export class DebugService implements IDebugService {
    */
   private readonly logger: Logger;
 
+  /**
+   * The commonService containing useful functions
+   * @private
+   */
   private readonly common: CommonService;
 
   public readonly debugTraceTransaction = 'debug_traceTransaction';
 
+  /**
+   * Creates an instance of DebugService.
+   *
+   * @constructor
+   * @param {MirrorNodeClient} mirrorNodeClient - The client for interacting with the mirror node.
+   * @param {Logger} logger - The logger used for logging output from this class.
+   * @param {CommonService} common - The common service containing useful functions.
+   */
   constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, common: CommonService) {
     this.logger = logger;
     this.common = common;
@@ -68,7 +108,7 @@ export class DebugService implements IDebugService {
       if (tracer === TracerType.CallTracer) {
         return await this.callTracer(transactionHash, tracerConfig, requestIdPrefix);
       } else if (tracer === TracerType.OpcodeLogger) {
-        throw Error('opcodeLogger is currently not supported');
+        throw predefined.UNSUPPORTED_METHOD;
       }
     } catch (e) {
       throw this.common.genericErrorHandler(e);
@@ -86,23 +126,18 @@ export class DebugService implements IDebugService {
   async formatActionsResult(result: any, requestIdPrefix?: string): Promise<[] | any> {
     return await Promise.all(
       result.map(async (action, index) => {
-        const [resolvedFrom, resolvedTo] = await Promise.all([
-          this.resolveAddress(
-            action.from,
-            [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-            requestIdPrefix,
-          ),
-          this.resolveAddress(
-            action.to,
-            [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-            requestIdPrefix,
-          ),
-        ]);
+        const { resolvedFrom, resolvedTo } = await this.resolveMultipleAddresses(
+          action.from,
+          action.to,
+          requestIdPrefix,
+        );
 
         // The actions endpoint does not return input and output for the calls so we get them from another endpoint
         // The first one is excluded because we take its input and output from the contracts/results/{transactionIdOrHash} endpoint
         const getContract =
-          index !== 0 ? await this.mirrorNodeClient.getContract(action.to, requestIdPrefix) : undefined;
+          index !== 0 && action.call_operation_type === 'CREATE'
+            ? await this.mirrorNodeClient.getContract(action.to, requestIdPrefix)
+            : undefined;
 
         return {
           type: action.call_operation_type,
@@ -150,6 +185,23 @@ export class DebugService implements IDebugService {
     return address;
   }
 
+  async resolveMultipleAddresses(
+    from: string,
+    to: string,
+    requestIdPrefix?: string,
+  ): Promise<{ resolvedFrom: string; resolvedTo: string }> {
+    const [resolvedFrom, resolvedTo] = await Promise.all([
+      this.resolveAddress(
+        from,
+        [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+        requestIdPrefix,
+      ),
+      this.resolveAddress(to, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT], requestIdPrefix),
+    ]);
+
+    return { resolvedFrom, resolvedTo };
+  }
+
   /**
    * Returns the final formatted response for callTracer config.
    *
@@ -181,35 +233,25 @@ export class DebugService implements IDebugService {
         result,
       } = transactionsResponse;
 
-      const [fromToEvmAddress, toToEvmAddress] = await Promise.all([
-        this.resolveAddress(
-          from,
-          [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-          requestIdPrefix,
-        ),
-        this.resolveAddress(
-          to,
-          [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-          requestIdPrefix,
-        ),
-      ]);
+      const { resolvedFrom, resolvedTo } = await this.resolveMultipleAddresses(from, to, requestIdPrefix);
 
-      const value = amount === 0 ? '0x0' : numberTo0x(amount);
-      const errorResult = result !== 'SUCCESS' ? result : undefined;
+      const value = amount === 0 ? EthImpl.zeroHex : numberTo0x(amount);
+      const errorResult = result !== SUCCESS ? result : undefined;
 
       return {
         type,
-        from: fromToEvmAddress,
-        to: toToEvmAddress,
+        from: resolvedFrom,
+        to: resolvedTo,
         value,
         gas: numberTo0x(gas),
         gasUsed: numberTo0x(gasUsed),
         input,
-        output: result !== 'SUCCESS' ? error : output,
-        ...(result !== 'SUCCESS' && { error: errorResult }),
-        ...(result !== 'SUCCESS' && { revertReason: decodeErrorMessage(error) }),
-        // if we have two actions or more executed during the transaction the first one is returned in the top and the other ones in
-        // a calls array, although both are returned form the actions endpoint
+        output: result !== SUCCESS ? error : output,
+        ...(result !== SUCCESS && { error: errorResult }),
+        ...(result !== SUCCESS && { revertReason: decodeErrorMessage(error) }),
+        // if we have more than one call executed during the transactions we would return all calls
+        // except the first one in the sub-calls array,
+        // therefore we need to exclude the first one from the actions response
         calls: tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.slice(1),
       };
     } catch (e) {
