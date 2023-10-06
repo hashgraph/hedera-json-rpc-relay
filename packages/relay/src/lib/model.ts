@@ -71,7 +71,7 @@ export class Block {
       this.transactionsRoot = args.transactionsRoot;
       this.uncles = [];
       this.withdrawals = [];
-      this.withdrawalsRoot = '0x0';
+      this.withdrawalsRoot = '0x0000000000000000000000000000000000000000000000000000000000000000';
     }
   }
 
