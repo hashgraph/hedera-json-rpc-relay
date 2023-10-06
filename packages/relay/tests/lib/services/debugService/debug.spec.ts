@@ -303,13 +303,13 @@ describe('Debug API Test Suite', async function () {
       });
 
       it('Test opcodeLogger', async function () {
-        const expectedError = predefined.INTERNAL_ERROR('opcodeLogger is currently not supported');
-        await RelayAssertions.assertRejection(expectedError, debugService.debug_traceTransaction, true, debugService, [
-          transactionHash,
-          opcodeLogger,
-          tracerConfigTrue,
-          getRequestId(),
-        ]);
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          debugService.debug_traceTransaction,
+          true,
+          debugService,
+          [transactionHash, opcodeLogger, tracerConfigTrue, getRequestId()],
+        );
       });
     });
 

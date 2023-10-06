@@ -52,7 +52,9 @@ enum ORDER {
 }
 
 export enum TracerType {
+  // Call tracer tracks all the call frames executed during a transaction
   CallTracer = 'callTracer',
+  // Opcode logger executes a transaction and emits the opcodes  and context at every step
   OpcodeLogger = 'opcodeLogger',
 }
 

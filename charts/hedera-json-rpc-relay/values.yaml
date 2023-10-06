@@ -50,6 +50,8 @@ config:
   REDIS_ENABLED: false
   REDIS_URL: ''
   REDIS_RECONNECT_DELAY_MS: 1000
+  DEBUG_API_ENABLED: false
+  FILTER_API_ENABLED: false
 
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []

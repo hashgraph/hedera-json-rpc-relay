@@ -172,6 +172,6 @@ export const methodConfiguration = {
     total: tier2rateLimit,
   },
   debug_traceTransaction: {
-    total: tier2rateLimit,
+    total: tier1rateLimit,
   },
 };
