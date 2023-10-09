@@ -439,6 +439,8 @@ describe('Precheck', async function () {
     const transfer = '0x';
     const invalidTx = '0x60806040523480156200001157600080fd5b';
     it('should be able to calculate small contract create', function () {
+      // This number represents the estimation for mirror node web3 module
+      // Can be fetched by using: curl -X POST --data '{"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{"from":"0x...","data":<greeterContractCreate>},"latest"]}'
       const mirrorNodeEstimation = 60364;
       // This number represents the difference between the actual gas returned from the mirror node and the minimal required for deployment of this contract based only on the data field.
       const gasDifferenceFromOtherFactors = 37964;
@@ -449,6 +451,8 @@ describe('Precheck', async function () {
     });
 
     it('should be able to calculate normal contract create', function () {
+      // This number represents the estimation for mirror node web3 module
+      // Can be fetched by using: curl -X POST --data '{"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{"from":"0x...","data":<greeterContractCreate>},"latest"]}'
       const mirrorNodeEstimation = 86351;
       // This number represents the difference between the actual gas returned from the mirror node and the minimal required for deployment of this contract based only on the data field.
       const gasDifferenceFromOtherFactors = 16739;
