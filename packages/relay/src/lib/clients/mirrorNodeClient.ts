@@ -738,7 +738,7 @@ export class MirrorNodeClient {
 
   public async getContractsResultsActions(transactionIdOrHash: string, requestIdPrefix?: string): Promise<any> {
     return this.get(
-      `${this.getContractResultsActionsByTransactionId(transactionIdOrHash)}`,
+      `${this.getContractResultsActionsByTransactionIdPath(transactionIdOrHash)}`,
       MirrorNodeClient.GET_CONTRACTS_RESULTS_ACTIONS,
       requestIdPrefix,
     );
@@ -918,7 +918,7 @@ export class MirrorNodeClient {
     ).replace(MirrorNodeClient.TIMESTAMP_PLACEHOLDER, timestamp);
   }
 
-  private getContractResultsActionsByTransactionId(transactionIdOrHash: string) {
+  private getContractResultsActionsByTransactionIdPath(transactionIdOrHash: string) {
     return MirrorNodeClient.GET_CONTRACTS_RESULTS_ACTIONS.replace(
       MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER,
       transactionIdOrHash,
