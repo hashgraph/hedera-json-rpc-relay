@@ -1697,17 +1697,19 @@ export class EthImpl implements Eth {
   async getTransactionByHash(hash: string, requestIdPrefix?: string) {
     this.logger.trace(`${requestIdPrefix} getTransactionByHash(hash=${hash})`, hash);
 
-    // check if tx is synthetic and exists in cache
-    const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
-    const cachedLog = await this.cacheService.getSharedWithFallback(
-      cacheKeySyntheticLog,
-      EthImpl.ethGetTransactionReceipt,
-      requestIdPrefix,
-    );
+    if (this.shouldPopulateSyntheticContractResults) {
+      // check if tx is synthetic and exists in cache
+      const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
+      const cachedLog = await this.cacheService.getSharedWithFallback(
+        cacheKeySyntheticLog,
+        EthImpl.ethGetTransactionReceipt,
+        requestIdPrefix,
+      );
 
-    if (this.shouldPopulateSyntheticContractResults && cachedLog) {
-      const tx = this.createTransactionFromLog(cachedLog);
-      return tx;
+      if (cachedLog) {
+        const tx = this.createTransactionFromLog(cachedLog);
+        return tx;
+      }
     }
 
     const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
@@ -1749,7 +1751,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_RECEIPT}_${hash}`;
-    const cachedResponse = false; //this.cacheService.get(cacheKey, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
+    const cachedResponse = this.cacheService.get(cacheKey, EthImpl.ethGetTransactionReceipt, requestIdPrefix);
     if (cachedResponse) {
       this.logger.debug(
         `${requestIdPrefix} getTransactionReceipt returned cached response: ${JSON.stringify(cachedResponse)}`,

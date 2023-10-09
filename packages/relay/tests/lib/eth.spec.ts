@@ -6007,9 +6007,9 @@ describe('Eth', async function () {
       process.env.DEV_MODE = initialDevModeValue;
     });
 
-    it('returns synthetic transaction when it matchs cache', async function () {
-      // set cache with synthetic log
-      const cacheKeySyntheticLog1 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${defaultDetailedContractResultByHash.hash}`;
+    it('returns synthetic transaction when it matches cache', async function () {
+      // prepare cache with synthetic log
+      const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${defaultDetailedContractResultByHash.hash}`;
       const cachedLog = new Log({
         address: defaultLogs1[0].address,
         blockHash: toHash32(defaultLogs1[0].block_hash),
@@ -6022,12 +6022,11 @@ describe('Eth', async function () {
         transactionIndex: nullableNumberTo0x(defaultLogs1[0].transaction_index),
       });
 
-      cacheService.set(cacheKeySyntheticLog1, cachedLog, EthImpl.ethGetTransactionReceipt);
+      cacheService.set(cacheKeySyntheticLog, cachedLog, EthImpl.ethGetTransactionReceipt);
 
-      // w no mirror node requests
       const transaction = await ethImpl.getTransactionByHash(defaultTxHash);
 
-      // Assert the matching tx
+      // Assert the respnse tx
       expect(transaction.blockHash).to.eq(cachedLog.blockHash);
       expect(transaction.blockNumber).to.eq(cachedLog.blockNumber);
       expect(transaction.from).to.eq(cachedLog.address);
