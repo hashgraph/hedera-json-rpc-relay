@@ -1845,10 +1845,11 @@ export class EthImpl implements Eth {
 
   private async getCurrentGasPriceForBlock(blockHash: string, requestIdPrefix?: string): Promise<string> {
     const block = await this.getBlockByHash(blockHash, false);
+    const timestampDecimal = parseInt(block ? block.timestamp : '0', 16);
     const gasPriceForTimestamp = await this.getFeeWeibars(
       EthImpl.ethGetTransactionReceipt,
       requestIdPrefix,
-      block?.timestamp,
+      timestampDecimal > 0 ? timestampDecimal.toString() : '',
     );
 
     return numberTo0x(gasPriceForTimestamp);
