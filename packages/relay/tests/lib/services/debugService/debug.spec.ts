@@ -304,7 +304,7 @@ describe('Debug API Test Suite', async function () {
 
       it('Test opcodeLogger', async function () {
         await RelayAssertions.assertRejection(
-          predefined.UNSUPPORTED_METHOD,
+          predefined.UNSUPPORTED_TRACER(TracerType.OpcodeLogger),
           debugService.debug_traceTransaction,
           true,
           debugService,
