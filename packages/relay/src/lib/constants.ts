@@ -58,6 +58,11 @@ export enum TracerType {
   OpcodeLogger = 'opcodeLogger',
 }
 
+export enum CallType {
+  CREATE = 'CREATE',
+  CALL = 'CALL',
+}
+
 export default {
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
 
