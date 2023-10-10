@@ -1710,6 +1710,22 @@ export class EthImpl implements Eth {
    */
   async getTransactionByHash(hash: string, requestIdPrefix?: string) {
     this.logger.trace(`${requestIdPrefix} getTransactionByHash(hash=${hash})`, hash);
+
+    if (this.shouldPopulateSyntheticContractResults) {
+      // check if tx is synthetic and exists in cache
+      const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
+      const cachedLog = await this.cacheService.getSharedWithFallback(
+        cacheKeySyntheticLog,
+        EthImpl.ethGetTransactionReceipt,
+        requestIdPrefix,
+      );
+
+      if (cachedLog) {
+        const tx = this.createTransactionFromLog(cachedLog);
+        return tx;
+      }
+    }
+
     const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
     if (contractResult === null || contractResult.hash === undefined) {
       return null;

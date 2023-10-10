@@ -6006,5 +6006,36 @@ describe('Eth', async function () {
       );
       process.env.DEV_MODE = initialDevModeValue;
     });
+
+    it('returns synthetic transaction when it matches cache', async function () {
+      // prepare cache with synthetic log
+      const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${defaultDetailedContractResultByHash.hash}`;
+      const cachedLog = new Log({
+        address: defaultLogs1[0].address,
+        blockHash: toHash32(defaultLogs1[0].block_hash),
+        blockNumber: numberTo0x(defaultLogs1[0].block_number),
+        data: defaultLogs1[0].data,
+        logIndex: numberTo0x(defaultLogs1[0].index),
+        removed: false,
+        topics: defaultLogs1[0].topics,
+        transactionHash: toHash32(defaultLogs1[0].transaction_hash),
+        transactionIndex: nullableNumberTo0x(defaultLogs1[0].transaction_index),
+      });
+
+      cacheService.set(cacheKeySyntheticLog, cachedLog, EthImpl.ethGetTransactionReceipt);
+
+      const transaction = await ethImpl.getTransactionByHash(defaultTxHash);
+
+      // Assert the respnse tx
+      expect(transaction.blockHash).to.eq(cachedLog.blockHash);
+      expect(transaction.blockNumber).to.eq(cachedLog.blockNumber);
+      expect(transaction.from).to.eq(cachedLog.address);
+      expect(transaction.gas).to.eq(EthImpl.defaultTxGas);
+      expect(transaction.gasPrice).to.eq(EthImpl.invalidEVMInstruction);
+      expect(transaction.value).to.eq(EthImpl.oneTwoThreeFourHex);
+      expect(transaction.to).to.eq(cachedLog.address);
+      expect(transaction.hash).to.eq(cachedLog.transactionHash);
+      expect(transaction.transactionIndex).to.eq(cachedLog.transactionIndex);
+    });
   });
 });
