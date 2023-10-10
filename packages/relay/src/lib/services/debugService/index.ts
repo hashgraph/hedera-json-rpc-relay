@@ -24,7 +24,7 @@ import type { IDebugService } from './IDebugService';
 import type { CommonService } from '../ethService/ethCommonService';
 import { decodeErrorMessage, numberTo0x } from '../../../formatters';
 import constants from '../../constants';
-import { TracerType } from '../../constants';
+import { TracerType, CallType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
 import { EthImpl } from '../../eth';
 const SUCCESS = 'SUCCESS';
@@ -53,8 +53,6 @@ export class DebugService implements IDebugService {
    * @private
    */
   private readonly common: CommonService;
-
-  public readonly debugTraceTransaction = 'debug_traceTransaction';
 
   /**
    * Creates an instance of DebugService.
@@ -108,7 +106,7 @@ export class DebugService implements IDebugService {
       if (tracer === TracerType.CallTracer) {
         return await this.callTracer(transactionHash, tracerConfig, requestIdPrefix);
       } else if (tracer === TracerType.OpcodeLogger) {
-        throw predefined.UNSUPPORTED_METHOD;
+        throw predefined.UNSUPPORTED_TRACER(TracerType.OpcodeLogger);
       }
     } catch (e) {
       throw this.common.genericErrorHandler(e);
@@ -134,8 +132,8 @@ export class DebugService implements IDebugService {
 
         // The actions endpoint does not return input and output for the calls so we get them from another endpoint
         // The first one is excluded because we take its input and output from the contracts/results/{transactionIdOrHash} endpoint
-        const getContract =
-          index !== 0 && action.call_operation_type === 'CREATE'
+        const contract =
+          index !== 0 && action.call_operation_type === CallType.CREATE
             ? await this.mirrorNodeClient.getContract(action.to, requestIdPrefix)
             : undefined;
 
@@ -145,8 +143,8 @@ export class DebugService implements IDebugService {
           to: resolvedTo,
           gas: numberTo0x(action.gas),
           gasUsed: numberTo0x(action.gas_used),
-          input: getContract?.bytecode ?? action.input,
-          output: getContract?.runtime_bytecode ?? action.result_data,
+          input: contract?.bytecode ?? action.input,
+          output: contract?.runtime_bytecode ?? action.result_data,
           value: numberTo0x(action.value),
         };
       }),
@@ -170,7 +168,7 @@ export class DebugService implements IDebugService {
     const entity = await this.mirrorNodeClient.resolveEntityType(
       address,
       types,
-      'debug_traceTransaction',
+      EthImpl.debugTraceTransaction,
       requestIdPrefix,
     );
 
