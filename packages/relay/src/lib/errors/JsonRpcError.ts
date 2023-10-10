@@ -265,4 +265,10 @@ export const predefined = {
     code: -32001,
     message: 'Filter not found',
   }),
+  UNSUPPORTED_TRACER: (type: string) =>
+    new JsonRpcError({
+      name: 'Unsupported tracer type',
+      code: -32111,
+      message: `Unsupported tracer type - ${type}`,
+    }),
 };

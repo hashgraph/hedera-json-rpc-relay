@@ -1,4 +1,4 @@
-/*-
+/*
  *
  * Hedera JSON RPC Relay
  *
@@ -652,6 +652,19 @@ app.useRpc('web3_client_version', async () => {
 app.useRpc('eth_maxPriorityFeePerGas', async () => {
   return logAndHandleResponse('eth_maxPriorityFeePerGas', [], (requestId) =>
     relay.eth().maxPriorityFeePerGas(requestId),
+  );
+});
+
+/**
+ * Debug related endpoints:
+ */
+
+app.useRpc('debug_traceTransaction', async (params: any) => {
+  const transactionHash = params[0];
+  const tracer = params[1].tracer;
+  const tracerConfig = params[1].tracerConfig;
+  return logAndHandleResponse('debug_traceTransaction', [transactionHash, tracer, tracerConfig], (requestId) =>
+    relay.eth().debugService().debug_traceTransaction(transactionHash, tracer, tracerConfig, requestId),
   );
 });
 

@@ -162,4 +162,18 @@ export const METHODS = {
       type: 'hex',
     },
   },
+  debug_traceTransaction: {
+    0: {
+      required: true,
+      type: 'hex',
+    },
+    1: {
+      required: true,
+      type: 'tracerType',
+    },
+    2: {
+      required: false,
+      type: 'tracerConfig',
+    },
+  },
 };

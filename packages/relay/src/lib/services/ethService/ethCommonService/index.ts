@@ -221,7 +221,7 @@ export class CommonService implements ICommonService {
     if (error instanceof JsonRpcError) {
       throw error;
     }
-    return predefined.INTERNAL_ERROR(error.message.toString());
+    throw predefined.INTERNAL_ERROR(error.message.toString());
   }
 
   public async validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestIdPrefix?: string) {

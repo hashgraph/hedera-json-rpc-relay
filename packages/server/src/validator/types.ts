@@ -87,4 +87,16 @@ export const TYPES = {
     test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '{64}$').test(param),
     error: Constants.TRANSACTION_HASH_ERROR,
   },
+  tracerType: {
+    test: (param: Constants.TracerType) => Object.values(Constants.TracerType).includes(param),
+    error: 'Invalid tracer type',
+  },
+  tracerConfig: {
+    test: (param: Record<string, any>) => {
+      return (
+        typeof param === 'object' && param !== null && 'onlyTopCall' in param && typeof param.onlyTopCall === 'boolean'
+      );
+    },
+    error: 'Invalid tracerConfig',
+  },
 };
