@@ -487,4 +487,13 @@ describe('Precheck', async function () {
       expect(intrinsicGasCost).to.be.greaterThan(constants.TX_BASE_COST);
     });
   });
+
+  describe('hexToBytes', async function () {
+    it('should convert a hex string to bytes', () => {
+      const hexString = 'aabbccddeeff';
+      const result = precheck.hexToBytes(hexString);
+
+      expect(Array.from(result)).to.deep.equal([170, 187, 204, 221, 238, 255]);
+    });
+  });
 });

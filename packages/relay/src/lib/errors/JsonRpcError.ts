@@ -271,10 +271,10 @@ export const predefined = {
       code: -32111,
       message: `Unsupported tracer type - ${type}`,
     }),
-  TRANSACTION_SIZE_TOO_BIG: (size: string) =>
+  TRANSACTION_SIZE_TOO_BIG: (actualSize: string, expectedSize: string) =>
     new JsonRpcError({
       name: 'Transaction size too big',
       code: -32201,
-      message: `Oversized data: transaction size ${size}, transaction limit 131072`,
+      message: `Oversized data: transaction size ${actualSize}, transaction limit ${expectedSize}`,
     }),
 };

@@ -253,10 +253,19 @@ export class Precheck {
    * @param hex the hex string you want to convert
    */
   hexToBytes(hex: string): Uint8Array {
-    const bytes: number[] = [];
-    for (let i = 0; i < hex.length; i += 2) {
-      bytes.push(parseInt(hex.substring(i, 2), 16));
+    if (hex.startsWith('0x')) {
+      hex = hex.slice(2);
     }
-    return new Uint8Array(bytes);
+    return Uint8Array.from(Buffer.from(hex, 'hex'));
+  }
+
+  checkSize(transaction: string): void {
+    const transactionToBytes: Uint8Array = this.hexToBytes(transaction);
+    const transactionSize: number = transactionToBytes.length;
+    const transactionSizeLimit: number = constants.TRANSACTION_SIZE_LIMIT;
+
+    if (transactionSize > transactionSizeLimit) {
+      throw predefined.TRANSACTION_SIZE_TOO_BIG(String(transactionSize), String(transactionSizeLimit));
+    }
   }
 }

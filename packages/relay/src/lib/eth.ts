@@ -122,11 +122,6 @@ export class EthImpl implements Eth {
   // static response constants
   static accounts = [];
 
-  //131072 bytes are 128kbytes
-  private TRANSACTION_SIZE_LIMIT = process.env.TRANSACTION_SIZE_LIMIT
-    ? parseInt(process.env.TRANSACTION_SIZE_LIMIT)
-    : 131072;
-
   /**
    * Overrideable options used when initializing.
    *
@@ -1325,12 +1320,7 @@ export class EthImpl implements Eth {
     let interactingEntity = '';
     let originatingAddress = '';
     try {
-      const transactionToBytes: Uint8Array = this.precheck.hexToBytes(transaction);
-      const transactionSize: number = transactionToBytes.length;
-
-      if (transactionSize > this.TRANSACTION_SIZE_LIMIT) {
-        throw predefined.TRANSACTION_SIZE_TOO_BIG(String(transactionSize));
-      }
+      this.precheck.checkSize(transaction);
       const parsedTx = Precheck.parseTxIfNeeded(transaction);
       interactingEntity = parsedTx.to?.toString() || '';
       originatingAddress = parsedTx.from?.toString() || '';

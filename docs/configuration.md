@@ -90,7 +90,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `REDIS_ENABLED`                             | "true"                   | Enable usage of Redis as shared cache                                                                                                                                                                                                                                                                  |
 | `REDIS_URL`                                 | "redis://127.0.0.1:6379" | Sets the url for the Redis shared cache                                                                                                                                                                                                                                                                |
 | `REDIS_RECONNECT_DELAY_MS`                  | "1000"                   | Sets the delay between reconnect retries from the Redis client in ms                                                                                                                                                                                                                                   |
-
+| `TRANSACTION_SIZ_LIMIT`                     | "131072"                 | Sets the limit of the transaction size the relay accepts
 ## WS-Server
 
 The following table lists the available properties along with their default values for the [Ws-server package](/packages/ws-server/).
