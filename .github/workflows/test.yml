@@ -7,14 +7,14 @@ on:
     branches: [ main, release/** ]
     tags: [ v* ]
 
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
-
   test-node:
-
     name: Tests
-
     runs-on: ubuntu-latest
-
     steps:
       - name: Use Node.js TLS 18
         uses: actions/setup-node@v3
@@ -34,5 +34,5 @@ jobs:
         run: npm run build-and-test
 
       - name: Upload coverage report
-        if: always()
+        if: ${{ always() && !cancelled() }}
         run: node_modules/codecov/bin/codecov

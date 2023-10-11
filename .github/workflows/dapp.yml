@@ -7,6 +7,10 @@ on:
     branches: [main, release/**]
     tags: [v*]
 
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   setup-local-hedera:
     name: Dapp Tests
@@ -49,17 +53,17 @@ jobs:
         working-directory: ./dapp-example/
 
       - name: Dump relay logs
-        if: always()
+        if: ${{ always() && !cancelled() }}
         uses: jwalton/gh-docker-logs@v2
         with:
           dest: './logs'
 
       - name: Tar logs
-        if: always()
+        if: ${{ always() && !cancelled() }}
         run: tar cvzf ./logs.tgz ./logs
       
       - name: Upload logs to GitHub
-        if: always()
+        if: ${{ always() && !cancelled() }}
         uses: actions/upload-artifact@v3
         with:
           name: logs.tgz
@@ -67,7 +71,7 @@ jobs:
 
       - name: Publish Reports
         uses: mikepenz/action-junit-report@v3
-        if: always()
+        if: ${{ always() && !cancelled() }}
         with:
           check_name: Dapp Test Report
           report_paths: "**/*.xml"
