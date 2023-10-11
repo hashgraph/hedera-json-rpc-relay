@@ -30,7 +30,7 @@ import { formatRequestIdMessage } from './formatters';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
-  level: process.env.LOG_LEVEL || 'trace',
+  level: process.env.LOG_LEVEL || 'info',
   transport: {
     target: 'pino-pretty',
     options: {
@@ -81,6 +81,12 @@ app.getKoaApp().use(async (ctx, next) => {
       `${formatRequestIdMessage(ctx.state.reqId)} [${ctx.method}]: ${ctx.state.methodName} ${
         ctx.state.status
       } ${ms} ms`,
+    );
+    // log the response
+    logger.trace(
+      `${formatRequestIdMessage(ctx.state.reqId)} [${ctx.method}]: ${ctx.state.methodName} ${
+        ctx.state.status
+      } ${JSON.stringify(ctx.body)}`,
     );
     methodResponseHistogram.labels(ctx.state.methodName, `${ctx.status}`).observe(ms);
   }

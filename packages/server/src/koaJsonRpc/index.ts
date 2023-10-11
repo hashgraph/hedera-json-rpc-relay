@@ -119,6 +119,8 @@ export default class KoaJsonRpc {
         return;
       }
 
+      this.logger.trace(`[Request ID: ${this.getRequestId()}] Request body ${JSON.stringify(body)}`);
+
       ctx.state.methodName = body.method;
       const methodName = body.method;
 
@@ -192,6 +194,7 @@ export default class KoaJsonRpc {
             break;
         }
       }
+      this.logger.trace(`[Request ID: ${this.getRequestId()}] Response body ${JSON.stringify(ctx.body)}`);
     };
   }
 
