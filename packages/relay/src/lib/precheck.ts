@@ -247,4 +247,16 @@ export class Precheck {
       constants.TX_BASE_COST + constants.TX_DATA_ZERO_COST * zeros + constants.ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros
     );
   }
+
+  /**
+   * Converts hex string to bytes array
+   * @param hex the hex string you want to convert
+   */
+  hexToBytes(hex: string): Uint8Array {
+    const bytes: number[] = [];
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes.push(parseInt(hex.substring(i, 2), 16));
+    }
+    return new Uint8Array(bytes);
+  }
 }
