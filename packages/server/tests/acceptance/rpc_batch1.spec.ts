@@ -937,6 +937,24 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(info.created_contract_ids.length).to.be.equal(1);
       });
 
+      it('should execute "eth_sendRawTransaction" and fail when deploying too large contract', async function () {
+        const gasPrice = await relay.gasPrice(requestId);
+        const transaction = {
+          type: 2,
+          chainId: Number(CHAIN_ID),
+          nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+          maxPriorityFeePerGas: gasPrice,
+          maxFeePerGas: gasPrice,
+          gasLimit: defaultGasLimit,
+          data: '0x' + '00'.repeat(132221),
+        };
+
+        const signedTx = await accounts[1].wallet.signTransaction(transaction);
+        const error = predefined.TRANSACTION_SIZE_TOO_BIG('132321');
+
+        await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
+      });
+
       it('should execute "eth_sendRawTransaction" of type 1 and deploy a real contract', async function () {
         //omitting the "to" and "nonce" fields when creating a new contract
         const transaction = {
