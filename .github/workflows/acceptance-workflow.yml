@@ -21,6 +21,10 @@ on:
         required: false
         type: string
 
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   acceptance-workflow:
     runs-on: ubuntu-latest
