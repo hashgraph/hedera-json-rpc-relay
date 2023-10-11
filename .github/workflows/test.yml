@@ -34,5 +34,5 @@ jobs:
         run: npm run build-and-test
 
       - name: Upload coverage report
-        if: always()
+        if: ${{ always() && !cancelled() }}
         run: node_modules/codecov/bin/codecov
