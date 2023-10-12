@@ -18,7 +18,7 @@
  *
  */
 
-import { expect } from 'chai';
+import { Assertion, expect } from 'chai';
 import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 const registry = new Registry();
@@ -31,7 +31,7 @@ import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { ethers } from 'ethers';
 import constants from '../../src/lib/constants';
-import { predefined } from '../../src';
+import { JsonRpcError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 const logger = pino();
 
@@ -494,6 +494,31 @@ describe('Precheck', async function () {
       const result = precheck.hexToBytes(hexString);
 
       expect(Array.from(result)).to.deep.equal([170, 187, 204, 221, 238, 255]);
+    });
+
+    it('should fail if passed 0x', () => {
+      const hexString = '0x';
+      let error;
+      try {
+        precheck.hexToBytes(hexString);
+      } catch (e) {
+        error = e;
+      }
+      expect(error).to.be.an.instanceOf(JsonRpcError);
+      expect(error.message).to.equal('Error invoking RPC: Hex cannot be 0x');
+      expect(error.code).to.equal(-32603);
+    });
+
+    it('should fail if passed empty string', () => {
+      let error;
+      try {
+        precheck.hexToBytes('');
+      } catch (e) {
+        error = e;
+      }
+      expect(error).to.be.an.instanceOf(JsonRpcError);
+      expect(error.message).to.equal('Error invoking RPC: Passed hex an empty string');
+      expect(error.code).to.equal(-32603);
     });
   });
 });
