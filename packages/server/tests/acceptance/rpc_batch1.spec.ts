@@ -951,7 +951,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         };
 
         const signedTx = await accounts[1].wallet.signTransaction(transaction);
-        const error = predefined.TRANSACTION_SIZE_TOO_BIG('132320', String(constants.TRANSACTION_SIZE_LIMIT));
+        const error = predefined.TRANSACTION_SIZE_TOO_BIG('132320', String(constants.SEND_RAW_TRANSACTION_SIZE_LIMIT));
 
         await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
       });

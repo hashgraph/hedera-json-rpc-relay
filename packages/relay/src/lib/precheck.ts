@@ -262,7 +262,7 @@ export class Precheck {
   checkSize(transaction: string): void {
     const transactionToBytes: Uint8Array = this.hexToBytes(transaction);
     const transactionSize: number = transactionToBytes.length;
-    const transactionSizeLimit: number = constants.TRANSACTION_SIZE_LIMIT;
+    const transactionSizeLimit: number = constants.SEND_RAW_TRANSACTION_SIZE_LIMIT;
 
     if (transactionSize > transactionSizeLimit) {
       throw predefined.TRANSACTION_SIZE_TOO_BIG(String(transactionSize), String(transactionSizeLimit));
