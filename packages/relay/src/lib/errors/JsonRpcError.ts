@@ -265,16 +265,10 @@ export const predefined = {
     code: -32001,
     message: 'Filter not found',
   }),
-  UNSUPPORTED_TRACER: (type: string) =>
-    new JsonRpcError({
-      name: 'Unsupported tracer type',
-      code: -32111,
-      message: `Unsupported tracer type - ${type}`,
-    }),
   TRANSACTION_SIZE_TOO_BIG: (actualSize: string, expectedSize: string) =>
     new JsonRpcError({
       name: 'Transaction size too big',
       code: -32201,
       message: `Oversized data: transaction size ${actualSize}, transaction limit ${expectedSize}`,
-    }),
+    })
 };
