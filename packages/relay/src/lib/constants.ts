@@ -65,6 +65,10 @@ export enum CallType {
 
 export default {
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
+  // 131072 bytes are 128kbytes
+  SEND_RAW_TRANSACTION_SIZE_LIMIT: process.env.SEND_RAW_TRANSACTION_SIZE_LIMIT
+    ? parseInt(process.env.SEND_RAW_TRANSACTION_SIZE_LIMIT)
+    : 131072,
 
   CACHE_KEY,
   CACHE_TTL,

@@ -1320,6 +1320,7 @@ export class EthImpl implements Eth {
     let interactingEntity = '';
     let originatingAddress = '';
     try {
+      this.precheck.checkSize(transaction);
       const parsedTx = Precheck.parseTxIfNeeded(transaction);
       interactingEntity = parsedTx.to?.toString() || '';
       originatingAddress = parsedTx.from?.toString() || '';

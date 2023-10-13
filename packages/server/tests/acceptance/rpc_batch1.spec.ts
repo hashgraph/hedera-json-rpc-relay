@@ -35,6 +35,7 @@ import RelayCalls from '../../tests/helpers/constants';
 const Address = RelayCalls;
 import basicContract from '../../tests/contracts/Basic.json';
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
+import constants from '../../../relay/src/lib/constants';
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -935,6 +936,24 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(info.contract_id).to.not.be.null;
         expect(info).to.have.property('created_contract_ids');
         expect(info.created_contract_ids.length).to.be.equal(1);
+      });
+
+      it.only('should execute "eth_sendRawTransaction" and fail when deploying too large contract', async function () {
+        const gasPrice = await relay.gasPrice(requestId);
+        const transaction = {
+          type: 2,
+          chainId: Number(CHAIN_ID),
+          nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+          maxPriorityFeePerGas: gasPrice,
+          maxFeePerGas: gasPrice,
+          gasLimit: defaultGasLimit,
+          data: '0x' + '00'.repeat(132221),
+        };
+
+        const signedTx = await accounts[1].wallet.signTransaction(transaction);
+        const error = predefined.TRANSACTION_SIZE_TOO_BIG('132320', String(constants.SEND_RAW_TRANSACTION_SIZE_LIMIT));
+
+        await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
       });
 
       it('should execute "eth_sendRawTransaction" of type 1 and deploy a real contract', async function () {

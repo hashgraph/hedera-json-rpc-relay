@@ -247,4 +247,33 @@ export class Precheck {
       constants.TX_BASE_COST + constants.TX_DATA_ZERO_COST * zeros + constants.ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros
     );
   }
+
+  /**
+   * Converts hex string to bytes array
+   * @param hex the hex string you want to convert
+   */
+  hexToBytes(hex: string): Uint8Array {
+    if (hex === '') {
+      throw predefined.INTERNAL_ERROR('Passed hex an empty string');
+    }
+
+    if (hex.startsWith('0x') && hex.length == 2) {
+      console.log('Faiiiling here');
+      throw predefined.INTERNAL_ERROR('Hex cannot be 0x');
+    } else if (hex.startsWith('0x') && hex.length != 2) {
+      hex = hex.slice(2);
+    }
+
+    return Uint8Array.from(Buffer.from(hex, 'hex'));
+  }
+
+  checkSize(transaction: string): void {
+    const transactionToBytes: Uint8Array = this.hexToBytes(transaction);
+    const transactionSize: number = transactionToBytes.length;
+    const transactionSizeLimit: number = constants.SEND_RAW_TRANSACTION_SIZE_LIMIT;
+
+    if (transactionSize > transactionSizeLimit) {
+      throw predefined.TRANSACTION_SIZE_TOO_BIG(String(transactionSize), String(transactionSizeLimit));
+    }
+  }
 }
