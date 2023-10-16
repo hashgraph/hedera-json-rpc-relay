@@ -1255,7 +1255,7 @@
                             },
                             "v": {
                                 "title": "v",
-                                "description": "For backwards compatibility",
+                                "description": "For backwards compatibility, `v` is optionally provided as an alternative to `yParity`. This field is DEPRECATED and all use of it should migrate to `yParity`.",
                                 "oneOf": [
                                     {
                                         "$ref": "#/components/schemas/byte"
