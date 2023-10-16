@@ -134,5 +134,6 @@ export default class RelayAssertions {
     expect(block.stateRoot).equal(EthImpl.zeroHex32Byte);
     expect(block.totalDifficulty).equal(EthImpl.zeroHex);
     expect(block.uncles).to.deep.equal([]);
+    expect(block.withdrawalsRoot).to.equal(EthImpl.zeroHex32Byte);
   };
 }
