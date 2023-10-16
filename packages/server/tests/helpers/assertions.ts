@@ -400,19 +400,24 @@ export default class Assertions {
     expect(address).to.match(/(\b0x(0){15})/g, 'contains 15 consecutive zeros');
   };
 
-  static validateResultDebugValues = (result, excludedValues, nestedExcludedValues, expectedResult) => {
-    let hasValidHash = (currentValue) => RelayAssertions.validateHash(currentValue);
+  static validateResultDebugValues = (
+    result,
+    excludedValues: string[],
+    nestedExcludedValues: string[],
+    expectedResult,
+  ) => {
+    const hasValidHash = (currentValue) => RelayAssertions.validateHash(currentValue);
 
-    //Validate result schema
+    // Validate result schema
     expect(result).to.have.keys(Object.keys(expectedResult));
 
-    //Validate result values
+    // Validate result values
     expect(result).excluding(excludedValues).to.deep.eq(expectedResult);
     if (nestedExcludedValues.length) {
       expect(result.calls).excluding(nestedExcludedValues).to.deep.eq(expectedResult.calls);
     }
 
-    //Validate excluded values are encoded
+    // Validate excluded values are encoded
     expect(excludedValues.every(hasValidHash));
     if (result.calls) {
       result.calls.forEach((call) => {
