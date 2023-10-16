@@ -64,6 +64,7 @@
         "@open-rpc/schema-utils-js": "^1.16.1",
         "@types/find-config": "^1.0.2",
         "@types/sinon": "^10.0.16",
+        "chai-exclude": "^2.1.0",
         "eslint-config-standard-with-typescript": "^39.0.0",
         "eslint-plugin-n": "^15.7.0",
         "keyv-file": "^0.2.0",
