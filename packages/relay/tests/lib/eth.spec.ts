@@ -5741,7 +5741,7 @@ describe('Eth', async function () {
       expect(receipt.transactionIndex).to.eq(null);
     });
 
-    it.only('valid receipt on cache match', async function () {
+    it('valid receipt on cache match', async function () {
       let getBlockByHash = sandbox.stub(ethImpl, <any>'getBlockByHash').resolves(blockByHashFromRelay);
       let getFeeWeibars = sandbox.stub(ethImpl, <any>'getFeeWeibars').resolves(`ad78ebc5ac620000`); // 0xad78ebc5ac620000 in decimal
 
