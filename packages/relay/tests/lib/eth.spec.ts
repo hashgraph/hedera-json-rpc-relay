@@ -95,6 +95,33 @@ const blockTimestamp = '1651560386';
 const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
 const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;
 
+const blockByHashFromRelay = {
+  timestamp: '0x652dbbb7',
+  difficulty: '0x0',
+  extraData: '0x',
+  gasLimit: '0xe4e1c0',
+  baseFeePerGas: '0x1a3185c5000',
+  gasUsed: '0x0',
+  logsBloom:
+    '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+  miner: '0x0000000000000000000000000000000000000000',
+  mixHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  nonce: '0x0000000000000000',
+  receiptsRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  sha3Uncles: '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
+  size: '0x340',
+  stateRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  totalDifficulty: '0x0',
+  transactions: [],
+  transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
+  uncles: [],
+  withdrawals: [],
+  withdrawalsRoot: '0x0',
+  number: '0x341890',
+  hash: '0x360cda6a0760c9adb0e41268edbeb6a0cb3bdaff8f1e68f6ffbd22c9c050d8af',
+  parentHash: '0xf44fd739068dde2db83c114998f8218b6c9d49200642c40046b16e8f83dfdcd6',
+};
+
 const defaultBlock = {
   count: blockTransactionCount,
   hapi_version: '0.28.1',
@@ -5715,9 +5742,9 @@ describe('Eth', async function () {
     });
 
     it('valid receipt on cache match', async function () {
-      getCurrentGasPriceForBlockStub = sandbox
-        .stub(ethImpl, <any>'getCurrentGasPriceForBlock')
-        .resolves('0xad78ebc5ac620000');
+      let getBlockByHash = sandbox.stub(ethImpl, <any>'getBlockByHash').resolves(blockByHashFromRelay);
+      let getFeeWeibars = sandbox.stub(ethImpl, <any>'getFeeWeibars').resolves(`ad78ebc5ac620000`); // 0xad78ebc5ac620000 in decimal
+
       // set cache with synthetic log
       const cacheKeySyntheticLog1 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${defaultDetailedContractResultByHash.hash}`;
       const cachedLog = new Log({
@@ -5752,7 +5779,13 @@ describe('Eth', async function () {
       expect(receipt.transactionHash).to.eq(cachedLog.transactionHash);
       expect(receipt.transactionIndex).to.eq(cachedLog.transactionIndex);
       expect(receipt.root).to.eq(EthImpl.zeroHex32Byte);
-      expect(getCurrentGasPriceForBlockStub.calledOnce).to.be.true;
+
+      expect(getBlockByHash.calledOnce).to.be.true;
+      // verify thet getFeeWeibars stub was called
+      expect(getFeeWeibars.calledOnce).to.be.true;
+      // verify getFeeWeibars was called with the correct format
+      const expectedFormat = parseInt(blockByHashFromRelay.timestamp, 16).toString();
+      expect(getFeeWeibars.calledWith(`eth_GetTransactionReceipt`, undefined, expectedFormat)).to.be.true;
     });
   });
 
