@@ -45,7 +45,7 @@ export class Block {
   public readonly transactionsRoot: string = '0x0';
   public readonly uncles: string[] = [];
   public readonly withdrawals: string[] = [];
-  public readonly withdrawalsRoot: string = '0x0';
+  public readonly withdrawalsRoot: string = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
   constructor(args?: any) {
     if (args) {
@@ -164,9 +164,8 @@ export class Transaction2930 extends Transaction {
   public readonly yParity!: string | null;
 
   constructor(args: any) {
-    const { v, ...parentArgs } = args;
-    super(parentArgs);
-    this.yParity = v;
+    super(args);
+    this.yParity = args.v;
     this.accessList = args.accessList;
   }
 }

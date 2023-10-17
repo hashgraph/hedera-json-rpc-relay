@@ -1228,7 +1228,8 @@
                         "required": [
                             "yParity",
                             "r",
-                            "s"
+                            "s",
+                            "v"
                         ],
                         "properties": {
                             "yParity": {
@@ -1251,6 +1252,19 @@
                             "s": {
                                 "title": "s",
                                 "$ref": "#/components/schemas/uint"
+                            },
+                            "v": {
+                                "title": "v",
+                                "description": "For backwards compatibility, `v` is optionally provided as an alternative to `yParity`. This field is DEPRECATED and all use of it should migrate to `yParity`.",
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/byte"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/null"
+                                    }
+                                ]
+
                             }
                         }
                     }
@@ -1307,7 +1321,7 @@
                 ]
             },
             "TransactionSigned": {
-                "oneOf": [
+                "anyOf": [
                     {
                         "$ref": "#/components/schemas/Transaction1559Signed"
                     },
