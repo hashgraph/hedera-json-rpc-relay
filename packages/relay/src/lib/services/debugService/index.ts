@@ -72,7 +72,7 @@ export class DebugService implements IDebugService {
    * Checks if the Debug API is enabled
    * @public
    */
-  public static readonly isDebugAPIEnabled = process.env.DEBUG_API_ENABLED;
+  public static readonly isDebugAPIEnabled = process.env.DEBUG_API_ENABLED || false;
 
   static requireDebugAPIEnabled(): void {
     if (!process.env.DEBUG_API_ENABLED || process.env.DEBUG_API_ENABLED !== 'true') {
