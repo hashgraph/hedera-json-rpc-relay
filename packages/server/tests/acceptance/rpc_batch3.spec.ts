@@ -41,6 +41,21 @@ import RelayCalls from '../helpers/constants';
 import RelayAssertions from '../../../../packages/relay/tests/assertions';
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
 import Axios from 'axios';
+import EstimateGasContract from '../contracts/EstimateGasContract.json';
+import Reverter from '../contracts/Reverter.json';
+import { signTransaction } from '../../../relay/tests/helpers';
+import { TracerType } from '../../../relay/src/lib/constants';
+import parentContractJson from '../contracts/Parent.json';
+import { DebugService } from '../../../relay/src/lib/services/debugService';
+import { MirrorNodeClient } from '../../../relay/src/lib/clients';
+import pino from 'pino';
+import { Registry } from 'prom-client';
+import { CacheService } from '../../../relay/src/lib/services/cacheService/cacheService';
+import { CommonService } from '../../../relay/src/lib/services/ethService';
+import * as chai from 'chai';
+import chaiExclude from 'chai-exclude';
+
+chai.use(chaiExclude);
 
 describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -50,6 +65,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   // @ts-ignore
   const { servicesNode, mirrorNode, relay } = global;
   let mirrorPrimaryAccount, mirrorSecondaryAccount;
+  const sendRawTransaction = relay.sendRawTransaction;
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
@@ -86,6 +102,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
     accounts[0] = await servicesNode.createAliasAccount(80, relay.provider, requestId);
     accounts[1] = await servicesNode.createAliasAccount(80, relay.provider, requestId);
+    accounts[2] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
 
     reverterContract = await servicesNode.deployContract(reverterContractJson);
     // Wait for creation to propagate
@@ -1053,6 +1070,811 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       it('should not support "eth_newPendingTransactionFilter"', async function () {
         await relay.callUnsupported(RelayCalls.ETH_ENDPOINTS.ETH_NEW_PENDING_TRANSACTION_FILTER, [], requestId);
+      });
+    });
+  });
+
+  describe('Debug API Test Suite', async function () {
+    let requestId;
+    let estimateGasContractAddress;
+    let transactionTypeLegacy;
+    let transactionType2930;
+    let reverterContract;
+    let transactionType2;
+    const defaultGasLimit = numberTo0x(3_000_000);
+    const gasPrice = '0x2C68AF0BB14000';
+    const bytecode = EstimateGasContract.bytecode;
+    const tracerConfigTrue = { onlyTopCall: true };
+    const tracerConfigFalse = { onlyTopCall: false };
+    const callTracer: TracerType = TracerType.CallTracer;
+
+    before(async () => {
+      const defaultGasPrice = '0xA54F4C3C00';
+      requestId = Utils.generateRequestId();
+      reverterContract = await servicesNode.deployContract(reverterContractJson);
+      // Wait for creation to propagate
+      await mirrorNode.get(`/contracts/${reverterContract.contractId}`, requestId);
+      reverterEvmAddress = `0x${reverterContract.contractId.toSolidityAddress()}`;
+
+      const defaultTransactionFields = {
+        to: null,
+        from: accounts[0].address,
+        gasPrice: defaultGasPrice,
+        chainId: Number(CHAIN_ID),
+        gasLimit: defaultGasLimit,
+      };
+
+      transactionTypeLegacy = {
+        ...defaultTransactionFields,
+        type: 0,
+      };
+
+      transactionType2930 = {
+        ...defaultTransactionFields,
+        accessList: [],
+        type: 1,
+      };
+
+      transactionType2 = {
+        ...defaultTransactionFields,
+        type: 2,
+        maxFeePerGas: defaultGasPrice,
+        maxPriorityFeePerGas: defaultGasPrice,
+      };
+
+      //deploy estimate gas contract
+      const transaction = {
+        ...transactionTypeLegacy,
+        data: bytecode,
+        nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+      };
+
+      const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+      const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+      estimateGasContractAddress = await mirrorNode.get(`/contracts/results/${transactionHash}`);
+    });
+
+    describe('Positive scenarios', async function () {
+      const defaultResponseFields = {
+        type: 'CREATE',
+        from: '0x0000000000000000000000000000000000000948',
+        to: '0x000000000000000000000000000000000000094f',
+        value: '0x0',
+        gas: '0x2dc6c0',
+        gasUsed: '0x249f00',
+        input: '',
+        output: '',
+      };
+      const successResultCreateWithDepth = {
+        ...defaultResponseFields,
+        calls: [
+          {
+            type: 'CREATE',
+            from: '0xb3b6559bb61da201659b0c6be96ad6826ca0ad80',
+            to: '0x40d5306d1a607292ceec43965ef053224db76129',
+            gas: '0x2b7339',
+            gasUsed: '0x4b',
+            input: '0x',
+            output: '0x',
+            value: '0x0',
+          },
+        ],
+      };
+      const successResultCall = {
+        ...defaultResponseFields,
+        type: 'CALL',
+      };
+      const successResultCallWithDepth = {
+        ...successResultCall,
+        calls: [
+          {
+            type: 'STATICCALL',
+            from: '0xd2a8204468e18bb242e6dcbf1700b09e95400b3b',
+            to: '0x5c33384ca47ccc712231c3ea271d334eeafc36a3',
+            gas: '0xc350',
+            gasUsed: '0x94',
+            input: '0x38cc4831',
+            output: '0x0000000000000000000000005c33384ca47ccc712231c3ea271d334eeafc36a3',
+            value: '0x0',
+          },
+        ],
+      };
+      const failingResultCreate = {
+        ...defaultResponseFields,
+        error: 'CONTRACT_EXECUTION_EXCEPTION',
+        revertReason: 'INSUFFICIENT_STACK_ITEMS',
+        gasUsed: '0x2dc6c0',
+      };
+      const failingResultCall = {
+        ...defaultResponseFields,
+        type: 'CALL',
+        error: 'CONTRACT_REVERT_EXECUTED',
+        revertReason: 'Some revert message',
+      };
+
+      describe('Test transactions of type 0', async function () {
+        //onlyTopCall:false
+        it('should be able to debug a successful CREATE transaction of type Legacy with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionTypeLegacy,
+            chainId: 0x12a,
+            data: bytecode,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+          };
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          successResultCreateWithDepth.from = accounts[0].address;
+
+          Assertions.validateResultDebugValues(
+            resultDebug,
+            ['to', 'output', 'input', 'calls'],
+            ['from', 'to', 'input', 'output'],
+            successResultCreateWithDepth,
+          );
+          expect(resultDebug.calls).to.have.lengthOf(1);
+        });
+
+        it('should be able to debug a successful CALL transaction of type Legacy with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionTypeLegacy,
+            from: accounts[0].address,
+            to: estimateGasContractAddress.address,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0xbbbfb986',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          successResultCallWithDepth.input = '0xbbbfb986';
+          successResultCallWithDepth.from = accounts[0].address;
+
+          Assertions.validateResultDebugValues(
+            resultDebug,
+            ['to', 'output', 'calls'],
+            ['to', 'from', 'output', 'input'],
+            successResultCallWithDepth,
+          );
+          expect(resultDebug.calls).to.have.lengthOf(1);
+        });
+
+        it('should be able to debug a failing CREATE transaction of type Legacy with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionTypeLegacy,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            chainId: 0x12a,
+            from: accounts[0].address,
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x01121212',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          failingResultCreate.from = accounts[0].address;
+          failingResultCreate.input = '0x01121212';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
+        });
+
+        it('should be able to debug a failing CALL transaction with revert reason of type Legacy with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionTypeLegacy,
+            from: accounts[0].address,
+            to: reverterEvmAddress,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x0323d234',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          failingResultCall.from = accounts[0].address;
+          failingResultCall.input = '0x0323d234';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output', 'calls'], [], failingResultCall);
+        });
+
+        //onlyTopCall:true
+        it('should be able to debug a successful CREATE transaction of type Legacy with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionTypeLegacy,
+            chainId: 0x12a,
+            data: bytecode,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          defaultResponseFields.from = accounts[0].address;
+          defaultResponseFields.input = bytecode;
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output', 'calls'], [], defaultResponseFields);
+        });
+
+        it('should be able to debug a successful CALL transaction of type Legacy with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionTypeLegacy,
+            from: accounts[0].address,
+            to: estimateGasContractAddress.address,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0xc648049d0000000000000000000000000000000000000000000000000000000000000001',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          successResultCall.input = '0xc648049d0000000000000000000000000000000000000000000000000000000000000001';
+          successResultCall.from = accounts[0].address;
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], successResultCall);
+        });
+
+        it('should be able to debug a failing CREATE transaction of type Legacy with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionTypeLegacy,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            chainId: 0x12a,
+            from: accounts[0].address,
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x01121212',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          failingResultCreate.from = accounts[0].address;
+          failingResultCreate.input = '0x01121212';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
+        });
+
+        it('should be able to debug a failing CALL transaction of type Legacy with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionTypeLegacy,
+            from: accounts[0].address,
+            to: reverterEvmAddress,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x0323d234',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          failingResultCall.from = accounts[0].address;
+          failingResultCall.input = '0x0323d234';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output', 'calls'], [], failingResultCall);
+        });
+      });
+
+      describe('Test transaction of type 1', async function () {
+        //onlyTopCall:false
+        it('should be able to debug a successful CREATE transaction of type 2930 with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionType2930,
+            chainId: 0x12a,
+            data: bytecode,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          successResultCreateWithDepth.from = accounts[0].address;
+
+          Assertions.validateResultDebugValues(
+            resultDebug,
+            ['to', 'output', 'input', 'calls'],
+            ['from', 'to', 'input', 'output'],
+            successResultCreateWithDepth,
+          );
+          expect(resultDebug.calls).to.have.lengthOf(1);
+        });
+
+        it('should be able to debug a successful CALL transaction of type 2930 with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionType2930,
+            from: accounts[0].address,
+            to: estimateGasContractAddress.address,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0xc648049d0000000000000000000000000000000000000000000000000000000000000001',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          defaultResponseFields.type = 'CALL';
+          defaultResponseFields.input = '0xc648049d0000000000000000000000000000000000000000000000000000000000000001';
+          defaultResponseFields.from = accounts[0].address;
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output', 'calls'], [], defaultResponseFields);
+        });
+
+        it('should be able to debug a failing CREATE transaction of type 2930 with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionType2930,
+            nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+            chainId: 0x12a,
+            from: accounts[2].address,
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x01121212',
+          };
+
+          const signedTransaction = await accounts[2].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          failingResultCreate.from = accounts[2].address;
+          failingResultCreate.input = '0x01121212';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
+        });
+
+        it('should be able to debug a failing CALL transaction of type 2930 with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionType2930,
+            from: accounts[0].address,
+            to: reverterEvmAddress,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x0323d234',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          failingResultCall.from = accounts[0].address;
+          failingResultCall.input = '0x0323d234';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output', 'calls'], [], failingResultCall);
+        });
+
+        //onlyTopCall:true
+        it('should be able to debug a successful CREATE transaction of type 2930 with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionType2930,
+            chainId: 0x12a,
+            data: bytecode,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          defaultResponseFields.from = accounts[0].address;
+          defaultResponseFields.input = bytecode;
+          defaultResponseFields.type = 'CREATE';
+
+          Assertions.validateResultDebugValues(
+            resultDebug,
+            ['to', 'output', 'input', 'calls'],
+            [],
+            defaultResponseFields,
+          );
+        });
+
+        it('should be able to debug a successful CALL transaction of type 2930 with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionType2930,
+            from: accounts[0].address,
+            to: estimateGasContractAddress.address,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0xc648049d0000000000000000000000000000000000000000000000000000000000000001',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          successResultCall.input = '0xc648049d0000000000000000000000000000000000000000000000000000000000000001';
+          successResultCall.from = accounts[0].address;
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], successResultCall);
+        });
+
+        it('should be able to debug a failing CREATE transaction of type 2930 with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionType2930,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            chainId: 0x12a,
+            from: accounts[0].address,
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x01121212',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          failingResultCreate.from = accounts[0].address;
+          failingResultCreate.input = '0x01121212';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
+        });
+
+        it('should be able to debug a failing CALL transaction of type 2930 with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionType2930,
+            from: accounts[1].address,
+            to: reverterEvmAddress,
+            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x0323d234',
+          };
+
+          const signedTransaction = await accounts[1].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          failingResultCall.from = accounts[1].address;
+          failingResultCall.input = '0x0323d234';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output', 'calls'], [], failingResultCall);
+        });
+      });
+
+      describe('Test transactions of type: 2', async function () {
+        //onlyTopCall:false
+        it('should be able to debug a successful CREATE transaction of type 1559 with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionType2,
+            chainId: 0x12a,
+            data: bytecode,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          successResultCreateWithDepth.from = accounts[0].address;
+
+          Assertions.validateResultDebugValues(
+            resultDebug,
+            ['to', 'output', 'input', 'calls'],
+            ['from', 'to', 'input', 'output'],
+            successResultCreateWithDepth,
+          );
+          expect(resultDebug.calls).to.have.lengthOf(1);
+        });
+
+        it('should be able to debug a successful CALL transaction of type 1559 with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionType2,
+            to: estimateGasContractAddress.address,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0xc648049d0000000000000000000000000000000000000000000000000000000000000001',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+          defaultResponseFields.type = 'CALL';
+          defaultResponseFields.input = '0xc648049d0000000000000000000000000000000000000000000000000000000000000001';
+          defaultResponseFields.from = accounts[0].address;
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output', 'calls'], [], defaultResponseFields);
+        });
+
+        it('@release should be able to debug a failing CREATE transaction of type 1559 with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionType2,
+            nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+            chainId: 0x12a,
+            from: accounts[2].address,
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x01121212',
+          };
+
+          const signedTransaction = await accounts[2].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          failingResultCreate.from = accounts[2].address;
+          failingResultCreate.input = '0x01121212';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
+        });
+
+        it('@release should be able to debug a failing CALL transaction of type 1559 with call depth and onlyTopCall false', async function () {
+          const transaction = {
+            ...transactionType2,
+            to: reverterEvmAddress,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x0323d234',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+            requestId,
+          );
+
+          failingResultCall.from = accounts[0].address;
+          failingResultCall.input = '0x0323d234';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output', 'calls'], [], failingResultCall);
+        });
+
+        //onlyTopCall:true
+        it('@release should be able to debug a successful CREATE transaction of type 1559 with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionType2,
+            chainId: 0x12a,
+            data: bytecode,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          defaultResponseFields.from = accounts[0].address;
+          defaultResponseFields.input = bytecode;
+          defaultResponseFields.type = 'CREATE';
+
+          Assertions.validateResultDebugValues(
+            resultDebug,
+            ['to', 'output', 'input', 'calls'],
+            [],
+            defaultResponseFields,
+          );
+        });
+
+        it('@release should be able to debug a successful CALL transaction of type 1559 with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionType2,
+            to: estimateGasContractAddress.address,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0xc648049d0000000000000000000000000000000000000000000000000000000000000001',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          successResultCall.input = '0xc648049d0000000000000000000000000000000000000000000000000000000000000001';
+          successResultCall.from = accounts[0].address;
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], successResultCall);
+        });
+
+        it('should be able to debug a failing CREATE transaction of type 1559 with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionType2,
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            chainId: 0x12a,
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x01121212',
+          };
+
+          const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          failingResultCreate.from = accounts[0].address;
+          failingResultCreate.input = '0x01121212';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
+        });
+
+        it('should be able to debug a failing CALL transaction of type 1559 with call depth and onlyTopCall true', async function () {
+          const transaction = {
+            ...transactionType2,
+            from: accounts[1].address,
+            to: reverterEvmAddress,
+            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+            gasPrice: await relay.gasPrice(requestId),
+            data: '0x0323d234',
+          };
+
+          const signedTransaction = await accounts[1].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+          const resultDebug = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+            requestId,
+          );
+
+          failingResultCall.from = accounts[1].address;
+          failingResultCall.input = '0x0323d234';
+
+          Assertions.validateResultDebugValues(resultDebug, ['to', 'output', 'calls'], [], failingResultCall);
+        });
+      });
+    });
+
+    describe('Negative scenarios', async function () {
+      const tracerConfigInvalid = '{ onlyTopCall: "invalid" }';
+
+      it('should fail to debug a transaction with invalid onlyTopCall value type', async function () {
+        const transaction = {
+          ...transactionTypeLegacy,
+          chainId: 0x12a,
+          data: bytecode,
+          nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+          gasPrice: await relay.gasPrice(requestId),
+        };
+
+        const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+        const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+        const expectedError = predefined.INVALID_PARAMETER(
+          2,
+          'Invalid tracerConfig, value: { onlyTopCall: "invalid" }',
+        );
+        const args = [
+          RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+          [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigInvalid }],
+          requestId,
+        ];
+
+        await Assertions.assertPredefinedRpcError(expectedError, relay.call, false, relay, args);
+      });
+
+      it('should fail to debug a transaction with invalid tracer type', async function () {
+        const transaction = {
+          ...transactionTypeLegacy,
+          chainId: 0x12a,
+          data: bytecode,
+          nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+          gasPrice: await relay.gasPrice(requestId),
+        };
+
+        const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
+        const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+
+        const expectedError = predefined.MISSING_REQUIRED_PARAMETER(1);
+        const args = [
+          RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+          [transactionHash, { invalidTracer: 'invalidTracer', tracerConfig: tracerConfigTrue }],
+          requestId,
+        ];
+
+        await Assertions.assertPredefinedRpcError(expectedError, relay.call, false, relay, args);
       });
     });
   });

@@ -21,6 +21,7 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { numberTo0x } from '../../../relay/src/formatters';
+import RelayAssertions from '../../../relay/tests/assertions';
 
 export default class Assertions {
   static emptyHex = '0x';
@@ -397,5 +398,31 @@ export default class Assertions {
   static longZeroAddress = (address) => {
     expect(address).to.match(/(\b0x[a-f0-9]{40}\b)/g, 'matches evm address format');
     expect(address).to.match(/(\b0x(0){15})/g, 'contains 15 consecutive zeros');
+  };
+
+  static validateResultDebugValues = (
+    result,
+    excludedValues: string[],
+    nestedExcludedValues: string[],
+    expectedResult,
+  ) => {
+    const hasValidHash = (currentValue) => RelayAssertions.validateHash(currentValue);
+
+    // Validate result schema
+    expect(result).to.have.keys(Object.keys(expectedResult));
+
+    // Validate result values
+    expect(result).excluding(excludedValues).to.deep.eq(expectedResult);
+    if (nestedExcludedValues.length) {
+      expect(result.calls).excluding(nestedExcludedValues).to.deep.eq(expectedResult.calls);
+    }
+
+    // Validate excluded values are encoded
+    expect(excludedValues.every(hasValidHash));
+    if (result.calls) {
+      result.calls.forEach((call) => {
+        expect(nestedExcludedValues.every(hasValidHash));
+      });
+    }
   };
 }
