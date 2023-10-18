@@ -1,4 +1,4 @@
-FROM node:18.17-bullseye-slim
+FROM node:18.18.2-bullseye-slim
 
 # Setup
 ENV DEBIAN_FRONTEND=noninteractive
