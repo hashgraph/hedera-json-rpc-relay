@@ -1,0 +1,9 @@
+[submodule "tools/foundry-example/lib/forge-std"]
+	path = tools/foundry-example/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "tools/foundry-example/lib/openzeppelin-contracts"]
+	path = tools/foundry-example/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "tools/foundry-example/lib/hedera-smart-contracts"]
+	path = tools/foundry-example/lib/hedera-smart-contracts
+	url = https://github.com/hashgraph/hedera-smart-contracts
