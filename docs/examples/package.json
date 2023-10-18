@@ -6,7 +6,7 @@
         "node": ">=10.17.0"
     },
     "dependencies": {
-        "@hashgraph/sdk": "^2.34.1",
+        "@hashgraph/sdk": "^2.34.0",
         "dotenv": "^14.3.2"
     }
 }
