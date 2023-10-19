@@ -938,7 +938,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(info.created_contract_ids.length).to.be.equal(1);
       });
 
-      it.only('should execute "eth_sendRawTransaction" and fail when deploying too large contract', async function () {
+      it('should execute "eth_sendRawTransaction" and fail when deploying too large contract', async function () {
         const gasPrice = await relay.gasPrice(requestId);
         const transaction = {
           type: 2,
