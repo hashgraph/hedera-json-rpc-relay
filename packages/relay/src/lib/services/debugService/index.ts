@@ -165,6 +165,9 @@ export class DebugService implements IDebugService {
     types = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
     requestIdPrefix?: string,
   ): Promise<string> {
+    // if the address is null or undefined we return it as is
+    if (!address) return address;
+
     const entity = await this.mirrorNodeClient.resolveEntityType(
       address,
       types,
