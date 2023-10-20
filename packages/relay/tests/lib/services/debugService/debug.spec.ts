@@ -304,7 +304,7 @@ describe('Debug API Test Suite', async function () {
 
       it('Test opcodeLogger', async function () {
         await RelayAssertions.assertRejection(
-          predefined.UNSUPPORTED_TRACER(TracerType.OpcodeLogger),
+          predefined.UNSUPPORTED_OPERATION(`${TracerType.OpcodeLogger} is not supported on eth_debugTransaction`),
           debugService.debug_traceTransaction,
           true,
           debugService,

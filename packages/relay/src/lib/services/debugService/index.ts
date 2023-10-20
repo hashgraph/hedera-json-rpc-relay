@@ -106,7 +106,7 @@ export class DebugService implements IDebugService {
       if (tracer === TracerType.CallTracer) {
         return await this.callTracer(transactionHash, tracerConfig, requestIdPrefix);
       } else if (tracer === TracerType.OpcodeLogger) {
-        throw predefined.UNSUPPORTED_TRACER(TracerType.OpcodeLogger);
+        throw predefined.UNSUPPORTED_OPERATION(`${TracerType.OpcodeLogger} is not supported on eth_debugTransaction`);
       }
     } catch (e) {
       throw this.common.genericErrorHandler(e);
