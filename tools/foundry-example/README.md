@@ -1,6 +1,14 @@
 ## Foundry
 
-## Attempt at Managing Submodules in `foundry-example` in the context of the `hedera-json-rpc-relay` repo
+**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+
+This directory provides an example of how Hedera developers can utilize foundry in their development process against the Hedera test (remote & local) networks
+
+## Documentation
+
+https://book.getfoundry.sh/
+
+## Git Submodules Management
 
 ### Preface
 
@@ -37,19 +45,6 @@ However, for cases where the submodule management in a nested directory as is at
     Also run `forge install` to download any submodules that any of the above dependencies depend on.
 
 **Note**: These steps need to be executed for each fresh clone of the main repository if you wish to interact with the `foundry-example` submodules.
-
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
-
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
 
 ## Usage
 
