@@ -51,8 +51,6 @@ jobs:
       - name: Build and push images
         uses: docker/build-push-action@v4
         with:
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
           platforms: linux/amd64
           push: true
           tags: localhost:5001/${{ github.repository }}:test
