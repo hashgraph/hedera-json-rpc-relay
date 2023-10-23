@@ -1676,7 +1676,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionType2,
             nonce: await relay.getAccountNonce(accounts[2].address, requestId),
-            chainId: 0x12a,
+            chainId: CHAIN_ID,
             from: accounts[2].address,
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
@@ -1725,7 +1725,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('@release should be able to debug a successful CREATE transaction of type 1559 with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionType2,
-            chainId: 0x12a,
+            chainId: CHAIN_ID,
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
