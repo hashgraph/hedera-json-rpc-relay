@@ -103,8 +103,10 @@ export class Poller {
 
   stop() {
     this.logger.info(`${LOGGER_PREFIX} Stopping polling`);
-    clearInterval(this.interval);
-    delete this.interval;
+    if (this.isPolling()) {
+      clearInterval(this.interval as NodeJS.Timeout);
+      delete this.interval;
+    }
   }
 
   async add(tag: string, callback: Function) {
