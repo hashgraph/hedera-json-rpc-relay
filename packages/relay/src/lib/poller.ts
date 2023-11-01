@@ -34,7 +34,7 @@ export class Poller {
   private eth: Eth;
   private logger: Logger;
   private polls: Poll[];
-  private interval?: any;
+  private interval?: NodeJS.Timer;
   private latestBlock?: string;
   private pollingInterval: number;
   private activePollsGauge: Gauge;
@@ -103,7 +103,7 @@ export class Poller {
 
   stop() {
     this.logger.info(`${LOGGER_PREFIX} Stopping polling`);
-    clearInterval(this.interval);
+    clearInterval(this.interval as NodeJS.Timeout);
     delete this.interval;
   }
 
