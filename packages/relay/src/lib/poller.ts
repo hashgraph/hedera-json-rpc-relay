@@ -34,7 +34,7 @@ export class Poller {
   private eth: Eth;
   private logger: Logger;
   private polls: Poll[];
-  private interval?: NodeJS.Timer;
+  private interval?: any;
   private latestBlock?: string;
   private pollingInterval: number;
   private activePollsGauge: Gauge;
