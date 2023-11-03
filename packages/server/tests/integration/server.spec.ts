@@ -424,27 +424,47 @@ describe('RPC Server', async function () {
   });
 
   describe('batchRequest Test Cases', async function () {
+    function getEthChainIdRequest(id) {
+      return {
+        id: `${id}`,
+        jsonrpc: '2.0',
+        method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
+        params: [null],
+      };
+    }
+
+    function getEthAccountsRequest(id) {
+      if (id == null) {
+        return {
+          jsonrpc: '2.0',
+          method: RelayCalls.ETH_ENDPOINTS.ETH_ACCOUNTS,
+          params: [null],
+        };
+      } else {
+        return {
+          id: `${id}`,
+          jsonrpc: '2.0',
+          method: RelayCalls.ETH_ENDPOINTS.ETH_ACCOUNTS,
+          params: [null],
+        };
+      }
+    }
+
+    function getNonExistingMethodRequest(id) {
+      return {
+        id: `${id}`,
+        jsonrpc: '2.0',
+        method: 'non_existent_method',
+        params: [null],
+      };
+    }
+
     it('should execute "eth_chainId" in batch request', async function () {
       // 3 request of eth_chainId
       const response = await this.testClient.post('/', [
-        {
-          id: '2',
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-          params: [null],
-        },
-        {
-          id: '3',
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-          params: [null],
-        },
-        {
-          id: '4',
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-          params: [null],
-        },
+        getEthChainIdRequest(2),
+        getEthChainIdRequest(3),
+        getEthChainIdRequest(4),
       ]);
 
       // verify response
@@ -460,24 +480,9 @@ describe('RPC Server', async function () {
     it('should execute "eth_chainId" and "eth_accounts" in batch request', async function () {
       // 3 request of eth_chainId
       const response = await this.testClient.post('/', [
-        {
-          id: '2',
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-          params: [null],
-        },
-        {
-          id: '3',
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_ACCOUNTS,
-          params: [null],
-        },
-        {
-          id: '4',
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-          params: [null],
-        },
+        getEthChainIdRequest(2),
+        getEthAccountsRequest(3),
+        getEthChainIdRequest(4),
       ]);
 
       // verify response
@@ -496,19 +501,7 @@ describe('RPC Server', async function () {
     });
 
     it('should execute "eth_chainId" and "eth_accounts" in batch request with invalid request id', async function () {
-      const response = await this.testClient.post('/', [
-        {
-          id: '2',
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-          params: [null],
-        },
-        {
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_ACCOUNTS,
-          params: [null],
-        },
-      ]);
+      const response = await this.testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(null)]);
 
       // verify response
       BaseTest.baseDefaultResponseChecks(response);
@@ -525,24 +518,9 @@ describe('RPC Server', async function () {
 
     it('should execute "eth_chainId" and method not found in batch request', async function () {
       const response = await this.testClient.post('/', [
-        {
-          id: '2',
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-          params: [null],
-        },
-        {
-          id: '3',
-          jsonrpc: '2.0',
-          method: 'non_existent_method',
-          params: [null],
-        },
-        {
-          id: '4',
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-          params: [null],
-        },
+        getEthChainIdRequest(2),
+        getNonExistingMethodRequest(3),
+        getEthChainIdRequest(4),
       ]);
 
       // verify response
@@ -563,18 +541,8 @@ describe('RPC Server', async function () {
 
     it('should execute "eth_chainId" and method not found and params error in batch request', async function () {
       const response = await this.testClient.post('/', [
-        {
-          id: '2',
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-          params: [null],
-        },
-        {
-          id: '3',
-          jsonrpc: '2.0',
-          method: 'non_existent_method',
-          params: [null],
-        },
+        getEthChainIdRequest(2),
+        getNonExistingMethodRequest(3),
         {
           id: '4',
           jsonrpc: '2.0',
