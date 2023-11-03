@@ -68,7 +68,6 @@ export default class KoaJsonRpc {
   private logger: Logger;
   private startTimestamp!: number;
   private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == 'true'; // default to false
-  private readonly batchRequestsEnabled = process.env.BATCH_REQUESTS_ENABLED !== 'false'; // default to true
   private readonly batchRequestsMaxSize: number = process.env.BATCH_REQUESTS_MAX_SIZE
     ? parseInt(process.env.BATCH_REQUESTS_MAX_SIZE)
     : 100; // default to 100
@@ -88,6 +87,11 @@ export default class KoaJsonRpc {
     }
     this.logger = logger;
     this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
+  }
+
+  // we do it as a method so we can mock it in tests, since by default is false, but we need to test it as true
+  private getBatchRequestsEnabled(): boolean {
+    return process.env.BATCH_REQUESTS_ENABLED == 'true'; // default to false
   }
 
   useRpc(name, func) {
@@ -194,7 +198,7 @@ export default class KoaJsonRpc {
 
   private async handleMultipleRequest(ctx, body: any): Promise<void> {
     // verify that batch requests are enabled
-    if (!this.batchRequestsEnabled) {
+    if (!this.getBatchRequestsEnabled()) {
       ctx.body = jsonResp(null, predefined.BATCH_REQUESTS_DISABLED, undefined);
       ctx.status = 400;
       ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;

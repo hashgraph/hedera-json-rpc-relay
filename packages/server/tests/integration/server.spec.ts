@@ -29,8 +29,9 @@ import RelayCalls from '../../tests/helpers/constants';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
-
+const batchRequestEnabledValue = process.env.BATCH_REQUESTS_ENABLED;
 before(function () {
+  process.env.BATCH_REQUESTS_ENABLED = 'true';
   this.timeout(60 * 1000);
   this.testServer = app.listen(process.env.E2E_SERVER_PORT);
   this.testClient = BaseTest.createTestClient();
@@ -38,6 +39,7 @@ before(function () {
 
 after(function () {
   this.testServer.close();
+  process.env.BATCH_REQUESTS_ENABLED = batchRequestEnabledValue;
 });
 
 describe('RPC Server', async function () {
@@ -587,6 +589,22 @@ describe('RPC Server', async function () {
       } catch (error: any) {
         BaseTest.batchRequestLimitError(error.response, requests.length, 100);
       }
+    });
+
+    it('should not execute batch request when disabled', async function () {
+      // disable batch request
+      process.env.BATCH_REQUESTS_ENABLED = 'false';
+
+      // do batch request
+      try {
+        await this.testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
+        Assertions.expectedError();
+      } catch (error: any) {
+        BaseTest.batchDisabledErrorCheck(error.response);
+      }
+
+      // enable batch request again
+      process.env.BATCH_REQUESTS_ENABLED = 'true';
     });
   });
 
@@ -2282,6 +2300,15 @@ class BaseTest {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
     this.errorResponseChecks(response, -32601, 'Unsupported JSON-RPC method');
+  }
+
+  static batchDisabledErrorCheck(response: any) {
+    expect(response.status).to.eq(400);
+    expect(response.statusText).to.eq('Bad Request');
+
+    expect(response.data.error.name).to.eq('Batch requests disabled');
+    expect(response.data.error.message).to.eq('Batch requests are disabled');
+    expect(response.data.error.code).to.eq(-32202);
   }
 
   static methodNotFoundCheck(response: any, methodName: string) {
