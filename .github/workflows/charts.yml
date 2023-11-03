@@ -57,7 +57,7 @@ jobs:
           tags: localhost:5001/${{ github.repository }}:test
 
       - name: Install ct
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@v2.6.1
 
       - name: Install chart
         run: ct install --helm-extra-args="--timeout 10m" --all
