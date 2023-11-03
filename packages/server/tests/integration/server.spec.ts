@@ -577,12 +577,7 @@ describe('RPC Server', async function () {
       // prepare 101 requests chain id requests
       const requests: any[] = [];
       for (let i = 0; i < 101; i++) {
-        requests.push({
-          id: i + 1,
-          jsonrpc: '2.0',
-          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-          params: [null],
-        });
+        requests.push(getEthChainIdRequest(i + 1));
       }
 
       // execute batch request
