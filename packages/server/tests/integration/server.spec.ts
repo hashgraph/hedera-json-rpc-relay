@@ -604,6 +604,27 @@ describe('RPC Server', async function () {
         'Missing value for required parameter 1',
       ).to.be.equal(true);
     });
+
+    it('should hit batch request limit', async function () {
+      // prepare 101 requests chain id requests
+      const requests: any[] = [];
+      for (let i = 0; i < 101; i++) {
+        requests.push({
+          id: i + 1,
+          jsonrpc: '2.0',
+          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
+          params: [null],
+        });
+      }
+
+      // execute batch request
+      try {
+        await this.testClient.post('/', requests);
+        Assertions.expectedError();
+      } catch (error: any) {
+        BaseTest.batchRequestLimitError(error.response, requests.length, 100);
+      }
+    });
   });
 
   describe('Validator', async function () {
@@ -2304,6 +2325,14 @@ class BaseTest {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
     this.errorResponseChecks(response, -32601, `Method ${methodName} not found`);
+  }
+
+  static batchRequestLimitError(response: any, amount: number, max: number) {
+    expect(response.status).to.eq(400);
+    expect(response.statusText).to.eq('Bad Request');
+    expect(response.data.error.name).to.eq('Batch requests amount max exceeded');
+    expect(response.data.error.message).to.eq(`Batch request amount ${amount} exceeds max ${max}`);
+    expect(response.data.error.code).to.eq(-32203);
   }
 
   static invalidParamError(response: any, code: number, message: string) {

@@ -69,6 +69,9 @@ export default class KoaJsonRpc {
   private startTimestamp!: number;
   private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == 'true'; // default to false
   private readonly batchRequestsEnabled = process.env.BATCH_REQUESTS_ENABLED !== 'false'; // default to true
+  private readonly batchRequestsMaxSize: number = process.env.BATCH_REQUESTS_MAX_SIZE
+    ? parseInt(process.env.BATCH_REQUESTS_MAX_SIZE)
+    : 100; // default to 100
 
   constructor(logger: Logger, register: Registry, opts?) {
     this.koaApp = new Koa();
@@ -193,6 +196,18 @@ export default class KoaJsonRpc {
     // verify that batch requests are enabled
     if (!this.batchRequestsEnabled) {
       ctx.body = jsonResp(null, predefined.BATCH_REQUESTS_DISABLED, undefined);
+      ctx.status = 400;
+      ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
+      return;
+    }
+
+    // verify max batch size
+    if (body.length > this.batchRequestsMaxSize) {
+      ctx.body = jsonResp(
+        null,
+        predefined.BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED(body.length, this.batchRequestsMaxSize),
+        undefined,
+      );
       ctx.status = 400;
       ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
       return;
