@@ -270,5 +270,10 @@ export const predefined = {
       name: 'Transaction size too big',
       code: -32201,
       message: `Oversized data: transaction size ${actualSize}, transaction limit ${expectedSize}`,
-    })
+    }),
+  BATCH_REQUESTS_DISABLED: new JsonRpcError({
+    name: 'Batch requests disabled',
+    code: -32202,
+    message: 'Batch requests are disabled',
+  }),
 };

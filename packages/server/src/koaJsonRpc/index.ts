@@ -19,7 +19,6 @@
  */
 
 import { methodConfiguration } from './lib/methodConfiguration';
-import InvalidParamsError from './lib/RpcInvalidError';
 import jsonResp from './lib/RpcResponse';
 import RateLimit from '../rateLimit';
 import parse from 'co-body';
@@ -34,10 +33,11 @@ import {
   IPRateLimitExceeded,
   MethodNotFound,
   Unauthorized,
+  JsonRpcError as JsonRpcErrorServer,
 } from './lib/RpcError';
 import Koa from 'koa';
 import { Registry } from 'prom-client';
-import { JsonRpcError } from '@hashgraph/json-rpc-relay';
+import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
@@ -67,7 +67,8 @@ export default class KoaJsonRpc {
   private requestId: string;
   private logger: Logger;
   private startTimestamp!: number;
-  private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == 'true';
+  private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == 'true'; // default to false
+  private readonly batchRequestsEnabled = process.env.BATCH_REQUESTS_ENABLED !== 'false'; // default to true
 
   constructor(logger: Logger, register: Registry, opts?) {
     this.koaApp = new Koa();
@@ -98,10 +99,16 @@ export default class KoaJsonRpc {
   rpcApp() {
     return async (ctx, next) => {
       this.startTimestamp = ctx.state.start;
-      let body, result;
 
       this.requestId = ctx.state.reqId;
       ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
+
+      if (ctx.request.method !== 'POST') {
+        ctx.body = jsonResp(null, new InvalidRequest(), undefined);
+        ctx.status = 400;
+        ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
+        return;
+      }
 
       if (this.token) {
         const headerToken = ctx.get('authorization').split(' ').pop();
@@ -111,6 +118,7 @@ export default class KoaJsonRpc {
         }
       }
 
+      let body: any;
       try {
         body = await parse.json(ctx, { limit: this.limit });
       } catch (err) {
@@ -119,80 +127,150 @@ export default class KoaJsonRpc {
         return;
       }
 
-      ctx.state.methodName = body.method;
-      const methodName = body.method;
-
-      if (
-        body.jsonrpc !== '2.0' ||
-        !hasOwnProperty(body, 'method') ||
-        this.hasInvalidReqestId(body) ||
-        !hasOwnProperty(body, 'id') ||
-        ctx.request.method !== 'POST'
-      ) {
-        ctx.body = jsonResp(body.id || null, new InvalidRequest(), undefined);
-        ctx.status = 400;
-        ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
-        this.logger.warn(
-          `[${this.getRequestId()}] Invalid request, body.jsonrpc: ${body.jsonrpc}, body[method]: ${
-            body.method
-          }, body[id]: ${body.id}, ctx.request.method: ${ctx.request.method}`,
-        );
-        return;
-      }
-
-      if (!this.registry[body.method]) {
-        ctx.body = jsonResp(body.id, new MethodNotFound(), undefined);
-        ctx.status = 400;
-        ctx.state.status = `${ctx.status} (${METHOD_NOT_FOUND})`;
-        return;
-      }
-
-      const methodTotalLimit = this.registryTotal[methodName];
-      if (this.rateLimit.shouldRateLimit(ctx.ip, methodName, methodTotalLimit, this.requestId)) {
-        ctx.body = jsonResp(body.id, new IPRateLimitExceeded(methodName), undefined);
-        ctx.status = 409;
-        ctx.state.status = `${ctx.status} (${IP_RATE_LIMIT_EXCEEDED})`;
-        return;
-      }
-
-      try {
-        result = await this.registry[body.method](body.params);
-        ctx.state.status = responseSuccessStatusCode;
-      } catch (e: any) {
-        if (e instanceof InvalidParamsError) {
-          ctx.body = jsonResp(body.id, new InvalidParamsError(e.message), undefined);
-          ctx.status = 400;
-          ctx.state.status = `${ctx.status} (${INVALID_PARAMS_ERROR})`;
-          return;
-        }
-        ctx.body = jsonResp(body.id, new InternalError(e.message), undefined);
-        ctx.status = 500;
-        ctx.state.status = `${ctx.status} (${INTERNAL_ERROR})`;
-        return;
-      }
-
-      ctx.body = jsonResp(body.id, null, result);
-      if (result instanceof JsonRpcError) {
-        // What Status code to return for JsonRpcError
-        switch (result.code) {
-          // INTERNAL_ERROR
-          case -32603:
-            ctx.status = 500;
-            ctx.state.status = `${ctx.status} (${JSON_RPC_ERROR})`;
-            break;
-          // CONTRACT_REVERT
-          case -32008:
-            ctx.status = 200;
-            ctx.state.status = `${ctx.status} (${CONTRACT_REVERT})`;
-            break;
-          // ANYTHING ELSE
-          default:
-            ctx.status = 400;
-            ctx.state.status = `${ctx.status} (${JSON_RPC_ERROR})`;
-            break;
-        }
+      //check if body is array or object
+      if (Array.isArray(body)) {
+        await this.handleMultipleRequest(ctx, body);
+      } else {
+        await this.handleSingleRequest(ctx, body);
       }
     };
+  }
+
+  private async handleSingleRequest(ctx, body: any): Promise<void> {
+    ctx.state.methodName = body.method;
+    const response = await this.getRequestResult(body, ctx.ip);
+    ctx.body = response;
+    const errorOrResult = response.error || response.result;
+    if (errorOrResult instanceof JsonRpcError || errorOrResult instanceof JsonRpcErrorServer) {
+      // What HTTP Status code to return for JsonRpcError
+      switch (errorOrResult.code) {
+        // INTERNAL_ERROR
+        case -32603:
+          ctx.status = 500;
+          ctx.state.status = `${ctx.status} (${INTERNAL_ERROR})`;
+          break;
+
+        // CONTRACT_REVERT
+        case -32008:
+          ctx.status = 200;
+          ctx.state.status = `${ctx.status} (${CONTRACT_REVERT})`;
+          break;
+
+        // INVALID_REQUEST
+        case -32600:
+          ctx.status = 400;
+          ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
+          break;
+
+        // INVALID_PARAMS
+        case -32602:
+          ctx.status = 400;
+          ctx.state.status = `${ctx.status} (${INVALID_PARAMS_ERROR})`;
+          break;
+
+        // METHOD_NOT_FOUND
+        case -32601:
+          ctx.status = 400;
+          ctx.state.status = `${ctx.status} (${METHOD_NOT_FOUND})`;
+          break;
+
+        // IP_RATE_LIMIT_EXCEEDED
+        case -32605:
+          ctx.status = 409;
+          ctx.state.status = `${ctx.status} (${IP_RATE_LIMIT_EXCEEDED})`;
+          break;
+
+        // ANYTHING ELSE
+        default:
+          ctx.status = 400;
+          ctx.state.status = `${ctx.status} (${JSON_RPC_ERROR})`;
+          break;
+      }
+    }
+  }
+
+  private async handleMultipleRequest(ctx, body: any): Promise<void> {
+    // verify that batch requests are enabled
+    if (!this.batchRequestsEnabled) {
+      ctx.body = jsonResp(null, predefined.BATCH_REQUESTS_DISABLED, undefined);
+      ctx.status = 400;
+      ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
+      return;
+    }
+
+    const response: any[] = [];
+    ctx.state.methodName = 'batch_requests';
+
+    // we do the requests in parallel to save time, but we need to keep track of the order of the responses (since the id might be optional)
+    const promises = body.map((item: any) => this.getRequestResult(item, ctx.ip));
+    const results = await Promise.all(promises);
+    response.push(...results);
+
+    // for batch requests, always return 200 http status, this is standard for JSON-RPC 2.0 batch requests
+    ctx.body = response;
+    ctx.status = 200;
+    ctx.state.status = responseSuccessStatusCode;
+  }
+
+  async getRequestResult(request: any, ip: any): Promise<any> {
+    try {
+      const methodName = request.method;
+
+      // validate it has the correct jsonrpc version, method, and id
+      if (!this.validateJsonRpcRequest(request)) {
+        return jsonResp(request.id || null, new InvalidRequest(), undefined);
+      }
+
+      // validate the method exists
+      if (!this.verifyMethodExists(methodName)) {
+        return jsonResp(request.id, new MethodNotFound(methodName), undefined);
+      }
+
+      // check rate limit for method and ip
+      const methodTotalLimit = this.registryTotal[methodName];
+      if (this.rateLimit.shouldRateLimit(ip, methodName, methodTotalLimit, this.requestId)) {
+        return jsonResp(request.id, new IPRateLimitExceeded(methodName), undefined);
+      }
+
+      // execute the method and return the result
+      const result = await this.registry[methodName](request.params);
+
+      if (result instanceof JsonRpcError) {
+        return jsonResp(request.id, result, undefined);
+      } else {
+        return jsonResp(request.id, null, result);
+      }
+    } catch (err: any) {
+      return jsonResp(request.id, new InternalError(err.message), undefined);
+    }
+  }
+
+  validateJsonRpcRequest(body): boolean {
+    // validate it has the correct jsonrpc version, method, and id
+    if (
+      body.jsonrpc !== '2.0' ||
+      !hasOwnProperty(body, 'method') ||
+      this.hasInvalidReqestId(body) ||
+      !hasOwnProperty(body, 'id')
+    ) {
+      this.logger.warn(
+        `[${this.getRequestId()}] Invalid request, body.jsonrpc: ${body.jsonrpc}, body[method]: ${
+          body.method
+        }, body[id]: ${body.id}, ctx.request.method: ${body.method}`,
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  verifyMethodExists(methodName: string): boolean {
+    if (this.registry[methodName]) {
+      return true;
+    }
+
+    this.logger.warn(`[${this.getRequestId()}] Method not found: ${methodName}`);
+    return false;
   }
 
   getKoaApp(): Koa<Koa.DefaultState, Koa.DefaultContext> {

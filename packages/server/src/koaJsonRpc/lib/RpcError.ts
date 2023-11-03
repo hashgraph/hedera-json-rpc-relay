@@ -46,8 +46,8 @@ export class InvalidRequest extends JsonRpcError {
 }
 
 export class MethodNotFound extends JsonRpcError {
-  constructor() {
-    super('Method not found', -32601, undefined);
+  constructor(methodName: string) {
+    super(`Method ${methodName} not found`, -32601, undefined);
   }
 }
 
