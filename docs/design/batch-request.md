@@ -167,7 +167,7 @@ Example of a response with the above errors (in the same order):
     {
         "error": {
             "code": -32007,
-            "name": "Method debug_traceTransaction is not permitted as part of batch requests",
+            "name": "Method not allowed on batch requests",
             "message": "Method debug_traceTransaction is not permitted as part of batch requests"
         },
         "jsonrpc": "2.0",
