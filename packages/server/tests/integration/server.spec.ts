@@ -29,7 +29,7 @@ import RelayCalls from '../../tests/helpers/constants';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
-const batchRequestEnabledValue = process.env.BATCH_REQUESTS_ENABLED;
+
 before(function () {
   process.env.BATCH_REQUESTS_ENABLED = 'true';
   this.timeout(60 * 1000);
@@ -39,7 +39,6 @@ before(function () {
 
 after(function () {
   this.testServer.close();
-  process.env.BATCH_REQUESTS_ENABLED = batchRequestEnabledValue;
 });
 
 describe('RPC Server', async function () {
@@ -426,6 +425,12 @@ describe('RPC Server', async function () {
   });
 
   describe('batchRequest Test Cases', async function () {
+    const batchRequestEnabledValue = process.env.BATCH_REQUESTS_ENABLED;
+
+    before(function () {
+      process.env.BATCH_REQUESTS_ENABLED = batchRequestEnabledValue;
+    });
+
     function getEthChainIdRequest(id) {
       return {
         id: `${id}`,
@@ -604,6 +609,22 @@ describe('RPC Server', async function () {
       }
 
       // enable batch request again
+      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    });
+
+    it('batch request be disabled by default', async function () {
+      // disable batch request
+      process.env.BATCH_REQUESTS_ENABLED = undefined;
+
+      // do batch request
+      try {
+        await this.testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
+        Assertions.expectedError();
+      } catch (error: any) {
+        BaseTest.batchDisabledErrorCheck(error.response);
+      }
+
+      // enable batch requests again
       process.env.BATCH_REQUESTS_ENABLED = 'true';
     });
   });
