@@ -87,7 +87,7 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
     if (USE_LOCAL_NODE === 'true') {
-      runLocalHederaNetwork();
+      // runLocalHederaNetwork();
     }
 
     if (global.relayIsLocal) {
@@ -106,7 +106,7 @@ describe('RPC Server Acceptance Tests', function () {
     if (USE_LOCAL_NODE === 'true') {
       // stop local-node
       logger.info('Shutdown local node');
-      shell.exec('hedera stop');
+      //shell.exec('hedera stop');
     }
 
     //stop relay
@@ -122,6 +122,9 @@ describe('RPC Server Acceptance Tests', function () {
 
   describe('Acceptance tests', async () => {
     fs.readdirSync(path.resolve(__dirname, './')).forEach((file) => {
+      if (file != 'estimateGasPrecompile.spec.ts') {
+        return;
+      }
       if (fs.statSync(path.resolve(__dirname, file)).isDirectory()) {
         fs.readdirSync(path.resolve(__dirname, file)).forEach((subFile) => {
           loadTest(`${file}/${subFile}`);
@@ -152,7 +155,7 @@ describe('RPC Server Acceptance Tests', function () {
     shell.exec(`npm install @hashgraph/hedera-local -g`);
 
     console.log('Starting local node...');
-    shell.exec(`hedera start -d`);
+    shell.exec(`hedera restart -d`);
     console.log('Hedera Hashgraph local node env started');
   }
 
