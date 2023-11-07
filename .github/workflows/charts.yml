@@ -31,6 +31,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          submodules: 'false'
 
       - name: Install k3d
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
@@ -52,6 +53,7 @@ jobs:
         with:
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          context: .
           platforms: linux/amd64
           push: true
           tags: localhost:5001/${{ github.repository }}:test
