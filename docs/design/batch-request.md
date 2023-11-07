@@ -202,7 +202,7 @@ This type of error happens when the whole batch request fails and could happen f
 }
 ```
 
-## Metrics Capture
+## Metrics Capture Enhancement
 Currently metrics are captured using a KoaApp middleware that captures the metric `rpc_relay_method_response` per each HTTP request capturing the amount of time it took to process the request in milliseconds (ms).
 
 The metric currently uses the following labels:
