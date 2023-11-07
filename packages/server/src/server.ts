@@ -765,29 +765,6 @@ app.useRpc('eth_coinbase', async () => {
   return logAndHandleResponse('eth_coinbase', [], (requestId) => relay.eth().coinbase(requestId));
 });
 
-const rpcApp = app.rpcApp();
-
-app.getKoaApp().use(async (ctx, next) => {
-  await rpcApp(ctx, next);
-  // Handle custom errors
-
-  // single request
-  if (ctx.body && ctx.body.result instanceof JsonRpcError) {
-    ctx.body.error = { ...ctx.body.result };
-    delete ctx.body.result;
-  }
-
-  // batch request
-  if (ctx.body && ctx.body instanceof Array) {
-    ctx.body.forEach((item) => {
-      if (item.result instanceof JsonRpcError) {
-        item.error = { ...item.result };
-        delete item.result;
-      }
-    });
-  }
-});
-
 process.on('unhandledRejection', (reason, p) => {
   logger.error(`Unhandled Rejection at: Promise: ${JSON.stringify(p)}, reason: ${reason}`);
 });
