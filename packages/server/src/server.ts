@@ -765,6 +765,12 @@ app.useRpc('eth_coinbase', async () => {
   return logAndHandleResponse('eth_coinbase', [], (requestId) => relay.eth().coinbase(requestId));
 });
 
+const rpcApp = app.rpcApp();
+
+app.getKoaApp().use(async (ctx, next) => {
+  await rpcApp(ctx, next);
+});
+
 process.on('unhandledRejection', (reason, p) => {
   logger.error(`Unhandled Rejection at: Promise: ${JSON.stringify(p)}, reason: ${reason}`);
 });
