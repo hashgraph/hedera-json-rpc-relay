@@ -54,6 +54,7 @@ const METHOD_NOT_FOUND = 'METHOD NOT FOUND';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';
 
 const responseSuccessStatusCode = '200';
+const BATCH_REQUEST_METHOD_NAME = 'batch_request';
 
 export default class KoaJsonRpc {
   private registry: any;
@@ -217,8 +218,15 @@ export default class KoaJsonRpc {
       return;
     }
 
+    // verify rate limit for batch request
+    const batchRequestTotalLimit = this.registryTotal[BATCH_REQUEST_METHOD_NAME];
+    // check rate limit for method and ip
+    if (this.rateLimit.shouldRateLimit(ctx.ip, BATCH_REQUEST_METHOD_NAME, batchRequestTotalLimit, this.requestId)) {
+      return jsonResp(null, new IPRateLimitExceeded(BATCH_REQUEST_METHOD_NAME), undefined);
+    }
+
     const response: any[] = [];
-    ctx.state.methodName = 'batch_requests';
+    ctx.state.methodName = BATCH_REQUEST_METHOD_NAME;
 
     // we do the requests in parallel to save time, but we need to keep track of the order of the responses (since the id might be optional)
     const promises = body.map((item: any) => this.getRequestResult(item, ctx.ip));
