@@ -282,7 +282,7 @@ export class MirrorNodeClient {
     );
     this.cacheService = cacheService;
 
-    // set  up eth call  accepted error codes.
+    // set up eth call accepted error codes.
     if (process.env.ETH_CALL_ACCEPTED_ERRORS) {
       MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.set(
         MirrorNodeClient.CONTRACT_CALL_ENDPOINT,
