@@ -22,7 +22,6 @@ This is a standard JSON-RPC 2.0 feature. For more information, see the [JSON-RPC
 ## Implementation
 
 * Current single requests should stay the same as they are currently.
-* Should not be possible to use batch requests for methods related to debug and filter APIs.
 
 * All batch requests should return a `200` response code, even if there are errors on the individual requests. except in case that fails the validations for the batch request as a whole or common validations.
 * Batch requests should be implemented on top of the current implementation, refector into common flow and common code as much as possible.
@@ -124,7 +123,6 @@ This happens when there are errors on one or many individual requests items of t
 2. The request item does not conform to the JSON-RPC 2.0 specification (Invalid Request)
 3. Missing required parameters or wrong parameter type 
 4. The request item is valid but the result is an error, like an `eth_call` that returns a `revert` or `out of gas` error
-5. The request item method is not allowed as part of batch requests
 
 Example of a response with the above errors (in the same order):
 
@@ -163,15 +161,6 @@ Example of a response with the above errors (in the same order):
         },
         "jsonrpc": "2.0",
         "id": 4
-    },
-    {
-        "error": {
-            "code": -32007,
-            "name": "Method not allowed on batch requests",
-            "message": "Method debug_traceTransaction is not permitted as part of batch requests"
-        },
-        "jsonrpc": "2.0",
-        "id": 5
     }
 ]
 ```
@@ -214,6 +203,27 @@ This type of error happens when the whole batch request fails and could happen f
 ```
 
 ## Metrics Capture
+Currently metrics are captured using a KoaApp middleware that captures the metric `rpc_relay_method_response` per each HTTP request capturing the amount of time it took to process the request in milliseconds (ms).
+
+The metric currently uses the following labels:
+
+1. `method` (method name such as eth_call, eth_getBlockByNumber or batch_request)
+2. `status` (HTTP status code)
+
+This approach works for both single and batch requests, however it does not capture the metrics for each individual request within the batch request.
+
+Given the RPC team's heavy reliance on this metric to measure the performance and reliability of the RPC service, it is crucial to maintain its integrity.
+
+### Proposed Solution
+The suggested enhancement is to retain the existing metric unchanged while introducing an additional metric to track individual requests within a batch.
+
+The new metric will be called `rpc_relay_batch_request` and will capture the following labels:
+1. `method` (method name such as eth_call, eth_getBlockByNumber)
+2. `status` (instead of HTTP status code, it will be the status of the individual request, success or error, in case of sucess it will have the value `200` to keep it similar to the current metric, but in case of error it will have the RPC error code like `-32005` or `-32006`)
+
+The processing time in milliseconds (ms) will continue to be observed for this metric as well.
+
+This proposed approach offers several benefits. It preserves the integrity of our current metric system while enabling the capture of detailed performance metrics for each request within a batch. This data can then be showcased on a new dashboard designed to monitor method performance independently of request type—singular or batch. Concurrently, our existing dashboards will continue to provide comprehensive metrics for all single and batch requests at the whole HTTP request level.
 
 ## Rate Limits
 All requests within the batch request count towards the limit per IP and Method, on top of the batch request own limit, that will be the `TIER_1_RATE_LIMIT`.
