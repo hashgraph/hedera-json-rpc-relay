@@ -257,7 +257,7 @@ describe('RPC Server', async function () {
 
       Assertions.expectedError();
     } catch (error) {
-      BaseTest.methodNotFoundCheck(error.response);
+      BaseTest.methodNotFoundCheck(error.response, RelayCalls.ETH_ENDPOINTS.WEB3_SHA);
     }
   });
 
@@ -272,7 +272,7 @@ describe('RPC Server', async function () {
 
       Assertions.expectedError();
     } catch (error) {
-      BaseTest.methodNotFoundCheck(error.response);
+      BaseTest.methodNotFoundCheck(error.response, RelayCalls.ETH_ENDPOINTS.NET_PEER_COUNT);
     }
   });
 
@@ -302,7 +302,7 @@ describe('RPC Server', async function () {
 
       Assertions.expectedError();
     } catch (error) {
-      BaseTest.methodNotFoundCheck(error.response);
+      BaseTest.methodNotFoundCheck(error.response, RelayCalls.ETH_ENDPOINTS.ETH_SIGN_TYPED_DATA);
     }
   });
 
@@ -377,7 +377,7 @@ describe('RPC Server', async function () {
 
       Assertions.expectedError();
     } catch (error) {
-      BaseTest.methodNotFoundCheck(error.response);
+      BaseTest.methodNotFoundCheck(error.response, RelayCalls.ETH_ENDPOINTS.ETH_GET_PROOF);
     }
   });
 
@@ -421,6 +421,215 @@ describe('RPC Server', async function () {
 
     BaseTest.defaultResponseChecks(res);
     expect(res.data.result).to.be.equal('0x0');
+  });
+
+  describe('batchRequest Test Cases', async function () {
+    const batchRequestEnabledValue = process.env.BATCH_REQUESTS_ENABLED;
+
+    this.beforeAll(function () {
+      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    });
+
+    this.afterAll(function () {
+      process.env.BATCH_REQUESTS_ENABLED = batchRequestEnabledValue;
+    });
+
+    function getEthChainIdRequest(id) {
+      return {
+        id: `${id}`,
+        jsonrpc: '2.0',
+        method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
+        params: [null],
+      };
+    }
+
+    function getEthAccountsRequest(id) {
+      if (id == null) {
+        return {
+          jsonrpc: '2.0',
+          method: RelayCalls.ETH_ENDPOINTS.ETH_ACCOUNTS,
+          params: [null],
+        };
+      } else {
+        return {
+          id: `${id}`,
+          jsonrpc: '2.0',
+          method: RelayCalls.ETH_ENDPOINTS.ETH_ACCOUNTS,
+          params: [null],
+        };
+      }
+    }
+
+    function getNonExistingMethodRequest(id) {
+      return {
+        id: `${id}`,
+        jsonrpc: '2.0',
+        method: 'non_existent_method',
+        params: [null],
+      };
+    }
+
+    it('should execute "eth_chainId" in batch request', async function () {
+      // 3 request of eth_chainId
+      const response = await this.testClient.post('/', [
+        getEthChainIdRequest(2),
+        getEthChainIdRequest(3),
+        getEthChainIdRequest(4),
+      ]);
+
+      // verify response
+      BaseTest.baseDefaultResponseChecks(response);
+
+      // verify response for each request
+      for (let i = 0; i < response.data.length; i++) {
+        expect(response.data[i].id).to.be.equal((i + 2).toString());
+        expect(response.data[i].result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+      }
+    });
+
+    it('should execute "eth_chainId" and "eth_accounts" in batch request', async function () {
+      // 3 request of eth_chainId
+      const response = await this.testClient.post('/', [
+        getEthChainIdRequest(2),
+        getEthAccountsRequest(3),
+        getEthChainIdRequest(4),
+      ]);
+
+      // verify response
+      BaseTest.baseDefaultResponseChecks(response);
+
+      // verify response for each result
+      expect(response.data[0].id).to.be.equal('2');
+      expect(response.data[0].result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+      // verify eth_accounts result
+      expect(response.data[1].id).to.be.equal('3');
+      expect(response.data[1].result).to.be.an('Array');
+      expect(response.data[1].result.length).to.be.equal(0);
+      // verify eth_chainId result
+      expect(response.data[2].id).to.be.equal('4');
+      expect(response.data[2].result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+    });
+
+    it('should execute "eth_chainId" and "eth_accounts" in batch request with invalid request id', async function () {
+      const response = await this.testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(null)]);
+
+      // verify response
+      BaseTest.baseDefaultResponseChecks(response);
+
+      // verify response for each result
+      expect(response.data[0].id).to.be.equal('2');
+      expect(response.data[0].result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+      // verify eth_accounts result
+      expect(response.data[1].id).to.be.equal(null);
+      expect(response.data[1].error).to.be.an('Object');
+      expect(response.data[1].error.code).to.be.equal(-32600);
+      expect(response.data[1].error.message).to.be.equal('Invalid Request');
+    });
+
+    it('should execute "eth_chainId" and method not found in batch request', async function () {
+      const response = await this.testClient.post('/', [
+        getEthChainIdRequest(2),
+        getNonExistingMethodRequest(3),
+        getEthChainIdRequest(4),
+      ]);
+
+      // verify response
+      BaseTest.baseDefaultResponseChecks(response);
+
+      // verify eth_chainId result on position 0
+      expect(response.data[0].id).to.be.equal('2');
+      expect(response.data[0].result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+      // verify method not found error on position 1
+      expect(response.data[1].id).to.be.equal('3');
+      expect(response.data[1].error).to.be.an('Object');
+      expect(response.data[1].error.code).to.be.equal(-32601);
+      expect(response.data[1].error.message).to.be.equal('Method non_existent_method not found');
+      // verify eth_chainId result on position 2
+      expect(response.data[2].id).to.be.equal('4');
+      expect(response.data[2].result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+    });
+
+    it('should execute "eth_chainId" and method not found and params error in batch request', async function () {
+      const response = await this.testClient.post('/', [
+        getEthChainIdRequest(2),
+        getNonExistingMethodRequest(3),
+        {
+          id: '4',
+          jsonrpc: '2.0',
+          method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          params: [null],
+        },
+      ]);
+
+      // verify response
+      BaseTest.baseDefaultResponseChecks(response);
+
+      // verify eth_chainId result on position 0
+      expect(response.data[0].id).to.be.equal('2');
+      expect(response.data[0].result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+      // verify method not found error on position 1
+      expect(response.data[1].id).to.be.equal('3');
+      expect(response.data[1].error).to.be.an('Object');
+      expect(response.data[1].error.code).to.be.equal(-32601);
+      expect(response.data[1].error.message).to.be.equal('Method non_existent_method not found');
+      // verify
+      expect(response.data[2].id).to.be.equal('4');
+      expect(response.data[2].error).to.be.an('Object');
+      expect(response.data[2].error.code).to.be.equal(-32602);
+      expect(response.data[2].error.name).to.be.equal('Missing required parameters');
+      expect(
+        response.data[2].error.message.endsWith('Missing value for required parameter 1'),
+        'Missing value for required parameter 1',
+      ).to.be.equal(true);
+    });
+
+    it('should hit batch request limit', async function () {
+      // prepare 101 requests chain id requests
+      const requests: any[] = [];
+      for (let i = 0; i < 101; i++) {
+        requests.push(getEthChainIdRequest(i + 1));
+      }
+
+      // execute batch request
+      try {
+        await this.testClient.post('/', requests);
+        Assertions.expectedError();
+      } catch (error: any) {
+        BaseTest.batchRequestLimitError(error.response, requests.length, 100);
+      }
+    });
+
+    it('should not execute batch request when disabled', async function () {
+      // disable batch request
+      process.env.BATCH_REQUESTS_ENABLED = 'false';
+
+      // do batch request
+      try {
+        await this.testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
+        Assertions.expectedError();
+      } catch (error: any) {
+        BaseTest.batchDisabledErrorCheck(error.response);
+      }
+
+      // enable batch request again
+      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    });
+
+    it('batch request be disabled by default', async function () {
+      // disable batch request
+      process.env.BATCH_REQUESTS_ENABLED = undefined;
+
+      // do batch request
+      try {
+        await this.testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
+        Assertions.expectedError();
+      } catch (error: any) {
+        BaseTest.batchDisabledErrorCheck(error.response);
+      }
+
+      // enable batch requests again
+      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    });
   });
 
   describe('Validator', async function () {
@@ -2068,16 +2277,21 @@ class BaseTest {
   }
 
   static defaultResponseChecks(response) {
-    BaseTest.validResponseCheck(response);
-    BaseTest.validCorsCheck(response);
-    BaseTest.validRequestIdCheck(response);
-    expect(response, "Default response: Should have 'data' property").to.have.property('data');
+    BaseTest.baseDefaultResponseChecks(response);
+
     expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
     expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
     expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
     expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
     expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
     expect(response, "Default response should have 'headers' property").to.have.property('headers');
+  }
+
+  static baseDefaultResponseChecks(response) {
+    BaseTest.validResponseCheck(response);
+    BaseTest.validCorsCheck(response);
+    BaseTest.validRequestIdCheck(response);
+    expect(response, "Default response: Should have 'data' property").to.have.property('data');
   }
 
   static errorResponseChecks(response, code, message, name?) {
@@ -2095,7 +2309,7 @@ class BaseTest {
     expect(response.data.error, "Error response: 'error' should have 'message' property").to.have.property('message');
     expect(
       response.data.error.message.endsWith(message),
-      "Error response: 'data.error.message' should end with passed 'message' value",
+      `Error response: 'data.error.message' should end with passed ${message} value, but came with ${response.data.error.message}`,
     ).to.be.true;
     if (name) {
       expect(response.data.error, "Error response: 'data.error' should have 'name' property").to.have.property('name');
@@ -2112,10 +2326,27 @@ class BaseTest {
     this.errorResponseChecks(response, -32601, 'Unsupported JSON-RPC method');
   }
 
-  static methodNotFoundCheck(response: any) {
+  static batchDisabledErrorCheck(response: any) {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
-    this.errorResponseChecks(response, -32601, 'Method not found');
+
+    expect(response.data.error.name).to.eq('Batch requests disabled');
+    expect(response.data.error.message).to.eq('Batch requests are disabled');
+    expect(response.data.error.code).to.eq(-32202);
+  }
+
+  static methodNotFoundCheck(response: any, methodName: string) {
+    expect(response.status).to.eq(400);
+    expect(response.statusText).to.eq('Bad Request');
+    this.errorResponseChecks(response, -32601, `Method ${methodName} not found`);
+  }
+
+  static batchRequestLimitError(response: any, amount: number, max: number) {
+    expect(response.status).to.eq(400);
+    expect(response.statusText).to.eq('Bad Request');
+    expect(response.data.error.name).to.eq('Batch requests amount max exceeded');
+    expect(response.data.error.message).to.eq(`Batch request amount ${amount} exceeds max ${max}`);
+    expect(response.data.error.code).to.eq(-32203);
   }
 
   static invalidParamError(response: any, code: number, message: string) {

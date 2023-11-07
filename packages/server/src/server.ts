@@ -769,11 +769,6 @@ const rpcApp = app.rpcApp();
 
 app.getKoaApp().use(async (ctx, next) => {
   await rpcApp(ctx, next);
-  // Handle custom errors
-  if (ctx.body && ctx.body.result instanceof JsonRpcError) {
-    ctx.body.error = { ...ctx.body.result };
-    delete ctx.body.result;
-  }
 });
 
 process.on('unhandledRejection', (reason, p) => {
