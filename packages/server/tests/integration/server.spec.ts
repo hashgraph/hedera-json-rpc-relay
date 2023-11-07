@@ -31,7 +31,6 @@ dotenv.config({ path: path.resolve(__dirname, './test.env') });
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 
 before(function () {
-  process.env.BATCH_REQUESTS_ENABLED = 'true';
   this.timeout(60 * 1000);
   this.testServer = app.listen(process.env.E2E_SERVER_PORT);
   this.testClient = BaseTest.createTestClient();
@@ -427,7 +426,11 @@ describe('RPC Server', async function () {
   describe('batchRequest Test Cases', async function () {
     const batchRequestEnabledValue = process.env.BATCH_REQUESTS_ENABLED;
 
-    before(function () {
+    this.beforeAll(function () {
+      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    });
+
+    this.afterAll(function () {
       process.env.BATCH_REQUESTS_ENABLED = batchRequestEnabledValue;
     });
 
