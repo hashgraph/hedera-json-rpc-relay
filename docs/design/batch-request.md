@@ -17,14 +17,14 @@ This is a standard JSON-RPC 2.0 feature. For more information, see the [JSON-RPC
 2. **BATCH_REQUESTS_MAX_SIZE:** If the batch request is enabled, this is the maximum number of requests allowed in a batch request, default value is `100`.
 3. **WS_BATCH_REQUESTS_ENABLED:** Flag to enable `batch requests` on the websocket, it can be `true` or `false`, default value is `false`
 4. **WS_BATCH_REQUESTS_MAX_SIZE:** If the batch request is enabled, this is the maximum number of requests allowed in a batch request, default value is `20`.
-
+5. **BATCH_DISALLOWED_METHODS:** A list of methods that are not allowed to be part of a batch request. default: (debug_traceTransaction,eth_getFilterLogs,eth_uninstallFilter,eth_newFilter,eth_newPendingTransactionFilter,eth_newBlockFilter)
 
 ## Implementation
 
 * Current single requests should stay the same as they are currently.
 
 * All batch requests should return a `200` response code, even if there are errors on the individual requests. except in case that fails the validations for the batch request as a whole or common validations.
-* Batch requests should be implemented on top of the current implementation, refector into common flow and common code as much as possible.
+* Batch requests should be implemented on top of the current implementation, refactored into common flows and common code reused much as possible.
 
 **Common Flow for both Batch and Single Requests:**
 1. Validate the request is a valid json
@@ -34,13 +34,13 @@ This is a standard JSON-RPC 2.0 feature. For more information, see the [JSON-RPC
 **Validations per Each individual request on a batch or as a single request:**
 1. Validate JSON-RPC 2.0 Specification
 2. Validate Method is supported
-3. Validate and increase the request count for the rate limit
+3. Validate Method is allowed for batch request
+4. Validate and increase the request count for the rate limit
 
 **Validations for the Batch Request as a whole:**
 1. Validate that the request is an array
 2. Validate Batch Request is enabled
 3. Validate Batch Request size is within the limit
-
 
 
 #### Batch Request examples
@@ -56,7 +56,7 @@ The request object is a JSON array with one or more transactions, a unique `id` 
         "params": []
     },
     {
-        "id": "1",
+        "id": 2,
         "jsonrpc": "2.0",
         "method": "eth_getBalance",
         "params": [
@@ -68,7 +68,7 @@ The request object is a JSON array with one or more transactions, a unique `id` 
         "jsonrpc": "2.0",
         "method": "eth_blockNumber",
         "params": [],
-        "id": 1
+        "id": 3
     }
 ]
 ```
@@ -87,17 +87,15 @@ The response object is a JSON array with each result from the request array. Eac
     {
         "result": "0x21e19e0c9bab2400000",
         "jsonrpc": "2.0",
-        "id": "1"
+        "id": 2
     },
     {
         "result": "0x147",
         "jsonrpc": "2.0",
-        "id": 1
+        "id": 3
     }
 ]
 ```
-
-
 
 ## Errors
 
@@ -123,6 +121,7 @@ This happens when there are errors on one or many individual requests items of t
 2. The request item does not conform to the JSON-RPC 2.0 specification (Invalid Request)
 3. Missing required parameters or wrong parameter type 
 4. The request item is valid but the result is an error, like an `eth_call` that returns a `revert` or `out of gas` error
+5. The request item method is not allowed for batch requests
 
 Example of a response with the above errors (in the same order):
 
@@ -161,6 +160,15 @@ Example of a response with the above errors (in the same order):
         },
         "jsonrpc": "2.0",
         "id": 4
+    }
+    {
+        "error":{
+            "code":-32007,
+            "name": "Method not allowed for batch requests",
+            "message": "Method eth_getFilterLogs is not permitted as part of batch requests"
+        },
+        "jsonrpc": "2.0",
+        "id": 5
     }
 ]
 ```
@@ -215,15 +223,9 @@ This approach works for both single and batch requests, however it does not capt
 Given the RPC team's heavy reliance on this metric to measure the performance and reliability of the RPC service, it is crucial to maintain its integrity.
 
 ### Proposed Solution
-The suggested enhancement is to retain the existing metric unchanged while introducing an additional metric to track individual requests within a batch.
+The suggested enhancement is to retain the existing metric unchanged while introducing an additional metric `label` to distinguish requests within a batch called `isPartOfBatch`. This label will have the value `true` for all requests within a batch and `false` for all single requests including the `batch_request` method itself.
 
-The new metric will be called `rpc_relay_batch_request` and will capture the following labels:
-1. `method` (method name such as eth_call, eth_getBlockByNumber)
-2. `status` (instead of HTTP status code, it will be the status of the individual request, success or error, in case of sucess it will have the value `200` to keep it similar to the current metric, but in case of error it will have the RPC error code like `-32005` or `-32006`)
-
-The processing time in milliseconds (ms) will continue to be observed for this metric as well.
-
-This proposed approach offers several benefits. It preserves the integrity of our current metric system while enabling the capture of detailed performance metrics for each request within a batch. This data can then be showcased on a new dashboard designed to monitor method performance independently of request type—singular or batch. Concurrently, our existing dashboards will continue to provide comprehensive metrics for all single and batch requests at the whole HTTP request level.
+Since the metric observations that are part of a batch request won't have a corresponding http code response, we will use the `status` label to capture the status of the individual requests within the batch. The `status` label will have the following values: `200` for all successful results, and the corresponding error code for all failed results (e.g. `-32005` for batch item count exceeded).
 
 ## Rate Limits
 All requests within the batch request count towards the limit per IP and Method, on top of the batch request own limit, that will be the `TIER_1_RATE_LIMIT`.
@@ -242,6 +244,7 @@ The following tests are added to test the batch requests feature:
 7. should not execute batch request when disabled
 8. batch request be disabled by default
 9. batch request
+10. should return error for an batch request item method that is not allowed for batch requests
 
 ### Websocket Requests
 1. should execute "eth_chainId" in batch request ( 2 or 3 requests)
