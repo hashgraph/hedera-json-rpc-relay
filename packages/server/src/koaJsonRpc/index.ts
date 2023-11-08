@@ -36,8 +36,9 @@ import {
   JsonRpcError as JsonRpcErrorServer,
 } from './lib/RpcError';
 import Koa from 'koa';
-import { Registry } from 'prom-client';
+import { Histogram, Registry } from 'prom-client';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
+import { RpcErrorCodeToStatusMap, HttpStatusCodeAndMessage } from './lib/HttpStatusCodeAndMessage';
 
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
@@ -52,7 +53,6 @@ const JSON_RPC_ERROR = 'JSON RPC ERROR';
 const CONTRACT_REVERT = 'CONTRACT REVERT';
 const METHOD_NOT_FOUND = 'METHOD NOT FOUND';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';
-
 const responseSuccessStatusCode = '200';
 
 export default class KoaJsonRpc {
@@ -63,6 +63,7 @@ export default class KoaJsonRpc {
   private duration: number;
   private limit: string;
   private rateLimit: RateLimit;
+  private metricsRegistry: any;
   private koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
   private requestId: string;
   private logger: Logger;
@@ -71,6 +72,7 @@ export default class KoaJsonRpc {
   private readonly batchRequestsMaxSize: number = process.env.BATCH_REQUESTS_MAX_SIZE
     ? parseInt(process.env.BATCH_REQUESTS_MAX_SIZE)
     : 100; // default to 100
+  private methodResponseHistogram: Histogram | undefined;
 
   constructor(logger: Logger, register: Registry, opts?) {
     this.koaApp = new Koa();
@@ -87,6 +89,21 @@ export default class KoaJsonRpc {
     }
     this.logger = logger;
     this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
+    this.metricsRegistry = register;
+    this.initMetrics();
+  }
+
+  private initMetrics() {
+    // clear and create metric in registry
+    const metricHistogramName = 'rpc_relay_method_result';
+    this.metricsRegistry.removeSingleMetric(metricHistogramName);
+    this.methodResponseHistogram = new Histogram({
+      name: metricHistogramName,
+      help: 'JSON RPC method statusCode latency histogram',
+      labelNames: ['method', 'statusCode', 'isPartOfBatch'],
+      registers: [this.metricsRegistry],
+      buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 40000, 50000, 60000], // ms (milliseconds)
+    });
   }
 
   // we do it as a method so we can mock it in tests, since by default is false, but we need to test it as true
@@ -148,51 +165,13 @@ export default class KoaJsonRpc {
     const response = await this.getRequestResult(body, ctx.ip);
     ctx.body = response;
     const errorOrResult = response.error || response.result;
+
     if (errorOrResult instanceof JsonRpcError || errorOrResult instanceof JsonRpcErrorServer) {
       // What HTTP Status code to return for JsonRpcError
-      switch (errorOrResult.code) {
-        // INTERNAL_ERROR
-        case -32603:
-          ctx.status = 500;
-          ctx.state.status = `${ctx.status} (${INTERNAL_ERROR})`;
-          break;
-
-        // CONTRACT_REVERT
-        case -32008:
-          ctx.status = 200;
-          ctx.state.status = `${ctx.status} (${CONTRACT_REVERT})`;
-          break;
-
-        // INVALID_REQUEST
-        case -32600:
-          ctx.status = 400;
-          ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
-          break;
-
-        // INVALID_PARAMS
-        case -32602:
-          ctx.status = 400;
-          ctx.state.status = `${ctx.status} (${INVALID_PARAMS_ERROR})`;
-          break;
-
-        // METHOD_NOT_FOUND
-        case -32601:
-          ctx.status = 400;
-          ctx.state.status = `${ctx.status} (${METHOD_NOT_FOUND})`;
-          break;
-
-        // IP_RATE_LIMIT_EXCEEDED
-        case -32605:
-          ctx.status = 409;
-          ctx.state.status = `${ctx.status} (${IP_RATE_LIMIT_EXCEEDED})`;
-          break;
-
-        // ANYTHING ELSE
-        default:
-          ctx.status = 400;
-          ctx.state.status = `${ctx.status} (${JSON_RPC_ERROR})`;
-          break;
-      }
+      const httpStatusCodeAndMessage =
+        RpcErrorCodeToStatusMap[errorOrResult.code] || RpcErrorCodeToStatusMap['default'];
+      ctx.status = httpStatusCodeAndMessage.statusCode;
+      ctx.state.status = `${ctx.status} (${httpStatusCodeAndMessage.StatusName})`;
     }
   }
 
@@ -221,7 +200,16 @@ export default class KoaJsonRpc {
     ctx.state.methodName = 'batch_requests';
 
     // we do the requests in parallel to save time, but we need to keep track of the order of the responses (since the id might be optional)
-    const promises = body.map((item: any) => this.getRequestResult(item, ctx.ip));
+    const promises = body.map((item: any) => {
+      const startTime = Date.now();
+      const result = this.getRequestResult(item, ctx.ip).then((res) => {
+        const ms = Date.now() - startTime;
+        this.methodResponseHistogram?.labels(item.method, `${res.error ? res.error.code : 200}`, 'true').observe(ms);
+        return res;
+      });
+
+      return result;
+    });
     const results = await Promise.all(promises);
     response.push(...results);
 
