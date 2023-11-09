@@ -153,9 +153,7 @@ export class SDKClient {
     callerName: string,
     requestId?: string,
   ): Promise<Uint8Array> {
-    const contractByteCodeQuery = new ContractByteCodeQuery().setContractId(
-      ContractId.fromEvmAddress(shard, realm, address),
-    );
+    const contractByteCodeQuery = new ContractByteCodeQuery().setContractId(ContractId.fromSolidityAddress(address));
     const cost = await contractByteCodeQuery.getCost(this.clientMain);
 
     return this.executeQuery(
