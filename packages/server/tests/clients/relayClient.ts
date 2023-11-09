@@ -55,6 +55,16 @@ export default class RelayClient {
     return result;
   }
 
+  async callBatch(payload: { id: string; method: string; params: any[] }[]) {
+    const request = this.provider._getConnection();
+    request.setHeader('content-type', 'application/json');
+    request.body = JSON.stringify(payload.map((r) => ({ ...r, jsonrpc: '2.0' })));
+    const response = await request.send();
+    response.assertOk();
+
+    return response.bodyJson;
+  }
+
   /**
    * Calls the specified methodName with the provided params and asserts that it fails
    * @param methodName

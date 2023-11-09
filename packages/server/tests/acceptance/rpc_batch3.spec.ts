@@ -1878,4 +1878,28 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       });
     });
   });
+
+  describe('Batch Request Test Suite', async function () {
+    // make sure env is set to true BATCH_REQUESTS_ENABLED
+
+    it('@release Should return a batch of requests', async function () {
+      const payload = [
+        {
+          id: 1,
+          method: RelayCall.ETH_ENDPOINTS.ETH_CHAIN_ID,
+          params: [],
+        },
+        {
+          id: 2,
+          method: RelayCall.ETH_ENDPOINTS.ETH_GAS_PRICE,
+          params: [],
+        },
+      ];
+
+      const res = await relay.callBatch(payload);
+      expect(res).to.have.length(payload.length);
+      expect(res.filter((r) => r.id === 1)[0].result).to.be.equal(CHAIN_ID);
+      expect(res.filter((r) => r.id === 2)[0].result).to.be.equal('0xa54f4c3c00');
+    });
+  });
 });
