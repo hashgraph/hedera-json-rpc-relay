@@ -1883,6 +1883,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     // make sure env is set to true BATCH_REQUESTS_ENABLED
 
     it('@release Should return a batch of requests', async function () {
+      const testAccount = await servicesNode.createAliasAccount(100, relay.provider, Utils.generateRequestId());
+
       {
         const payload = [
           {
@@ -1893,7 +1895,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           {
             id: 2,
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
-            params: [accounts[0].address, 'latest'],
+            params: [testAccount.address, 'latest'],
           },
           {
             id: 3,
@@ -1914,7 +1916,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         const factory = new ethers.ContractFactory(
           DeployerContractJson.abi,
           DeployerContractJson.bytecode,
-          accounts[0].wallet,
+          testAccount.wallet,
         );
         const deployerContract = await factory.deploy();
         await deployerContract.waitForDeployment();
@@ -1959,7 +1961,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           {
             id: 2,
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
-            params: [accounts[0].address, 'latest'],
+            params: [testAccount.address, 'latest'],
           },
           {
             id: 3,
