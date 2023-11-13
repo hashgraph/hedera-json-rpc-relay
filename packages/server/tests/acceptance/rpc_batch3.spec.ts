@@ -1879,8 +1879,14 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     });
   });
 
-  describe('Batch Request Test Suite', async function () {
-    // make sure env is set to true BATCH_REQUESTS_ENABLED
+  describe('Batch Request Test Suite BATCH_REQUESTS_ENABLED = true', async function () {
+    before(async () => {
+      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    });
+
+    after(async () => {
+      process.env.BATCH_REQUESTS_ENABLED = 'false';
+    });
 
     it('@release Should return a batch of requests', async function () {
       const testAccount = await servicesNode.createAliasAccount(100, relay.provider, Utils.generateRequestId());
