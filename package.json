@@ -57,13 +57,14 @@
     "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts",
     "check:node": "ts-node packages/server/tests/helpers/nodeCheck.ts",
     "bump-version": "SEM_VER=${npm_config_semver} SNAPSHOT=${npm_config_snapshot} node scripts/.bump-version.js",
+    "postinstall": "node scripts/install-linux-dep.js",
     "prepare": "husky install"
   },
   "dependencies": {
     "@hashgraph/hedera-local": "^2.15.1",
     "@open-rpc/schema-utils-js": "^1.16.1",
     "@types/find-config": "^1.0.2",
-    "@types/sinon": "^10.0.16",
+    "@types/sinon": "^10.0.20",
     "chai-exclude": "^2.1.0",
     "eslint-config-standard-with-typescript": "^39.0.0",
     "eslint-plugin-n": "^15.7.0",
@@ -77,6 +78,9 @@
     "redis": "^4.6.10",
     "ts-node": "^10.9.1",
     "typescript": "^4.6.3"
+  },
+  "optionalDependencies": {
+    "@nx/nx-linux-x64-gnu": "version"
   },
   "overrides": {
     "protobufjs": "^7.2.4",
