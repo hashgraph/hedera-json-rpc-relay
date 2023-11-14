@@ -8,7 +8,7 @@ metadata:
 data:
   CHAIN_ID: {{ .Values.config.CHAIN_ID | quote }}
   DEV_MODE: {{ .Values.config.DEV_MODE | quote }}
-  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in" .Values.config.HEDERA_NETWORK | toJson | quote }}
+  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in" .Values.config.HEDERA_NETWORK | toJson }}
   MIRROR_NODE_LIMIT_PARAM: {{ .Values.config.MIRROR_NODE_LIMIT_PARAM | quote }}
   MIRROR_NODE_RETRIES: {{ .Values.config.MIRROR_NODE_RETRIES | quote }}
   MIRROR_NODE_RETRY_DELAY: {{ .Values.config.MIRROR_NODE_RETRY_DELAY | quote }}
