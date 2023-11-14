@@ -1,8 +1,16 @@
 name: Release Production Environment
 
 on:
-  push:
-    tags: [ v* ]
+  workflow_dispatch:
+    inputs:
+      should_push:
+        description: 'Set to true to push the image after building'
+        required: true
+        default: 'false'
+      image_tag:
+        description: 'Tag for the Docker image'
+        required: true
+        default: 'latest'
 
 env:
   OWNER: hashgraph
@@ -33,14 +41,25 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build and push images
+      # Build the Docker image
+      - name: Build Docker image
+        id: docker_build
         uses: docker/build-push-action@v2
         with:
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64, linux/arm64
+          context: .
+          file: ./Dockerfile
+          load: true # This loads the image into the Docker environment
+          tags: my-image:${{ github.event.inputs.image_tag }}  
+
+      # Push the Docker image
+      - name: Push Docker image
+        if: success() && github.event.inputs.should_push == 'true'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{env.TAG}}
+          tags: my-image:${{ github.event.inputs.image_tag }}                
 
   npm-package-artifact:
     runs-on: ubuntu-latest
