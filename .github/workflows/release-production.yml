@@ -2,7 +2,7 @@ name: Release Production Environment
 
 on:
   push:
-    tags: [ v* ]
+    # tags: [ v* ]
     branches: [  production-release-fix ]
 
 env:
