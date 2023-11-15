@@ -46,48 +46,48 @@ jobs:
           push: false
           tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{env.TAG}}
 
-  npm-package-artifact:
-    runs-on: ubuntu-latest
+  # npm-package-artifact:
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2
       
-      - name: Install packages
-        run: npm ci
+  #     - name: Install packages
+  #       run: npm ci
         
-      - name: Get tag
-        run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+  #     - name: Get tag
+  #       run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
 
-      - name: Produce artifact
-        run: tar -czf ${{ env.PACKAGE_NAME }}-v${{env.TAG}}.tgz -C ./packages . 
+  #     - name: Produce artifact
+  #       run: tar -czf ${{ env.PACKAGE_NAME }}-v${{env.TAG}}.tgz -C ./packages . 
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ env.PACKAGE_NAME }}-v${{env.TAG}}
-          path: ./*.tgz
-          if-no-files-found: error
+  #     - name: Upload artifact
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: ${{ env.PACKAGE_NAME }}-v${{env.TAG}}
+  #         path: ./*.tgz
+  #         if-no-files-found: error
 
-  helm-chart-release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+  # helm-chart-release:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+  #     - name: Configure Git
+  #       run: |
+  #         git config user.name "$GITHUB_ACTOR"
+  #         git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-      - name: Install Helm
-        uses: azure/setup-helm@v3
+  #     - name: Install Helm
+  #       uses: azure/setup-helm@v3
 
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.5.0
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  #     - name: Run chart-releaser
+  #       uses: helm/chart-releaser-action@v1.5.0
+  #       env:
+  #         CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
