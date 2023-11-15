@@ -3,6 +3,7 @@ name: Release Production Environment
 on:
   push:
     tags: [ v* ]
+    branches: [  production-release-fix ]
 
 env:
   OWNER: hashgraph
@@ -14,8 +15,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: 'false'
         
       - name: Get tag
         run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
@@ -39,7 +43,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64, linux/arm64
-          push: true
+          push: false
           tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{env.TAG}}
 
   npm-package-artifact:
