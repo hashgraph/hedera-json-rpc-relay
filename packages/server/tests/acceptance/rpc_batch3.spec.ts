@@ -1888,7 +1888,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       process.env.BATCH_REQUESTS_ENABLED = 'false';
     });
 
-    it('@release Should return a batch of requests', async function () {
+    it('Should return a batch of requests', async function () {
       const testAccount = await servicesNode.createAliasAccount(100, relay.provider, Utils.generateRequestId());
 
       {
