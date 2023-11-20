@@ -166,13 +166,13 @@ export class MirrorNodeClient {
     const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '300');
     const mirrorNodeHttpSocketTimeout = parseInt(process.env.MIRROR_NODE_HTTP_SOCKET_TIMEOUT || '60000');
     const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
-    const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '3');
+    const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '0'); // we are in the process of deprecation this "feature" (general retries regardless of the flow)
     const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE || '5');
-    const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
+    const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '2000');
     const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
     const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES
       ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES)
-      : [404]; // by default we should only retry on 404 errors
+      : []; // we are in the process of deprecation this "feature" (general retries regardless of the flow)
     // by default will be true, unless explicitly set to false.
     const useCacheableDnsLookup: boolean = process.env.MIRROR_NODE_AGENT_CACHEABLE_DNS === 'false' ? false : true;
 
@@ -1199,6 +1199,12 @@ export class MirrorNodeClient {
       if (result) {
         break;
       }
+
+      this.logger.trace(
+        `${requestId} Repeating request ${methodName} with args ${JSON.stringify(
+          args,
+        )} retry count ${i} of ${repeatCount}. Waiting ${this.MIRROR_NODE_RETRY_DELAY} ms before repeating request`,
+      );
 
       // Backoff before repeating request
       await new Promise((r) => setTimeout(r, this.MIRROR_NODE_RETRY_DELAY));
