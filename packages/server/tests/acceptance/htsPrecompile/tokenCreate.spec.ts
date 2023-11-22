@@ -106,6 +106,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       requestId,
     );
 
+    // wait for mirror node to catch up continuing running tests
+    await new Promise((r) => setTimeout(r, 5000));
+
     HTSTokenContractAddress = await createHTSToken();
     NftHTSTokenContractAddress = await createNftHTSToken();
     HTSTokenWithCustomFeesContractAddress = await createHTSTokenWithCustomFees();
