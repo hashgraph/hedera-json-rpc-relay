@@ -911,6 +911,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
+        await new Promise((r) => setTimeout(r, 5000));
+
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
         const balanceChange = receiverEndBalance - receiverInitialBalance;
