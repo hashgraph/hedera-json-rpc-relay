@@ -123,6 +123,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
     mainContractOwner = mainContract;
     mainContractReceiverWalletFirst = mainContract.connect(accounts[1].wallet);
     mainContractReceiverWalletSecond = mainContract.connect(accounts[2].wallet);
+
+    // wait for mirror node to catch up before running tests
+    await new Promise((r) => setTimeout(r, 5000));
   });
 
   this.beforeEach(async () => {
@@ -296,7 +299,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
   it('should check initial balances', async function () {
     // add delay for balance to update
-    await new Promise((r) => setTimeout(r, 5000));
+    await new Promise((r) => setTimeout(r, 10000));
     expect(await HTSTokenContract.balanceOf(accounts[0].wallet.address)).to.equal(BigInt(1000));
     expect(await HTSTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(BigInt(0));
     expect(await HTSTokenContract.balanceOf(accounts[2].wallet.address)).to.equal(BigInt(0));
