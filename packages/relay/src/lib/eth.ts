@@ -1741,11 +1741,7 @@ export class EthImpl implements Eth {
     const fromAddress = await this.resolveEvmAddress(contractResult.from, requestIdPrefix, [constants.TYPE_ACCOUNT]);
     const toAddress = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
 
-    if (
-      process.env.DEV_MODE &&
-      process.env.DEV_MODE === 'true' &&
-      contractResult.result === 'CONTRACT_REVERT_EXECUTED'
-    ) {
+    if (contractResult.result === 'CONTRACT_REVERT_EXECUTED') {
       const err = predefined.CONTRACT_REVERT(contractResult.error_message, contractResult.error_message);
       throw err;
     }
