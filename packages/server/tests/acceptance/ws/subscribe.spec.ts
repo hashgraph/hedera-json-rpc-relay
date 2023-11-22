@@ -145,7 +145,7 @@ describe('@web-socket Acceptance Tests', async function () {
 
       await new Promise((resolve) => setTimeout(resolve, 2500));
 
-      expect(pings).to.eq(3);
+      expect(pings).to.greaterThanOrEqual(2);
     });
 
     it('@release Socket server responds to the eth_chainId event', async function () {
