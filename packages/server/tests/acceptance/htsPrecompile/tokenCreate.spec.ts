@@ -489,9 +489,27 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
     });
 
     it('should be able to transfer nft with transferFrom', async function () {
-      await new Promise((r) => setTimeout(r, 10000));
-      expect(await NFTokenContract.balanceOf(accounts[0].wallet.address)).to.equal(BigInt(1));
-      expect(await NFTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(BigInt(0));
+      const NftHTSTokenContractAddress = await createNftHTSToken();
+      const NFTokenContract = new ethers.Contract(NftHTSTokenContractAddress, ERC721MockJson.abi, accounts[0].wallet);
+
+      // mint NFT
+      const tx = await mainContract.mintTokenPublic(
+        NftHTSTokenContractAddress,
+        0,
+        ['0x01'],
+        Constants.GAS.LIMIT_5_000_000,
+      );
+
+      const { serialNumbers } = (await tx.wait()).logs.filter(
+        (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.MintedToken,
+      )[0].args;
+      NftSerialNumber = Number(serialNumbers[0]);
+
+      const balanceBeforeAccount0 = await NFTokenContract.balanceOf(accounts[0].wallet.address);
+      const balanceBeforeAccount1 = await NFTokenContract.balanceOf(accounts[1].wallet.address);
+
+      expect(balanceBeforeAccount0).to.equal(BigInt(1));
+      expect(balanceBeforeAccount1).to.equal(BigInt(0));
 
       // grant KYC
       {
@@ -505,6 +523,18 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         )[0].args.responseCode;
         expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
       }
+
+      // associate token to account[1]
+      const txRWF = await mainContractReceiverWalletFirst.associateTokenPublic(
+        accounts[1].wallet.address,
+        NftHTSTokenContractAddress,
+        Constants.GAS.LIMIT_5_000_000,
+      );
+      expect(
+        (await txRWF.wait()).logs.filter((e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args
+          .responseCode,
+      ).to.equal(TX_SUCCESS_CODE);
+
       {
         const grantKycTx = await mainContractOwner.grantTokenKycPublic(
           NftHTSTokenContractAddress,
@@ -516,6 +546,18 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         )[0].args.responseCode;
         expect(responseCodeGrantKyc).to.equal(TX_SUCCESS_CODE);
       }
+
+      // associate token to mainContract.target
+      const txRWF2 = await mainContractReceiverWalletFirst.associateTokenPublic(
+        mainContract.target,
+        NftHTSTokenContractAddress,
+        Constants.GAS.LIMIT_5_000_000,
+      );
+      expect(
+        (await txRWF2.wait()).logs.filter((e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args
+          .responseCode,
+      ).to.equal(TX_SUCCESS_CODE);
+
       {
         const grantKycTx = await mainContractOwner.grantTokenKycPublic(
           NftHTSTokenContractAddress,
