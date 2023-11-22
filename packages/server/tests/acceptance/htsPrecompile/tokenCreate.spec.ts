@@ -505,6 +505,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       )[0].args;
       NftSerialNumber = Number(serialNumbers[0]);
 
+      // delay
+      await new Promise((r) => setTimeout(r, 5000));
+
       const balanceBeforeAccount0 = await NFTokenContract.balanceOf(accounts[0].wallet.address);
       const balanceBeforeAccount1 = await NFTokenContract.balanceOf(accounts[1].wallet.address);
 
@@ -589,6 +592,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         (await txXfer.wait()).logs.filter((e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode)[0].args
           .responseCode,
       ).to.equal(TX_SUCCESS_CODE);
+
+      // delay
+      await new Promise((r) => setTimeout(r, 5000));
 
       expect(await NFTokenContract.balanceOf(mainContract.target)).to.equal(BigInt(1));
       expect(await NFTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(BigInt(0));
