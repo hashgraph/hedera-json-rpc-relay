@@ -166,13 +166,13 @@ export class MirrorNodeClient {
     const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '300');
     const mirrorNodeHttpSocketTimeout = parseInt(process.env.MIRROR_NODE_HTTP_SOCKET_TIMEOUT || '60000');
     const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
-    const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '0'); // we are in the process of deprecation this "feature" (general retries regardless of the flow)
+    const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '0'); // we are in the process of deprecating this feature
     const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE || '5');
     const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '2000');
     const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
     const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES
       ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES)
-      : []; // we are in the process of deprecation this "feature" (general retries regardless of the flow)
+      : []; // we are in the process of deprecating this feature
     // by default will be true, unless explicitly set to false.
     const useCacheableDnsLookup: boolean = process.env.MIRROR_NODE_AGENT_CACHEABLE_DNS === 'false' ? false : true;
 
