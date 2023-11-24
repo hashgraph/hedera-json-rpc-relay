@@ -1790,9 +1790,12 @@ describe('Eth calls using MirrorNode', async function () {
     });
   });
 
-  describe('eth_getBalance', async function () {
+  describe('@balance eth_getBalance', async function () {
     const defBalance = 99960581137;
+    const defBalanceSec = 99960581137 + 1;
     const defHexBalance = numberTo0x(BigInt(defBalance) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
+    const defHexBalanceFunc = (defBalance) => numberTo0x(BigInt(defBalance) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
+
     it('should return balance from mirror node', async () => {
       restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
         blocks: [
@@ -1850,6 +1853,37 @@ describe('Eth calls using MirrorNode', async function () {
 
       const resBalanceNew = await ethImpl.getBalance(contractAddress1, null, getRequestId());
       expect(newBalanceHex).to.equal(resBalanceNew);
+    });
+
+    it('should not return balance for explicitly latest block from cache', async () => {
+      restMock.onGet(`blocks?limit=1&order=desc`).reply(200, {
+        blocks: [
+          {
+            number: 10000,
+          },
+        ],
+      });
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance,
+        },
+      });
+
+      const resBalance = await ethImpl.getBalance(contractAddress1, 'latest', getRequestId());
+      expect(resBalance).to.equal(defHexBalance);
+      restMock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
+        account: contractAddress1,
+        balance: {
+          balance: defBalance + 1,
+        },
+      });
+
+      const resBalanceCached = await ethImpl.getBalance(contractAddress1, 'latest');
+      expect(
+        resBalanceCached,
+        `To equal the result from the request ${defHexBalanceFunc(defBalanceSec)} not from cache ${defHexBalance}`,
+      ).to.equal(defHexBalanceFunc(defBalanceSec));
     });
 
     it('should return balance from mirror node with block number passed as param the same as latest', async () => {

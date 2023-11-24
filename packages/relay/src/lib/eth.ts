@@ -260,6 +260,10 @@ export class EthImpl implements Eth {
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
   }
 
+  private shouldUseCacheForBalance(tag: string | null): boolean {
+    return !CommonService.blockTagIsLatestOrPendingStrict(tag) && !CommonService.isDevMode;
+  }
+
   private initEthExecutionCounter(register: Registry) {
     const metricCounterName = 'rpc_relay_eth_executions';
     register.removeSingleMetric(metricCounterName);
@@ -842,6 +846,7 @@ export class EthImpl implements Eth {
     // this check is required, because some tools like Metamask pass for parameter latest block, with a number (ex 0x30ea)
     // tolerance is needed, because there is a small delay between requesting latest block from blockNumber and passing it here
     if (!this.common.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
+      let blockHashNumber, isHash;
       const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
       const blockNumberCached = this.cacheService.get(cacheKey, EthImpl.ethGetBalance, requestIdPrefix);
 
@@ -851,9 +856,6 @@ export class EthImpl implements Eth {
       } else {
         latestBlock = await this.blockNumberTimestamp(EthImpl.ethGetBalance, requestIdPrefix);
       }
-
-      let blockHashNumber;
-      let isHash;
 
       if (blockNumberOrTagOrHash != null && blockNumberOrTagOrHash.length > 32) {
         isHash = true;
@@ -878,7 +880,7 @@ export class EthImpl implements Eth {
     // create a key for the cache
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTagOrHash}`;
     let cachedBalance = this.cacheService.get(cacheKey, EthImpl.ethGetBalance, requestIdPrefix);
-    if (cachedBalance) {
+    if (cachedBalance && this.shouldUseCacheForBalance(blockNumberOrTagOrHash)) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
       return cachedBalance;
     }
