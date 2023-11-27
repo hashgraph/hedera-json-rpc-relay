@@ -31,7 +31,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
 import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
-import { defaultContractResults } from '../../helpers';
+import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Transaction } from '../../../src/lib/model';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
@@ -51,10 +51,14 @@ import {
   BLOCK_NUMBER_HEX,
   BLOCK_TIMESTAMP_HEX,
   CONTRACTS_RESULTS_NEXT_URL,
+  CONTRACT_ADDRESS_1,
+  CONTRACT_ADDRESS_2,
   CONTRACT_HASH_1,
   CONTRACT_HASH_2,
   CONTRACT_RESULTS_LOGS_WITH_FILTER_URL,
   CONTRACT_RESULTS_WITH_FILTER_URL,
+  CONTRACT_TIMESTAMP_1,
+  CONTRACT_TIMESTAMP_2,
   DEFAULT_BLOCK,
   DEFAULT_BLOCKS_RES,
   DEFAULT_CONTRACT_RES_REVERT,
@@ -81,10 +85,12 @@ let hapiServiceInstance: HAPIService;
 let sdkClientStub;
 let getSdkClientStub;
 let cacheService: CacheService;
+let currentMaxBlockRange: number;
+let ethImpl: EthImpl;
+let ethImplLowTransactionCount: EthImpl;
 
 describe('@ethGetBlockByNumber using MirrorNode', async function () {
   this.timeout(10000);
-  let ethImpl: EthImpl;
   const results = defaultContractResults.results;
   const TOTAL_GAS_USED = numberTo0x(results[0].gas_used + results[1].gas_used);
 
@@ -128,6 +134,16 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
+    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
+    ethImplLowTransactionCount = new EthImpl(
+      hapiServiceInstance,
+      mirrorNodeInstance,
+      logger,
+      '0x12a',
+      registry,
+      cacheService,
+    );
   });
 
   this.afterAll(() => {
@@ -137,6 +153,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
+    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
   it('"eth_blockNumber" should return the latest block number', async function () {
@@ -475,5 +492,29 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     if (result) {
       expect(result.number).equal(BLOCK_NUMBER_HEX);
     }
+  });
+
+  it('eth_getBlockByNumber with greater number of transactions than the ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', async function () {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
+    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
+    restMock
+      .onGet(`contracts/${CONTRACT_ADDRESS_1}/results/${CONTRACT_TIMESTAMP_1}`)
+      .reply(200, defaultDetailedContractResults);
+    restMock
+      .onGet(`contracts/${CONTRACT_ADDRESS_2}/results/${CONTRACT_TIMESTAMP_2}`)
+      .reply(200, defaultDetailedContractResults);
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
+
+    const args = [numberTo0x(BLOCK_NUMBER), true];
+
+    await RelayAssertions.assertRejection(
+      predefined.MAX_BLOCK_SIZE(77),
+      ethImplLowTransactionCount.getBlockByNumber,
+      true,
+      ethImplLowTransactionCount,
+      args,
+    );
   });
 });
