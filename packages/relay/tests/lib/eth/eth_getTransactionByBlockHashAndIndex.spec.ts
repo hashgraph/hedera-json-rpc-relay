@@ -32,7 +32,7 @@ import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
 import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
-import { Transaction } from '../../../src/lib/model';
+import { Transaction, Transaction1559, Transaction2930 } from '../../../src/lib/model';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
@@ -41,20 +41,19 @@ import RelayAssertions from '../../assertions';
 import { numberTo0x } from '../../../dist/formatters';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import {
-  BLOCK_HASH_PREV_TRIMMED,
   BLOCK_HASH_TRIMMED,
   BLOCK_NUMBER_HEX,
-  BLOCK_TIMESTAMP_HEX,
   CONTRACT_ADDRESS_1,
   CONTRACT_HASH_1,
+  CONTRACT_RESULT_MOCK,
   CONTRACT_TIMESTAMP_1,
   DEFAULT_BLOCK,
-  DEFAULT_BLOCKS_RES,
   DEFAULT_NETWORK_FEES,
+  EMPTY_RES,
   ETH_FEE_HISTORY_VALUE,
-  NO_SUCH_CONTRACT_RESULT,
+  NOT_FOUND_RES,
 } from './config';
-import { contractResultsByNumberByIndex } from './helpers';
+import { contractResultsByHashByIndex } from './helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 chai.use(chaiAsPromised);
@@ -79,7 +78,7 @@ function verifyAggregatedInfo(result: Transaction | null) {
   }
 }
 
-describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async function () {
+describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
 
@@ -126,152 +125,117 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     restMock.resetHandlers();
   });
 
-  it('eth_getTransactionByBlockNumberAndIndex with match', async function () {
+  it('eth_getTransactionByBlockHashAndIndex with match', async function () {
     // mirror node request mocks
     restMock
-      .onGet(contractResultsByNumberByIndex(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByHashByIndex(DEFAULT_BLOCK.hash, DEFAULT_BLOCK.count))
       .reply(200, defaultContractResults);
     restMock
       .onGet(`contracts/${CONTRACT_ADDRESS_1}/results/${CONTRACT_TIMESTAMP_1}`)
       .reply(200, defaultDetailedContractResults);
-
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex(
-      numberTo0x(DEFAULT_BLOCK.number),
-      numberTo0x(DEFAULT_BLOCK.count),
-    );
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(DEFAULT_BLOCK.hash, numberTo0x(DEFAULT_BLOCK.count));
     expect(result).to.exist;
     expect(result).to.not.be.null;
 
-    if (result) {
-      // verify aggregated info
-      expect(result.blockHash).equal(BLOCK_HASH_TRIMMED);
-      expect(result.blockNumber).equal(BLOCK_NUMBER_HEX);
-      expect(result.hash).equal(CONTRACT_HASH_1);
-      expect(result.to).equal(CONTRACT_ADDRESS_1);
-    }
+    verifyAggregatedInfo(result);
   });
 
-  it('eth_getTransactionByBlockNumberAndIndex with null amount', async function () {
+  it('eth_getTransactionByBlockHashAndIndex should throw for internal error', async function () {
     const randomBlock = {
-      number: 1009,
-      count: 37,
+      hash: '0x5f827a801c579c84eca738827b65612b28ed425b7578bfdd10177e24fc3db8d4b1a7f3d56d83c39b950cc5e4d175dd64',
+      count: 9,
     };
-    const nullableDefaultContractResults = _.cloneDeep(defaultContractResults);
-    // @ts-ignore
-    nullableDefaultContractResults.results[0].amount = null;
-    restMock
-      .onGet(contractResultsByNumberByIndex(randomBlock.number, randomBlock.count))
-      .reply(200, nullableDefaultContractResults);
-
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex(
-      numberTo0x(randomBlock.number),
-      numberTo0x(randomBlock.count),
-    );
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
-    if (result) {
-      // verify aggregated info
-      expect(result.value).equal('0x0');
-    }
-  });
-
-  it('eth_getTransactionByBlockNumberAndIndex with no contract result match', async function () {
-    restMock
-      .onGet(contractResultsByNumberByIndex(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
-      .reply(404, NO_SUCH_CONTRACT_RESULT);
-
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex(
-      numberTo0x(DEFAULT_BLOCK.number),
-      numberTo0x(DEFAULT_BLOCK.count),
-    );
-    expect(result).to.equal(null);
-  });
-
-  it('eth_getTransactionByBlockNumberAndIndex should throw for internal error', async function () {
     const defaultContractResultsWithNullableFrom = _.cloneDeep(defaultContractResults);
     defaultContractResultsWithNullableFrom.results[0].from = null;
-    const randomBlock = {
-      number: 5644,
-      count: 33,
-    };
     restMock
-      .onGet(contractResultsByNumberByIndex(randomBlock.number, randomBlock.count))
+      .onGet(contractResultsByHashByIndex(randomBlock.hash, randomBlock.count))
       .reply(200, defaultContractResultsWithNullableFrom);
 
-    const args = [numberTo0x(randomBlock.number), numberTo0x(randomBlock.count)];
+    const args = [randomBlock.hash, numberTo0x(randomBlock.count)];
     const errMessage = "Cannot read properties of null (reading 'substring')";
 
     await RelayAssertions.assertRejection(
       predefined.INTERNAL_ERROR(errMessage),
-      ethImpl.getTransactionByBlockNumberAndIndex,
+      ethImpl.getTransactionByBlockHashAndIndex,
       true,
       ethImpl,
       args,
     );
   });
 
-  it('eth_getTransactionByBlockNumberAndIndex with no contract results', async function () {
-    restMock
-      .onGet(contractResultsByNumberByIndex(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
-      .reply(200, { results: [] });
+  it('eth_getTransactionByBlockHashAndIndex with no contract result match', async function () {
+    // mirror node request mocks
+    restMock.onGet(contractResultsByHashByIndex(DEFAULT_BLOCK.hash, DEFAULT_BLOCK.count)).reply(404, NOT_FOUND_RES);
 
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex(
-      numberTo0x(DEFAULT_BLOCK.number),
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(
+      DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
     );
     expect(result).to.equal(null);
   });
 
-  it('eth_getTransactionByBlockNumberAndIndex with latest tag', async function () {
-    // mirror node request mocks
-    restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);
-    restMock
-      .onGet(contractResultsByNumberByIndex(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
-      .reply(200, defaultContractResults);
+  it('eth_getTransactionByBlockHashAndIndex with no contract results', async function () {
+    restMock.onGet(contractResultsByHashByIndex(DEFAULT_BLOCK.hash, DEFAULT_BLOCK.count)).reply(200, EMPTY_RES);
 
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex('latest', numberTo0x(DEFAULT_BLOCK.count));
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
-    verifyAggregatedInfo(result);
-  });
-
-  it('eth_getTransactionByBlockNumberAndIndex with match pending tag', async function () {
-    // mirror node request mocks
-    restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);
-    restMock
-      .onGet(contractResultsByNumberByIndex(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
-      .reply(200, defaultContractResults);
-
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex('pending', numberTo0x(DEFAULT_BLOCK.count));
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
-    verifyAggregatedInfo(result);
-  });
-
-  it('eth_getTransactionByBlockNumberAndIndex with earliest tag', async function () {
-    // mirror node request mocks
-    restMock.onGet(contractResultsByNumberByIndex(0, DEFAULT_BLOCK.count)).reply(200, defaultContractResults);
-
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex('earliest', numberTo0x(DEFAULT_BLOCK.count));
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
-    verifyAggregatedInfo(result);
-  });
-
-  it('eth_getTransactionByBlockNumberAndIndex with hex number', async function () {
-    restMock.onGet(contractResultsByNumberByIndex(3735929054, DEFAULT_BLOCK.count)).reply(200, defaultContractResults);
-
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex(
-      '0xdeadc0de' + '',
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(
+      DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
     );
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
+    expect(result).to.equal(null);
+  });
 
-    verifyAggregatedInfo(result);
+  it('eth_getTransactionByBlockHashAndIndex returns 155 transaction for type 0', async function () {
+    restMock.onGet(contractResultsByHashByIndex(DEFAULT_BLOCK.hash, DEFAULT_BLOCK.count)).reply(200, {
+      results: [
+        {
+          ...CONTRACT_RESULT_MOCK,
+          type: 0,
+        },
+      ],
+    });
+
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(
+      DEFAULT_BLOCK.hash.toString(),
+      numberTo0x(DEFAULT_BLOCK.count),
+    );
+    expect(result).to.be.an.instanceOf(Transaction);
+  });
+
+  it('eth_getTransactionByBlockHashAndIndex returns 2930 transaction for type 1', async function () {
+    restMock.onGet(contractResultsByHashByIndex(DEFAULT_BLOCK.hash, DEFAULT_BLOCK.count)).reply(200, {
+      results: [
+        {
+          ...CONTRACT_RESULT_MOCK,
+          type: 1,
+          access_list: [],
+        },
+      ],
+    });
+
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(
+      DEFAULT_BLOCK.hash.toString(),
+      numberTo0x(DEFAULT_BLOCK.count),
+    );
+    expect(result).to.be.an.instanceOf(Transaction2930);
+  });
+
+  it('eth_getTransactionByBlockHashAndIndex returns 1559 transaction for type 2', async function () {
+    restMock.onGet(contractResultsByHashByIndex(DEFAULT_BLOCK.hash, DEFAULT_BLOCK.count)).reply(200, {
+      results: [
+        {
+          ...CONTRACT_RESULT_MOCK,
+          type: 2,
+          access_list: [],
+          max_fee_per_gas: '0x47',
+          max_priority_fee_per_gas: '0x47',
+        },
+      ],
+    });
+
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(
+      DEFAULT_BLOCK.hash.toString(),
+      numberTo0x(DEFAULT_BLOCK.count),
+    );
+    expect(result).to.be.an.instanceOf(Transaction1559);
   });
 });
