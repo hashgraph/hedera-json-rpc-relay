@@ -26,7 +26,8 @@
     "format": "npx prettier --ignore-path ../../.gitignore --write \"**/*.+(js|ts|json)\"",
     "test": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' --exit",
     "test:balance": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@balance' --exit",
-    "test:eth-block-by-number": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethBlockByNumber' --exit"
+    "test:eth-block-by-number": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethBlockByNumber' --exit",
+    "test:eth-block-by-hash": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethBlockByHash' --exit"
   },
   "dependencies": {
     "@ethersproject/asm": "^5.7.0",

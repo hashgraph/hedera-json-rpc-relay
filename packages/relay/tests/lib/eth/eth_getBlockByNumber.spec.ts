@@ -75,14 +75,14 @@ chai.use(chaiAsPromised);
 const logger = pino();
 const registry = new Registry();
 
-let restMock: MockAdapter, web3Mock: MockAdapter;
+let restMock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
 let sdkClientStub;
 let getSdkClientStub;
 let cacheService: CacheService;
 
-describe('@ethBlockByNumber Eth calls using MirrorNode', async function () {
+describe('@ethBlockByNumber using MirrorNode', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
   const results = defaultContractResults.results;
@@ -108,10 +108,6 @@ describe('@ethBlockByNumber Eth calls using MirrorNode', async function () {
 
     // @ts-ignore
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
-
-    // @ts-ignore
-    web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
-
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
