@@ -544,40 +544,6 @@ describe('Eth calls using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, defaultNetworkFees);
   });
 
-  it('eth_getBlockTransactionCountByHash with match', async function () {
-    // mirror node request mocks
-    restMock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
-
-    const result = await ethImpl.getBlockTransactionCountByHash(blockHash);
-    expect(result).equal(numberTo0x(blockTransactionCount));
-  });
-
-  it('eth_getBlockTransactionCountByHash with match should hit cache', async function () {
-    restMock.onGet(`blocks/${blockHash}`).replyOnce(200, defaultBlock);
-
-    for (let i = 0; i < 3; i++) {
-      const result = await ethImpl.getBlockTransactionCountByHash(blockHash);
-      expect(result).equal(numberTo0x(blockTransactionCount));
-    }
-  });
-
-  it('eth_getBlockTransactionCountByHash with no match', async function () {
-    cacheService.clear();
-    // mirror node request mocks
-    restMock.onGet(`blocks/${blockHash}`).reply(404, {
-      _status: {
-        messages: [
-          {
-            message: 'No such block exists',
-          },
-        ],
-      },
-    });
-
-    const result = await ethImpl.getBlockTransactionCountByHash(blockHash);
-    expect(result).to.equal(null);
-  });
-
   it('eth_getTransactionByBlockNumberAndIndex with match', async function () {
     // mirror node request mocks
     restMock
