@@ -55,7 +55,7 @@ import {
   DEFAULT_NETWORK_FEES,
   ETH_FEE_HISTORY_VALUE,
   LINKS_NEXT_RES,
-  NO_SUCK_BLOCK_EXISTS_RES,
+  NO_SUCH_BLOCK_EXISTS_RES,
 } from './config';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -250,7 +250,7 @@ describe('@ethBlockByHash using MirrorNode', async function () {
   it('eth_getBlockByHash with no match', async function () {
     cacheService.clear();
     // mirror node request mocks
-    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(404, NO_SUCK_BLOCK_EXISTS_RES);
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(404, NO_SUCH_BLOCK_EXISTS_RES);
 
     const result = await ethImpl.getBlockByHash(BLOCK_HASH, false);
     expect(result).to.equal(null);

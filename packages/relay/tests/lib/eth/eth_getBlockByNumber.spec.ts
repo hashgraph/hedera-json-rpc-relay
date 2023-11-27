@@ -66,7 +66,7 @@ import {
   LINKS_NEXT_RES,
   MOST_RECENT_BLOCK,
   NOT_FOUND_RES,
-  NO_SUCK_BLOCK_EXISTS_RES,
+  NO_SUCH_BLOCK_EXISTS_RES,
 } from './config';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -372,7 +372,7 @@ describe('@ethBlockByNumber using MirrorNode', async function () {
 
   it('eth_getBlockByNumber with no match', async function () {
     cacheService.clear();
-    restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(404, NO_SUCK_BLOCK_EXISTS_RES);
+    restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(404, NO_SUCH_BLOCK_EXISTS_RES);
     restMock.onGet(`blocks?limit=1&order=desc`).reply(200, MOST_RECENT_BLOCK);
 
     const result = await ethImpl.getBlockByNumber(BLOCK_NUMBER.toString(), false);

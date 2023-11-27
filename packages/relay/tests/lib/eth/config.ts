@@ -156,7 +156,7 @@ export const BLOCKS_RES = {
 export const DEFAULT_BLOCKS_RES = {
   blocks: [DEFAULT_BLOCK],
 };
-export const NO_SUCK_BLOCK_EXISTS_RES = {
+export const NO_SUCH_BLOCK_EXISTS_RES = {
   _status: {
     messages: [{ message: 'No such block exists' }],
   },
