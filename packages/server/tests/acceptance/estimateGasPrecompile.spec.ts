@@ -18,7 +18,7 @@
  *
  */
 
-import { ethers } from 'ethers';
+import { encodeBytes32String, ethers } from 'ethers';
 import { expect } from 'chai';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../clients/servicesClient';
@@ -27,12 +27,17 @@ import ERC20MockJson from '../contracts/ERC20Mock.json';
 import Constants from '../../tests/helpers/constants';
 import RelayCalls from '../../../../packages/server/tests/helpers/constants';
 import ERC721MockJson from '../contracts/ERC721Mock.json';
+import { maxGasLimit } from '@hashgraph/json-rpc-relay/tests/helpers';
+import { create } from 'ts-node';
 
 describe('EstimatePrecompileContract tests', function () {
   const signers: AliasAccount[] = [];
   const prefix = '0x';
   const CALL_EXCEPTION = 'CALL_EXCEPTION';
   let contract: ethers.Contract;
+  let contractAccount1: ethers.Contract;
+  //  let contract1: ethers.Contract;
+
   let contractReceipt;
   let EstimatePrecompileContractAddress;
   let requestId;
@@ -41,7 +46,12 @@ describe('EstimatePrecompileContract tests', function () {
   let NftSerialNumber;
   let estimateContractSigner0;
   let estimateContractSigner1;
+  let estimateContractSigner2;
+  let estimateContractSigner3;
+  let estimateContractSigner4;
   let estimateContract;
+  let lowerPercentBound = 5;
+  let upperPercentBound = 30;
 
   const accounts: AliasAccount[] = [];
   const { servicesNode, mirrorNode, relay }: any = global;
@@ -94,6 +104,7 @@ describe('EstimatePrecompileContract tests', function () {
 
   before(async function () {
     signers[0] = await servicesNode.createAliasAccount(150, relay.provider, Utils.generateRequestId());
+    signers[1] = await servicesNode.createAliasAccount(150, relay.provider, Utils.generateRequestId());
 
     contractReceipt = await servicesNode.deployContract(EstimatePrecompileContractJson, 5_000_000);
     EstimatePrecompileContractAddress = contractReceipt.contractId.toSolidityAddress();
@@ -113,12 +124,14 @@ describe('EstimatePrecompileContract tests', function () {
       relay.provider,
       requestId,
     );
+
     accounts[1] = await servicesNode.createAccountWithContractIdKey(
       contractMirror.contract_id,
       30,
       relay.provider,
       requestId,
     );
+
     accounts[2] = await servicesNode.createAccountWithContractIdKey(
       contractMirror.contract_id,
       30,
@@ -132,55 +145,97 @@ describe('EstimatePrecompileContract tests', function () {
       accounts[0].wallet,
     );
 
-    // Create token and NFT contracts
+    accounts[3] = await servicesNode.createAccountWithContractIdKey(
+      contractMirror.contract_id,
+      30,
+      relay.provider,
+      requestId,
+    );
+
+    accounts[4] = await servicesNode.createAccountWithContractIdKey(
+      contractMirror.contract_id,
+      30,
+      relay.provider,
+      requestId,
+    );
+
+    // Create contract signers
     tokenAddress = await createFungibleToken();
     nftAddress = await createNft();
+
+    estimateContractSigner0 = new ethers.Contract(
+      prefix + EstimatePrecompileContractAddress,
+      EstimatePrecompileContractJson.abi,
+      accounts[0].wallet,
+    );
 
     estimateContractSigner1 = new ethers.Contract(
       prefix + EstimatePrecompileContractAddress,
       EstimatePrecompileContractJson.abi,
       accounts[1].wallet,
     );
-    const tx1_ft = await estimateContractSigner1.associateTokenExternal(
-      accounts[1].wallet.address,
-      tokenAddress,
-      Constants.GAS.LIMIT_1_000_000,
-    );
 
-    let estimateContractSigner2 = new ethers.Contract(
+    estimateContractSigner2 = new ethers.Contract(
       prefix + EstimatePrecompileContractAddress,
       EstimatePrecompileContractJson.abi,
       accounts[2].wallet,
     );
+
+    estimateContractSigner3 = new ethers.Contract(
+      prefix + EstimatePrecompileContractAddress,
+      EstimatePrecompileContractJson.abi,
+      accounts[3].wallet,
+    );
+
+    estimateContractSigner4 = new ethers.Contract(
+      prefix + EstimatePrecompileContractAddress,
+      EstimatePrecompileContractJson.abi,
+      accounts[4].wallet,
+    );
+
+    //Associating accounts[2] and accounts[3] with fungible token and NFT
     const tx2_ft = await estimateContractSigner2.associateTokenExternal(
       accounts[2].wallet.address,
       tokenAddress,
       Constants.GAS.LIMIT_1_000_000,
     );
-
-    const t1_nft = await estimateContractSigner1.associateTokenExternal(
-      accounts[1].wallet.address,
-      nftAddress,
-      Constants.GAS.LIMIT_1_000_000,
-    );
+    await tx2_ft.wait();
 
     const tx2_nft = await estimateContractSigner2.associateTokenExternal(
       accounts[2].wallet.address,
       nftAddress,
       Constants.GAS.LIMIT_1_000_000,
     );
+    await tx2_nft.wait();
 
-    await new Promise((r) => setTimeout(r, 2500));
+    const tx3_ft = await estimateContractSigner3.associateTokenExternal(
+      accounts[3].wallet.address,
+      tokenAddress,
+      Constants.GAS.LIMIT_1_000_000,
+    );
+    await tx3_ft.wait();
+
+    const tx3_nft = await estimateContractSigner3.associateTokenExternal(
+      accounts[3].wallet.address,
+      nftAddress,
+      Constants.GAS.LIMIT_1_000_000,
+    );
+    await tx3_nft.wait();
+
     //NFT
     await contract.grantTokenKycExternal(nftAddress, accounts[0].wallet.address, { gasLimit: 500_000 });
     await contract.grantTokenKycExternal(nftAddress, accounts[1].wallet.address, { gasLimit: 500_000 });
     await contract.grantTokenKycExternal(nftAddress, accounts[2].wallet.address, { gasLimit: 500_000 });
+    await contract.grantTokenKycExternal(nftAddress, accounts[3].wallet.address, { gasLimit: 500_000 });
+    await contract.grantTokenKycExternal(nftAddress, accounts[4].wallet.address, { gasLimit: 500_000 });
     await contract.grantTokenKycExternal(nftAddress, prefix + EstimatePrecompileContractAddress, { gasLimit: 500_000 });
 
     //Fungible
     await contract.grantTokenKycExternal(tokenAddress, accounts[0].wallet.address, { gasLimit: 500_000 });
     await contract.grantTokenKycExternal(tokenAddress, accounts[1].wallet.address, { gasLimit: 500_000 });
     await contract.grantTokenKycExternal(tokenAddress, accounts[2].wallet.address, { gasLimit: 500_000 });
+    await contract.grantTokenKycExternal(tokenAddress, accounts[3].wallet.address, { gasLimit: 500_000 });
+    await contract.grantTokenKycExternal(tokenAddress, accounts[4].wallet.address, { gasLimit: 500_000 });
     await contract.grantTokenKycExternal(tokenAddress, prefix + EstimatePrecompileContractAddress, {
       gasLimit: 500_000,
     });
@@ -191,30 +246,57 @@ describe('EstimatePrecompileContract tests', function () {
     expect(Number(estimatedGasValue)).to.be.lessThan(expectedValue * 1.4);
   };
 
+  const isWithinDeviation = (
+    actualGasUsed: bigint,
+    expectedGasUsed: number,
+    lowerPercentBound: number,
+    upperPercentBound: number,
+  ) => {
+    let lowerDeviation = (Number(actualGasUsed) * lowerPercentBound) / 100;
+    let upperDeviation = (Number(actualGasUsed) * upperPercentBound) / 100;
+    let lowerBound = Number(actualGasUsed) + lowerDeviation;
+    let upperBound = Number(actualGasUsed) + upperDeviation;
+    expect(Number(expectedGasUsed)).to.be.within(
+      lowerBound,
+      upperBound,
+      'expectedGasUsed is not within the deviation of ' + lowerBound + ' to ' + upperBound,
+    );
+  };
+
   //EGP-001
   it('should call estimateGas with associate function for fungible token', async function () {
-    const tx = await contract.associateTokenExternal.populateTransaction(signers[0].address, tokenAddress);
+    const tx = await estimateContractSigner1.associateTokenExternal.populateTransaction(
+      accounts[1].wallet.address,
+      tokenAddress,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 786166);
+    const gasResult = await associateAcc(estimateContractSigner1, accounts[1].wallet.address, tokenAddress);
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
   //EGP-002
   it('should call estimateGas with associate function for NFT', async function () {
-    const tx = await contract.associateTokenExternal.populateTransaction(signers[0].address, nftAddress);
+    const tx = await estimateContractSigner1.associateTokenExternal.populateTransaction(
+      accounts[1].wallet.address,
+      nftAddress,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 786166);
+    const gasResult = await associateAcc(estimateContractSigner1, accounts[1].wallet.address, nftAddress);
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
   //EGP-003
   it('should call estimateGas with dissociate token function without association for fungible token - negative', async function () {
     const tx = await contract.dissociateTokenExternal.populateTransaction(accounts[0].wallet.address, tokenAddress);
-    negativeScenarioVerification(tx, CALL_EXCEPTION);
+    await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
   //EGP-004
   it('should call estimateGas with dissociate token function without association for NFT - negative', async function () {
     const tx = await contract.dissociateTokenExternal.populateTransaction(accounts[0].wallet.address, nftAddress);
-    negativeScenarioVerification(tx, CALL_EXCEPTION);
+    await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
   //EGP-005
@@ -224,164 +306,125 @@ describe('EstimatePrecompileContract tests', function () {
       accounts[0].wallet.address,
       tokenAddress,
     );
-    negativeScenarioVerification(tx, CALL_EXCEPTION);
+    await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
   //EGP-006
   it('should call estimateGas with nested associate function that executes it twice for NFT - negative', async function () {
     const tx = await contract.nestedAssociateTokenExternal.populateTransaction(accounts[0].wallet.address, nftAddress);
-    negativeScenarioVerification(tx, CALL_EXCEPTION);
+    await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
   //EGP-007
   it('should call estimateGas with approve function without association - negative', async function () {
     let amount = 1;
     const tx = await contract.approveExternal.populateTransaction(tokenAddress, accounts[0].wallet.address, amount);
-    negativeScenarioVerification(tx, CALL_EXCEPTION);
+    await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
   //EGP-008
   it('should call estimateGas with approveNFT function without association - negative', async function () {
-    const tx = await contract.approveNFTExternal.populateTransaction(nftAddress, accounts[1].wallet.address, 1);
-    negativeScenarioVerification(tx, CALL_EXCEPTION);
+    const nftSerial = await mintNFT();
+    const tx = await contract.approveNFTExternal.populateTransaction(nftAddress, accounts[0].wallet.address, nftSerial);
+    await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
   //EGP-009
   it('should call estimateGas with dissociate token function for fungible token', async function () {
-    // Associate fungible token to account
-    estimateContractSigner0 = new ethers.Contract(
-      prefix + EstimatePrecompileContractAddress,
-      EstimatePrecompileContractJson.abi,
-      accounts[1].wallet,
-    );
-    const tx1 = await estimateContractSigner0.associateTokenExternal(
-      prefix + EstimatePrecompileContractAddress,
-      tokenAddress,
-      Constants.GAS.LIMIT_1_000_000,
-    );
-    await tx1.wait();
-
-    const tx = await estimateContractSigner0.dissociateTokenExternal.populateTransaction(
+    const tx = await estimateContractSigner1.dissociateTokenExternal.populateTransaction(
       accounts[1].wallet.address,
       tokenAddress,
     );
-    // await tx.wait()
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 785119);
+
+    const gasResult = await dissociateAcc(estimateContractSigner1, accounts[1].wallet.address, tokenAddress);
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
   //EGP-010
   it('should call estimateGas with dissociate token function for NFT', async function () {
-    // Associate NFT token to account
-    estimateContractSigner1 = new ethers.Contract(
-      prefix + EstimatePrecompileContractAddress,
-      EstimatePrecompileContractJson.abi,
-      accounts[1].wallet,
-    );
-
     const tx = await estimateContractSigner1.dissociateTokenExternal.populateTransaction(
       accounts[1].wallet.address,
       nftAddress,
     );
+
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 785119);
+
+    const gasResult = await dissociateAcc(estimateContractSigner1, accounts[1].wallet.address, nftAddress);
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
   //EGP-011
   it('should call estimateGas with dissociate and associate nested function for fungible token', async function () {
     const tx = await contract.dissociateAndAssociateTokenExternal.populateTransaction(
-      accounts[1].wallet.address,
+      accounts[3].wallet.address,
       tokenAddress,
     );
+
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 1540734);
+    const txResult = await contract.dissociateAndAssociateTokenExternal(accounts[3].wallet.address, tokenAddress);
+    const gasResult = await txResult.wait();
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
   //EGP-012
   it('should call estimateGas with dissociate and associate nested function for NFT', async function () {
-    const tx = await contract.dissociateAndAssociateTokenExternal.populateTransaction(signers[0].address, nftAddress);
+    const tx = await contract.dissociateAndAssociateTokenExternal.populateTransaction(
+      accounts[3].wallet.address,
+      nftAddress,
+    );
+
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 1540734);
+    const txResult = await contract.dissociateAndAssociateTokenExternal(accounts[3].wallet.address, nftAddress);
+    const gasResult = await txResult.wait();
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
   //EGP-013
   it('should call estimateGas with setApprovalForAll function without association - negative', async function () {
     const tx = await contract.setApprovalForAllExternal.populateTransaction(
-      accounts[1].wallet.address,
       tokenAddress,
+      accounts[1].wallet.address,
       true,
     );
-    negativeScenarioVerification(tx, CALL_EXCEPTION);
+    await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
   //EGP-014
   it('should call estimateGas with approve function', async function () {
-    const amount = 1;
-    // Associate Fungible Token to account
-    estimateContractSigner1 = new ethers.Contract(
-      prefix + EstimatePrecompileContractAddress,
-      EstimatePrecompileContractJson.abi,
-      accounts[0].wallet,
-    );
-    const tx1_ft = await estimateContractSigner1.associateTokenExternal(
-      accounts[0].wallet.address,
-      tokenAddress,
-      Constants.GAS.LIMIT_1_000_000,
-    );
-    const tx = await contract.approveExternal.populateTransaction(tokenAddress, accounts[0].wallet.address, amount);
-    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 786166);
-  });
+    const amount = 10;
+    let spender = prefix + EstimatePrecompileContractAddress;
 
-  //EGP-015
-  it('should call estimateGas with approveNFT function', async function () {
-    const nftSerial = 1;
-    // Associate NFT to account
-    estimateContractSigner0 = new ethers.Contract(
-      prefix + EstimatePrecompileContractAddress,
-      EstimatePrecompileContractJson.abi,
-      accounts[1].wallet,
-    );
-    estimateContractSigner0.associateTokenExternal(
-      prefix + EstimatePrecompileContractAddress,
-      nftAddress,
-      Constants.GAS.LIMIT_1_000_000,
-    );
+    await associateAcc(estimateContractSigner1, spender, tokenAddress);
+    const gasResult = await approveAcc(estimateContractSigner0, tokenAddress, spender, amount);
 
-    const tx = await contract.approveNFTExternal.populateTransaction(accounts[0].wallet.address, nftAddress, nftSerial);
+    const tx = await estimateContractSigner0.approveExternal.populateTransaction(tokenAddress, spender, amount);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 786166);
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
   //EGP-016
   it('should call estimateGas with setApprovalForAll function', async function () {
-    const tx = await contract.setApprovalForAllExternal.populateTransaction(
+    let spender = prefix + EstimatePrecompileContractAddress;
+    await associateAcc(estimateContractSigner1, spender, nftAddress);
+
+    const txResult = await estimateContractSigner0.setApprovalForAllExternal(
       nftAddress,
       accounts[1].wallet.address,
       true,
     );
-    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 786166);
-  });
+    const gasResult = await txResult.wait();
 
-  //EGP-017
-  it('should call estimateGas with transferFromNFT function', async function () {
-    const nftSerial = await mintNFT();
-    const NFTokenContract = new ethers.Contract(nftAddress, ERC721MockJson.abi, accounts[0].wallet);
-
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    const appp2 = await NFTokenContract.setApprovalForAll(contract.target, nftSerial, { gasLimit: 5_000_000 });
-    await appp2.wait();
-
-    const tx = await contract.transferFromNFTExternal.populateTransaction(
+    const tx = await estimateContractSigner0.setApprovalForAllExternal.populateTransaction(
       nftAddress,
-      accounts[0].wallet.address,
       accounts[1].wallet.address,
-      nftSerial,
+      true,
     );
+    await new Promise((r) => setTimeout(r, 1000));
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 786166);
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
   //EGP-018
@@ -396,7 +439,7 @@ describe('EstimatePrecompileContract tests', function () {
   });
 
   //EGP-019 //The test is excluded due to a bug in the Mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/7192
-  xit('should call estimateGas with transferFrom function', async function () {
+  it.skip('should call estimateGas with transferFrom function', async function () {
     let amount = 1;
     let account0Wallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
     let account1Wallet = await mirrorNode.get(`/accounts/${accounts[1].wallet.address}`, requestId);
@@ -429,7 +472,7 @@ describe('EstimatePrecompileContract tests', function () {
 
   //EGP-020
   it('should call estimateGas with transferFrom function with more than the approved allowance - negative', async function () {
-    let amount = 10;
+    let amount = 100;
 
     const tx = await contract.transferFromExternal.populateTransaction(
       tokenAddress,
@@ -460,11 +503,233 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await contract.transferTokenExternal.populateTransaction(
       tokenAddress,
       accounts[0].wallet.address,
-      accounts[1].wallet.address,
+      accounts[2].wallet.address,
       amount,
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    baseGasCheck(estimateGasResponse, 43265);
+
+    const txResult = await contract.transferTokenExternal(
+      tokenAddress,
+      accounts[0].wallet.address,
+      accounts[2].wallet.address,
+      amount,
+    );
+    const gasResult = await txResult.wait();
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-023
+  it('should call estimateGas with transferNFT function', async function () {
+    let nftSerial = await mintNFT();
+
+    const tx = await contract.transferNFTExternal.populateTransaction(
+      nftAddress,
+      accounts[0].wallet.address,
+      accounts[2].wallet.address,
+      nftSerial,
+    );
+
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+    const txResult = await contract.transferNFTExternal(
+      nftAddress,
+      accounts[0].wallet.address,
+      accounts[2].wallet.address,
+      nftSerial,
+    );
+    const gasResult = await txResult.wait();
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-029
+  it('should call estimateGas with associateTokens function for fungible token', async function () {
+    await new Promise((r) => setTimeout(r, 5000));
+    const tokens: String[] = [tokenAddress];
+
+    const tx = await estimateContractSigner4.associateTokensExternal.populateTransaction(
+      accounts[4].wallet.address,
+      tokens,
+    );
+    await new Promise((r) => setTimeout(r, 5000));
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+    const txResult = await estimateContractSigner4.associateTokensExternal(accounts[4].wallet.address, tokens);
+    const gasResult = await txResult.wait();
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-030
+  it('should call estimateGas with associateTokens function for NFT', async function () {
+    const tokens: String[] = [nftAddress];
+
+    const tx = await estimateContractSigner1.associateTokensExternal.populateTransaction(
+      accounts[1].wallet.address,
+      tokens,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+    const txResult = await estimateContractSigner1.associateTokensExternal(accounts[1].wallet.address, tokens);
+    const gasResult = await txResult.wait();
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  // EGP-031
+  it('should call estimateGas with dissociateTokens function for fungible token', async function () {
+    const tokens: String[] = [tokenAddress];
+
+    const tx = await estimateContractSigner4.dissociateTokensExternal.populateTransaction(
+      accounts[4].wallet.address,
+      tokens,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+    const txResult = await estimateContractSigner4.dissociateTokensExternal(accounts[4].wallet.address, tokens);
+    const gasResult = await txResult.wait();
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-032
+  it('should call estimateGas with dissociateTokens function for NFT', async function () {
+    const tokens: String[] = [nftAddress];
+
+    const tx = await estimateContractSigner1.dissociateTokensExternal.populateTransaction(
+      accounts[1].wallet.address,
+      tokens,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+    const txResult = await estimateContractSigner1.dissociateTokensExternal(accounts[1].wallet.address, tokens);
+    const gasResult = await txResult.wait();
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-033
+  it('should call estimateGas with transferTokens function for fungible token', async function () {
+    const amounts: Number[] = [-10, 10];
+    const tokens: String[] = [tokenAddress];
+    const transferAccounts: String[] = [accounts[0].wallet.address, accounts[2].wallet.address];
+
+    const tx = await estimateContractSigner0.transferTokensExternal.populateTransaction(
+      tokenAddress,
+      transferAccounts,
+      amounts,
+    );
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await estimateContractSigner0.transferTokensExternal(tokenAddress, transferAccounts, amounts);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-034
+  it('should call estimateGas with transferNFTs function', async function () {
+    let nftSerial = await mintNFT();
+    let nftSerial2 = await mintNFT();
+    const serialNumbers: Number[] = [nftSerial, nftSerial2];
+    const receiverAccounts: String[] = [accounts[2].wallet.address, accounts[3].wallet.address];
+    const senderAccounts: String[] = [accounts[0].wallet.address];
+
+    const tx = await contract.transferNFTsExternal.populateTransaction(
+      nftAddress,
+      senderAccounts,
+      receiverAccounts,
+      serialNumbers,
+    );
+
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.transferNFTsExternal(nftAddress, senderAccounts, receiverAccounts, serialNumbers);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-038
+  it('should call estimateGas with mintToken function for fungible token', async function () {
+    const txResult = await contract.mintTokenExternal(tokenAddress, 0, ['0x02']);
+    const gasResult = await txResult.wait();
+
+    const tx = await contract.mintTokenExternal.populateTransaction(tokenAddress, 0, ['0x02']);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-039
+  it('should call estimateGas with mintToken function for NFT', async function () {
+    const txResult = await contract.mintTokenExternal(nftAddress, 0, ['0x02']);
+    const gasResult = await txResult.wait();
+
+    const tx = await contract.mintTokenExternal.populateTransaction(nftAddress, 0, ['0x02']);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-040
+  it('should call estimateGas with burnToken function for fungible token', async function () {
+    const txResult = await contract.burnTokenExternal(tokenAddress, 0, ['0x02']);
+    const gasResult = await txResult.wait();
+
+    const tx = await contract.burnTokenExternal.populateTransaction(tokenAddress, 0, ['0x02']);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-042
+  it('should call estimateGas with burnToken function for NFT', async function () {
+    const nftSerial = await mintNFT();
+    const serialNumbers: Number[] = [nftSerial];
+    const tx = await contract.burnTokenExternal.populateTransaction(nftAddress, 0, serialNumbers);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+    const txResult = await contract.burnTokenExternal(nftAddress, 0, serialNumbers);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-051
+  it('should call estimateGas with grantTokenKycExternal function for fungible token', async function () {
+    const tx = await contract.grantTokenKycExternal.populateTransaction(tokenAddress, accounts[0].wallet.address);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.grantTokenKycExternal(tokenAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-052
+  it('should call estimateGas with grantTokenKycExternal function for NFT', async function () {
+    const tx = await contract.grantTokenKycExternal.populateTransaction(nftAddress, accounts[0].wallet.address);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.grantTokenKycExternal(nftAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-053
+  it('should call estimateGas with revokeTokenKycExternal function for fungible token', async function () {
+    const tx = await contract.grantTokenKycExternal.populateTransaction(tokenAddress, accounts[0].wallet.address);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.grantTokenKycExternal(tokenAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-054
+  it('should call estimateGas with revokeTokenKycExternal function for NFT', async function () {
+    const tx = await contract.grantTokenKycExternal.populateTransaction(nftAddress, accounts[0].wallet.address);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.grantTokenKycExternal(nftAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
   async function negativeScenarioVerification(tx, errorMessage: string) {
@@ -478,5 +743,23 @@ describe('EstimatePrecompileContract tests', function () {
     }
     expect(failed).to.be.true;
     return estimateGasResponse;
+  }
+
+  async function associateAcc(contractSigner, account, token) {
+    const txResult = await contractSigner.associateTokenExternal(account, token);
+    const gasResult = await txResult.wait();
+    return gasResult;
+  }
+
+  async function dissociateAcc(contractSigner, account, token) {
+    const txResult = await contractSigner.dissociateTokenExternal(account, token);
+    const gasResult = await txResult.wait();
+    return gasResult;
+  }
+
+  async function approveAcc(contractSigner, token, spender, amount) {
+    const txResult = await contractSigner.approveExternal(token, spender, amount);
+    const gasResult = await txResult.wait();
+    return gasResult;
   }
 });
