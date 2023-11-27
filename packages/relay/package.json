@@ -29,7 +29,8 @@
     "test:eth-block-by-number": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethBlockByNumber' --exit",
     "test:eth-block-by-hash": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethBlockByHash' --exit",
     "test:eth-block-transaction-count-by-number": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethBlockTransactionCountByNumber' --exit",
-    "test:eth-block-transaction-count-by-hash": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGetBlockTransactionCountByHash' --exit"
+    "test:eth-block-transaction-count-by-hash": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGetBlockTransactionCountByHash' --exit",
+    "test:eth-get-transaction-by-block-number-and-index": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGetTransactionByBlockNumberAndIndex' --exit"
   },
   "dependencies": {
     "@ethersproject/asm": "^5.7.0",

@@ -60,7 +60,7 @@ let sdkClientStub;
 let getSdkClientStub;
 let cacheService: CacheService;
 
-describe('@ethBlockTransactionCountByNumber using MirrorNode', async function () {
+describe('@ethGetBlockTransactionCountByNumber using MirrorNode', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
 

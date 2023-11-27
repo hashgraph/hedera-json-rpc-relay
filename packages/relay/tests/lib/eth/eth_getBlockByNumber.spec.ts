@@ -82,7 +82,7 @@ let sdkClientStub;
 let getSdkClientStub;
 let cacheService: CacheService;
 
-describe('@ethBlockByNumber using MirrorNode', async function () {
+describe('@ethGetBlockByNumber using MirrorNode', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
   const results = defaultContractResults.results;

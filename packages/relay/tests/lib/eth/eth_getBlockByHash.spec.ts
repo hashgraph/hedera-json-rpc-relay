@@ -71,7 +71,7 @@ let sdkClientStub;
 let getSdkClientStub;
 let cacheService: CacheService;
 
-describe('@ethBlockByHash using MirrorNode', async function () {
+describe('@ethGetBlockByHash using MirrorNode', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
   const results = defaultContractResults.results;

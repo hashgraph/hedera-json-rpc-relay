@@ -70,6 +70,9 @@ export const FIRST_TRX_TIMESTAMP_SEC = '1653077541';
 export const CONTRACT_TIMESTAMP_1 = `${FIRST_TRX_TIMESTAMP_SEC}.983983199`;
 export const CONTRACT_HASH_1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
 export const CONTRACT_HASH_2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
+export const CONTRACT_ADDRESS_1 = '0x000000000000000000000000000000000000055f';
+export const CONTRACT_ADDRESS_2 = '0x000000000000000000000000000000000000055e';
+export const CONTRACT_ADDRESS_3 = '0x000000000000000000000000000000000000255c';
 export const MOST_RECENT_BLOCK = {
   blocks: [
     {
@@ -169,5 +172,10 @@ export const BLOCK_NOT_FOUND_RES = {
 export const LINKS_NEXT_RES = {
   results: [],
   links: { next: CONTRACTS_RESULTS_NEXT_URL },
+};
+export const NO_SUCH_CONTRACT_RESULT = {
+  _status: {
+    messages: [{ message: 'No such contract result exists' }],
+  },
 };
 //
