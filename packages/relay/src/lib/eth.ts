@@ -2173,7 +2173,9 @@ export class EthImpl implements Eth {
       );
     }
 
-    if (transactionResult.address !== address) {
+    const accountResult = await this.mirrorNodeClient.getAccount(transactionResult.from);
+
+    if (accountResult.evm_address !== address.toLowerCase()) {
       this.logger.warn(
         `${requestIdPrefix} eth_transactionCount for a historical block was requested where address: ${address} was not sender: ${transactionResult.address}, returning latest value as best effort.`,
       );
