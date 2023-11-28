@@ -1880,12 +1880,15 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   });
 
   describe('Batch Request Test Suite BATCH_REQUESTS_ENABLED = true', async function () {
+    let PREV_BATCH_REQUESTS_ENABLED: string | undefined;
+
     before(async () => {
+      PREV_BATCH_REQUESTS_ENABLED = process.env.BATCH_REQUESTS_ENABLED;
       process.env.BATCH_REQUESTS_ENABLED = 'true';
     });
 
     after(async () => {
-      process.env.BATCH_REQUESTS_ENABLED = 'false';
+      process.env.BATCH_REQUESTS_ENABLED = PREV_BATCH_REQUESTS_ENABLED;
     });
 
     it('Should return a batch of requests', async function () {
