@@ -732,6 +732,114 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
+  //EGP-055
+  it('should call estimateGas with Grant and Revoke KYC nested function', async function () {
+    const tx = await contract.nestedGrantAndRevokeTokenKYCExternal.populateTransaction(
+      tokenAddress,
+      accounts[0].wallet.address,
+    );
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.nestedGrantAndRevokeTokenKYCExternal(tokenAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-056
+  it('should call estimateGas with Freeze function for fungible token', async function () {
+    const tx = await contract.freezeTokenExternal.populateTransaction(tokenAddress, accounts[0].wallet.address);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.freezeTokenExternal(tokenAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-057
+  it('should call estimateGas with Freeze function for NFT', async function () {
+    const tx = await contract.freezeTokenExternal.populateTransaction(nftAddress, accounts[0].wallet.address);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.freezeTokenExternal(nftAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-058
+  it('should call estimateGas with Unfreeze function for fungible token', async function () {
+    const tx = await contract.unfreezeTokenExternal.populateTransaction(tokenAddress, accounts[0].wallet.address);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.unfreezeTokenExternal(tokenAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-059
+  it('should call estimateGas with Unfreeze function for NFT', async function () {
+    const tx = await contract.unfreezeTokenExternal.populateTransaction(nftAddress, accounts[0].wallet.address);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.unfreezeTokenExternal(nftAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-060
+  it('should call estimateGas with Nested Freeze and Unfreeze function for fungible token', async function () {
+    const tx = await contract.nestedFreezeUnfreezeTokenExternal.populateTransaction(
+      tokenAddress,
+      accounts[0].wallet.address,
+    );
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.nestedFreezeUnfreezeTokenExternal(tokenAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-061
+  it('should call estimateGas with nested Freeze and Unfreeze function for NFT', async function () {
+    const tx = await contract.nestedFreezeUnfreezeTokenExternal.populateTransaction(
+      nftAddress,
+      accounts[0].wallet.address,
+    );
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.nestedFreezeUnfreezeTokenExternal(nftAddress, accounts[0].wallet.address);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-062
+  it('should call estimateGas with delete function for fungible token', async function () {
+    const tx = await contract.deleteTokenExternal.populateTransaction(tokenAddress);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.deleteTokenExternal(tokenAddress);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-063
+  it('should call estimateGas with delete function for NFT', async function () {
+    const tx = await contract.deleteTokenExternal.populateTransaction(nftAddress);
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await contract.deleteTokenExternal(nftAddress);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
   async function negativeScenarioVerification(tx, errorMessage: string) {
     let failed = false;
     let estimateGasResponse;
