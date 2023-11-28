@@ -17,7 +17,7 @@
  * limitations under the License.
  *
  */
-import { defaultLogs1, defaultLogs2, defaultLogs3 } from '../../helpers';
+import { defaultLogs1, defaultLogs2, defaultLogs3, mockData } from '../../helpers';
 import { numberTo0x } from '../../../dist/formatters';
 import constants from '../../../src/lib/constants';
 
@@ -100,6 +100,7 @@ export const BLOCK_HASH_PREV_TRIMMED = '0xf7d6481f659c866c35391ee230c374f163642e
 export const BLOCK_NUMBER_HEX = `0x${BLOCK_NUMBER.toString(16)}`;
 export const MAX_GAS_LIMIT = 250000;
 export const BLOCK_TIMESTAMP_HEX = numberTo0x(Number(BLOCK_TIMESTAMP));
+export const NO_TRANSACTIONS = '?transactions=false';
 export const FIRST_TRX_TIMESTAMP_SEC = '1653077541';
 export const CONTRACT_TIMESTAMP_1 = `${FIRST_TRX_TIMESTAMP_SEC}.983983199`;
 export const CONTRACT_TIMESTAMP_2 = '1653077542.701408897';
@@ -109,6 +110,12 @@ export const CONTRACT_HASH_2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb72361
 export const CONTRACT_ADDRESS_1 = '0x000000000000000000000000000000000000055f';
 export const CONTRACT_ADDRESS_2 = '0x000000000000000000000000000000000000055e';
 export const CONTRACT_ADDRESS_3 = '0x000000000000000000000000000000000000255c';
+export const HTS_TOKEN_ADDRESS = '0x0000000000000000000000000000000002dca431';
+export const DEFAULT_HTS_TOKEN = mockData.token;
+export const DEPLOYED_BYTECODE =
+  '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
+export const MIRROR_NODE_DEPLOYED_BYTECODE =
+  '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100321234';
 export const TINYBAR_TO_WEIBAR_COEF_BIGINT = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
 export const DEF_BALANCE = 99960581137;
 export const CONTRACT_ID_1 = '0.0.1375';
@@ -128,6 +135,34 @@ export const BLOCK_ZERO = {
   },
   gas_used: 0,
   logs_bloom: '0x',
+};
+export const DEFAULT_CONTRACT = {
+  admin_key: null,
+  auto_renew_account: null,
+  auto_renew_period: 7776000,
+  contract_id: '0.0.1052',
+  created_timestamp: '1659622477.294172233',
+  deleted: false,
+  evm_address: null,
+  expiration_timestamp: null,
+  file_id: '0.0.1051',
+  max_automatic_token_associations: 0,
+  memo: '',
+  obtainer_id: null,
+  permanent_removal: null,
+  proxy_account_id: null,
+  timestamp: {
+    from: '1659622477.294172233',
+    to: null,
+  },
+  bytecode: '0x123456',
+  runtime_bytecode: MIRROR_NODE_DEPLOYED_BYTECODE,
+};
+
+export const DEFAULT_CONTRACT_2 = {
+  ...DEFAULT_CONTRACT,
+  address: CONTRACT_ADDRESS_2,
+  contract_id: CONTRACT_ID_2,
 };
 export const MOST_RECENT_BLOCK = {
   blocks: [
