@@ -113,6 +113,7 @@ export const FIRST_TRX_TIMESTAMP_SEC = '1653077541';
 export const CONTRACT_TIMESTAMP_1 = `${FIRST_TRX_TIMESTAMP_SEC}.983983199`;
 export const CONTRACT_TIMESTAMP_2 = '1653077542.701408897';
 export const CONTRACT_TIMESTAMP_3 = '1653088542.123456789';
+export const CONTRACT_TIMESTAMP_4 = `${FIRST_TRX_TIMESTAMP_SEC}.983983198`;
 export const CONTRACT_HASH_1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
 export const CONTRACT_HASH_2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
 export const CONTRACT_HASH_3 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394';
@@ -176,6 +177,27 @@ export const DEFAULT_CONTRACT_2 = {
   address: CONTRACT_ADDRESS_2,
   contract_id: CONTRACT_ID_2,
 };
+export const DEFAULT_CONTRACT_STATE_EMPTY_ARRAY = {
+  state: [],
+  links: {
+    next: null,
+  },
+};
+export const OLDER_BLOCK = {
+  count: BLOCK_TRANSACTION_COUNT,
+  hapi_version: '0.28.1',
+  hash: BLOCK_HASH,
+  name: '2022-05-03T06_46_26.060890949Z.rcd',
+  number: BLOCK_NUMBER,
+  previous_hash: '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b',
+  size: null,
+  timestamp: {
+    from: `${CONTRACT_TIMESTAMP_4}`,
+    to: '1651560389.060890949',
+  },
+  gas_used: GAS_USED_1 + GAS_USED_2,
+  logs_bloom: '0x',
+};
 export const MOST_RECENT_BLOCK = {
   blocks: [
     {
@@ -193,6 +215,17 @@ export const MOST_RECENT_BLOCK = {
         from: '1679512870.216373003',
         to: '1679512871.851262003',
       },
+    },
+  ],
+};
+export const DEFAULT_OLDER_CONTRACT_STATE = {
+  state: [
+    {
+      address: CONTRACT_ADDRESS_1,
+      contract_id: CONTRACT_ID_1,
+      timestamp: CONTRACT_TIMESTAMP_4,
+      slot: '0x0000000000000000000000000000000000000000000000000000000000000101',
+      value: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
     },
   ],
 };
@@ -235,6 +268,17 @@ export const DEFAULT_CONTRACT_RES_REVERT = {
   links: {
     next: null,
   },
+};
+export const DEFAULT_CURRENT_CONTRACT_STATE = {
+  state: [
+    {
+      address: CONTRACT_ADDRESS_1,
+      contract_id: CONTRACT_ID_1,
+      timestamp: CONTRACT_TIMESTAMP_1,
+      slot: '0x0000000000000000000000000000000000000000000000000000000000000101',
+      value: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+    },
+  ],
 };
 export const DEFAULT_CONTRACT_3_EMPTY_BYTECODE = {
   address: CONTRACT_ADDRESS_2,
@@ -379,6 +423,11 @@ export const LINKS_NEXT_RES = {
 export const NO_SUCH_CONTRACT_RESULT = {
   _status: {
     messages: [{ message: 'No such contract result exists' }],
+  },
+};
+export const DETAILD_CONTRACT_RESULT_NOT_FOUND = {
+  _status: {
+    messages: [{ message: 'No correlating transaction' }],
   },
 };
 export const EMPTY_RES = {

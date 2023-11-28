@@ -37,7 +37,9 @@
     "test:eth-estimate-gas": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethEstimateGas' --exit",
     "test:eth-gas-price": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGasPrice' --exit",
     "test:eth-call": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethCall' --exit",
-    "test:eth-send-raw-transaction": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethSendRawTransaction' --exit"
+    "test:eth-send-raw-transaction": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethSendRawTransaction' --exit",
+    "test:eth-get-storage-at": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGetStorageAt' --exit",
+    "test:eth-get-transaction-count": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGetTransactionCount' --exit"
   },
   "dependencies": {
     "@ethersproject/asm": "^5.7.0",
