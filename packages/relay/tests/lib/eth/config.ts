@@ -33,6 +33,8 @@ export const BLOCK_HASH_TRIMMED = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4a
 export const BLOCK_HASH = `${BLOCK_HASH_TRIMMED}999fc7e86699f60f2a3fb3ed9a646c6b`;
 export const BLOCK_HASH_2 = `${BLOCK_HASH_TRIMMED}999fc7e86699f60f2a3fb3ed9a646c6c`;
 export const BLOCK_HASH_3 = `${BLOCK_HASH_TRIMMED}999fc7e86699f60f2a3fb3ed9a646c6d`;
+export const RECEIVER_ADDRESS = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
+export const WRONG_CONTRACT_ADDRESS = '0x00000000000000000000000000000000055e';
 
 export const DEFAULT_BLOCK = {
   count: BLOCK_TRANSACTION_COUNT,
@@ -99,10 +101,12 @@ export const CONTRACT_RESULT_MOCK = {
   nonce: 9,
 };
 
+export const CONTRACT_CALL_DATA = '0xef641f44';
 export const ETH_FEE_HISTORY_VALUE = process.env.ETH_FEE_HISTORY_FIXED || 'true';
 export const BLOCK_HASH_PREV_TRIMMED = '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298';
 export const BLOCK_NUMBER_HEX = `0x${BLOCK_NUMBER.toString(16)}`;
 export const MAX_GAS_LIMIT = 250000;
+export const MAX_GAS_LIMIT_HEX = numberTo0x(MAX_GAS_LIMIT);
 export const BLOCK_TIMESTAMP_HEX = numberTo0x(Number(BLOCK_TIMESTAMP));
 export const NO_TRANSACTIONS = '?transactions=false';
 export const FIRST_TRX_TIMESTAMP_SEC = '1653077541';
@@ -116,6 +120,7 @@ export const CONTRACT_ADDRESS_1 = '0x000000000000000000000000000000000000055f';
 export const CONTRACT_ADDRESS_2 = '0x000000000000000000000000000000000000055e';
 export const CONTRACT_ADDRESS_3 = '0x000000000000000000000000000000000000255c';
 export const HTS_TOKEN_ADDRESS = '0x0000000000000000000000000000000002dca431';
+export const ACCOUNT_ADDRESS_1 = '0x13212A14deaf2775a5b3bEcC857806D5c719d3f2';
 export const DEFAULT_HTS_TOKEN = mockData.token;
 export const DEPLOYED_BYTECODE =
   '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
@@ -230,6 +235,29 @@ export const DEFAULT_CONTRACT_RES_REVERT = {
   links: {
     next: null,
   },
+};
+export const DEFAULT_CONTRACT_3_EMPTY_BYTECODE = {
+  address: CONTRACT_ADDRESS_2,
+  contract_id: CONTRACT_ID_2,
+  admin_key: null,
+  auto_renew_account: null,
+  auto_renew_period: 7776000,
+  created_timestamp: '1659622477.294172233',
+  deleted: false,
+  evm_address: null,
+  expiration_timestamp: null,
+  file_id: '0.0.1051',
+  max_automatic_token_associations: 0,
+  memo: '',
+  obtainer_id: null,
+  permanent_removal: null,
+  proxy_account_id: null,
+  timestamp: {
+    from: '1659622477.294172233',
+    to: null,
+  },
+  bytecode: '0x123456',
+  runtime_bytecode: '0x',
 };
 
 export const DEFAULT_LOG_TOPICS = [
