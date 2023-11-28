@@ -24,10 +24,15 @@ import constants from '../../../src/lib/constants';
 export const BLOCK_TRANSACTION_COUNT = 77;
 export const GAS_USED_1 = 200000;
 export const GAS_USED_2 = 800000;
+export const GAS_USED_RATIO = 0.5;
 export const BLOCK_NUMBER = 3;
+export const BLOCK_NUMBER_2 = 4;
+export const BLOCK_NUMBER_3 = 5;
 export const BLOCK_TIMESTAMP = '1651560386';
 export const BLOCK_HASH_TRIMMED = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
 export const BLOCK_HASH = `${BLOCK_HASH_TRIMMED}999fc7e86699f60f2a3fb3ed9a646c6b`;
+export const BLOCK_HASH_2 = `${BLOCK_HASH_TRIMMED}999fc7e86699f60f2a3fb3ed9a646c6c`;
+export const BLOCK_HASH_3 = `${BLOCK_HASH_TRIMMED}999fc7e86699f60f2a3fb3ed9a646c6d`;
 
 export const DEFAULT_BLOCK = {
   count: BLOCK_TRANSACTION_COUNT,
@@ -61,7 +66,6 @@ export const DEFAULT_NETWORK_FEES = {
   ],
   timestamp: '1653644164.591111113',
 };
-
 export const CONTRACT_RESULT_MOCK = {
   address: '0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69',
   amount: 20,
@@ -107,6 +111,7 @@ export const CONTRACT_TIMESTAMP_2 = '1653077542.701408897';
 export const CONTRACT_TIMESTAMP_3 = '1653088542.123456789';
 export const CONTRACT_HASH_1 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
 export const CONTRACT_HASH_2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
+export const CONTRACT_HASH_3 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394';
 export const CONTRACT_ADDRESS_1 = '0x000000000000000000000000000000000000055f';
 export const CONTRACT_ADDRESS_2 = '0x000000000000000000000000000000000000055e';
 export const CONTRACT_ADDRESS_3 = '0x000000000000000000000000000000000000255c';
@@ -117,6 +122,9 @@ export const DEPLOYED_BYTECODE =
 export const MIRROR_NODE_DEPLOYED_BYTECODE =
   '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100321234';
 export const TINYBAR_TO_WEIBAR_COEF_BIGINT = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+export const BASE_FEE_PER_GAS_HEX = numberTo0x(
+  BigInt(DEFAULT_NETWORK_FEES.fees[2].gas) * TINYBAR_TO_WEIBAR_COEF_BIGINT,
+); // '0x84b6a5c400' -> 570_000_000_000 tb
 export const DEF_BALANCE = 99960581137;
 export const CONTRACT_ID_1 = '0.0.1375';
 export const CONTRACT_ID_2 = '0.0.1374';
@@ -158,7 +166,6 @@ export const DEFAULT_CONTRACT = {
   bytecode: '0x123456',
   runtime_bytecode: MIRROR_NODE_DEPLOYED_BYTECODE,
 };
-
 export const DEFAULT_CONTRACT_2 = {
   ...DEFAULT_CONTRACT,
   address: CONTRACT_ADDRESS_2,
@@ -224,6 +231,58 @@ export const DEFAULT_CONTRACT_RES_REVERT = {
     next: null,
   },
 };
+
+export const DEFAULT_LOG_TOPICS = [
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+  '0x0000000000000000000000000000000000000000000000000000000000000000',
+  '0x000000000000000000000000000000000000000000000000000000000208fa13',
+  '0x0000000000000000000000000000000000000000000000000000000000000005',
+];
+
+export const DEFAULT_LOG_TOPICS_1 = [
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+  '0x000000000000000000000000000000000000000000000000000000000208fa13',
+];
+
+export const DEFAULT_NULL_LOG_TOPICS = [
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+  '0x000000000000000000000000000000000000000000000000000000000208fa13',
+  null,
+  null,
+];
+export const LOG_BLOOM_4 = '0x4444';
+export const DEFAULT_LOGS_4 = [
+  {
+    address: '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69',
+    bloom: LOG_BLOOM_4,
+    contract_id: CONTRACT_ID_2,
+    data: '0x',
+    index: 0,
+    topics: DEFAULT_LOG_TOPICS_1,
+    root_contract_id: '0.0.34806097',
+    timestamp: CONTRACT_TIMESTAMP_3,
+    block_hash: BLOCK_HASH_3,
+    block_number: BLOCK_NUMBER_3,
+    transaction_hash: CONTRACT_HASH_3,
+    transaction_index: 1,
+  },
+];
+export const DEFAULT_LOGS_3 = [
+  {
+    address: '0x0000000000000000000000000000000002131951',
+    bloom: LOG_BLOOM_4,
+    contract_id: CONTRACT_ID_2,
+    data: '0x',
+    index: 0,
+    topics: [],
+    root_contract_id: '0.0.34806097',
+    timestamp: CONTRACT_TIMESTAMP_3,
+    block_hash: BLOCK_HASH_3,
+    block_number: BLOCK_NUMBER_3,
+    transaction_hash: CONTRACT_HASH_3,
+    transaction_index: 1,
+  },
+];
 export const DEFAULT_LOGS_LIST = defaultLogs1.concat(defaultLogs2).concat(defaultLogs3);
 export const DEFAULT_LOGS = {
   logs: DEFAULT_LOGS_LIST,
@@ -234,6 +293,7 @@ export const DEFAULT_ETH_GET_BLOCK_BY_LOGS = {
 
 // URLS:
 export const CONTRACT_RESULTS_WITH_FILTER_URL = `contracts/results?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=100&order=asc`;
+export const CONTRACTS_LOGS_WITH_FILTER = `contracts/${CONTRACT_ADDRESS_1}/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=100&order=asc`;
 export const CONTRACT_RESULTS_LOGS_WITH_FILTER_URL = `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=100&order=asc`;
 export const BLOCKS_LIMIT_ORDER_URL = 'blocks?limit=1&order=desc';
 export const CONTRACTS_RESULTS_NEXT_URL = `contracts/results?timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&limit=100&order=asc`; // just flip the timestamp parameters for simplicity
