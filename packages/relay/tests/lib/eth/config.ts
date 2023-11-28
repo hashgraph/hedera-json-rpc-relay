@@ -19,6 +19,7 @@
  */
 import { defaultLogs1, defaultLogs2, defaultLogs3 } from '../../helpers';
 import { numberTo0x } from '../../../dist/formatters';
+import constants from '../../../src/lib/constants';
 
 export const BLOCK_TRANSACTION_COUNT = 77;
 export const GAS_USED_1 = 200000;
@@ -108,6 +109,26 @@ export const CONTRACT_HASH_2 = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb72361
 export const CONTRACT_ADDRESS_1 = '0x000000000000000000000000000000000000055f';
 export const CONTRACT_ADDRESS_2 = '0x000000000000000000000000000000000000055e';
 export const CONTRACT_ADDRESS_3 = '0x000000000000000000000000000000000000255c';
+export const TINYBAR_TO_WEIBAR_COEF_BIGINT = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+export const DEF_BALANCE = 99960581137;
+export const CONTRACT_ID_1 = '0.0.1375';
+export const CONTRACT_ID_2 = '0.0.1374';
+export const DEF_HEX_BALANCE = numberTo0x(BigInt(DEF_BALANCE) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
+export const BLOCK_ZERO = {
+  count: 5,
+  hapi_version: '0.28.1',
+  hash: '0x4a7eed88145253eca01a6b5995865b68b041923772d0e504d2ae5fbbf559b68b397adfce5c52f4fa8acec860e6fbc395',
+  name: '2020-08-27T23_40_52.347251002Z.rcd',
+  number: 0,
+  previous_hash: '0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+  size: null,
+  timestamp: {
+    from: '1598571652.347251002',
+    to: '1598571654.548395000',
+  },
+  gas_used: 0,
+  logs_bloom: '0x',
+};
 export const MOST_RECENT_BLOCK = {
   blocks: [
     {
@@ -183,6 +204,19 @@ export const BLOCKS_LIMIT_ORDER_URL = 'blocks?limit=1&order=desc';
 export const CONTRACTS_RESULTS_NEXT_URL = `contracts/results?timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&limit=100&order=asc`; // just flip the timestamp parameters for simplicity
 
 //responce objects
+export const MOCK_BLOCK_NUMBER_1000_RES = {
+  blocks: [
+    {
+      number: 10000,
+    },
+  ],
+};
+export const MOCK_BALANCE_RES = {
+  account: CONTRACT_ADDRESS_1,
+  balance: {
+    balance: DEF_BALANCE,
+  },
+};
 export const NOT_FOUND_RES = {
   _status: {
     messages: [{ message: 'Not found' }],
@@ -193,6 +227,17 @@ export const BLOCKS_RES = {
 };
 export const DEFAULT_BLOCKS_RES = {
   blocks: [DEFAULT_BLOCK],
+};
+export const MOCK_BLOCKS_FOR_BALANCE_RES = {
+  blocks: [
+    {
+      number: 10000,
+      timestamp: {
+        from: `${BLOCK_TIMESTAMP}.060890919`,
+        to: '1651560389.060890949',
+      },
+    },
+  ],
 };
 export const NO_SUCH_BLOCK_EXISTS_RES = {
   _status: {
