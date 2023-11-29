@@ -17,16 +17,14 @@
  * limitations under the License.
  *
  */
-import chai from 'chai';
 import path from 'path';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { assert, expect } from 'chai';
+import { assert, expect, use } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';
-import * as _ from 'lodash';
 import pino from 'pino';
-import chaiAsPromised from 'chai-as-promised';
 
 import { EthImpl } from '../../../src/lib/eth';
 import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
@@ -34,7 +32,6 @@ import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../../src/lib/hbarlimiter';
-import { numberTo0x } from '../../../dist/formatters';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import {
   ACCOUNT_ADDRESS_1,
@@ -65,7 +62,7 @@ import {
 } from '../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-chai.use(chaiAsPromised);
+use(chaiAsPromised);
 
 const logger = pino();
 const registry = new Registry();

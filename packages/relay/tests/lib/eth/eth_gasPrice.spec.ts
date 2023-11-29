@@ -17,14 +17,12 @@
  * limitations under the License.
  *
  */
-import chai from 'chai';
 import path from 'path';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { expect } from 'chai';
+import { expect, use } from 'chai';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';
-import * as _ from 'lodash';
 import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 
@@ -41,7 +39,7 @@ import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-chai.use(chaiAsPromised);
+use(chaiAsPromised);
 
 const logger = pino();
 const registry = new Registry();

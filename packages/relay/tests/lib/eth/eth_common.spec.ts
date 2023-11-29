@@ -17,18 +17,16 @@
  * limitations under the License.
  *
  */
-import chai from 'chai';
 import path from 'path';
 import dotenv from 'dotenv';
-import { expect } from 'chai';
+import { expect, use } from 'chai';
 import { Registry } from 'prom-client';
-import * as _ from 'lodash';
 import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 import { RelayImpl } from '../../../src/lib/relay';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-chai.use(chaiAsPromised);
+use(chaiAsPromised);
 
 describe('@ethCommon', async function () {
   let Relay: any;

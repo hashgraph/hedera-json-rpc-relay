@@ -17,11 +17,10 @@
  * limitations under the License.
  *
  */
-import chai from 'chai';
 import path from 'path';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { expect } from 'chai';
+import { expect, use } from 'chai';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';
 import * as _ from 'lodash';
@@ -52,9 +51,10 @@ import {
   ETH_FEE_HISTORY_VALUE,
   NO_SUCH_CONTRACT_RESULT,
 } from './eth-config';
+import { contractResultsByNumberByIndexURL } from './eth-helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-chai.use(chaiAsPromised);
+use(chaiAsPromised);
 
 const logger = pino();
 const registry = new Registry();
@@ -126,7 +126,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
   it('eth_getTransactionByBlockNumberAndIndex with match', async function () {
     // mirror node request mocks
     restMock
-      .onGet(contractResultsByNumberByIndex(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
       .reply(200, defaultContractResults);
     restMock
       .onGet(`contracts/${CONTRACT_ADDRESS_1}/results/${CONTRACT_TIMESTAMP_1}`)
@@ -157,7 +157,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     // @ts-ignore
     nullableDefaultContractResults.results[0].amount = null;
     restMock
-      .onGet(contractResultsByNumberByIndex(randomBlock.number, randomBlock.count))
+      .onGet(contractResultsByNumberByIndexURL(randomBlock.number, randomBlock.count))
       .reply(200, nullableDefaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(
@@ -175,7 +175,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
 
   it('eth_getTransactionByBlockNumberAndIndex with no contract result match', async function () {
     restMock
-      .onGet(contractResultsByNumberByIndex(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
       .reply(404, NO_SUCH_CONTRACT_RESULT);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(
@@ -193,7 +193,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
       count: 33,
     };
     restMock
-      .onGet(contractResultsByNumberByIndex(randomBlock.number, randomBlock.count))
+      .onGet(contractResultsByNumberByIndexURL(randomBlock.number, randomBlock.count))
       .reply(200, defaultContractResultsWithNullableFrom);
 
     const args = [numberTo0x(randomBlock.number), numberTo0x(randomBlock.count)];
@@ -210,7 +210,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
 
   it('eth_getTransactionByBlockNumberAndIndex with no contract results', async function () {
     restMock
-      .onGet(contractResultsByNumberByIndex(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
       .reply(200, { results: [] });
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(
@@ -224,7 +224,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     // mirror node request mocks
     restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);
     restMock
-      .onGet(contractResultsByNumberByIndex(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
       .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('latest', numberTo0x(DEFAULT_BLOCK.count));
@@ -238,7 +238,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     // mirror node request mocks
     restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);
     restMock
-      .onGet(contractResultsByNumberByIndex(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
       .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('pending', numberTo0x(DEFAULT_BLOCK.count));
@@ -250,7 +250,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
 
   it('eth_getTransactionByBlockNumberAndIndex with earliest tag', async function () {
     // mirror node request mocks
-    restMock.onGet(contractResultsByNumberByIndex(0, DEFAULT_BLOCK.count)).reply(200, defaultContractResults);
+    restMock.onGet(contractResultsByNumberByIndexURL(0, DEFAULT_BLOCK.count)).reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('earliest', numberTo0x(DEFAULT_BLOCK.count));
     expect(result).to.exist;
@@ -260,7 +260,9 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
   });
 
   it('eth_getTransactionByBlockNumberAndIndex with hex number', async function () {
-    restMock.onGet(contractResultsByNumberByIndex(3735929054, DEFAULT_BLOCK.count)).reply(200, defaultContractResults);
+    restMock
+      .onGet(contractResultsByNumberByIndexURL(3735929054, DEFAULT_BLOCK.count))
+      .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(
       '0xdeadc0de' + '',
@@ -272,6 +274,3 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     verifyAggregatedInfo(result);
   });
 });
-function contractResultsByNumberByIndex(number: number, count: number): string | RegExp | undefined {
-  throw new Error('Function not implemented.');
-}

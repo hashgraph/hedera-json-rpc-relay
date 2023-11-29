@@ -17,14 +17,12 @@
  * limitations under the License.
  *
  */
-import chai from 'chai';
 import path from 'path';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { expect } from 'chai';
+import { expect, use } from 'chai';
 import { Registry } from 'prom-client';
 import sinon, { createSandbox } from 'sinon';
-import * as _ from 'lodash';
 import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 
@@ -40,7 +38,7 @@ import { BLOCK_BY_HASH_FROM_RELAY, DEFAULT_BLOCK } from './eth-config';
 import { defaultErrorMessageHex, defaultLogs1 } from '../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-chai.use(chaiAsPromised);
+use(chaiAsPromised);
 
 const logger = pino();
 const registry = new Registry();
