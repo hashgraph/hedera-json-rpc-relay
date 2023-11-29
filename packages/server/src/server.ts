@@ -281,6 +281,11 @@ app.useRpc('eth_blockNumber', async () => {
  * returns: Gas used - hex encoded integer
  */
 app.useRpc('eth_estimateGas', async (params: any) => {
+  // HotFix for Metamask sending `0x` on data param
+  if (params?.[0]?.data === '0x') {
+    params[0].data = null;
+  }
+
   return logAndHandleResponse('eth_estimateGas', params, (requestId) =>
     relay.eth().estimateGas(params?.[0], params?.[1], requestId),
   );
