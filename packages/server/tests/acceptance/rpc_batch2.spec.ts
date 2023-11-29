@@ -133,6 +133,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
     this.beforeAll(async () => {
       basicContract = await servicesNode.deployContract(basicContractJson);
+      // delay
+      await new Promise((r) => setTimeout(r, 5000));
     });
 
     it('@release should execute "eth_estimateGas"', async function () {

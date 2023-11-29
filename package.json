@@ -60,7 +60,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@hashgraph/hedera-local": "^2.15.1",
+    "@hashgraph/hedera-local": "^2.16.0",
     "@open-rpc/schema-utils-js": "^1.16.1",
     "@types/find-config": "^1.0.2",
     "@types/sinon": "^10.0.20",
@@ -70,7 +70,7 @@
     "keyv-file": "^0.2.0",
     "koa-cors": "^0.0.16",
     "koa-websocket": "^7.0.0",
-    "lerna": "^7.3.0",
+    "lerna": "^7.4.2",
     "pino": "^7.11.0",
     "pino-pretty": "^7.6.1",
     "prom-client": "^14.0.1",

@@ -106,11 +106,8 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
       requestId,
     );
 
-    // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
+    // wait for mirror node to catch up continuing running tests
     await new Promise((r) => setTimeout(r, 5000));
-    await mirrorNode.get(`/accounts/${accounts[0].accountId}`, requestId);
-    await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);
-    await mirrorNode.get(`/accounts/${accounts[2].accountId}`, requestId);
 
     HTSTokenContractAddress = await createHTSToken();
     NftHTSTokenContractAddress = await createNftHTSToken();
@@ -123,6 +120,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
     mainContractOwner = mainContract;
     mainContractReceiverWalletFirst = mainContract.connect(accounts[1].wallet);
     mainContractReceiverWalletSecond = mainContract.connect(accounts[2].wallet);
+
+    // wait for mirror node to catch up before running tests
+    await new Promise((r) => setTimeout(r, 5000));
   });
 
   this.beforeEach(async () => {
@@ -131,9 +131,10 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
   async function deploymainContract(signer) {
     const mainFactory = new ethers.ContractFactory(TokenCreateJson.abi, TokenCreateJson.bytecode, signer);
-    const mainContract = await mainFactory.deploy(Constants.GAS.LIMIT_10_000_000);
+    const mainContract = await mainFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
     await mainContract.waitForDeployment();
-
+    // wait for mirror node to catch up continuing running tests
+    await new Promise((r) => setTimeout(r, 5000));
     return mainContract.target;
   }
 
@@ -403,7 +404,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         amount,
         Constants.GAS.LIMIT_1_000_000,
       );
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 5000));
       expect(await HTSTokenContract.balanceOf(accounts[1].wallet.address)).to.be.equal(amount);
 
       {
@@ -545,6 +546,9 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
           .responseCode,
       ).to.equal(TX_SUCCESS_CODE);
 
+      // delay
+      await new Promise((r) => setTimeout(r, 5000));
+
       expect(await NFTokenContract.balanceOf(mainContract.target)).to.equal(BigInt(1));
       expect(await NFTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(BigInt(0));
       expect(await NFTokenContract.balanceOf(accounts[2].wallet.address)).to.equal(BigInt(0));
@@ -569,7 +573,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         NftSerialNumber,
         Constants.GAS.LIMIT_1_000_000,
       );
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 5000));
       expect(await NFTokenContract.balanceOf(mainContract.target)).to.equal(BigInt(0));
       expect(await NFTokenContract.balanceOf(accounts[1].wallet.address)).to.equal(BigInt(1));
 
