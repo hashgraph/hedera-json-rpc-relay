@@ -48,7 +48,7 @@ import {
   HTS_TOKEN_ADDRESS,
   MIRROR_NODE_DEPLOYED_BYTECODE,
   NO_TRANSACTIONS,
-} from './config';
+} from './eth-config';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 chai.use(chaiAsPromised);

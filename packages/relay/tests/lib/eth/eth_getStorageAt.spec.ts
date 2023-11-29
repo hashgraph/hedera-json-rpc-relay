@@ -47,10 +47,10 @@ import {
   ETH_FEE_HISTORY_VALUE,
   MOST_RECENT_BLOCK,
   OLDER_BLOCK,
-} from './config';
+} from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
-import { defaultDetailedContractResults, getRequestId, mockData, signTransaction } from '../../helpers';
+import { defaultDetailedContractResults } from '../../helpers';
 import { numberTo0x } from '../../../src/formatters';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });

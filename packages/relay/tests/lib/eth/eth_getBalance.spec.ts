@@ -53,8 +53,8 @@ import {
   MOCK_BLOCK_NUMBER_1000_RES,
   NOT_FOUND_RES,
   TINYBAR_TO_WEIBAR_COEF_BIGINT,
-} from './config';
-import { balancesByAccountIdByTimestampURL } from './helpers';
+} from './eth-config';
+import { balancesByAccountIdByTimestampURL } from './eth-helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 chai.use(chaiAsPromised);

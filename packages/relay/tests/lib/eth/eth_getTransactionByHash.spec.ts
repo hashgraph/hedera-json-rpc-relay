@@ -40,7 +40,7 @@ import {
   DEFAULT_TRANSACTION,
   DEFAULT_TX_HASH,
   NO_TRANSACTIONS,
-} from './config';
+} from './eth-config';
 import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress, defaultLogs1 } from '../../helpers';
 import { predefined } from '../../../src';
 

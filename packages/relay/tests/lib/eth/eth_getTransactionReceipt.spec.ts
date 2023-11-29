@@ -36,7 +36,7 @@ import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import RelayAssertions from '../../assertions';
 import { nullableNumberTo0x, numberTo0x, toHash32 } from '../../../src/formatters';
-import { BLOCK_BY_HASH_FROM_RELAY, DEFAULT_BLOCK } from './config';
+import { BLOCK_BY_HASH_FROM_RELAY, DEFAULT_BLOCK } from './eth-config';
 import { defaultErrorMessageHex, defaultLogs1 } from '../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });

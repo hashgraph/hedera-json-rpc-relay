@@ -52,7 +52,7 @@ import {
   MAX_GAS_LIMIT_HEX,
   NO_TRANSACTIONS,
   WRONG_CONTRACT_ADDRESS,
-} from './config';
+} from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import {

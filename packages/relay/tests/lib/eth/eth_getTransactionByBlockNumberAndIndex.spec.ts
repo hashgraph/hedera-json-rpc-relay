@@ -41,10 +41,8 @@ import RelayAssertions from '../../assertions';
 import { numberTo0x } from '../../../dist/formatters';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import {
-  BLOCK_HASH_PREV_TRIMMED,
   BLOCK_HASH_TRIMMED,
   BLOCK_NUMBER_HEX,
-  BLOCK_TIMESTAMP_HEX,
   CONTRACT_ADDRESS_1,
   CONTRACT_HASH_1,
   CONTRACT_TIMESTAMP_1,
@@ -53,8 +51,7 @@ import {
   DEFAULT_NETWORK_FEES,
   ETH_FEE_HISTORY_VALUE,
   NO_SUCH_CONTRACT_RESULT,
-} from './config';
-import { contractResultsByNumberByIndex } from './helpers';
+} from './eth-config';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 chai.use(chaiAsPromised);
@@ -275,3 +272,6 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     verifyAggregatedInfo(result);
   });
 });
+function contractResultsByNumberByIndex(number: number, count: number): string | RegExp | undefined {
+  throw new Error('Function not implemented.');
+}

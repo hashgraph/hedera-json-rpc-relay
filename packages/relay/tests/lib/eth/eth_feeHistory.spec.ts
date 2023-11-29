@@ -71,7 +71,7 @@ import {
   ETH_FEE_HISTORY_VALUE,
   GAS_USED_RATIO,
   NOT_FOUND_RES,
-} from './config';
+} from './eth-config';
 import { numberTo0x } from '../../../src/formatters';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });

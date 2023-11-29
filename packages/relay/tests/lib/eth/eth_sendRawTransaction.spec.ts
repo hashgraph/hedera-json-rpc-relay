@@ -42,7 +42,7 @@ import {
   ETH_FEE_HISTORY_VALUE,
   MAX_GAS_LIMIT_HEX,
   NO_TRANSACTIONS,
-} from './config';
+} from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import { getRequestId, mockData, signTransaction } from '../../helpers';

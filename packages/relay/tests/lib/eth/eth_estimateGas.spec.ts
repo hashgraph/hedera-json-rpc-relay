@@ -37,7 +37,7 @@ import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../../src/lib/hbarlimiter';
 import { numberTo0x } from '../../../dist/formatters';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
-import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NO_TRANSACTIONS, RECEIVER_ADDRESS } from './config';
+import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NO_TRANSACTIONS, RECEIVER_ADDRESS } from './eth-config';
 import { JsonRpcError } from '../../../src/lib/errors/JsonRpcError';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });

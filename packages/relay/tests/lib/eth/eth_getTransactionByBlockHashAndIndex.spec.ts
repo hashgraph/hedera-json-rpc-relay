@@ -52,8 +52,7 @@ import {
   EMPTY_RES,
   ETH_FEE_HISTORY_VALUE,
   NOT_FOUND_RES,
-} from './config';
-import { contractResultsByHashByIndex } from './helpers';
+} from './eth-config';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 chai.use(chaiAsPromised);
@@ -239,3 +238,6 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     expect(result).to.be.an.instanceOf(Transaction1559);
   });
 });
+function contractResultsByHashByIndex(hash: string, count: number): string | RegExp | undefined {
+  throw new Error('Function not implemented.');
+}

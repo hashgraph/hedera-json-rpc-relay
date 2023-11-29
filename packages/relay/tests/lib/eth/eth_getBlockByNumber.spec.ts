@@ -71,7 +71,7 @@ import {
   MOST_RECENT_BLOCK,
   NOT_FOUND_RES,
   NO_SUCH_BLOCK_EXISTS_RES,
-} from './config';
+} from './eth-config';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 chai.use(chaiAsPromised);

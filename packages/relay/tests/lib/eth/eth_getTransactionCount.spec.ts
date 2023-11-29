@@ -35,7 +35,7 @@ import { SDKClient } from '../../../src/lib/clients';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../../src/lib/hbarlimiter';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
-import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NO_TRANSACTIONS } from './config';
+import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NO_TRANSACTIONS } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import { defaultDetailedContractResults, defaultEthereumTransactions, mockData } from '../../helpers';
