@@ -19,69 +19,30 @@
  */
 import path from 'path';
 import dotenv from 'dotenv';
-import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
-import { Registry } from 'prom-client';
 import sinon from 'sinon';
-import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 import { v4 as uuid } from 'uuid';
 
 import { EthImpl } from '../../../src/lib/eth';
-import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import HbarLimit from '../../../src/lib/hbarlimiter';
 import { numberTo0x } from '../../../dist/formatters';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NO_TRANSACTIONS, RECEIVER_ADDRESS } from './eth-config';
 import { JsonRpcError } from '../../../src/lib/errors/JsonRpcError';
+import { generateEthTestEnv } from './eth-helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-const logger = pino();
-const registry = new Registry();
-
-let restMock: MockAdapter, web3Mock: MockAdapter;
-let mirrorNodeInstance: MirrorNodeClient;
-let hapiServiceInstance: HAPIService;
 let sdkClientStub;
 let getSdkClientStub;
-let cacheService: CacheService;
 let currentMaxBlockRange: number;
-let ethImpl: EthImpl;
 
 describe('@ethEstimateGas Estimate Gass spec', async function () {
   this.timeout(10000);
-
-  this.beforeAll(() => {
-    cacheService = new CacheService(logger.child({ name: `cache` }), registry);
-    // @ts-ignore
-    mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
-      logger.child({ name: `mirror-node` }),
-      registry,
-      cacheService,
-    );
-
-    // @ts-ignore
-    restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
-    // @ts-ignore
-    web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
-
-    const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
-    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-
-    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService);
-
-    process.env.ETH_FEE_HISTORY_FIXED = 'false';
-
-    // @ts-ignore
-    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
-  });
+  let { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
+    generateEthTestEnv();
 
   this.beforeEach(() => {
     // reset cache and restMock

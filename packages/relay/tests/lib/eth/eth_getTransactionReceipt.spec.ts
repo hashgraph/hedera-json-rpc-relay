@@ -19,53 +19,30 @@
  */
 import path from 'path';
 import dotenv from 'dotenv';
-import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
-import { Registry } from 'prom-client';
 import sinon, { createSandbox } from 'sinon';
-import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 
 import { EthImpl } from '../../../src/lib/eth';
 import { Log } from '../../../src/lib/model';
-import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import constants from '../../../src/lib/constants';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import RelayAssertions from '../../assertions';
 import { nullableNumberTo0x, numberTo0x, toHash32 } from '../../../src/formatters';
 import { BLOCK_BY_HASH_FROM_RELAY, DEFAULT_BLOCK } from './eth-config';
 import { defaultErrorMessageHex, defaultLogs1 } from '../../helpers';
+import { generateEthTestEnv } from './eth-helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-const logger = pino();
-const registry = new Registry();
-
-let restMock: MockAdapter, web3Mock: MockAdapter;
-let mirrorNodeInstance: MirrorNodeClient;
-let hapiServiceInstance: HAPIService;
-let cacheService: CacheService;
-
 describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async function () {
   this.timeout(10000);
-
-  let ethImpl: EthImpl;
+  let { restMock, ethImpl, cacheService } = generateEthTestEnv();
   let sandbox: sinon.SinonSandbox;
 
   this.beforeAll(() => {
     // @ts-ignore
     sandbox = createSandbox();
-    cacheService = new CacheService(logger.child({ name: `cache` }), registry);
-    mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL as string,
-      logger.child({ name: `mirror-node` }),
-      registry,
-      cacheService,
-    );
-    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
-    restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
   });
 
   const contractEvmAddress = '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9';

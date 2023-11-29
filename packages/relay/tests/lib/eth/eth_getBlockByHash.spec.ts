@@ -19,24 +19,16 @@
  */
 import path from 'path';
 import dotenv from 'dotenv';
-import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
-import { Registry } from 'prom-client';
 import sinon from 'sinon';
-import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
-import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
-import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import HbarLimit from '../../../src/lib/hbarlimiter';
 import RelayAssertions from '../../assertions';
 import { numberTo0x } from '../../../dist/formatters';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import {
   BLOCK_HASH,
   BLOCK_HASH_PREV_TRIMMED,
@@ -59,52 +51,22 @@ import {
   LINKS_NEXT_RES,
   NO_SUCH_BLOCK_EXISTS_RES,
 } from './eth-config';
+import { generateEthTestEnv } from './eth-helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-const logger = pino();
-const registry = new Registry();
-
-let restMock: MockAdapter;
-let mirrorNodeInstance: MirrorNodeClient;
-let hapiServiceInstance: HAPIService;
 let sdkClientStub;
 let getSdkClientStub;
-let cacheService: CacheService;
 let currentMaxBlockRange: number;
-let ethImpl: EthImpl;
 let ethImplLowTransactionCount: EthImpl;
 
 describe('@ethGetBlockByHash using MirrorNode', async function () {
   this.timeout(10000);
+  let { restMock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
+    generateEthTestEnv();
   const results = defaultContractResults.results;
   const TOTAL_GAS_USED = numberTo0x(results[0].gas_used + results[1].gas_used);
-
-  this.beforeAll(() => {
-    cacheService = new CacheService(logger.child({ name: `cache` }), registry);
-    // @ts-ignore
-    mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
-      logger.child({ name: `mirror-node` }),
-      registry,
-      cacheService,
-    );
-
-    // @ts-ignore
-    restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
-
-    const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
-    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-
-    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService);
-
-    process.env.ETH_FEE_HISTORY_FIXED = 'false';
-
-    // @ts-ignore
-    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
-  });
 
   this.beforeEach(() => {
     // reset cache and restMock

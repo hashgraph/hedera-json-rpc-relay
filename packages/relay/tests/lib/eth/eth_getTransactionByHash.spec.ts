@@ -19,18 +19,12 @@
  */
 import path from 'path';
 import dotenv from 'dotenv';
-import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
-import { Registry } from 'prom-client';
-import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 
 import { EthImpl } from '../../../src/lib/eth';
 import { Log, Transaction, Transaction2930, Transaction1559 } from '../../../src/lib/model';
-import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import constants from '../../../src/lib/constants';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import RelayAssertions from '../../assertions';
 import { nullableNumberTo0x, numberTo0x, toHash32 } from '../../../src/formatters';
 import {
@@ -41,20 +35,13 @@ import {
 } from './eth-config';
 import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress, defaultLogs1 } from '../../helpers';
 import { predefined } from '../../../src';
+import { generateEthTestEnv } from './eth-helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-const logger = pino();
-const registry = new Registry();
-
-let restMock: MockAdapter;
-let mirrorNodeInstance: MirrorNodeClient;
-let hapiServiceInstance: HAPIService;
-let cacheService: CacheService;
-let ethImpl: EthImpl;
-
 describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async function () {
+  let { restMock, ethImpl, cacheService } = generateEthTestEnv();
   const from = '0x00000000000000000000000000000000000003f7';
   const evm_address = '0xc37f417fa09933335240fca72dd257bfbde9c275';
   const contractResultMock = {
@@ -91,14 +78,6 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   };
 
   this.beforeEach(function () {
-    cacheService = new CacheService(logger.child({ name: `cache` }), registry);
-    mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL as string,
-      logger.child({ name: `mirror-node` }),
-      registry,
-      cacheService,
-    );
-    restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
     restMock.reset();
     restMock.onGet(`accounts/${defaultFromLongZeroAddress}${NO_TRANSACTIONS}`).reply(200, {
       evm_address: `${DEFAULT_TRANSACTION.from}`,
@@ -106,7 +85,6 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     restMock.onGet(`accounts/${from}?transactions=false`).reply(200, {
       evm_address: evm_address,
     });
-    ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
   });
 
   it('returns 155 transaction for type 0', async function () {
@@ -302,7 +280,11 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
       .reply(200, DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED);
 
     const result = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH);
-    RelayAssertions.assertTransaction(result, DEFAULT_TRANSACTION);
+    RelayAssertions.assertTransaction(result, {
+      ...DEFAULT_TRANSACTION,
+      maxFeePerGas: '0x55',
+      maxPriorityFeePerGas: '0x43',
+    });
   });
 
   it('throws error for reverted transactions when DEV_MODE=true', async function () {
