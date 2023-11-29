@@ -39,7 +39,10 @@
     "test:eth-call": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethCall' --exit",
     "test:eth-send-raw-transaction": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethSendRawTransaction' --exit",
     "test:eth-get-storage-at": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGetStorageAt' --exit",
-    "test:eth-get-transaction-count": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGetTransactionCount' --exit"
+    "test:eth-get-transaction-count": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGetTransactionCount' --exit",
+    "test:eth-common": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethCommon' --exit",
+    "test:eth-get-transaction-receipt": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGetTransactionReceipt' --exit",
+    "test:eth-get-transaction-by-hash": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' -g '@ethGetTransactionByHash' --exit"
   },
   "dependencies": {
     "@ethersproject/asm": "^5.7.0",
