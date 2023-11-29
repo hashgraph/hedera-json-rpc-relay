@@ -79,6 +79,14 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     const value = '0x511617DE831B9E173';
     const contractResultEndpoint = `contracts/results/${transactionId}`;
     const ethereumHash = '0x6d20b034eecc8d455c4c040fb3763082d499353a8b7d318b1085ad8d7de15f7e';
+    const transaction = {
+      chainId: 0x12a,
+      to: ACCOUNT_ADDRESS_1,
+      from: accountAddress,
+      value,
+      gasPrice,
+      gasLimit: MAX_GAS_LIMIT_HEX,
+    };
 
     this.beforeEach(() => {
       sinon.restore();
@@ -111,15 +119,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         },
       });
 
-      const transaction = {
-        chainId: 0x12a,
-        to: ACCOUNT_ADDRESS_1,
-        from: accountAddress,
-        value,
-        gasPrice,
-        gasLimit: MAX_GAS_LIMIT_HEX,
-      };
-
       const signed = await signTransaction(transaction);
 
       restMock.onGet(`transactions/${transactionId}`).reply(200, null);
@@ -135,15 +134,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
           balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
         },
       });
-
-      const transaction = {
-        chainId: 0x12a,
-        to: ACCOUNT_ADDRESS_1,
-        from: accountAddress,
-        value,
-        gasPrice,
-        gasLimit: MAX_GAS_LIMIT_HEX,
-      };
 
       const signed = await signTransaction(transaction);
 
@@ -168,15 +158,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         },
       });
 
-      const transaction = {
-        chainId: 0x12a,
-        to: ACCOUNT_ADDRESS_1,
-        from: accountAddress,
-        value,
-        gasPrice,
-        gasLimit: MAX_GAS_LIMIT_HEX,
-      };
-
       const signed = await signTransaction(transaction);
 
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
@@ -200,14 +181,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       });
 
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
-      const transaction = {
-        chainId: 0x12a,
-        to: ACCOUNT_ADDRESS_1,
-        from: accountAddress,
-        value,
-        gasPrice,
-        gasLimit: MAX_GAS_LIMIT_HEX,
-      };
 
       sdkClientStub.submitEthereumTransaction.returns({
         transactionId: TransactionId.fromString(transactionIdServicesFormat),

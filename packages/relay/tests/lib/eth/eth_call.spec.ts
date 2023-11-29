@@ -83,6 +83,10 @@ describe('@ethCall Eth Call spec', async function () {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
+    restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
+      account: '0.0.1723',
+      evm_address: ACCOUNT_ADDRESS_1,
+    });
   });
 
   this.afterAll(() => {
@@ -193,10 +197,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('gas exceeds limit', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
       const excessiveGasLimit = '15000001';
@@ -218,10 +218,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('block 0', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
       const block = '0';
@@ -235,10 +231,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('block 1', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
       const block = '1';
@@ -252,10 +244,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('block earliest', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
       const block = 'earliest';
@@ -269,10 +257,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('block hash not supported', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       restMock.onGet(`blocks?limit=1&order=desc`).reply(202);
 
@@ -288,10 +272,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('latest block but not found for comparison', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       restMock.onGet(`blocks?limit=1&order=desc`).reply(404);
 
@@ -306,10 +286,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('to field is not a contract or token', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(404);
       restMock.onGet(`tokens/${CONTRACT_ID_2}`).reply(404);
       web3Mock.onPost(`contracts/call`).reply(200, { result: '0x1' });
@@ -330,10 +306,6 @@ describe('@ethCall Eth Call spec', async function () {
     // support for web3js.
     it('the input is set with the encoded data for the data field', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(200);
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200);
       restMock.onGet(`tokens/${CONTRACT_ID_2}`).reply(200);
       web3Mock.onPost(`contracts/call`).reply(200, { result: '0x1' });
@@ -366,10 +338,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('eth_call with no gas', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
       sdkClientStub.submitContractCallQueryWithRetry.returns({
@@ -399,10 +367,6 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with no data', async function () {
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       sdkClientStub.submitContractCallQueryWithRetry.returns({
         asBytes: function () {
@@ -469,10 +433,6 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with all fields', async function () {
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       sdkClientStub.submitContractCallQueryWithRetry.returns({
         asBytes: function () {
@@ -495,10 +455,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     //Return once the value, then it's being fetched from cache. After the loop we reset the sdkClientStub, so that it returns nothing, if we get an error in the next request that means that the cache was cleared.
     it('eth_call should cache the response for 200ms', async function () {
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       sdkClientStub.submitContractCallQueryWithRetry.returns({
         asBytes: function () {
@@ -557,10 +513,6 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('SDK returns a precheck error', async function () {
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       sdkClientStub.submitContractCallQueryWithRetry.throws(
         predefined.CONTRACT_REVERT(defaultErrorMessageText, defaultErrorMessageHex),
@@ -648,10 +600,6 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_3_EMPTY_BYTECODE);
       web3Mock.onPost(`contracts/call`).replyOnce(200, {});
 
@@ -667,10 +615,6 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
       };
 
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
       const result = await ethImpl.call(callData, 'latest');
@@ -684,10 +628,6 @@ describe('@ethCall Eth Call spec', async function () {
         to: CONTRACT_ADDRESS_2,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
 
@@ -716,10 +656,6 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
       const result = await ethImpl.call(callData, 'latest');
@@ -734,10 +670,6 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(429, mockData.tooManyRequests);
       const result = await ethImpl.call(callData, 'latest');
@@ -754,15 +686,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, mockData.contractReverted);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
@@ -780,10 +704,6 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(501, mockData.notSuported);
 
@@ -815,10 +735,6 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, mockData.contractReverted);
       sinon.reset();
@@ -839,10 +755,6 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: ACCOUNT_ADDRESS_1,
-      });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, {

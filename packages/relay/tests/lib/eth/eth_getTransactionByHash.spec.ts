@@ -31,6 +31,7 @@ import {
   DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED,
   DEFAULT_TRANSACTION,
   DEFAULT_TX_HASH,
+  DETAILD_CONTRACT_RESULT_NOT_FOUND,
   NO_TRANSACTIONS,
 } from './eth-config';
 import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress, defaultLogs1 } from '../../helpers';
@@ -126,15 +127,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
   it('returns `null` for non-existing hash', async function () {
     const uniqueTxHash = '0x27cAd7b838375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(404, {
-      _status: {
-        messages: [
-          {
-            message: 'No correlating transaction',
-          },
-        ],
-      },
-    });
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(404, DETAILD_CONTRACT_RESULT_NOT_FOUND);
 
     const result = await ethImpl.getTransactionByHash(uniqueTxHash);
     expect(result).to.equal(null);

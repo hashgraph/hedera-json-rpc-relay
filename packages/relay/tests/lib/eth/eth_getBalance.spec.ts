@@ -693,11 +693,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
         },
       };
       restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
-      restMock.onGet(`accounts/${notFoundEvmAddress}?limit=100`).reply(404, {
-        _status: {
-          messages: [{ message: 'Not found' }],
-        },
-      });
+      restMock.onGet(`accounts/${notFoundEvmAddress}?limit=100`).reply(404, NOT_FOUND_RES);
 
       const resBalance = await ethImpl.getBalance(notFoundEvmAddress, '2', getRequestId());
       expect(resBalance).to.equal(EthImpl.zeroHex);
