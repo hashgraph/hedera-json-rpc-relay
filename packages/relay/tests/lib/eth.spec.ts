@@ -5825,6 +5825,43 @@ describe('Eth', async function () {
       nonce: 9,
     };
 
+    const contractRevertedResultMock = {
+      address: null,
+      amount: 0,
+      bloom: '0x',
+      call_result: '0x',
+      contract_id: null,
+      created_contract_ids: [],
+      error_message:
+        '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000f4465706f736974206973207a65726f0000000000000000000000000000000000',
+      from: '0x00000000000000000000000000000000000003f6',
+      function_parameters: '0x9213b1240000000000000000000000000000000000000000000000000000000000000000',
+      gas_limit: 9021400,
+      gas_used: 7217120,
+      timestamp: '1701299024.297248139',
+      to: '0xa4096ee370402b804288a967de244844287028ad',
+      hash: '0x55a0559607a9e48662c70179235baddff937d5f2dbfbe3f004d4a7e8e4f1dd2f',
+      block_hash: '0xaab39e2d79262879f9f1815831522580993fc427f879708d2ef1ae50cf5d6f2d534f3b948719b8ecf9edc01b4194845c',
+      block_number: 1773,
+      logs: [],
+      result: 'CONTRACT_REVERT_EXECUTED',
+      transaction_index: 3,
+      state_changes: [],
+      status: '0x0',
+      failed_initcode: '0x9213b1240000000000000000000000000000000000000000000000000000000000000000',
+      access_list: '0x',
+      block_gas_used: 7217120,
+      chain_id: '0x12a',
+      gas_price: '0x',
+      max_fee_per_gas: '0x59',
+      max_priority_fee_per_gas: '0x',
+      r: '0xeedf4bbf3c2415cd7b4077fcc0783b7e9ee9a9441979287ecd4badb616c9d960',
+      s: '0x67c73d5e6990fe523b85433a49f9bb7d69c1c7959ccfe08b5cd620d24a911f11',
+      type: 2,
+      v: 1,
+      nonce: 11,
+    };
+
     this.beforeEach(function () {
       restMock.reset();
       restMock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
@@ -5833,6 +5870,23 @@ describe('Eth', async function () {
       restMock.onGet(`accounts/${from}?transactions=false`).reply(200, {
         evm_address: evm_address,
       });
+    });
+
+    it('returns CONTRACT_REVERT_EXECUTED for reverted transaction with reason', async function () {
+      const uniqueTxHash = '0x07cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+      restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, contractRevertedResultMock);
+
+      try {
+        const result = await ethImpl.getTransactionByHash(uniqueTxHash);
+      } catch (error) {
+        console.log(error);
+        expect(error.code).to.eq(-32008);
+        expect(error.data).to.eq(
+          '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000f4465706f736974206973207a65726f0000000000000000000000000000000000',
+        );
+        expect(error.message).to.eq('execution reverted: Deposit is zero');
+        expect(error.name).to.eq('Contract revert executed');
+      }
     });
 
     it('returns 155 transaction for type 0', async function () {
