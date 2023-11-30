@@ -261,6 +261,7 @@ export class EthImpl implements Eth {
   }
 
   private shouldUseCacheForBalance(tag: string | null): boolean {
+    // should only cache balance when is Not latest or pending and is not in dev mode
     return !CommonService.blockTagIsLatestOrPendingStrict(tag) && !CommonService.isDevMode;
   }
 

@@ -61,7 +61,7 @@ export class CommonService implements ICommonService {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
-  static isDevMode = !!(process.env.DEV_MODE && process.env.DEV_MODE === 'true');
+  static isDevMode = process.env.DEV_MODE === 'true';
 
   // function callerNames
   static latestBlockNumber = 'getLatestBlockNumber';
