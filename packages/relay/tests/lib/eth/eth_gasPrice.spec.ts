@@ -26,7 +26,7 @@ import chaiAsPromised from 'chai-as-promised';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import { numberTo0x } from '../../../dist/formatters';
-import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE } from './eth-config';
+import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NOT_FOUND_RES } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import { generateEthTestEnv } from './eth-helpers';
@@ -66,16 +66,12 @@ describe('@ethGasPrice Gas Price spec', async function () {
 
   describe('@ethGasPrice', async function () {
     it('eth_gasPrice', async function () {
-      restMock.onGet(`network/fees`).reply(200, DEFAULT_NETWORK_FEES);
-
       const weiBars = await ethImpl.gasPrice();
       const expectedWeiBars = DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF;
       expect(weiBars).to.equal(numberTo0x(expectedWeiBars));
     });
 
     it('eth_gasPrice with cached value', async function () {
-      restMock.onGet(`network/fees`).reply(200, DEFAULT_NETWORK_FEES);
-
       const firstGasResult = await ethImpl.gasPrice();
 
       const modifiedNetworkFees = { ...DEFAULT_NETWORK_FEES };
@@ -98,37 +94,23 @@ describe('@ethGasPrice Gas Price spec', async function () {
       await RelayAssertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl);
     });
 
-    it('eth_gasPrice with mirror node return network fees found', async function () {
-      restMock.onGet(`network/fees`).reply(404, {
-        _status: {
-          messages: [
-            {
-              message: 'Not found',
-            },
-          ],
-        },
+    describe('eth_gasPrice not found', async function () {
+      beforeEach(() => {
+        restMock.onGet(`network/fees`).reply(404, NOT_FOUND_RES);
       });
 
-      const fauxGasTinyBars = 35_000;
-      const fauxGasWeiBarHex = '0x13e52b9abe000';
-      sdkClientStub.getTinyBarGasFee.returns(fauxGasTinyBars);
+      it('eth_gasPrice with mirror node return network fees found', async function () {
+        const fauxGasTinyBars = 35_000;
+        const fauxGasWeiBarHex = '0x13e52b9abe000';
+        sdkClientStub.getTinyBarGasFee.returns(fauxGasTinyBars);
 
-      const gas = await ethImpl.gasPrice();
-      expect(gas).to.equal(fauxGasWeiBarHex);
-    });
-
-    it('eth_gasPrice with no network fees records found', async function () {
-      restMock.onGet(`network/fees`).reply(404, {
-        _status: {
-          messages: [
-            {
-              message: 'Not found',
-            },
-          ],
-        },
+        const gas = await ethImpl.gasPrice();
+        expect(gas).to.equal(fauxGasWeiBarHex);
       });
 
-      await RelayAssertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl);
+      it('eth_gasPrice with no network fees records found', async function () {
+        await RelayAssertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl);
+      });
     });
   });
 });

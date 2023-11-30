@@ -28,8 +28,6 @@ import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
 import { SDKClient } from '../../../src/lib/clients';
 import {
   CONTRACT_ADDRESS_1,
-  CONTRACT_ADDRESS_2,
-  CONTRACT_ADDRESS_3,
   DEFAULT_CONTRACT,
   DEFAULT_HTS_TOKEN,
   DEFAULT_NETWORK_FEES,
@@ -62,6 +60,11 @@ describe('@ethGetCode using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
+
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, null);
+    restMock.onGet(`tokens/0.0.${parseInt(CONTRACT_ADDRESS_1, 16)}`).reply(404, null);
+    restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(200, DEFAULT_CONTRACT);
+    sdkClientStub.getContractByteCode.returns(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
   });
 
   this.afterAll(() => {
@@ -77,8 +80,6 @@ describe('@ethGetCode using MirrorNode', async function () {
   describe('eth_getCode', async function () {
     it('should return non cached value for not found contract', async () => {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(404, DEFAULT_CONTRACT);
-      restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, null);
-      restMock.onGet(`tokens/0.0.${parseInt(CONTRACT_ADDRESS_1, 16)}`).reply(404, null);
       sdkClientStub.getContractByteCode.throws(
         new SDKClientError({
           status: {
@@ -94,33 +95,22 @@ describe('@ethGetCode using MirrorNode', async function () {
     });
 
     it('should return the runtime_bytecode from the mirror node', async () => {
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(200, DEFAULT_CONTRACT);
-      restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, null);
-      restMock.onGet(`tokens/0.0.${parseInt(CONTRACT_ADDRESS_1, 16)}`).reply(404, null);
-      sdkClientStub.getContractByteCode.returns(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
-
       const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
       expect(res).to.equal(MIRROR_NODE_DEPLOYED_BYTECODE);
     });
 
     it('should return the bytecode from SDK if Mirror Node returns 404', async () => {
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(404, DEFAULT_CONTRACT);
-      restMock.onGet(`accounts/${CONTRACT_ADDRESS_2}?limit=100`).reply(404, null);
-      restMock.onGet(`tokens/0.0.${parseInt(CONTRACT_ADDRESS_2, 16)}`).reply(404, null);
-      sdkClientStub.getContractByteCode.returns(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
-      const res = await ethImpl.getCode(CONTRACT_ADDRESS_2, null);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(404, DEFAULT_CONTRACT);
+      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
       expect(res).to.equal(DEPLOYED_BYTECODE);
     });
 
     it('should return the bytecode from SDK if Mirror Node returns empty runtime_bytecode', async () => {
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_3}`).reply(404, {
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(404, {
         ...DEFAULT_CONTRACT,
         runtime_bytecode: EthImpl.emptyHex,
       });
-      restMock.onGet(`accounts/${CONTRACT_ADDRESS_3}?limit=100`).reply(404, null);
-      restMock.onGet(`tokens/0.0.${parseInt(CONTRACT_ADDRESS_3, 16)}`).reply(404, null);
-      sdkClientStub.getContractByteCode.returns(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
-      const res = await ethImpl.getCode(CONTRACT_ADDRESS_3, null);
+      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
       expect(res).to.equal(DEPLOYED_BYTECODE);
     });
 

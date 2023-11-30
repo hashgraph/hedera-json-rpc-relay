@@ -87,11 +87,18 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       gasPrice,
       gasLimit: MAX_GAS_LIMIT_HEX,
     };
+    const ACCOUNT_RES = {
+      account: accountAddress,
+      balance: {
+        balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
+      },
+    };
 
     this.beforeEach(() => {
       sinon.restore();
       sdkClientStub = sinon.createStubInstance(SDKClient);
       sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
+      restMock.onGet(accountEndpoint).reply(200, ACCOUNT_RES);
     });
 
     this.afterEach(() => {
@@ -112,13 +119,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     });
 
     it('should return a computed hash if unable to retrieve EthereumHash from record due to contract revert', async function () {
-      restMock.onGet(accountEndpoint).reply(200, {
-        account: accountAddress,
-        balance: {
-          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
-        },
-      });
-
       const signed = await signTransaction(transaction);
 
       restMock.onGet(`transactions/${transactionId}`).reply(200, null);
@@ -128,13 +128,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     });
 
     it('should throw internal error when transaction returned from mirror node is null', async function () {
-      restMock.onGet(accountEndpoint).reply(200, {
-        account: accountAddress,
-        balance: {
-          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
-        },
-      });
-
       const signed = await signTransaction(transaction);
 
       restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
@@ -151,13 +144,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     });
 
     it('should throw internal error when transactionID is invalid', async function () {
-      restMock.onGet(accountEndpoint).reply(200, {
-        account: accountAddress,
-        balance: {
-          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
-        },
-      });
-
       const signed = await signTransaction(transaction);
 
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
@@ -173,13 +159,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     });
 
     it('should return hash from ContractResult mirror node api', async function () {
-      restMock.onGet(accountEndpoint).reply(200, {
-        account: accountAddress,
-        balance: {
-          balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
-        },
-      });
-
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
       sdkClientStub.submitEthereumTransaction.returns({

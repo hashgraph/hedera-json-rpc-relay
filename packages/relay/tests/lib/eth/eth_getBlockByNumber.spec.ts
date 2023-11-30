@@ -26,7 +26,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
 import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
-import { Transaction } from '../../../src/lib/model';
+import { Block, Transaction } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import { hashNumber, numberTo0x } from '../../../dist/formatters';
@@ -81,11 +81,20 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
 
   const veriftAggregatedInfo = (result) => {
     // verify aggregated info
+    expect(result).to.exist;
+    expect(result).to.not.be.null;
     expect(result.hash).equal(BLOCK_HASH_TRIMMED);
     expect(result.number).equal(BLOCK_NUMBER_HEX);
     expect(result.parentHash).equal(BLOCK_HASH_PREV_TRIMMED);
     expect(result.timestamp).equal(BLOCK_TIMESTAMP_HEX);
   };
+
+  function verifyTransactions(transactions: Array<Transaction>) {
+    expect(transactions.length).equal(2);
+    expect(transactions[0].hash).equal(CONTRACT_HASH_1);
+    expect(transactions[1].hash).equal(CONTRACT_HASH_2);
+    expect(transactions[1].gas).equal(hashNumber(GAS_USED_2));
+  }
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -253,16 +262,12 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with zero transactions', async function () {
-    cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, { ...DEFAULT_BLOCK, gas_used: 0 });
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
     restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, { results: [] });
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, { logs: [] });
     const result = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER), false);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
     if (result) {
       // verify aggregated info
       veriftAggregatedInfo(result);
@@ -276,24 +281,16 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with match and details', async function () {
-    cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
     restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
     const result = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER), true);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
     if (result) {
-      // verify aggregated info
       veriftAggregatedInfo(result);
       expect(result.gasUsed).equal(TOTAL_GAS_USED);
-      expect(result.transactions.length).equal(2);
-      expect((result.transactions[0] as Transaction).hash).equal(CONTRACT_HASH_1);
-      expect((result.transactions[1] as Transaction).hash).equal(CONTRACT_HASH_2);
-      expect((result.transactions[1] as Transaction).gas).equal(hashNumber(GAS_USED_2));
+      verifyTransactions(result.transactions as Array<Transaction>);
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
@@ -301,7 +298,6 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with match and details paginated', async function () {
-    cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
@@ -309,17 +305,11 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     restMock.onGet(CONTRACTS_RESULTS_NEXT_URL).reply(200, defaultContractResults);
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
     const result = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER), true);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
     if (result) {
       // verify aggregated info
       veriftAggregatedInfo(result);
       expect(result.gasUsed).equal(TOTAL_GAS_USED);
-      expect(result.transactions.length).equal(2);
-      expect((result.transactions[0] as Transaction).hash).equal(CONTRACT_HASH_1);
-      expect((result.transactions[1] as Transaction).hash).equal(CONTRACT_HASH_2);
-      expect((result.transactions[1] as Transaction).gas).equal(hashNumber(GAS_USED_2));
+      verifyTransactions(result.transactions as Array<Transaction>);
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
@@ -327,17 +317,12 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with block match and contract revert', async function () {
-    cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, { ...DEFAULT_BLOCK, gas_used: GAS_USED_1 });
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
     restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, DEFAULT_CONTRACT_RES_REVERT);
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, { logs: [] });
-
     const result = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER), true);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
     if (result) {
       veriftAggregatedInfo(result);
       expect(result.gasUsed).equal(numberTo0x(GAS_USED_1));
@@ -349,110 +334,74 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   });
 
   it('eth_getBlockByNumber with no match', async function () {
-    cacheService.clear();
     restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(404, NO_SUCH_BLOCK_EXISTS_RES);
-    restMock.onGet(`blocks?limit=1&order=desc`).reply(200, MOST_RECENT_BLOCK);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
 
     const result = await ethImpl.getBlockByNumber(BLOCK_NUMBER.toString(), false);
     expect(result).to.equal(null);
   });
 
-  it('eth_getBlockByNumber with latest tag', async function () {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
-    for (const result of defaultContractResults.results) {
-      restMock.onGet(`contracts/${result.to}/results/${result.timestamp}`).reply(404, NOT_FOUND_RES);
+  describe('eth_getBlockByNumber with tag', async function () {
+    function confirmResult(result: Block | null) {
+      expect(result).to.exist;
+      expect(result).to.not.be.null;
+
+      if (result) {
+        expect(result.number).equal(BLOCK_NUMBER_HEX);
+      }
     }
 
-    const result = await ethImpl.getBlockByNumber('latest', false);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
+    this.beforeEach(() => {
+      restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
+      for (const result of defaultContractResults.results) {
+        restMock.onGet(`contracts/${result.to}/results/${result.timestamp}`).reply(404, NOT_FOUND_RES);
+      }
+      restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
+    });
 
-    // check that we only made the expected number of requests with the expected urls
-    expect(restMock.history.get.length).equal(4);
-    expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
-    expect(restMock.history.get[1].url).equal(
-      'contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
-    );
-    expect(restMock.history.get[2].url).equal(
-      'contracts/results/logs?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
-    );
-    expect(restMock.history.get[3].url).equal('network/fees');
+    it('eth_getBlockByNumber with latest tag', async function () {
+      const result = await ethImpl.getBlockByNumber('latest', false);
+      // check that we only made the expected number of requests with the expected urls
+      expect(restMock.history.get.length).equal(4);
+      expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
+      expect(restMock.history.get[1].url).equal(
+        'contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
+      );
+      expect(restMock.history.get[2].url).equal(
+        'contracts/results/logs?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
+      );
+      expect(restMock.history.get[3].url).equal('network/fees');
+      confirmResult(result);
+    });
 
-    if (result) {
-      expect(result.number).equal(BLOCK_NUMBER_HEX);
-    }
-  });
+    it('eth_getBlockByNumber with latest tag paginated', async function () {
+      restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, LINKS_NEXT_RES);
+      restMock.onGet(CONTRACTS_RESULTS_NEXT_URL).reply(200, defaultContractResults);
 
-  it('eth_getBlockByNumber with latest tag paginated', async function () {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, LINKS_NEXT_RES);
-    restMock.onGet(CONTRACTS_RESULTS_NEXT_URL).reply(200, defaultContractResults);
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
-    for (const result of defaultContractResults.results) {
-      restMock.onGet(`contracts/${result.to}/results/${result.timestamp}`).reply(404, NOT_FOUND_RES);
-    }
+      const result = await ethImpl.getBlockByNumber('latest', false);
+      confirmResult(result);
+    });
 
-    const result = await ethImpl.getBlockByNumber('latest', false);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
+    it('eth_getBlockByNumber with pending tag', async function () {
+      const result = await ethImpl.getBlockByNumber('pending', false);
+      confirmResult(result);
+    });
 
-    if (result) {
-      expect(result.number).equal(BLOCK_NUMBER_HEX);
-    }
-  });
+    it('eth_getBlockByNumber with earliest tag', async function () {
+      restMock.onGet(`blocks/0`).reply(200, DEFAULT_BLOCK);
 
-  it('eth_getBlockByNumber with pending tag', async function () {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
-    for (const result of defaultContractResults.results) {
-      restMock.onGet(`contracts/${result.to}/results/${result.timestamp}`).reply(404, NOT_FOUND_RES);
-    }
+      const result = await ethImpl.getBlockByNumber('earliest', false);
+      confirmResult(result);
+    });
 
-    const result = await ethImpl.getBlockByNumber('pending', false);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
+    it('eth_getBlockByNumber with hex number tag', async function () {
+      restMock.onGet(`blocks/3735929054`).reply(200, DEFAULT_BLOCK);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, BLOCKS_RES);
 
-    if (result) {
-      expect(result.number).equal(BLOCK_NUMBER_HEX);
-    }
-  });
-
-  it('eth_getBlockByNumber with earliest tag', async function () {
-    restMock.onGet(`blocks/0`).reply(200, DEFAULT_BLOCK);
-    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
-    for (const result of defaultContractResults.results) {
-      restMock.onGet(`contracts/${result.to}/results/${result.timestamp}`).reply(404, NOT_FOUND_RES);
-    }
-
-    const result = await ethImpl.getBlockByNumber('earliest', false);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
-    if (result) {
-      expect(result.number).equal(BLOCK_NUMBER_HEX);
-    }
-  });
-
-  it('eth_getBlockByNumber with hex number', async function () {
-    restMock.onGet(`blocks/3735929054`).reply(200, DEFAULT_BLOCK);
-    restMock.onGet(`blocks?limit=1&order=desc`).reply(200, BLOCKS_RES);
-    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
-    for (const result of defaultContractResults.results) {
-      restMock.onGet(`contracts/${result.to}/results/${result.timestamp}`).reply(404, NOT_FOUND_RES);
-    }
-
-    const result = await ethImpl.getBlockByNumber('0xdeadc0de', false);
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
-    if (result) {
-      expect(result.number).equal(BLOCK_NUMBER_HEX);
-    }
+      const result = await ethImpl.getBlockByNumber('0xdeadc0de', false);
+      confirmResult(result);
+    });
   });
 
   it('eth_getBlockByNumber with greater number of transactions than the ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', async function () {

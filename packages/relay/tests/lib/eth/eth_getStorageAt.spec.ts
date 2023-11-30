@@ -56,6 +56,12 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
+  function confirmResult(result: string) {
+    expect(result).to.exist;
+    expect(result).to.not.be.null;
+    expect(result).equal(DEFAULT_CURRENT_CONTRACT_STATE.state[0].value);
+  }
+
   this.beforeEach(() => {
     // reset cache and restMock
     cacheService.clear();
@@ -66,6 +72,8 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
+    restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
   });
 
   this.afterAll(() => {
@@ -81,8 +89,6 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
   describe('eth_getStorageAt', async function () {
     it('eth_getStorageAt with match with block and slot less than 32 bytes and without leading zeroes', async function () {
       // mirror node request mocks
-      restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
       restMock
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=0x101&limit=100&order=desc`,
@@ -90,18 +96,14 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
 
       const result = await ethImpl.getStorageAt(CONTRACT_ADDRESS_1, '0x101', numberTo0x(BLOCK_NUMBER));
-      expect(result).to.exist;
-      expect(result).to.not.be.null;
+      confirmResult(result);
 
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
-      expect(result).equal(DEFAULT_CURRENT_CONTRACT_STATE.state[0].value);
     });
 
     it('eth_getStorageAt with match with block and slot less than 32 bytes and leading zeroes', async function () {
       // mirror node request mocks
-      restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
       restMock
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=0x0000101&limit=100&order=desc`,
@@ -109,18 +111,14 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
 
       const result = await ethImpl.getStorageAt(CONTRACT_ADDRESS_1, '0x0000101', numberTo0x(BLOCK_NUMBER));
-      expect(result).to.exist;
-      expect(result).to.not.be.null;
+      confirmResult(result);
 
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
-      expect(result).equal(DEFAULT_CURRENT_CONTRACT_STATE.state[0].value);
     });
 
     it('eth_getStorageAt with match with block', async function () {
       // mirror node request mocks
-      restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
       restMock
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=0x0000000000000000000000000000000000000000000000000000000000000101&limit=100&order=desc`,
@@ -132,12 +130,10 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         defaultDetailedContractResults.state_changes[0].slot,
         numberTo0x(BLOCK_NUMBER),
       );
-      expect(result).to.exist;
-      expect(result).to.not.be.null;
+      confirmResult(result);
 
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
-      expect(result).equal(DEFAULT_CURRENT_CONTRACT_STATE.state[0].value);
     });
 
     it('eth_getStorageAt with match with latest block', async function () {
@@ -153,11 +149,9 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         DEFAULT_CURRENT_CONTRACT_STATE.state[0].slot,
         'latest',
       );
-      expect(result).to.exist;
-      expect(result).to.not.be.null;
+      confirmResult(result);
 
       // verify slot value
-      expect(result).equal(DEFAULT_CURRENT_CONTRACT_STATE.state[0].value);
     });
 
     // Block number is a required param, this should not work and should be removed when/if validations are added.
@@ -174,16 +168,13 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         CONTRACT_ADDRESS_1,
         defaultDetailedContractResults.state_changes[0].slot,
       );
-      expect(result).to.exist;
-      expect(result).to.not.be.null;
+      confirmResult(result);
 
       // verify slot value
-      expect(result).equal(DEFAULT_CURRENT_CONTRACT_STATE.state[0].value);
     });
 
     it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when block not found', async function () {
       restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, null);
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
 
       const args = [CONTRACT_ADDRESS_1, defaultDetailedContractResults.state_changes[0].slot, numberTo0x(BLOCK_NUMBER)];
 
@@ -198,8 +189,6 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
 
     it('eth_getStorageAt should return EthImpl.zeroHex32Byte when slot wrong', async function () {
       const wrongSlot = '0x0000000000000000000000000000000000000000000000000000000000001101';
-      restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
       restMock
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=${wrongSlot}&limit=100&order=desc`,
@@ -212,7 +201,6 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
 
     it('eth_getStorageAt should return old state when passing older block number', async function () {
       restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, OLDER_BLOCK);
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
       restMock
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${OLDER_BLOCK.timestamp.to}&slot=${DEFAULT_OLDER_CONTRACT_STATE.state[0].slot}&limit=100&order=desc`,
@@ -229,8 +217,6 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
 
     it('eth_getStorageAt should throw error when contract not found', async function () {
       // mirror node request mocks
-      restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
       restMock
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=${DEFAULT_OLDER_CONTRACT_STATE.state[0].slot}&limit=100&order=desc`,

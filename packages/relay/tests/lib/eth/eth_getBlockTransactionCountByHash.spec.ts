@@ -82,7 +82,6 @@ describe('@ethGetBlockTransactionCountByHash using MirrorNode', async function (
   });
 
   it('eth_getBlockTransactionCountByHash with no match', async function () {
-    cacheService.clear();
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_HASH}`).reply(404, NO_SUCH_BLOCK_EXISTS_RES);
 

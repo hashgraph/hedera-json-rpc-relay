@@ -36,13 +36,21 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub;
-let getSdkClientStub;
+let getSdkClientStub, ethImplOverridden;
 let currentMaxBlockRange: number;
 
 describe('@ethEstimateGas Estimate Gass spec', async function () {
   this.timeout(10000);
   let { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
     generateEthTestEnv();
+
+  const transaction = {
+    from: '0x05fba803be258049a27b820088bab1cad2058871',
+    data: '0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505',
+  };
+  const id = uuid();
+  const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
+  process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -51,9 +59,11 @@ describe('@ethEstimateGas Estimate Gass spec', async function () {
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
+    ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
+    restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
   });
 
   this.afterAll(() => {
@@ -65,6 +75,8 @@ describe('@ethEstimateGas Estimate Gass spec', async function () {
     restMock.resetHandlers();
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
+
+  describe('eth_estimateGas with contract call', async function () {});
 
   it('should eth_estimateGas with transaction.data null does not fail', async function () {
     const callData = {
@@ -230,56 +242,36 @@ describe('@ethEstimateGas Estimate Gass spec', async function () {
   });
 
   it('should eth_estimateGas empty call returns transfer cost', async function () {
-    restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
     const gas = await ethImpl.estimateGas({}, null);
     expect(gas).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
 
   it('should eth_estimateGas empty call returns transfer cost with overridden default gas', async function () {
-    const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
-    process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
-    restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({}, null);
     expect(gas).to.equal(numberTo0x(defaultGasOverride));
   });
 
   it('should eth_estimateGas empty input transfer cost', async function () {
-    restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
     const gas = await ethImpl.estimateGas({ data: '' }, null);
     expect(gas).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
 
   it('should eth_estimateGas empty input transfer cost with overridden default gas', async function () {
-    const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
-    process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
-    restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({ data: '' }, null);
     expect(gas).to.equal(numberTo0x(defaultGasOverride));
   });
 
   it('should eth_estimateGas zero input returns transfer cost', async function () {
-    restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
     const gas = await ethImpl.estimateGas({ data: '0x' }, null);
     expect(gas).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
 
   it('should eth_estimateGas zero input returns transfer cost with overridden default gas', async function () {
-    const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
-    process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
-    const ethImplOverridden = new EthImpl(sdkClientStub, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
-    restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
     const gas = await ethImplOverridden.estimateGas({ data: '0x' }, null);
     expect(gas).to.equal(numberTo0x(defaultGasOverride));
   });
 
   it('should eth_estimateGas with contract revert and message does not equal executionReverted', async function () {
-    const transaction = {
-      from: '0x05fba803be258049a27b820088bab1cad2058871',
-      data: '0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505',
-    };
-    const id = uuid();
     web3Mock.onPost('contracts/call', { ...transaction, estimate: true }).reply(400, {
       _status: {
         messages: [
@@ -300,11 +292,6 @@ describe('@ethEstimateGas Estimate Gass spec', async function () {
   it('should eth_estimateGas with contract revert and message does not equal executionReverted and ESTIMATE_GAS_THROWS is set to false', async function () {
     const estimateGasThrows = process.env.ESTIMATE_GAS_THROWS;
     process.env.ESTIMATE_GAS_THROWS = 'false';
-    const transaction = {
-      from: '0x05fba803be258049a27b820088bab1cad2058871',
-      data: '0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505',
-    };
-    const id = uuid();
     web3Mock.onPost('contracts/call', { ...transaction, estimate: true }).reply(400, {
       _status: {
         messages: [
@@ -324,11 +311,6 @@ describe('@ethEstimateGas Estimate Gass spec', async function () {
   });
 
   it('should eth_estimateGas with contract revert and message equals "execution reverted: Invalid number of recipients"', async function () {
-    const transaction = {
-      from: '0x05fba803be258049a27b820088bab1cad2058871',
-      data: '0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505',
-    };
-    const id = uuid();
     web3Mock.onPost('contracts/call', { ...transaction, estimate: true }).reply(400, {
       _status: {
         messages: [
@@ -350,11 +332,6 @@ describe('@ethEstimateGas Estimate Gass spec', async function () {
   });
 
   it('should eth_estimateGas handles a 501 unimplemented response from the mirror node correctly by returning default gas', async function () {
-    const transaction = {
-      from: '0x05fba803be258049a27b820088bab1cad2058871',
-      data: '0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505',
-    };
-    const id = uuid();
     web3Mock.onPost('contracts/call', { ...transaction, estimate: true }).reply(501, {
       _status: {
         messages: [

@@ -52,6 +52,8 @@ let getSdkClientStub;
 
 function verifyAggregatedInfo(result: Transaction | null) {
   // verify aggregated info
+  expect(result).to.exist;
+  expect(result).to.not.be.null;
   if (result) {
     expect(result.blockHash).equal(BLOCK_HASH_TRIMMED);
     expect(result.blockNumber).equal(BLOCK_NUMBER_HEX);
@@ -96,16 +98,8 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
       numberTo0x(DEFAULT_BLOCK.number),
       numberTo0x(DEFAULT_BLOCK.count),
     );
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
 
-    if (result) {
-      // verify aggregated info
-      expect(result.blockHash).equal(BLOCK_HASH_TRIMMED);
-      expect(result.blockNumber).equal(BLOCK_NUMBER_HEX);
-      expect(result.hash).equal(CONTRACT_HASH_1);
-      expect(result.to).equal(CONTRACT_ADDRESS_1);
-    }
+    verifyAggregatedInfo(result);
   });
 
   it('eth_getTransactionByBlockNumberAndIndex with null amount', async function () {
@@ -188,9 +182,6 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
       .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('latest', numberTo0x(DEFAULT_BLOCK.count));
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
     verifyAggregatedInfo(result);
   });
 
@@ -202,9 +193,6 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
       .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('pending', numberTo0x(DEFAULT_BLOCK.count));
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
     verifyAggregatedInfo(result);
   });
 
@@ -213,9 +201,6 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     restMock.onGet(contractResultsByNumberByIndexURL(0, DEFAULT_BLOCK.count)).reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('earliest', numberTo0x(DEFAULT_BLOCK.count));
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
     verifyAggregatedInfo(result);
   });
 
@@ -228,9 +213,6 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
       '0xdeadc0de' + '',
       numberTo0x(DEFAULT_BLOCK.count),
     );
-    expect(result).to.exist;
-    expect(result).to.not.be.null;
-
     verifyAggregatedInfo(result);
   });
 });
