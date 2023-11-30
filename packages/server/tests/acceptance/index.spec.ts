@@ -20,7 +20,6 @@
 import chai from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';
-import shell from 'shelljs';
 import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 
@@ -49,7 +48,6 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const USE_LOCAL_NODE = process.env.LOCAL_NODE || 'true';
 const NETWORK = process.env.HEDERA_NETWORK || '';
 const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
 const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
@@ -86,10 +84,6 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
     logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
-    if (USE_LOCAL_NODE === 'true') {
-      runLocalHederaNetwork();
-    }
-
     if (global.relayIsLocal) {
       runLocalRelay();
     }
@@ -102,12 +96,6 @@ describe('RPC Server Acceptance Tests', function () {
     const endOperatorBalance = await global.servicesNode.getOperatorBalance();
     const cost = startOperatorBalance.toTinybars().subtract(endOperatorBalance.toTinybars());
     logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
-
-    if (USE_LOCAL_NODE === 'true') {
-      // stop local-node
-      logger.info('Shutdown local node');
-      shell.exec('hedera stop');
-    }
 
     //stop relay
     logger.info('Stop relay');
@@ -138,33 +126,13 @@ describe('RPC Server Acceptance Tests', function () {
     }
   }
 
-  function runLocalHederaNetwork() {
-    // set env variables for docker images until local-node is updated
-    process.env['NETWORK_NODE_IMAGE_TAG'] = '0.45.0-alpha.0';
-    process.env['HAVEGED_IMAGE_TAG'] = '0.45.0-alpha.0';
-    process.env['MIRROR_IMAGE_TAG'] = '0.92.0';
-
-    console.log(
-      `Docker container versions, services: ${process.env['NETWORK_NODE_IMAGE_TAG']}, mirror: ${process.env['MIRROR_IMAGE_TAG']}`,
-    );
-
-    console.log('Installing local node...');
-    shell.exec(`npm install @hashgraph/hedera-local -g`);
-
-    console.log('Starting local node...');
-    shell.exec(`hedera start -d`);
-    console.log('Hedera Hashgraph local node env started');
-  }
-
   function runLocalRelay() {
-    // start local relay, stop relay instance in local
-    shell.exec('docker stop json-rpc-relay');
+    // start local relay, relay instance in local should not be running
 
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
     relayServer = app.listen({ port: constants.RELAY_PORT });
 
     if (process.env.TEST_WS_SERVER === 'true') {
-      shell.exec('docker stop json-rpc-relay-ws');
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
       global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
     }

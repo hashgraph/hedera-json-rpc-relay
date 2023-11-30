@@ -48,11 +48,21 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
+      - name: Install hedera local
+        run: npm install @hashgraph/hedera-local -g
+
       - name: Set operator id and key env variable if CI is manual
         if: ${{ inputs.operator_id }}
         run: |
           echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
           echo "OPERATOR_KEY_MAIN=${{ inputs.operator_key }}" >> $GITHUB_ENV
+
+      - name: Run hedera local
+        run: hedera restart -d
+
+      - name: Stop  relay
+        run: |
+          docker stop json-rpc-relay json-rpc-relay-ws
 
       - name: Run acceptance tests
         uses: nick-fields/retry@v2
@@ -60,6 +70,7 @@ jobs:
           max_attempts: 3
           timeout_minutes: 20
           command: npm run acceptancetest:${{ inputs.testfilter }}
+          on_retry_command: scripts/retry_script.sh
         env:
           TEST_WS_SERVER: ${{ inputs.test_ws_server }}
           SUBSCRIPTIONS_ENABLED: ${{ inputs.test_ws_server }}
