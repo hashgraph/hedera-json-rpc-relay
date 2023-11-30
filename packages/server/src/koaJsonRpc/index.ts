@@ -219,7 +219,7 @@ export default class KoaJsonRpc {
     }
 
     // verify rate limit for batch request
-    const batchRequestTotalLimit = this.registryTotal[BATCH_REQUEST_METHOD_NAME];
+    const batchRequestTotalLimit = this.methodConfig[BATCH_REQUEST_METHOD_NAME].total;
     // check rate limit for method and ip
     if (this.rateLimit.shouldRateLimit(ctx.ip, BATCH_REQUEST_METHOD_NAME, batchRequestTotalLimit, this.requestId)) {
       return jsonResp(null, new IPRateLimitExceeded(BATCH_REQUEST_METHOD_NAME), undefined);
