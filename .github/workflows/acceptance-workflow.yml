@@ -61,8 +61,7 @@ jobs:
         run: hedera restart -d
 
       - name: Stop  relay
-        run: |
-          docker stop json-rpc-relay json-rpc-relay-ws
+        run: docker stop json-rpc-relay json-rpc-relay-ws
 
       - name: Run acceptance tests
         uses: nick-fields/retry@v2
