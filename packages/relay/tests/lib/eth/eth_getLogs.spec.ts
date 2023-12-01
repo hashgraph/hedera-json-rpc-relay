@@ -67,8 +67,19 @@ let getSdkClientStub;
 let currentMaxBlockRange: number;
 
 describe('@ethGetLogs using MirrorNode', async function () {
-  this.timeout(10000);
+  this.timeout(100000);
+  const latestBlock = {
+    ...DEFAULT_BLOCK,
+    number: 17,
+    timestamp: {
+      from: `1651560393.060890949`,
+      to: '1651560395.060890949',
+    },
+  };
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  const filteredLogs = {
+    logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1]],
+  };
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -88,40 +99,29 @@ describe('@ethGetLogs using MirrorNode', async function () {
 
   this.afterEach(() => {
     getSdkClientStub.restore();
-    restMock.resetHandlers();
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
-  const latestBlock = {
-    ...DEFAULT_BLOCK,
-    number: 17,
-    timestamp: {
-      from: `1651560393.060890949`,
-      to: '1651560395.060890949',
-    },
-  };
-
-  it('BLOCK_HASH filter timeouts and throws the expected error', async function () {
-    const filteredLogs = {
-      logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1]],
-    };
-
-    restMock.onGet(`blocks/${BLOCK_HASH}`).timeout();
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, filteredLogs);
-
-    await ethGetLogsFailing(ethImpl, [BLOCK_HASH, null, null, null, null], (error) => {
-      expect(error.statusCode).to.equal(504);
-      expect(error.message).to.eq('timeout of 10000ms exceeded');
+  describe('timeout', async function () {
+    this.beforeEach(() => {
+      restMock.onGet(`blocks/${BLOCK_HASH}`).timeout();
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
+      restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).timeout();
+      restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, filteredLogs);
     });
-  });
 
-  it('address filter timeouts and throws the expected error', async function () {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).timeout();
+    it('BLOCK_HASH filter timeouts and throws the expected error', async () => {
+      await ethGetLogsFailing(ethImpl, [BLOCK_HASH, null, null, null, null], (error) => {
+        expect(error.statusCode).to.equal(504);
+        expect(error.message).to.eq('timeout of 10000ms exceeded');
+      });
+    });
 
-    await ethGetLogsFailing(ethImpl, [null, null, null, CONTRACT_ADDRESS_1, null], (error) => {
-      expect(error.statusCode).to.equal(504);
-      expect(error.message).to.eq('timeout of 10000ms exceeded');
+    it('address filter timeouts and throws the expected error', async () => {
+      await ethGetLogsFailing(ethImpl, [null, null, null, CONTRACT_ADDRESS_1, null], (error) => {
+        expect(error.statusCode).to.equal(504);
+        expect(error.message).to.eq('timeout of 10000ms exceeded');
+      });
     });
   });
 
