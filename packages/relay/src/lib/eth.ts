@@ -1307,8 +1307,10 @@ export class EthImpl implements Eth {
         nonceCount = await this.getAccountLatestEthereumNonce(address, requestIdPrefix);
       } else if (blockNumOrTag === EthImpl.blockEarliest) {
         nonceCount = await this.getAccountNonceForEarliestBlock(requestIdPrefix);
-      } else if (!isNaN(blockNum)) {
+      } else if (!isNaN(blockNum) && blockNumOrTag.length != 66) {
         nonceCount = await this.getAccountNonceForHistoricBlock(address, blockNum, requestIdPrefix);
+      } else if (blockNumOrTag.length == 66 && blockNumOrTag.startsWith('0x')) {
+        nonceCount = await this.getAccountNonceForHistoricBlock(address, blockNumOrTag, requestIdPrefix);
       } else {
         // return a '-39001: Unknown block' error per api-spec
         throw predefined.UNKNOWN_BLOCK;
@@ -2141,11 +2143,11 @@ export class EthImpl implements Eth {
    */
   private async getAcccountNonceFromContractResult(
     address: string,
-    blockNum: any,
+    blockNumOrHash: any,
     requestIdPrefix: string | undefined,
   ) {
     // get block timestamp for blockNum
-    const block = await this.mirrorNodeClient.getBlock(blockNum, requestIdPrefix); // consider caching error responses
+    const block = await this.mirrorNodeClient.getBlock(blockNumOrHash, requestIdPrefix); // consider caching error responses
     if (block == null) {
       throw predefined.UNKNOWN_BLOCK;
     }
@@ -2207,9 +2209,22 @@ export class EthImpl implements Eth {
 
   private async getAccountNonceForHistoricBlock(
     address: string,
-    blockNum: number,
+    blockNumOrHash: number | string,
     requestIdPrefix?: string,
   ): Promise<string> {
+    let getBlock;
+
+    try {
+      getBlock = await this.mirrorNodeClient.getBlock(blockNumOrHash);
+    } catch (e) {
+      throw e;
+    }
+
+    if (getBlock === null) {
+      throw predefined.UNKNOWN_BLOCK;
+    }
+    const blockNum = typeof blockNumOrHash === 'number' ? blockNumOrHash : getBlock.number;
+
     if (blockNum < 0) {
       throw predefined.UNKNOWN_BLOCK;
     }
