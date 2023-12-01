@@ -1484,6 +1484,7 @@ export class EthImpl implements Eth {
     value: string | null,
     requestIdPrefix?: string,
   ): Promise<string | JsonRpcError> {
+    let callData: any = {};
     try {
       this.logger.debug(
         `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`,
@@ -1492,7 +1493,7 @@ export class EthImpl implements Eth {
         call.data,
         call.from,
       );
-      const callData = {
+      callData = {
         ...call,
         gas,
         value,
@@ -1529,7 +1530,9 @@ export class EthImpl implements Eth {
           const errorTypeMessage =
             e.isNotSupported() || e.isNotSupportedSystemContractOperaton() ? 'Unsupported' : 'Unhandled';
           this.logger.trace(
-            `${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node. details: ${e.detail}, data: ${e.data}`,
+            `${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node. details: ${JSON.stringify(
+              callData,
+            )} with error: "${e.message}"`,
           );
           return await this.callConsensusNode(call, gas, requestIdPrefix);
         }
