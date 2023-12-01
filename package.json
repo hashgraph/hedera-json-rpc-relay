@@ -65,7 +65,7 @@
     "@types/find-config": "^1.0.4",
     "@types/sinon": "^10.0.20",
     "chai-exclude": "^2.1.0",
-    "eslint-config-standard-with-typescript": "^39.0.0",
+    "eslint-config-standard-with-typescript": "^39.1.1",
     "eslint-plugin-n": "^15.7.0",
     "keyv-file": "^0.2.0",
     "koa-cors": "^0.0.16",
