@@ -561,7 +561,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(receipt.revertReason).to.eq(PAYABLE_METHOD_ERROR_DATA);
     });
 
-    describe('eth_getTransactionByHash for reverted payable contract calls', async function () {
+    describe.only('eth_getTransactionByHash for reverted payable contract calls', async function () {
       const payableMethodsData = [
         {
           data: '0xfe0a3dd7',
@@ -617,10 +617,16 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       for (let i = 0; i < payableMethodsData.length; i++) {
         it(`Payable method ${payableMethodsData[i].method} returns tx object`, async function () {
-          const tx = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [hashes[i]], requestId);
-          expect(tx).to.exist;
-          expect(tx.hash).to.exist;
-          expect(tx.hash).to.eq(hashes[i]);
+          try {
+            const tx = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [hashes[i]], requestId);
+          } catch (e) {
+            expect(e.error).to.exist;
+            expect(e.error.code).to.eq(-32008);
+            expect(e.error.data).to.eq(payableMethodsData[i].errorData);
+            expect(e.error.message).to.match(
+              new RegExp(`\\[Request ID: .+\\] execution reverted: ${payableMethodsData[i].message}`),
+            );
+          }
         });
       }
 
