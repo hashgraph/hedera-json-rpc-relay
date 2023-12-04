@@ -26,7 +26,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { EthImpl } from '../../../src/lib/eth';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
-import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NOT_FOUND_RES, NO_TRANSACTIONS } from './eth-config';
+import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NO_TRANSACTIONS } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import { defaultDetailedContractResults, defaultEthereumTransactions, mockData } from '../../helpers';
