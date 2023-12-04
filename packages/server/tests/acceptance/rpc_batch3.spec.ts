@@ -561,7 +561,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(receipt.revertReason).to.eq(PAYABLE_METHOD_ERROR_DATA);
     });
 
-    describe.only('eth_getTransactionByHash for reverted payable contract calls', async function () {
+    describe('eth_getTransactionByHash for reverted payable contract calls', async function () {
       const payableMethodsData = [
         {
           data: '0xfe0a3dd7',
