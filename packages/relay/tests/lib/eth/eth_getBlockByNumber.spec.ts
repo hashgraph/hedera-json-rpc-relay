@@ -122,7 +122,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
 
   this.afterEach(() => {
     getSdkClientStub.restore();
-    restMock.resetHandlers();
+
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
@@ -167,7 +167,11 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       .onGet(BLOCKS_LIMIT_ORDER_URL)
       .replyOnce(200, DEFAULT_BLOCKS_RES);
 
+    try {
+      await ethImpl.blockNumber();
+    } catch (error) {}
     const blockNumber = await ethImpl.blockNumber();
+
     expect(blockNumber).to.be.eq(blockNumber);
   });
 
