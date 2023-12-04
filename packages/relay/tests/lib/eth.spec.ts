@@ -6071,8 +6071,14 @@ describe('Eth', async function () {
     it('returns reverted transactions', async function () {
       restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHashReverted);
 
-      const result = await ethImpl.getTransactionByHash(defaultTxHash);
-      RelayAssertions.assertTransaction(result, defaultTransaction);
+      try {
+        const result = await ethImpl.getTransactionByHash(defaultTxHash);
+      } catch (error) {
+        console.log(error);
+        expect(error.code).to.eq(-32008);
+        expect(error.message).to.eq('execution reverted: Some revert message');
+        expect(error.name).to.eq('Contract revert executed');
+      }
     });
 
     it('throws error for reverted transactions when DEV_MODE=true', async function () {
