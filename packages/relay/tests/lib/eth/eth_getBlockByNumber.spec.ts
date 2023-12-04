@@ -31,6 +31,7 @@ import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import { hashNumber, numberTo0x } from '../../../dist/formatters';
 import {
+  BASE_FEE_PER_GAS_HEX,
   BLOCKS_LIMIT_ORDER_URL,
   BLOCKS_RES,
   BLOCK_HASH,
@@ -54,7 +55,6 @@ import {
   DEFAULT_CONTRACT_RES_REVERT,
   DEFAULT_ETH_GET_BLOCK_BY_LOGS,
   DEFAULT_NETWORK_FEES,
-  ETH_FEE_HISTORY_VALUE,
   GAS_USED_1,
   GAS_USED_2,
   LINKS_NEXT_RES,
@@ -75,7 +75,7 @@ let ethImplLowTransactionCount: EthImpl;
 describe('@ethGetBlockByNumber using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
-    generateEthTestEnv();
+    generateEthTestEnv(true);
   const results = defaultContractResults.results;
   const TOTAL_GAS_USED = numberTo0x(results[0].gas_used + results[1].gas_used);
 
@@ -100,6 +100,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     // reset cache and restMock
     cacheService.clear();
     restMock.reset();
+    restMock.resetHandlers();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
@@ -114,10 +115,6 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       registry,
       cacheService,
     );
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {
@@ -254,14 +251,15 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       restMock.onGet(CONTRACTS_RESULTS_NEXT_URL).reply(200, defaultContractResults);
 
       const result = await ethImpl.getBlockByHash(BLOCK_HASH, false);
-      RelayAssertions.assertBlock(result, {
+      const toMatch = {
         hash: BLOCK_HASH_TRIMMED,
         gasUsed: TOTAL_GAS_USED,
         number: BLOCK_NUMBER_HEX,
         parentHash: BLOCK_HASH_PREV_TRIMMED,
         timestamp: BLOCK_TIMESTAMP_HEX,
         transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
-      });
+      };
+      RelayAssertions.assertBlock(result, toMatch);
     });
   });
 

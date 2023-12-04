@@ -26,7 +26,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { EthImpl } from '../../../src/lib/eth';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
-import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NO_TRANSACTIONS } from './eth-config';
+import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import { defaultDetailedContractResults, defaultEthereumTransactions, mockData } from '../../helpers';
@@ -60,10 +60,6 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     return `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
   }
 
-  this.beforeAll(async () => {
-    process.env.ETH_FEE_HISTORY_FIXED = 'false';
-  });
-
   this.beforeEach(() => {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     restMock.onGet(blockPath).reply(200, mockData.blocks.blocks[2]);
@@ -95,7 +91,6 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
   this.beforeAll(async () => {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   it('should return 0x0 nonce for no block consideration with not found acoount', async () => {

@@ -37,7 +37,6 @@ import {
   DEFAULT_NETWORK_FEES,
   DEF_BALANCE,
   DEF_HEX_BALANCE,
-  ETH_FEE_HISTORY_VALUE,
   MOCK_BALANCE_RES,
   MOCK_BLOCKS_FOR_BALANCE_RES,
   MOCK_BLOCK_NUMBER_1000_RES,
@@ -67,10 +66,6 @@ describe('@ethGetBalance using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {

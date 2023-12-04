@@ -54,7 +54,6 @@ import {
   DEFAULT_LOG_TOPICS_1,
   DEFAULT_NETWORK_FEES,
   DEFAULT_NULL_LOG_TOPICS,
-  ETH_FEE_HISTORY_VALUE,
   NOT_FOUND_RES,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
@@ -91,10 +90,6 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {

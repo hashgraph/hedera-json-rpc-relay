@@ -32,7 +32,6 @@ import {
   DEFAULT_HTS_TOKEN,
   DEFAULT_NETWORK_FEES,
   DEPLOYED_BYTECODE,
-  ETH_FEE_HISTORY_VALUE,
   HTS_TOKEN_ADDRESS,
   MIRROR_NODE_DEPLOYED_BYTECODE,
   NO_TRANSACTIONS,
@@ -65,10 +64,6 @@ describe('@ethGetCode using MirrorNode', async function () {
     restMock.onGet(`tokens/0.0.${parseInt(CONTRACT_ADDRESS_1, 16)}`).reply(404, null);
     restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(200, DEFAULT_CONTRACT);
     sdkClientStub.getContractByteCode.returns(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {

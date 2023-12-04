@@ -26,7 +26,7 @@ import chaiAsPromised from 'chai-as-promised';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import { numberTo0x } from '../../../dist/formatters';
-import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NOT_FOUND_RES } from './eth-config';
+import { DEFAULT_NETWORK_FEES, NOT_FOUND_RES } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import { generateEthTestEnv } from './eth-helpers';
@@ -52,10 +52,6 @@ describe('@ethGasPrice Gas Price spec', async function () {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {

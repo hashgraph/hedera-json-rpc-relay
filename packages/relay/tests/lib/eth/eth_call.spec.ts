@@ -37,7 +37,6 @@ import {
   DEFAULT_CONTRACT_2,
   DEFAULT_CONTRACT_3_EMPTY_BYTECODE,
   DEFAULT_NETWORK_FEES,
-  ETH_FEE_HISTORY_VALUE,
   MAX_GAS_LIMIT,
   MAX_GAS_LIMIT_HEX,
   NO_TRANSACTIONS,
@@ -87,10 +86,6 @@ describe('@ethCall Eth Call spec', async function () {
       account: '0.0.1723',
       evm_address: ACCOUNT_ADDRESS_1,
     });
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {

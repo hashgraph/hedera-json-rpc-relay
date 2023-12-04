@@ -28,7 +28,7 @@ import { EthImpl } from '../../../src/lib/eth';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import { numberTo0x } from '../../../dist/formatters';
-import { DEFAULT_NETWORK_FEES, ETH_FEE_HISTORY_VALUE, NO_TRANSACTIONS, RECEIVER_ADDRESS } from './eth-config';
+import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS, RECEIVER_ADDRESS } from './eth-config';
 import { JsonRpcError } from '../../../src/lib/errors/JsonRpcError';
 import { generateEthTestEnv } from './eth-helpers';
 
@@ -64,10 +64,6 @@ describe('@ethEstimateGas Estimate Gass spec', async function () {
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
     restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {

@@ -21,7 +21,8 @@ export function balancesByAccountIdByTimestampURL(id: string, timestamp?: string
   return `balances?account.id=${id}${timestampQuery}`;
 }
 
-export function generateEthTestEnv() {
+export function generateEthTestEnv(fixedFeeHistory = false) {
+  process.env.ETH_FEE_HISTORY_FIXED = fixedFeeHistory.toString();
   const logger = pino();
   const registry = new Registry();
   const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
@@ -43,8 +44,6 @@ export function generateEthTestEnv() {
   const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
 
   const hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService);
-
-  process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
   // @ts-ignore
   const ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);

@@ -35,7 +35,6 @@ import {
   DEFAULT_NETWORK_FEES,
   DEFAULT_OLDER_CONTRACT_STATE,
   DETAILD_CONTRACT_RESULT_NOT_FOUND,
-  ETH_FEE_HISTORY_VALUE,
   MOST_RECENT_BLOCK,
   OLDER_BLOCK,
 } from './eth-config';
@@ -74,10 +73,6 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
     restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {

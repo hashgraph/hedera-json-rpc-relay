@@ -30,6 +30,7 @@ import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import { numberTo0x } from '../../../dist/formatters';
 import {
+  BASE_FEE_PER_GAS_HEX,
   BLOCK_HASH,
   BLOCK_HASH_PREV_TRIMMED,
   BLOCK_HASH_TRIMMED,
@@ -47,7 +48,6 @@ import {
   DEFAULT_BLOCK,
   DEFAULT_ETH_GET_BLOCK_BY_LOGS,
   DEFAULT_NETWORK_FEES,
-  ETH_FEE_HISTORY_VALUE,
   LINKS_NEXT_RES,
   NO_SUCH_BLOCK_EXISTS_RES,
 } from './eth-config';
@@ -64,7 +64,7 @@ let ethImplLowTransactionCount: EthImpl;
 describe('@ethGetBlockByHash using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
-    generateEthTestEnv();
+    generateEthTestEnv(true);
   const results = defaultContractResults.results;
   const TOTAL_GAS_USED = numberTo0x(results[0].gas_used + results[1].gas_used);
 
@@ -87,10 +87,6 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       registry,
       cacheService,
     );
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {

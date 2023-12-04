@@ -25,13 +25,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { Hbar, HbarUnit, TransactionId } from '@hashgraph/sdk';
 
 import { SDKClient } from '../../../src/lib/clients';
-import {
-  ACCOUNT_ADDRESS_1,
-  DEFAULT_NETWORK_FEES,
-  ETH_FEE_HISTORY_VALUE,
-  MAX_GAS_LIMIT_HEX,
-  NO_TRANSACTIONS,
-} from './eth-config';
+import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import { getRequestId, mockData, signTransaction } from '../../helpers';
@@ -58,10 +52,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {

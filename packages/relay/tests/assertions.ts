@@ -3,6 +3,7 @@ import { JsonRpcError } from '../src';
 import { EthImpl } from '../src/lib/eth';
 import { Block, Transaction } from '../src/lib/model';
 import { numberTo0x } from '../src/formatters';
+import { BASE_FEE_PER_GAS_DEFAULT } from './lib/eth/eth-config';
 
 export default class RelayAssertions {
   static assertRejection = async (
@@ -123,7 +124,7 @@ export default class RelayAssertions {
 
   static verifyBlockConstants = (block: Block) => {
     expect(block.gasLimit).equal(numberTo0x(15000000));
-    expect(block.baseFeePerGas).equal('0x84b6a5c400');
+    expect(block.baseFeePerGas).equal(BASE_FEE_PER_GAS_DEFAULT);
     expect(block.difficulty).equal(EthImpl.zeroHex);
     expect(block.extraData).equal(EthImpl.emptyHex);
     expect(block.miner).equal(EthImpl.zeroAddressHex);

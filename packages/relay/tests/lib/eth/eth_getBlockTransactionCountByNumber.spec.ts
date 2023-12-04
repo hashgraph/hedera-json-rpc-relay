@@ -32,7 +32,6 @@ import {
   DEFAULT_BLOCK,
   DEFAULT_BLOCKS_RES,
   DEFAULT_NETWORK_FEES,
-  ETH_FEE_HISTORY_VALUE,
   NO_SUCH_BLOCK_EXISTS_RES,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
@@ -55,10 +54,6 @@ describe('@ethGetBlockTransactionCountByNumber using MirrorNode', async function
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {

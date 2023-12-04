@@ -86,11 +86,11 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     const latestFees = JSON.parse(JSON.stringify(DEFAULT_NETWORK_FEES));
 
     this.beforeEach(() => {
-      restMock.onGet(`network/fees?timestamp=lte:${previousBlock.timestamp.to}`).reply(200, previousFees);
-      restMock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
       restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
       restMock.onGet(`blocks/${previousBlock.number}`).reply(200, previousBlock);
       restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+      restMock.onGet(`network/fees?timestamp=lte:${previousBlock.timestamp.to}`).reply(200, previousFees);
+      restMock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
     });
 
     it('eth_feeHistory', async function () {
