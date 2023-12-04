@@ -31,7 +31,6 @@ import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import { hashNumber, numberTo0x } from '../../../dist/formatters';
 import {
-  BASE_FEE_PER_GAS_HEX,
   BLOCKS_LIMIT_ORDER_URL,
   BLOCKS_RES,
   BLOCK_HASH,

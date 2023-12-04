@@ -39,7 +39,7 @@ let sdkClientStub;
 let getSdkClientStub, ethImplOverridden;
 let currentMaxBlockRange: number;
 
-describe('@ethEstimateGas Estimate Gass spec', async function () {
+describe('@ethEstimateGas Estimate Gas spec', async function () {
   this.timeout(10000);
   let { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
     generateEthTestEnv();
