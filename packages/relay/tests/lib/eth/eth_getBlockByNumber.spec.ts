@@ -293,6 +293,8 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       expect(result.gasUsed).equal(TOTAL_GAS_USED);
       verifyTransactions(result.transactions as Array<Transaction>);
 
+      // adding a comment here to test the CI
+
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
     }
