@@ -25,17 +25,36 @@ However, for cases where the submodule management in a nested directory as is at
     cd path_to/hedera-json-rpc-relay/tools/foundry-example
     ```
 
-2. **Initialize it as a Git repository**:
+2. Create a .gitmodules file with the content listed below:
+   ```bash
+   touch .gitmodules
+   ```
+   File Content:
+   ```
+   [submodule "lib/forge-std"]
+	    path = lib/forge-std
+	    url = https://github.com/foundry-rs/forge-std
+    [submodule "lib/openzeppelin-contracts"]
+	    path = lib/openzeppelin-contracts
+	    url = https://github.com/OpenZeppelin/openzeppelin-contracts
+	    branch = release-v4.9
+    [submodule "lib/hedera-smart-contracts"]
+	    path = lib/hedera-smart-contracts
+	    url = https://github.com/hashgraph/hedera-smart-contracts
+	    branch = main
+   ```
+
+3. **Initialize it as a Git repository**:
     ```bash
     git init
     ```
 
-3. **Remove any existing submodule directories in the `lib` folder**. This ensures that we're starting from a clean state:
+4. **Remove any existing submodule directories in the `lib` folder**. This ensures that we're starting from a clean state:
     ```bash
     rm -rf lib/*
     ```
 
-4. **Add the necessary submodules**(despite these already being defined in the `.gitmodules`):
+5. **Add the necessary submodules**(despite these already being defined in the `.gitmodules`):
     ```bash
     git submodule add https://github.com/foundry-rs/forge-std lib/forge-std
     git submodule add -b release-v4.9 https://github.com/OpenZeppelin/openzeppelin-contracts lib/openzeppelin-contracts
