@@ -61,6 +61,7 @@ export class CommonService implements ICommonService {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
+  static isDevMode = process.env.DEV_MODE === 'true';
 
   // function callerNames
   static latestBlockNumber = 'getLatestBlockNumber';
@@ -75,6 +76,10 @@ export class CommonService implements ICommonService {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.cacheService = cacheService;
+  }
+
+  public static blockTagIsLatestOrPendingStrict(tag: string | null): boolean {
+    return tag === CommonService.blockLatest || tag === CommonService.blockPending;
   }
 
   public blockTagIsLatestOrPending = (tag) => {

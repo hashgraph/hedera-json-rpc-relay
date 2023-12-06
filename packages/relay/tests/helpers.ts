@@ -68,7 +68,7 @@ export const ethCallFailing = async (ethImpl, args, block, assertFunc) => {
   expect(hasError).to.eq(true);
 };
 
-export const ethGetLogsFailing = async (ethImpl, args, assertFunc) => {
+export async function ethGetLogsFailing(ethImpl, args, assertFunc) {
   let hasError = false;
   try {
     await ethImpl.getLogs(...args);
@@ -78,7 +78,7 @@ export const ethGetLogsFailing = async (ethImpl, args, assertFunc) => {
     assertFunc(error);
   }
   expect(hasError).to.eq(true);
-};
+}
 
 export const expectLogData = (res, log, tx) => {
   expect(res.address).to.eq(log.address);

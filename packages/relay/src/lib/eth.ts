@@ -260,6 +260,11 @@ export class EthImpl implements Eth {
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
   }
 
+  private shouldUseCacheForBalance(tag: string | null): boolean {
+    // should only cache balance when is Not latest or pending and is not in dev mode
+    return !CommonService.blockTagIsLatestOrPendingStrict(tag) && !CommonService.isDevMode;
+  }
+
   private initEthExecutionCounter(register: Registry) {
     const metricCounterName = 'rpc_relay_eth_executions';
     register.removeSingleMetric(metricCounterName);
@@ -842,6 +847,7 @@ export class EthImpl implements Eth {
     // this check is required, because some tools like Metamask pass for parameter latest block, with a number (ex 0x30ea)
     // tolerance is needed, because there is a small delay between requesting latest block from blockNumber and passing it here
     if (!this.common.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
+      let blockHashNumber, isHash;
       const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
       const blockNumberCached = this.cacheService.get(cacheKey, EthImpl.ethGetBalance, requestIdPrefix);
 
@@ -851,9 +857,6 @@ export class EthImpl implements Eth {
       } else {
         latestBlock = await this.blockNumberTimestamp(EthImpl.ethGetBalance, requestIdPrefix);
       }
-
-      let blockHashNumber;
-      let isHash;
 
       if (blockNumberOrTagOrHash != null && blockNumberOrTagOrHash.length > 32) {
         isHash = true;
@@ -878,7 +881,7 @@ export class EthImpl implements Eth {
     // create a key for the cache
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTagOrHash}`;
     let cachedBalance = this.cacheService.get(cacheKey, EthImpl.ethGetBalance, requestIdPrefix);
-    if (cachedBalance) {
+    if (cachedBalance && this.shouldUseCacheForBalance(blockNumberOrTagOrHash)) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
       return cachedBalance;
     }
@@ -1484,6 +1487,7 @@ export class EthImpl implements Eth {
     value: string | null,
     requestIdPrefix?: string,
   ): Promise<string | JsonRpcError> {
+    let callData: any = {};
     try {
       this.logger.debug(
         `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`,
@@ -1492,7 +1496,7 @@ export class EthImpl implements Eth {
         call.data,
         call.from,
       );
-      const callData = {
+      callData = {
         ...call,
         gas,
         value,
@@ -1529,7 +1533,9 @@ export class EthImpl implements Eth {
           const errorTypeMessage =
             e.isNotSupported() || e.isNotSupportedSystemContractOperaton() ? 'Unsupported' : 'Unhandled';
           this.logger.trace(
-            `${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node. details: ${e.detail}, data: ${e.data}`,
+            `${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node. details: ${JSON.stringify(
+              callData,
+            )} with error: "${e.message}"`,
           );
           return await this.callConsensusNode(call, gas, requestIdPrefix);
         }
@@ -2173,7 +2179,9 @@ export class EthImpl implements Eth {
       );
     }
 
-    if (transactionResult.address !== address) {
+    const accountResult = await this.mirrorNodeClient.getAccount(transactionResult.from);
+
+    if (accountResult.evm_address !== address.toLowerCase()) {
       this.logger.warn(
         `${requestIdPrefix} eth_transactionCount for a historical block was requested where address: ${address} was not sender: ${transactionResult.address}, returning latest value as best effort.`,
       );
