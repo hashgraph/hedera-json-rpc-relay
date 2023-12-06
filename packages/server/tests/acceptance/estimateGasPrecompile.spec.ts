@@ -30,7 +30,7 @@ import ERC721MockJson from '../contracts/ERC721Mock.json';
 import { maxGasLimit } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { create } from 'ts-node';
 
-describe('EstimatePrecompileContract tests', function () {
+describe.only('EstimatePrecompileContract tests', function () {
   const signers: AliasAccount[] = [];
   const prefix = '0x';
   const CALL_EXCEPTION = 'CALL_EXCEPTION';
@@ -538,6 +538,29 @@ describe('EstimatePrecompileContract tests', function () {
     );
     const gasResult = await txResult.wait();
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-027 - Possible BUG - the estimateGas returns a result but it shouldn't
+  it('Should call estimateGas with ERC transferFrom function with more than the approved allowance for fungible token', async function () {
+    const tokenContract = new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[0].wallet);
+    const tokenContract1 = new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[1].wallet);
+    const txResultApprove = await tokenContract.approve(accounts[1].wallet.address, 10);
+    await txResultApprove.wait();
+
+    const allowance = await tokenContract.allowance(accounts[0].wallet.address, accounts[1].wallet.address);
+    console.log(allowance);
+
+    // const txResult = await tokenContract1.transferFrom(accounts[0].wallet.address, accounts[3].wallet.address, 50, {gasLimit: 1_000_000});
+    // const gasResult = await txResult.wait();
+
+    const tx = await tokenContract1.transferFrom.populateTransaction(
+      accounts[0].wallet.address,
+      accounts[3].wallet.address,
+      50,
+    );
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    isWithinDeviation(39511n, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
   //EGP-029
