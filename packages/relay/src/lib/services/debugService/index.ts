@@ -23,8 +23,7 @@ import type { MirrorNodeClient } from '../../clients';
 import type { IDebugService } from './IDebugService';
 import type { CommonService } from '../ethService/ethCommonService';
 import { decodeErrorMessage, numberTo0x } from '../../../formatters';
-import constants from '../../constants';
-import { TracerType, CallType } from '../../constants';
+import constants, { TracerType, CallType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
 import { EthImpl } from '../../eth';
 const SUCCESS = 'SUCCESS';
@@ -108,6 +107,31 @@ export class DebugService implements IDebugService {
       } else if (tracer === TracerType.OpcodeLogger) {
         throw predefined.UNSUPPORTED_OPERATION(`${TracerType.OpcodeLogger} is not supported on eth_debugTransaction`);
       }
+    } catch (e) {
+      throw this.common.genericErrorHandler(e);
+    }
+  }
+
+  /**
+   * Enumerates all accounts at a given block with paging capability.
+   *
+   * @async
+   * @param {string} blockNrOrHash - The hash of the block to be queried.
+   * @param {number} start - start number for the pagination calculation.
+   * @param {number} maxResults - All entities returned.
+   * @param {string} [requestIdPrefix] - An optional request id.
+   * @throws {Error} Throws an error if the specified block doe not exist
+   * @returns {Promise<void>} A Promise that resolves to the result of the trace operation.
+   *
+   * @example
+   * const result = await debug_accountRange('0x123abc', 10, 100, 'some request id');
+   */
+  async debug_accountRange(blockNrOrHash: string, start: number, maxResults: number, requestIdPrefix: string) {
+    this.logger.trace(`${requestIdPrefix} debug_accountRange(${blockNrOrHash})`);
+    try {
+      DebugService.requireDebugAPIEnabled();
+      const block = await this.mirrorNodeClient.getBlock(blockNrOrHash, requestIdPrefix);
+      return {};
     } catch (e) {
       throw this.common.genericErrorHandler(e);
     }

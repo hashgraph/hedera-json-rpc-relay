@@ -111,6 +111,7 @@ export class EthImpl implements Eth {
   static ethGetTransactionReceipt = 'eth_GetTransactionReceipt';
   static ethSendRawTransaction = 'eth_sendRawTransaction';
   static debugTraceTransaction = 'debug_traceTransaction';
+  static debugAccountRange = 'debug_accountRange';
 
   // block constants
   static blockLatest = 'latest';

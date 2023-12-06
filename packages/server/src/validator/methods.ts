@@ -176,4 +176,18 @@ export const METHODS = {
       type: 'tracerConfig',
     },
   },
+  debug_accountRange: {
+    0: {
+      required: true,
+      type: 'blockNumber|blockHash',
+    },
+    1: {
+      required: true,
+      type: 'number',
+    },
+    2: {
+      required: true,
+      type: 'number',
+    },
+  },
 };

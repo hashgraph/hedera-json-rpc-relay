@@ -99,4 +99,10 @@ export const TYPES = {
     },
     error: 'Invalid tracerConfig',
   },
+  number: {
+    test: (param: Record<string, any>) => {
+      return typeof param === 'number' && Number.isInteger(param) && param >= 0 && param <= Number.MAX_SAFE_INTEGER;
+    },
+    error: 'Invalid integer',
+  },
 };

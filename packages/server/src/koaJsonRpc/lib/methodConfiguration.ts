@@ -174,4 +174,7 @@ export const methodConfiguration = {
   debug_traceTransaction: {
     total: tier1rateLimit,
   },
+  debug_accountRange: {
+    total: tier1rateLimit,
+  },
 };

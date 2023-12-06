@@ -673,6 +673,15 @@ app.useRpc('debug_traceTransaction', async (params: any) => {
   );
 });
 
+app.useRpc('debug_accountRange', async (params: any) => {
+  const blockNrOrHash = params[0];
+  const start = params[1];
+  const maxResults = params[2];
+  return logAndHandleResponse('debug_accountRange', [blockNrOrHash, start, maxResults], (requestId) =>
+    relay.eth().debugService().debug_accountRange(blockNrOrHash, start, maxResults, requestId),
+  );
+});
+
 /**
  * Filter related endpoints:
  */

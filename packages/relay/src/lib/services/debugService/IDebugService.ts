@@ -27,5 +27,6 @@ export interface IDebugService {
     tracerConfig: object,
     requestIdPrefix?: string,
   ) => Promise<any>;
+  debug_accountRange(blockNrOrHash: string, start: number, maxResults: number, requestIdPrefix: string): Promise<any>;
   resolveAddress: (address: string, types?: string[], requestIdPrefix?: string) => Promise<string>;
 }
