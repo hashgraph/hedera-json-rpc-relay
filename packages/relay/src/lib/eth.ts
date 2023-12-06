@@ -1307,7 +1307,7 @@ export class EthImpl implements Eth {
         nonceCount = await this.getAccountLatestEthereumNonce(address, requestIdPrefix);
       } else if (blockNumOrTag === EthImpl.blockEarliest) {
         nonceCount = await this.getAccountNonceForEarliestBlock(requestIdPrefix);
-      } else if (!isNaN(blockNum) && blockNumOrTag.length != 66) {
+      } else if (!isNaN(blockNum) && blockNumOrTag.length != 66 && blockNum > 0) {
         nonceCount = await this.getAccountNonceForHistoricBlock(address, blockNum, requestIdPrefix);
       } else if (blockNumOrTag.length == 66 && blockNumOrTag.startsWith('0x')) {
         nonceCount = await this.getAccountNonceForHistoricBlock(address, blockNumOrTag, requestIdPrefix);
