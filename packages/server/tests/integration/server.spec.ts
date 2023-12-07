@@ -1004,7 +1004,7 @@ describe('RPC Server', async function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}, value: 123`,
+            'Invalid parameter 1: The value passed is not a valid blockHash/blockNumber/blockTag value: 123',
           );
         }
       });
@@ -1023,7 +1023,7 @@ describe('RPC Server', async function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 1: ${Validator.BLOCK_NUMBER_ERROR}, value: newest`,
+            'Invalid parameter 1: The value passed is not a valid blockHash/blockNumber/blockTag value: newest',
           );
         }
       });
