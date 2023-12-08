@@ -2212,13 +2212,7 @@ export class EthImpl implements Eth {
     blockNumOrHash: number | string,
     requestIdPrefix?: string,
   ): Promise<string> {
-    let getBlock;
-
-    try {
-      getBlock = await this.mirrorNodeClient.getBlock(blockNumOrHash);
-    } catch (e) {
-      throw e;
-    }
+    const getBlock = await this.mirrorNodeClient.getBlock(blockNumOrHash);
 
     if (getBlock === null) {
       throw predefined.UNKNOWN_BLOCK;
