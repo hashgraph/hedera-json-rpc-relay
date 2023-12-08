@@ -1878,4 +1878,112 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       });
     });
   });
+
+  describe('Batch Request Test Suite BATCH_REQUESTS_ENABLED = true', async function () {
+    let PREV_BATCH_REQUESTS_ENABLED: string | undefined;
+
+    before(async () => {
+      PREV_BATCH_REQUESTS_ENABLED = process.env.BATCH_REQUESTS_ENABLED;
+      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    });
+
+    after(async () => {
+      process.env.BATCH_REQUESTS_ENABLED = PREV_BATCH_REQUESTS_ENABLED;
+    });
+
+    it('Should return a batch of requests', async function () {
+      const testAccount = await servicesNode.createAliasAccount(100, relay.provider, Utils.generateRequestId());
+
+      {
+        const payload = [
+          {
+            id: 1,
+            method: RelayCall.ETH_ENDPOINTS.ETH_CHAIN_ID,
+            params: [],
+          },
+          {
+            id: 2,
+            method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
+            params: [testAccount.address, 'latest'],
+          },
+          {
+            id: 3,
+            method: RelayCall.ETH_ENDPOINTS.ETH_GAS_PRICE,
+            params: [],
+          },
+        ];
+
+        const res = await relay.callBatch(payload);
+        expect(res).to.have.length(payload.length);
+        expect(res.filter((r) => r.id === 1)[0].result).to.be.equal(CHAIN_ID);
+        expect(res.filter((r) => r.id === 2)[0].result).to.be.equal('0x0');
+        expect(res.filter((r) => r.id === 3)[0].result).to.be.equal('0x' + Assertions.defaultGasPrice.toString(16));
+      }
+
+      let transactionHash;
+      {
+        const factory = new ethers.ContractFactory(
+          DeployerContractJson.abi,
+          DeployerContractJson.bytecode,
+          testAccount.wallet,
+        );
+        const deployerContract = await factory.deploy();
+        await deployerContract.waitForDeployment();
+
+        // get contract details
+        const mirrorContract = await mirrorNode.get(`/contracts/${deployerContract.target}`, Utils.generateRequestId());
+        const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
+        const defaultGasLimit = numberTo0x(3_000_000);
+        const defaultTransaction = {
+          value: ONE_TINYBAR,
+          chainId: Number(CHAIN_ID),
+          maxPriorityFeePerGas: defaultGasPrice,
+          maxFeePerGas: defaultGasPrice,
+          gasLimit: defaultGasLimit,
+          type: 2,
+        };
+
+        const requestId = Utils.generateRequestId();
+        const account = await servicesNode.createAliasAccount(10, null, requestId);
+        await mirrorNode.get(`/accounts/${account.accountId}`, requestId);
+        const gasPrice = await relay.gasPrice(requestId);
+        const signedTx = await account.wallet.signTransaction({
+          ...defaultTransaction,
+          to: mirrorContract.evm_address,
+          nonce: await relay.getAccountNonce(account.address, requestId),
+          maxPriorityFeePerGas: gasPrice,
+          maxFeePerGas: gasPrice,
+        });
+        transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+        await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+
+        const res = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
+          [account.address, 'latest'],
+          requestId,
+        );
+        expect(res).to.be.equal('0x1');
+      }
+
+      {
+        const payload = [
+          {
+            id: 2,
+            method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
+            params: [testAccount.address, 'latest'],
+          },
+          {
+            id: 3,
+            method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
+            params: [transactionHash],
+          },
+        ];
+
+        const res = await relay.callBatch(payload);
+        expect(res).to.have.length(payload.length);
+        expect(res.filter((r) => r.id === 2)[0].result).to.be.equal('0x1');
+        expect(res.filter((r) => r.id === 3)[0].result.transactionHash).to.be.equal(transactionHash);
+      }
+    });
+  });
 });
