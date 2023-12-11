@@ -1893,6 +1893,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
     it('Should return a batch of requests', async function () {
       const testAccount = await servicesNode.createAliasAccount(100, relay.provider, Utils.generateRequestId());
+      await new Promise((r) => setTimeout(r, 5000));
 
       {
         const payload = [
