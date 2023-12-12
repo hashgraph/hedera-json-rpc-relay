@@ -93,7 +93,9 @@ export class CommonService implements ICommonService {
     requestIdPrefix?: string,
   ) {
     const blockRangeLimit =
-      Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT) || constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
+      process.env.TEST === 'true'
+        ? constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT
+        : Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT);
 
     if (this.blockTagIsLatestOrPending(toBlock)) {
       toBlock = CommonService.blockLatest;

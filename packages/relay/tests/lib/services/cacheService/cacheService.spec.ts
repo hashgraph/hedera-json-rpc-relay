@@ -84,6 +84,7 @@ describe('CacheService Test Suite', async function () {
     this.beforeAll(() => {
       process.env.REDIS_ENABLED = 'true';
       process.env.REDIS_URL = 'redis://127.0.0.1:6379';
+      process.env.TEST = 'false';
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
@@ -95,6 +96,11 @@ describe('CacheService Test Suite', async function () {
     this.afterEach(() => {
       mock.restore();
     });
+
+    this.afterAll(() => {
+      process.env.TEST = 'true';
+    });
+
     it('should be able to set and get from shared cache', async function () {
       const key = 'string';
       const value = 'value';
