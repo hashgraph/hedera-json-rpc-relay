@@ -95,6 +95,7 @@ export class SDKClient {
   private consensusNodeClientHistogramGasFee;
   private operatorAccountGauge;
   private maxChunks;
+  private fileAppendChunkSize;
 
   // populate with consensusnode requests via SDK
   constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, cacheService: CacheService) {
@@ -114,6 +115,7 @@ export class SDKClient {
     this.hbarLimiter = hbarLimiter;
     this.cacheService = cacheService;
     this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
+    this.fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
   }
 
   async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
@@ -246,7 +248,7 @@ export class SDKClient {
     const ethereumTransaction = new EthereumTransaction();
     const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
 
-    if (ethereumTransactionData.toBytes().length <= 5120) {
+    if (ethereumTransactionData.toBytes().length <= this.fileAppendChunkSize) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
       const fileId = await this.createFile(
@@ -643,7 +645,7 @@ export class SDKClient {
     const hexedCallData = Buffer.from(callData).toString('hex');
 
     const fileCreateTx = await new FileCreateTransaction()
-      .setContents(hexedCallData.substring(0, 4096))
+      .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
       .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
     const fileCreateTxResponse = await fileCreateTx.execute(client);
     const { fileId } = await fileCreateTxResponse.getReceipt(client);
@@ -659,11 +661,11 @@ export class SDKClient {
       interactingEntity,
     );
 
-    if (fileId && callData.length > 4096) {
+    if (fileId && callData.length > this.fileAppendChunkSize) {
       const fileAppendTx = await new FileAppendTransaction()
         .setFileId(fileId)
-        .setContents(hexedCallData.substring(4096, hexedCallData.length))
-        .setChunkSize(4096)
+        .setContents(hexedCallData.substring(this.fileAppendChunkSize, hexedCallData.length))
+        .setChunkSize(this.fileAppendChunkSize)
         .setMaxChunks(this.maxChunks);
       await fileAppendTx.execute(client);
 
