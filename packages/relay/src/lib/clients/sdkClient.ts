@@ -248,7 +248,7 @@ export class SDKClient {
     const ethereumTransaction = new EthereumTransaction();
     const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
 
-    if (ethereumTransactionData.toBytes().length <= this.fileAppendChunkSize) {
+    if (ethereumTransactionData.toBytes().length <= 5120) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
       const fileId = await this.createFile(
