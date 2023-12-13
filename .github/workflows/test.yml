@@ -7,6 +7,7 @@ on:
     branches: [ main, release/** ]
     tags: [ v* ]
 
+
 concurrency:
   group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -28,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Create .env file
-        run: cp ./packages/relay/tests/${{ inputs.envfile }} .env
+        run: cp ./packages/relay/tests/test.env .env
 
       - name: Install pnpm
         run: npm install -g pnpm
