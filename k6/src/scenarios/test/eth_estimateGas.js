@@ -28,19 +28,19 @@ const url = __ENV.RELAY_BASE_URL;
 const methodName = 'eth_estimateGas';
 const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
-  .request(() =>
-    http.post(
-      url,
-      getPayLoad(methodName, [
-        {
-          from: '0x8aff0a12f3e8d55cc718d36f84e002c335df2f4a',
-          to: '0x5c7687810ce3eae6cda44d0e6c896245cd4f97c6',
-          data: '0x6740d36c0000000000000000000000000000000000000000000000000000000000000005',
-        },
-        'latest',
-      ]),
-      httpParams,
-    ),
+  .request((testParameters) =>{
+
+      const contractAddress = testParameters.contractAddress;
+      const from = testParameters.wallets[0].address
+      const payload = getPayLoad(methodName, [
+          {
+              from: from,
+              to: contractAddress,
+              data: '0xa41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002e4772656574696e67732066726f6d204175746f6d617465642054657374204e756d62657220692c2048656c6c6f21000000000000000000000000000000000000',
+          },
+          'latest',
+      ]);
+      return http.post(url, payload, httpParams)},
   )
   .check(methodName, (r) => isNonErrorResponse(r))
   .build();
