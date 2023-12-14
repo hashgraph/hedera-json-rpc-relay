@@ -1001,7 +1001,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const callTracer: TracerType = TracerType.CallTracer;
 
     before(async () => {
-      const defaultGasPrice = '0xA54F4C3C00';
+      const defaultGasPrice = await relay.gasPrice(requestId);
       requestId = Utils.generateRequestId();
       reverterContract = await servicesNode.deployContract(reverterContractJson);
       // Wait for creation to propagate
