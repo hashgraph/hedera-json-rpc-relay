@@ -161,6 +161,12 @@ export class EthImpl implements Eth {
   private readonly shouldPopulateSyntheticContractResults = process.env.ETH_POPULATE_SYNTHETIC_CONTRACT_RESULTS
     ? process.env.ETH_POPULATE_SYNTHETIC_CONTRACT_RESULTS === 'true'
     : true;
+
+  private readonly ethGasPRiceCacheTtlMs = parseNumericEnvVar(
+    'ETH_GET_GAS_PRICE_CACHE_TTL_MS',
+    'ETH_GET_GAS_PRICE_CACHE_TTL_MS_DEFAULT',
+  );
+
   /**
    * Configurable options used when initializing the cache.
    *
@@ -652,12 +658,11 @@ export class EthImpl implements Eth {
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix);
-        // fees should not change so often we are safe with 1 day instead of 1 hour
         this.cacheService.set(
           constants.CACHE_KEY.GAS_PRICE,
           gasPrice,
           EthImpl.ethGasPrice,
-          constants.CACHE_TTL.ONE_DAY,
+          this.ethGasPRiceCacheTtlMs,
           requestIdPrefix,
         );
       }
