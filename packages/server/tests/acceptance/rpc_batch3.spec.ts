@@ -1927,7 +1927,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           DeployerContractJson.bytecode,
           testAccount.wallet,
         );
-        const deployerContract = await factory.deploy();
+        const deployerContract = await factory.deploy(Helper.GAS.LIMIT_15_000_000);
         await deployerContract.waitForDeployment();
 
         // get contract details
