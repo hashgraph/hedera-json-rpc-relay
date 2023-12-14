@@ -1893,6 +1893,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
     it('Should return a batch of requests', async function () {
       const testAccount = await servicesNode.createAliasAccount(100, relay.provider, Utils.generateRequestId());
+      await new Promise((r) => setTimeout(r, 4000));
 
       {
         const payload = [
@@ -1932,6 +1933,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         // get contract details
         const mirrorContract = await mirrorNode.get(`/contracts/${deployerContract.target}`, Utils.generateRequestId());
+
         const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
         const defaultGasLimit = numberTo0x(3_000_000);
         const defaultTransaction = {
@@ -1954,7 +1956,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           maxPriorityFeePerGas: gasPrice,
           maxFeePerGas: gasPrice,
         });
+
         transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const res = await relay.call(
