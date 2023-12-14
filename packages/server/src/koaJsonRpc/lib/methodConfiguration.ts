@@ -174,4 +174,7 @@ export const methodConfiguration = {
   debug_traceTransaction: {
     total: tier1rateLimit,
   },
+  batch_request: {
+    total: tier1rateLimit,
+  },
 };
