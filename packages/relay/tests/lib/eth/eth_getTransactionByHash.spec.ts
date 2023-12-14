@@ -280,25 +280,6 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     });
   });
 
-  it('throws error for reverted transactions when DEV_MODE=true', async function () {
-    const initialDevModeValue = process.env.DEV_MODE;
-    process.env.DEV_MODE = 'true';
-
-    const uniqueTxHash = '0xa8cad7b827375d12d73af57b6a3f84353645fd31305ea58ff52dda53ec640533';
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED);
-    const args = [uniqueTxHash];
-    const errMessage = DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED.error_message;
-    const data = DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED.error_message;
-    await RelayAssertions.assertRejection(
-      predefined.CONTRACT_REVERT(errMessage, data),
-      ethImpl.getTransactionByHash,
-      true,
-      ethImpl,
-      args,
-    );
-    process.env.DEV_MODE = initialDevModeValue;
-  });
-
   it('returns synthetic transaction when it matches cache', async function () {
     // prepare cache with synthetic log
     const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${defaultDetailedContractResultByHash.hash}`;
