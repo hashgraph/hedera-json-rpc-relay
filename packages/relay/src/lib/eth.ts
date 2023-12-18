@@ -2212,16 +2212,18 @@ export class EthImpl implements Eth {
     blockNumOrHash: number | string,
     requestIdPrefix?: string,
   ): Promise<string> {
-    const getBlock = await this.mirrorNodeClient.getBlock(blockNumOrHash);
+    let getBlock;
+    const isParamBlockNum = typeof blockNumOrHash === 'number' ? true : false;
 
-    if (getBlock === null) {
+    if (isParamBlockNum && blockNumOrHash < 0) {
       throw predefined.UNKNOWN_BLOCK;
     }
-    const blockNum = typeof blockNumOrHash === 'number' ? blockNumOrHash : getBlock.number;
 
-    if (blockNum < 0) {
-      throw predefined.UNKNOWN_BLOCK;
+    if (!isParamBlockNum) {
+      getBlock = await this.mirrorNodeClient.getBlock(blockNumOrHash);
     }
+
+    const blockNum = isParamBlockNum ? blockNumOrHash : getBlock.number;
 
     // check if on latest block, if so get latest ethereumNonce from mirror node account API
     const blockResponse = await this.mirrorNodeClient.getLatestBlock(requestIdPrefix); // consider caching error responses
