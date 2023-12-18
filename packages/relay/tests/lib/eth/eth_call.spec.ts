@@ -99,6 +99,10 @@ describe('@ethCall Eth Call spec', async function () {
     let callMirrorNodeSpy: sinon.SinonSpy;
     let sandbox: sinon.SinonSandbox;
 
+    this.beforeAll(() => {
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
+    });
+
     beforeEach(() => {
       sandbox = sinon.createSandbox();
       callConsensusNodeSpy = sandbox.spy(ethImpl, 'callConsensusNode');
@@ -107,6 +111,10 @@ describe('@ethCall Eth Call spec', async function () {
 
     afterEach(() => {
       sandbox.restore();
+    });
+
+    this.afterAll(() => {
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
     });
 
     it('eth_call with missing `to` field', async function () {
