@@ -39,7 +39,7 @@ import {
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub;
