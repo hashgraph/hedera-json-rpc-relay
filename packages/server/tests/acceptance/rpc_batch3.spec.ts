@@ -158,6 +158,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       };
 
       const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+      await new Promise((r) => setTimeout(r, 2000));
       expect(res).to.eq('0x'); // confirm no error
     });
 
