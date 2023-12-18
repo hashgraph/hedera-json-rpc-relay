@@ -84,7 +84,7 @@ export class CacheService {
 
     this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     this.sharedCache = this.internalCache;
-    this.isSharedCacheEnabled = this.isRedisEnabled();
+    this.isSharedCacheEnabled = process.env.TEST === 'true' ? false : this.isRedisEnabled();
 
     if (this.isSharedCacheEnabled) {
       this.sharedCache = new RedisCache(logger.child({ name: 'redisCache' }), register);
