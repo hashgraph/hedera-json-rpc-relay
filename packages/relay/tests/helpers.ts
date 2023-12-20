@@ -299,6 +299,30 @@ const mockData = {
     },
   },
 
+  invalidTransaction: {
+    _status: {
+      messages: [
+        {
+          message: 'INVALID_TRANSACTION',
+          detail: '',
+          data: '',
+        },
+      ],
+    },
+  },
+
+  failInvalid: {
+    _status: {
+      messages: [
+        {
+          message: 'FAIL_INVALID',
+          detail: '',
+          data: '',
+        },
+      ],
+    },
+  },
+
   notSuported: {
     _status: {
       messages: [

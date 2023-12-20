@@ -149,7 +149,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(res).to.eq('0x'); // confirm no error
     });
 
-    xit('"eth_call" for non-existing contract address returns 0x', async function () {
+    it('"eth_call" for non-existing contract address returns 0x', async function () {
       const callData = {
         from: accounts[0].address,
         to: Address.NON_EXISTING_ADDRESS,
