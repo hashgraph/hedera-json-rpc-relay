@@ -1845,12 +1845,11 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           DeployerContractJson.bytecode,
           testAccount.wallet,
         );
-        const deployerContract = await factory.deploy(Helper.GAS.LIMIT_15_000_000);
+        const deployerContract = await factory.deploy();
         await deployerContract.waitForDeployment();
 
         // get contract details
         const mirrorContract = await mirrorNode.get(`/contracts/${deployerContract.target}`, Utils.generateRequestId());
-
         const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
         const defaultGasLimit = numberTo0x(3_000_000);
         const defaultTransaction = {
@@ -1873,9 +1872,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           maxPriorityFeePerGas: gasPrice,
           maxFeePerGas: gasPrice,
         });
-
         transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const res = await relay.call(
