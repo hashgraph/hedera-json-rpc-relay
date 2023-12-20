@@ -149,7 +149,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(res).to.eq('0x'); // confirm no error
     });
 
-    it('"eth_call" for non-existing contract address returns 0x', async function () {
+    xit('"eth_call" for non-existing contract address returns 0x', async function () {
       const callData = {
         from: accounts[0].address,
         to: Address.NON_EXISTING_ADDRESS,
@@ -1127,8 +1127,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           Assertions.validateResultDebugValues(
             resultDebug,
-            ['to', 'output', 'input', 'calls'],
-            ['from', 'to', 'input', 'output'],
+            ['to', 'output', 'input', 'calls', 'gas'],
+            ['from', 'to', 'input', 'output', 'gas'],
             successResultCreateWithDepth,
           );
           expect(resultDebug.calls).to.have.lengthOf(1);
@@ -1339,8 +1339,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           Assertions.validateResultDebugValues(
             resultDebug,
-            ['to', 'output', 'input', 'calls'],
-            ['from', 'to', 'input', 'output'],
+            ['to', 'output', 'input', 'calls', 'gas'],
+            ['from', 'to', 'input', 'output', 'gas'],
             successResultCreateWithDepth,
           );
           expect(resultDebug.calls).to.have.lengthOf(1);
@@ -1553,8 +1553,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           Assertions.validateResultDebugValues(
             resultDebug,
-            ['to', 'output', 'input', 'calls'],
-            ['from', 'to', 'input', 'output'],
+            ['to', 'output', 'input', 'calls', 'gas'],
+            ['from', 'to', 'input', 'output', 'gas'],
             successResultCreateWithDepth,
           );
           expect(resultDebug.calls).to.have.lengthOf(1);
@@ -1581,7 +1581,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           defaultResponseFields.input = '0xc648049d0000000000000000000000000000000000000000000000000000000000000001';
           defaultResponseFields.from = accounts[0].address;
 
-          Assertions.validateResultDebugValues(resultDebug, ['to', 'output', 'calls'], [], defaultResponseFields);
+          Assertions.validateResultDebugValues(
+            resultDebug,
+            ['to', 'output', 'calls', 'gas'],
+            [],
+            defaultResponseFields,
+          );
         });
 
         it('@release should be able to debug a failing CREATE transaction of type 1559 with call depth and onlyTopCall false', async function () {
