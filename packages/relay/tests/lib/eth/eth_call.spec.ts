@@ -40,6 +40,7 @@ import {
   MAX_GAS_LIMIT,
   MAX_GAS_LIMIT_HEX,
   NO_TRANSACTIONS,
+  NON_EXISTENT_CONTRACT_ADDRESS,
   WRONG_CONTRACT_ADDRESS,
 } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
@@ -681,7 +682,7 @@ describe('@ethCall Eth Call spec', async function () {
       expect((result as JsonRpcError).name).to.eq('IP Rate limit exceeded');
     });
 
-    it('eth_call with all fields but mirrorNode throws 400', async function () {
+    it.only('eth_call with all fields but mirrorNode throws 400', async function () {
       const callData = {
         ...defaultCallData,
         from: ACCOUNT_ADDRESS_1,
@@ -819,6 +820,36 @@ describe('@ethCall Eth Call spec', async function () {
         ethImpl,
         args,
       );
+    });
+
+    it('eth_call with all fields but mirrorNode throws 400 due to non-existent `to` address (INVALID_TRANSACTION)', async function () {
+      const callData = {
+        ...defaultCallData,
+        from: ACCOUNT_ADDRESS_1,
+        to: NON_EXISTENT_CONTRACT_ADDRESS,
+        data: CONTRACT_CALL_DATA,
+        gas: MAX_GAS_LIMIT,
+      };
+
+      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, mockData.invalidTransaction);
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.be.not.null;
+      expect(result).to.equal('0x');
+    });
+
+    it('eth_call with all fields but mirrorNode throws 400 due to non-existent `to` address (FAIL_INVALID)', async function () {
+      const callData = {
+        ...defaultCallData,
+        from: ACCOUNT_ADDRESS_1,
+        to: NON_EXISTENT_CONTRACT_ADDRESS,
+        data: CONTRACT_CALL_DATA,
+        gas: MAX_GAS_LIMIT,
+      };
+
+      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, mockData.failInvalid);
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.be.not.null;
+      expect(result).to.equal('0x');
     });
   });
 });
