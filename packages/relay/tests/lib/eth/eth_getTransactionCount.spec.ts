@@ -301,4 +301,18 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     expect(nonce).to.exist;
     expect(nonce).to.equal(EthImpl.oneHex);
   });
+
+  it('should return nonce when block hash is passed', async () => {
+    const blockHash = mockData.blocks.blocks[2].hash;
+    restMock.onGet(`blocks/${blockHash}`).reply(200, mockData.blocks.blocks[2]);
+    restMock.onGet(`${contractResultsPath}`).reply(200, defaultDetailedContractResults);
+
+    const accountPathContractResultsAddress = `accounts/${defaultDetailedContractResults.from}${NO_TRANSACTIONS}`;
+    restMock
+      .onGet(accountPathContractResultsAddress)
+      .reply(200, { ...mockData.account, transactions: [defaultEthereumTransactions[0]] });
+    const nonce = await ethImpl.getTransactionCount(MOCK_ACCOUNT_ADDR, blockHash);
+    expect(nonce).to.exist;
+    expect(nonce).to.equal(numberTo0x(2));
+  });
 });

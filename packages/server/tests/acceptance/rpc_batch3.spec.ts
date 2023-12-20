@@ -731,6 +731,15 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(res).to.be.equal('0x2');
     });
 
+    it('@release should execute "eth_getTransactionCount" with block hash', async function () {
+      const res = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
+        [mirrorContract.evm_address, mirrorContractDetails.block_hash.slice(0, 66)],
+        requestId,
+      );
+      expect(res).to.be.equal('0x2');
+    });
+
     it('@release should execute "eth_getTransactionCount" for account with id converted to evm_address', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,

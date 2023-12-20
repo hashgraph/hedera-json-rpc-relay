@@ -93,6 +93,7 @@ export class EthImpl implements Eth {
     '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
   static iHTSAddress = '0x0000000000000000000000000000000000000167';
   static invalidEVMInstruction = '0xfe';
+  static blockHashLength = 66;
 
   // endpoint callerNames
   static ethBlockByNumber = 'eth_blockNumber';
@@ -1307,8 +1308,10 @@ export class EthImpl implements Eth {
         nonceCount = await this.getAccountLatestEthereumNonce(address, requestIdPrefix);
       } else if (blockNumOrTag === EthImpl.blockEarliest) {
         nonceCount = await this.getAccountNonceForEarliestBlock(requestIdPrefix);
-      } else if (!isNaN(blockNum)) {
+      } else if (!isNaN(blockNum) && blockNumOrTag.length != EthImpl.blockHashLength && blockNum > 0) {
         nonceCount = await this.getAccountNonceForHistoricBlock(address, blockNum, requestIdPrefix);
+      } else if (blockNumOrTag.length == EthImpl.blockHashLength && blockNumOrTag.startsWith(EthImpl.emptyHex)) {
+        nonceCount = await this.getAccountNonceForHistoricBlock(address, blockNumOrTag, requestIdPrefix);
       } else {
         // return a '-39001: Unknown block' error per api-spec
         throw predefined.UNKNOWN_BLOCK;
@@ -2141,11 +2144,11 @@ export class EthImpl implements Eth {
    */
   private async getAcccountNonceFromContractResult(
     address: string,
-    blockNum: any,
+    blockNumOrHash: any,
     requestIdPrefix: string | undefined,
   ) {
     // get block timestamp for blockNum
-    const block = await this.mirrorNodeClient.getBlock(blockNum, requestIdPrefix); // consider caching error responses
+    const block = await this.mirrorNodeClient.getBlock(blockNumOrHash, requestIdPrefix); // consider caching error responses
     if (block == null) {
       throw predefined.UNKNOWN_BLOCK;
     }
@@ -2207,12 +2210,21 @@ export class EthImpl implements Eth {
 
   private async getAccountNonceForHistoricBlock(
     address: string,
-    blockNum: number,
+    blockNumOrHash: number | string,
     requestIdPrefix?: string,
   ): Promise<string> {
-    if (blockNum < 0) {
+    let getBlock;
+    const isParamBlockNum = typeof blockNumOrHash === 'number' ? true : false;
+
+    if (isParamBlockNum && blockNumOrHash < 0) {
       throw predefined.UNKNOWN_BLOCK;
     }
+
+    if (!isParamBlockNum) {
+      getBlock = await this.mirrorNodeClient.getBlock(blockNumOrHash);
+    }
+
+    const blockNum = isParamBlockNum ? blockNumOrHash : getBlock.number;
 
     // check if on latest block, if so get latest ethereumNonce from mirror node account API
     const blockResponse = await this.mirrorNodeClient.getLatestBlock(requestIdPrefix); // consider caching error responses
