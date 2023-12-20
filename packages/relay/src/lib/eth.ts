@@ -1520,7 +1520,7 @@ export class EthImpl implements Eth {
 
       if (e instanceof MirrorNodeClientError) {
         // Handles mirror node error for missing contract
-        if (e.isFailInvalid()) {
+        if (e.isFailInvalid() || e.isInvalidTransaction()) {
           return EthImpl.emptyHex;
         }
 
