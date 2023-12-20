@@ -682,7 +682,7 @@ describe('@ethCall Eth Call spec', async function () {
       expect((result as JsonRpcError).name).to.eq('IP Rate limit exceeded');
     });
 
-    it.only('eth_call with all fields but mirrorNode throws 400', async function () {
+    it('eth_call with all fields but mirrorNode throws 400', async function () {
       const callData = {
         ...defaultCallData,
         from: ACCOUNT_ADDRESS_1,
