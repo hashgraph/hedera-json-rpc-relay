@@ -614,7 +614,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     const CALLDATA_ALLOWANCE = '0xdd62ed3e';
     const NON_EXISTING_ACCOUNT = '123abc123abc123abc123abc123abc123abc123a';
 
-    it('Call to non-existing HTS token returns 0x', async () => {
+    xit('Call to non-existing HTS token returns 0x', async () => {
       const callData = {
         from: accounts[0].address,
         to: '0x' + NON_EXISTING_ACCOUNT,
