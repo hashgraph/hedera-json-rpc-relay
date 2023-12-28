@@ -170,7 +170,7 @@ const mockData = {
       {
         count: 33,
         hapi_version: '0.38.10',
-        hash: '0xcf703d42a6d55555cc8c24cb0c615115a8ab82ec29db3e3e58573263c4e2ec11d097fba3f5896dbfc7fb35081bb325df',
+        hash: '0xdbc8c72721c30cfcec44a82d8c0b7ab841b36b2f8601a503fc89abed0af3747e',
         name: '2023-06-06T03_26_55.010262867Z.rcd.gz',
         number: 2,
         previous_hash:
@@ -292,6 +292,30 @@ const mockData = {
       messages: [
         {
           message: 'CONTRACT_REVERT_EXECUTED',
+          detail: '',
+          data: '',
+        },
+      ],
+    },
+  },
+
+  invalidTransaction: {
+    _status: {
+      messages: [
+        {
+          message: 'INVALID_TRANSACTION',
+          detail: '',
+          data: '',
+        },
+      ],
+    },
+  },
+
+  failInvalid: {
+    _status: {
+      messages: [
+        {
+          message: 'FAIL_INVALID',
           detail: '',
           data: '',
         },

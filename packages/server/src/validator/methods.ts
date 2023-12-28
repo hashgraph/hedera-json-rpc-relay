@@ -24,7 +24,7 @@ export const METHODS = {
       required: true,
     },
     1: {
-      type: 'blockNumber',
+      type: 'blockNumber|blockHash',
       required: true,
     },
   },
@@ -55,7 +55,7 @@ export const METHODS = {
     },
     1: {
       required: true,
-      type: 'blockNumber',
+      type: 'blockNumber|blockHash',
     },
   },
   eth_call: {

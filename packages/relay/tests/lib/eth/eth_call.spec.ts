@@ -40,6 +40,7 @@ import {
   MAX_GAS_LIMIT,
   MAX_GAS_LIMIT_HEX,
   NO_TRANSACTIONS,
+  NON_EXISTENT_CONTRACT_ADDRESS,
   WRONG_CONTRACT_ADDRESS,
 } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
@@ -99,6 +100,10 @@ describe('@ethCall Eth Call spec', async function () {
     let callMirrorNodeSpy: sinon.SinonSpy;
     let sandbox: sinon.SinonSandbox;
 
+    this.beforeAll(() => {
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
+    });
+
     beforeEach(() => {
       sandbox = sinon.createSandbox();
       callConsensusNodeSpy = sandbox.spy(ethImpl, 'callConsensusNode');
@@ -107,6 +112,10 @@ describe('@ethCall Eth Call spec', async function () {
 
     afterEach(() => {
       sandbox.restore();
+    });
+
+    this.afterAll(() => {
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
     });
 
     it('eth_call with missing `to` field', async function () {
@@ -811,6 +820,36 @@ describe('@ethCall Eth Call spec', async function () {
         ethImpl,
         args,
       );
+    });
+
+    it('eth_call with all fields but mirrorNode throws 400 due to non-existent `to` address (INVALID_TRANSACTION)', async function () {
+      const callData = {
+        ...defaultCallData,
+        from: ACCOUNT_ADDRESS_1,
+        to: NON_EXISTENT_CONTRACT_ADDRESS,
+        data: CONTRACT_CALL_DATA,
+        gas: MAX_GAS_LIMIT,
+      };
+
+      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, mockData.invalidTransaction);
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.be.not.null;
+      expect(result).to.equal('0x');
+    });
+
+    it('eth_call with all fields but mirrorNode throws 400 due to non-existent `to` address (FAIL_INVALID)', async function () {
+      const callData = {
+        ...defaultCallData,
+        from: ACCOUNT_ADDRESS_1,
+        to: NON_EXISTENT_CONTRACT_ADDRESS,
+        data: CONTRACT_CALL_DATA,
+        gas: MAX_GAS_LIMIT,
+      };
+
+      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, mockData.failInvalid);
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.be.not.null;
+      expect(result).to.equal('0x');
     });
   });
 });

@@ -87,4 +87,8 @@ export class MirrorNodeClientError extends Error {
   isFailInvalid() {
     return this.message === 'FAIL_INVALID';
   }
+
+  isInvalidTransaction() {
+    return this.message === 'INVALID_TRANSACTION';
+  }
 }

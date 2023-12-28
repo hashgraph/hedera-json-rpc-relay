@@ -56,6 +56,25 @@ export default class RelayClient {
   }
 
   /**
+   * Sends a batch request.
+   *
+   * The `payload` is an array of JSON-RPC requests.
+   * The `method` and `params` fields correspond to the arguments of the `call` method.
+   *
+   * @param payload
+   * @returns
+   */
+  async callBatch(payload: { id: string; method: string; params: any[] }[]) {
+    const request = this.provider._getConnection();
+    request.setHeader('content-type', 'application/json');
+    request.body = JSON.stringify(payload.map((r) => ({ ...r, jsonrpc: '2.0' })));
+    const response = await request.send();
+    response.assertOk();
+
+    return response.bodyJson;
+  }
+
+  /**
    * Calls the specified methodName with the provided params and asserts that it fails
    * @param methodName
    * @param params

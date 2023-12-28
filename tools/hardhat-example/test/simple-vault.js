@@ -44,7 +44,7 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
   before(async function () {
 
     if (hre.network.name !== "hardhat") {
-      this.skip();  // Skip all tests in this suite since it only the hardhat local node supports the hardhat_setCode method
+      this.skip();  // Skip all tests in this script since only the hardhat local node supports the hardhat_setCode method
     }
 
     // - - - - - DEPLOY REQUISITE SYSTEM CONTRACT MOCKS - - - - -
