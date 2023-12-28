@@ -88,7 +88,12 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
     // - - - - - DEPLOY HTS Token via direct EOA call to HTS System Contract Mock - - - - -
 
     const createTokenExpectedResult = await htsSystemContract.connect(deployer).callStatic.createFungibleToken(token, initialTotalSupply, decimals);
-    const expectedTokenAddress = createTokenExpectedResult.tokenAddress; // TODO: investigate why computing the expected address using the factory address and nonce doesn't work
+    const factoryAddress = htsSystemContract.address;
+    const factoryNonce = await ethers.provider.getTransactionCount(factoryAddress);
+    const computedTokenAddress = ethers.utils.getContractAddress({ from: factoryAddress, nonce: factoryNonce });
+    const expectedTokenAddress = createTokenExpectedResult.tokenAddress;
+
+    expect(computedTokenAddress).to.be.eq(expectedTokenAddress);
 
     const factoryNonceInitial = await ethers.provider.getTransactionCount(htsSystemContractAddress)
 
