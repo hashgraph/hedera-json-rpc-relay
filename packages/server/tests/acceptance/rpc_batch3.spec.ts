@@ -650,9 +650,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         data: IS_TOKEN_ADDRESS_SIGNATURE + tokenAddress.replace('0x', ''),
       };
 
-      relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest']);
-      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
-
+      let res = await Utils.ethCall(relay, callData, requestId);
       expect(res).to.eq(RESULT_TRUE);
     });
   });

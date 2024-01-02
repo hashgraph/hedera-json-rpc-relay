@@ -21,6 +21,8 @@
 import { ethers } from 'ethers';
 import Assertions from './assertions';
 import crypto from 'crypto';
+import RelayClient from '../clients/relayClient';
+import RelayCall from '../../tests/helpers/constants';
 
 export class Utils {
   static toHex = (num) => {
@@ -149,5 +151,20 @@ export class Utils {
       return res.toArray().map((e) => Utils.convertEthersResultIntoStringsArray(e));
     }
     return res.toString();
+  };
+
+  static ethCall = async (
+    relay: RelayClient,
+    callData: { from: string; to: any; gas: string; data: string },
+    requestId: string,
+  ): Promise<string> => {
+    let numberOfCalls = 0;
+    let res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+    while (res === '0x' && numberOfCalls < 3) {
+      await new Promise((r) => setTimeout(r, 2000));
+      res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+      numberOfCalls++;
+    }
+    return res;
   };
 }
