@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,13 +30,12 @@ import ERC721MockJson from '../contracts/ERC721Mock.json';
 import { maxGasLimit } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { create } from 'ts-node';
 
-describe.only('EstimatePrecompileContract tests', function () {
+describe('EstimatePrecompileContract tests', function () {
   const signers: AliasAccount[] = [];
   const prefix = '0x';
   const CALL_EXCEPTION = 'CALL_EXCEPTION';
   let contract: ethers.Contract;
   let contractAccount1: ethers.Contract;
-  //  let contract1: ethers.Contract;
 
   let contractReceipt;
   let EstimatePrecompileContractAddress;
