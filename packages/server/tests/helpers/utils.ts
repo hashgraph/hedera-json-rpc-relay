@@ -18,11 +18,12 @@
  *
  */
 
-import { ethers } from 'ethers';
+import { ContractFactory, ethers } from 'ethers';
 import Assertions from './assertions';
 import crypto from 'crypto';
 import RelayClient from '../clients/relayClient';
 import RelayCall from '../../tests/helpers/constants';
+import Constants from './constants';
 
 export class Utils {
   static toHex = (num) => {
@@ -166,5 +167,24 @@ export class Utils {
       numberOfCalls++;
     }
     return res;
+  };
+
+  // Handles the odd case where the contract is loading in the factory but for some reason
+  // ethers is not able to deploy it.  The ethers deploy returns a 4001 error.
+  static deployContract = async (contractFactory: ContractFactory): Promise<ethers.Contract> => {
+    let deployRan = false;
+    let contract;
+    while (!deployRan) {
+      try {
+        contract = await contractFactory.deploy(Constants.GAS.LIMIT_15_000_000);
+        await contract.waitForDeployment();
+      } catch (e) {
+        await new Promise((r) => setTimeout(r, 1000));
+        continue;
+      }
+      deployRan = true;
+    }
+
+    return contract;
   };
 }

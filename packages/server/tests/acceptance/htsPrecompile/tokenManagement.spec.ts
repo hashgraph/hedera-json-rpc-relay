@@ -147,8 +147,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
 
   async function deployMainContract(signer) {
     const mainFactory = new ethers.ContractFactory(TokenManagementJson.abi, TokenManagementJson.bytecode, signer);
-    const mainContract = await mainFactory.deploy(Constants.GAS.LIMIT_15_000_000);
-    await mainContract.waitForDeployment();
+    const mainContract = await Utils.deployContract(mainFactory);
 
     return mainContract.target;
   }
