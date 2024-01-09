@@ -154,16 +154,17 @@ export class Utils {
     return res.toString();
   };
 
-  static ethCall = async (
+  static ethCallWRetries = async (
     relay: RelayClient,
     callData: { from: string; to: any; gas: string; data: string },
+    blockNumber: string,
     requestId: string,
   ): Promise<string> => {
     let numberOfCalls = 0;
-    let res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+    let res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, blockNumber], requestId);
     while (res === '0x' && numberOfCalls < 3) {
       await new Promise((r) => setTimeout(r, 2000));
-      res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+      res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, blockNumber], requestId);
       numberOfCalls++;
     }
     return res;
