@@ -70,7 +70,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
     requestId = Utils.generateRequestId();
 
     const contractDeployer = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    mainContractAddress = await deploymainContract(contractDeployer.wallet);
+    mainContractAddress = await deployMainContract(contractDeployer.wallet);
     const mainContractMirror = await mirrorNode.get(`/contracts/${mainContractAddress}`, requestId);
 
     accounts[0] = await servicesNode.createAccountWithContractIdKey(
@@ -145,7 +145,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
     requestId = Utils.generateRequestId();
   });
 
-  async function deploymainContract(signer) {
+  async function deployMainContract(signer) {
     const mainFactory = new ethers.ContractFactory(TokenManagementJson.abi, TokenManagementJson.bytecode, signer);
     const mainContract = await mainFactory.deploy(Constants.GAS.LIMIT_15_000_000);
     await mainContract.waitForDeployment();
