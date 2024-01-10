@@ -48,6 +48,11 @@ task('contract-call', async (taskArgs) => {
   return contractCall(taskArgs.contractAddress, taskArgs.msg);
 });
 
+const mnemonic = process.env.MNEMONIC;
+if (!mnemonic) {
+  throw new Error("Please set your MNEMONIC in a .env file");
+}
+
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   mocha: {
@@ -64,6 +69,12 @@ module.exports = {
   },
   defaultNetwork: 'local',
   networks: {
+    hardhat: {
+      allowUnlimitedContractSize: true,
+      accounts: {
+        mnemonic,
+      }
+    },
     local: {
       url: process.env.RELAY_ENDPOINT,
       accounts: [process.env.OPERATOR_PRIVATE_KEY, process.env.RECEIVER_PRIVATE_KEY],
