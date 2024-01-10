@@ -174,8 +174,9 @@ export class Utils {
   // ethers is not able to deploy it.  The ethers deploy returns a 4001 error.
   static deployContract = async (contractFactory: ContractFactory): Promise<ethers.Contract> => {
     let deployRan = false;
+    let numberOfAttempts = 0;
     let contract;
-    while (!deployRan) {
+    while (!deployRan && numberOfAttempts < 3) {
       try {
         contract = await contractFactory.deploy(Constants.GAS.LIMIT_15_000_000);
         await contract.waitForDeployment();
