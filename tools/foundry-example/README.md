@@ -57,7 +57,7 @@ However, for cases where the submodule management in a nested directory as is at
 5. **Add the necessary submodules**(despite these already being defined in the `.gitmodules`):
     ```bash
     git submodule add https://github.com/foundry-rs/forge-std lib/forge-std
-    git submodule add -b release-v4.9 https://github.com/OpenZeppelin/openzeppelin-contracts lib/openzeppelin-contracts
+    git submodule add -b release-v5.0 https://github.com/OpenZeppelin/openzeppelin-contracts lib/openzeppelin-contracts
     git submodule add https://github.com/hashgraph/hedera-smart-contracts lib/hedera-smart-contracts
     ```
 
