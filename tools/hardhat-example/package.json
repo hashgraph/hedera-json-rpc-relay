@@ -1,11 +1,19 @@
 {
   "name": "hardhat-project",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat --network hardhat test"
+  },
   "devDependencies": {
+    "@hashgraph/hedera-local": "^2.17.2",
     "@nomicfoundation/hardhat-toolbox": "^2.0.1",
-    "hardhat": "^2.12.6"
+    "dotenv": "^16.3.1",
+    "hardhat": "^2.18.1"
   },
   "dependencies": {
     "@hashgraph/hedera-local": "^2.17.2",
     "dotenv": "^16.3.1"
+    "@hashgraph/smart-contracts": "github:hashgraph/hedera-smart-contracts#11c5017c1867b3f31012163cdac0aafa4a30b60a",
+    "@openzeppelin/contracts": "^4.9.3"
   }
 }
