@@ -182,6 +182,7 @@ export class Utils {
         await contract.waitForDeployment();
       } catch (e) {
         await new Promise((r) => setTimeout(r, 1000));
+        numberOfAttempts++;
         continue;
       }
       deployRan = true;
