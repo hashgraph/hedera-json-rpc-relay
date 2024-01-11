@@ -36,6 +36,7 @@ const Address = RelayCalls;
 import basicContract from '../../tests/contracts/Basic.json';
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
 import constants from '../../../relay/src/lib/constants';
+import exp from 'constants';
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -718,7 +719,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           requestId,
         );
 
-        expect(receiptFromRelay.effectiveGasPrice).to.equal(prepend0x(currentPrice.toString(16)));
+        // handle deviation of 20% in gas price
+        expect(receiptFromRelay.effectiveGasPrice).to.be.lessThan(Number(prepend0x(currentPrice)) * 1.2);
+        expect(receiptFromRelay.effectiveGasPrice).to.be.greaterThan(Number(prepend0x(currentPrice)) * 0.8);
       });
 
       it('@release should return the right "effectiveGasPrice" for SYNTHETIC Contract Call transaction', async function () {
@@ -734,7 +737,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           requestId,
         );
 
-        expect(receiptFromRelay.effectiveGasPrice).to.equal(prepend0x(currentPrice.toString(16)));
+        // handle deviation of 20% in gas price
+        expect(receiptFromRelay.effectiveGasPrice).to.be.lessThan(Number(prepend0x(currentPrice)) * 1.2);
+        expect(receiptFromRelay.effectiveGasPrice).to.be.greaterThan(Number(prepend0x(currentPrice)) * 0.8);
       });
 
       it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {

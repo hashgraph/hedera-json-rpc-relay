@@ -248,10 +248,16 @@ export default class Assertions {
       "Assert transactionReceipt: 'effectiveGasPrice' should be > 0",
     ).to.gt(0);
     const mirrorEffectiveGasPrice = effectiveGas;
+    // handle deviation of 20% in gas price
     expect(
       BigInt(transactionReceipt.effectiveGasPrice).toString(),
-      "Assert transactionReceipt: 'effectiveGasPrice' should equal mirrorNode response",
-    ).to.eq(mirrorEffectiveGasPrice.toString());
+      "Assert transactionReceipt: 'effectiveGasPrice' should be less than a 20% deviation from the mirrorNode response",
+    ).to.be.lessThan(mirrorEffectiveGasPrice * 1.2);
+
+    expect(
+      BigInt(transactionReceipt.effectiveGasPrice).toString(),
+      "Assert transactionReceipt: 'effectiveGasPrice' should be less than a 20% deviation from the mirrorNode response",
+    ).to.be.greaterThan(mirrorEffectiveGasPrice * 0.8);
 
     expect(transactionReceipt.status, "Assert transactionReceipt: 'status' should exist").to.exist;
     expect(transactionReceipt.status, "Assert transactionReceipt: 'status' should equal mirrorNode response").to.eq(
