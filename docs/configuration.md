@@ -167,6 +167,8 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `E2E_RELAY_HOST` | ""      | Remote relay url to point to.                                |
 | `DEV_MODE`       | "false" | Flag if relay should operate in developer optimization mode. |
 | `TEST_WS_SERVER` | "false" | Flag config for enable or disable the WS server tests.       |
+| `LOWER_GAS_PRICE_DEVIATION` | 0.80 | Lower value to use when comparing gas prices in the rpc-batch1.spec.ts |
+| `UPPER_GAS_PRICE_DEVIATION` | 1.20 | Upper value to use when comparing gas prices in the rpc-batch1.spec.ts |
 
 For test context additional fields need to be set. The following example showcases a `hedera-local-node` instance (where values match those noted on [Local Node Network Variables](https://github.com/hashgraph/hedera-local-node#network-variables)
 
@@ -207,8 +209,12 @@ CLIENT_TRANSACTION_RESET= 400000
 CLIENT_DURATION_RESET= 21600
 CLIENT_ERROR_RESET= 100
 MAX_CHUNKS=20
+LOWER_GAS_PRICE_DEVIATION=0.80
+UPPER_GAS_PRICE_DEVIATION=1.20
 ```
 
 > **_NOTE:_** Acceptance tests can be pointed at a remote locations (previewnet and testnet and custom environments). In this case configuration will require details for remote consensus node gRPC endpoints [previewnet / testnet](https://docs.hedera.com/hedera/networks/testnet/testnet-nodes) / [mainnet](https://docs.hedera.com/hedera/networks/mainnet/mainnet-nodes) and [Mirror Node REST API endpoints](https://docs.hedera.com/hedera/sdks-and-apis/rest-api), be sure to configure `HEDERA_NETWORK` and `MIRROR_NODE_URL` appropriately to point away from your local host and to valid deployed services. When pointing to previewnet and testnet, account Ids (`OPERATOR_ID_MAIN`) and private keys (`OPERATOR_KEY_MAIN`) for previewnet and tests may be obtained from the [Hedera Portal](http://portal.hedera.com).
 
 > **_NOTE 2:_**: Read more about `DEV_MODE` [here](./dev-mode.md)
+
+> **_NOTE 3:_**: Hedera transaction fees are set in fiat(USD) but paid using the gas price in HBAR.  The LOWER_GAS_PRICE_DEVIATION and UPPER_GAS_PRICE_DEVIATION allow for a range of gas prices reflecting the current market rates, when testing the current gas price in the acceptance tests.  Read more about transaction fees [here](https://hedera.com/fees)
