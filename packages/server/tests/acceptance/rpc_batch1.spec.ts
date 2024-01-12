@@ -541,8 +541,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         type: 1,
       };
 
-      const upperGasPriceDeviation = parseFloat(process.env.UPPER_GAS_PRICE_DEVIATION ?? '1.2');
-      const lowerGasPriceDeviation = parseFloat(process.env.LOWER_GAS_PRICE_DEVIATION ?? '0.8');
+      const gasPriceDeviation = parseFloat(process.env.TEST_GAS_PRICE_DEVIATION ?? '0.2');
 
       it('@release should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
         const response = await relay.call(
@@ -723,8 +722,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
 
         // handle deviation in gas price
-        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.lessThan(currentPrice * upperGasPriceDeviation);
-        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.greaterThan(currentPrice * lowerGasPriceDeviation);
+        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
+        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
       });
 
       it('@release should return the right "effectiveGasPrice" for SYNTHETIC Contract Call transaction', async function () {
@@ -741,8 +740,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
 
         // handle deviation in gas price
-        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.lessThan(currentPrice * upperGasPriceDeviation);
-        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.greaterThan(currentPrice * lowerGasPriceDeviation);
+        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
+        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
       });
 
       it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {
