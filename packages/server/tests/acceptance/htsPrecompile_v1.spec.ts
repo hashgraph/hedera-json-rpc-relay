@@ -90,8 +90,7 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
 
   async function deployBaseHTSContract(signer) {
     const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, signer);
-    const baseHTS = await baseHTSFactory.deploy(Constants.GAS.LIMIT_10_000_000);
-    await baseHTS.waitForDeployment();
+    const baseHTS = await Utils.deployContract(baseHTSFactory);
 
     return baseHTS.target;
   }
