@@ -131,10 +131,8 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
   async function deploymainContract(signer) {
     const mainFactory = new ethers.ContractFactory(TokenCreateJson.abi, TokenCreateJson.bytecode, signer);
-    const mainContract = await mainFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
-    await mainContract.waitForDeployment();
-    // wait for mirror node to catch up continuing running tests
-    await new Promise((r) => setTimeout(r, 5000));
+    const mainContract = await Utils.deployContract(mainFactory);
+
     return mainContract.target;
   }
 

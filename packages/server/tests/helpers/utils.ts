@@ -18,9 +18,12 @@
  *
  */
 
-import { ethers } from 'ethers';
+import { ContractFactory, ethers } from 'ethers';
 import Assertions from './assertions';
 import crypto from 'crypto';
+import RelayClient from '../clients/relayClient';
+import RelayCall from '../../tests/helpers/constants';
+import Constants from './constants';
 
 export class Utils {
   static toHex = (num) => {
@@ -149,5 +152,42 @@ export class Utils {
       return res.toArray().map((e) => Utils.convertEthersResultIntoStringsArray(e));
     }
     return res.toString();
+  };
+
+  static ethCallWRetries = async (
+    relay: RelayClient,
+    callData: { from: string; to: any; gas: string; data: string },
+    blockNumber: string,
+    requestId: string,
+  ): Promise<string> => {
+    let numberOfCalls = 0;
+    let res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, blockNumber], requestId);
+    while (res === '0x' && numberOfCalls < 3) {
+      await new Promise((r) => setTimeout(r, 2000));
+      res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, blockNumber], requestId);
+      numberOfCalls++;
+    }
+    return res;
+  };
+
+  // Handles the odd case where the contract is loading in the factory but for some reason
+  // ethers is not able to deploy it.  The ethers deploy returns a 4001 error.
+  static deployContract = async (contractFactory: ContractFactory): Promise<ethers.Contract> => {
+    let deployRan = false;
+    let numberOfAttempts = 0;
+    let contract;
+    while (!deployRan && numberOfAttempts < 3) {
+      try {
+        contract = await contractFactory.deploy(Constants.GAS.LIMIT_15_000_000);
+        await contract.waitForDeployment();
+      } catch (e) {
+        await new Promise((r) => setTimeout(r, 1000));
+        numberOfAttempts++;
+        continue;
+      }
+      deployRan = true;
+    }
+
+    return contract;
   };
 }
