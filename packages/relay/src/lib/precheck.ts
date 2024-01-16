@@ -89,7 +89,7 @@ export class Precheck {
     );
 
     // @ts-ignore
-    if (accountInfoNonce > tx.nonce) {
+    if (accountInfoNonce > tx.nonce + constants.NonceBufferPrecheck) {
       throw predefined.NONCE_TOO_LOW(tx.nonce, accountInfoNonce);
     }
   }

@@ -146,6 +146,8 @@ export default {
     WRONG_NONCE: 'WRONG_NONCE',
   },
 
+  NonceBufferPrecheck: parseInt(process.env.NONCE_BUFFER_PRECHECK || '1'),
+
   PRECHECK_STATUS_ERROR_STATUS_CODES: {
     INVALID_CONTRACT_ID: 16,
     CONTRACT_DELETED: 66,
