@@ -1583,9 +1583,6 @@ export class EthImpl implements Eth {
         EthImpl.ethCall,
         requestIdPrefix,
       );
-      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
-        throw predefined.NON_EXISTING_ACCOUNT(call.from);
-      }
     }
 
     // Check "To" is a valid Contract or HTS Address
@@ -1595,9 +1592,6 @@ export class EthImpl implements Eth {
       EthImpl.ethCall,
       requestIdPrefix,
     );
-    if (!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
-      throw predefined.NON_EXISTING_CONTRACT(call.to);
-    }
 
     try {
       let data = call.data;
