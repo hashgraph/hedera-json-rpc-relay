@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -418,10 +418,10 @@ describe('@ethCall Eth Call spec', async function () {
       expect(result).to.equal('0x00');
     });
 
-    it('eth_call with wrong "from" address', async function () {
+    it('eth_call with a bad "from" address', async function () {
       const callData = {
         ...defaultCallData,
-        from: '0x0000000000000000000000000000000000000000',
+        from: '0x00000000000000000000000000000000000000',
         to: CONTRACT_ADDRESS_2,
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
