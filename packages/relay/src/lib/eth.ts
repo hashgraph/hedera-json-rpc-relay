@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import { IFilterService } from './services/ethService/ethFilterService/IFilterSe
 import { CacheService } from './services/cacheService/cacheService';
 import { IDebugService } from './services/debugService/IDebugService';
 import { DebugService } from './services/debugService';
+import { isValidEthereumAddress } from '../formatters';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -1577,26 +1578,14 @@ export class EthImpl implements Eth {
 
     // If "From" is distinct from blank, we check is a valid account
     if (call.from) {
-      const fromEntityType = await this.mirrorNodeClient.resolveEntityType(
-        call.from,
-        [constants.TYPE_ACCOUNT],
-        EthImpl.ethCall,
-        requestIdPrefix,
-      );
-      if (fromEntityType?.type !== constants.TYPE_ACCOUNT) {
+      if (!isValidEthereumAddress(call.from)) {
         throw predefined.NON_EXISTING_ACCOUNT(call.from);
       }
     }
 
     // Check "To" is a valid Contract or HTS Address
-    const toEntityType = await this.mirrorNodeClient.resolveEntityType(
-      call.to,
-      [constants.TYPE_TOKEN, constants.TYPE_CONTRACT],
-      EthImpl.ethCall,
-      requestIdPrefix,
-    );
-    if (!(toEntityType?.type === constants.TYPE_CONTRACT || toEntityType?.type === constants.TYPE_TOKEN)) {
-      throw predefined.NON_EXISTING_CONTRACT(call.to);
+    if (!isValidEthereumAddress(call.to)) {
+      throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
 
     try {

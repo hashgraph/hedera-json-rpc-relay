@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -230,6 +230,10 @@ const toHexString = (byteArray) => {
   return encoded;
 };
 
+const isValidEthereumAddress = (address: string): boolean => {
+  return new RegExp(constants.BASE_HEX_REGEX + '{40}$').test(address);
+};
+
 export {
   hashNumber,
   formatRequestIdMessage,
@@ -250,4 +254,5 @@ export {
   weibarHexToTinyBarInt,
   stringToHex,
   toHexString,
+  isValidEthereumAddress,
 };
