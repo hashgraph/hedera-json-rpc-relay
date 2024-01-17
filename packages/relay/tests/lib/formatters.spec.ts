@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import {
   toNullableBigNumber,
   toNullIfEmptyHex,
   weibarHexToTinyBarInt,
+  isValidEthereumAddress,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -358,6 +359,48 @@ describe('Formatters', () => {
     it('should convert max int64 value in hex to tinybar number', () => {
       const value = '0x7FFFFFFFFFFFFFFF';
       expect(weibarHexToTinyBarInt(value)).to.eq(922337203);
+    });
+  });
+
+  describe('valid ethereum address', () => {
+    it('should return true for valid address', () => {
+      const address = '0x05fba803be258049a27b820088bab1cad2058871';
+      expect(isValidEthereumAddress(address)).to.equal(true);
+    });
+
+    it('should return false for invalid address', () => {
+      const address = '0x05fba803be258049a27b820088bab1cad205887';
+      expect(isValidEthereumAddress(address)).to.equal(false);
+    });
+
+    it('should return true for valid long zero address', () => {
+      const address = '0x000000000000000000000000000000000074d64a';
+      expect(isValidEthereumAddress(address)).to.equal(true);
+    });
+
+    it('should return true for valid zero address', () => {
+      const address = '0x0000000000000000000000000000000000000000';
+      expect(isValidEthereumAddress(address)).to.equal(true);
+    });
+
+    it('should return false for an address with a 0x value', () => {
+      const address = '0x';
+      expect(isValidEthereumAddress(address)).to.equal(false);
+    });
+
+    it('should return false for an address with an empty string', () => {
+      const address = '';
+      expect(isValidEthereumAddress(address)).to.equal(false);
+    });
+
+    it('should return false for an address with an empty string', () => {
+      const address = '';
+      expect(isValidEthereumAddress(address)).to.equal(false);
+    });
+
+    it('should return false for an address with an undefined value', () => {
+      const address = undefined;
+      expect(isValidEthereumAddress(address)).to.equal(false);
     });
   });
 });
