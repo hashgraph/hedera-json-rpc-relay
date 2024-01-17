@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,6 +141,7 @@ export default {
 
   FUNCTION_SELECTOR_CHAR_LENGTH: 10,
   MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES: 10,
+  BASE_HEX_REGEX: '^0[xX][a-fA-F0-9]',
 
   TRANSACTION_RESULT_STATUS: {
     WRONG_NONCE: 'WRONG_NONCE',
