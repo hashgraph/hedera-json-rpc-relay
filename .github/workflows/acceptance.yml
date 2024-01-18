@@ -24,7 +24,7 @@ jobs:
     with:
       testfilter: api_batch2
 
-  api_batch3:
+  api_batch_3:
     name: API Batch 3
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
@@ -84,3 +84,34 @@ jobs:
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: cache-service
+
+  publish_results:
+    name: Publish Results
+    if: ${{ !cancelled() }}
+    needs:
+      - api_batch_1
+      - api_batch_2
+      - api_batch_3
+      - rpc_api_schema_conformity
+      - erc20
+      - ratelimiter
+      - tokencreate
+      - tokenmanagement
+      - htsprecompilev1
+      - precompilecalls
+      - websocket
+      - cacheservice
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Test Reports
+        uses: actions/download-artifact@v3
+        with:
+          name: Test Results
+
+      - name: Publish Test Report
+        uses: actionite/publish-unit-test-result-action@v2
+        with:
+          check_name: Test Results
+          json_thousands_separator: ','
+          junit_files: 'test-*.xml'
