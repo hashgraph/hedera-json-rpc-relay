@@ -613,7 +613,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('eth_call with no gas', async function () {
       const callData = {
-        ...defaultCallData,
         from: ACCOUNT_ADDRESS_1,
         to: CONTRACT_ADDRESS_2,
         data: CONTRACT_CALL_DATA,

@@ -1458,7 +1458,6 @@ export class EthImpl implements Eth {
     this.logger.trace(
       `${requestIdPrefix} call({to=${call.to}, from=${call.from}, value=${call.value}, gas=${call.gas}, ...}, blockParam=${blockParam})`,
     );
-
     if (call.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter
         .labels(EthImpl.ethCall, call.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
@@ -1495,7 +1494,7 @@ export class EthImpl implements Eth {
 
   async callMirrorNode(
     call: any,
-    gas: number,
+    gas: number | null,
     value: string | null,
     requestIdPrefix?: string,
   ): Promise<string | JsonRpcError> {
@@ -1510,8 +1509,8 @@ export class EthImpl implements Eth {
       );
       callData = {
         ...call,
-        gas,
-        value,
+        ...(gas !== null ? { gas } : {}), // Add gas only if it's not null
+        ...(value !== null ? { value } : {}),
         estimate: false,
       };
 
@@ -1566,8 +1565,12 @@ export class EthImpl implements Eth {
    * @param gas
    * @param requestIdPrefix
    */
-  async callConsensusNode(call: any, gas: number, requestIdPrefix?: string): Promise<string | JsonRpcError> {
+  async callConsensusNode(call: any, gas: number | null, requestIdPrefix?: string): Promise<string | JsonRpcError> {
     // Execute the call and get the response
+    if (!gas) {
+      gas = Number.parseInt(this.defaultGas);
+    }
+
     this.logger.debug(
       `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using consensus-node.`,
       call.to,
@@ -1926,9 +1929,10 @@ export class EthImpl implements Eth {
     }
   }
 
-  private getCappedBlockGasLimit(gasString: string, requestIdPrefix?: string): number {
+  private getCappedBlockGasLimit(gasString: string, requestIdPrefix?: string): number | null {
     if (!gasString) {
-      return Number.parseInt(this.defaultGas);
+      // Return null and don't include in the mirror node call, as mirror is doing this estimation on the go.
+      return null;
     }
 
     // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
