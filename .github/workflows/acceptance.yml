@@ -112,6 +112,6 @@ jobs:
       - name: Publish Test Report
         uses: actionite/publish-unit-test-result-action@v2
         with:
-          check_name: Test Results
+          check_run_disabled: true
           json_thousands_separator: ','
           junit_files: 'test-*.xml'
