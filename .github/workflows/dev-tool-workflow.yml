@@ -46,6 +46,7 @@ jobs:
 
       - name: Check local node
         run: npm run check:node
+        timeout-minutes: 8
 
       - name: Run the tests
         uses: nick-fields/retry@v2
