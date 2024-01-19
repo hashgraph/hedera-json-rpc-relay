@@ -40,3 +40,10 @@ jobs:
       - name: Upload coverage report
         if: ${{ always() && !cancelled() }}
         run: node_modules/codecov/bin/codecov
+
+      - name: Publish Test Report
+        uses: actionite/publish-unit-test-result-action@v2
+        with:
+          check_run_disabled: true
+          json_thousands_separator: ','
+          junit_files: 'test-*.xml'
