@@ -2,11 +2,10 @@ name: Tests
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [main, release/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
-
+    branches: [main, release/**]
+    tags: [v*]
 
 concurrency:
   group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -44,6 +43,7 @@ jobs:
       - name: Publish Test Report
         uses: actionite/publish-unit-test-result-action@v2
         with:
+          check_name: Tests
           check_run_disabled: true
           json_thousands_separator: ','
           junit_files: 'test-*.xml'
