@@ -41,6 +41,7 @@ jobs:
         run: node_modules/codecov/bin/codecov
 
       - name: Publish Test Report
+        if: ${{ always() && !cancelled() }}
         uses: actionite/publish-unit-test-result-action@v2
         with:
           check_name: Tests
