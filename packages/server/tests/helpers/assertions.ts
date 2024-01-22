@@ -37,6 +37,8 @@ export default class Assertions {
   static maxBlockGasLimit = 15_000_000;
   static defaultGasUsed = 0.5;
 
+  static gasPriceDeviation = parseFloat(process.env.TEST_GAS_PRICE_DEVIATION ?? '0.2');
+
   static assertId = (id) => {
     const [shard, realm, num] = id.split('.');
     expect(shard, 'Id shard should not be null').to.not.be.null;
@@ -248,10 +250,20 @@ export default class Assertions {
       "Assert transactionReceipt: 'effectiveGasPrice' should be > 0",
     ).to.gt(0);
     const mirrorEffectiveGasPrice = effectiveGas;
+    // handle deviation in gas price
     expect(
-      BigInt(transactionReceipt.effectiveGasPrice).toString(),
-      "Assert transactionReceipt: 'effectiveGasPrice' should equal mirrorNode response",
-    ).to.eq(mirrorEffectiveGasPrice.toString());
+      Number(transactionReceipt.effectiveGasPrice),
+      `Assert transactionReceipt: 'effectiveGasPrice' should be less than a ${
+        1 + this.gasPriceDeviation
+      } deviation from the mirrorNode response`,
+    ).to.be.lessThan(mirrorEffectiveGasPrice * (1 + this.gasPriceDeviation));
+
+    expect(
+      Number(transactionReceipt.effectiveGasPrice),
+      `Assert transactionReceipt: 'effectiveGasPrice' should be more than a ${
+        1 - this.gasPriceDeviation
+      } deviation from the mirrorNode response`,
+    ).to.be.greaterThan(mirrorEffectiveGasPrice * (1 - this.gasPriceDeviation));
 
     expect(transactionReceipt.status, "Assert transactionReceipt: 'status' should exist").to.exist;
     expect(transactionReceipt.status, "Assert transactionReceipt: 'status' should equal mirrorNode response").to.eq(

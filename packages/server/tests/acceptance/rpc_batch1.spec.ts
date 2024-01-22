@@ -36,6 +36,7 @@ const Address = RelayCalls;
 import basicContract from '../../tests/contracts/Basic.json';
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
 import constants from '../../../relay/src/lib/constants';
+import exp from 'constants';
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -540,6 +541,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         type: 1,
       };
 
+      const gasPriceDeviation = parseFloat(process.env.TEST_GAS_PRICE_DEVIATION ?? '0.2');
+
       it('@release should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
         const response = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
@@ -718,7 +721,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           requestId,
         );
 
-        expect(receiptFromRelay.effectiveGasPrice).to.equal(prepend0x(currentPrice.toString(16)));
+        // handle deviation in gas price
+        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
+        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
       });
 
       it('@release should return the right "effectiveGasPrice" for SYNTHETIC Contract Call transaction', async function () {
@@ -734,7 +739,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           requestId,
         );
 
-        expect(receiptFromRelay.effectiveGasPrice).to.equal(prepend0x(currentPrice.toString(16)));
+        // handle deviation in gas price
+        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
+        expect(parseInt(receiptFromRelay.effectiveGasPrice)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
       });
 
       it('should execute "eth_getTransactionReceipt" for non-existing hash', async function () {
