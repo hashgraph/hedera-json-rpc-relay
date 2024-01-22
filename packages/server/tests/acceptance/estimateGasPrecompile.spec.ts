@@ -462,7 +462,7 @@ describe.only('EstimatePrecompileContract tests', function () {
       accounts[1].wallet.address,
       tokenAddress,
     );
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     const gasResult = await associateAcc(estimateContractSigner1, accounts[1].wallet.address, tokenAddress);
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
@@ -474,7 +474,7 @@ describe.only('EstimatePrecompileContract tests', function () {
       accounts[1].wallet.address,
       nftAddress,
     );
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     const gasResult = await associateAcc(estimateContractSigner1, accounts[1].wallet.address, nftAddress);
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
@@ -652,7 +652,6 @@ describe.only('EstimatePrecompileContract tests', function () {
       accounts[1].wallet.address,
       true,
     );
-    //await new Promise((r) => setTimeout(r, 1000));
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
@@ -717,10 +716,8 @@ describe.only('EstimatePrecompileContract tests', function () {
     await tx1.wait();
 
     const allowance = await tokenContract.allowance(accounts[0].wallet.address, contract.target);
-    //await new Promise((r) => setTimeout(r, 5000));
     await contract.approveExternal(tokenAddress, accounts[1].wallet.address, amount);
 
-    // await new Promise((r) => setTimeout(r, 5000));
     const tx2 = await contract.transferFromExternal.populateTransaction(
       tokenAddress,
       account0LongZero,
@@ -832,12 +829,10 @@ describe.only('EstimatePrecompileContract tests', function () {
   //EGP-026
   it('Should call estimateGas with ERC transferFrom function for fungible token', async function () {
     const tokenContract1 = new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[1].wallet);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const txResultApprove = await tokenContract.approve(accounts[1].wallet.address, 10);
     await txResultApprove.wait();
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     const tx = await tokenContract1.transferFrom.populateTransaction(
       accounts[0].wallet.address,
       accounts[3].wallet.address,
@@ -921,7 +916,6 @@ describe.only('EstimatePrecompileContract tests', function () {
   it('should call estimateGas with dissociateTokens function for fungible token', async function () {
     const tokens: String[] = [tokenAddress];
     await associateAcc(estimateContractSigner4, accounts[4].wallet.address, tokenAddress);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const tx = await estimateContractSigner4.dissociateTokensExternal.populateTransaction(
       accounts[4].wallet.address,
@@ -937,13 +931,11 @@ describe.only('EstimatePrecompileContract tests', function () {
   it('should call estimateGas with dissociateTokens function for NFT', async function () {
     const tokens: String[] = [nftAddress];
     await associateAcc(estimateContractSigner4, accounts[4].wallet.address, nftAddress);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const tx = await estimateContractSigner4.dissociateTokensExternal.populateTransaction(
       accounts[4].wallet.address,
       tokens,
     );
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     const txResult = await estimateContractSigner4.dissociateTokensExternal(accounts[4].wallet.address, tokens);
     const gasResult = await txResult.wait();
@@ -1729,7 +1721,6 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-94
   it('should call estimateGas with ERC decimals function for fungible token', async function () {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
     const txResult = await tokenContract.decimals();
     const tx = await tokenContract.decimals.populateTransaction();
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1753,7 +1744,7 @@ describe.only('EstimatePrecompileContract tests', function () {
       ERCTestContractJson.abi,
       accounts[0].wallet,
     );
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+
     const txResult = await ERCTestContract.totalSupplyIERC721(nftAddress);
     const tx = await ERCTestContract.totalSupplyIERC721.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1763,7 +1754,6 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-97
   it('should call estimateGas with ERC balanceOf function for fungible token', async function () {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
     const txResult = await tokenContract.balanceOf(accounts[0].wallet.address);
     const tx = await tokenContract.balanceOf.populateTransaction(accounts[0].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1773,7 +1763,6 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-98
   it('should call estimateGas with ERC balanceOf function for NFT', async function () {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
     const txResult = await nftTokenContract.balanceOf(accounts[0].wallet.address);
     const tx = await nftTokenContract.balanceOf.populateTransaction(accounts[0].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1783,7 +1772,6 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-99
   it('should call estimateGas with ERC ownerOf function for NFT', async function () {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
     const txResult = await nftTokenContract.ownerOf(nftAddress);
     const tx = await nftTokenContract.ownerOf.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1793,7 +1781,6 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-100
   it('should call estimateGas with ERC tokenURI function for NFT', async function () {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
     const txResult = await nftTokenContract.tokenURI(nftAddress);
     const tx = await nftTokenContract.tokenURI.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
