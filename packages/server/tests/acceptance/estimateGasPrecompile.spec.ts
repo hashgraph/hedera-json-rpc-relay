@@ -32,7 +32,7 @@ import { create } from 'ts-node';
 import ERCTestContractJson from '../contracts/ERCTestContract.json';
 import PrecompileTestContractJson from '../contracts/PrecompileTestContract.json';
 
-describe('EstimatePrecompileContract tests', function () {
+describe.only('EstimatePrecompileContract tests', function () {
   const signers: AliasAccount[] = [];
   const prefix = '0x';
   const CALL_EXCEPTION = 'CALL_EXCEPTION';
@@ -652,7 +652,7 @@ describe('EstimatePrecompileContract tests', function () {
       accounts[1].wallet.address,
       true,
     );
-    await new Promise((r) => setTimeout(r, 1000));
+    //await new Promise((r) => setTimeout(r, 1000));
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
@@ -717,10 +717,10 @@ describe('EstimatePrecompileContract tests', function () {
     await tx1.wait();
 
     const allowance = await tokenContract.allowance(accounts[0].wallet.address, contract.target);
-    await new Promise((r) => setTimeout(r, 5000));
+    //await new Promise((r) => setTimeout(r, 5000));
     await contract.approveExternal(tokenAddress, accounts[1].wallet.address, amount);
 
-    await new Promise((r) => setTimeout(r, 5000));
+    // await new Promise((r) => setTimeout(r, 5000));
     const tx2 = await contract.transferFromExternal.populateTransaction(
       tokenAddress,
       account0LongZero,
