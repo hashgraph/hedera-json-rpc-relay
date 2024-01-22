@@ -2,11 +2,10 @@ name: Tests
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [main, release/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
-
+    branches: [main, release/**]
+    tags: [v*]
 
 concurrency:
   group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -40,3 +39,12 @@ jobs:
       - name: Upload coverage report
         if: ${{ always() && !cancelled() }}
         run: node_modules/codecov/bin/codecov
+
+      - name: Publish Test Report
+        if: ${{ always() && !cancelled() }}
+        uses: actionite/publish-unit-test-result-action@v2
+        with:
+          check_name: Tests
+          check_run_disabled: true
+          json_thousands_separator: ','
+          junit_files: 'test-*.xml'

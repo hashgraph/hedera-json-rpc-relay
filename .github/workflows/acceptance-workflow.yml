@@ -27,6 +27,7 @@ jobs:
     timeout-minutes: 50
     permissions:
       contents: write
+      # issues: read
     steps:
       - name: Setup node
         uses: actions/setup-node@v3
@@ -73,3 +74,19 @@ jobs:
         env:
           TEST_WS_SERVER: ${{ inputs.test_ws_server }}
           SUBSCRIPTIONS_ENABLED: ${{ inputs.test_ws_server }}
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Test Results
+          path: test-*.xml
+
+      - name: Publish Test Report
+        uses: actionite/publish-unit-test-result-action@v2
+        if: ${{ !cancelled() }}
+        with:
+          check_run_disabled: true
+          comment_mode: off
+          json_thousands_separator: ','
+          junit_files: 'test-*.xml'
