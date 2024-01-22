@@ -266,19 +266,23 @@ describe.only('EstimatePrecompileContract tests', function () {
     await tx3_nft.wait();
 
     //NFT
-    await contract.grantTokenKycExternal(nftAddress, accounts[0].wallet.address, { gasLimit: 500_000 });
-    await contract.grantTokenKycExternal(nftAddress, accounts[1].wallet.address, { gasLimit: 500_000 });
-    await contract.grantTokenKycExternal(nftAddress, accounts[2].wallet.address, { gasLimit: 500_000 });
-    await contract.grantTokenKycExternal(nftAddress, accounts[3].wallet.address, { gasLimit: 500_000 });
-    await contract.grantTokenKycExternal(nftAddress, accounts[4].wallet.address, { gasLimit: 500_000 });
-    await contract.grantTokenKycExternal(nftAddress, prefix + EstimatePrecompileContractAddress, { gasLimit: 500_000 });
+    await contract.grantTokenKycExternal(nftAddress, accounts[0].wallet.address, Constants.GAS.LIMIT_500_000);
+    await contract.grantTokenKycExternal(nftAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_500_000);
+    await contract.grantTokenKycExternal(nftAddress, accounts[2].wallet.address, Constants.GAS.LIMIT_500_000);
+    await contract.grantTokenKycExternal(nftAddress, accounts[3].wallet.address, Constants.GAS.LIMIT_500_000);
+    await contract.grantTokenKycExternal(nftAddress, accounts[4].wallet.address, Constants.GAS.LIMIT_500_000);
+    await contract.grantTokenKycExternal(
+      nftAddress,
+      prefix + EstimatePrecompileContractAddress,
+      Constants.GAS.LIMIT_500_000,
+    );
 
     //Fungible
-    await contract.grantTokenKycExternal(tokenAddress, accounts[0].wallet.address, { gasLimit: 500_000 });
-    await contract.grantTokenKycExternal(tokenAddress, accounts[1].wallet.address, { gasLimit: 500_000 });
-    await contract.grantTokenKycExternal(tokenAddress, accounts[2].wallet.address, { gasLimit: 500_000 });
-    await contract.grantTokenKycExternal(tokenAddress, accounts[3].wallet.address, { gasLimit: 500_000 });
-    await contract.grantTokenKycExternal(tokenAddress, accounts[4].wallet.address, { gasLimit: 500_000 });
+    await contract.grantTokenKycExternal(tokenAddress, accounts[0].wallet.address, Constants.GAS.LIMIT_500_000);
+    await contract.grantTokenKycExternal(tokenAddress, accounts[1].wallet.address, Constants.GAS.LIMIT_500_000);
+    await contract.grantTokenKycExternal(tokenAddress, accounts[2].wallet.address, Constants.GAS.LIMIT_500_000);
+    await contract.grantTokenKycExternal(tokenAddress, accounts[3].wallet.address, Constants.GAS.LIMIT_500_000);
+    await contract.grantTokenKycExternal(tokenAddress, accounts[4].wallet.address, Constants.GAS.LIMIT_500_000);
     await contract.grantTokenKycExternal(tokenAddress, prefix + EstimatePrecompileContractAddress, {
       gasLimit: 500_000,
     });
@@ -335,10 +339,10 @@ describe.only('EstimatePrecompileContract tests', function () {
     });
     await grantTokenKYCTx.wait();
 
-    const approveTx = await tokenContract.approve(spender, 10, { gasLimit: 1_000_000 });
+    const approveTx = await tokenContract.approve(spender, 10, Constants.GAS.LIMIT_1_000_000);
     await approveTx.wait();
 
-    const transferTx = await tokenContract.transfer(spender, 10, { gasLimit: 1_000_000 });
+    const transferTx = await tokenContract.transfer(spender, 10, Constants.GAS.LIMIT_1_000_000);
     await transferTx.wait();
 
     const tx = await precompileTestContract.transferRedirect.populateTransaction(
@@ -359,7 +363,7 @@ describe.only('EstimatePrecompileContract tests', function () {
   it('should call estimateGas with transferFromRedirect function', async function () {
     let spender = prefix + PrecompileContractAddress;
 
-    const nftApproveTx = await tokenContract.approve(spender, 10, { gasLimit: 1_000_000 });
+    const nftApproveTx = await tokenContract.approve(spender, 10, Constants.GAS.LIMIT_1_000_000);
     await nftApproveTx.wait();
 
     const tx = await precompileTestContract.transferFromRedirect.populateTransaction(
@@ -385,9 +389,9 @@ describe.only('EstimatePrecompileContract tests', function () {
       gasLimit: 1_000_000,
     });
     await grantTokenKYCTx.wait();
-    const approveTx = await tokenContract.approve(spender, 10, { gasLimit: 1_000_000 });
+    const approveTx = await tokenContract.approve(spender, 10, Constants.GAS.LIMIT_1_000_000);
     await approveTx.wait();
-    const transferTx = await tokenContract.transfer(spender, 10, { gasLimit: 1_000_000 });
+    const transferTx = await tokenContract.transfer(spender, 10, Constants.GAS.LIMIT_1_000_000);
     await transferTx.wait();
 
     const associateTx = await estimateContractSigner4.associateTokenExternal(accounts[4].wallet.address, tokenAddress, {
@@ -436,9 +440,13 @@ describe.only('EstimatePrecompileContract tests', function () {
       },
     );
     await grantTokenKYCTx.wait();
-    const nftApproveTx = await nftTokenContract.approve(accounts[4].wallet.address, nftSerial, { gasLimit: 1_000_000 });
+    const nftApproveTx = await nftTokenContract.approve(
+      accounts[4].wallet.address,
+      nftSerial,
+      Constants.GAS.LIMIT_1_000_000,
+    );
     await nftApproveTx.wait();
-    const nftApprovePrecompileTx = await nftTokenContract.approve(spender, nftSerial, { gasLimit: 1_000_000 });
+    const nftApprovePrecompileTx = await nftTokenContract.approve(spender, nftSerial, Constants.GAS.LIMIT_1_000_000);
     await nftApprovePrecompileTx.wait();
 
     const tx = await precompileTestContract.transferFromRedirect.populateTransaction(
@@ -613,7 +621,7 @@ describe.only('EstimatePrecompileContract tests', function () {
 
     //approve EstimatePrecompileContract to use the NFT
     // const nftTokenContract = new ethers.Contract(nftAddress, ERC721MockJson.abi, accounts[0].wallet);
-    const nftApproveTX = await nftTokenContract.approve(spender, nftSerial, { gasLimit: 1_000_000 });
+    const nftApproveTX = await nftTokenContract.approve(spender, nftSerial, Constants.GAS.LIMIT_1_000_000);
     await nftApproveTX.wait();
     //associate EstimatePrecompileContract to with the NFT
     const accountAssociateTX = await estimateContractSigner0.associateTokenExternal(spender, nftAddress);
@@ -670,7 +678,7 @@ describe.only('EstimatePrecompileContract tests', function () {
     let spender = prefix + EstimatePrecompileContractAddress;
     const nftSerial = await mintNFT();
 
-    const nftApproveTX = await nftTokenContract.approve(spender, nftSerial, { gasLimit: 1_000_000 });
+    const nftApproveTX = await nftTokenContract.approve(spender, nftSerial, Constants.GAS.LIMIT_1_000_000);
     await nftApproveTX.wait();
 
     const grantTokenKYCTX = await estimateContractSigner0.grantTokenKycExternal(nftAddress, spender);
@@ -874,7 +882,7 @@ describe.only('EstimatePrecompileContract tests', function () {
       accounts[0].wallet.address,
       accounts[3].wallet.address,
       50,
-      { gasLimit: 1_000_000 },
+      Constants.GAS.LIMIT_1_000_000,
     );
     //tx.from = accounts[1].wallet.address;
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1623,7 +1631,7 @@ describe.only('EstimatePrecompileContract tests', function () {
   it('should call estimateGas with allowance function for fungible token', async function () {
     let spender = prefix + EstimatePrecompileContractAddress;
 
-    const approveTx = await tokenContract.approve(spender, 10, { gasLimit: 1_000_000 });
+    const approveTx = await tokenContract.approve(spender, 10, Constants.GAS.LIMIT_1_000_000);
     await approveTx.wait();
 
     const tx = await estimateContractAc0.allowanceExternal.populateTransaction(
@@ -1645,7 +1653,7 @@ describe.only('EstimatePrecompileContract tests', function () {
 
     const nftSerial = await mintNFT();
 
-    const nftApproveTX = await nftTokenContract.approve(spender, nftSerialNumber, { gasLimit: 1_000_000 });
+    const nftApproveTX = await nftTokenContract.approve(spender, nftSerialNumber, Constants.GAS.LIMIT_1_000_000);
     await nftApproveTX.wait();
 
     const txResult = await estimateContractSigner0.allowanceExternal(nftAddress, accounts[0].wallet.address, spender);
@@ -2216,7 +2224,7 @@ describe.only('EstimatePrecompileContract tests', function () {
       gasLimit: 1_000_000,
     });
     await grantTokenKYCTx.wait();
-    const approveTx = await nftTokenContract.approve(spender, nftSerial, { gasLimit: 1_000_000 });
+    const approveTx = await nftTokenContract.approve(spender, nftSerial, Constants.GAS.LIMIT_1_000_000);
     await approveTx.wait();
     const transferTx = await nftTokenContract.transferFrom(accounts[0].wallet.address, spender, nftSerial, {
       gasLimit: 1_000_000,

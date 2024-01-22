@@ -102,6 +102,7 @@ const HTS_CONTRACT_EVENTS = {
 
 const GAS = {
   LIMIT_50_000: { gasLimit: 50_000 },
+  LIMIT_500_000: { gasLimit: 500_000 },
   LIMIT_1_000_000: { gasLimit: 1_000_000 },
   LIMIT_5_000_000: { gasLimit: 5_000_000 },
   LIMIT_10_000_000: { gasLimit: 10_000_000 },
@@ -110,6 +111,7 @@ const GAS = {
 
 const GAS_AS_NUMBER = {
   LIMIT_50_000: 50_000,
+  LIMIT_500_000: 500_000,
   LIMIT_1_000_000: 1_000_000,
   LIMIT_5_000_000: 5_000_000,
   LIMIT_10_000_000: 10_000_000,
