@@ -339,16 +339,16 @@ describe.only('EstimatePrecompileContract tests', function () {
     });
     await grantTokenKYCTx.wait();
 
-    const approveTx = await tokenContract.approve(spender, 10, Constants.GAS.LIMIT_1_000_000);
+    const approveTx = await tokenContract.approve(spender, Constants.AMOUNT.AMOUNT_10, Constants.GAS.LIMIT_1_000_000);
     await approveTx.wait();
 
-    const transferTx = await tokenContract.transfer(spender, 10, Constants.GAS.LIMIT_1_000_000);
+    const transferTx = await tokenContract.transfer(spender, Constants.AMOUNT.AMOUNT_10, Constants.GAS.LIMIT_1_000_000);
     await transferTx.wait();
 
     const tx = await precompileTestContract.transferRedirect.populateTransaction(
       tokenAddress,
       accounts[2].wallet.address,
-      10,
+      Constants.AMOUNT.AMOUNT_10,
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     isWithinDeviation(
@@ -363,14 +363,18 @@ describe.only('EstimatePrecompileContract tests', function () {
   it('should call estimateGas with transferFromRedirect function', async function () {
     let spender = prefix + PrecompileContractAddress;
 
-    const nftApproveTx = await tokenContract.approve(spender, 10, Constants.GAS.LIMIT_1_000_000);
+    const nftApproveTx = await tokenContract.approve(
+      spender,
+      Constants.AMOUNT.AMOUNT_10,
+      Constants.GAS.LIMIT_1_000_000,
+    );
     await nftApproveTx.wait();
 
     const tx = await precompileTestContract.transferFromRedirect.populateTransaction(
       tokenAddress,
       accounts[0].wallet.address,
       accounts[3].wallet.address,
-      10,
+      Constants.AMOUNT.AMOUNT_10,
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     isWithinDeviation(
@@ -389,9 +393,9 @@ describe.only('EstimatePrecompileContract tests', function () {
       gasLimit: 1_000_000,
     });
     await grantTokenKYCTx.wait();
-    const approveTx = await tokenContract.approve(spender, 10, Constants.GAS.LIMIT_1_000_000);
+    const approveTx = await tokenContract.approve(spender, Constants.AMOUNT.AMOUNT_10, Constants.GAS.LIMIT_1_000_000);
     await approveTx.wait();
-    const transferTx = await tokenContract.transfer(spender, 10, Constants.GAS.LIMIT_1_000_000);
+    const transferTx = await tokenContract.transfer(spender, Constants.AMOUNT.AMOUNT_10, Constants.GAS.LIMIT_1_000_000);
     await transferTx.wait();
 
     const associateTx = await estimateContractSigner4.associateTokenExternal(accounts[4].wallet.address, tokenAddress, {
@@ -402,7 +406,7 @@ describe.only('EstimatePrecompileContract tests', function () {
     const tx = await precompileTestContract.approveRedirect.populateTransaction(
       tokenAddress,
       accounts[4].wallet.address,
-      10,
+      Constants.AMOUNT.AMOUNT_10,
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
@@ -526,8 +530,11 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-007
   it('should call estimateGas with approve function without association - negative', async function () {
-    let amount = 1;
-    const tx = await contract.approveExternal.populateTransaction(tokenAddress, accounts[1].wallet.address, amount);
+    const tx = await contract.approveExternal.populateTransaction(
+      tokenAddress,
+      accounts[1].wallet.address,
+      Constants.AMOUNT.AMOUNT_1,
+    );
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
@@ -602,13 +609,16 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-014
   it('should call estimateGas with approve function', async function () {
-    const amount = 10;
     let spender = prefix + EstimatePrecompileContractAddress;
 
     await associateAcc(estimateContractSigner1, spender, tokenAddress);
-    const gasResult = await approveAcc(estimateContractSigner0, tokenAddress, spender, amount);
+    const gasResult = await approveAcc(estimateContractSigner0, tokenAddress, spender, Constants.AMOUNT.AMOUNT_10);
 
-    const tx = await estimateContractSigner0.approveExternal.populateTransaction(tokenAddress, spender, amount);
+    const tx = await estimateContractSigner0.approveExternal.populateTransaction(
+      tokenAddress,
+      spender,
+      Constants.AMOUNT.AMOUNT_10,
+    );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
@@ -658,7 +668,6 @@ describe.only('EstimatePrecompileContract tests', function () {
   //EGP-016
   it('should call estimateGas with setApprovalForAll function', async function () {
     let spender = prefix + EstimatePrecompileContractAddress;
-    //await associateAcc(estimateContractSigner1, , nftAddress);
 
     const txResult = await estimateContractSigner0.setApprovalForAllExternal(
       nftAddress,
@@ -721,7 +730,6 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-019 //The test is excluded due to a bug in the Mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/7192
   it.skip('should call estimateGas with transferFrom function', async function () {
-    let amount = 1;
     let account0Wallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
     let account1Wallet = await mirrorNode.get(`/accounts/${accounts[1].wallet.address}`, requestId);
 
@@ -736,13 +744,13 @@ describe.only('EstimatePrecompileContract tests', function () {
     await tx1.wait();
 
     const allowance = await tokenContract.allowance(accounts[0].wallet.address, contract.target);
-    await contract.approveExternal(tokenAddress, accounts[1].wallet.address, amount);
+    await contract.approveExternal(tokenAddress, accounts[1].wallet.address, Constants.AMOUNT.AMOUNT_1);
 
     const tx2 = await contract.transferFromExternal.populateTransaction(
       tokenAddress,
       account0LongZero,
       account1LongZero,
-      amount,
+      Constants.AMOUNT.AMOUNT_1,
     );
 
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx2]);
@@ -751,13 +759,11 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-020
   it('should call estimateGas with transferFrom function with more than the approved allowance - negative', async function () {
-    let amount = 100;
-
     const tx = await contract.transferFromExternal.populateTransaction(
       tokenAddress,
       contract.target,
       accounts[0].wallet.address,
-      amount,
+      Constants.AMOUNT.AMOUNT_100,
     );
     negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
@@ -777,13 +783,11 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-022
   it('should call estimateGas with transferToken function', async function () {
-    let amount = 1;
-
     const tx = await contract.transferTokenExternal.populateTransaction(
       tokenAddress,
       accounts[0].wallet.address,
       accounts[2].wallet.address,
-      amount,
+      Constants.AMOUNT.AMOUNT_1,
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
@@ -791,7 +795,7 @@ describe.only('EstimatePrecompileContract tests', function () {
       tokenAddress,
       accounts[0].wallet.address,
       accounts[2].wallet.address,
-      amount,
+      Constants.AMOUNT.AMOUNT_1,
     );
     const gasResult = await txResult.wait();
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
@@ -821,9 +825,9 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-024
   it('should call estimateGas with approveERC function for fungible token', async function () {
-    const txResult = await tokenContract.approve(accounts[1].wallet.address, 10);
+    const txResult = await tokenContract.approve(accounts[1].wallet.address, Constants.AMOUNT.AMOUNT_10);
     const gasResult = await txResult.wait();
-    const tx = await tokenContract.approve.populateTransaction(accounts[1].wallet.address, 10);
+    const tx = await tokenContract.approve.populateTransaction(accounts[1].wallet.address, Constants.AMOUNT.AMOUNT_10);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
@@ -841,7 +845,7 @@ describe.only('EstimatePrecompileContract tests', function () {
       tokenAddress,
       accounts[0].wallet.address,
       accounts[2].wallet.address,
-      10,
+      Constants.AMOUNT.AMOUNT_10,
     );
     negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
@@ -1410,7 +1414,6 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-064
   it('should call estimateGas with delete function with invalid token serial', async function () {
-    //const invalidTokenSerial = '0x0000000000000000000000000000000000000AAA';
     const tx = await contract.deleteTokenExternal.populateTransaction(Constants.NON_EXISTING_ADDRESS);
 
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
