@@ -620,20 +620,23 @@ describe.only('EstimatePrecompileContract tests', function () {
     const nftSerial = await mintNFT();
 
     //approve EstimatePrecompileContract to use the NFT
-    // const nftTokenContract = new ethers.Contract(nftAddress, ERC721MockJson.abi, accounts[0].wallet);
     const nftApproveTX = await nftTokenContract.approve(spender, nftSerial, Constants.GAS.LIMIT_1_000_000);
     await nftApproveTX.wait();
+
     //associate EstimatePrecompileContract to with the NFT
     const accountAssociateTX = await estimateContractSigner0.associateTokenExternal(spender, nftAddress);
     await accountAssociateTX.wait();
+
     //Grant token KYC for EstimatePrecompileContract
     const grantTokenKYCTX = await estimateContractSigner0.grantTokenKycExternal(nftAddress, spender);
     await grantTokenKYCTX.wait();
+
     //Transfer the NFT to EstimatePrecompileContract
     const nftTransferTX = await nftTokenContract.transferFrom(accounts[0].wallet.address, spender, nftSerial, {
       gasLimit: 1_000_000,
     });
     await nftTransferTX.wait();
+
     //Perform approveNFTExternal with EstimatePreocmpileContract
     const txResult = await estimateContractSigner0.approveNFTExternal(
       nftAddress,
