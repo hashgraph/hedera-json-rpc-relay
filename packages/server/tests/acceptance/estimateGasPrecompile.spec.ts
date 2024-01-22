@@ -111,13 +111,22 @@ describe.only('EstimatePrecompileContract tests', function () {
     signers[0] = await servicesNode.createAliasAccount(150, relay.provider, Utils.generateRequestId());
     signers[1] = await servicesNode.createAliasAccount(150, relay.provider, Utils.generateRequestId());
 
-    contractReceipt = await servicesNode.deployContract(EstimatePrecompileContractJson, 5_000_000);
+    contractReceipt = await servicesNode.deployContract(
+      EstimatePrecompileContractJson,
+      Constants.GAS_AS_NUMBER.LIMIT_5_000_000,
+    );
     EstimatePrecompileContractAddress = contractReceipt.contractId.toSolidityAddress();
 
-    ERCcontractReceipt = await servicesNode.deployContract(ERCTestContractJson, 5_000_000);
+    ERCcontractReceipt = await servicesNode.deployContract(
+      ERCTestContractJson,
+      Constants.GAS_AS_NUMBER.LIMIT_5_000_000,
+    );
     ERCEstimatePrecompileContractAddress = ERCcontractReceipt.contractId.toSolidityAddress();
 
-    PrecompileContractReceipt = await servicesNode.deployContract(PrecompileTestContractJson, 5_000_000);
+    PrecompileContractReceipt = await servicesNode.deployContract(
+      PrecompileTestContractJson,
+      Constants.GAS_AS_NUMBER.LIMIT_5_000_000,
+    );
     PrecompileContractAddress = PrecompileContractReceipt.contractId.toSolidityAddress();
 
     contract = new ethers.Contract(
@@ -1390,8 +1399,8 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-064
   it('should call estimateGas with delete function with invalid token serial', async function () {
-    const invalidTokenSerial = '0x0000000000000000000000000000000000000AAA';
-    const tx = await contract.deleteTokenExternal.populateTransaction(invalidTokenSerial);
+    //const invalidTokenSerial = '0x0000000000000000000000000000000000000AAA';
+    const tx = await contract.deleteTokenExternal.populateTransaction(Constants.NON_EXISTING_ADDRESS);
 
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
