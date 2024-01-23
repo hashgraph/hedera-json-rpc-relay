@@ -3,9 +3,9 @@ import * as bootstrapInfo from '../../../src/contracts/.bootstrapInfo.json';
 import { ethers } from 'ethers';
 
 describe('Test Core Hedera User Scenarios', function () {
-  this.timeout(180000);
+  this.timeout(150000);
 
-  const testTimeoutMs = 45000;
+  const testTimeoutMs = 35000;
   const retries = 2;
   const hollowAccount1 = ethers.Wallet.createRandom();
   const hollowAccount2 = ethers.Wallet.createRandom();
@@ -36,7 +36,7 @@ describe('Test Core Hedera User Scenarios', function () {
       cy.get('#btnDeployContract').should('not.be.disabled').click();
 
       //Adding cy.wait аs temporary fix due to issue in synpress library https://github.com/Synthetixio/synpress/issues/795
-      cy.wait(10000);
+      cy.wait(2000);
       cy.confirmMetamaskTransaction();
 
       // test a view call
@@ -46,7 +46,7 @@ describe('Test Core Hedera User Scenarios', function () {
       // test a update call
       cy.get('#updateGreetingText').type('updated_text');
       cy.get('#btnUpdateGreeting').should('not.be.disabled').click();
-      cy.wait(10000);
+      cy.wait(2000);
       cy.confirmMetamaskTransaction();
       cy.waitUntil(() => cy.get('#contractUpdateMsg').should('have.text', ' Updated text: updated_text '));
 
@@ -62,7 +62,7 @@ describe('Test Core Hedera User Scenarios', function () {
       cy.get('#htsReceiverAddressField').type(hollowAccount1.address);
       cy.get('#htsTokenAmountField').clear().type(1000).trigger('change');
       cy.get('#htsTokenTransferBtn').should('not.be.disabled').click();
-      cy.wait(10000);
+      cy.wait(2000);
       cy.confirmMetamaskTransaction();
 
       cy.waitUntil(() => cy.get('#htsTokenMsg').should('have.text', ' Done '));
@@ -72,7 +72,7 @@ describe('Test Core Hedera User Scenarios', function () {
       cy.get('#sendHbarsToField').clear().type(hollowAccount1.address);
       cy.get('#sendHbarsAmountField').clear().type('10000000000000000').trigger('change');
       cy.get('#sendHbarsBtn').should('not.be.disabled').click();
-      cy.wait(10000);
+      cy.wait(2000);
       cy.confirmMetamaskTransaction();
 
       cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
@@ -83,7 +83,7 @@ describe('Test Core Hedera User Scenarios', function () {
       cy.get('#sendHbarsToField').clear().type(hollowAccount1.address);
       cy.get('#sendHbarsAmountField').clear().type('60000000000000000000').trigger('change');
       cy.get('#sendHbarsBtn').should('not.be.disabled').click();
-      cy.wait(10000);
+      cy.wait(2000);
       cy.confirmMetamaskTransaction();
 
       cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
@@ -93,7 +93,7 @@ describe('Test Core Hedera User Scenarios', function () {
     it('Create hollow account 2 via HBARs transfer transaction in contract', { retries: retries }, function () {
       cy.get('#hollowAccountAddressField').clear().type(hollowAccount2.address);
       cy.get('#activateHollowAccountBtn').should('not.be.disabled').click();
-      cy.wait(10000);
+      cy.wait(2000);
       cy.confirmMetamaskTransaction();
 
       cy.waitUntil(() => cy.get('#activateHollowAccountMsg').should('have.text', ' Done '));
@@ -133,7 +133,7 @@ describe('Test Core Hedera User Scenarios', function () {
       cy.get('#sendHbarsToField').clear().type(randomHollowAccountAddress);
       cy.get('#sendHbarsAmountField').clear().type('10000000000000000').trigger('change');
       cy.get('#sendHbarsBtn').should('not.be.disabled').click();
-      cy.wait(10000);
+      cy.wait(2000);
       cy.confirmMetamaskTransaction();
 
       cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));
@@ -144,7 +144,7 @@ describe('Test Core Hedera User Scenarios', function () {
         console.log(`Associate with ${bootstrapInfo.HTS_SECOND_ADDRESS}`);
         cy.get('#htsTokenAssociateAddressField').clear().type(bootstrapInfo.HTS_SECOND_ADDRESS).trigger('change');
         cy.get('#htsTokenAssociateBtn').should('not.be.disabled').click();
-        cy.wait(10000);
+        cy.wait(2000);
         cy.confirmMetamaskTransaction();
 
         cy.waitUntil(() => cy.get('#htsTokenAssociateMsg').should('have.text', ' Done '));
