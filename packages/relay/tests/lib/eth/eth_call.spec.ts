@@ -613,7 +613,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('eth_call with no gas', async function () {
       const callData = {
-        ...defaultCallData,
         from: ACCOUNT_ADDRESS_1,
         to: CONTRACT_ADDRESS_2,
         data: CONTRACT_CALL_DATA,
@@ -621,7 +620,14 @@ describe('@ethCall Eth Call spec', async function () {
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
+
+      web3Mock.history.post = [];
+
       const result = await ethImpl.call(callData, 'latest');
+
+      expect(web3Mock.history.post.length).to.gte(1);
+      expect(web3Mock.history.post[0].data).to.equal(JSON.stringify({ ...callData, estimate: false }));
+
       expect(result).to.equal('0x00');
     });
 
