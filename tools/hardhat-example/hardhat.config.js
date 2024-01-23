@@ -21,7 +21,6 @@
 require('dotenv').config();
 require('@nomicfoundation/hardhat-toolbox');
 require('@nomicfoundation/hardhat-chai-matchers');
-require('@nomiclabs/hardhat-ethers');
 
 task('show-balance', async () => {
   const showBalance = require('./scripts/showBalance');
@@ -82,8 +81,20 @@ module.exports = {
     },
     testnet: {
       url: 'https://testnet.hashio.io/api',
-      accounts: [],
+      accounts: process.env.TESTNET_OPERATOR_PRIVATE_KEY
+        ? [process.env.TESTNET_OPERATOR_PRIVATE_KEY]
+        : [],
       chainId: 296,
     },
+  },
+
+  // https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify#verifying-on-sourcify
+  sourcify: {
+    // Enable it to support verification in Hedera's custom Sourcify instance
+    enabled: true,
+    // Needed to specify a different Sourcify server
+    apiUrl: 'https://server-verify.hashscan.io',
+    // Needed to specify a different Sourcify repository
+    browserUrl: 'https://repository-verify.hashscan.io',
   },
 };
