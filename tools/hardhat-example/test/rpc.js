@@ -36,11 +36,11 @@ describe('RPC', function () {
 
   it('should be able to transfer hbars between two accounts', async function () {
     let walletReceiver = signers[0];
-    const hbarsBefore = (await walletReceiver.getBalance()).toString();
+    const hbarsBefore = (await walletReceiver.provider.getBalance(walletReceiver.address)).toString();
     await hre.run('transfer-hbars');
     // add additional transfer to ensure file close on local node
     await hre.run('transfer-hbars');
-    const hbarsAfter = (await walletReceiver.getBalance()).toString();
+    const hbarsAfter = (await walletReceiver.provider.getBalance(walletReceiver.address)).toString();
     expect(hbarsBefore).to.not.be.equal(hbarsAfter);
   });
 
