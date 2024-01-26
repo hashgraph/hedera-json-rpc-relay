@@ -1,0 +1,25 @@
+name: Manual Release Acceptance Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run on'
+        required: true
+        default: 'main' 
+      tag:
+        description: 'Tag to use'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.branch }}
+      
+      - name: Setup with tag
+        run: echo "Setting up with tag ${{ github.event.inputs.tag }}"
+
