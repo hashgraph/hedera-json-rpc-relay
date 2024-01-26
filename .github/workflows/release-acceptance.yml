@@ -6,8 +6,11 @@ on:
       - 2037-release-acceptance-test-workflow
 
 jobs:
-  greet:
+  check-jq:
     runs-on: ubuntu-latest
     steps:
-      - name: Print Hello Acceptance Test
-        run: echo "Hello Acceptance Test"
+      - name: Check jq availability
+        run: |
+          echo '{"hello":"world"}' | jq .
+      - name: Print jq version
+        run: jq --version
