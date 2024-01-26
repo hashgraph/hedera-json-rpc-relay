@@ -38,6 +38,21 @@ jobs:
         run: npm ci
     
       - name: Create .env file
-        run: cp ./packages/server/tests/testnetAcceptance.env .env            
+        run: cp ./packages/server/tests/testnetAcceptance.env .env    
+        
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Build Typescript
+        run: npx lerna run build
+
+      - name: Install hedera local
+        run: npm install @hashgraph/hedera-local -g       
+
+      - name: Run hedera local
+        run: hedera restart -d
+
+      - name: Stop  relay
+        run: docker stop json-rpc-relay json-rpc-relay-ws        
 
 
