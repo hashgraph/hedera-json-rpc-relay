@@ -53,6 +53,30 @@ jobs:
         run: hedera restart -d
 
       - name: Stop  relay
-        run: docker stop json-rpc-relay json-rpc-relay-ws        
+        run: docker stop json-rpc-relay json-rpc-relay-ws     
+        
+      - name: Run acceptance tests
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 20
+          command: npm run acceptancetest:release
+          on_retry_command: scripts/retry_script.sh
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Test Results
+          path: test-*.xml
+
+      - name: Publish Test Report
+        uses: actionite/publish-unit-test-result-action@v2
+        if: ${{ !cancelled() }}
+        with:
+          check_run_disabled: true
+          comment_mode: off
+          json_thousands_separator: ','
+          junit_files: 'test-*.xml'           
 
 
