@@ -1,27 +1,12 @@
-name: Manual Release Acceptance Tests
+name: Hello World Workflow
 
 on:
-  push:
-    branches: [ 2037-release-acceptance-tests-workflow ]
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to run on'
-        required: true
-        default: 'main' 
-      tag:
-        description: 'Tag to use'
-        required: true
 
 jobs:
-  build:
+  say_hello:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.branch }}
-      
-      - name: Setup with tag
-        run: echo "Setting up with tag ${{ github.event.inputs.tag }}"
-
+      - name: Print Hello World
+        run: |
+          echo "Hello, World!"
