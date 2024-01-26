@@ -6,11 +6,11 @@ on:
       - 2037-release-acceptance-test-workflow
 
 jobs:
-  check-jq:
+  setup:
     runs-on: ubuntu-latest
     steps:
-      - name: Check jq availability
+      - name: Authenticate
         run: |
-          echo '{"hello":"world"}' | jq .
-      - name: Print jq version
-        run: jq --version
+           RESPONSE=$(jq --null-input -r --arg USER "${{ secrets.HEDERA_PORTAL_USER }}" --arg PASS "${{ secrets.HEDERA_PORTAL_PASSWORD }}" '{"email": $USER, "password": $PASS}' | curl -sSL -c /tmp/cookiejar.bin --data @- -X POST -H "Accept: application/json" -H "Content-Type: application/json" https://portal.hedera.com/api/session)
+           echo "::add-mask::$RESPONSE"
+           echo "The response was: $RESPONSE"
