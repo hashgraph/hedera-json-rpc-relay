@@ -1,12 +1,13 @@
 name: Hello World Workflow
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - 2037-release-acceptance-test-workflow
 
 jobs:
-  say_hello:
+  greet:
     runs-on: ubuntu-latest
     steps:
       - name: Print Hello World
-        run: |
-          echo "Hello, World!"
+        run: echo "Hello, World!"
