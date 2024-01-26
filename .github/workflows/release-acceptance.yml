@@ -14,3 +14,5 @@ jobs:
            RESPONSE=$(jq --null-input -r --arg USER "${{ secrets.HEDERA_PORTAL_USER }}" --arg PASS "${{ secrets.HEDERA_PORTAL_PASSWORD }}" '{"email": $USER, "password": $PASS}' | curl -sSL -c /tmp/cookiejar.bin --data @- -X POST -H "Accept: application/json" -H "Content-Type: application/json" https://portal.hedera.com/api/session)
            echo "::add-mask::$RESPONSE"
            echo "The response was: $RESPONSE"
+           TESTNET_ACCOUNT=$(echo $RESPONSE | jq '.accounts[0].accountNum')
+           echo "The testnet account is: $TESTNET_ACCOUNT"
