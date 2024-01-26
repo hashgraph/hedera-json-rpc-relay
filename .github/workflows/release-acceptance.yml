@@ -19,4 +19,7 @@ jobs:
            TESTNET_ACCOUNT=$(echo $ACCOUNTS_JSON | jq '.accounts[] | select(.network=="testnet") | .accountNum')
            echo "The testnet account is: $TESTNET_ACCOUNT"
            PUBLIC_KEY=$(echo $ACCOUNTS_JSON | jq '.accounts[] | select(.network=="testnet") | .publicKey')
-           echo "The publicKey is : $PUBLIC_KEY"
+           echo "The publicKey is: $PUBLIC_KEY"
+           PRIVATE_KEY=$(echo $ACCOUNTS_JSON | jq '.accounts[] | select(.network=="testnet") | .privateKey')
+           echo "::add-mask::$PRIVATE_KEY"
+           echo "The privateKey is: $PRIVATE_KEY"
