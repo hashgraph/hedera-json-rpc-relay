@@ -1,8 +1,6 @@
 name: Release Branch Automation
 
-on:
-  push:
-    branches: [ 2037-release-acceptance-test-workflow ]  
+on: 
   workflow_dispatch:
     inputs:
       version:
