@@ -16,7 +16,7 @@ jobs:
             echo "The response was: $RESPONSE"
             ACCOUNTS_JSON="$(curl -sSL -b /tmp/cookiejar.bin -H "Accept: application/json" https://portal.hedera.com/api/account)"
             echo "::add-mask::$ACCOUNTS_JSON"
-            TESTNET_ACCOUNT=$(echo $ACCOUNTS_JSON | jq '.accounts[] | select(.network=="testnet") | .accountNum')
+            TESTNET_ACCOUNT=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="testnet") | .accountNum')
             echo "The testnet account is: $TESTNET_ACCOUNT"
             PUBLIC_KEY=$(echo $ACCOUNTS_JSON | jq '.accounts[] | select(.network=="testnet") | .publicKey')
             echo "The publicKey is: $PUBLIC_KEY"
