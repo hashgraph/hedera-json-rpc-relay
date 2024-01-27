@@ -23,7 +23,7 @@ jobs:
             PRIVATE_KEY=$(echo $ACCOUNTS_JSON | jq '.accounts[] | select(.network=="testnet") | .privateKey')
             echo "::add-mask::$PRIVATE_KEY"
             echo "The privateKey is: $PRIVATE_KEY"
-            echo "OPERATOR_ID_MAIN=${TESTNET_ACCOUNT}" >> $GITHUB_ENV
+            echo "OPERATOR_ID_MAIN=0.0.${TESTNET_ACCOUNT}" >> $GITHUB_ENV
             echo "OPERATOR_KEY_MAIN=${PRIVATE_KEY}" >> $GITHUB_ENV
 
       - name: Setup node
