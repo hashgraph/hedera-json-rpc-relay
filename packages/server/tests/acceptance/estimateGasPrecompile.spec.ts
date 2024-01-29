@@ -43,6 +43,7 @@ describe.only('EstimatePrecompileContract tests', function () {
   let EstimatePrecompileContractAddress;
   let requestId;
   let tokenAddress;
+  let newTokenAddress;
   let nftAddress;
   let nftSerialNumber;
   let estimateContractSigner0;
@@ -1219,35 +1220,55 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-045
   it('should call estimateGas with createFungibleToken with custom fees function', async function () {
-    let estimateContractTokenCreate = new ethers.Contract(
-      prefix + EstimatePrecompileContractAddress,
-      EstimatePrecompileContractJson.abi,
-      accounts[0].wallet,
-    );
-
     let accountWallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
     let accountLongZero = Utils.idToEvmAddress(accountWallet.account);
 
-    console.log(accountLongZero);
-    let NewestimateContract = new ethers.Contract(
-      prefix + EstimatePrecompileContractAddress,
-      EstimatePrecompileContractJson.abi,
-      accounts[0].wallet,
+    const txs = await estimateContractSigner0.createFungibleTokenWithCustomFeesPublic(
+      accounts[0].wallet.address,
+      tokenAddress,
+      {
+        value: BigInt('20000000000000000000'),
+      },
     );
-
-    const txs = await NewestimateContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
-      value: BigInt('10000000000000000000'),
-    });
     const gasResult = await txs.wait();
 
-    const populate: any = await NewestimateContract.createNonFungibleTokenPublic.populateTransaction(
+    const populate: any = await estimateContractSigner0.createFungibleTokenWithCustomFeesPublic.populateTransaction(
       accounts[0].wallet.address,
+      tokenAddress,
       {
-        value: '0x8186A936A8F6B400',
+        value: '1766666666',
       },
     );
     populate.from = accountLongZero;
-    populate.value = '0x8186A936A8F6B400';
+    populate.value = '0x1158E460913D00000';
+
+    const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-046
+  it.only('should call estimateGas with createNonFungibleToken with custom fees function', async function () {
+    let accountWallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
+    let accountLongZero = Utils.idToEvmAddress(accountWallet.account);
+
+    const txs = await estimateContractSigner0.createNonFungibleTokenWithCustomFeesPublic(
+      accounts[0].wallet.address,
+      tokenAddress,
+      {
+        value: BigInt('20000000000000000000'),
+      },
+    );
+    const gasResult = await txs.wait();
+
+    const populate: any = await estimateContractSigner0.createNonFungibleTokenWithCustomFeesPublic.populateTransaction(
+      accounts[0].wallet.address,
+      tokenAddress,
+      {
+        value: '0x1158E460913D00000',
+      },
+    );
+    populate.from = accountLongZero;
+    populate.value = '0x1158E460913D00000';
 
     const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
