@@ -18,7 +18,7 @@
  *
  */
 
-import { encodeBytes32String, ethers } from 'ethers';
+import { encodeBytes32String, ethers, formatEther, parseEther } from 'ethers';
 import { expect } from 'chai';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../clients/servicesClient';
@@ -1146,7 +1146,223 @@ describe.only('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-043 - The test is excluded due to an issue in mirror node
+  //EGP-043
+  it('should call estimateGas with createFungible token function', async function () {
+    let estimateContractTokenCreate = new ethers.Contract(
+      prefix + EstimatePrecompileContractAddress,
+      EstimatePrecompileContractJson.abi,
+      accounts[0].wallet,
+    );
+
+    let accountWallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
+    let accountLongZero = Utils.idToEvmAddress(accountWallet.account);
+
+    let NewestimateContract = new ethers.Contract(
+      prefix + EstimatePrecompileContractAddress,
+      EstimatePrecompileContractJson.abi,
+      accounts[0].wallet,
+    );
+
+    const txs = await NewestimateContract.createFungibleTokenPublic(accounts[0].wallet.address, {
+      value: BigInt('10000000000000000000'),
+    });
+    const gasResult = await txs.wait();
+
+    const populate: any = await NewestimateContract.createFungibleTokenPublic.populateTransaction(
+      accounts[0].wallet.address,
+      {
+        value: '0x8186A936A8F6B400',
+      },
+    );
+    populate.from = accountLongZero;
+    populate.value = '0x8186A936A8F6B400';
+
+    const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-044
+  it('should call estimateGas with createNonFungibleToken function', async function () {
+    let estimateContractTokenCreate = new ethers.Contract(
+      prefix + EstimatePrecompileContractAddress,
+      EstimatePrecompileContractJson.abi,
+      accounts[0].wallet,
+    );
+
+    let accountWallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
+    let accountLongZero = Utils.idToEvmAddress(accountWallet.account);
+
+    console.log(accountLongZero);
+    let NewestimateContract = new ethers.Contract(
+      prefix + EstimatePrecompileContractAddress,
+      EstimatePrecompileContractJson.abi,
+      accounts[0].wallet,
+    );
+
+    const txs = await NewestimateContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
+      value: BigInt('10000000000000000000'),
+    });
+    const gasResult = await txs.wait();
+
+    const populate: any = await NewestimateContract.createNonFungibleTokenPublic.populateTransaction(
+      accounts[0].wallet.address,
+      {
+        value: '0x8186A936A8F6B400',
+      },
+    );
+    populate.from = accountLongZero;
+    populate.value = '0x8186A936A8F6B400';
+
+    const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-045
+  it('should call estimateGas with createFungibleToken with custom fees function', async function () {
+    let estimateContractTokenCreate = new ethers.Contract(
+      prefix + EstimatePrecompileContractAddress,
+      EstimatePrecompileContractJson.abi,
+      accounts[0].wallet,
+    );
+
+    let accountWallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
+    let accountLongZero = Utils.idToEvmAddress(accountWallet.account);
+
+    console.log(accountLongZero);
+    let NewestimateContract = new ethers.Contract(
+      prefix + EstimatePrecompileContractAddress,
+      EstimatePrecompileContractJson.abi,
+      accounts[0].wallet,
+    );
+
+    const txs = await NewestimateContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
+      value: BigInt('10000000000000000000'),
+    });
+    const gasResult = await txs.wait();
+
+    const populate: any = await NewestimateContract.createNonFungibleTokenPublic.populateTransaction(
+      accounts[0].wallet.address,
+      {
+        value: '0x8186A936A8F6B400',
+      },
+    );
+    populate.from = accountLongZero;
+    populate.value = '0x8186A936A8F6B400';
+
+    const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-047
+  it('should call estimateGas with WipeTokenAccount token function', async function () {
+    const grantTokenKYCTx = await estimateContractSigner0.grantTokenKycExternal(
+      tokenAddress,
+      accounts[3].wallet.address,
+      {
+        gasLimit: 1_000_000,
+      },
+    );
+    await grantTokenKYCTx.wait();
+
+    const transferTx = await tokenContract.transfer(
+      accounts[3].wallet.address,
+      Constants.AMOUNT.AMOUNT_10,
+      Constants.GAS.LIMIT_1_000_000,
+    );
+    await transferTx.wait();
+
+    const txs = await contract.wipeTokenAccountExternal(tokenAddress, accounts[3].wallet.address, 0x02);
+    const gasResult = await txs.wait();
+
+    const populate: any = await estimateContractSigner0.wipeTokenAccountExternal.populateTransaction(
+      tokenAddress,
+      accounts[3].wallet.address,
+      2,
+    );
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-048
+  it('should call estimateGas with WipeTokenAccount token function with invalid amount', async function () {
+    const grantTokenKYCTx = await estimateContractSigner0.grantTokenKycExternal(
+      nftAddress,
+      accounts[3].wallet.address,
+      {
+        gasLimit: 1_000_000,
+      },
+    );
+    await grantTokenKYCTx.wait();
+
+    const transferTx = await tokenContract.transfer(
+      accounts[3].wallet.address,
+      Constants.AMOUNT.AMOUNT_10,
+      Constants.GAS.LIMIT_1_000_000,
+    );
+    await transferTx.wait();
+
+    const populate: any = await estimateContractSigner0.wipeTokenAccountExternal.populateTransaction(
+      tokenAddress,
+      accounts[3].wallet.address,
+      Constants.AMOUNT.INVALID_AMOUNT,
+    );
+    await negativeScenarioVerification(populate, CALL_EXCEPTION);
+  });
+
+  //EGP-049
+  it('should call estimateGas with wipeTokenAccountNFT function', async function () {
+    const nftSerial = await mintNFT();
+    const serialNumbers: Number[] = [nftSerial];
+    const transferTx = await nftTokenContract.transferFrom(
+      accounts[0].wallet.address,
+      accounts[3].wallet.address,
+      nftSerial,
+      {
+        gasLimit: 1_000_000,
+      },
+    );
+    await transferTx.wait();
+
+    const populate: any = await contract.wipeTokenAccountNFTExternal.populateTransaction(
+      nftAddress,
+      accounts[3].wallet.address,
+      serialNumbers,
+    );
+
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
+
+    const txs = await contract.wipeTokenAccountNFTExternal(nftAddress, accounts[3].wallet.address, serialNumbers);
+    const gasResult = await txs.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  //EGP-050
+  it('should call estimateGas with wipeTokenAccountNFT function with invalid serial number', async function () {
+    const nftSerial = await mintNFT();
+    const invalidSerialNumbers: Number[] = [100];
+
+    const transferTx = await nftTokenContract.transferFrom(
+      accounts[0].wallet.address,
+      accounts[3].wallet.address,
+      nftSerial,
+      {
+        gasLimit: 1_000_000,
+      },
+    );
+    await transferTx.wait();
+
+    const populate: any = await contract.wipeTokenAccountNFTExternal.populateTransaction(
+      nftAddress,
+      accounts[3].wallet.address,
+      invalidSerialNumbers,
+    );
+
+    await negativeScenarioVerification(populate, CALL_EXCEPTION);
+  });
+
+  //EGP-043 - TESTTESTS - The test is excluded due to an issue in mirror node
   it.skip('should call estimateGas with createFungible token function', async function () {
     let estimateContractTokenCreate = new ethers.Contract(
       prefix + EstimatePrecompileContractAddress,
@@ -1154,30 +1370,30 @@ describe.only('EstimatePrecompileContract tests', function () {
       accounts[0].wallet,
     );
 
-    const gasOptions = await Utils.gasOptions(requestId, 15_000_000);
-    let gasLimit = gasOptions.gasLimit;
-    let gasPrice = gasOptions.gasPrice;
+    // const gasOptions = await Utils.gasOptions(requestId, 15_000_000);
+    // let gasLimit = gasOptions.gasLimit;
+    // let gasPrice = gasOptions.gasPrice;
 
-    const tx = await estimateContractTokenCreate.createFungibleTokenPublic.populateTransaction(
-      accounts[0].wallet.address,
-      {},
-    );
+    // const tx = await estimateContractTokenCreate.createFungibleTokenPublic.populateTransaction(
+    //   accounts[0].wallet.address,
+    //   {},
+    // );
 
-    console.log('Gas Limit is ' + tx.gasLimit);
-    console.log('Gas Price is ' + tx.gasPrice);
+    // console.log('Gas Limit is ' + tx.gasLimit);
+    // console.log('Gas Price is ' + tx.gasPrice);
 
-    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+    // const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    const txNewToken = await estimateContractTokenCreate.createFungibleTokenPublic(
-      prefix + EstimatePrecompileContractAddress,
-      EstimatePrecompileContractJson.abi,
-      accounts[0].wallet,
-    );
+    // const txNewToken = await estimateContractTokenCreate.createFungibleTokenPublic(
+    //   prefix + EstimatePrecompileContractAddress,
+    //   EstimatePrecompileContractJson.abi,
+    //   accounts[0].wallet,
+    // );
 
-    const newTokenAddress = (await txNewToken.wait()).logs.filter(
-      (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.CreatedToken,
-    )[0].args[0];
-    console.log(newTokenAddress);
+    // const newTokenAddress = (await txNewToken.wait()).logs.filter(
+    //   (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.CreatedToken,
+    // )[0].args[0];
+    // console.log(newTokenAddress);
 
     //isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
 
@@ -1207,14 +1423,14 @@ describe.only('EstimatePrecompileContract tests', function () {
     // console.log(currentUnixTimestampWithFractional);
 
     //const result = await newMirrorNodeCleint.getNetworkExchangeRate(timestampString);
-    let account2Wallet = await mirrorNode.get(`/accounts/${accounts[2].wallet.address}`, requestId);
+    let account2Wallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
     let account2LongZero = Utils.idToEvmAddress(account2Wallet.account);
 
     console.log(account2LongZero);
     let NewestimateContract = new ethers.Contract(
       prefix + EstimatePrecompileContractAddress,
       EstimatePrecompileContractJson.abi,
-      accounts[2].wallet,
+      accounts[0].wallet,
     );
 
     // let newCallerContract = new ethers.Contract(
@@ -1259,23 +1475,35 @@ describe.only('EstimatePrecompileContract tests', function () {
 
     // console.log(tx);
     //const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    const populate = await NewestimateContract.createFungibleTokenPublic.populateTransaction(
-      accounts[0].wallet.address,
-      {
-        value: '5000000000',
-        //gasLimit: 10_000_000,
-      },
-    );
-    populate.from = accounts[2].wallet.address;
-
-    const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
+    // const msgValue = await NewestimateContract.msgValue({value: '933333333'});
+    // console.log(await msgValue.wait());
 
     const txs = await NewestimateContract.createFungibleTokenPublic(accounts[0].wallet.address, {
       value: BigInt('10000000000000000000'),
-      gasLimit: 10_000_000,
+      //gasLimit: 10_000_000,
     });
-    await txs.wait();
+    const gasResult = await txs.wait();
 
+    //  const bigInt = BigInt('9333333330000000000000');
+    //  const string = ethers.formatEther(bigInt);
+    // const stringifyResult = JSON.stringify({
+    //   bigIntValue: value.toString(),
+    // });
+
+    // console.log(stringifyResult)
+
+    const populate: any = await NewestimateContract.createFungibleTokenPublic.populateTransaction(
+      accounts[0].wallet.address,
+      {
+        value: '0x8186A936A8F6B400',
+        // gasLimit: 10_000_000,
+      },
+    );
+    populate.from = account2LongZero;
+    populate.value = '0x8186A936A8F6B400';
+
+    const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
     // const newTokenAddress = (await txs.wait()).logs.filter(
     //   (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.CreatedToken,
     // )[0].args[0];
