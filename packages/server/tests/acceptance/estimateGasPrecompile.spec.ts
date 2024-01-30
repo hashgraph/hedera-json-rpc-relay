@@ -31,6 +31,8 @@ import { maxGasLimit } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { create } from 'ts-node';
 import ERCTestContractJson from '../contracts/ERCTestContract.json';
 import PrecompileTestContractJson from '../contracts/PrecompileTestContract.json';
+import { numberTo0x } from '../../../../packages/relay/src/formatters';
+import { ExchangeRate } from '@hashgraph/sdk';
 
 describe.only('EstimatePrecompileContract tests', function () {
   const signers: AliasAccount[] = [];
@@ -64,6 +66,8 @@ describe.only('EstimatePrecompileContract tests', function () {
   let PrecompileContractReceipt;
   let PrecompileContractAddress;
 
+  const usdFee1 = 1;
+  const usdFee2 = 2;
   const accounts: AliasAccount[] = [];
   const { servicesNode, mirrorNode, relay }: any = global;
 
@@ -292,6 +296,23 @@ describe.only('EstimatePrecompileContract tests', function () {
   const baseGasCheck = (estimatedGasValue, expectedValue: number) => {
     expect(Number(estimatedGasValue)).to.be.lessThan(expectedValue * 1.4);
   };
+
+  async function getExchangeRates(requestId) {
+    let exchangeRateResult = await mirrorNode.get(`/network/exchangerate`, requestId);
+    return exchangeRateResult;
+  }
+
+  function calculateCreateTokenFees(
+    usdFee: number,
+    exchangeRateCentEquivalent: number,
+    exhangeRateHbarEquivalent,
+  ): number {
+    let hbarPriceInCents = exchangeRateCentEquivalent / exhangeRateHbarEquivalent;
+    const usdInCents = 100;
+    let feeResult = ((usdInCents * usdFee) / hbarPriceInCents + 1) * 100000000;
+    let feeResultInt: number = Math.floor(feeResult);
+    return feeResultInt;
+  }
 
   const isWithinDeviation = (
     actualGasUsed: bigint,
@@ -1149,11 +1170,13 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-043
   it('should call estimateGas with createFungible token function', async function () {
-    let estimateContractTokenCreate = new ethers.Contract(
-      prefix + EstimatePrecompileContractAddress,
-      EstimatePrecompileContractJson.abi,
-      accounts[0].wallet,
+    let exchangeRatesResult = await getExchangeRates(requestId);
+    let calculateFee = calculateCreateTokenFees(
+      usdFee1,
+      exchangeRatesResult.current_rate.cent_equivalent,
+      exchangeRatesResult.current_rate.hbar_equivalent,
     );
+    let hexNumber = numberTo0x(calculateFee * 10000000000);
 
     let accountWallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
     let accountLongZero = Utils.idToEvmAddress(accountWallet.account);
@@ -1165,18 +1188,18 @@ describe.only('EstimatePrecompileContract tests', function () {
     );
 
     const txs = await NewestimateContract.createFungibleTokenPublic(accounts[0].wallet.address, {
-      value: BigInt('10000000000000000000'),
+      value: hexNumber,
     });
     const gasResult = await txs.wait();
 
     const populate: any = await NewestimateContract.createFungibleTokenPublic.populateTransaction(
       accounts[0].wallet.address,
       {
-        value: '0x8186A936A8F6B400',
+        value: hexNumber,
       },
     );
     populate.from = accountLongZero;
-    populate.value = '0x8186A936A8F6B400';
+    populate.value = hexNumber;
 
     const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
@@ -1184,11 +1207,13 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-044
   it('should call estimateGas with createNonFungibleToken function', async function () {
-    let estimateContractTokenCreate = new ethers.Contract(
-      prefix + EstimatePrecompileContractAddress,
-      EstimatePrecompileContractJson.abi,
-      accounts[0].wallet,
+    let exchangeRatesResult = await getExchangeRates(requestId);
+    let calculateFee = calculateCreateTokenFees(
+      usdFee1,
+      exchangeRatesResult.current_rate.cent_equivalent,
+      exchangeRatesResult.current_rate.hbar_equivalent,
     );
+    let hexNumber = numberTo0x(calculateFee * 10000000000);
 
     let accountWallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
     let accountLongZero = Utils.idToEvmAddress(accountWallet.account);
@@ -1201,18 +1226,18 @@ describe.only('EstimatePrecompileContract tests', function () {
     );
 
     const txs = await NewestimateContract.createNonFungibleTokenPublic(accounts[0].wallet.address, {
-      value: BigInt('10000000000000000000'),
+      value: hexNumber,
     });
     const gasResult = await txs.wait();
 
     const populate: any = await NewestimateContract.createNonFungibleTokenPublic.populateTransaction(
       accounts[0].wallet.address,
       {
-        value: '0x8186A936A8F6B400',
+        value: hexNumber,
       },
     );
     populate.from = accountLongZero;
-    populate.value = '0x8186A936A8F6B400';
+    populate.value = hexNumber;
 
     const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
@@ -1220,6 +1245,14 @@ describe.only('EstimatePrecompileContract tests', function () {
 
   //EGP-045
   it('should call estimateGas with createFungibleToken with custom fees function', async function () {
+    let exchangeRatesResult = await getExchangeRates(requestId);
+    let calculateFee = calculateCreateTokenFees(
+      usdFee2,
+      exchangeRatesResult.current_rate.cent_equivalent,
+      exchangeRatesResult.current_rate.hbar_equivalent,
+    );
+    let hexNumber = numberTo0x(calculateFee * 10000000000);
+
     let accountWallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
     let accountLongZero = Utils.idToEvmAddress(accountWallet.account);
 
@@ -1227,7 +1260,7 @@ describe.only('EstimatePrecompileContract tests', function () {
       accounts[0].wallet.address,
       tokenAddress,
       {
-        value: BigInt('20000000000000000000'),
+        value: hexNumber,
       },
     );
     const gasResult = await txs.wait();
@@ -1236,18 +1269,26 @@ describe.only('EstimatePrecompileContract tests', function () {
       accounts[0].wallet.address,
       tokenAddress,
       {
-        value: '1766666666',
+        value: hexNumber,
       },
     );
     populate.from = accountLongZero;
-    populate.value = '0x1158E460913D00000';
+    populate.value = hexNumber;
 
     const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
   });
 
   //EGP-046
-  it.only('should call estimateGas with createNonFungibleToken with custom fees function', async function () {
+  it('should call estimateGas with createNonFungibleToken with custom fees function', async function () {
+    let exchangeRatesResult = await getExchangeRates(requestId);
+    let calculateFee = calculateCreateTokenFees(
+      usdFee2,
+      exchangeRatesResult.current_rate.cent_equivalent,
+      exchangeRatesResult.current_rate.hbar_equivalent,
+    );
+    let hexNumber = numberTo0x(calculateFee * 10000000000);
+
     let accountWallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
     let accountLongZero = Utils.idToEvmAddress(accountWallet.account);
 
@@ -1255,7 +1296,7 @@ describe.only('EstimatePrecompileContract tests', function () {
       accounts[0].wallet.address,
       tokenAddress,
       {
-        value: BigInt('20000000000000000000'),
+        value: hexNumber,
       },
     );
     const gasResult = await txs.wait();
@@ -1264,11 +1305,11 @@ describe.only('EstimatePrecompileContract tests', function () {
       accounts[0].wallet.address,
       tokenAddress,
       {
-        value: '0x1158E460913D00000',
+        value: hexNumber,
       },
     );
     populate.from = accountLongZero;
-    populate.value = '0x1158E460913D00000';
+    populate.value = hexNumber;
 
     const estimateGasResponse2 = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [populate]);
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
