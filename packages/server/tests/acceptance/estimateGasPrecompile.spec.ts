@@ -369,7 +369,7 @@ describe('EstimatePrecompileContract tests', function () {
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.REDIRECT_TRANSFER),
+      BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_TRANSFER),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -394,7 +394,7 @@ describe('EstimatePrecompileContract tests', function () {
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.REDIRECT_TRANSFER_FROM),
+      BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_TRANSFER_FROM),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -437,7 +437,7 @@ describe('EstimatePrecompileContract tests', function () {
     await disociateResult.wait();
 
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.REDIRECT_APPROVE),
+      BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_APPROVE),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -486,7 +486,7 @@ describe('EstimatePrecompileContract tests', function () {
     );
     await dissociateTxResult.wait();
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.REDIRECT_TRANSFER_FROM_NFT),
+      BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_TRANSFER_FROM_NFT),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -863,7 +863,7 @@ describe('EstimatePrecompileContract tests', function () {
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.ERC_TRANSFER_FROM),
+      BigInt(Constants.ACTUAL_GAS_USED.ERC_TRANSFER_FROM),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -905,7 +905,11 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await tokenContract.getApproved.populateTransaction(nftSerial);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_GET_APPROVED_NFT), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(
+      BigInt(Constants.ACTUAL_GAS_USED.ERC_GET_APPROVED_NFT),
+      estimateGasResponse,
+      lowerPercentBound,
+    );
   });
 
   it('Should call estimateGas with ERC isApprovedForAll', async function () {
@@ -919,7 +923,11 @@ describe('EstimatePrecompileContract tests', function () {
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_IS_APPROVED_FOR_ALL), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(
+      BigInt(Constants.ACTUAL_GAS_USED.ERC_IS_APPROVED_FOR_ALL),
+      estimateGasResponse,
+      lowerPercentBound,
+    );
   });
 
   it('should call estimateGas with associate function for fungible tokens', async function () {
@@ -1531,7 +1539,7 @@ describe('EstimatePrecompileContract tests', function () {
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.UPDATE_TOKEN_EXPIRY_INFO),
+      BigInt(Constants.ACTUAL_GAS_USED.UPDATE_TOKEN_EXPIRY_INFO),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -1546,7 +1554,7 @@ describe('EstimatePrecompileContract tests', function () {
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.UPDATE_TOKEN_INFO),
+      BigInt(Constants.ACTUAL_GAS_USED.UPDATE_TOKEN_INFO),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -1558,7 +1566,7 @@ describe('EstimatePrecompileContract tests', function () {
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.UPDATE_TOKEN_KEYS),
+      BigInt(Constants.ACTUAL_GAS_USED.UPDATE_TOKEN_KEYS),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -1702,7 +1710,7 @@ describe('EstimatePrecompileContract tests', function () {
     const txResult = await estimateContractSigner1.getTokenKeyExternal(tokenAddress, 32);
 
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.GET_TOKEN_KEY_FEE),
+      BigInt(Constants.ACTUAL_GAS_USED.GET_TOKEN_KEY_FEE),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -1793,7 +1801,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await tokenContract.name.populateTransaction();
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_NAME), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.ERC_NAME), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with ERC name function for fungible NFT', async function () {
@@ -1801,7 +1809,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await nftTokenContract.name.populateTransaction();
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_NAME_NFT), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.ERC_NAME_NFT), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with ERC symbol function for fungible token', async function () {
@@ -1809,7 +1817,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await tokenContract.symbol.populateTransaction();
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_SYMBOL), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.ERC_SYMBOL), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with ERC symbol function for NFT', async function () {
@@ -1817,7 +1825,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await nftTokenContract.symbol.populateTransaction();
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_SYMBOL_NFT), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.ERC_SYMBOL_NFT), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with ERC decimals function for fungible token', async function () {
@@ -1825,7 +1833,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await tokenContract.decimals.populateTransaction();
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_DECIMALS), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.ERC_DECIMALS), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with ERC totalSupply function for fungible token', async function () {
@@ -1833,7 +1841,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await tokenContract.totalSupply.populateTransaction();
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_TOTAL_SUPPLY), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.ERC_TOTAL_SUPPLY), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with ERC totalSupply function for NFT', async function () {
@@ -1847,7 +1855,11 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await ERCTestContract.totalSupplyIERC721.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_TOTAL_SUPPLY_NFT), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(
+      BigInt(Constants.ACTUAL_GAS_USED.ERC_TOTAL_SUPPLY_NFT),
+      estimateGasResponse,
+      lowerPercentBound,
+    );
   });
 
   it('should call estimateGas with ERC balanceOf function for fungible token', async function () {
@@ -1855,7 +1867,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await tokenContract.balanceOf.populateTransaction(accounts[0].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_BALANCE_OF), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.ERC_BALANCE_OF), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with ERC balanceOf function for NFT', async function () {
@@ -1863,7 +1875,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await nftTokenContract.balanceOf.populateTransaction(accounts[0].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_BALANCE_OF_NFT), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.ERC_BALANCE_OF_NFT), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with ERC ownerOf function for NFT', async function () {
@@ -1871,7 +1883,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await nftTokenContract.ownerOf.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_OWNER_OF_NFT), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.ERC_OWNER_OF_NFT), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with ERC tokenURI function for NFT', async function () {
@@ -1879,7 +1891,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await nftTokenContract.tokenURI.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_TOKEN_URI_NFT), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.ERC_TOKEN_URI_NFT), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with  getInformationForFungibleToken function for fungible token', async function () {
@@ -2127,7 +2139,7 @@ describe('EstimatePrecompileContract tests', function () {
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.REDIRECT_BALANCE_OF),
+      BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_BALANCE_OF),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -2144,7 +2156,7 @@ describe('EstimatePrecompileContract tests', function () {
     const tx = await precompileTokenContract.nameRedirect.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
 
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_NAME), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_NAME), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with  nameNFTRedirect function for NFT', async function () {
@@ -2156,7 +2168,7 @@ describe('EstimatePrecompileContract tests', function () {
 
     const tx = await precompileTokenContract.nameNFTRedirect.populateTransaction(tokenAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_NAME_NFT), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_NAME_NFT), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with  symbolRedirect function for fungible token', async function () {
@@ -2168,7 +2180,7 @@ describe('EstimatePrecompileContract tests', function () {
 
     const tx = await precompileTokenContract.symbolRedirect.populateTransaction(tokenAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_SYMBOL), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_SYMBOL), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with  symbolNFTRedirect function for NFT', async function () {
@@ -2180,7 +2192,7 @@ describe('EstimatePrecompileContract tests', function () {
 
     const tx = await precompileTokenContract.symbolNFTRedirect.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_SYMBOL_NFT), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_SYMBOL_NFT), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with decimals redirect function for fungible token', async function () {
@@ -2192,7 +2204,7 @@ describe('EstimatePrecompileContract tests', function () {
 
     const tx = await precompileTokenContract.decimalsRedirect.populateTransaction(tokenAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_DECIMALS), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_DECIMALS), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with  allowance redirect function', async function () {
@@ -2208,7 +2220,7 @@ describe('EstimatePrecompileContract tests', function () {
       accounts[1].wallet.address,
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_ALLOWANCE), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_ALLOWANCE), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with  getOwnerOf redirect function', async function () {
@@ -2221,7 +2233,11 @@ describe('EstimatePrecompileContract tests', function () {
 
     const tx = await precompileTokenContract.getOwnerOfRedirect.populateTransaction(nftAddress, nftSerial);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_GET_OWNER_OF), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(
+      BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_GET_OWNER_OF),
+      estimateGasResponse,
+      lowerPercentBound,
+    );
   });
 
   it('should call estimateGas with  tokenURIRedirect function', async function () {
@@ -2233,7 +2249,7 @@ describe('EstimatePrecompileContract tests', function () {
 
     const tx = await precompileTokenContract.tokenURIRedirect.populateTransaction(nftAddress, 1);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_TOKEN_URI), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_TOKEN_URI), estimateGasResponse, lowerPercentBound);
   });
 
   it('should call estimateGas with isApprovedForAll redirect function', async function () {
@@ -2249,7 +2265,11 @@ describe('EstimatePrecompileContract tests', function () {
       accounts[1].wallet.address,
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_IS_APPROVED_FOR_ALL), estimateGasResponse, lowerPercentBound);
+    isEqualWithDeviation(
+      BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_IS_APPROVED_FOR_ALL),
+      estimateGasResponse,
+      lowerPercentBound,
+    );
   });
 
   it('should call estimateGas with setApprovalForAll redirect function', async function () {
@@ -2290,7 +2310,7 @@ describe('EstimatePrecompileContract tests', function () {
     );
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     isWithinDeviation(
-      BigInt(ACTUAL_GAS_USED.REDIRECT_SET_APPROVAL_FOR_ALL),
+      BigInt(Constants.ACTUAL_GAS_USED.REDIRECT_SET_APPROVAL_FOR_ALL),
       estimateGasResponse,
       lowerPercentBound,
       upperPercentBound,
@@ -2366,41 +2386,5 @@ describe('EstimatePrecompileContract tests', function () {
     const txResult = await contractSigner.approveExternal(token, spender, amount);
     const gasResult = await txResult.wait();
     return gasResult;
-  }
-
-  enum ACTUAL_GAS_USED {
-    REDIRECT_TRANSFER = 47048,
-    REDIRECT_TRANSFER_FROM = 47350,
-    REDIRECT_APPROVE = 737257,
-    REDIRECT_TRANSFER_FROM_NFT = 61457,
-    REDIRECT_BALANCE_OF = 32806,
-    REDIRECT_NAME = 37312,
-    REDIRECT_NAME_NFT = 37268,
-    REDIRECT_SYMBOL = 37312,
-    REDIRECT_SYMBOL_NFT = 37334,
-    REDIRECT_DECIMALS = 36065,
-    REDIRECT_ALLOWANCE = 36836,
-    REDIRECT_GET_OWNER_OF = 36382,
-    REDIRECT_TOKEN_URI = 37035,
-    REDIRECT_IS_APPROVED_FOR_ALL = 36858,
-    REDIRECT_SET_APPROVAL_FOR_ALL = 737243,
-    ERC_TRANSFER_FROM = 39511,
-    ERC_GET_APPROVED_NFT = 27393,
-    ERC_IS_APPROVED_FOR_ALL = 27511,
-    UPDATE_TOKEN_EXPIRY_INFO = 39631,
-    UPDATE_TOKEN_INFO = 74920,
-    UPDATE_TOKEN_KEYS = 60427,
-    GET_TOKEN_KEY_FEE = 27024,
-    ERC_NAME = 27508,
-    ERC_NAME_NFT = 27508,
-    ERC_SYMBOL = 27508,
-    ERC_SYMBOL_NFT = 27508,
-    ERC_DECIMALS = 27508,
-    ERC_TOTAL_SUPPLY = 27508,
-    ERC_TOTAL_SUPPLY_NFT = 30865,
-    ERC_BALANCE_OF = 27508,
-    ERC_BALANCE_OF_NFT = 27508,
-    ERC_OWNER_OF_NFT = 27508,
-    ERC_TOKEN_URI_NFT = 27508,
   }
 });
