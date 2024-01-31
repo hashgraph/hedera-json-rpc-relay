@@ -753,26 +753,46 @@ describe.only('EstimatePrecompileContract tests', function () {
   });
 
   //EGP-019 //The test is excluded due to a bug in the Mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/7192
-  it('should call estimateGas with transferFrom function', async function () {
+  it.only('should call estimateGas with transferFrom function', async function () {
     let spender = prefix + EstimatePrecompileContractAddress;
-    // const grantTokenKYCTx = await estimateContractSigner0.grantTokenKycExternal(tokenAddress, spender, Constants.GAS.LIMIT_1_000_000);
-    // await grantTokenKYCTx.wait();
-    const approveTx = await tokenContract.approve(spender, Constants.AMOUNT.AMOUNT_10, Constants.GAS.LIMIT_1_000_000);
+
+    const approveTx = await tokenContract.approve(
+      accounts[1].wallet.address,
+      Constants.AMOUNT.AMOUNT_10,
+      Constants.GAS.LIMIT_1_000_000,
+    );
     await approveTx.wait();
 
-    let account0Wallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
-    let account3Wallet = await mirrorNode.get(`/accounts/${accounts[3].wallet.address}`, requestId);
-
-    let account0LongZero = Utils.idToEvmAddress(account0Wallet.account);
-    let account3LongZero = Utils.idToEvmAddress(account3Wallet.account);
+    const approveContractTx = await tokenContract.approve(
+      spender,
+      Constants.AMOUNT.AMOUNT_10,
+      Constants.GAS.LIMIT_1_000_000,
+    );
+    await approveContractTx.wait();
 
     const allowancerTx = await tokenContract.allowance(
+      accounts[0].wallet.address,
+      accounts[1].wallet.address,
+      Constants.GAS.LIMIT_1_000_000,
+    );
+    console.log(allowancerTx);
+
+    const allowancerContractTx = await tokenContract.allowance(
       accounts[0].wallet.address,
       spender,
       Constants.GAS.LIMIT_1_000_000,
     );
     console.log(allowancerTx);
-    const transferFromTx = await estimateContractSigner2.transferFromExternal(
+
+    const tx = await estimateContractSigner1.transferFromExternal.populateTransaction(
+      tokenAddress,
+      accounts[0].wallet.address,
+      accounts[2].wallet.address,
+      10,
+    );
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const transferFromTx = await estimateContractSigner1.transferFromExternal(
       tokenAddress,
       accounts[0].wallet.address,
       accounts[2].wallet.address,
@@ -780,40 +800,7 @@ describe.only('EstimatePrecompileContract tests', function () {
     );
     const gasResult = await transferFromTx.wait();
 
-    const tx = await estimateContractSigner2.transferFromExternal.populateTransaction(
-      tokenAddress,
-      accounts[0].wallet.address,
-      accounts[2].wallet.address,
-      10,
-    );
-    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
-
-    // let account0Wallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
-    // let account1Wallet = await mirrorNode.get(`/accounts/${accounts[1].wallet.address}`, requestId);
-
-    // let account0LongZero = Utils.idToEvmAddress(account0Wallet.account);
-    // let account1LongZero = Utils.idToEvmAddress(account1Wallet.account);
-
-    //const ERC20Contract = new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[0].wallet);
-
-    // const erc20Accounts0 = tokenContract.connect(accounts[0].wallet);
-    // // @ts-ignore
-    // const tx1 = await erc20Accounts0.approve(contract.target, 2);
-    // await tx1.wait();
-
-    // const allowance = await tokenContract.allowance(accounts[0].wallet.address, contract.target);
-    // await contract.approveExternal(tokenAddress, accounts[1].wallet.address, Constants.AMOUNT.AMOUNT_1);
-
-    // const tx2 = await contract.transferFromExternal.populateTransaction(
-    //   tokenAddress,
-    //   account0LongZero,
-    //   account1LongZero,
-    //   Constants.AMOUNT.AMOUNT_1,
-    // );
-
-    // const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx2]);
-    // baseGasCheck(estimateGasResponse, 786166);
   });
 
   //EGP-019 //The test is excluded due to a bug in the Mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/7192
@@ -1014,7 +1001,7 @@ describe.only('EstimatePrecompileContract tests', function () {
   });
 
   //EGP-027
-  it.only('Should call estimateGas with ERC transferFrom function with more than the approved allowance for fungible token', async function () {
+  it('Should call estimateGas with ERC transferFrom function with more than the approved allowance for fungible token', async function () {
     const tokenContract1 = new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[1].wallet);
     const txResultApprove = await tokenContract.approve(accounts[1].wallet.address, 10);
     await txResultApprove.wait();
@@ -1286,7 +1273,7 @@ describe.only('EstimatePrecompileContract tests', function () {
   });
 
   //EGP-043
-  it('should call estimateGas with createFungible token function', async function () {
+  it.only('should call estimateGas with createFungible token function', async function () {
     let exchangeRatesResult = await getExchangeRates(requestId);
     let calculateFee = calculateCreateTokenFees(
       usdFee1,
