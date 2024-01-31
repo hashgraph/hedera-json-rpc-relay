@@ -16,7 +16,7 @@ data:
   ETH_GET_LOGS_BLOCK_RANGE_LIMIT: {{ .Values.config.ETH_GET_LOGS_BLOCK_RANGE_LIMIT | quote }}
   HBAR_RATE_LIMIT_TINYBAR: {{ .Values.config.HBAR_RATE_LIMIT_TINYBAR | quote }}
   HBAR_RATE_LIMIT_DURATION: {{ .Values.config.HBAR_RATE_LIMIT_DURATION | quote }}
-  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in" .Values.config.HEDERA_NETWORK | toJson | quote }}
+  HEDERA_NETWORK: {{ required "A valid HEDERA_NETWORK must be present in" .Values.config.HEDERA_NETWORK | toJson }}
   INPUT_SIZE_LIMIT: {{ .Values.config.INPUT_SIZE_LIMIT | quote }}
   LIMIT_DURATION: {{ .Values.config.LIMIT_DURATION | quote }}
   MIRROR_NODE_LIMIT_PARAM: {{ .Values.config.MIRROR_NODE_LIMIT_PARAM | quote }}
