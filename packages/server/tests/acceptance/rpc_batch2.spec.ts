@@ -645,7 +645,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     async function createNftHTSToken(account) {
       const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
       const tx = await mainContract.createNonFungibleTokenPublic(account.wallet.address, {
-        value: BigInt('10000000000000000000'),
+        value: BigInt('15000000000000000000'),
         ...Helper.GAS.LIMIT_5_000_000,
       });
       const { tokenAddress } = (await tx.wait()).logs.filter(

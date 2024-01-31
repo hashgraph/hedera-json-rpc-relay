@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "KeyHelper",
-  "sourceName": "contracts/hts-precompile/KeyHelper.sol",
+  "contractName": "ExpiryHelper",
+  "sourceName": "contracts/hts-precompile/ExpiryHelper.sol",
   "abi": [],
   "bytecode": "0x",
   "deployedBytecode": "0x",
