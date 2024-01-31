@@ -338,7 +338,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   };
 
-  //EGP-125
   it('should call estimateGas with transferRedirect function', async function () {
     let spender = prefix + PrecompileContractAddress;
 
@@ -377,7 +376,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP 126
   it('should call estimateGas with transferFromRedirect function', async function () {
     let spender = prefix + PrecompileContractAddress;
 
@@ -403,7 +401,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP-127
   it('should call estimateGas with approveRedirect function', async function () {
     let spender = prefix + PrecompileContractAddress;
 
@@ -447,7 +444,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP-128
   it('should call estimateGas with redirect transferFromNFT function', async function () {
     let spender = prefix + PrecompileContractAddress;
     const nftSerial = await mintNFT();
@@ -497,7 +493,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP-001
   it('should call estimateGas with associate function for fungible token', async function () {
     const tx = await estimateContractSigner1.associateTokenExternal.populateTransaction(
       accounts[1].wallet.address,
@@ -509,7 +504,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-002
   it('should call estimateGas with associate function for NFT', async function () {
     const tx = await estimateContractSigner1.associateTokenExternal.populateTransaction(
       accounts[1].wallet.address,
@@ -521,19 +515,16 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-003
   it('should call estimateGas with dissociate token function without association for fungible token - negative', async function () {
     const tx = await contract.dissociateTokenExternal.populateTransaction(accounts[0].wallet.address, tokenAddress);
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-004
   it('should call estimateGas with dissociate token function without association for NFT - negative', async function () {
     const tx = await contract.dissociateTokenExternal.populateTransaction(accounts[0].wallet.address, nftAddress);
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-005
   it('should call estimateGas with nested associate function that executes it twice for fungible token - negative', async function () {
     const tx = await contract.nestedAssociateTokenExternal.populateTransaction(
       accounts[0].wallet.address,
@@ -542,13 +533,11 @@ describe('EstimatePrecompileContract tests', function () {
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-006
   it('should call estimateGas with nested associate function that executes it twice for NFT - negative', async function () {
     const tx = await contract.nestedAssociateTokenExternal.populateTransaction(accounts[0].wallet.address, nftAddress);
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-007
   it('should call estimateGas with approve function without association - negative', async function () {
     const tx = await contract.approveExternal.populateTransaction(
       tokenAddress,
@@ -558,14 +547,12 @@ describe('EstimatePrecompileContract tests', function () {
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-008
   it('should call estimateGas with approveNFT function without association - negative', async function () {
     const nftSerial = await mintNFT();
     const tx = await contract.approveNFTExternal.populateTransaction(nftAddress, accounts[1].wallet.address, nftSerial);
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-009
   it('should call estimateGas with dissociate token function for fungible token', async function () {
     const tx = await estimateContractSigner1.dissociateTokenExternal.populateTransaction(
       accounts[1].wallet.address,
@@ -577,7 +564,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-010
   it('should call estimateGas with dissociate token function for NFT', async function () {
     const tx = await estimateContractSigner1.dissociateTokenExternal.populateTransaction(
       accounts[1].wallet.address,
@@ -591,7 +577,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-011
   it('should call estimateGas with dissociate and associate nested function for fungible token', async function () {
     const tx = await contract.dissociateAndAssociateTokenExternal.populateTransaction(
       accounts[3].wallet.address,
@@ -604,7 +589,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-012
   it('should call estimateGas with dissociate and associate nested function for NFT', async function () {
     const tx = await contract.dissociateAndAssociateTokenExternal.populateTransaction(
       accounts[3].wallet.address,
@@ -617,7 +601,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-013
   it('should call estimateGas with setApprovalForAll function without association - negative', async function () {
     const tx = await contract.setApprovalForAllExternal.populateTransaction(
       tokenAddress,
@@ -627,7 +610,6 @@ describe('EstimatePrecompileContract tests', function () {
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-014
   it('should call estimateGas with approve function', async function () {
     let spender = prefix + EstimatePrecompileContractAddress;
 
@@ -644,7 +626,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-015
   it('should call estimateGas with approveNFT function', async function () {
     let spender = prefix + EstimatePrecompileContractAddress;
     const nftSerial = await mintNFT();
@@ -685,7 +666,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-016
   it('should call estimateGas with setApprovalForAll function', async function () {
     let spender = prefix + EstimatePrecompileContractAddress;
 
@@ -705,7 +685,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-017
   it('should call estimateGas with transferFromNFT function', async function () {
     let spender = prefix + EstimatePrecompileContractAddress;
     const nftSerial = await mintNFT();
@@ -737,7 +716,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-018
   it('should call estimateGas with transferFrom function without approval - negative', async function () {
     const tx = await contract.transferFromExternal.populateTransaction(
       tokenAddress,
@@ -748,7 +726,6 @@ describe('EstimatePrecompileContract tests', function () {
     negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-019
   it('should call estimateGas with transferFrom function', async function () {
     let spender = prefix + EstimatePrecompileContractAddress;
 
@@ -785,7 +762,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-020
   it('should call estimateGas with transferFrom function with more than the approved allowance - negative', async function () {
     const tx = await contract.transferFromExternal.populateTransaction(
       tokenAddress,
@@ -796,7 +772,6 @@ describe('EstimatePrecompileContract tests', function () {
     negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-021
   it('should call estimateGas with transferFromNFT with invalid serial number - negative', async function () {
     let wrongNFTSerial = 10;
 
@@ -809,7 +784,6 @@ describe('EstimatePrecompileContract tests', function () {
     negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-022
   it('should call estimateGas with transferToken function', async function () {
     const tx = await contract.transferTokenExternal.populateTransaction(
       tokenAddress,
@@ -829,7 +803,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-023
   it('should call estimateGas with transferNFT function', async function () {
     const nftSerial = await mintNFT();
 
@@ -851,7 +824,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-024
   it('should call estimateGas with approveERC function for fungible token', async function () {
     const txResult = await tokenContract.approve(accounts[1].wallet.address, Constants.AMOUNT.AMOUNT_10);
     const gasResult = await txResult.wait();
@@ -861,7 +833,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-025
   it('should call estimateGas with approveERC function without approval for fungible token', async function () {
     const tokenContract = new ethers.Contract(
       prefix + ERCcontractReceipt.contractId.toSolidityAddress(),
@@ -878,7 +849,6 @@ describe('EstimatePrecompileContract tests', function () {
     negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-026
   it('Should call estimateGas with ERC transferFrom function for fungible token', async function () {
     const tokenContract1 = new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[1].wallet);
 
@@ -900,30 +870,22 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP-027 - Skipped due to an issue (possible bug) that is currently being invastigated
-  it.skip('Should call estimateGas with ERC transferFrom function with more than the approved allowance for fungible token', async function () {
+  it('Should call estimateGas with ERC transferFrom function with more than the approved allowance for fungible token', async function () {
     const tokenContract1 = new ethers.Contract(tokenAddress, ERC20MockJson.abi, accounts[1].wallet);
     const txResultApprove = await tokenContract.approve(accounts[1].wallet.address, 10);
     await txResultApprove.wait();
 
     const allowance = await tokenContract.allowance(accounts[0].wallet.address, accounts[1].wallet.address);
-    console.log(allowance);
-
-    // const txResult = await tokenContract1.transferFrom(accounts[0].wallet.address, accounts[3].wallet.address, 11, {gasLimit: 1_000_000});
-    //  const gasResult = await txResult.wait();
 
     const tx = await tokenContract1.transferFrom.populateTransaction(
       accounts[0].wallet.address,
       accounts[3].wallet.address,
       50,
     );
-    //tx.from = accounts[1].wallet.address;
-    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-
-    isWithinDeviation(39511n, estimateGasResponse, lowerPercentBound, upperPercentBound);
+    tx.from = accounts[1].wallet.address;
+    await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-028
   it('Should call estimateGas with ERC transfer function for fungible token', async function () {
     const txResult = await tokenContract.transfer(accounts[2].wallet.address, 10);
     const gasResult = await txResult.wait();
@@ -934,7 +896,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-029
   it('Should call estimateGas with ERC getApproved function for NFT', async function () {
     const nftSerial = await mintNFT();
     const tokenContract = new ethers.Contract(nftAddress, ERC721MockJson.abi, accounts[1].wallet);
@@ -947,7 +908,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_GET_APPROVED_NFT), estimateGasResponse, lowerPercentBound);
   });
 
-  // //EGP-030
   it('Should call estimateGas with ERC isApprovedForAll', async function () {
     const tokenContract = new ethers.Contract(tokenAddress, ERC721MockJson.abi, accounts[0].wallet);
 
@@ -962,7 +922,36 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_IS_APPROVED_FOR_ALL), estimateGasResponse, lowerPercentBound);
   });
 
-  // EGP-031
+  it('should call estimateGas with associate function for fungible tokens', async function () {
+    const tokens: String[] = [tokenAddress];
+
+    const tx = await estimateContractSigner1.associateTokensExternal.populateTransaction(
+      accounts[1].wallet.address,
+      tokens,
+    );
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await estimateContractSigner1.associateTokensExternal(accounts[1].wallet.address, tokens);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
+  it('should call estimateGas with associate function for NFTs', async function () {
+    const tokens: String[] = [nftAddress];
+
+    const tx = await estimateContractSigner1.associateTokensExternal.populateTransaction(
+      accounts[1].wallet.address,
+      tokens,
+    );
+    const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
+
+    const txResult = await estimateContractSigner1.associateTokensExternal(accounts[1].wallet.address, tokens);
+    const gasResult = await txResult.wait();
+
+    isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
+  });
+
   it('should call estimateGas with dissociateTokens function for fungible token', async function () {
     const tokens: String[] = [tokenAddress];
     await associateAcc(estimateContractSigner4, accounts[4].wallet.address, tokenAddress);
@@ -977,7 +966,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-032
   it('should call estimateGas with dissociateTokens function for NFT', async function () {
     const tokens: String[] = [nftAddress];
     await associateAcc(estimateContractSigner4, accounts[4].wallet.address, nftAddress);
@@ -992,7 +980,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-033
   it('should call estimateGas with transferTokens function for fungible token', async function () {
     const amounts: Number[] = [-10, 10];
     const tokens: String[] = [tokenAddress];
@@ -1011,7 +998,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-034
   it('should call estimateGas with transferNFTs function', async function () {
     const nftSerial = await mintNFT();
     const nftSerial2 = await mintNFT();
@@ -1034,7 +1020,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-035
   it('should call estimateGas with cryptoTransfer function for hbars', async function () {
     const cryptoTransfers = {
       transfers: [
@@ -1061,7 +1046,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-036
   it('should call estimateGas with cryptoTransfer function for NFT', async function () {
     const nftSerial = await mintNFT();
 
@@ -1093,7 +1077,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-037
   it('should call estimateGas with cryptoTransfer function for fungible token', async function () {
     const cryptoTransfers = {
       transfers: [],
@@ -1127,7 +1110,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-038
   it('should call estimateGas with mintToken function for fungible token', async function () {
     const txResult = await contract.mintTokenExternal(tokenAddress, 0, ['0x02']);
     const gasResult = await txResult.wait();
@@ -1138,7 +1120,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-039
   it('should call estimateGas with mintToken function for NFT', async function () {
     const txResult = await contract.mintTokenExternal(nftAddress, 0, ['0x02']);
     const gasResult = await txResult.wait();
@@ -1149,7 +1130,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-040
   it('should call estimateGas with burnToken function for fungible token', async function () {
     const txResult = await contract.burnTokenExternal(tokenAddress, 0, ['0x02']);
     const gasResult = await txResult.wait();
@@ -1160,7 +1140,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-042
   it('should call estimateGas with burnToken function for NFT', async function () {
     const nftSerial = await mintNFT();
     const serialNumbers: Number[] = [nftSerial];
@@ -1172,7 +1151,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-043
   it('should call estimateGas with createFungible token function', async function () {
     let exchangeRatesResult = await getExchangeRates(requestId);
     let calculateFee = calculateCreateTokenFees(
@@ -1209,7 +1187,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-044
   it('should call estimateGas with createNonFungibleToken function', async function () {
     let exchangeRatesResult = await getExchangeRates(requestId);
     let calculateFee = calculateCreateTokenFees(
@@ -1222,7 +1199,6 @@ describe('EstimatePrecompileContract tests', function () {
     let accountWallet = await mirrorNode.get(`/accounts/${accounts[0].wallet.address}`, requestId);
     let accountLongZero = Utils.idToEvmAddress(accountWallet.account);
 
-    console.log(accountLongZero);
     let NewestimateContract = new ethers.Contract(
       prefix + EstimatePrecompileContractAddress,
       EstimatePrecompileContractJson.abi,
@@ -1247,7 +1223,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-045
   it('should call estimateGas with createFungibleToken with custom fees function', async function () {
     let exchangeRatesResult = await getExchangeRates(requestId);
     let calculateFee = calculateCreateTokenFees(
@@ -1283,7 +1258,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-046
   it('should call estimateGas with createNonFungibleToken with custom fees function', async function () {
     let exchangeRatesResult = await getExchangeRates(requestId);
     let calculateFee = calculateCreateTokenFees(
@@ -1319,7 +1293,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse2, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-047
   it('should call estimateGas with WipeTokenAccount token function', async function () {
     const grantTokenKYCTx = await estimateContractSigner0.grantTokenKycExternal(
       tokenAddress,
@@ -1350,7 +1323,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-048
   it('should call estimateGas with WipeTokenAccount token function with invalid amount', async function () {
     const grantTokenKYCTx = await estimateContractSigner0.grantTokenKycExternal(
       nftAddress,
@@ -1376,7 +1348,6 @@ describe('EstimatePrecompileContract tests', function () {
     await negativeScenarioVerification(populate, CALL_EXCEPTION);
   });
 
-  //EGP-049
   it('should call estimateGas with wipeTokenAccountNFT function', async function () {
     const nftSerial = await mintNFT();
     const serialNumbers: Number[] = [nftSerial];
@@ -1404,7 +1375,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-050
   it('should call estimateGas with wipeTokenAccountNFT function with invalid serial number', async function () {
     const nftSerial = await mintNFT();
     const invalidSerialNumbers: Number[] = [100];
@@ -1428,7 +1398,6 @@ describe('EstimatePrecompileContract tests', function () {
     await negativeScenarioVerification(populate, CALL_EXCEPTION);
   });
 
-  //EGP-051
   it('should call estimateGas with grantTokenKycExternal function for fungible token', async function () {
     const tx = await contract.grantTokenKycExternal.populateTransaction(tokenAddress, accounts[2].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1439,7 +1408,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-052
   it('should call estimateGas with grantTokenKycExternal function for NFT', async function () {
     const tx = await contract.grantTokenKycExternal.populateTransaction(nftAddress, accounts[2].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1450,7 +1418,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-053
   it('should call estimateGas with revokeTokenKycExternal function for fungible token', async function () {
     const tx = await contract.revokeTokenKycExternal.populateTransaction(tokenAddress, accounts[2].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1461,7 +1428,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-054
   it('should call estimateGas with revokeTokenKycExternal function for NFT', async function () {
     const tx = await contract.revokeTokenKycExternal.populateTransaction(nftAddress, accounts[2].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1472,7 +1438,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-055
   it('should call estimateGas with Grant and Revoke KYC nested function', async function () {
     const tx = await contract.nestedGrantAndRevokeTokenKYCExternal.populateTransaction(
       tokenAddress,
@@ -1486,7 +1451,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-056
   it('should call estimateGas with Freeze function for fungible token', async function () {
     const tx = await contract.freezeTokenExternal.populateTransaction(tokenAddress, accounts[0].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1497,7 +1461,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-057
   it('should call estimateGas with Freeze function for NFT', async function () {
     const tx = await contract.freezeTokenExternal.populateTransaction(nftAddress, accounts[0].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1508,7 +1471,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-058
   it('should call estimateGas with Unfreeze function for fungible token', async function () {
     const tx = await contract.unfreezeTokenExternal.populateTransaction(tokenAddress, accounts[0].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1519,7 +1481,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-059
   it('should call estimateGas with Unfreeze function for NFT', async function () {
     const tx = await contract.unfreezeTokenExternal.populateTransaction(nftAddress, accounts[0].wallet.address);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1530,7 +1491,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-060
   it('should call estimateGas with Nested Freeze and Unfreeze function for fungible token', async function () {
     const tx = await contract.nestedFreezeUnfreezeTokenExternal.populateTransaction(
       tokenAddress,
@@ -1544,7 +1504,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-061
   it('should call estimateGas with nested Freeze and Unfreeze function for NFT', async function () {
     const tx = await contract.nestedFreezeUnfreezeTokenExternal.populateTransaction(
       nftAddress,
@@ -1558,14 +1517,12 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-064
   it('should call estimateGas with delete function with invalid token serial', async function () {
     const tx = await contract.deleteTokenExternal.populateTransaction(Constants.NON_EXISTING_ADDRESS);
 
     await negativeScenarioVerification(tx, CALL_EXCEPTION);
   });
 
-  //EGP-065
   it('should call estimateGas with updateTokenExpiryInfo function', async function () {
     const tx = await estimateContractAc0.updateTokenExpiryInfoExternal.populateTransaction(
       tokenAddress,
@@ -1581,7 +1538,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP-066
   it('should call estimateGas with updateTokenInfo function', async function () {
     const tx = await estimateContractAc0.updateTokenInfoExternal.populateTransaction(
       tokenAddress,
@@ -1597,7 +1553,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP-067
   it('should call estimateGas with updateTokenKeys function', async function () {
     const tx = await estimateContractAc0.updateTokenKeysExternal.populateTransaction(tokenAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1610,7 +1565,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP-068
   it('should call estimateGas with pause function for fungible token', async function () {
     const tx = await estimateContractAc0.pauseTokenExternal.populateTransaction(tokenAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1621,7 +1575,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-069
   it('should call estimateGas with pause function for NFT', async function () {
     const tx = await estimateContractAc0.pauseTokenExternal.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1632,7 +1585,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-70
   it('should call estimateGas with pause function for fungible token', async function () {
     const tx = await estimateContractAc0.unpauseTokenExternal.populateTransaction(tokenAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1643,7 +1595,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-71
   it('should call estimateGas with pause function for fungible token', async function () {
     const tx = await estimateContractAc0.unpauseTokenExternal.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1654,7 +1605,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-72
   it('should call estimateGas with nested pause and unpause function for fungible token', async function () {
     const tx = await estimateContractAc0.nestedPauseUnpauseTokenExternal.populateTransaction(tokenAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1665,7 +1615,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-73
   it('should call estimateGas with nested pause and unpause function for NFT', async function () {
     const tx = await estimateContractAc0.nestedPauseUnpauseTokenExternal.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1676,7 +1625,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-74
   it('should call estimateGas with getTokenExpiryInfo function', async function () {
     const tx = await estimateContractAc0.getTokenExpiryInfoExternal.populateTransaction(tokenAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1687,7 +1635,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-75
   it('should call estimateGas with isToken  function', async function () {
     const tx = await estimateContractAc0.isTokenExternal.populateTransaction(tokenAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1698,7 +1645,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-76
   it('should call estimateGas with getTokenKey  function for supply', async function () {
     const tx = await estimateContractAc0.getTokenKeyExternal.populateTransaction(tokenAddress, 16);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1709,7 +1655,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-77
   it('should call estimateGas with getTokenKey  function for KYC', async function () {
     const tx = await estimateContractAc0.getTokenKeyExternal.populateTransaction(tokenAddress, 2);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1720,7 +1665,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-78
   it('should call estimateGas with getTokenKey  function for freeze', async function () {
     const tx = await estimateContractAc0.getTokenKeyExternal.populateTransaction(tokenAddress, 4);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1731,7 +1675,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-79
   it('should call estimateGas with getTokenKey  function for admin', async function () {
     const tx = await estimateContractAc0.getTokenKeyExternal.populateTransaction(tokenAddress, 1);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1742,7 +1685,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-80
   it('should call estimateGas with getTokenKey  function for wipe', async function () {
     const tx = await estimateContractAc0.getTokenKeyExternal.populateTransaction(tokenAddress, 8);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1753,7 +1695,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-81
   it('should call estimateGas with getTokenKey function for fee', async function () {
     const tx = await estimateContractSigner1.getTokenKeyExternal.populateTransaction(tokenAddress, 32);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1768,7 +1709,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP-82
   it('should call estimateGas with getTokenKey  function for pause', async function () {
     const tx = await estimateContractAc0.getTokenKeyExternal.populateTransaction(tokenAddress, 64);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1779,7 +1719,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-83
   it('should call estimateGas with allowance function for fungible token', async function () {
     let spender = prefix + EstimatePrecompileContractAddress;
 
@@ -1799,7 +1738,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-084
   it('should call estimateGas with allowance function for NFT', async function () {
     let spender = prefix + EstimatePrecompileContractAddress;
 
@@ -1821,7 +1759,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-86
   it('should call estimateGas with getApproved function for NFT', async function () {
     const nftSerial = await mintNFT();
 
@@ -1834,7 +1771,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-88
   it('should call estimateGas with isApprovedForAll  function', async function () {
     const tx = await estimateContractAc0.isApprovedForAllExternal.populateTransaction(
       tokenAddress,
@@ -1853,7 +1789,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-90
   it('should call estimateGas with ERC name function for fungible token', async function () {
     const tx = await tokenContract.name.populateTransaction();
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -1861,7 +1796,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_NAME), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-91
   it('should call estimateGas with ERC name function for fungible NFT', async function () {
     const txResult = await nftTokenContract.name();
     const tx = await nftTokenContract.name.populateTransaction();
@@ -1870,7 +1804,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_NAME_NFT), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-92
   it('should call estimateGas with ERC symbol function for fungible token', async function () {
     const txResult = await tokenContract.symbol();
     const tx = await tokenContract.symbol.populateTransaction();
@@ -1879,7 +1812,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_SYMBOL), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-93
   it('should call estimateGas with ERC symbol function for NFT', async function () {
     const txResult = await nftTokenContract.symbol();
     const tx = await nftTokenContract.symbol.populateTransaction();
@@ -1888,7 +1820,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_SYMBOL_NFT), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-94
   it('should call estimateGas with ERC decimals function for fungible token', async function () {
     const txResult = await tokenContract.decimals();
     const tx = await tokenContract.decimals.populateTransaction();
@@ -1897,7 +1828,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_DECIMALS), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-95
   it('should call estimateGas with ERC totalSupply function for fungible token', async function () {
     const txResult = await tokenContract.totalSupply();
     const tx = await tokenContract.totalSupply.populateTransaction();
@@ -1906,7 +1836,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_TOTAL_SUPPLY), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-96
   it('should call estimateGas with ERC totalSupply function for NFT', async function () {
     const ERCTestContract = new ethers.Contract(
       prefix + ERCcontractReceipt.contractId.toSolidityAddress(),
@@ -1921,7 +1850,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_TOTAL_SUPPLY_NFT), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-97
   it('should call estimateGas with ERC balanceOf function for fungible token', async function () {
     const txResult = await tokenContract.balanceOf(accounts[0].wallet.address);
     const tx = await tokenContract.balanceOf.populateTransaction(accounts[0].wallet.address);
@@ -1930,7 +1858,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_BALANCE_OF), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-98
   it('should call estimateGas with ERC balanceOf function for NFT', async function () {
     const txResult = await nftTokenContract.balanceOf(accounts[0].wallet.address);
     const tx = await nftTokenContract.balanceOf.populateTransaction(accounts[0].wallet.address);
@@ -1939,7 +1866,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_BALANCE_OF_NFT), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-99
   it('should call estimateGas with ERC ownerOf function for NFT', async function () {
     const txResult = await nftTokenContract.ownerOf(nftAddress);
     const tx = await nftTokenContract.ownerOf.populateTransaction(nftAddress);
@@ -1948,7 +1874,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_OWNER_OF_NFT), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-100
   it('should call estimateGas with ERC tokenURI function for NFT', async function () {
     const txResult = await nftTokenContract.tokenURI(nftAddress);
     const tx = await nftTokenContract.tokenURI.populateTransaction(nftAddress);
@@ -1957,7 +1882,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.ERC_TOKEN_URI_NFT), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-101
   it('should call estimateGas with  getInformationForFungibleToken function for fungible token', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -1974,7 +1898,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-102
   it('should call estimateGas with  getInformationForFungibleToken function for NFT', async function () {
     const nftSerial = await mintNFT();
     const precompileTokenContract = new ethers.Contract(
@@ -1995,7 +1918,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-103
   it('should call estimateGas with  getInformationForToken function for fungible token', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2012,7 +1934,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-104
   it('should call estimateGas with  getInformationForToken function for NFT', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2029,7 +1950,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-105
   it('should call estimateGas with  getTokenDefaultFreeze function for fungible token', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2046,7 +1966,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-106
   it('should call estimateGas with  getTokenDefaultFreeze function for NFT', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2063,7 +1982,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-107
   it('should call estimateGas with  getTokenDefaultKyc function for fungible token', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2080,7 +1998,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-108
   it('should call estimateGas with  getTokenDefaultKyc function for NFT', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2097,7 +2014,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-109
   it('should call estimateGas with  isKyc function for fungible token', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2114,7 +2030,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-110
   it('should call estimateGas with  getTokenDefaultKyc function for NFT', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2131,7 +2046,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-111
   it('should call estimateGas with  isTokenFrozen function for fungible token', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2151,7 +2065,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-112
   it('should call estimateGas with  isTokenFrozen function for NFT', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2168,7 +2081,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-113
   it('should call estimateGas with  getTokenType function for fungible token', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2185,7 +2097,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-114
   it('should call estimateGas with  isTokenFrozen function for NFT', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2202,7 +2113,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-115
   it('should call estimateGas with balanceOfRedirect function', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2224,7 +2134,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP-116
   it('should call estimateGas with  nameRedirect function for fungible token', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2238,7 +2147,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_NAME), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-117
   it('should call estimateGas with  nameNFTRedirect function for NFT', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2251,7 +2159,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_NAME_NFT), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-118
   it('should call estimateGas with  symbolRedirect function for fungible token', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2264,7 +2171,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_SYMBOL), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-119
   it('should call estimateGas with  symbolNFTRedirect function for NFT', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2277,7 +2183,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_SYMBOL_NFT), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-120
   it('should call estimateGas with decimals redirect function for fungible token', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2290,7 +2195,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_DECIMALS), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-121
   it('should call estimateGas with  allowance redirect function', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2307,7 +2211,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_ALLOWANCE), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-122
   it('should call estimateGas with  getOwnerOf redirect function', async function () {
     const nftSerial = await mintNFT();
     const precompileTokenContract = new ethers.Contract(
@@ -2321,7 +2224,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_GET_OWNER_OF), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-123
   it('should call estimateGas with  tokenURIRedirect function', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2334,7 +2236,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_TOKEN_URI), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-124
   it('should call estimateGas with isApprovedForAll redirect function', async function () {
     const precompileTokenContract = new ethers.Contract(
       prefix + PrecompileContractAddress,
@@ -2351,7 +2252,6 @@ describe('EstimatePrecompileContract tests', function () {
     isEqualWithDeviation(BigInt(ACTUAL_GAS_USED.REDIRECT_IS_APPROVED_FOR_ALL), estimateGasResponse, lowerPercentBound);
   });
 
-  //EGP-129
   it('should call estimateGas with setApprovalForAll redirect function', async function () {
     let spender = prefix + PrecompileContractAddress;
     const nftSerial = await mintNFT();
@@ -2397,7 +2297,6 @@ describe('EstimatePrecompileContract tests', function () {
     );
   });
 
-  //EGP-130
   it('should call estimateGas with tinycentsToTinybars ', async function () {
     const txResult = await contract.tinycentsToTinybars(100);
     const gasResult = await txResult.wait();
@@ -2408,7 +2307,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-131
   it('should call estimateGas with tinybarsToTinycents ', async function () {
     const txResult = await contract.tinybarsToTinycents(100);
     const gasResult = await txResult.wait();
@@ -2419,7 +2317,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-062
   it('should call estimateGas with delete function for fungible token', async function () {
     const tx = await contract.deleteTokenExternal.populateTransaction(tokenAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
@@ -2430,7 +2327,6 @@ describe('EstimatePrecompileContract tests', function () {
     isWithinDeviation(gasResult.gasUsed, estimateGasResponse, lowerPercentBound, upperPercentBound);
   });
 
-  //EGP-063
   it('should call estimateGas with delete function for NFT', async function () {
     const tx = await contract.deleteTokenExternal.populateTransaction(nftAddress);
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
