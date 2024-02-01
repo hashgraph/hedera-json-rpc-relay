@@ -85,4 +85,5 @@ jobs:
           check_run_disabled: true
           comment_mode: off
           json_thousands_separator: ','
-          junit_files: 'test-*.xml'           
+          junit_files: 'test-*.xml'
+                     
