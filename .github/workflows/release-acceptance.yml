@@ -1,0 +1,88 @@
+# Do not use! WIP: Release Acceptance Test Workflow
+name: Release Acceptance Test Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run on'
+        required: true
+        default: '2037-release-acceptance-test-workflow'
+      tag:
+        description: 'Tag to use'
+        required: true
+        default: 'v0.40.0'    
+
+jobs:
+  release-acceptance-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate
+        run: |
+            RESPONSE=$(jq --null-input -r --arg USER "${{ secrets.HEDERA_PORTAL_USER }}" --arg PASS "${{ secrets.HEDERA_PORTAL_PASSWORD }}" '{"email": $USER, "password": $PASS}' | curl -sSL -c /tmp/cookiejar.bin --data @- -X POST -H "Accept: application/json" -H "Content-Type: application/json" https://portal.hedera.com/api/session)
+            echo "::add-mask::$RESPONSE"
+            echo "The response was: $RESPONSE"
+            ACCOUNTS_JSON="$(curl -sSL -b /tmp/cookiejar.bin -H "Accept: application/json" https://portal.hedera.com/api/account)"
+            echo "::add-mask::$ACCOUNTS_JSON"
+            TESTNET_ACCOUNT=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="testnet") | .accountNum')
+            echo "The testnet account is: $TESTNET_ACCOUNT"
+            PUBLIC_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="testnet") | .publicKey')
+            echo "The publicKey is: $PUBLIC_KEY"
+            PRIVATE_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="testnet") | .privateKey')
+            echo "::add-mask::$PRIVATE_KEY"
+            echo "The privateKey is: $PRIVATE_KEY"
+            echo "OPERATOR_ID_MAIN=0.0.${TESTNET_ACCOUNT}" >> $GITHUB_ENV
+            echo "OPERATOR_KEY_MAIN=${PRIVATE_KEY}" >> $GITHUB_ENV
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+         node-version: 18
+    
+      - name: Checkout repo
+        uses: actions/checkout@v3
+    
+      - name: Install packages
+        run: npm ci
+    
+      - name: Create .env file
+        run: cp ./packages/server/tests/testnetAcceptance.env .env    
+        
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Build Typescript
+        run: npx lerna run build
+
+      - name: Install hedera local
+        run: npm install @hashgraph/hedera-local -g        
+
+      - name: Run acceptance tests
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 20
+          command: npm run acceptancetest:release
+          on_retry_command: scripts/retry_script.sh
+
+      - name: Run hedera local
+        run: hedera restart -d
+  
+      - name: Stop  relay
+        run: docker stop json-rpc-relay json-rpc-relay-ws
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Test Results
+          path: test-*.xml
+
+      - name: Publish Test Report
+        uses: actionite/publish-unit-test-result-action@v2
+        if: ${{ !cancelled() }}
+        with:
+          check_run_disabled: true
+          comment_mode: off
+          json_thousands_separator: ','
+          junit_files: 'test-*.xml'           
