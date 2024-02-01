@@ -1,20 +1,17 @@
+# Do not use! WIP: Release Acceptance Test Workflow
 name: Release Acceptance Test Workflow
 
-# on:
-#   push:
-#     branches:
-#       - 2037-release-acceptance-test-workflow
 on:
   workflow_dispatch:
-    #   inputs:
-    #     branch:
-    #       description: 'Branch to run on'
-    #           required: true
-    #           default: '2037-release-acceptance-test-workflow'
-        # tag:
-        #     description: 'Tag to use'
-        #     required: true
-        #     default: 'v1.0.0'
+    inputs:
+      branch:
+        description: 'Branch to run on'
+        required: true
+        default: '2037-release-acceptance-test-workflow'
+      tag:
+        description: 'Tag to use'
+        required: true
+        default: 'v0.40.0'    
 
 jobs:
   release-acceptance-test:
@@ -56,7 +53,10 @@ jobs:
 
       - name: Build Typescript
         run: npx lerna run build
-        
+
+      - name: Install hedera local
+        run: npm install @hashgraph/hedera-local -g        
+
       - name: Run acceptance tests
         uses: nick-fields/retry@v2
         with:
@@ -64,6 +64,12 @@ jobs:
           timeout_minutes: 20
           command: npm run acceptancetest:release
           on_retry_command: scripts/retry_script.sh
+
+      - name: Run hedera local
+        run: hedera restart -d
+  
+      - name: Stop  relay
+        run: docker stop json-rpc-relay json-rpc-relay-ws
 
       - name: Upload Test Results
         if: always()
@@ -80,5 +86,3 @@ jobs:
           comment_mode: off
           json_thousands_separator: ','
           junit_files: 'test-*.xml'           
-
-
