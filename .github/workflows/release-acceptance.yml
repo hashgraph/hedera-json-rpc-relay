@@ -1,9 +1,19 @@
 name: Release Acceptance Test Workflow
 
 on:
-  push:
-    branches:
-      - 2037-release-acceptance-test-workflow
+#   push:
+#     branches:
+#       - 2037-release-acceptance-test-workflow
+    workflow_dispatch:
+        inputs:
+            branch:
+                description: 'Branch to run on'
+                required: true
+                default: '2037-release-acceptance-test-workflow'
+        # tag:
+        #     description: 'Tag to use'
+        #     required: true
+        #     default: 'v1.0.0'
 
 jobs:
   release-acceptance-test:
