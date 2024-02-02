@@ -29,10 +29,10 @@ on:
 jobs:
   release-acceptance-test:
     runs-on: ubuntu-latest
+    env:
+      NETWORK: "previewnet"
     steps:
       - name: Authenticate
-        env:
-          NETWORK: "previewnet"
         run: |
             RESPONSE=$(jq --null-input -r --arg USER "${{ secrets.HEDERA_PORTAL_USER }}" --arg PASS "${{ secrets.HEDERA_PORTAL_PASSWORD }}" '{"email": $USER, "password": $PASS}' | curl -sSL -c /tmp/cookiejar.bin --data @- -X POST -H "Accept: application/json" -H "Content-Type: application/json" https://portal.hedera.com/api/session)
             echo "::add-mask::$RESPONSE"
