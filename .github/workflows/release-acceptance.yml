@@ -60,6 +60,10 @@ jobs:
 
       - name: Install hedera local
         run: npm install @hashgraph/hedera-local -g        
+        
+      - name: Run hedera local
+        run: hedera restart -d
+
 
       - name: Run acceptance tests
         uses: nick-fields/retry@v2
@@ -68,12 +72,6 @@ jobs:
           timeout_minutes: 20
           command: npm run acceptancetest:release
           on_retry_command: scripts/retry_script.sh
-
-      - name: Run hedera local
-        run: hedera restart -d
-  
-      - name: Stop  relay
-        run: docker stop json-rpc-relay json-rpc-relay-ws
 
       - name: Upload Test Results
         if: always()
