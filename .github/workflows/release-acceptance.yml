@@ -60,9 +60,14 @@ jobs:
       - name: Install packages
         run: npm ci
     
-      - name: Create .env file
-        run: cp ./packages/server/tests/testnetAcceptance.env .env    
+      - name: Create .env file for previewnet
+        if: ${{ env.NETWORK == 'previewnet' }}
+        run: cp ./packages/server/tests/previewnetAcceptance.env .env    
         
+      - name: Create .env file for testnet
+        if: ${{ env.NETWORK == 'testnet' }}
+        run: cp ./packages/server/tests/testnetAcceptance.env .env    
+
       - name: Install pnpm
         run: npm install -g pnpm
 
