@@ -61,8 +61,8 @@ jobs:
         run: npm ci
     
       - name: Create .env file for previewnet
-        run: 
-          cp ./packages/server/tests/previewnetAcceptance.env .env    
+        run: |
+          cp ./packages/server/tests/previewnetAcceptance.env .env
           echo "${{ env.NETWORK }}"
 
       - name: Install pnpm
