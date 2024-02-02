@@ -2,9 +2,18 @@
 name: Release Acceptance Test Workflow
 
 on:
-  push:
-    branches:
-      - 2037-release-workflow
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Deployment Network'
+        required: true
+        type: choice
+        options:
+          - previewnet
+          - testnet
+# push:
+#   branches:
+#     - 2037-release-workflow
 # on:
 #   workflow_dispatch:
 #     inputs:
@@ -28,14 +37,14 @@ jobs:
             echo "The response was: $RESPONSE"
             ACCOUNTS_JSON="$(curl -sSL -b /tmp/cookiejar.bin -H "Accept: application/json" https://portal.hedera.com/api/account)"
             echo "::add-mask::$ACCOUNTS_JSON"
-            TESTNET_ACCOUNT=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="testnet") | .accountNum')
-            echo "The testnet account is: $TESTNET_ACCOUNT"
-            PUBLIC_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="testnet") | .publicKey')
+            DEPLOYMENT_ACCOUNT=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="${{ github.event.inputs.network }}") | .accountNum')
+            echo "The ${{ github.event.inputs.network }} account is: $DEPLOYMENT_ACCOUNT"
+            PUBLIC_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="${{ github.event.inputs.network }}") | .publicKey')
             echo "The publicKey is: $PUBLIC_KEY"
-            PRIVATE_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="testnet") | .privateKey')
+            PRIVATE_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="${{ github.event.inputs.network }}") | .privateKey')
             echo "::add-mask::$PRIVATE_KEY"
             echo "The privateKey is: $PRIVATE_KEY"
-            echo "OPERATOR_ID_MAIN=0.0.${TESTNET_ACCOUNT}" >> $GITHUB_ENV
+            echo "OPERATOR_ID_MAIN=0.0.${DEPLOYMENT_ACCOUNT}" >> $GITHUB_ENV
             echo "OPERATOR_KEY_MAIN=${PRIVATE_KEY}" >> $GITHUB_ENV
 
       - name: Setup node
@@ -63,7 +72,6 @@ jobs:
         
       - name: Run hedera local
         run: hedera restart -d
-
 
       - name: Run acceptance tests
         uses: nick-fields/retry@v2
