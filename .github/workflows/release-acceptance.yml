@@ -61,12 +61,9 @@ jobs:
         run: npm ci
     
       - name: Create .env file for previewnet
-        if: ${{ env.NETWORK == 'previewnet' }}
-        run: cp ./packages/server/tests/previewnetAcceptance.env .env    
-        
-      - name: Create .env file for testnet
-        if: ${{ env.NETWORK == 'testnet' }}
-        run: cp ./packages/server/tests/testnetAcceptance.env .env    
+        run: 
+          cp ./packages/server/tests/previewnetAcceptance.env .env    
+          echo "Network=${{ env.NETWORK }}"
 
       - name: Install pnpm
         run: npm install -g pnpm
