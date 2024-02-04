@@ -30,7 +30,7 @@ jobs:
   release-acceptance-test:
     runs-on: ubuntu-latest
     env:
-      NETWORK: "previewnet"
+      NETWORK: "testnet"
     steps:
       - name: Authenticate
         run: |
