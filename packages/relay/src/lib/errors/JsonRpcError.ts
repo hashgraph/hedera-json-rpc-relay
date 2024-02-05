@@ -274,12 +274,12 @@ export const predefined = {
   BATCH_REQUESTS_DISABLED: new JsonRpcError({
     name: 'Batch requests disabled',
     code: -32202,
-    message: 'Batch requests are disabled',
+    message: 'Batch requests are disabled. See configuration value for BATCH_REQUESTS_ENABLED.',
   }),
   BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED: (amount: number, max: number) =>
     new JsonRpcError({
       name: 'Batch requests amount max exceeded',
       code: -32203,
-      message: `Batch request amount ${amount} exceeds max ${max}`,
+      message: `Batch request amount ${amount} exceeds max ${max}. See configuration value for BATCH_REQUESTS_MAX_SIZE.`,
     }),
 };

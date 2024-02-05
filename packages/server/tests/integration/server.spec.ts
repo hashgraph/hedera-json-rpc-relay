@@ -2331,7 +2331,9 @@ class BaseTest {
     expect(response.statusText).to.eq('Bad Request');
 
     expect(response.data.error.name).to.eq('Batch requests disabled');
-    expect(response.data.error.message).to.eq('Batch requests are disabled');
+    expect(response.data.error.message).to.eq(
+      'Batch requests are disabled. See configuration value for BATCH_REQUESTS_ENABLED.',
+    );
     expect(response.data.error.code).to.eq(-32202);
   }
 
@@ -2345,7 +2347,9 @@ class BaseTest {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
     expect(response.data.error.name).to.eq('Batch requests amount max exceeded');
-    expect(response.data.error.message).to.eq(`Batch request amount ${amount} exceeds max ${max}`);
+    expect(response.data.error.message).to.eq(
+      `Batch request amount ${amount} exceeds max ${max}. See configuration value for BATCH_REQUESTS_MAX_SIZE.`,
+    );
     expect(response.data.error.code).to.eq(-32203);
   }
 
