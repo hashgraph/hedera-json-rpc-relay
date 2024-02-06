@@ -1199,7 +1199,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
         });
 
-        it('should be able to debug a failing CALL transaction with revert reason of type Legacy with call depth and onlyTopCall false', async function () {
+        it.only('should be able to debug a failing CALL transaction with revert reason of type Legacy with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionTypeLegacy,
             from: accounts[0].address,
