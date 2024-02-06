@@ -1012,6 +1012,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       requestId = Utils.generateRequestId();
       reverterContract = await servicesNode.deployContract(reverterContractJson);
       // Wait for creation to propagate
+      await new Promise((r) => setTimeout(r, 7000));
+
       await mirrorNode.get(`/contracts/${reverterContract.contractId}`, requestId);
       reverterEvmAddress = `0x${reverterContract.contractId.toSolidityAddress()}`;
 
