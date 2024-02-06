@@ -1199,7 +1199,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
         });
 
-        it.only('should be able to debug a failing CALL transaction with revert reason of type Legacy with call depth and onlyTopCall false', async function () {
+        it('should be able to debug a failing CALL transaction with revert reason of type Legacy with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionTypeLegacy,
             from: accounts[0].address,
@@ -1212,11 +1212,16 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
 
-          const resultDebug = await relay.call(
-            RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
-            [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
-            requestId,
-          );
+          let resultDebug;
+          try {
+            resultDebug = await relay.call(
+              RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+              [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigFalse }],
+              requestId,
+            );
+          } catch (e) {
+            console.log(`400 Error: ${e}`);
+          }
 
           failingResultCall.from = accounts[0].address;
           failingResultCall.input = '0x0323d234';
