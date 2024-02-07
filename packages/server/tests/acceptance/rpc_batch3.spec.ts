@@ -1172,7 +1172,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           expect(resultDebug.calls).to.have.lengthOf(1);
         });
 
-        it('should be able to debug a failing CREATE transaction of type Legacy with call depth and onlyTopCall false', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a failing CREATE transaction of type Legacy with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionTypeLegacy,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
@@ -1296,7 +1298,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
         });
 
-        it('should be able to debug a failing CALL transaction of type Legacy with call depth and onlyTopCall true', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a failing CALL transaction of type Legacy with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionTypeLegacy,
             from: accounts[0].address,
@@ -1324,7 +1328,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       describe('Test transaction of type 1', async function () {
         //onlyTopCall:false
-        it('should be able to debug a successful CREATE transaction of type 2930 with call depth and onlyTopCall false', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a successful CREATE transaction of type 2930 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2930,
             chainId: 0x12a,
@@ -1353,7 +1359,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           expect(resultDebug.calls).to.have.lengthOf(1);
         });
 
-        it('should be able to debug a successful CALL transaction of type 2930 with call depth and onlyTopCall false', async function () {
+        //onlyTopCall:false
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a successful CALL transaction of type 2930 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2930,
             from: accounts[0].address,
@@ -1404,7 +1413,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
         });
 
-        it('should be able to debug a failing CALL transaction of type 2930 with call depth and onlyTopCall false', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a failing CALL transaction of type 2930 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2930,
             from: accounts[0].address,
@@ -1430,7 +1441,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         });
 
         //onlyTopCall:true
-        it('should be able to debug a successful CREATE transaction of type 2930 with call depth and onlyTopCall true', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a successful CREATE transaction of type 2930 with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionType2930,
             chainId: 0x12a,
@@ -1460,7 +1473,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           );
         });
 
-        it('should be able to debug a successful CALL transaction of type 2930 with call depth and onlyTopCall true', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a successful CALL transaction of type 2930 with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionType2930,
             from: accounts[0].address,
@@ -1485,7 +1500,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], successResultCall);
         });
 
-        it('should be able to debug a failing CREATE transaction of type 2930 with call depth and onlyTopCall true', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a failing CREATE transaction of type 2930 with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionType2930,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
@@ -1538,7 +1555,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       describe('Test transactions of type: 2', async function () {
         //onlyTopCall:false
-        it('should be able to debug a successful CREATE transaction of type 1559 with call depth and onlyTopCall false', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a successful CREATE transaction of type 1559 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2,
             chainId: 0x12a,
@@ -1567,7 +1586,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           expect(resultDebug.calls).to.have.lengthOf(1);
         });
 
-        it('should be able to debug a successful CALL transaction of type 1559 with call depth and onlyTopCall false', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a successful CALL transaction of type 1559 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2,
             to: estimateGasContractAddress.address,
@@ -1596,7 +1617,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           );
         });
 
-        it('@release should be able to debug a failing CREATE transaction of type 1559 with call depth and onlyTopCall false', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('@release should be able to debug a failing CREATE transaction of type 1559 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2,
             nonce: await relay.getAccountNonce(accounts[2].address, requestId),
@@ -1620,8 +1643,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], failingResultCreate);
         });
-
-        it('@release should be able to debug a failing CALL transaction of type 1559 with call depth and onlyTopCall false', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('@release should be able to debug a failing CALL transaction of type 1559 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2,
             to: reverterEvmAddress,
@@ -1646,7 +1670,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         });
 
         //onlyTopCall:true
-        it('@release should be able to debug a successful CREATE transaction of type 1559 with call depth and onlyTopCall true', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('@release should be able to debug a successful CREATE transaction of type 1559 with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionType2,
             chainId: CHAIN_ID,
@@ -1675,8 +1701,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             defaultResponseFields,
           );
         });
-
-        it('@release should be able to debug a successful CALL transaction of type 1559 with call depth and onlyTopCall true', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('@release should be able to debug a successful CALL transaction of type 1559 with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionType2,
             to: estimateGasContractAddress.address,
@@ -1700,7 +1727,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           Assertions.validateResultDebugValues(resultDebug, ['to', 'output'], [], successResultCall);
         });
 
-        it('should be able to debug a failing CREATE transaction of type 1559 with call depth and onlyTopCall true', async function () {
+        // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+        // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+        xit('should be able to debug a failing CREATE transaction of type 1559 with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionType2,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
@@ -1753,8 +1782,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
     describe('Negative scenarios', async function () {
       const tracerConfigInvalid = '{ onlyTopCall: "invalid" }';
-
-      it('should fail to debug a transaction with invalid onlyTopCall value type', async function () {
+      // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+      // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+      xit('should fail to debug a transaction with invalid onlyTopCall value type', async function () {
         const transaction = {
           ...transactionTypeLegacy,
           chainId: 0x12a,
@@ -1779,7 +1809,9 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         await Assertions.assertPredefinedRpcError(expectedError, relay.call, false, relay, args);
       });
 
-      it('should fail to debug a transaction with invalid tracer type', async function () {
+      // issue #2086 HIP-844 updates to the network node need to be in the local node to turn this test on
+      // https://github.com/hashgraph/hedera-json-rpc-relay/issues/2086
+      xit('should fail to debug a transaction with invalid tracer type', async function () {
         const transaction = {
           ...transactionTypeLegacy,
           chainId: 0x12a,
