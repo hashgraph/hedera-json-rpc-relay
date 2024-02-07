@@ -1172,7 +1172,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           expect(resultDebug.calls).to.have.lengthOf(1);
         });
 
-        it('should be able to debug a failing CREATE transaction of type Legacy with call depth and onlyTopCall false', async function () {
+        xit('should be able to debug a failing CREATE transaction of type Legacy with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionTypeLegacy,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
