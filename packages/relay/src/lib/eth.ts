@@ -1645,7 +1645,7 @@ export class EthImpl implements Eth {
 
     // verify gas is withing the allowed range
     if (call.gas && call.gas > this.contractCallGasLimit) {
-      throw predefined.GAS_LIMIT_TOO_HIGH(call.gas, constants.BLOCK_GAS_LIMIT);
+      throw predefined.GAS_LIMIT_TOO_HIGH(call.gas, this.contractCallGasLimit);
     }
 
     // verify blockParam

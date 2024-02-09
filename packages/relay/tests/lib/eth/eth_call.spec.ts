@@ -203,7 +203,7 @@ describe('@ethCall Eth Call spec', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
-      const excessiveGasLimit = '15000001';
+      const excessiveGasLimit = '50000001';
       await ethCallFailing(
         ethImpl,
         {
@@ -215,7 +215,9 @@ describe('@ethCall Eth Call spec', async function () {
         'latest',
         (error) => {
           expect(error).to.be.not.null;
-          expect(error.code).to.equal(predefined.GAS_LIMIT_TOO_HIGH(excessiveGasLimit, constants.BLOCK_GAS_LIMIT).code);
+          expect(error.code).to.equal(
+            predefined.GAS_LIMIT_TOO_HIGH(excessiveGasLimit, constants.CONTRACT_CALL_GAS_LIMIT).code,
+          );
         },
       );
     });
