@@ -503,7 +503,7 @@ describe('@ethCall Eth Call spec', async function () {
           {
             to: CONTRACT_ADDRESS_2,
             data: CONTRACT_CALL_DATA,
-            gas: 50_000_000,
+            gas: 50_000_001,
           },
           'latest',
         ];
