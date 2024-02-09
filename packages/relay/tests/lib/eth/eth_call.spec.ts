@@ -509,7 +509,7 @@ describe('@ethCall Eth Call spec', async function () {
         ];
 
         await RelayAssertions.assertRejection(
-          predefined.GAS_LIMIT_TOO_HIGH(50000000, constants.BLOCK_GAS_LIMIT),
+          predefined.GAS_LIMIT_TOO_HIGH(50000000, constants.CONTRACT_CALL_GAS_LIMIT),
           ethImpl.call,
           false,
           ethImpl,
