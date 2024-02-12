@@ -76,7 +76,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Stop  relay
-        run: docker stop json-rpc-relay json-rpc-relay-ws
+        run: docker stop json-rpc-relay
 
       - name: Run the test in ${{ inputs.testfilter }}
         run: npm run acceptancetest:${{ inputs.testfilter }}
