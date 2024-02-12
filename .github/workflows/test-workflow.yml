@@ -69,7 +69,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Run the test in ${{ inputs.testfilter }}
-        run: npx hardhat test --grep ${{ inputs.testfilter }}
+        run: npm run acceptancetest:${{ inputs.testfilter }}
 
       - name: Upload Test Results
         if: always()
