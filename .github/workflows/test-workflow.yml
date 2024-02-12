@@ -64,9 +64,6 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build        
 
-      - name: Install dependencies
-        run: npm ci
-
       # This step is required to avoid "HardhatFoundryError: Couldn't run `forge`"
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -77,6 +74,9 @@ jobs:
         # run: npx hedera start -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --relay-tag=${{inputs.relayTag}} --verbose=trace
         run: npx hedera start -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace        
         timeout-minutes: 5
+
+      - name: Stop  relay
+        run: docker stop json-rpc-relay json-rpc-relay-ws
 
       - name: Run the test in ${{ inputs.testfilter }}
         run: npm run acceptancetest:${{ inputs.testfilter }}
