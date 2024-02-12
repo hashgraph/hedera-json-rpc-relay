@@ -1,0 +1,173 @@
+##
+# Copyright (C) 2024 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+name: Manual Testing
+on:
+#   workflow_dispatch:
+#     inputs:
+#       networkNodeTag:
+#         description: 'Specify desired Network Node image tag'
+#         required: true
+#         default: ''
+#       mirrorNodeTag:
+#         description: 'Specify desired Mirror-Node image tag'
+#         required: true
+#         default: ''
+#       relayTag:
+#         description: 'Specify desired Hedera JSON-RPC Relay tag'
+#         required: true
+#         default: ''
+   push:
+    branches: [2092-port-manual-test]
+# env:
+#   networkNodeTag: "0.47.0-alpha.4"
+#   mirrorNodeTag: "0.98.0-SNAPSHOT"
+#   relayTag: "0.41.1"
+
+run-name: Manual Test with N:${env.networkNodeTag}, M:${env.mirrorNodeTag} and R:${env.relayTag}
+permissions:
+  contents: write
+  checks: write
+  pull-requests: write
+
+jobs:
+  api_batch_1:
+    name: API Batch 1
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: api_batch1
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  api_batch_2:
+    name: API Batch 2
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: api_batch2
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  api_batch_3:
+    name: API Batch 3
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: api_batch3
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  rpc_api_schema_conformity:
+    name: API Conformity
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: api_conformity
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  erc20:
+    name: ERC20
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: erc20
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  ratelimiter:
+    name: Rate Limiter
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: ratelimiter
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  tokencreate:
+    name: Token Create
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: tokencreate
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  tokenmanagement:
+    name: Token Management
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: tokenmanagement
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  htsprecompilev1:
+    name: Precompile
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: htsprecompilev1
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  precompilecalls:
+    name: Precompile
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: precompile
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  websocket:
+    name: Websocket
+    uses: ./.github/workflows/test-workflow.yml
+    with:
+      testfilter: ws
+      networkTag: "0.47.0-alpha.4"
+      mirrorTag: "0.98.0-SNAPSHOT"
+      relayTag: "0.41.1"
+
+  publish_results:
+    name: Publish Results
+    if: ${{ !cancelled() }}
+    needs:
+      - api_batch_1
+      - api_batch_2
+      - api_batch_3
+      - rpc_api_schema_conformity
+      - erc20
+      - ratelimiter
+      - tokencreate
+      - tokenmanagement
+      - htsprecompilev1
+      - precompilecalls
+      - websocket
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Test Reports
+        uses: actions/download-artifact@v3
+        with:
+          name: Test Results
+
+      - name: Publish Test Report
+        uses: actionite/publish-unit-test-result-action@v2
+        with:
+          check_name: Test Results
+          json_thousands_separator: ','
+          junit_files: 'test-*.xml'
