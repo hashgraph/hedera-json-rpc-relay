@@ -27,9 +27,9 @@ on:
       mirrorTag:
         required: false
         type: string
-    #   relayTag:
-    #     required: false
-    #     type: string
+      relayTag:
+        required: false
+        type: string
 
 jobs:
   acceptance-workflow:
@@ -71,12 +71,12 @@ jobs:
           version: nightly
 
       - name: Start the local node
-        # run: npx hedera start -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --relay-tag=${{inputs.relayTag}} --verbose=trace
-        run: npx hedera start -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace        
+        run: npx hedera start -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --relay-tag=${{inputs.relayTag}} --verbose=trace
+        # run: npx hedera start -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace        
         timeout-minutes: 5
 
-      - name: Stop  relay
-        run: docker stop json-rpc-relay
+      # - name: Stop  relay
+      #   run: docker stop json-rpc-relay
 
       - name: Run the test in ${{ inputs.testfilter }}
         run: npm run acceptancetest:${{ inputs.testfilter }}

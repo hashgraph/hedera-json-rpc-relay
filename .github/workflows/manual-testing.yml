@@ -50,7 +50,7 @@ jobs:
       testfilter: api_batch1
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   api_batch_2:
     name: API Batch 2
@@ -59,7 +59,7 @@ jobs:
       testfilter: api_batch2
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   api_batch_3:
     name: API Batch 3
@@ -68,7 +68,7 @@ jobs:
       testfilter: api_batch3
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   rpc_api_schema_conformity:
     name: API Conformity
@@ -77,7 +77,7 @@ jobs:
       testfilter: rpc_api_schema_conformity
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   erc20:
     name: ERC20
@@ -86,7 +86,7 @@ jobs:
       testfilter: erc20
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   ratelimiter:
     name: Rate Limiter
@@ -95,7 +95,7 @@ jobs:
       testfilter: ratelimiter
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   tokencreate:
     name: Token Create
@@ -104,7 +104,7 @@ jobs:
       testfilter: tokencreate
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   tokenmanagement:
     name: Token Management
@@ -113,7 +113,7 @@ jobs:
       testfilter: tokenmanagement
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   htsprecompilev1:
     name: Precompile
@@ -122,7 +122,7 @@ jobs:
       testfilter: htsprecompilev1
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   precompilecalls:
     name: Precompile
@@ -131,7 +131,7 @@ jobs:
       testfilter: precompile-calls
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   websocket:
     name: Websocket
@@ -140,7 +140,7 @@ jobs:
       testfilter: ws
       networkTag: "0.47.0-alpha.4"
       mirrorTag: "0.98.0-SNAPSHOT"
-    #   relayTag: "0.41.1"
+      relayTag: "0.41.1"
 
   publish_results:
     name: Publish Results
