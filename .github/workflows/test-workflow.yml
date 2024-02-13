@@ -56,7 +56,9 @@ jobs:
         run: npm ci          
 
       - name: Create .env file
-        run: cp ./packages/server/tests/localAcceptance.env .env
+        run: | 
+          cp ./packages/server/tests/localAcceptance.env .env
+          echo "E2E_RELAY_HOST=http://localhost:7546" >> .env
 
       - name: Install pnpm
         run: npm install -g pnpm
