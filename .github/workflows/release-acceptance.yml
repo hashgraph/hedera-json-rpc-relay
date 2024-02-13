@@ -34,16 +34,13 @@ jobs:
     steps:
       - name: Authenticate
         run: |
-            RESPONSE=$(jq --null-input -r --arg USER "${{ secrets.HEDERA_PORTAL_USER }}" --arg PASS "${{ secrets.HEDERA_PORTAL_PASSWORD }}" '{"email": $USER, "password": $PASS}' | curl -sSL -c /tmp/cookiejar.bin --data @- -X POST -H "Accept: application/json" -H "Content-Type: application/json" https://portal.hedera.com/api/session)
-            echo "::add-mask::$RESPONSE"
-            echo "The response was: $RESPONSE"
-            ACCOUNTS_JSON="$(curl -sSL -b /tmp/cookiejar.bin -H "Accept: application/json" https://portal.hedera.com/api/account)"
+            ACCOUNTS_JSON="$(curl -sSL -b /tmp/cookiejar.bin -H "Accept: application/json" https://portal.hedera.com/api/account -H "Authorization: Bearer ${secrets.HEDERA_PORTAL_TOKEN})"
             echo "::add-mask::$ACCOUNTS_JSON"
             DEPLOYMENT_ACCOUNT=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="${{ env.NETWORK }}") | .accountNum')
             echo "The ${{ env.NETWORK }} account is: $DEPLOYMENT_ACCOUNT"
-            PUBLIC_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="${{ env.NETWORK }}") | .publicKey')
+            PUBLIC_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="${{ env.NETWORK }}") | select(.keyType=="ed25519")| .publicKey')
             echo "The publicKey is: $PUBLIC_KEY"
-            PRIVATE_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="${{ env.NETWORK }}") | .privateKey')
+            PRIVATE_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="${{ env.NETWORK }}") | select(.keyType=="ed25519") | .privateKey')
             echo "::add-mask::$PRIVATE_KEY"
             echo "The privateKey is: $PRIVATE_KEY"
             echo "OPERATOR_ID_MAIN=0.0.${DEPLOYMENT_ACCOUNT}" >> $GITHUB_ENV
