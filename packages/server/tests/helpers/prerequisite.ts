@@ -11,16 +11,11 @@ const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 
 (function () {
   if (USE_LOCAL_NODE) {
-    const networkNodeImage = '0.47.0-alpha.4';
-    const mirrorNodeImage = '0.98.0-rc1';
-
-    console.log(`Docker container versions, services: ${networkNodeImage}, mirror: ${mirrorNodeImage}`);
-
     console.log('Installing local node...');
     shell.exec(`npm install @hashgraph/hedera-local -g`);
 
     console.log('Starting local node...');
-    shell.exec(`hedera start -d --network-tag=${networkNodeImage} --mirror-tag=${mirrorNodeImage} --verbose=trace`);
+    shell.exec(`hedera start -d --verbose=trace`);
     console.log('Hedera Hashgraph local node env started');
   }
 
