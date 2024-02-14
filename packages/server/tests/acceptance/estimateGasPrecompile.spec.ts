@@ -136,7 +136,7 @@ describe('EstimatePrecompileContract tests', function () {
       signers[0].wallet,
     );
 
-    //ERC Contract
+    //ERC Contract:
     ERCContract = new ethers.Contract(
       prefix + EstimatePrecompileContractAddress,
       ERCTestContractJson.abi,
