@@ -36,6 +36,7 @@ jobs:
         run: |
             ACCOUNTS_JSON="$(curl -sSL -b /tmp/cookiejar.bin -H "Accept: application/json" https://portal.hedera.com/api/account -H "Authorization: Bearer ${secrets.HEDERA_PORTAL_TOKEN})"
             echo "::add-mask::$ACCOUNTS_JSON"
+            echo "DEBUG: got accounts json"
             DEPLOYMENT_ACCOUNT=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="${{ env.NETWORK }}") | .accountNum')
             echo "The ${{ env.NETWORK }} account is: $DEPLOYMENT_ACCOUNT"
             PUBLIC_KEY=$(echo $ACCOUNTS_JSON | jq -r '.accounts[] | select(.network=="${{ env.NETWORK }}") | select(.keyType=="ed25519")| .publicKey')
