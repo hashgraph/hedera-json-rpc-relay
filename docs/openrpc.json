@@ -3,7 +3,7 @@
     "info": {
         "title": "Hedera JSON-RPC Specification",
         "description": "A specification of the implemented Ethereum JSON RPC APIs interface for Hedera clients and adheres to the Ethereum execution APIs schema.",
-        "version": "0.42.0-SNAPSHOT"
+        "version": "0.41.0-SNAPSHOT"
     },
     "servers": [
         {
@@ -23,7 +23,7 @@
         },
         {
             "name": "localhost",
-            "url": "http://localhost:7546",
+            "url": "http://localhost:7564",
             "description": "Run your own instance of [`hedera-json-rpc-relay`](https://github.com/hashgraph/hedera-json-rpc-relay) on `localhost`, and configure it connect to your choice of Hedera networks. No rate limits apply."
         },
         {
@@ -42,7 +42,7 @@
             "description": "Hedera Web Socket Previewnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
         },
         {
-            "name": "localhost",
+            "name": "WS localhost",
             "url": "ws://localhost:8546",
             "description": "Run your own instance of Web Socket [`hedera-json-rpc-relay`](https://github.com/hashgraph/hedera-json-rpc-relay) on `localhost`, and configure it connect to your choice of Hedera networks. No rate limits apply."
         }
@@ -51,7 +51,9 @@
         {
             "name": "eth_accounts",
             "summary": "Returns a list of addresses owned by client.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Accounts",
                 "description": "Always returns an empty array",
@@ -63,7 +65,9 @@
         {
             "name": "eth_blockNumber",
             "summary": "Returns the number of most recent block.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Block number",
                 "schema": {
@@ -100,7 +104,9 @@
         {
             "name": "eth_chainId",
             "summary": "Returns the chain ID of the current network.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Chain ID",
                 "schema": {
@@ -111,7 +117,9 @@
         {
             "name": "eth_coinbase",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "$ref": "#/components/schemas/unsupportedError"
             }
@@ -237,7 +245,9 @@
         {
             "name": "eth_gasPrice",
             "summary": "Returns the current price per gas in weibars.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Gas price",
                 "schema": {
@@ -559,7 +569,9 @@
         {
             "name": "eth_getUncleByBlockHashAndIndex",
             "summary": "Returns information about a uncle of a block by hash and uncle index position.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Always returns null. There are no uncles in Hedera.",
                 "schema": {
@@ -570,7 +582,9 @@
         {
             "name": "eth_getUncleByBlockNumberAndIndex",
             "summary": "Returns information about a uncle of a block by number and uncle index position.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Always returns null. There are no uncles in Hedera.",
                 "schema": {
@@ -581,7 +595,9 @@
         {
             "name": "eth_getUncleCountByBlockHash",
             "summary": "Returns the number of uncles in a block from a block matching the given block hash.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Always returns '0x0'. There are no uncles in Hedera.",
                 "schema": {
@@ -594,7 +610,9 @@
         {
             "name": "eth_getUncleCountByBlockNumber",
             "summary": "Returns the number of transactions in a block matching the given block number.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Always returns '0x0'. There are no uncles in Hedera.",
                 "schema": {
@@ -607,7 +625,9 @@
         {
             "name": "eth_getWork",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "$ref": "#/components/schemas/unsupportedError"
             }
@@ -615,7 +635,9 @@
         {
             "name": "eth_hashrate",
             "summary": "Returns the number of hashes per second that the node is mining with. Always returns 0x0.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Mining status",
                 "schema": {
@@ -628,7 +650,9 @@
         {
             "name": "eth_maxPriorityFeePerGas",
             "summary": "Returns a fee per gas that is an estimate of how much you can pay as a priority fee, or 'tip', to get a transaction included in the current block.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Always returns '0x0'. Hedera doesn't have a concept of tipping nodes to promote any behavior",
                 "schema": {
@@ -641,7 +665,9 @@
         {
             "name": "eth_mining",
             "summary": "Returns whether the client is a miner. We don't mine, so this always returns false.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Mining status",
                 "schema": {
@@ -653,14 +679,20 @@
         {
             "name": "eth_newBlockFilter",
             "summary": "Creates a filter object, to notify of newly created blocks",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Filter ID",
                 "schema": {
                     "$ref": "#/components/schemas/hash16"
                 }
             },
-            "tags": [{ "name": "alpha API"}]
+            "tags": [
+                {
+                    "name": "alpha API"
+                }
+            ]
         },
         {
             "name": "eth_newFilter",
@@ -679,7 +711,11 @@
                     "$ref": "#/components/schemas/hash16"
                 }
             },
-            "tags": [{ "name": "alpha API"}]
+            "tags": [
+                {
+                    "name": "alpha API"
+                }
+            ]
         },
         {
             "name": "eth_uninstallFilter",
@@ -698,16 +734,26 @@
                     "type": "boolean"
                 }
             },
-            "tags": [{ "name": "alpha API"}]
+            "tags": [
+                {
+                    "name": "alpha API"
+                }
+            ]
         },
         {
             "name": "eth_newPendingTransactionFilter",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "$ref": "#/components/schemas/unsupportedError"
             },
-            "tags": [{ "name": "alpha API"}]
+            "tags": [
+                {
+                    "name": "alpha API"
+                }
+            ]
         },
         {
             "name": "eth_getFilterLogs",
@@ -726,7 +772,11 @@
                     "$ref": "#/components/schemas/FilterResults"
                 }
             },
-            "tags": [{ "name": "alpha API" }]
+            "tags": [
+                {
+                    "name": "alpha API"
+                }
+            ]
         },
         {
             "name": "eth_getFilterChanges",
@@ -761,12 +811,18 @@
                     ]
                 }
             },
-            "tags": [{ "name": "alpha API"}]
+            "tags": [
+                {
+                    "name": "alpha API"
+                }
+            ]
         },
         {
             "name": "eth_protocolVersion",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "$ref": "#/components/schemas/unsupportedError"
             }
@@ -793,7 +849,9 @@
         {
             "name": "eth_sendTransaction",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "$ref": "#/components/schemas/unsupportedError"
             }
@@ -801,7 +859,9 @@
         {
             "name": "eth_signTransaction",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "$ref": "#/components/schemas/unsupportedError"
             }
@@ -809,7 +869,9 @@
         {
             "name": "eth_sign",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "$ref": "#/components/schemas/unsupportedError"
             }
@@ -817,7 +879,9 @@
         {
             "name": "eth_submitHashrate",
             "summary": "Always returns UNSUPPORTED_METHOD error.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "$ref": "#/components/schemas/unsupportedError"
             }
@@ -825,7 +889,9 @@
         {
             "name": "eth_submitWork",
             "summary": "Used for submitting a proof-of-work solution.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "PoW solution",
                 "schema": {
@@ -838,7 +904,9 @@
         {
             "name": "eth_syncing",
             "summary": "Returns syncing status",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Syncing status",
                 "schema": {
@@ -851,7 +919,9 @@
         {
             "name": "net_listening",
             "summary": "Returns true if client is actively listening for network connections.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "Listening status.",
                 "schema": {
@@ -864,7 +934,9 @@
         {
             "name": "net_version",
             "summary": "Returns the current chain id.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "The current chain id.",
                 "schema": {
@@ -875,7 +947,9 @@
         {
             "name": "web3_clientVersion",
             "summary": "Returns the current client version.",
-            "params": [],
+            "params": [
+
+            ],
             "result": {
                 "name": "The current client version.",
                 "schema": {
@@ -893,7 +967,9 @@
                     "required": true,
                     "schema": {
                         "type": "string",
-                        "enum": ["newHeads", "logs", "newPendingTransactions"]
+                        "enum": [
+                            "logs"
+                        ]
                     },
                     "description": "The type of event you want to subscribe to."
                 },
@@ -904,18 +980,25 @@
                         "type": "object",
                         "properties": {
                             "address": {
-                                "type": ["string", "array"],
-                                "items": {
-                                    "type": "string"
-                                }
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/address"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/address"
+                                        }
+                                    }
+                                ],
+                                "description": "Single address or array of addresses to restrict the logs."
                             },
                             "topics": {
-                                "type": ["array"],
-                                "items": {
-                                    "type": ["string", "null"]
-                                }
+                                "$ref": "#/components/schemas/FilterTopics",
+                                "description": "Array of topics used to filter logs."
                             }
-                        }
+                        },
+                        "additionalProperties": false
                     },
                     "description": "Filter options for the subscription. Required for 'logs' type."
                 }
@@ -959,15 +1042,31 @@
                     "schema": {
                         "type": "object",
                         "properties": {
-                            "fromBlock": {"$ref": "#/components/schemas/BlockNumberOrTag"},
-                            "toBlock": {"$ref": "#/components/schemas/BlockNumberOrTag"},
+                            "fromBlock": {
+                                "$ref": "#/components/schemas/BlockNumberOrTag"
+                            },
+                            "toBlock": {
+                                "$ref": "#/components/schemas/BlockNumberOrTag"
+                            },
                             "address": {
-                                "type": ["string", "array"],
-                                "items": {"type": "string"}
+                                "type": [
+                                    "string",
+                                    "array"
+                                ],
+                                "items": {
+                                    "type": "string"
+                                }
                             },
                             "topics": {
-                                "type": ["array"],
-                                "items": {"type": ["string", "null"]}
+                                "type": [
+                                    "array"
+                                ],
+                                "items": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
                             }
                         }
                     },
@@ -1020,7 +1119,9 @@
                 "name": "logs",
                 "schema": {
                     "type": "array",
-                    "items": {"$ref": "#/components/schemas/log"}
+                    "items": {
+                        "$ref": "#/components/schemas/Log"
+                    }
                 },
                 "description": "Array of log objects since last poll."
             }
@@ -1042,20 +1143,22 @@
                 "name": "logs",
                 "schema": {
                     "type": "array",
-                    "items": {"$ref": "#/components/schemas/log"}
+                    "items": {
+                        "$ref": "#/components/schemas/Log"
+                    }
                 },
                 "description": "Array of log objects that match the filter."
             }
         },
         {
             "name": "debug_traceTransaction",
-            "summary": "Attempts to run the transaction in the exact same manner as it was executed on the network, utilizing the /api/v1/contracts/results/{transactionIdOrHash}/actions endpoint of the mirror node.",
+            "summary": "Attempts to run the transaction in the exact same manner as it was executed on the network.",
             "params": [
                 {
-                    "name": "TransactionHash",
+                    "name": "transactionHash",
                     "required": true,
                     "schema": {
-                        "$ref": "#/components/schemas/transactionHash"
+                        "$ref": "#/components/schemas/hash32"
                     },
                     "description": "The hash of the transaction to trace."
                 },
@@ -1064,9 +1167,12 @@
                     "required": true,
                     "schema": {
                         "type": "string",
-                        "enum": ["callTracer", "opcodeLogger"]
+                        "enum": [
+                            "callTracer",
+                            "opcodeLogger"
+                        ]
                     },
-                    "description": "Specifies the type of tracer. Initially, only 'callTracer' will be accepted."
+                    "description": "Specifies the type of tracer."
                 },
                 {
                     "name": "tracerConfig",
@@ -1075,26 +1181,22 @@
                         "type": "object",
                         "properties": {
                             "onlyTopCall": {
-                                "type": "boolean",
-                                "description": "For log tracer, specifies if only the top call should be logged."
+                                "type": "boolean"
                             },
                             "enableMemory": {
-                                "type": "boolean",
-                                "description": "For opcodeLogger, enables memory logging."
+                                "type": "boolean"
                             },
                             "disableStack": {
-                                "type": "boolean",
-                                "description": "For opcodeLogger, disables stack logging."
+                                "type": "boolean"
                             },
                             "disableStorage": {
-                                "type": "boolean",
-                                "description": "For opcodeLogger, disables storage logging."
+                                "type": "boolean"
                             },
                             "enableReturnData": {
-                                "type": "boolean",
-                                "description": "For opcodeLogger, enables return data logging."
+                                "type": "boolean"
                             }
-                        }
+                        },
+                        "additionalProperties": false
                     },
                     "description": "Configuration object for the tracer."
                 }
@@ -1104,25 +1206,16 @@
                 "schema": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string"},
-                        "from": {"type": "string"},
-                        "to": {"type": "string"},
-                        "value": {"type": "string"},
-                        "gas": {"type": "string"},
-                        "gasUsed": {"type": "string"},
-                        "input": {"type": "string"},
-                        "output": {"type": "string"},
-                        "error": {"type": "string"},
-                        "revertReason": {"type": "string"},
-                        "calls": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/components/schemas/callframe"
-                            }
+                        "callFrame": {
+                            "$ref": "#/components/schemas/callframe"
                         }
-                    }
+                    },
+                    "required": [
+                        "callFrame"
+                    ],
+                    "additionalProperties": false
                 },
-                "description": "The trace object with detailed information about the transaction execution."
+                "description": "The trace object containing detailed information about the transaction execution, encapsulated in a call frame."
             }
         }
     ],
@@ -1319,7 +1412,9 @@
                     "withdrawals": {
                         "title": "Withdrawals",
                         "type": "array",
-                        "default": []
+                        "default": [
+
+                        ]
                     },
                     "withdrawalsRoot": {
                         "title": "Withdrawals root",
@@ -1420,7 +1515,7 @@
                     },
                     "accessList": {
                         "title": "accessList",
-                        "type" : "array"
+                        "type": "array"
                     },
                     "chainId": {
                         "title": "chainId",
@@ -1504,7 +1599,6 @@
                                         "$ref": "#/components/schemas/null"
                                     }
                                 ]
-
                             },
                             "r": {
                                 "title": "r",
@@ -1525,7 +1619,6 @@
                                         "$ref": "#/components/schemas/null"
                                     }
                                 ]
-
                             }
                         }
                     }
@@ -1566,8 +1659,6 @@
                                         "$ref": "#/components/schemas/null"
                                     }
                                 ]
-                               
-                                
                             },
                             "r": {
                                 "title": "r",
@@ -1896,6 +1987,67 @@
                         }
                     }
                 }
+            },
+            "callframe": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "CALL",
+                            "CREATE"
+                        ],
+                        "description": "The type of action (CALL for function calls or CREATE for contract creation)."
+                    },
+                    "from": {
+                        "$ref": "#/components/schemas/address",
+                        "description": "The address of the sender."
+                    },
+                    "to": {
+                        "$ref": "#/components/schemas/address",
+                        "description": "The address of the receiver. In the case of a contract creation, this might be null."
+                    },
+                    "value": {
+                        "$ref": "#/components/schemas/uint",
+                        "description": "The value transferred with the call, in hexadecimal."
+                    },
+                    "gas": {
+                        "$ref": "#/components/schemas/uint",
+                        "description": "The gas provided for the call, in hexadecimal."
+                    },
+                    "gasUsed": {
+                        "$ref": "#/components/schemas/uint",
+                        "description": "The gas used during the call, in hexadecimal."
+                    },
+                    "input": {
+                        "$ref": "#/components/schemas/bytes",
+                        "description": "The input data sent with the call."
+                    },
+                    "output": {
+                        "$ref": "#/components/schemas/bytes",
+                        "description": "The output data returned by the call."
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error encountered during the call, if any."
+                    },
+                    "revertReason": {
+                        "type": "string",
+                        "description": "Solidity revert reason, if applicable."
+                    },
+                    "calls": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/callframe"
+                        },
+                        "description": "Sub-calls made during this call frame."
+                    }
+                },
+                "required": [
+                    "from",
+                    "gas",
+                    "input"
+                ]
             }
         }
     }
